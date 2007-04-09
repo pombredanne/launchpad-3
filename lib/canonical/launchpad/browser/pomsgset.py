@@ -986,7 +986,7 @@ class POMsgSetView(LaunchpadView):
                 'is_multi_line': is_multi_line
                 }
 
-            if self.hide_private_content:
+            if self.message_must_be_hidden:
                 # We must hide the translation because it may have private
                 # info that we don't want to show to anoymous users.
                 translation_entry['active_translation'] = u'''
@@ -1036,7 +1036,7 @@ class POMsgSetView(LaunchpadView):
             return dict((k, v) for (k, v) in main.iteritems()
                         if k not in pruners_merged)
 
-        if self.hide_private_content:
+        if self.message_must_be_hidden:
             # We must hide all suggestions because it may have private
             # info that we don't want to show to anoymous users.
             non_editor = self._buildSuggestions(None, [])
@@ -1136,16 +1136,23 @@ class POMsgSetView(LaunchpadView):
         return len(self.msgids) > 1
 
     @cachedproperty
-    def hide_private_content(self):
-        """Whether this message should be hidden due private information."""
-        if (self.user is None and
-            self.msgid in (
-                u'translation-credits',
-                u'_: EMAIL OF TRANSLATORS<img alt=""'
-                u' src="/@@/translation-newline" /><br/>\nYour emails')):
-            return True
-        else:
+    def message_must_be_hidden(self):
+        """Whether the message must be hidden.
+
+        Messages are always shown to logged-in users.
+
+        Messages that are likely to contain email addresses
+        are shown only to logged-in users, and not to anonymous users.
+        """
+        if self.user is not None:
+            # Always show messages to logged-in users.
             return False
+        # For anonymous users, check the msgid.
+        return self.msgid in [
+            u'translation-credits',
+            u'_: EMAIL OF TRANSLATORS<img alt=""' +
+                u' src="/@@/translation-newline" /><br/>\nYour emails'
+            ]
 
     @cachedproperty
     def sequence(self):
