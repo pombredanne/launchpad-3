@@ -20,10 +20,12 @@ from zope.component import getUtility
 
 from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
-    ITranslationGroup, ITranslationGroupSet, ILanguageSet,
-    IPersonSet, ILaunchBag, NotFoundError
+    ITranslationGroup, ITranslationGroupSet, ITranslator, ITranslatorSet,
+    ILanguageSet, IPersonSet, ILaunchBag, NotFoundError
     )
-from canonical.launchpad.webapp import GetitemNavigation
+from canonical.launchpad.webapp import (
+    action, canonical_url, GetitemNavigation, LaunchpadFormView
+    )
 
 
 class TranslationGroupNavigation(GetitemNavigation):
@@ -109,18 +111,26 @@ class TranslationGroupView:
         return result
 
 
-class TranslationGroupAddTranslatorView(AddView):
+class TranslationGroupAddTranslatorView(LaunchpadFormView):
+    schema = ITranslator
+    field_names = ['language', 'translator']
 
-    __used_for__ = ITranslationGroup
+    @action("Add", name="add")
+    def add_action(self, action, data):
+        language = data.get('language')
+        translator = data.get('translator')
+        file('/tmp/add.log','a').write("lang='%s' trans='%s'\n"%(language,translator))
+        getUtility(ITranslatorSet).new(self.context, language, translator)
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        AddView.__init__(self, context, request)
+    def validate(self, data):
+        language = data.get('language')
+        if self.context.query_translator(language):
+            self.setFieldError('language',
+                "There is already a translator for this language")
 
-    def nextURL(self):
-        return self._nextURL
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class TranslationGroupSetAddView(AddView):
