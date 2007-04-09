@@ -43,10 +43,9 @@ from canonical.launchpad.helpers import is_english_variant, request_languages
 
 from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, ILanguageSet,
-    ILaunchpadStatisticSet,
-    IQuestion,
-    IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionSet,
-    IQuestionTarget, IProject, UnexpectedFormData)
+    ILaunchpadStatisticSet, IProject, IQuestion, IQuestionAddMessageForm, 
+    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget, 
+    UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
@@ -185,9 +184,9 @@ class QuestionLanguageVocabularyFactory:
     def __init__(self, view):
         """Create a QuestionLanguageVocabularyFactory.
 
-        :param view: The view provides the request used to determine the user 
-        languages. The view contains the Product widget selected by the user 
-        in the case where a question is asked in the context of a Project 
+        :param view: The view that provides the request used to determine the 
+        user languages. The view contains the Product widget selected by the 
+        user in the case where a question is asked in the context of a Project.
         """
         self.view = view
 
@@ -209,10 +208,9 @@ class QuestionLanguageVocabularyFactory:
             question_target = IQuestionTarget(context)
             supported_languages = question_target.getSupportedLanguages()
         elif (IProject.providedBy(context) and 
-            self.view.question_target is not None):
-            
-            # projects do not implement IQuestionTarget--the user must
-            # choose a product while asking a question
+                self.view.question_target is not None):
+            # Projects do not implement IQuestionTarget--the user must
+            # choose a product while asking a question.
             question_target = IQuestionTarget(self.view.question_target)
             supported_languages = question_target.getSupportedLanguages()
         else:
