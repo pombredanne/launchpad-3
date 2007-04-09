@@ -268,7 +268,8 @@ for a Person:
 
   >>> carlos = getUtility(IPersonSet).getByName('carlos')
   >>> [pt.pofile.title for pt in carlos.translation_history]
-  [u'Spanish (es) translation of man in Ubuntu Hoary package "evolution"',
+  [u'Spanish (es) translation of alsa-utils in alsa-utils trunk',
+   u'Spanish (es) translation of man in Ubuntu Hoary package "evolution"',
    u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
    u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
    u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
