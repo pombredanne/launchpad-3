@@ -148,7 +148,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     This view provides a search form to filter the displayed questions.
     """
-    
+
     schema = ISearchQuestionsForm
 
     custom_widget('languages', NotRequiredRadioWidget, 
@@ -156,9 +156,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
-                  
+
     template = ViewPageTemplateFile('../templates/question-listing.pt')
-    
+
     # Set to true to display a column showing the question's target.
     @property
     def display_target_column(self):
@@ -183,10 +183,11 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                 widget.setRenderedValue(value)
 
     def createLanguagesField(self):
-        """Create a field to choose a set language using a special vocabulary.
+        """Create a field to choose a set of languages.
 
-        :param the_form: The form that will use this field.
-        :return: A form.Fields instance containing the language field.
+        Create a specialized vocabulary based on the user's preferred languages.
+        If the user is anonymous, the languages submited in the browser's
+        request will be used.
         """
         # XXX: sinzui 2007-04-06 Insert English as the first element, to make 
         # it the default one. We probably want to remove English because 
@@ -270,7 +271,6 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             context=self.context.displayname,
             search_text=self.search_text)
         # Check if the set of selected status has a special title.
-        # XXX: sinzui 2007-04-06 Revise the no results messages to include lang
         status_set_title = self.status_title_map.get(
             frozenset(self.status_filter))
         if status_set_title:
@@ -373,7 +373,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                 question.sourcepackagename)
             return '<a href="%s/+tickets">%s</a>' % (
                 canonical_url(sourcepackage), question.sourcepackagename.name)
-    
+
 
 class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     """SearchQuestionsView specialization for the 'My questions' report.
