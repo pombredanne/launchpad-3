@@ -49,7 +49,7 @@ First choose a driver for the UDS Guacamole sprint.
   'http://launchpad.dev/sprints/uds-guacamole/+edit'
 
   >>> browser.getControl('Meeting Driver').value = 'ubuntu-team'
-  >>> browser.getControl('Change', index=2).click()
+  >>> browser.getControl('Change').click()
 
   >>> browser.url
   'http://launchpad.dev/sprints/uds-guacamole'
@@ -70,7 +70,7 @@ Guacamole agenda.
   >>> cprov_browser.open('http://launchpad.dev/sprints/uds-guacamole')
   >>> cprov_browser.getLink('Blueprints').click()
   >>> cprov_browser.url
-  'http://blueprints.launchpad.dev/sprints/uds-guacamole/+specs'
+  'http://blueprints.launchpad.dev/sprints/uds-guacamole/'
 
   >>> cprov_browser.getLink('Set agenda').click()
 

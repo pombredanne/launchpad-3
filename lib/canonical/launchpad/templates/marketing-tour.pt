@@ -1,0 +1,116 @@
+<html metal:use-macro="context/@@marketing_template/master">
+<body>
+  <div id="breadcrumb">
+    <dl>
+      <dt>Your location:</dt>
+      <dd>
+        <ul metal:fill-slot="breadcrumbs">
+          <li><a href="/">Home</a></li>
+          <li class="current">Take a tour</li>
+        </ul>
+      </dd>
+    </dl>
+  </div>
+
+  <dl metal:fill-slot="navigation"
+      id="sub-navigation">
+    <dt>Sub-navigation<dt>
+    <dd>
+      <ul>
+        <li><a href="+about">Overview</a></li>
+        <li class="current"><a href="+tour">Application tour</a></li>
+        <li><a href="+faq">FAQs</a></li>
+      </ul>
+      <ul id="global">
+        <li><a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#102;&#101;&#101;&#100;&#98;&#97;&#99;&#107;&#64;&#108;&#97;&#117;&#110;&#99;&#104;&#112;&#97;&#100;&#46;&#110;&#101;&#116;">Contact us</a></li>
+      </ul>
+    </dd>
+  </dl>
+
+  <div id="tour" metal:fill-slot="contents">
+    <div id="primary">
+      <h2 tal:content="view/title">App Name</h2>
+      <h3 class="byline">Application tour</h3>
+
+      <ul id="pane-selector">
+        <li tal:repeat="screen_title view/screen_titles"
+            tal:attributes="class python: repeat['screen_title'].index() == view.current_screen_index and 'current' or ''"
+          ><a href="#"
+              tal:attributes="href string:${request/URL}?screen=${repeat/screen_title/index}"
+              tal:content="screen_title">Getting started</a></li>
+      </ul>
+
+      <div class="info"
+            tal:replace="nothing">
+        <h5>Rosetta</h5>
+        <p><strong>Rosetta is a web-based system for translating open source software into any language.</strong>
+          All you need to start translating is a web browser, a good knowledge of the application you're translating,
+          and a thorough understanding of the English language</p>
+      </div> <!-- info -->
+    </div> <!-- primary -->
+
+    <div id="secondary"
+         tal:define="screen view/current_screen">
+      <h4 tal:content="screen/summary">Screen summary</h4>
+  <script>
+  <!--
+  function sync_highlight(point, state) {
+      // Bail out in case on non-compliant DOM implementation
+      if (!document.getElementById) {
+        return false;
+      }
+
+      marker = document.getElementById("p" + point);
+      callout = document.getElementById("point-" + point);
+      style = state ? 'highlighted' : '';
+      marker.className = style;
+      callout.className = style;
+
+      return true;
+  }
+  -->
+  </script>
+
+      <div id="pane">
+        <div class="screen">
+          <ol class="callouts"
+              tal:condition="screen/callouts">
+            <li id="p1" style="top: 0px; left: 0px"
+                tal:repeat="callout screen/callouts"
+                tal:attributes="id string:p${repeat/callout/number};
+                                style string:top: ${callout/top}px;; left: ${callout/left}px;; ;
+                                onmouseover string:return sync_highlight(${repeat/callout/number}, true);;;
+                                onmouseout string:return sync_highlight(${repeat/callout/number}, false);;"
+                tal:content="repeat/callout/number"
+                >One</li>
+          </ol>
+          <img src="#" alt="Screenshot"
+               tal:attributes="src screen/screenshot;
+                               alt string:${screen/title} Screenshot"/>
+        </div>
+        <ul class="info"
+            tal:condition="screen/callouts">
+          <li id="point-1"
+              tal:repeat="callout screen/callouts"
+              tal:attributes="id string:point-${repeat/callout/number};
+                              onmouseover string:return sync_highlight(${repeat/callout/number}, true);;;
+                              onmouseout string:return sync_highlight(${repeat/callout/number}, false);;"
+              tal:content="structure callout/text">Description of point 1.</li>
+        </ul>
+        <a class="button next" href="+tour" title="Next"
+           tal:condition="view/next_screen_index"
+           tal:attributes="href string:${request/URL}?screen=${view/next_screen_index}"
+           >Next &gt;</a>
+
+        <tal:next_tour condition="not: view/next_screen_index">
+          <a class="button next" href="+tour" title="Next tour"
+             tal:condition="view/next_tour_url"
+             tal:attributes="href view/next_tour_url"
+            >Next Tour &gt;</a>
+        </tal:next_tour>
+
+      </div> <!-- pane -->
+  </div> <!-- secondary -->
+  </div>
+</body>
+</html>

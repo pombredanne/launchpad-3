@@ -13,6 +13,14 @@
       classes="TeamNavigation PersonNavigation"
       />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonDynMenu"
+      attribute="__call__"
+      name="+menudata"
+      />
+
   <adapter
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
       for="canonical.launchpad.interfaces.IPerson"
@@ -23,9 +31,6 @@
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
-      <allow attributes="
-          default_gotchi_resource default_gotchi_heading_resource
-          default_emblem_resource" />
       <require
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />
@@ -52,7 +57,12 @@
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
       layer="canonical.launchpad.layers.BugsLayer"
-      name="+assignedbugs"
+      name="+bugs"
+      />
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+translations"
+      layer="canonical.launchpad.layers.TranslationsLayer"
       />
 
   <browser:menus
@@ -115,6 +125,13 @@
       template="../templates/person-edit.pt" />
 
   <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonBrandingView"
+      permission="launchpad.Edit"
+      template="../templates/object-branding.pt" />
+
+  <browser:page
       name="+edithomepage"
       for="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonEditHomePageView"
@@ -128,6 +145,10 @@
       <browser:page
           name="+index"
           template="../templates/person-index.pt"
+          />
+      <browser:page
+          name="+ask-a-question-button"
+          template="../templates/null.pt"
           />
       <browser:page
           name="+packages"
@@ -220,13 +241,16 @@
       attribute="__call__"
       />
 
-  <browser:page
+  <browser:generalform
       name="+bugs"
       for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
       facet="bugs"
-      class="canonical.launchpad.browser.RedirectToAssignedBugsView"
+      class="canonical.launchpad.browser.PersonRelatedBugsView"
+      fields="status importance assignee milestone
+              omit_dupes has_patch component has_no_package"
       permission="zope.Public"
-      attribute="__call__"
+      template="../templates/buglisting-embedded-advanced-search.pt"
       />
 
   <browser:generalform
@@ -412,6 +436,13 @@
       name="+edit"
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.TeamEditView"
+      permission="launchpad.Edit"
+      template="../templates/team-edit.pt" />
+
+  <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.ITeam"
+      class="canonical.launchpad.browser.TeamBrandingView"
       permission="launchpad.Edit"
       template="../templates/team-edit.pt" />
 
@@ -696,7 +727,14 @@
     name="+subscribedtickets"
     permission="zope.Public"
     />
-
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonAnswerContactForView"
+    name="+answer-contact-for"
+    permission="zope.Public"
+    template="../templates/person-answer-contact-for.pt"
+    />
+      
   <browser:menus
     module="canonical.launchpad.browser"
     classes="PersonAnswersMenu"

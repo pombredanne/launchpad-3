@@ -3,31 +3,37 @@
 __metaclass__ = type
 
 __all__ = [
-    'PersonNavigation',
-    'TeamNavigation',
-    'PersonSOP',
-    'PersonFacets',
-    'PersonBranchesMenu',
-    'PersonBugsMenu',
-    'PersonSpecsMenu',
-    'PersonOverviewMenu',
-    'TeamOverviewMenu',
+    'AdminRequestPeopleMergeView',
     'BaseListView',
-    'PeopleListView',
-    'TeamListView',
-    'UbunteroListView',
+    'BugContactPackageBugsSearchListingView',
+    'FinishedPeopleMergeRequestView',
     'FOAFSearchView',
-    'PersonClaimView',
-    'PersonSpecWorkLoadView',
-    'PersonSpecFeedbackView',
+    'ObjectReassignmentView',
+    'PeopleListView',
+    'PersonAddView',
+    'PersonAnswersMenu',
+    'PersonAssignedBugTaskSearchListingView',
+    'PersonAuthoredBranchesView',
+    'PersonBranchesMenu',
+    'PersonBranchesView',
+    'PersonBrandingView',
+    'PersonBugsMenu',
     'PersonChangePasswordView',
+    'PersonClaimView',
     'PersonCodeOfConductEditView',
+    'PersonDynMenu',
+    'PersonEditEmailsView',
+    'PersonEditHomePageView',
+    'PersonEditIRCNicknamesView',
+    'PersonEditJabberIDsView',
+    'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
     'PersonEditJabberIDsView',
     'PersonEditIRCNicknamesView',
     'PersonEditSSHKeysView',
     'PersonEditHomePageView',
+    'PersonAnswerContactForView',
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
     'BugContactPackageBugsSearchListingView',
@@ -35,41 +41,50 @@ __all__ = [
     'PersonRdfView',
     'PersonView',
     'PersonTranslationView',
+    'PersonFacets',
     'PersonGPGView',
-    'TeamJoinView',
-    'TeamLeaveView',
-    'PersonEditEmailsView',
-    'RequestPeopleMergeView',
-    'AdminRequestPeopleMergeView',
-    'FinishedPeopleMergeRequestView',
-    'RequestPeopleMergeMultipleEmailsView',
-    'ObjectReassignmentView',
-    'TeamReassignmentView',
-    'RedirectToAssignedBugsView',
-    'PersonAddView',
     'PersonLanguagesView',
-    'RedirectToEditLanguagesView',
     'PersonLatestQuestionsView',
+    'PersonNavigation',
+    'PersonOverviewMenu',
+    'PersonRdfView',
+    'PersonRegisteredBranchesView',
+    'PersonRelatedBugsView',
     'PersonSearchQuestionsView',
-    'PersonAnswersMenu',
+    'PersonSetContextMenu',
+    'PersonSetFacets',
+    'PersonSetNavigation',
+    'PersonSetSOP',
+    'PersonSOP',
+    'PersonSpecFeedbackView',
+    'PersonSpecsMenu',
+    'PersonSpecWorkLoadView',
+    'PersonSubscribedBranchesView',
+    'PersonTeamBranchesView',
+    'PersonTranslationView',
+    'PersonView',
+    'RedirectToEditLanguagesView',
+    'ReportedBugTaskSearchListingView',
+    'RequestPeopleMergeMultipleEmailsView',
+    'RequestPeopleMergeView',
     'SearchAnsweredQuestionsView',
     'SearchAssignedQuestionsView',
     'SearchCommentedQuestionsView',
     'SearchCreatedQuestionsView',
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
-    'PersonSetNavigation',
-    'PersonSetSOP',
-    'PersonSetFacets',
-    'PersonSetContextMenu',
-    'PersonBranchesView',
-    'PersonAuthoredBranchesView',
-    'PersonRegisteredBranchesView',
-    'PersonSubscribedBranchesView',
-    'PersonTeamBranchesView',
+    'SubscribedBugTaskSearchListingView',
+    'TeamJoinView',
+    'TeamLeaveView',
+    'TeamListView',
+    'TeamNavigation',
+    'TeamOverviewMenu',
+    'TeamReassignmentView',
+    'UbunteroListView',
     ]
 
 import cgi
+import copy
 import urllib
 from operator import attrgetter, itemgetter
 
@@ -82,6 +97,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
@@ -89,8 +105,7 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
     PersonCreationRationale, BugTaskStatus)
 
-from canonical.widgets import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget, PasswordChangeWidget)
+from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -104,12 +119,14 @@ from canonical.launchpad.interfaces import (
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
     BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet)
 
-from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.bugtask import (
+    BugListingBatchNavigator, BugTaskSearchListingView)
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
@@ -117,6 +134,7 @@ from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 
+from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
@@ -172,6 +190,26 @@ class PersonNavigation(CalendarTraversalMixin,
 
     def breadcrumb(self):
         return self.context.displayname
+
+
+class PersonDynMenu(DynMenu):
+
+    menus = {
+        'contributions': 'contributionsMenu',
+        }
+
+    @neverempty
+    def contributionsMenu(self):
+        L = [self.makeBreadcrumbLink(item)
+             for item in self.context.iterTopProjectsContributedTo()]
+        L.sort(key=lambda item: item.text.lower())
+        if L:
+            for obj in L:
+                yield obj
+        else:
+            yield self.makeLink(
+                'Projects you contribute to go here.', target=None)
+        yield self.makeLink('See all projects...', target='/products')
 
 
 class TeamNavigation(CalendarTraversalMixin,
@@ -250,7 +288,7 @@ class PersonSetContextMenu(ContextMenu):
              'teamlist', 'ubunterolist', 'newteam', 'adminrequestmerge', ]
 
     def products(self):
-        return Link('/products/', 'View projects')
+        return Link('/projects/', 'View projects')
 
     def distributions(self):
         return Link('/distros/', 'View distributions')
@@ -321,14 +359,14 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Bugs'
         summary = (
             'Bug reports that %s is involved with' % self.context.browsername)
-        return Link('+assignedbugs', text, summary)
+        return Link('', text, summary)
 
     def specifications(self):
         text = 'Blueprints'
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)
-        return Link('+specs', text, summary)
+        return Link('', text, summary)
 
     def bounties(self):
         text = 'Bounties'
@@ -341,20 +379,19 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.browsername)
-        return Link('+branches', text, summary)
+        return Link('', text, summary)
 
     def answers(self):
         text = 'Answers'
         summary = 'Questions that involves %s' % self.context.browsername
-        return Link('+tickets', text, summary)
+        return Link('', text, summary)
 
     def translations(self):
-        target = '+translations'
         text = 'Translations'
         summary = (
             'Software that %s is involved in translating' %
             self.context.browsername)
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def calendar(self):
         text = 'Calendar'
@@ -369,9 +406,7 @@ class PersonFacets(StandardLaunchpadFacets):
 class PersonBranchesMenu(ApplicationMenu):
 
     usedfor = IPerson
-
     facet = 'branches'
-
     links = ['authored', 'registered', 'subscribed', 'addbranch']
 
     def authored(self):
@@ -395,10 +430,13 @@ class PersonBranchesMenu(ApplicationMenu):
 class PersonBugsMenu(ApplicationMenu):
 
     usedfor = IPerson
-
     facet = 'bugs'
+    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'relatedbugs',
+             'softwarebugs']
 
-    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'softwarebugs']
+    def relatedbugs(self):
+        text = 'Related'
+        return Link('', text, icon='bugs')
 
     def assignedbugs(self):
         text = 'Assigned'
@@ -421,7 +459,7 @@ class TeamBugsMenu(PersonBugsMenu):
 
     usedfor = ITeam
     facet = 'bugs'
-    links = ['assignedbugs', 'softwarebugs', 'subscribedbugs']
+    links = ['assignedbugs', 'relatedbugs', 'softwarebugs', 'subscribedbugs']
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -494,15 +532,22 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = IPerson
     facet = 'overview'
-    links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
-             'editlanguages', 'editwikinames', 'editircnicknames',
-             'editjabberids', 'editpassword', 'editsshkeys', 'editpgpkeys',
-             'codesofconduct', 'administer', 'common_packages']
+    links = ['edit', 'branding', 'common_edithomepage',
+             'editemailaddresses', 'editlanguages', 'editwikinames',
+             'editircnicknames', 'editjabberids', 'editpassword',
+             'editsshkeys', 'editpgpkeys', 'codesofconduct', 'karma',
+             'administer', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
         text = 'Change details'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        target = '+branding'
+        text = 'Change branding'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -543,7 +588,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def karma(self):
         target = '+karma'
-        text = 'Karma'
+        text = 'Show karma summary'
         summary = (
             u'%s\N{right single quotation mark}s activities '
             u'in Launchpad' % self.context.browsername)
@@ -584,14 +629,20 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'common_edithomepage', 'members', 'add_member',
-             'editemail', 'polls', 'add_poll', 'joinleave', 'reassign',
-             'common_packages']
+    links = ['edit', 'branding', 'common_edithomepage', 'members',
+             'add_member', 'editemail', 'polls', 'add_poll', 'joinleave',
+             'reassign', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
         text = 'Change details'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        target = '+branding'
+        text = 'Change branding'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
@@ -918,7 +969,7 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
         # bug (but different tasks) being displayed.
         return BugTaskSearchListingView.search(
             self,
-            extra_params={'owner': self.context,'bug_reporter': self.context})
+            extra_params=dict(owner=self.context, bug_reporter=self.context))
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -1122,10 +1173,50 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return self.getBugContactPackageSearchURL()
 
 
+class PersonRelatedBugsView(BugTaskSearchListingView):
+    """All bugs related to someone."""
+
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
+    def search(self):
+        """Return the open bugs related to a person."""
+        context = self.context
+        params = self.buildSearchParams()
+        subscriber_params = copy.copy(params)
+        subscriber_params.subscriber = context
+        assignee_params = copy.copy(params)
+        owner_params = copy.copy(params)
+        # Only override the assignee and owner if they were not specified
+        # by the user.
+        if assignee_params.assignee is None:
+            assignee_params.assignee = context
+        if owner_params.owner is None:
+            # Specify both owner and bug_reporter to try to prevent the same
+            # bug (but different tasks) being displayed.
+            owner_params.owner = context
+            owner_params.bug_reporter = context
+        tasks = self.context.searchTasks(
+            assignee_params, subscriber_params, owner_params)
+        return BugListingBatchNavigator(
+            tasks, self.request, columns_to_show=self.columns_to_show,
+            size=config.malone.buglist_batch_size)
+
+    def getSearchPageHeading(self):
+        return "Bugs related to %s" % self.context.displayname
+
+    def getAdvancedSearchPageHeading(self):
+        return "Bugs Related to %s: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        return "Search bugs related to %s" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        return canonical_url(self.context) + "/+bugs"
+
+
 class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs assigned to someone."""
-
-    context_parameter = 'assignee'
 
     columns_to_show = ["id", "summary", "targetname", "importance", "status"]
 
@@ -1160,13 +1251,6 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
         return canonical_url(self.context) + "/+assignedbugs"
 
 
-class RedirectToAssignedBugsView:
-
-    def __call__(self):
-        self.request.response.redirect(
-            canonical_url(self.context) + "/+assignedbugs")
-
-
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
@@ -1198,7 +1282,7 @@ class PersonLanguagesView(LaunchpadView):
 
     def initialize(self):
         request = self.request
-        if (request.method == "POST" and "SAVE-LANGS" in request.form):
+        if request.method == "POST" and "SAVE-LANGS" in request.form:
             self.submitLanguages()
 
     def requestCountry(self):
@@ -1292,7 +1376,8 @@ class PersonView(LaunchpadView):
     @cachedproperty
     def contributions(self):
         """Cache the results of getProjectsAndCategoriesContributedTo()."""
-        return self.context.getProjectsAndCategoriesContributedTo()
+        return self.context.getProjectsAndCategoriesContributedTo(
+            limit=5)
 
     @cachedproperty
     def contributed_categories(self):
@@ -1347,8 +1432,9 @@ class PersonView(LaunchpadView):
     def userIsParticipant(self):
         """Return true if the user is a participant of this team.
 
-        A person is said to be a team participant when he's an indirect member
-        of that team.
+        A person is said to be a team participant when he's a member
+        of that team, either directly or indirectly via another team
+        membership.
         """
         if self.user is None:
             return False
@@ -1397,6 +1483,16 @@ class PersonView(LaunchpadView):
             return convertToHtmlCode(self.context.preferredemail.email)
         else:
             return None
+
+    def htmlJabberIDs(self):
+        """Return the person's Jabber IDs somewhat obfuscated.
+
+        The IDs are encoded using HTML hexadecimal entities to hinder
+        email harvesting. (Jabber IDs are sometime valid email accounts,
+        gmail for example.)
+        """
+        return [convertToHtmlCode(jabber.jabberid)
+                for jabber in self.context.jabberids]
 
     def showSSHKeys(self):
         """Return a data structure used for display of raw SSH keys"""
@@ -1929,11 +2025,14 @@ class PersonEditHomePageView(BasePersonEditView):
 
 class PersonEditView(BasePersonEditView):
 
-    field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
-                   'gotchi']
+    field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone']
     custom_widget('timezone', SelectWidget, size=15)
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+
+
+class PersonBrandingView(BrandingChangeView):
+
+    field_names = ['logo', 'mugshot']
+    schema = IPerson
 
 
 class TeamJoinView(PersonView):
@@ -2692,14 +2791,49 @@ class SearchSubscribedQuestionsView(SearchQuestionsView):
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
+                 
+class PersonAnswerContactForView(LaunchpadView):
+    """View used to show all the IQuestionTargets that an IPerson is an answer
+    contact for.
+    """
+    
+    @cachedproperty
+    def direct_question_targets(self):
+        """List of IQuestionTargets that the context is a direct answer contact.
+        
+        Sorted alphabetically by title.
+        """
+        return sorted(
+            self.context.getDirectAnswerQuestionTargets(), 
+            key=attrgetter('title'))
+
+    @cachedproperty
+    def team_question_targets(self):
+        """List of IQuestionTargets for the context's team membership.
+        
+        Sorted alphabetically by title.
+        """
+        return sorted(
+            self.context.getTeamAnswerQuestionTargets(), 
+            key=attrgetter('title'))
+                        
+    def showRemoveYourselfLink(self):
+        """The link is only shown when the page is in the user's own profile."""
+        return self.user == self.context
+
 
 class PersonAnswersMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'answers'
     links = ['answered', 'assigned', 'created', 'commented', 'need_attention',
-             'subscribed']
+             'subscribed', 'answer_contact_for']
 
+    def answer_contact_for(self):
+        summary="Projects for which %s is an answer contact for" % (
+            self.context.displayname)
+        return Link('+answer-contact-for', 'Answer contact for', summary)
+        
     def answered(self):
         summary = 'Questions answered by %s' % self.context.displayname
         return Link('+answeredtickets', 'Answered', summary, icon='question')

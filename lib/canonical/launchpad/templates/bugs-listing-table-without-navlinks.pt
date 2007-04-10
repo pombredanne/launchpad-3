@@ -18,7 +18,7 @@
     </thead>
     <tbody>
       <tr tal:repeat="bugtask context/getBugListingItems">
-        <td class="icon right" tal:content="structure bugtask/fmt:icon" />
+        <td class="icon right" tal:content="structure bugtask/image:icon" />
         <td
           class="amount"
           tal:content="bugtask/bug/id"

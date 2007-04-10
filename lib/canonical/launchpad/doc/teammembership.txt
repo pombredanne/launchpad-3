@@ -179,7 +179,6 @@ to check the path from a team to another one.
     >>> [team.name for team in salgado.findPathToTeam(t3)]
     [u't3']
 
-
 t2 can't use its leave() method to leave t5 because it's a team and teams
 take no actions. One of t5 administrators have to go and remove t2 from t5
 if t2 shouldn't be a member of t5 anymore.

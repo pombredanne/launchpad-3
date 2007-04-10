@@ -6,7 +6,7 @@ targeted to it.
     ...     'http://launchpad.dev/firefox/1.0')
     >>> anon_browser.getLink('Bugs').click()
     >>> anon_browser.url
-    'http://bugs.launchpad.dev/firefox/1.0/+bugs'
+    'http://bugs.launchpad.dev/firefox/1.0/'
 
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
