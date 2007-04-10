@@ -2140,6 +2140,26 @@ class PersonSet:
         # flush its caches.
         flush_database_caches()
 
+    def getTranslatorsByLanguage(self, language):
+        """See IPersonSet."""
+        # XXX CarlosPerelloMarin 20070331: The KarmaCache table doesn't have a
+        # field to store karma per language, so we are actually returning the
+        # people with the most translation karma that have this language
+        # selected in their preferences.  See bug #102257 for more info.
+        return Person.select('''
+            PersonLanguage.person = Person.id AND
+            PersonLanguage.language = %s AND
+            KarmaCache.person = Person.id AND
+            KarmaCache.product IS NULL AND
+            KarmaCache.project IS NULL AND
+            KarmaCache.sourcepackagename IS NULL AND
+            KarmaCache.distribution IS NULL AND
+            KarmaCache.category = KarmaCategory.id AND
+            KarmaCategory.name = 'translations'
+            ''' % sqlvalues(language), orderBy=['-KarmaCache.karmavalue'],
+            clauseTables=[
+                'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
+
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'

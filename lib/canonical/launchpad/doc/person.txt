@@ -418,6 +418,37 @@ To check if a person is an Ubuntero, use IPerson.is_ubuntero:
     >>> foobar.is_ubuntero
     True
 
+
+Translators for a given language
+--------------------------------
+
+We can get the list of translators that did some translation in Launchpad and
+expressed their interest for a concrete language.
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     ILanguageSet, IPersonSet, IKarmaCacheManager)
+
+  # Sample data is not complete for this test, so we need to note that another
+  # Spanish translator expressed its interest on doing Spanish translations.
+  # That other person is Foo Bar (name16).
+  >>> personset = getUtility(IPersonSet)
+  >>> foo_bar = personset.getByName('name16')
+  >>> print foo_bar.displayname
+  Foo Bar
+  >>> languageset = getUtility(ILanguageSet)
+  >>> spanish = languageset.getLanguageByCode('es')
+  >>> foo_bar.addLanguage(spanish)
+  >>> translators = personset.getTranslatorsByLanguage(spanish)
+  >>> for translator in translators:
+  ...     karma = 0
+  ...     for karma_category_cache in translator.karma_category_caches:
+  ...         if (karma_category_cache.category.name == 'translations'):
+  ...             karma = karma_category_cache.karmavalue
+  ...     print (translator.displayname, karma)
+  (u'Foo Bar', 164)
+  (u'Carlos Perell\xf3 Mar\xedn', 9)
+
+
 Branches
 --------
 
