@@ -63,9 +63,9 @@
       </div>
       <div>
       <a href="login">
-        I want to <span>request CDs of
+        I want to <span>request CDs</span> of
         <span tal:replace="flavour_name">Ubuntu</span> 7.04 (Feisty Fawn)
-        </span></a>
+        </a>
       </div>
     </div>
   
@@ -81,10 +81,6 @@
         <li tal:condition="not: view/flavour/enumvalue:EDUBUNTU">
           <a href="http://www.ubuntu.com/getubuntu/purchase#buy"
             >Purchase DVDs from online retailers</a></li>
-        <li><a href="login">Request CDs of
-          <span tal:replace="flavour_name">Ubuntu</span>
-          7.04 (Feisty Fawn) from ShipIt</a>
-        </li>
       </ul>
 
     <p><a href="login">Check the status of an existing request</a></p>
