@@ -8,6 +8,7 @@ __all__ = [
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
+    'IBranchDelta',
     'IBranchLifecycleFilter',
     'IBranchBatchNavigator',
     ]
@@ -219,9 +220,6 @@ class IBranch(IHasOwner):
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
 
-    def has_subscription(person):
-        """Is this person subscribed to the branch?"""
-
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
@@ -229,10 +227,16 @@ class IBranch(IHasOwner):
         """Revisions in the history that are more recent than timestamp."""
 
     # subscription-related methods
-    def subscribe(person):
+    def subscribe(person, notification_level, max_diff_lines):
         """Subscribe this person to the branch.
 
         :return: new or existing BranchSubscription."""
+
+    def getSubscription(person):
+        """Return the BranchSubscription for this person."""
+
+    def hasSubscription(person):
+        """Is this person subscribed to the branch?"""
 
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
@@ -246,6 +250,13 @@ class IBranch(IHasOwner):
     def createBranchRevision(sequence, revision):
         """Create a new BranchRevision for this branch."""
 
+    def getTipRevision():
+        """Returns the Revision associated with the last_scanned_id.
+
+        Will return None if last_scanned_id is None, or if the id
+        is not found (as in a ghost revision).
+        """
+
     def updateScannedDetails(revision_id, revision_count):
         """Updates attributes associated with the scanning of the branch.
 
@@ -253,6 +264,24 @@ class IBranch(IHasOwner):
         script.
         """
 
+    def getAttributeNotificationAddresses():
+        """Return a list of email addresses of interested subscribers.
+
+        Only branch subscriptions that specified an interest in
+        attribute notifications will have specified email addresses added.
+        """
+
+    def getRevisionNotificationDetails():
+        """Return a map of max diff size to a list of email addresses.
+        
+        Only branch subscriptions that specified an interest in
+        revision notifications will have their specified email addresses added.
+
+        If a user has subscribed to a branch directly, the settings
+        that the user specifies overrides the settings of a team that the
+        user is a member of.
+        """
+        
     def getScannerData():
         """Retrieve the full ancestry of a branch for the branch scanner.
 
@@ -268,7 +297,6 @@ class IBranch(IHasOwner):
             3. Dictionnary mapping bzr bzr revision-ids to the database ids of
                the corresponding BranchRevision rows for this branch.
         """
-
 
 
 class IBranchSet(Interface):
@@ -429,6 +457,23 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
         """
+
+
+class IBranchDelta(Interface):
+    """The quantitative changes made to a branch that was edited or altered."""
+
+    branch = Attribute("The IBranch, after it's been edited.")
+    user = Attribute("The IPerson that did the editing.")
+
+    # fields on the branch itself, we provide just the new changed value
+    name = Attribute("Old and new names or None.")
+    title = Attribute("Old and new branch titles or None.")
+    summary = Attribute("The branch summary or None.")
+    url = Attribute("Old and new branch URLs or None.")
+    whiteboard = Attribute("The branch whiteboard or None.")
+    lifecycle_status = Attribute("Old and new lifecycle status, or None.")
+    revision_count = Attribute("Old and new revision counts, or None.")
+    last_scanned_id = Attribute("The revision id of the tip revision.")
 
 
 class IBranchLifecycleFilter(Interface):
