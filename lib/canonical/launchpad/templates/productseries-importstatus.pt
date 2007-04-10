@@ -23,13 +23,8 @@
 
 <tal:block tal:condition="context/rcstype">
 
-  <table class="listing">
-    <thead class="lesser">
-      <tr>
-        <th colspan="2">Revision Control</th>
-      </tr>
-    </thead>
-    <tbody class="lesser">
+  <table>
+    <tbody>
         <tal:block condition="context/rcstype/enumvalue:CVS">
           <tr>
             <th>CVS</th>
@@ -50,7 +45,7 @@
         </tal:block>
         <tal:block condition="context/rcstype/enumvalue:SVN">
           <tr>
-            <th>Subversion:</th>
+            <th>Subversion</th>
             <td tal:content="context/svnrepository">http://svn.gnome.org/evolution/trunk</td>
           </tr>
         </tal:block>
