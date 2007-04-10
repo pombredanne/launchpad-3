@@ -4,7 +4,8 @@ __metaclass__ = type
 __all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
            'ShippingRequest', 'ShippingRequestSet', 'RequestedCDs',
            'Shipment', 'ShipmentSet', 'ShippingRun', 'ShippingRunSet',
-           'ShipItReport', 'ShipItReportSet']
+           'ShipItReport', 'ShipItReportSet',
+           'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT']
 
 from StringIO import StringIO
 import csv
@@ -45,6 +46,9 @@ from canonical.launchpad.interfaces import (
     IShipItReport, IShipItReportSet, ShipItConstants, ILibraryFileAliasSet,
     SOFT_MAX_SHIPPINGRUN_SIZE, MAX_CDS_FOR_UNTRUSTED_PEOPLE)
 from canonical.launchpad.database.country import Country
+
+
+MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 class ShippingRequest(SQLBase):
