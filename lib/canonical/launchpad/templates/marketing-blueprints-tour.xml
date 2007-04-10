@@ -2,60 +2,59 @@
 <tour next="translations">
   <title>Blueprints</title>
   <screen>
-    <title>Viewing a blueprint</title>
-    <summary>Blueprints help communities to discuss their ideas and then track
-      their implementation
+    <title>Capturing ideas</title>
+    <headline>Capturing and tracking ideas</headline>
+    <summary>Launchpad's Blueprint Tracker helps you to manage your
+      community's ideas, without imposing strict project management. A
+      blueprint can be anything from a single sentence to a full
+      specification, with information about who is involved and where it fits
+      into your project's roadmap.
     </summary>
     <screenshot>/+icing/blueprints-tour-screenshot1.png</screenshot>
-    <callout top="22" left="392">Blueprints track who is involved in a feature
-      idea, how well defined the idea is and any implementation progress.
+    <callout top="" left="">Anyone can create a blueprint for your project,
+      helping you to make the most of your community's creativity. You retain
+      control by prioritising each blueprint.
     </callout>
-    <callout top="85" left="164">Each blueprint has a summary, with a link to
-      the full detail of the specification.
+    <callout top="" left="">Ideas and proposals within free software projects
+      range from an initial concept, through to full specs. You can track how
+      well-defined a blueprint is and the progress of work on its
+      implementation.
     </callout>
-    <callout top="163" left="336">Launchpad can link blueprints to meetings
-      and development sprints and generate an agenda from them.
-    </callout>
-    <callout top="222" left="22">The dependency tree offers a visual overview
-      of where the blueprint fits into the project's development plan.
+    <callout top="" left="">You can even target blueprints to specific
+      releases of your software.
     </callout>
   </screen>
+  <screen>
+    <title>Blueprint detail</title>
+    <screenshot>/+icing/blueprints-tour-screenshot2.png</screenshot>
+    <callout top="" left="">At a glance, you can see who is involved in the
+      blueprint, its current status and any meetings at which it has been
+      discussed.
+    </callout>
+    <callout top="" left="">By telling Launchpad where a blueprint fits into
+      your project, and what other blueprints must be completed first, you can
+      create a roadmap for your software.
+    </callout>
+    <callout top="" left="">If a blueprint arises from a bug report, or a
+      branch of code implements a blueprint, you can link them enabling
+      everyone to see how they relate.
+    </callout>
+  </screen>
+
   <screen>
     <title>Planning meetings</title>
-    <summary>Launchpad can track the real world meetings that communities
-      have, using blueprints to form an agenda
+    <summary>
+      <p>Many software projects find that face to face team meetings
+        are an invaluable way to build community and to work together on
+        specific goals.
+      </p>
+      <p>Launchpad makes it easy for anyone in the community to organise
+        meetings and development sprints. Each meeting's agenda consists of
+        blueprints. Anyone can suggest a blueprint for discussion, while you
+        approve each proposal.
+      </p>
     </summary>
-    <screenshot>/+icing/blueprints-tour-screenshot2.png</screenshot>
-    <callout top="105" left="287">Everyone involved in the meeting can propose
-      blueprints for discussion.
-    </callout>
-    <callout top="75" left="138">All the practical information about a meeting
-      or sprint is just a click away. People planning to attend can register
-      using their Launchpad account.
-    </callout>
-  </screen>
-  <screen>
-    <title>Browsing blueprints</title>
-    <summary>An overview of a community's blueprints</summary>
     <screenshot>/+icing/blueprints-tour-screenshot3.png</screenshot>
-    <callout top="135" left="24">Communities set the priority of the
-      blueprints they're working on.
-    </callout>
-    <callout top="70" left="115">The <b>i</b> shows that this is blueprint is
-      documentation, rather than a plan for a new feature.
-    </callout>
-    <callout top="93" left="230">Launchpad tracks both how well-defined an
-      idea is and the progress of its implementation.
-    </callout>
-    <callout top="239" left="442">Communities can tie blueprints to specific
-      releases of their software.
-    </callout>
   </screen>
-  <screen>
-    <title>Creating a road map</title>
-    <summary>Launchpad automatically develops a road map based on the
-      priorities and dependencies of individual blueprints
-    </summary>
-    <screenshot>/+icing/blueprints-tour-screenshot4.png</screenshot>
-  </screen>
+
 </tour>
