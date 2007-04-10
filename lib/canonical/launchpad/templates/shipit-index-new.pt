@@ -47,7 +47,7 @@
   <div metal:fill-slot="body">
   <tal:block define="flavour_name view/flavour/title">
   
-    <h1>Requesting free CDs from ShipIt</h1>
+    <h1>Requesting CDs from ShipIt</h1>
 
     <p>Ubuntu is available free of charge and we can send you CDs of the
     latest version (7.04) with no extra cost, but the delivery may take up to
@@ -63,7 +63,7 @@
       </div>
       <div>
       <a href="login">
-        I want to <span>request free CDs of
+        I want to <span>request CDs of
         <span tal:replace="flavour_name">Ubuntu</span> 7.04 (Feisty Fawn)
         </span></a>
       </div>
@@ -71,24 +71,19 @@
   
     <div class="visualClear body">&nbsp;</div>
 
-      <h1>Getting <span tal:replace="flavour_name">Ubuntu</span></h1>
-
-      <p>There are several ways to get
-      <span tal:replace="flavour_name">Ubuntu</span>. Please choose an
-      option that best fits your needs.</p>
+      <h1>Other ways of getting <span tal:replace="flavour_name">Ubuntu</span></h1>
 
       <ul id="downloadOptions">
-        <li><a tal:attributes="href view/download_link"
-          >Download a copy of the CD for free</a></li>
-        <li><a href="http://www.ubuntu.com/products/GetUbuntu#localdistrib" 
+        <li><a href="http://www.ubuntu.com/getubuntu/purchase#distributor"
           >Purchase a CD from one of our world-wide distributors</a></li>
-        <li><a href="http://www.ubuntu.com/products/GetUbuntu#bulk" 
+        <li><a href="http://www.ubuntu.com/getubuntu/purchase#bulk"
           >Buy CDs in large quantities</a></li>
         <li tal:condition="not: view/flavour/enumvalue:EDUBUNTU">
-          <a href="http://www.ubuntu.com/products/GetUbuntu#buycurrent"
+          <a href="http://www.ubuntu.com/getubuntu/purchase#buy"
             >Purchase DVDs from online retailers</a></li>
-        <li><a href="login">Request free CDs of older, but fully supported,
-          <span tal:replace="flavour_name">Ubuntu</span> LTS from ShipIt</a>
+        <li><a href="login">Request CDs of
+          <span tal:replace="flavour_name">Ubuntu</span>
+          7.04 (Feisty Fawn) from ShipIt</a>
         </li>
       </ul>
 
