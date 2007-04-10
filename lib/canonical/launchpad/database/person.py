@@ -2222,6 +2222,7 @@ class JabberID(SQLBase):
     implements(IJabberID)
 
     _table = 'JabberID'
+    _defaultOrder = ['jabberid']
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     jabberid = StringCol(dbName='jabberid', notNull=True)
