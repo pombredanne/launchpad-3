@@ -9,7 +9,7 @@ import re
 from tempfile import mkdtemp
 from time import time
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.app.session.interfaces import ISession
+from zope.app.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
 from zope.interface import Interface, Attribute, implements
 from zope.security.interfaces import Unauthorized
@@ -24,14 +24,22 @@ from openid.server.server import (
 from openid.server.trustroot import TrustRoot
 # XXX: Temporary - switch to SQL -- StuartBishop 20070214
 from openid.store.filestore import FileOpenIDStore
+from openid import oidutil
 
-from canonical.launchpad.interfaces import ILaunchBag, UnexpectedFormData
+from canonical.launchpad.interfaces import (
+        ILaunchBag, IOpenIdAuthorizationSet, UnexpectedFormData,
+        )
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 
 
-SESSION_PKG_KEY = 'openid'
+SESSION_PKG_KEY = 'OpenID'
+
+# Shut up noisy OpenID library
+def null_log(message, level=0):
+    pass
+oidutil.log = null_log
 
 
 class IOpenIdView(Interface):
@@ -75,10 +83,15 @@ class OpenIdView(LaunchpadView):
 
         # Not a form submission, so extract the OpenIDRequest from the request.
         try:
+            # Convert our Unicode arguments Z3 gives us back to ASCII so
+            # the error messages the OpenID library gives us are nicer (it
+            # relies on repr())
+            args = {}
+            for key, value in self.request.form.items():
+                if key.startswith('openid.'):
+                    args[key.encode('US-ASCII')] = value.encode('US-ASCII')
             # NB: Will be None if there are no parameters in the request.
-            self.openid_request = self.openid_server.decodeRequest(
-                self.request.form
-                )
+            self.openid_request = self.openid_server.decodeRequest(args)
         except ProtocolError, exception:
             return self.renderProtocolError(exception)
 
@@ -230,7 +243,7 @@ class OpenIdView(LaunchpadView):
         auth_set = getUtility(IOpenIdAuthorizationSet)
         return auth_set.isAuthorized(
                 self.current_user,
-                self.trust_root,
+                self.openid_request.trust_root,
                 client_id
                 )
 

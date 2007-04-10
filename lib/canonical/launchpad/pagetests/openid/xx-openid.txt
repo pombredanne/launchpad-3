@@ -1,5 +1,6 @@
-OpenID
-======
+= OpenID = 
+
+== Introduction ==
 
 Launchpad is an OpenID server. If the URL is accessed by a web browser,
 an informative message is displayed. We replicate the one from the
@@ -36,7 +37,7 @@ XXX: Break most of this out into a helper -- StuartBishop 20070302
 ...         print >> out, 'Consumer received %s' % self.request.method
 ...         keys = sorted(self.request.form.keys())
 ...         for key in keys:
-...             print >> out, '%s=%s' % (key, self.request.form[key])
+...             print >> out, '%s:%s' % (key, self.request.form[key])
 ...         return out.getvalue()
 ...     def browserDefault(self, request):
 ...         return self, ()
@@ -56,8 +57,10 @@ date enough Zope3
 >>> anon_browser.open('http://launchpad.dev/+openid-consumer?foo=%2Bbar')
 >>> print anon_browser.contents
 Consumer received GET
-foo=+bar
+foo:+bar
 
+
+== OpenID Server Discovery ==
 
 A Launchpad user's home page contains the required <link rel="openid.server" />
 tag to allow OpenID consumers to determine the URL of the OpenID server to
@@ -78,6 +81,10 @@ hardcoded URL or we set up some hidden URLs to be used
 </head>
 ...
 
+
+== associate Mode ==
+
+Establish a shared secret between Consumer and Identity Provider.
 
 After determining the URL of the OpenID server, the next thing a consumer
 needs to do is associate with the server and get a shared secret via a
@@ -105,9 +112,13 @@ Get the association handle, which we will need for later tests.
 >>> import re
 >>> [assoc_handle] = re.findall('assoc_handle:(.*)', anon_browser.contents)
 
+== checkid_immediate Mode ==
+
+Ask an Identity Provider if a End User owns the Claimed Identifier,
+getting back an immediate "yes" or "can't say" answer.
 
 Once the shared secret is negotiated, the consumer can send
-checkid_immediate and checkid_setup GET requests. checkid_immediate requests
+checkid_immediate and checkid_setup GET requests.checkid_immediate requests
 will currently return "can't say" as we are not yet logged into Launchpad.
 
 >>> args = urlencode({
@@ -119,17 +130,22 @@ will currently return "can't say" as we are not yet logged into Launchpad.
 >>> anon_browser.open('http://openid.launchpad.dev/?%s' % args)
 >>> print anon_browser.contents
 Consumer received GET
-openid.mode=id_res
-openid.user_setup_url=http://openid.launchpad.dev/?...
+openid.mode:id_res
+openid.user_setup_url:http://openid.launchpad.dev/?...
 <BLANKLINE>
 
+As we don't yet have an 'Allow Always' option, this mode will
+always return a failure so we can't test a success.
+
+
+== checkid_setup Mode ==
 
 checkid_setup is interactive with the user, giving them the oppertunity
 to log in and approve access to the consumer site. We can extract the
 URL for the checkid_setup from the result of the previous test.
 
 >>> [setup_url] = re.findall(
-...     '(?m)^openid.user_setup_url=(.*)$', anon_browser.contents
+...     '(?m)^openid.user_setup_url:(.*)$', anon_browser.contents
 ...     )
 >>> anon_browser.open(setup_url)
 >>> print '\n' + anon_browser.contents
@@ -151,7 +167,7 @@ authentication.
 http://launchpad.dev/+openid-consumer?openid.mode=cancel
 >>> print anon_browser.contents
 Consumer received GET
-openid.mode=cancel
+openid.mode:cancel
 <BLANKLINE>
 
 
@@ -176,14 +192,17 @@ http://openid.launchpad.dev/+openid/+login?...
 http://launchpad.dev/+openid-consumer?...
 >>> print sabdfl_browser.contents
 Consumer received GET
-openid.assoc_handle=...
-openid.identity=https://launchpad.dev/~sabdfl
-openid.mode=id_res
-openid.return_to=http://launchpad.dev/+openid-consumer
-openid.sig=...
-openid.signed=...
+openid.assoc_handle:...
+openid.identity:https://launchpad.dev/~sabdfl
+openid.mode:id_res
+openid.return_to:http://launchpad.dev/+openid-consumer
+openid.sig:...
+openid.signed:return_to,mode,identity
 <BLANKLINE>
 
+Grab some results for the later check_authentication tests.
+
+>>> [sig] = re.findall('sig:(.*)', sabdfl_browser.contents)
 
 Note that the return_to URL must be in the trust_root, or an error is
 returned.
@@ -195,10 +214,71 @@ returned.
 ...     'openid.trust_root': 'http://com',
 ...     'whatever': 'blah',
 ...     })
->>> anon_browser.open('http://openid.launchpad.dev/?%s' % args)
->>> print anon_browser.contents
+>>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print sabdfl_browser.contents
 Consumer received GET
-openid.error=return_to u'http://launchpad.dev/+openid-consumer' not under trust_root u'http://com'
-openid.mode=error
+openid.error:...
+openid.mode:error
+<BLANKLINE>
+
+
+== check_authentication Mode ==
+
+Ask an Identity Provider if a message is valid. For dumb, stateless
+Consumers or when verifying an invalidate_handle response. 
+
+
+If an association handle is stateful (genereted using the associate Mode),
+check_authentication will fail.
+
+>>> args = urlencode({
+...     'openid.mode': 'check_authentication',
+...     'openid.assoc_handle': assoc_handle,
+...     'openid.sig': sig,
+...     'openid.signed':  'return_to,mode,identity',
+...     'openid.identity': 'https://launchpad.dev/~sabdfl',
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+...     })
+>>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print sabdfl_browser.contents
+is_valid:false
+<BLANKLINE>
+
+
+If we are a dumb consumer though, we must invoke the check_authentication
+Mode.
+
+>>> args = urlencode({
+...     'openid.mode': 'checkid_setup',
+...     'openid.identity': 'https://launchpad.dev/~sabdfl',
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+...     })
+>>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> sabdfl_browser.getControl('Allow Once').click()
+>>> print sabdfl_browser.contents
+Consumer received GET
+openid.assoc_handle:...
+openid.identity:https://launchpad.dev/~sabdfl
+openid.mode:id_res
+openid.return_to:http://launchpad.dev/+openid-consumer
+openid.sig:...
+openid.signed:return_to,mode,identity
+<BLANKLINE>
+
+>>> [stateless_assoc_handle] = re.findall(
+...     'assoc_handle:(.*)', sabdfl_browser.contents
+...     )
+>>> [sig] = re.findall('sig:(.*)', sabdfl_browser.contents)
+>>> args = urlencode({
+...     'openid.mode': 'check_authentication',
+...     'openid.assoc_handle': stateless_assoc_handle,
+...     'openid.sig': sig,
+...     'openid.signed': 'return_to,mode,identity',
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+...     'openid.identity': 'https://launchpad.dev/~sabdfl',
+...     })
+>>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print sabdfl_browser.contents
+is_valid:true
 <BLANKLINE>
 

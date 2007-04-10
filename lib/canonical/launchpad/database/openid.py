@@ -11,7 +11,7 @@ from sqlobject import StringCol, ForeignKey
 
 from canonical.database.constants import DEFAULT, UTC_NOW, NEVER_EXPIRES
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
         IOpenIdAuthorization, IOpenIdAuthorizationSet,
         )
@@ -30,13 +30,13 @@ class OpenIdAuthorizationSet:
     implements(IOpenIdAuthorizationSet)
     
     def isAuthorized(self, person, trust_root, client_id):
-        """See IOpenIdAuthorizationSet.isAuthorized"""
+        """See IOpenIdAuthorizationSet."""
         cur = cursor()
         cur.execute("""
             SELECT TRUE FROM OpenIdAuthorization
             WHERE person = %s
                 AND trust_root = %s
-                AND date_expires >= CURRENT_TIMESTAMP IN TIME ZONE 'UTC'
+                AND date_expires >= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                 AND (client_id IS NULL OR client_id = %s)
             LIMIT 1
             """ % sqlvalues(person.id, trust_root, client_id))
