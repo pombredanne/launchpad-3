@@ -139,11 +139,11 @@ class SourcePackageQuestionTargetMixin:
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            'Language.id = language AND distribution = %s AND '
-            'sourcepackagename = %s'
+            'Language.id = Ticket.language AND '
+            'Ticket.distribution = %s AND '
+            'Ticket.sourcepackagename = %s'
                 % sqlvalues(self.distribution, self.sourcepackagename),
             clauseTables=['Ticket'], distinct=True))
-
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
