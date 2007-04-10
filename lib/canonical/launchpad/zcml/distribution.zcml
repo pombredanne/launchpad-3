@@ -31,7 +31,7 @@
         classes="
             DistributionFacets DistributionOverviewMenu DistributionBugsMenu
             DistributionBountiesMenu DistributionSpecificationsMenu
-            DistributionTranslationsMenu DistributionSetFacets 
+            DistributionTranslationsMenu DistributionSetFacets
             DistributionSetContextMenu
             "
             />
@@ -60,7 +60,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         layer="canonical.launchpad.layers.AnswersLayer"
-        name="+tickets"
+        name="+questions"
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"

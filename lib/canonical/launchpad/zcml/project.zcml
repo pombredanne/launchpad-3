@@ -57,7 +57,7 @@
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
-        name="+tickets"
+        name="+questions"
         layer="canonical.launchpad.layers.AnswersLayer"
         />
     <browser:defaultView
@@ -237,10 +237,16 @@
 
     <facet facet="answers">
         <browser:page
-            name="+addticket"
+            name="+addquestion"
             for="canonical.launchpad.interfaces.IProject"
             class="canonical.launchpad.browser.ProjectAddQuestionView"
             permission="launchpad.AnyPerson"
+            />
+        <browser:renamed-page
+            name="+addticket"
+            for="canonical.launchpad.interfaces.IProject"
+            new_name="+addquestion"
+            rootsite="answers"
             />
         <browser:page
             name="+ask-a-question-button"
