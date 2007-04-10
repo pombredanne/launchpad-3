@@ -156,9 +156,9 @@ openid.mode=cancel
 
 
 
-Now, lets do that again but allow the request, which will first require us
-to log in to Launchpad and then redirect us back to the consumer saying
-the request is valid.
+Now, lets do that again but allow the request. This will require us
+to log in to Launchpad before being redirected back to the consumer
+informing it that the request is valid.
 
 >>> anon_browser.handleErrors = True
 >>> anon_browser.open(setup_url)
