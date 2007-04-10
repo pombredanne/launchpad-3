@@ -366,13 +366,12 @@ class Question(SQLBase, BugLinkTargetMixin):
         """See IQuestion."""
         assert IQuestionTarget.providedBy(question_target), (
             "The target must be an IQuestionTarget")
-        # do trio test to assign QT
         if IProduct.providedBy(question_target):
             self.product = question_target
-        elif IDistribution.providedBy(question_target):
-            self.distribution = question_target
         elif ISourcepackage.providedBy(question_target):
             self.sourcepackagename = question_target.name
+        elif IDistribution.providedBy(question_target):
+            self.distribution = question_target
         else:
             raise AssertionError("Unknown IQuestionTarget type of %s" %
                 question_target)
