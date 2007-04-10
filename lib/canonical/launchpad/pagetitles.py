@@ -120,6 +120,9 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
+branch_edit_subscription = ContextDisplayName(smartquote(
+    'Edit subscription to branch "%s"'))
+
 def branch_index(context, view):
     if context.author:
         return smartquote('"%s" branch by %s in Launchpad') % (
@@ -127,7 +130,8 @@ def branch_index(context, view):
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
-branch_subscription = ContextDisplayName(smartquote('Subscription to branch "%s"'))
+branch_subscription = ContextDisplayName(smartquote(
+    'Subscription to branch "%s"'))
 
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
@@ -815,6 +819,8 @@ root_index = 'Launchpad'
 rosetta_about = 'About Rosetta'
 
 rosetta_index = 'Launchpad Translations'
+
+rosetta_products = 'Products with Translations in Launchpad'
 
 product_branch_add = ContextDisplayName('Register a new %s branch')
 

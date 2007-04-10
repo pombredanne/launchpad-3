@@ -51,15 +51,14 @@ comment, of the bug report.
 
     >>> ubuntu_filebug.initialize()
     SQLObjectCreatedEvent: <Bug at ...>
-    
+
     >>> launchbag.clear()
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> search_params = BugTaskSearchParams(
     ...     searchtext="bin pkg", user=current_user)
 
-    >>> latest_ubuntu_bugtask = ubuntu.searchTasks(
-    ...     search_params)[0]
+    >>> latest_ubuntu_bugtask = ubuntu.searchTasks(search_params)[0]
 
 The user specified a binary package name, so that's been added to the
 bug description and the first comment:
@@ -459,6 +458,7 @@ the list changes.
 
     >>> login("no-priv@canonical.com")
 
+    >>> current_user = getUtility(ILaunchBag).user
     >>> ubuntu_warty = ubuntu.getRelease("warty")
     >>> firefox_trunk = firefox.getSeries("trunk")
 

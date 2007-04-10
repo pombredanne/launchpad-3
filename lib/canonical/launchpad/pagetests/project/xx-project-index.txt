@@ -41,6 +41,33 @@ the project, the overview page is also displayed:
     >>> browser.url
     'http://code.launchpad.dev/mozilla'
 
+== Products of a project ==
+
+The home page of a project contains a list of all products which are part of that project.
+
+    >>> browser.open('http://launchpad.dev/mozilla')
+    >>> products = find_tags_by_class(browser.contents, 'project')
+    >>> for product in products:
+    ...     print product.find('a').renderContents()
+    Mozilla Firefox
+    Mozilla Thunderbird
+ 
+Inactive products are not included in that list, though.
+
+    >>> from canonical.launchpad.database import ProductSet
+    >>> firefox = ProductSet().getByName('firefox')
+    >>> firefox.active = False
+    >>> firefox.syncUpdate()
+ 
+    >>> browser.open('http://launchpad.dev/mozilla')
+    >>> products = find_tags_by_class(browser.contents, 'project')
+    >>> for product in products:
+    ...     print product.find('a').renderContents()
+    Mozilla Thunderbird
+ 
+    >>> firefox.active = True
+    >>> firefox.syncUpdate()
+
 == URL Shortut to Access the Project's Products ==
 
 It is possible to access the project's product through the project URL.
@@ -57,3 +84,4 @@ needed.
   ...
   ...Latest bugs...
   ...
+
