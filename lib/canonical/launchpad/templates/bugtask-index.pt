@@ -6,26 +6,26 @@
   <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-subscribers" />
-    <div tal:replace="structure context/@@+portlet-questions" />
-    <div tal:replace="structure context/@@+portlet-duplicates" />
+    <div tal:replace="structure context/bug/@@+portlet-subscribers" />
+    <div tal:replace="structure context/bug/@@+portlet-questions" />
+    <div tal:replace="structure context/bug/@@+portlet-duplicates" />
     <div tal:replace="structure context/target/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/bug/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-search" />
-    <div tal:replace="structure context/@@+portlet-specs" />
-    <div tal:replace="structure context/@@+portlet-attachments" />
-    <div tal:replace="structure context/@@+portlet-cve" />
-    <div tal:replace="structure context/@@+portlet-reference" />
-    <div tal:replace="structure context/@@+portlet-watch" />
+    <div tal:replace="structure context/bug/@@+portlet-specs" />
+    <div tal:replace="structure context/bug/@@+portlet-attachments" />
+    <div tal:replace="structure context/bug/@@+portlet-cve" />
+    <div tal:replace="structure context/bug/@@+portlet-reference" />
+    <div tal:replace="structure context/bug/@@+portlet-watch" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
       <div>
-        <tal:icon replace="structure context/fmt:icon" />
+        <tal:icon replace="structure context/image:icon" />
         Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>,
         first reported
         <span

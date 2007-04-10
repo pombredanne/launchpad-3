@@ -111,8 +111,6 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
 
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'distrorelease',
-                            orderBy=['dateexpected', 'name'])
     architectures = SQLMultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')
@@ -124,6 +122,18 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     sections = SQLRelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
+
+    @property
+    def all_milestones(self):
+        """See IDistroRelease."""
+        return Milestone.selectBy(
+            distrorelease=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IDistroRelease."""
+        return Milestone.selectBy(
+            distrorelease=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
     def drivers(self):

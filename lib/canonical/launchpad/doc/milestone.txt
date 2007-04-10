@@ -21,7 +21,7 @@ IMilestoneSet can be accessed as a utility.
 To retrieve all milestones, iterate over an IMilestoneSet object:
 
     >>> sorted(ms.id for ms in milestoneset)
-    [1, 2]
+    [1, 2, 3]
 
 To create a new Milestone, use the .newMilestone(name, dateexpected=None)
 method of a ProductSeries or DistroRelease:

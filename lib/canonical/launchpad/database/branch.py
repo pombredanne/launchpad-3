@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, AND)
+    SQLObjectNotFound)
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -19,12 +19,15 @@ from canonical.database.sqlbase import (
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.database.revision import BranchRevision
+from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.database.revision import Revision
 from canonical.lp.dbschema import (
+    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     BranchRelationships, BranchLifecycleStatus)
 
 
@@ -41,31 +44,16 @@ class Branch(SQLBase):
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
-    started_at = ForeignKey(dbName='started_at', foreignKey='BranchRevision',
-                            default=None)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     author = ForeignKey(dbName='author', foreignKey='Person', default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
-    branch_product_name = StringCol(default=None)
-    product_locked = BoolCol(default=False, notNull=True)
 
     home_page = StringCol()
-    branch_home_page = StringCol(default=None)
-    home_page_locked = BoolCol(default=False, notNull=True)
 
     lifecycle_status = EnumCol(schema=BranchLifecycleStatus, notNull=True,
         default=BranchLifecycleStatus.NEW)
-
-    landing_target = ForeignKey(dbName='landing_target', foreignKey='Branch',
-                                default=None)
-    current_delta_url = StringCol(default=None)
-    current_diff_adds = IntCol(default=None)
-    current_diff_deletes = IntCol(default=None)
-    current_conflicts_url = StringCol(default=None)
-    current_activity = IntCol(default=0, notNull=True)
-    stats_updated = UtcDateTimeCol(default=None)
 
     last_mirrored = UtcDateTimeCol(default=None)
     last_mirrored_id = StringCol(default=None)
@@ -75,25 +63,15 @@ class Branch(SQLBase):
 
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
-    revision_count = IntCol(default=0, notNull=True)
-
-    cache_url = StringCol(default=None)
+    revision_count = IntCol(default=DEFAULT, notNull=True)
 
     @property
     def revision_history(self):
-        """See IBranch."""
-        query = self._get_revision_history_query()
-        return query.prejoin(['revision'])
-
-    def _get_revision_history_query(self):
-        # XXX: David Allouche 2007-02-09.
-        # Transitional helper for revision_history and latest_revisions.
-        # Will be moved to BranchRevisionSet by the full implementation of
-        # CompleteBranchRevisions.
         return BranchRevision.select('''
             BranchRevision.branch = %s AND
             BranchRevision.sequence IS NOT NULL
-            ''' % sqlvalues(self), orderBy='-sequence')
+            ''' % sqlvalues(self),
+            prejoins=['revision'], orderBy='-sequence')
 
     subjectRelations = SQLMultipleJoin(
         'BranchRelationship', joinColumn='subject')
@@ -166,8 +144,7 @@ class Branch(SQLBase):
 
     def latest_revisions(self, quantity=10):
         """See IBranch."""
-        query = self._get_revision_history_query()
-        return query.limit(quantity)
+        return self.revision_history.limit(quantity)
 
     def revisions_since(self, timestamp):
         """See IBranch."""
@@ -187,60 +164,116 @@ class Branch(SQLBase):
         return tuple(self.subjectRelations) + tuple(self.objectRelations)
 
     # subscriptions
-    def subscribe(self, person):
+    def subscribe(self, person, notification_level, max_diff_lines):
         """See IBranch."""
-        for sub in self.subscriptions:
-            if sub.person.id == person.id:
-                return sub
-        return BranchSubscription(branch=self, person=person)
+        # can't subscribe twice
+        assert not self.hasSubscription(person), "User is already subscribed."
+        return BranchSubscription(branch=self, person=person,
+                                  notification_level=notification_level,
+                                  max_diff_lines=max_diff_lines)
+
+    def getSubscription(self, person):
+        """See IBranch."""
+        if person is None:
+            return None
+        subscription = BranchSubscription.selectOneBy(
+            person=person, branch=self)
+        return subscription
+
+    def hasSubscription(self, person):
+        """See IBranch."""
+        return self.getSubscription(person) is not None
 
     def unsubscribe(self, person):
         """See IBranch."""
-        for sub in self.subscriptions:
-            if sub.person.id == person.id:
-                BranchSubscription.delete(sub.id)
-                break
+        subscription = self.getSubscription(person)
+        assert subscription is not None, "User is not subscribed."
+        BranchSubscription.delete(subscription.id)
 
-    def has_subscription(self, person):
-        """See IBranch."""
-        assert person is not None
-        subscription = BranchSubscription.selectOneBy(
-            person=person, branch=self)
-        return subscription is not None
-
-    # revision number manipulation
     def getBranchRevision(self, sequence):
         """See IBranch.getBranchRevision()"""
         assert sequence is not None, \
                "Only use this to fetch revisions from mainline history."
-        return BranchRevision.selectOneBy(
-            branch=self, sequence=sequence)
+        return BranchRevision.selectOneBy(branch=self, sequence=sequence)
 
     def createBranchRevision(self, sequence, revision):
         """See IBranch.createBranchRevision()"""
-        return BranchRevision(branch=self, sequence=sequence, revision=revision)
+        return BranchRevision(
+            branch=self, sequence=sequence, revision=revision)
 
-    def truncateHistory(self, from_rev):
-        """See IBranch.truncateHistory()"""
-        revnos = BranchRevision.select(AND(
-            BranchRevision.q.branchID == self.id,
-            BranchRevision.q.sequence >= from_rev))
-        did_something = False
-        # Since in the future we may not be storing the entire
-        # revision history, a simple count against BranchRevision
-        # may not be sufficient to adjust the revision_count.
-        for revno in revnos:
-            revno.destroySelf()
-            self.revision_count -= 1
-            did_something = True
-        return did_something
+    def getTipRevision(self):
+        """See IBranch"""
+        tip_revision_id = self.last_scanned_id
+        if tip_revision_id is None:
+            return None
+        return Revision.selectOneBy(revision_id=tip_revision_id)
 
     def updateScannedDetails(self, revision_id, revision_count):
         """See IBranch."""
         self.last_scanned = UTC_NOW
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
-        
+
+    def getAttributeNotificationAddresses(self):
+        """See IBranch."""
+        addresses = set()
+        interested_levels = (
+            BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+            BranchSubscriptionNotificationLevel.FULL)
+        for subscription in self.subscriptions:
+            if subscription.notification_level in interested_levels:
+                addresses.update(contactEmailAddresses(subscription.person))
+        return sorted(addresses)
+
+    def getRevisionNotificationDetails(self):
+        """See IBranch."""
+        team_email_details = {}
+        individual_email_details = {}
+        interested_levels = (
+            BranchSubscriptionNotificationLevel.DIFFSONLY,
+            BranchSubscriptionNotificationLevel.FULL)
+        for subscription in self.subscriptions:
+            if subscription.notification_level in interested_levels:
+                addresses = contactEmailAddresses(subscription.person)
+                if subscription.person.isTeam():
+                    email_details = team_email_details
+                else:
+                    email_details = individual_email_details
+                for address in addresses:
+                    curr = email_details.get(
+                        address, BranchSubscriptionDiffSize.NODIFF)
+                    email_details[address] = max(
+                        curr, subscription.max_diff_lines)
+        # Individual preferences override team preferences.
+        email_details = team_email_details
+        email_details.update(individual_email_details)
+        # Now that we have determined the maximum size to send
+        # to any individual, switch the map around.
+        result = {}
+        for address, max_diff in email_details.iteritems():
+            result.setdefault(max_diff, []).append(address)
+        return result
+
+    def getScannerData(self):
+        """See IBranch."""
+        cur = cursor()
+        cur.execute("""
+            SELECT BranchRevision.id, BranchRevision.sequence,
+                Revision.revision_id
+            FROM Revision, BranchRevision
+            WHERE Revision.id = BranchRevision.revision
+                AND BranchRevision.branch = %s
+            ORDER BY BranchRevision.sequence
+            """ % sqlvalues(self))
+        ancestry = set()
+        history = []
+        branch_revision_map = {}
+        for branch_revision_id, sequence, revision_id in cur.fetchall():
+            ancestry.add(revision_id)
+            branch_revision_map[revision_id] = branch_revision_id
+            if sequence is not None:
+                history.append(revision_id)
+        return ancestry, history, branch_revision_map
 
 
 class BranchSet:
@@ -446,22 +479,18 @@ class BranchSet:
 
     def getBranchesForPerson(self, person, lifecycle_statuses=None):
         """See IBranchSet."""
-        owner_ids = [str(team.id) for team in person.teams_participated_in]
-        owner_ids.append(str(person.id))
-        owner_ids = ','.join(owner_ids)
-
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
         subscribed_branches = Branch.select(
             '''Branch.id = BranchSubscription.branch
-            AND BranchSubscription.person in (%s) %s
-            ''' % (owner_ids, lifecycle_clause),
+            AND BranchSubscription.person = %s %s
+            ''' % (person.id, lifecycle_clause),
             clauseTables=['BranchSubscription'])
 
         owner_author_branches = Branch.select(
-            '''(Branch.owner in (%s) OR
-            Branch.author = %s) %s
-            ''' % (owner_ids, person.id, lifecycle_clause))
+            '''(Branch.owner = %s
+            OR Branch.author = %s) %s
+            ''' % (person.id, person.id, lifecycle_clause))
         
         return subscribed_branches.union(
             owner_author_branches, orderBy=Branch._defaultOrder)

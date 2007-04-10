@@ -7,9 +7,6 @@
 >
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-latestspecs" />
   <div tal:replace="structure context/@@+portlet-details" />
@@ -33,10 +30,9 @@
   />
 
   <p class="informational message" tal:condition="not: view/specs">
-    There are no specifications currently proposed as goals for
+    There are no blueprints currently proposed as goals for
     <span tal:replace="context/displayname">1.0</span>. You can check the
-    list of specifications previously declined using the "Show Declined"
-    action menu option.
+    list of blueprints previously declined using "Show Declined".
   </p>
 
   <form tal:attributes="action request/URL" method="POST">

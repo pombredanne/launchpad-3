@@ -58,7 +58,7 @@ class EditBugNominationStatus(AuthorizationBase):
     usedfor = IBugNomination
 
     def checkAuthenticated(self, user):
-        return check_permission("launchpad.Driver", self.obj.target)
+        return self.obj.canApprove(user)
 
 
 class EditByOwnersOrAdmins(AuthorizationBase):
@@ -471,11 +471,6 @@ class EditBugTask(AuthorizationBase):
     usedfor = IHasBug
 
     def checkAuthenticated(self, user):
-        if self.obj.conjoined_master is not None:
-            # It's never allowed to edit this bugtask directly, it
-            # should be edited through conjoined_master.
-            return False
-
         admins = getUtility(ILaunchpadCelebrities).admin
 
         if user.inTeam(admins):

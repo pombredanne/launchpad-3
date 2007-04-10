@@ -7,6 +7,10 @@ __metaclass__ = type
 import unittest
 
 from canonical.launchpad.scripts.supermirror import branchtomirror
+from canonical.launchpad.database import Branch
+from canonical.launchpad.webapp import canonical_url
+from canonical.testing import LaunchpadZopelessLayer
+
 
 # Define a bunch of different fake format classes to pass to identical_formats
 
@@ -114,6 +118,28 @@ class TestBranchKind(unittest.TestCase):
         is_import_values = [branch_to_mirror.isImportBranch()
             for branch_to_mirror in self.iterSampleBranches()]
         self.assertEqual(is_import_values, [True, False, False])
+
+
+class TestCanonicalUrl(unittest.TestCase):
+    """Test cases for rendering the canonical url of a branch."""
+
+    layer = LaunchpadZopelessLayer
+
+    def testCanonicalUrlConsistent(self):
+        # BranchToMirror._canonical_url is consistent with
+        # webapp.canonical_url, if the provided unique_name is correct.
+        branch = Branch.get(15)
+        # Check that the unique_name used in this test is consistent with the
+        # sample data. This is an invariant of the test, so use a plain assert.
+        unique_name = 'name12/gnome-terminal/main'
+        assert branch.unique_name == '~' + unique_name
+        branch_to_mirror = branchtomirror.BranchToMirror(
+            src=None, dest=None, branch_status_client=None,
+            branch_id=None, branch_unique_name=unique_name)
+        # Now check that our implementation of canonical_url is consistent with
+        # the canonical one.
+        self.assertEqual(
+            branch_to_mirror._canonical_url(), canonical_url(branch))
 
 
 def test_suite():
