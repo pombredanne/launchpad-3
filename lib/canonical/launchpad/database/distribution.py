@@ -545,9 +545,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            'Language.id = language AND '
-            'distribution = %s AND '
-            'sourcepackagename IS NULL' % sqlvalues(self.id),
+            'Language.id = Ticket.language AND '
+            'Ticket.distribution = %s AND '
+            'Ticket.sourcepackagename IS NULL' % sqlvalues(self.id),
             clauseTables=['Ticket'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):

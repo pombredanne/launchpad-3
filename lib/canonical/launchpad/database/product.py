@@ -359,8 +359,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            'Language.id = language AND '
-            'product = %s' % sqlvalues(self.id),
+            'Language.id = Ticket.language AND '
+            'Ticket.product = %s' % sqlvalues(self.id),
             clauseTables=['Ticket'], distinct=True))
 
     @property
