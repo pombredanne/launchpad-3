@@ -4,6 +4,7 @@ PYTHON=python${PYTHON_VERSION}
 # If we fix them all to have EITHER a good makefile (build and check targets work), or no makefile
 # we can reenable auto detection.
 # test_dirs:=$(shell find . -maxdepth 1 -mindepth 1 -name ".arch-ids" -prune -o -type d -print | grep -v pyarch)
+build_dirs:=buildbot bzr cscvs pybaz pygettextpo pygpgme sqlobject twisted zope
 test_dirs:=buildbot bzr cscvs pybaz pygettextpo sqlobject twisted zope
 launchpad_test_dirs:=buildbot pybaz pygettextpo sqlobject zope
 
@@ -16,7 +17,7 @@ check: build
 	done
 
 check_for_launchpad: build
-	@ for subdir in ${launchpad_test_dirs}; do \
+	@ for subdir in ${build_dirs}; do\
 		$(MAKE) -C $$subdir check \
 		PYTHON=${PYTHON} PYTHON_VERSION=${PYTHON_VERSION} || exit $$?;\
 	done
