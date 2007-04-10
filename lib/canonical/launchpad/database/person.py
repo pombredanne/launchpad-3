@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
     ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH, IProduct,
     IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasLogo, IHasMugshot,
-    IHasIcon, JoinNotAllowed)
+    IHasIcon, JoinNotAllowed, MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -640,6 +640,12 @@ class Person(SQLBase, HasSpecificationsMixin):
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
+
+    @cachedproperty
+    def is_trusted_on_shipit(self):
+        """See IPerson."""
+        min_entries = MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT
+        return Karma.selectBy(person=self).count() >= min_entries
 
     def shippedShipItRequestsOfCurrentRelease(self):
         """See IPerson."""
@@ -2133,6 +2139,26 @@ class PersonSet:
         # Since we've updated the database behind SQLObject's back,
         # flush its caches.
         flush_database_caches()
+
+    def getTranslatorsByLanguage(self, language):
+        """See IPersonSet."""
+        # XXX CarlosPerelloMarin 20070331: The KarmaCache table doesn't have a
+        # field to store karma per language, so we are actually returning the
+        # people with the most translation karma that have this language
+        # selected in their preferences.  See bug #102257 for more info.
+        return Person.select('''
+            PersonLanguage.person = Person.id AND
+            PersonLanguage.language = %s AND
+            KarmaCache.person = Person.id AND
+            KarmaCache.product IS NULL AND
+            KarmaCache.project IS NULL AND
+            KarmaCache.sourcepackagename IS NULL AND
+            KarmaCache.distribution IS NULL AND
+            KarmaCache.category = KarmaCategory.id AND
+            KarmaCategory.name = 'translations'
+            ''' % sqlvalues(language), orderBy=['-KarmaCache.karmavalue'],
+            clauseTables=[
+                'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
 
 class PersonLanguage(SQLBase):

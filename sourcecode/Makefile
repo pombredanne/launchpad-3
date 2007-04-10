@@ -23,7 +23,7 @@ check_for_launchpad: build
 	done
 
 build:
-	@ for subdir in ${test_dirs}; do\
+	@ for subdir in ${build_dirs}; do\
 		if [ -e $$subdir/Makefile ]; then\
 			$(MAKE) -C $$subdir \
 			PYTHON=${PYTHON} PYTHON_VERSION=${PYTHON_VERSION} \

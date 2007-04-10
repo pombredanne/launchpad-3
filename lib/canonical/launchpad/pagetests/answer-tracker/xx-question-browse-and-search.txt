@@ -20,6 +20,17 @@ He discovers that there are no questions on the Kubuntu Answers page:
     >>> from BeautifulSoup import BeautifulSoup
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions for Kubuntu with the requested statuses.
+    
+The same is true for Projects that do not have Products.
+
+    >>> browser.open('http://launchpad.dev/aaa')
+    >>> browser.getLink('Answers').click()
+    >>> print browser.title
+    Questions for the Test Project
+    
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> print find_main_content(browser.contents).first('p').renderContents()
+    There are no questions for the Test Project with the requested statuses.
 
 == Browsing Questions ==
 

@@ -13,7 +13,7 @@
             set_attributes="displayname title summary description
                             translationgroup translationpermission
                             driver members owner bugcontact
-                            official_malone official_rosetta
+                            official_malone official_rosetta official_answers
                             security_contact upload_admin upload_sender
                             mirror_admin homepage_content icon logo
                             mugshot"
