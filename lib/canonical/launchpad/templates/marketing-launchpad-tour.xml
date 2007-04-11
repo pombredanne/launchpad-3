@@ -18,7 +18,7 @@
           Launchpad helps different projects to collaborate on common
           problems, such as bugs in shared code.
       </p>
-      <p>Let's start with finding your way around the interface.</p>
+      <p>Let's start by finding our way around the interface.</p>
     </summary>
 
     <screenshot>/+icing/launchpad-tour-screenshot1.png</screenshot>
@@ -28,8 +28,8 @@
     <callout top="13" left="285">Use the tabs to switch between Launchpad's
       applications.
     </callout>
-    <callout top="57" left="100">The Actions menu gives you different options,
-      depending on which application you're using.
+    <callout top="57" left="100">The Actions menu is important in Launchpad,
+      giving you access to the main functionality of the current application.
     </callout>
     <callout top="143" left="28">You can find additional information in the
       expandable boxes below the Actions menu.
@@ -45,48 +45,44 @@
     <screenshot>/+icing/launchpad-tour-screenshot2.png</screenshot>
     <callout top="53" left="305">Knowing who you're working with is an
       important part of community building and may help you find people to
-      collaborate with. Each Launchpad user can post a short description of
-      themselves and a photo.
+      collaborate with.
     </callout>
-    <callout top="146" left="202">Launchpad shows you which projects a user is
-      most active in and the Launchpad applications they've used for those
-      projects.
+    <callout top="146" left="202">Launchpad shows you which projects and
+      applications each person has used most recently.
     </callout>
-    <callout top="223" left="220">Similarly, you can see all the teams that a
-      person has joined.
+    <callout top="223" left="220">You can build a picture of someone's
+      interests by seeing which Launchpad teams they've joined.
     </callout>
-    <callout top="148" left="369">It's important to be able to contact people
-      you want to work with. Launchpad shows you how to contact them and where
-      to find a wiki page with more information.
+    <callout top="148" left="369">Launchpad shows you how to contact people
+      that you'd like to work with and where to find a wiki page with more
+      information.
     </callout>
   </screen>
 
   <screen>
     <title>Teams</title>
-    <headline>Spontaneous team creation</headline>
+    <headline>Effortless team creation</headline>
     <summary>
       <p>Strong communities are built on teams. Launchpad helps communities to
-        develop rich structures, through the spontaneous creation of teams
+        develop rich structures, through the effortless creation of teams
         around projects and initiatives.
       </p>
-      <p>Anyone can create a team and you can use them just about anywhere
-        that you'd use an individual: for example, as a member of another
-        team, as a project's bug contact or to access a shared Bazaar branch.
+      <p>Teams work just like individuals: they can join other teams and take
+        roles in projects, such as acting as a bug contact for a project.
       </p>
     </summary>
     <screenshot>/+icing/launchpad-tour-screenshot3.png</screenshot>
     <callout top="50" left="360">Your team's description is an important way
-      to let potential members know what the team plans to do and how it is
-      organised.
+      to let potential members know your plans and how they can join you.
     </callout>
-    <callout top="150" left="220">You can choose from three membership
-      policies for your team. Open membership means anyone can join, anyone
-      can apply to a moderated team but a team administrator must approve
-      their membership and restricted teams are invitation-only.
+    <callout top="150" left="220">As a team administrator, you choose the
+      membership policy that's most appropriate:
+      open: anyone can join; moderated: anyone can apply to join but a
+      team administrator must approve their membership;
+      restricted: a team administrator must invite a person to join.
     </callout>
-    <callout top="150" left="430">Teams can own teams and be a member of other
-      teams. The row of small icons shows which other teams this team belongs
-      to.
+    <callout top="220" left="390">This row of small icons shows which other
+      teams this team has joined.
     </callout>
   </screen>
 

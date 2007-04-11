@@ -4,24 +4,23 @@
   <screen>
     <title>Capturing ideas</title>
     <headline>Capturing and tracking ideas</headline>
-    <summary>Launchpad's Blueprint Tracker helps you to manage your
-      community's ideas, without imposing strict project management. A
-      blueprint can be anything from a single sentence to a full
-      specification, with information about who is involved and where it fits
-      into your project's roadmap.
+    <summary>Launchpad's Blueprint Tracker helps you to manage ideas and
+      proposals for your project. A blueprint can be anything from a single
+      sentence to a full specification, with information about who is involved
+      and where it fits into your project's roadmap.
     </summary>
     <screenshot>/+icing/blueprints-tour-screenshot1.png</screenshot>
     <callout top="" left="">Anyone can create a blueprint for your project,
-      helping you to make the most of your community's creativity. You retain
-      control by prioritising each blueprint.
+      helping you to make the most of your community's creativity. As a
+      project leader, you set the priority of each blueprint.
     </callout>
     <callout top="" left="">Ideas and proposals within free software projects
-      range from an initial concept, through to full specs. You can track how
-      well-defined a blueprint is and the progress of work on its
+      range from an initial concept, through to a full specification. You can
+      track how well-defined a blueprint is and the progress of work on its
       implementation.
     </callout>
-    <callout top="" left="">You can even target blueprints to specific
-      releases of your software.
+    <callout top="" left="">You can target blueprints to specific releases of
+      your software.
     </callout>
   </screen>
   <screen>
@@ -55,6 +54,9 @@
       </p>
     </summary>
     <screenshot>/+icing/blueprints-tour-screenshot3.png</screenshot>
+    <transition>For the final stop on our tour, let's look at how Launchpad
+      helps your community to answer user support questions.
+    </transition>
   </screen>
 
 </tour>

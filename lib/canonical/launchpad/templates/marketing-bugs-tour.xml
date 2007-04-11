@@ -35,7 +35,7 @@
       making it ideal for both newer users and experienced
       developers.
     </summary>
-    <screenshot>/+icing/bugs-tour-screenshot1.png</screenshot>
+    <screenshot>/+icing/bugs-tour-screenshot2.png</screenshot>
     <callout>You can attach files - such as screen shots and logs - to help
       bug triagers understand the cause of a bug.
     </callout>
@@ -45,8 +45,8 @@
       changes to existing bugs.
     </callout>
     <transition>In some projects, bug reports are used to request new
-      features. Let's look at Launchpad's Blueprint Tracker, which is helps
-      you track ideas for your software.
+      features. Let's look at Launchpad's Blueprint Tracker, which helps you
+      track and develop ideas for your software.
     </transition>
   </screen>
 </tour>

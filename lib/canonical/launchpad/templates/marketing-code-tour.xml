@@ -14,11 +14,13 @@
       </p>
     </summary>
     <screenshot>/+icing/code-tour-screenshot1.png</screenshot>
-    <callout>If your code is in a Bazaar branch, simply give Launchpad its URL
-      and a short summary.
+    <callout>If your code is already in a Bazaar branch, simply give Launchpad
+      its URL and a short summary.
     </callout>
-    <callout>If you want to use Bazaar to access code in a Subversion or CVS
-      repository, you can request an import.
+    <callout>You can use Bazaar to access code stored in Subversion and CVS
+      repositories by requesting that Launchpad make the code available in
+      Bazaar. Launchpad will regularly update the Bazaar branch from the
+      original repository.
     </callout>
   </screen>
   <screen>
@@ -29,10 +31,9 @@
       individuals.
     </summary>
     <screenshot>/+icing/code-tour-screenshot2.png</screenshot>
-    <callout>Here the trunk branch is owned by Bazaar Developers, a Launchpad
-      team. Launchpad team branches work like Subversion repositories: they're
-      hosted centrally and only members of that team have commit access. The
-      other branches shown here have been registered by individual developers.
+    <callout>Both teams and individuals can register their branches of your
+      code, helping you to find all lines of development associated with your
+      project.
     </callout>
     <callout>Launchpad Code Hosting integrates with Launchpad's other
       applications. If a branch fixes a bug or implements a blueprint,
@@ -56,17 +57,15 @@
       individual or team responsible for the branch.
     </callout>
     <callout>Launchpad shows you where the branch is hosted, making it easy to
-      branch.
+      retrieve the code.
     </callout>
-    <callout>Details of the branch's most recent revisions, complete with the
-      developer's commit messages, give you a flavour of this line of
-      development.
+    <callout>Launchpad shows you the latest activity in this branch by
+      displaying the most recent developer commit messages.
     </callout>
-    <callout>For more detail, you can browse the code itself, with complete
-      revision history and diffs.
+    <callout>For more detail, you can browse the code itself, with diffs and a
+      complete revision history.
     </callout>
-    <transition>Next, let's look at how you can use Launchpad to manage bugs
-      and collaborate with other projects you share code with.
+    <transition>Next, let's look at how you can use Launchpad to manage bugs.
     </transition>
   </screen>
 </tour>
