@@ -20,6 +20,7 @@ sourcecode/sourcerer
 sourcecode/sqlobject
 sourcecode/sqlos
 sourcecode/testresources
+sourcecode/urljr
 sourcecode/zope
 ./botmaster
 ./tags
