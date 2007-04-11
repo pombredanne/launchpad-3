@@ -28,9 +28,11 @@ Logged in as a regular user, the +export page is accessible.
   >>> print user_browser.contents
   <...
   ...Translations download...
-  Once you complete this form, the file will be exported, and you
-  will be notified by e-mail to <code>no-priv@canonical.com</code>
-  with the URL where you can download your request...
+  Export process would be quite slow and thus, most of the time, you
+  will need to wait until the system process your request and sends you
+  a notification email to
+  <code>no-priv@canonical.com</code>
+  with a link where you will be able to get the exported file...
 
 If we POST the page, it should add the request to the queue.
 

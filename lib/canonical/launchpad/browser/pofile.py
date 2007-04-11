@@ -151,7 +151,6 @@ class POFileAppMenus(ApplicationMenu):
 
 class BaseExportView(LaunchpadView):
     """Base class for PO export views."""
-    __used_for__ = IPOFile
 
     def initialize(self):
         self.request_set = getUtility(IPOExportRequestSet)
@@ -200,7 +199,6 @@ class BaseExportView(LaunchpadView):
 
 class POFileView(LaunchpadView):
     """A basic view for a POFile"""
-    __used_for__ = IPOFile
 
     @cachedproperty
     def contributors(self):
@@ -209,7 +207,6 @@ class POFileView(LaunchpadView):
 
 class POFileUploadView(POFileView):
     """A basic view for a POFile"""
-    __used_for__ = IPOFile
 
     def initialize(self):
         self.form = self.request.form
@@ -296,8 +293,6 @@ class POFileTranslateView(BaseTranslationView):
     traversal is done for details about how we decide between a POFile
     or a DummyPOFile.
     """
-
-    __used_for__ = IPOFile
 
     DEFAULT_SHOW = 'all'
     DEFAULT_SIZE = 10

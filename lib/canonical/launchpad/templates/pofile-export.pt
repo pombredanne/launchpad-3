@@ -17,35 +17,30 @@
                      value format/value;
                      checked format/is_default" />
             <span tal:content="format/title">translation format</span>
-            <span tal:condition="format/is_default">(default)</span>
           </label>
         </div>
         <div>
-          <tal:valid-export condition="context/validExportCache">
-            <p>
-              If you select the default entry, you will be able to download
-              that entry directly once you submit the form.
-            </p>
-            <p>
-              For the other options, we need to process your request.
-              Unfortunately, that process would take some time, and thus, once
-              that task is done, you will be notified by e-mail to
-              <code tal:content="view/user/preferredemail/email">user@domain
-              </code> with the URL where you can download your request.
-            </p>
-          </tal:valid-export>
-          <tal:not-valid-export condition="not: context/validExportCache">
-            <p>
-              Once you complete this form, the file will be exported, and you
-              will be notified by e-mail to 
-              <code tal:content="view/user/preferredemail/email">user@domain
-              </code> with the URL where you can download your request.
-          </tal:not-valid-export>
-        </div>
         <div class="formControls">
           <input type="submit" value="Confirm Download" />
         </div>
       </form>
+    </div>
+    <div metal:fill-slot="help">
+      <p>
+        From this form, you can request file downloading with the
+        translations available in Launchpad.
+      </p>
+      <p>
+        Export process would be quite slow and thus, most of the time, you
+        will need to wait until the system process your request and sends you
+        a notification email to
+        <code tal:content="view/user/preferredemail/email">user@domain</code>
+        with a link where you will be able to get the exported file.
+      </p>
+      <p>
+        However, as an optimisation to this process, if we already have
+        available the requested file, the system will send you it directly.
+      </p>
     </div>
   </body>
 </html>
