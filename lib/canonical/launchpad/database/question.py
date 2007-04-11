@@ -543,7 +543,8 @@ class QuestionSearch:
 
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, needs_attention_from=None, sort=None,
-                 product=None, distribution=None, sourcepackagename=None):
+                 product=None, distribution=None, sourcepackagename=None,
+                 project=None):
         self.search_text = search_text
 
         if zope_isinstance(status, Item):
@@ -565,6 +566,7 @@ class QuestionSearch:
         self.product = product
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
+        self.project = project
 
     def getTargetConstraints(self):
         """Return the constraints related to the IQuestionTarget context."""
@@ -589,6 +591,10 @@ class QuestionSearch:
                 constraints.append(
                     'Question.sourcepackagename = %s' % sqlvalues(
                         self.sourcepackagename))
+        elif self.project:
+            constraints.append("""
+                Question.product = Product.id AND
+                Product.project = %s""" % sqlvalues(self.project))
 
         return constraints
 
@@ -596,17 +602,29 @@ class QuestionSearch:
         """Return the tables that should be joined for the constraints."""
         if self.needs_attention_from:
             return self.getMessageJoins(self.needs_attention_from)
+        elif self.project:
+            return self.getProductJoins()
         else:
             return []
 
     def getMessageJoins(self, person):
         """Create the joins needed to select constraints on the messages by a
         particular person."""
-        return [
+        joins = [
             ('LEFT OUTER JOIN QuestionMessage '
              'ON QuestionMessage.question = Question.id'),
             ('LEFT OUTER JOIN Message ON QuestionMessage.message = Message.id '
              'AND Message.owner = %s' % sqlvalues(person))]
+        if self.project:
+            joins.extend(self.getProductJoins())
+
+        return joins
+
+    def getProductJoins(self):
+        """Create the joins needed to select contrains on progects by a
+        particular project."""
+        return [('JOIN Product '
+                 'ON Question.product = Product.id')]
 
     def getConstraints(self):
         """Return a list of SQL constraints to use for this search."""
@@ -646,8 +664,8 @@ class QuestionSearch:
         # The idea is to prejoin all dependant tables, except if the
         # object will be the same in all rows because it is used as a
         # search criteria.
-        if self.product or self.sourcepackagename:
-            # Will always be the same product or sourcepackage.
+        if self.product or self.sourcepackagename or self.project:
+            # Will always be the same product, sourcepackage, or project.
             return ['owner']
         elif self.distribution:
             # Same distribution, sourcepackagename will vary.
@@ -655,6 +673,12 @@ class QuestionSearch:
         else:
             # QuestionTarget will vary.
             return ['owner', 'product', 'distribution', 'sourcepackagename']
+
+    def getPrejoinClauseTables(self):
+        """Return a list of tables that are in the contraints"""
+        if self.getConstraints().count('Question.product = Product.id'):
+            return ['product']
+        return []
 
     def getOrderByClause(self):
         """Return the ORDER BY clause to use to order this search's results."""
@@ -696,6 +720,7 @@ class QuestionSearch:
                         ' AND '.join(constraints)))
         return Question.select(
             query, prejoins=self.getPrejoins(),
+            prejoinClauseTables=self.getPrejoinClauseTables(),
             orderBy=self.getOrderByClause())
 
 
@@ -708,14 +733,14 @@ class QuestionTargetSearch(QuestionSearch):
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
                  needs_attention_from=None, product=None, distribution=None,
-                 sourcepackagename=None):
-        assert product is not None or distribution is not None, (
-            "Missing a product or distribution context.")
+                 sourcepackagename=None, project=None):
+        assert (product is not None or distribution is not None or
+            project is not None), ("Missing a product or distribution context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
             needs_attention_from=needs_attention_from, sort=sort,
             product=product, distribution=distribution,
-            sourcepackagename=sourcepackagename)
+            sourcepackagename=sourcepackagename, project=project)
 
         if owner:
             assert IPerson.providedBy(owner), (
