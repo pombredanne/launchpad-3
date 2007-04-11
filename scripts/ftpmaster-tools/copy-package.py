@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Copy publications across suites."""
@@ -86,6 +86,9 @@ class CopyPackageHelper:
         self.from_suite = from_suite
         self.to_suite = to_suite
 
+        self.target_source = None
+        self.target_binaries = list()
+
     def _buildLocations(self):
         """XXX."""
         try:
@@ -122,6 +125,27 @@ class CopyPackageHelper:
                 self.sourcename, self.sourceversion,
                 self.from_location))
 
+    def _buildBinaries(self):
+        """Build self.target_binaries with a list of distro arch release
+        binary packages.  Ensure _buildSources is called before this."""
+        # Obtain names of all binary packages resulting from this 
+        # source version.
+        # XXX does this need to be a set?
+        binary_name_set = set([binary.name 
+                               for binary in self.target_source.binaries])
+        # Get the binary packages in each distroarchrelease and store them
+        # in target_binaries for later.
+        for binary_name in binary_name_set:
+            for distroarchrelease in self.from_location.distrorelease.architectures:
+                darbp = distroarchrelease.getBinaryPackage(binary_name)
+                try:
+                    # only include currently published binaries
+                    current = darbp.current_published
+                except NotFoundError:
+                    pass
+                else:
+                    self.target_binaries.append(darbp)
+
     def _requestFeedback(self, question='Are you sure', valid_answers=None):
         """XXX."""
         answer = None
@@ -146,6 +170,7 @@ class CopyPackageHelper:
         """XXX."""
         self._buildLocations()
         self._buildSource()
+        self._buildBinaries()
 
         self._displayInfo()
 
@@ -160,6 +185,15 @@ class CopyPackageHelper:
         copy = self.target_source.copyTo(
             distrorelease=self.to_location.distrorelease,
             pocket=self.to_location.pocket)
+        for binary in self.target_binaries:
+            # copyTo will raise an error if the target distro is not released
+            # in the same architecture, or the binary is not published.
+            try:
+                sbpph = binary.copyTo(
+                    distrorelease=self.to_location.distrorelease,
+                    pocket=self.to_location.pocket)
+            except NotFoundError:
+                pass
 
         self.logger.info(
             "Copied to %s/%s" % (copy.distrorelease.name, copy.pocket.title))

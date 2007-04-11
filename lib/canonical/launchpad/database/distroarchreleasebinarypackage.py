@@ -256,3 +256,22 @@ class DistroArchReleaseBinaryPackage:
         current.datesuperseded = UTC_NOW
 
         return current
+
+    def copyTo(self, distrorelease, pocket):
+        """See IDistroArchReleaseBinaryPackage."""
+        # may raise NOT FOUND
+        current = self.current_published
+        # may raise NOT FOUND
+        target_dar = distrorelease[current.distroarchrelease.architecturetag]
+
+        copy = SecureBinaryPackagePublishingHistory(
+            binarypackagerelease=current.binarypackagerelease,
+            distroarchrelease=target_dar,
+            component=current.component,
+            section=current.section,
+            priority=current.priority,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            pocket=pocket
+        )
+        return copy
