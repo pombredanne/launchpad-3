@@ -229,10 +229,12 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             distinct=True)
         via_bugs = MentoringOffer.select('''
             BugTask.distribution = %s AND
-            BugTask.bug = MentoringOffer.bug
+            BugTask.bug = MentoringOffer.bug AND
+            BugTask.bug = Bug.id AND
+            Bug.private IS FALSE
             ''' % sqlvalues(self.id) + """ AND NOT (
             """ + BugTask.completeness_clause +")",
-            clauseTables=['BugTask'],
+            clauseTables=['BugTask', 'Bug'],
             distinct=True)
         return via_specs.union(via_bugs)
 

@@ -419,10 +419,12 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             distinct=True)
         via_bugs = MentoringOffer.select('''
             BugTask.product = %s AND
-            BugTask.bug = MentoringOffer.bug
+            BugTask.bug = MentoringOffer.bug AND
+            BugTask.bug = Bug.id AND
+            Bug.private IS FALSE
             ''' % sqlvalues(self.id) + """ AND NOT (
             """ + BugTask.completeness_clause + ")",
-            clauseTables=['BugTask'],
+            clauseTables=['BugTask', 'Bug'],
             distinct=True)
         return via_specs.union(via_bugs)
 

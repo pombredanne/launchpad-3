@@ -133,10 +133,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         via_bugs = MentoringOffer.select('''
             Product.project = %s AND
             BugTask.product = Product.id AND
-            BugTask.bug = MentoringOffer.bug
+            BugTask.bug = MentoringOffer.bug AND
+            BugTask.bug = Bug.id AND
+            Bug.private IS FALSE
             ''' % sqlvalues(self.id) + """ AND NOT (
             """ + BugTask.completeness_clause + ")",
-            clauseTables=['Product', 'BugTask'],
+            clauseTables=['Product', 'BugTask', 'Bug'],
             distinct=True)
         return via_specs.union(via_bugs)
 

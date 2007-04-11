@@ -237,13 +237,16 @@ class Person(SQLBase, HasSpecificationsMixin):
             FROM MentoringOffer
             LEFT OUTER JOIN BugTask ON
                 MentoringOffer.bug = BugTask.bug
+            LEFT OUTER JOIN Bug ON
+                BugTask.bug = Bug.id
             LEFT OUTER JOIN Specification ON
                 MentoringOffer.specification = Specification.id
             WHERE
                 MentoringOffer.owner = %s
                 """ % sqlvalues(self.id) + """ AND (
                 BugTask.id IS NULL OR NOT
-                (""" + BugTask.completeness_clause +""")) AND (
+                (Bug.private IS TRUE OR
+                  (""" + BugTask.completeness_clause +"""))) AND (
                 Specification.id IS NULL OR NOT
                 (""" + Specification.completeness_clause +")))",
             )
@@ -258,13 +261,16 @@ class Person(SQLBase, HasSpecificationsMixin):
                 MentoringOffer.team = TeamParticipation.person
             LEFT OUTER JOIN BugTask ON
                 MentoringOffer.bug = BugTask.bug
+            LEFT OUTER JOIN Bug ON
+                BugTask.bug = Bug.id
             LEFT OUTER JOIN Specification ON
                 MentoringOffer.specification = Specification.id
             WHERE
                 TeamParticipation.team = %s
                 """ % sqlvalues(self.id) + """ AND (
                 BugTask.id IS NULL OR NOT
-                (""" + BugTask.completeness_clause +""")) AND (
+                (Bug.private IS TRUE OR
+                  (""" + BugTask.completeness_clause +"""))) AND (
                 Specification.id IS NULL OR NOT
                 (""" + Specification.completeness_clause +")))",
             )
