@@ -12,21 +12,20 @@ Documentation on general design
   - NascentUpload is a motor that creates the changes file, does
     verifications, gets overrides, triggers creation or rejection and
     prepares the email message
-
-XXX cprov 20070326: expand the list of features and add more detailed
-explanations.
 """
 
 __metaclass__ = type
 
 import apt_pkg
+import os
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.changesfile import ChangesFile, DSCFile
+from canonical.archivepublisher.changesfile import ChangesFile
+from canonical.archivepublisher.dscfile import DSCFile
 from canonical.archivepublisher.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
-    BaseBinaryUploadFile, DebBinaryUploadFile, UdebBinaryUploadFile)
+    BaseBinaryUploadFile)
 from canonical.archivepublisher.template_messages import (
     rejection_template, new_template, accepted_template, announce_template)
 from canonical.config import config
@@ -443,9 +442,10 @@ class NascentUpload:
     def _components_valid_for(self, person):
         """Return the set of components this person could upload to."""
 
-        possible_components = set(acl.component.name
-                                  for acl in self.policy.distro.uploaders
-                                  if person in acl)
+        possible_components = set(
+            acl.component.name for acl in self.policy.distro.uploaders
+            if person in acl)
+
         if possible_components:
             self.logger.debug("%s (%d) is an uploader for %s." % (
                 person.displayname, person.id,
@@ -475,8 +475,8 @@ class NascentUpload:
         possible_components = self._components_valid_for(self.changes.signer)
 
         if not possible_components:
-            self.reject("Signer has no upload rights at all to this "
-                        "distribution.")
+            self.reject(
+                "Signer has no upload rights at all to this distribution.")
 
         return possible_components
 
@@ -485,8 +485,8 @@ class NascentUpload:
         by the provided signer.
         """
         if self.changes.signer is None:
-            self.logger.debug("No signer, therefore no point verifying signer "
-                              "against ACL")
+            self.logger.debug(
+                "No signer, therefore no point verifying signer against ACL")
             return
 
         for uploaded_file in self.changes.files:
@@ -495,11 +495,12 @@ class NascentUpload:
                 # binaries, because they are the only objects that get
                 # overridden and created in the database.
                 continue
-            if (uploaded_file.component not in signer_components and
+            if (uploaded_file.component_name not in signer_components and
                 uploaded_file.new == False):
-                self.reject("Signer is not permitted to upload to the "
-                            "component '%s' of file '%s'" % (
-                    uploaded_file.component, uploaded_file.filename))
+                self.reject(
+                    "Signer is not permitted to upload to the component "
+                    "'%s' of file '%s'" % (
+                    uploaded_file.component.name, uploaded_file.filename))
 
     #
     # Handling checking of versions and overrides
@@ -632,8 +633,8 @@ class NascentUpload:
         self.logger.debug("%s: (source) exists in %s" % (
             uploaded_file.package, override.pocket.name))
 
-        uploaded_file.component = override.component.name
-        uploaded_file.section = override.section.name
+        uploaded_file.component_name = override.component.name
+        uploaded_file.section_name = override.section.name
 
     def overrideBinary(self, uploaded_file, override):
         """Overrides the uploaded binary based on its override information.
@@ -644,12 +645,12 @@ class NascentUpload:
             uploaded_file.package, override.distroarchrelease.architecturetag,
             override.pocket.name))
 
-        uploaded_file.component = override.component.name
-        uploaded_file.section = override.section.name
+        uploaded_file.component_name = override.component.name
+        uploaded_file.section_name = override.section.name
         # Both, changesfiles and nascentuploadfile local maps, reffer to
         # priority in lower-case names, but the DBSCHEMA name is upper-case.
         # That's why we need this conversion here.
-        uploaded_file.priority = override.priority.name.lower()
+        uploaded_file.priority_name = override.priority.name.lower()
 
     def find_and_apply_overrides(self):
         """Look for ancestry and overrides information.
@@ -753,7 +754,8 @@ class NascentUpload:
 
             # NEW, Auto-APPROVED and UNAPPROVED source uploads targeted to
             # section 'translations' should not generate any emails.
-            if (self.sourceful and self.changes.dsc.section == 'translations'):
+            if (self.sourceful and
+                self.changes.dsc.section_name == 'translations'):
                 self.logger.debug(
                     "Skipping acceptance and announcement, it is a language-"
                     "package upload.")
@@ -777,6 +779,14 @@ class NascentUpload:
             if self.policy.pocket == PackagePublishingPocket.BACKPORTS:
                 self.logger.debug(
                     "Skipping announcement, it is a BACKPORT.")
+                return True, [accept_msg % interpolations]
+
+            # Auto-APPROVED binary uploads to SECURITY skips announcement.
+            # usually processed with 'security' policy
+            if (self.policy.pocket == PackagePublishingPocket.SECURITY
+                and self.binaryful):
+                self.logger.debug(
+                    "Skipping announcement, it is a binary upload to SECURITY.")
                 return True, [accept_msg % interpolations]
 
             # Fallback, all the rest comming from 'insecure', 'secure',

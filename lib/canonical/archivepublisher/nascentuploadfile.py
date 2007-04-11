@@ -27,7 +27,10 @@ import time
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.utils import prefix_multi_line_string
+from canonical.archivepublisher.utils import (
+    prefix_multi_line_string, re_taint_free, re_isadeb, re_issource,
+    re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
+    re_extract_src_version)
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
     IComponentSet, ISectionSet, IBuildSet, ILibraryFileAliasSet,
@@ -37,18 +40,6 @@ from canonical.lp.dbschema import (
     PackagePublishingPriority, DistroReleaseQueueCustomFormat,
     DistroReleaseQueueStatus, BinaryPackageFormat, BuildStatus)
 
-
-re_taint_free = re.compile(r"^[-+~/\.\w]+$")
-
-re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?deb)$")
-re_issource = re.compile(r"(.+)_(.+?)\.(orig\.tar\.gz|diff\.gz|tar\.gz|dsc)$")
-
-re_no_epoch = re.compile(r"^\d+\:")
-re_no_revision = re.compile(r"-[^-]+$")
-
-re_valid_version = re.compile(r"^([0-9]+:)?[0-9A-Za-z\.\-\+~:]+$")
-re_valid_pkg_name = re.compile(r"^[\dA-Za-z][\dA-Za-z\+\-\.]+$")
-re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
 
 apt_pkg.InitSystem()
 

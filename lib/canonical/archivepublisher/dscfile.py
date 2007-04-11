@@ -1,9 +1,19 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""
+""" DSCFile and related.
+
 Class representing a DSC file, which encapsulates collections of
 files representing a source uploaded.
 """
+
+__metaclass__ = type
+
+__all__ = [
+    'SignableTagFile',
+    'DSCFile',
+    'DSCUploadedFile',
+    ]
+
 import os
 import errno
 import shutil
@@ -14,18 +24,19 @@ import tempfile
 from zope.component import getUtility
 
 from canonical.archivepublisher.nascentuploadfile import (
-    UploadWarning, UploadError, NascentUploadFile, SourceUploadFile,
-    re_valid_pkg_name, re_valid_version, re_issource)
+    UploadWarning, UploadError, NascentUploadFile, SourceUploadFile)
 from canonical.archivepublisher.tagfiles import (
     parse_tagfile, TagFileParseError)
 from canonical.archivepublisher.utils import (
-    prefix_multi_line_string, safe_fix_maintainer, ParseMaintError)
+    prefix_multi_line_string, safe_fix_maintainer, ParseMaintError,
+    re_valid_pkg_name, re_valid_version, re_issource)
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
     NotFoundError, IGPGHandler, GPGVerificationError, IGPGKeySet,
     IPersonSet, ISourcePackageNameSet)
 from canonical.librarian.utils import copy_and_close
 from canonical.lp.dbschema import PersonCreationRationale
+
 
 class SignableTagFile:
     """Base class for signed file verification."""
@@ -176,6 +187,27 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         """Return the DSC source name."""
         return self._dict['source']
 
+    @property
+    def dsc_version(self):
+        """Return the DSC source version."""
+        return self._dict['version']
+
+    @property
+    def format(self):
+        """Return the DSC format."""
+        return self._dict['format']
+
+    @property
+    def architecture(self):
+        """Return the DSC source architecture."""
+        return self._dict['architecture']
+
+    @property
+    def binary(self):
+        """Return the DSC claimed binary line."""
+        return self._dict['binary']
+
+
     #
     # DSC file checks.
     #
@@ -187,6 +219,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         be accumulated in the rejection message.
         """
         for error in SourceUploadFile.verify(self):
+            yield error
+
+        # check size and checksum of the DSC file itself
+        try:
+            self.checkSizeAndCheckSum()
+        except UploadError, error:
             yield error
 
         files = []
@@ -210,16 +248,14 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 files.append(file_instance)
         self.files = files
 
-        source = self._dict['source']
-        version = self._dict['version']
-        if not re_valid_pkg_name.match(source):
+        if not re_valid_pkg_name.match(self.source):
             yield UploadError(
-                "%s: invalid source name %s" % (self.filename, source))
-        if not re_valid_version.match(version):
+                "%s: invalid source name %s" % (self.filename, self.source))
+        if not re_valid_version.match(self.dsc_version):
             yield UploadError(
-                "%s: invalid version %s" % (self.filename, version))
+                "%s: invalid version %s" % (self.filename, self.dsc_version))
 
-        if self._dict['format'] != "1.0":
+        if self.format != "1.0":
             yield UploadError(
                 "%s: Format is not 1.0. This is incompatible with "
                 "dpkg-source." % self.filename)
@@ -246,13 +282,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                         % (self.filename, field_name, error))
 
         # Verify the filename matches appropriately
-        dsc_version = self._dict["version"]
 
-        if dsc_version != self.version:
+        if self.dsc_version != self.version:
             yield UploadError(
                 "%s: version ('%s') in .dsc does not match version "
                 "('%s') in .changes."
-                % (self.filename, dsc_version, self.version))
+                % (self.filename, self.dsc_version, self.version))
 
         for error in self.check_files():
             yield error
@@ -305,12 +340,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 target_file = open(sub_dsc_file.filepath, "wb")
                 copy_and_close(library_file, target_file)
 
-            try:
-                sub_dsc_file.checkSizeAndCheckSum()
-            except UploadError, error:
+            for error in sub_dsc_file.verify():
                 yield error
                 files_missing = True
-                continue
+
 
         if not has_tar:
             yield UploadError(
@@ -445,4 +478,12 @@ class DSCUploadedFile(NascentUploadFile):
         NascentUploadFile.__init__(
             self, filepath, digest, size, component_and_section,
             priority, policy, logger)
+
+    def verify(self):
+        """Check Sub DSCFile mentioned size & checksum."""
+        try:
+            self.checkSizeAndCheckSum()
+        except UploadError, error:
+            yield error
+
 

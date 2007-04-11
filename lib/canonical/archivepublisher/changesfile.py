@@ -1,9 +1,16 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""
+""" ChangesFile class
+
 Classes representing Changes and DSC files, which encapsulate collections of
 files uploaded.
 """
+
+__metaclass__ = type
+
+__all__ = [
+    'ChangesFile'
+    ]
 
 import os
 import re
@@ -11,13 +18,12 @@ import re
 from canonical.archivepublisher.dscfile import DSCFile, SignableTagFile
 from canonical.archivepublisher.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, DebBinaryUploadFile,
-    UdebBinaryUploadFile, BaseBinaryUploadFile, SourceUploadFile,
-    re_isadeb, re_issource)
+    UdebBinaryUploadFile, BaseBinaryUploadFile, SourceUploadFile)
+from canonical.archivepublisher.utils import (
+    re_isadeb, re_issource, re_changes_file_name)
 from canonical.archivepublisher.tagfiles import (
     parse_tagfile, TagFileParseError)
 from canonical.lp.dbschema import SourcePackageUrgency
-
-re_changes_file_name = re.compile(r"([^_]+)_([^_]+)_([^\.]+).changes")
 
 
 class ChangesFile(SignableTagFile):

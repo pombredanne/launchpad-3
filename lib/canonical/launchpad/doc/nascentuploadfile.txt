@@ -1,6 +1,15 @@
 = NascentUploadFiles =
 
-XXX .....
+Files related with an Soyuz upload are modelled as:
+
+ * ChangesFile: the upload changesfile;
+   * DSCFile: the upload DSC file for source uploads;
+     * DSCUploadedFile: used to check consistency of the files
+                        mentioned in DSC;
+   * SourceUploadFile: source files like ORIG and DIFF;
+   * UDebBinaryUploadFile: udeb package file;
+   * DebBinaryUploadFile: deb package file;
+   * CustomUploadFile: normally a tarball used for custom uploads.
 
 Import the test keys so we have them ready for verification
 
@@ -10,33 +19,47 @@ Import the test keys so we have them ready for verification
 We need to be logged into the security model in order to get any further
 
   >>> login('foo.bar@canonical.com')
-
-  >>> from canonical.archivepublisher.changesfile import ChangesFile
   >>> from canonical.archivepublisher.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
 
-
-
-XXX .....
-
-
-
 == ChangesFile  ==
 
-XXX: summary
+A changesfile contains manifest of what is included (ou should be
+considered) for the upload in question.
 
   >>> modified_insecure_policy = getPolicy(
   ...     name='insecure', distro='ubuntu', distrorelease='hoary')
   >>> modified_insecure_policy.can_upload_binaries = True
   >>> modified_insecure_policy.can_upload_mixed = True
 
+  >>> from canonical.archivepublisher.changesfile import ChangesFile
+
   >>> ed_mixed_changes = ChangesFile(
   ...     datadir('ed_0.2-20_i386.changes'),
   ...     modified_insecure_policy, mock_logger_quiet)
 
+At this point the changesfile content is already parsed:
+
+  >>> ed_mixed_changes.source
+  'ed'
+  >>> ed_mixed_changes.version
+  '0.2-20'
+  >>> ed_mixed_changes.architectures
+  set(['source', 'i386'])
+  >>> ed_mixed_changes.suite_name
+  'unstable'
+
+Push upload targeted suite into policy before the checks, nomally done
+by NascentUpload object:
+
   >>> modified_insecure_policy.setDistroReleaseAndPocket(
   ...      ed_mixed_changes.suite_name)
+
+
+Build contained objects, any error during this process will be stored
+in the returned generator. This way all the checks are performed and
+we can deal with the errors later:
 
   >>> errors = ed_mixed_changes.process_files()
   >>> errors
@@ -44,9 +67,7 @@ XXX: summary
   >>> len(list(errors))
   0
 
-XXX: explain why
-
-We can also extract the list of files from the upload.
+At this point we can inspect the list of files contained in the upload.
 
   >>> for uploaded_file in ed_mixed_changes.files:
   ...     print uploaded_file.filename
@@ -60,15 +81,23 @@ We can also extract the list of files from the upload.
   >>> [f.filename for f in ed_mixed_changes.source_package_files]
   ['ed_0.2-20.dsc', 'ed_0.2-20.diff.gz']
 
-=== Parsing Addresses ===
 
-Going back to the upload itself, at a very basic level a NascentUpload
+Similar to what we have in 'process_files' ChangesFile.verify is also
+a error generator
+
+  >>> errors = ed_mixed_changes.verify()
+  >>> len(list(errors))
+  0
+
+
+=== ChangesFile Parsing Addresses ===
+
+Going back to the upload itself, at a very basic level a ChangesFile
 allows us to probe the contents of the changes file to see things like
 the maintainer.
 
   >>> ed_mixed_changes.maintainer['rfc822']
   'James Troup <james@nocrew.org>'
-
 
 We can parse addresses and look them up in launchpad.
 
@@ -78,7 +107,6 @@ We can parse addresses and look them up in launchpad.
   u'Foo Bar'
   >>> addr['person'].creation_comment is None
   True
-
 
 If the address is unparsable, we get an error.
 
@@ -99,3 +127,151 @@ a new Person will be created.
 
   >>> addr['person'].creation_comment
   u'when the ed_0.2-20 package was uploaded to hoary/RELEASE'
+
+
+=== Signature Traces ===
+
+Changes file can be optionally GPG-signed, so ChangesFile has
+infrastructure to record this information for later checks with policy
+requirements.
+
+The ChangesFile signer IPerson, used to checks upload ACL, normally
+know as 'sponsor' or 'mentor':
+
+  >>> ed_mixed_changes.signer.displayname
+  u'Foo Bar'
+
+The IGPGKey used to sign this ChangesFile:
+
+  >>> ed_mixed_changes.signingkey.displayname
+  u'1024D/6C64A8C5'
+
+The IGPGKey fingerprint used to sign this ChangesFile:
+
+  >>> ed_mixed_changes.fingerprint
+  '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
+
+
+== DSCFile ==
+
+DSCFile class models the operations and checks needed for processing
+and storing a DSC file in the LP system.
+
+The DSC file itself contains information about what was used to build
+the given version of source.
+
+  >>> from canonical.archivepublisher.dscfile import (
+  ...    DSCFile, DSCUploadedFile)
+
+  >>> ed_mixed_dsc = DSCFile(
+  ...     datadir('ed_0.2-20.dsc'),
+  ...     'e31eeb0b6b3b87e1ea79378df864be18', 522, 'editors',
+  ...     'important', 'ed', '0.2-20', ed_mixed_changes,
+  ...     modified_insecure_policy, mock_logger_quiet)
+
+  >>> ed_mixed_dsc
+  <canonical.archivepublisher.dscfile.DSCFile ...>
+
+So this object is exactly the same than what we already have created
+in the ChangesFile instance.
+
+  >>> ed_mixed_changes.dsc
+  <canonical.archivepublisher.dscfile.DSCFile ...>
+
+The DSCFile also presents a similar behaviour to access its parsed
+contents:
+
+  >>> ed_mixed_dsc.source
+  'ed'
+  >>> ed_mixed_dsc.version
+  '0.2-20'
+  >>> ed_mixed_dsc.architecture
+  'any'
+  >>> ed_mixed_dsc.binary
+  'ed'
+
+
+The DSC is GPG-signed most of the time, so we can guarantee who was
+the author. The DSCFile class implements the same address parsing
+methods found in ChangesFile:
+
+  >>> ed_mixed_dsc.maintainer['rfc822']
+  'James Troup <james@nocrew.org>'
+
+The DSC signer IPerson:
+
+  >>> ed_mixed_dsc.signer.displayname
+  u'Foo Bar'
+
+The IGPGKey used to sign this DSC, which will be stored as the
+ISourcePackageRelease.dscsiginingkey:
+
+  >>> ed_mixed_dsc.signingkey.displayname
+  u'1024D/6C64A8C5'
+
+The IGPGKey fingerprint used to sign this DSC:
+
+  >>> ed_mixed_dsc.fingerprint
+  '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
+
+A DSCFile provides a verification API similiar to what we have in
+ChangesFile itself:
+
+  >>> errors = ed_mixed_dsc.verify()
+  >>> errors
+  <generator ...>
+  >>> len(list(errors))
+  0
+
+Apart of other consisteny checks DSCFile is able to check also ensure
+the digest declared in in the DSC matches the content of the files on
+disk:
+
+  >>> ed_broken_dsc = DSCFile(
+  ...     datadir('ed_0.2-20.dsc'),
+  ...     'e31eeb0b6b3b87e1ea79378df864ffff', 500, 'editors',
+  ...     'important', 'ed', '0.2-20', ed_mixed_changes,
+  ...     modified_insecure_policy, mock_logger_quiet)
+
+  >>> errors = ed_broken_dsc.verify()
+  >>> [str(err) for err in errors]
+  ['File ed_0.2-20.dsc mentioned in the changes has a checksum mismatch. e31eeb0b6b3b87e1ea79378df864be18 != e31eeb0b6b3b87e1ea79378df864ffff']
+
+
+=== Sub-DSC files or DSCUploadedFiles ===
+
+Sub-DSCFiles are DSCUploadedFile objects.
+
+  >>> ed_mixed_dsc.files[0]
+  <canonical.archivepublisher.dscfile.DSCUploadedFile ...>
+
+We can also inspect the list of files declared in this DSC:
+
+  >>> for dsc_file in ed_mixed_dsc.files:
+  ...     print dsc_file.filename
+  ed_0.2.orig.tar.gz
+  ed_0.2-20.diff.gz
+
+The DSCUploadedFile also inherit the ability to verify file sanity:
+
+  >>> ed_broken_dsc_file = DSCUploadedFile(
+  ...     datadir('ed_0.2-20.diff.gz'),
+  ...     'f9e1e5f13725f581919e9bfd6227ffff', 500,
+  ...     modified_insecure_policy, mock_logger_quiet)
+  >>> errors = ed_broken_dsc_file.verify()
+  >>> [str(err) for err in errors]
+  ['File ed_0.2-20.diff.gz mentioned in the changes has a checksum mismatch. f9e1e5f13725f581919e9bfd62272a05 != f9e1e5f13725f581919e9bfd6227ffff']
+
+
+== SourceUploadFile ==
+
+
+== DebBinaryUploadFile ==
+
+
+== UDebBinaryUploadFile ==
+
+
+== CustomUploadFile ==
+
+
