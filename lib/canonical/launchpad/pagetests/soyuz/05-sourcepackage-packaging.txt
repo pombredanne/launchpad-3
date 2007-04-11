@@ -5,14 +5,12 @@ package's +packaging page:
 
   >>> user_browser.open(
   ...     "http://launchpad.dev/ubuntu/warty/+source/mozilla/+packaging")
+
   >>> print extract_text(
-  ...     find_tags_by_class(user_browser.contents, 'informational'))
-  <BLANKLINE>
-  Launchpad doesn&#8217;t know which project and series this
-  package
+  ...     find_tags_by_class(user_browser.contents, 'informational')[0])
+  Launchpad doesn&#8217;t know which project and series this package
   belongs to.
   If you can, please let us know.
-  <BLANKLINE>
 
 As we could see 'mozilla' sourcepackage has no established Packaging
 records. We can add or edit the Packaging information for a specific
@@ -30,18 +28,14 @@ Now we can check if the Packaging record for "grumpy" is annotated:
   ...     "http://launchpad.dev/ubuntu/grumpy/+source/mozilla/+packaging")
   >>> print extract_text(
   ...     find_tag_by_id(user_browser.contents, 'packaging-table'))
-  <BLANKLINE>
   Upstream links for all source packages called
   "mozilla"
-  <BLANKLINE>
   Distribution
   Release
   Upstream Project Series
-  <BLANKLINE>
   Ubuntu
   Grumpy
   Mozilla Firefox Series: trunk
-  <BLANKLINE>
 
 
 The same Packaging record is also presented in "warty", because the
@@ -51,18 +45,14 @@ list of Packaging records depends only on the source package name:
   ...     "http://launchpad.dev/ubuntu/warty/+source/mozilla/+packaging")
   >>> print extract_text(
   ...     find_tag_by_id(user_browser.contents, 'packaging-table'))
-  <BLANKLINE>
   Upstream links for all source packages called
   "mozilla"
-  <BLANKLINE>
   Distribution
   Release
   Upstream Project Series
-  <BLANKLINE>
   Ubuntu
   Grumpy
   Mozilla Firefox Series: trunk
-  <BLANKLINE>
 
 
 Now, let's add a Packaging record to the warty context:
@@ -79,33 +69,25 @@ Now in the "warty" context both Packaging records are presented:
   ...     "http://launchpad.dev/ubuntu/warty/+source/mozilla/+packaging")
   >>> print extract_text(
   ...     find_tag_by_id(user_browser.contents, 'packaging-table'))
-  <BLANKLINE>
   Upstream links for all source packages called
   "mozilla"
-  <BLANKLINE>
   Distribution
   Release
   Upstream Project Series
-  <BLANKLINE>
   Ubuntu
   Grumpy
   Mozilla Firefox Series: trunk
-  <BLANKLINE>
   Ubuntu
   Warty
   Mozilla Firefox Series: 1.0
-  <BLANKLINE>
 
 And the Packaging record for "warty" context is highlighted:
 
   >>> print extract_text(
-  ...     find_tags_by_class(user_browser.contents, 'highlight'))
-  <BLANKLINE>
+  ...    find_tags_by_class(user_browser.contents, 'highlight')[0])
   Ubuntu
   Warty
   Mozilla Firefox Series: 1.0
-  <BLANKLINE>
-
 
 In the same way when we are back to the "grumpy" context the both
 stored Packaging records are presented but now, the "grumpy" Packaging
@@ -113,30 +95,23 @@ record is highlighted.
 
   >>> user_browser.open(
   ...     "http://launchpad.dev/ubuntu/grumpy/+source/mozilla/+packaging")
+
   >>> print extract_text(
   ...     find_tag_by_id(user_browser.contents, 'packaging-table'))
-  <BLANKLINE>
   Upstream links for all source packages called
   "mozilla"
-  <BLANKLINE>
   Distribution
   Release
   Upstream Project Series
-  <BLANKLINE>
   Ubuntu
   Grumpy
   Mozilla Firefox Series: trunk
-  <BLANKLINE>
   Ubuntu
   Warty
   Mozilla Firefox Series: 1.0
-  <BLANKLINE>
 
   >>> print extract_text(
-  ...     find_tags_by_class(user_browser.contents, 'highlight'))
-  <BLANKLINE>
+  ...     find_tags_by_class(user_browser.contents, 'highlight')[0])
   Ubuntu
   Grumpy
   Mozilla Firefox Series: trunk
-  <BLANKLINE>
-
