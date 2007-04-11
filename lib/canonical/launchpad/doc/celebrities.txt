@@ -56,7 +56,7 @@ tracker
 We have an Answer Tracker Janitor which takes care of expiring old
 questions.
 
-  >>> answer_tracker_janitor = personset.getByName('support-tracker-janitor')
+  >>> answer_tracker_janitor = personset.getByName('answer-tracker-janitor')
   >>> celebs.answer_tracker_janitor == answer_tracker_janitor
   True
 
