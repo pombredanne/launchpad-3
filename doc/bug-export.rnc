@@ -7,6 +7,11 @@ start = lpbugs
 boolean = "True" | "False"
 lpname = xsd:string { pattern = "[a-z0-9][a-z0-9\+\.\-]*" }
 cvename = xsd:string { pattern = "(19|20)[0-9][0-9]-[0-9][0-9][0-9][0-9]" }
+
+# XXX: 20060411 jamesh
+# These status and importance values need to be kept in sync with the
+# rest of Launchpad.  However, there are not yet any tests for this.
+#     https://bugs.launchpad.net/bugs/105401
 status = (
   "UNCONFIRMED"  |
   "NEEDSINFO"    |
@@ -42,6 +47,7 @@ bug = element bug {
   element duplicateof { xsd:integer }? &
   element datecreated { xsd:dateTime } &
   element nickname { lpname }? &
+  # The following will likely be renamed summary in a future version.
   element title { text } &
   element description { text } &
   element reporter { person } &
@@ -79,6 +85,7 @@ attachment = element attachment {
   attribute href { xsd:anyURI }? &
   element type { "PATCH" | "UNSPECIFIED" }? &
   element filename { text }? &
+  # The following will likely be renamed summary in a future version.
   element title { text }? &
   element mimetype { text }? &
   element contents { xsd:base64Binary }
