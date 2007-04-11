@@ -5,8 +5,6 @@ __metaclass__ = type
 import os
 import subprocess
 import sys
-import shutil
-import tempfile
 import unittest
 
 from canonical.config import config
