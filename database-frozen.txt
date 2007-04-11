@@ -8,6 +8,6 @@ means.
 
 Status
 ------
-Database patches can be landed at the moment. Beta code updates are
-blocked. If this is a problem, notify stub.
+launchpad/beta does not allow database updates as it needs to be kept in
+sync with the production database.
 
