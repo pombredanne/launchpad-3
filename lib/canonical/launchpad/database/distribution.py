@@ -793,7 +793,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 # XXX: is the first record the most appropriate?
                 binaries = list(publishing.publishedBinaries()[:1])
                 if binaries:
-                    binarypackagename = binaries[0].binarypackagerelease.binarypackagename
+                    binarypackagename = \
+                        binaries[0].binarypackagerelease.binarypackagename
                 else:
                     binarypackagename = None
 
