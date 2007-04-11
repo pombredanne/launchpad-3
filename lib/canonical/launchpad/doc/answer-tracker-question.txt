@@ -104,17 +104,31 @@ It is also possible to adapt a question to its IQuestionTarget.
     >>> verifyObject(IQuestionTarget, target)
     True
     
-The question can be transfered to a new IQuestionTarget
+The question can be transferred to a new IQuestionTarget. The transfer
+does not change the question's status.
 
+    >>> print firefox_question.status.title
+    Open
+    
     >>> thunderbird = getUtility(IProductSet)['thunderbird']
     >>> thunderbird_question_target = IQuestionTarget(thunderbird)
-    >>> firefox_question.transfer(thunderbird_question_target)
+    >>> message = firefox_question.transfer(thunderbird_question_target, 
+    ...     sample_person, 'This question pertains to Thunderbird.')
     >>> firefox_question.target == thunderbird
     True
 
-And back again
+    >>> from canonical.launchpad.interfaces import IQuestionMessage    
+    >>> print message.new_status.name
+    OPEN
 
-    >>> firefox_question.transfer(firefox)
+    >>> print firefox_question.status.title
+    Open
+        
+There are no restrictions to the number of IQuestionTarget that
+a question can be transferred to.
+
+    >>> message = firefox_question.transfer(firefox,
+    ...     sample_person, 'My mistake, this question is about Firefox.')
     >>> firefox_question.target == firefox
     True
 

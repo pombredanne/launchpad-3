@@ -7,7 +7,7 @@ QuestionTarget instead of being rejected.
 The user must login to access the Transfer a question view:
 
     >>> anon_browser.open('http://answers.launchpad.dev/ubuntu/+ticket/10')
-    >>> anon_browser.getLink('Transfer a question').click()
+    >>> anon_browser.getLink('Transfer question').click()
     Traceback (most recent call last):
       ...
     Unauthorized...
@@ -27,11 +27,11 @@ question view.
     >>> print user_browser.title
     Transfer question #10 to another project
     
-He is asked to enter a project and provide a reason to transfer the
-question.
+He is asked to enter a project and provide a explanation to transfer
+the question.
 
     >>> print find_tags_by_class(user_browser.content, 'message')
-    Please enter or choose a project and provide an reason.
+    Please enter or choose a project and provide an explanation.
     Clicking the 'Transfer' button, will transfer the question to the
     project.
 
@@ -45,7 +45,7 @@ the form again with a message reminding him of the form requirements.
     
     >>> print find_tags_by_class(user_browser.content, 'informational message')
     >>> print find_tags_by_class(user_browser.content, 'message')
-    You must enter a reason.
+    You must provide an explanation message.
 
 The project is still selected.
 

@@ -18,6 +18,7 @@ __all__ = [
     'QuestionRejectView',
     'QuestionSetView',
     'QuestionSubscriptionView',
+    'QuestionTransferView',
     'QuestionWorkflowView',
     ]
 
@@ -46,7 +47,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadStatisticSet,
     IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionSet,
-    IQuestionTarget, UnexpectedFormData)
+    IQuestionTransferForm, IQuestionTarget, UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
@@ -788,6 +789,43 @@ class SearchAllQuestionsView(SearchQuestionsView):
             return _('There are no questions with the requested statuses.')
 
 
+class QuestionTransferView(LaunchpadFormView):
+    """A view for transfering questions to other QuestionTargets."""
+    
+    schema = IQuestionTransferForm
+    custom_widget('questiontarget', ProjectScopeWidget)
+
+    @property
+    def target_css_class(self):
+        """The CSS class for used in the scope widget."""
+        if self.questiontarget_error:
+            return 'error'
+        else:
+            return None
+
+    @property
+    def questiontarget_error(self):
+        """The error message for the scope widget."""
+        return self.getWidgetError('target')
+            
+    def validate(self, data):
+        """See LaunchpadFormView."""
+        if 'message' not in data:
+            self.setFieldError(
+                'message', _('You must provide an explanation message.'))
+        if data['questiontarget'] is None:
+            self.setFieldError('questiontarget', _('You must choose a project.'))
+
+    @action(_('Transfer'))
+    def transfer_action(self, action, data):
+        """Transfer the question to another QuestionTarget."""
+        self.context.transfer(self.project, self.user, data['message'])
+        self.request.response.addNotification(
+            _('You have transferred the question.'))
+        self.request.response.redirect(canonical_url(self.context))
+        return ''
+
+
 class QuestionContextMenu(ContextMenu):
 
     usedfor = IQuestion
@@ -797,6 +835,7 @@ class QuestionContextMenu(ContextMenu):
         'changestatus',
         'history',
         'subscription',
+        'transfer',
         'linkbug',
         'unlinkbug',
         'makebug',
@@ -831,6 +870,10 @@ class QuestionContextMenu(ContextMenu):
             text = 'Subscribe'
             icon = 'mail'
         return Link('+subscribe', text, icon=icon)
+        
+    def transfer(self):
+        text = 'Transfer question'
+        return Link('+transfer', text, icon='edit')
 
     def linkbug(self):
         text = 'Link existing bug'

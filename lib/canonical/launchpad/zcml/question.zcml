@@ -118,6 +118,12 @@
     class="canonical.launchpad.browser.QuestionSubscriptionView"
     permission="launchpad.AnyPerson" />
 
+  <browser:page
+    name="+transfer"
+    template="../templates/question-transfer.pt"
+    for="canonical.launchpad.interfaces.IQuestion"
+    class="canonical.launchpad.browser.QuestionTransferView"
+    permission="launchpad.AnyPerson" />
   <browser:generalform
     name="+makebug"
     schema="canonical.launchpad.interfaces.IBug"

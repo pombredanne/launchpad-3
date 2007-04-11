@@ -362,7 +362,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         self.dateanswered = None
         return msg
         
-    def transfer(self, question_target):
+    def transfer(self, question_target, user, comment, datecreated=None):
         """See IQuestion."""
         assert IQuestionTarget.providedBy(question_target), (
             "The target must be an IQuestionTarget")
@@ -375,6 +375,10 @@ class Question(SQLBase, BugLinkTargetMixin):
         else:
             raise AssertionError("Unknown IQuestionTarget type of %s" %
                 question_target)
+        return self._newMessage(
+            user, comment, datecreated=datecreated,
+            action=QuestionAction.COMMENT, new_status=self.status,
+            update_question_dates=False)
 
     # subscriptions
     def subscribe(self, person):
