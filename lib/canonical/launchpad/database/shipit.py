@@ -4,7 +4,8 @@ __metaclass__ = type
 __all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
            'ShippingRequest', 'ShippingRequestSet', 'RequestedCDs',
            'Shipment', 'ShipmentSet', 'ShippingRun', 'ShippingRunSet',
-           'ShipItReport', 'ShipItReportSet']
+           'ShipItReport', 'ShipItReportSet',
+           'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT']
 
 from StringIO import StringIO
 import csv
@@ -17,8 +18,8 @@ from zope.component import getUtility
 
 import pytz
 
-from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
+from sqlobject.sqlbuilder import AND, SQLConstant
+from sqlobject import ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol
 
 from canonical.config import config
 from canonical.uuid import generate_uuid
@@ -42,9 +43,12 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
     IRequestedCDs, IShippingRequestSet, ILaunchpadCelebrities, IShipment,
     IShippingRun, IShippingRunSet, IShipmentSet, ShippingRequestPriority,
-    IShipItReport, IShipItReportSet, ShipItConstants,
-    SOFT_MAX_SHIPPINGRUN_SIZE, ILibraryFileAliasSet)
+    IShipItReport, IShipItReportSet, ShipItConstants, ILibraryFileAliasSet,
+    SOFT_MAX_SHIPPINGRUN_SIZE, MAX_CDS_FOR_UNTRUSTED_PEOPLE)
 from canonical.launchpad.database.country import Country
+
+
+MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 class ShippingRequest(SQLBase):
@@ -965,19 +969,21 @@ class StandardShipItRequestSet:
                 quantityppc=quantityppc, quantityamd64=quantityamd64,
                 isdefault=isdefault)
 
-    def getAll(self):
+    def getByFlavour(self, flavour, user=None):
         """See IStandardShipItRequestSet"""
-        return StandardShipItRequest.select()
-
-    def getByFlavour(self, flavour):
-        """See IStandardShipItRequestSet"""
-        return StandardShipItRequest.selectBy(flavour=flavour)
+        query = "flavour = %s" % sqlvalues(flavour)
+        if user is None or not user.is_trusted_on_shipit:
+            query += (" AND quantityx86 + quantityppc + quantityamd64 <= %s"
+                      % sqlvalues(MAX_CDS_FOR_UNTRUSTED_PEOPLE))
+        orderBy = SQLConstant("quantityx86 + quantityppc + quantityamd64, id")
+        return StandardShipItRequest.select(query, orderBy=orderBy)
 
     def getAllGroupedByFlavour(self):
         """See IStandardShipItRequestSet"""
         standard_requests = {}
         for flavour in ShipItFlavour.items:
-            standard_requests[flavour] = self.getByFlavour(flavour)
+            standard_requests[flavour] = StandardShipItRequest.selectBy(
+                flavour=flavour)
         return standard_requests
 
     def get(self, id, default=None):

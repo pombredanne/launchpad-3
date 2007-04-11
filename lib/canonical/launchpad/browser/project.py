@@ -278,7 +278,7 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
 
     def new(self):
         text = 'Ask a question'
-        return Link('+addticket', text, icon='add')
+        return Link('+addquestion', text, icon='add')
 
 
 class ProjectTranslationsMenu(ApplicationMenu):
@@ -507,3 +507,4 @@ class ProjectAddQuestionView(QuestionAddView):
             return self.widgets['product'].getInputValue()
         else:
             return None
+
