@@ -50,6 +50,9 @@ class DistroMirrorURIField(URIField):
         # URIField has already established that we have a valid URI
         uri = URI(value)
 
+        # This field is also used when creating new mirrors and in that case
+        # self.context is not an IDistributionMirror so it doesn't make sense
+        # to try to get the existing value of the attribute.
         if IDistributionMirror.providedBy(self.context):
             orig_value = self.get(self.context)
             if orig_value is not None and URI(orig_value) == uri:
