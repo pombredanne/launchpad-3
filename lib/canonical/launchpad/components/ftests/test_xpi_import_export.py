@@ -170,7 +170,7 @@ class XpiTestCase(LaunchpadZopelessTestCase):
 
         self.failUnlessEqual(
             [potmsgset.sourcecomment for potmsgset in potmsgsets],
-            [None, None, None, None,
+            [None, u"Translators, don't play with fire!", None, None,
              u"Translators, if you're older than six, don't translate this",
              None, None, None, u"Default key in en_US: 'M'",
              u"Default key in en_US: 'm'",
