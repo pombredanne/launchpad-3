@@ -23,20 +23,13 @@ For further info about DDTP see:
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
-  >>> from canonical.archivepublisher.tests import datadir
-
   >>> distro_release_set = getUtility(IDistroReleaseSet)
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
 
-  >>> import logging
-
-  >>> class MockOptions:
-  ...     distro = "ubuntutest"
-  ...     distrorelease = None
-  >>> mock_options = MockOptions()
+  >>> from canonical.archivepublisher.nascentupload import NascentUpload
+  >>> from canonical.archivepublisher.tests import (
+  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
@@ -49,27 +42,26 @@ we need to access and modify DistroReleaseQueue records and other tables.
 First, test the rejection of a missapplied changesfile name, which
 doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
 
+  >>> sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntutest', distrorelease=None)
+
   >>> upload = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('ddtp-tarball'),
-  ...     "translations-main_20060728.changes",
-  ...     logging.getLogger())
+  ...     datadir('ddtp-tarball/translations-main_20060728.changes'),
+  ...     sync_policy, mock_logger_quiet)
   Traceback (most recent call last):
   ...
   FatalUploadError: translations-main_20060728.changes -> inappropriate changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
 
 Now do a proper upload into the system.
 
-  >>> class MockLogger:
-  ...     def debug(self, s):
-  ...         print "DEBUG:", s
+  >>> insecure_policy = getPolicy(
+  ...     name='insecure', distro='ubuntutest', distrorelease=None)
 
   >>> upload = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir('ddtp-tarball'),
-  ...     "translations-main_20060728_all.changes",
-  ...     MockLogger())
+  ...     datadir('ddtp-tarball/translations-main_20060728_all.changes'),
+  ...     insecure_policy, mock_logger)
   DEBUG: Verifying signature on translations-main_20060728_all.changes
 
-  >>> upload.policy.setOptions(mock_options)
   >>> upload.process()
   DEBUG: Beginning processing.
   DEBUG: Verifying the changes file.
@@ -196,15 +188,12 @@ index , the "bn" one, and left the rest untouched, this feature is
 know as "partial update" and will save some storage when fixing specific
 language indexes or adding new ones:
 
-  >>> class QuietLogger:
-  ...     def debug(self, s):
-  ...         pass
+  >>> insecure_policy = getPolicy(
+  ...     name='insecure', distro='ubuntutest', distrorelease=None)
 
   >>> upload = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir('ddtp-tarball'),
-  ...     "translations-main_20060817_all.changes",
-  ...     QuietLogger())
-  >>> upload.policy.setOptions(mock_options)
+  ...     datadir('ddtp-tarball/translations-main_20060817_all.changes'),
+  ...     insecure_policy, mock_logger_quiet)
   >>> upload.process()
   >>> upload.is_rejected
   False

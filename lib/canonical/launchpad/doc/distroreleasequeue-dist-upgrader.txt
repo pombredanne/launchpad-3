@@ -6,18 +6,12 @@ This test will check the upload of dist-upgrade tarballs
   ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
 
   >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
-  >>> from canonical.archivepublisher.tests import datadir
+  >>> from canonical.archivepublisher.tests import (
+  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> distro_release_set = getUtility(IDistroReleaseSet)
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
-
-  >>> import logging
-
-  >>> class MockOptions:
-  ...     distro = "ubuntutest"
-  ...     distrorelease = None
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
@@ -28,26 +22,26 @@ Login as an admin.
 
 First, test the rejection of a missapplied changesfile name:
 
-  >>> upload = NascentUpload(findPolicyByName('sync'),
-  ...     datadir(''), "dist-upgrader_20060302.0120.changes",
-  ...     logging.getLogger())
+  >>> sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntutest', distrorelease=None)
+
+  >>> upload = NascentUpload(
+  ...     datadir('dist-upgrader/dist-upgrader_20060302.0120.changes'),
+  ...     sync_policy, mock_logger)
   Traceback (most recent call last):
   ...
   FatalUploadError: dist-upgrader_20060302.0120.changes -> inappropriate changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
 
 Now do a proper upload into the system.
 
-  >>> class MockLogger:
-  ...     def debug(self, s):
-  ...         print "DEBUG:", s
+  >>> insecure_policy = getPolicy(
+  ...     name='insecure', distro='ubuntutest', distrorelease=None)
 
-  >>> upload = NascentUpload(findPolicyByName('insecure'),
-  ...     datadir(''), "dist-upgrader_20060302.0120_all.changes",
-  ...     MockLogger())
+  >>> upload = NascentUpload(
+  ...     datadir('dist-upgrader/dist-upgrader_20060302.0120_all.changes'),
+  ...     insecure_policy, mock_logger)
   DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
 
-  >>> mock_options = MockOptions()
-  >>> upload.policy.setOptions(mock_options)
   >>> upload.process()
   DEBUG: Beginning processing.
   DEBUG: Verifying the changes file.
@@ -227,27 +221,26 @@ If any problem happen during the custom publication, the error will be
 printed and the queue item will remain in ACCEPTED queue waiting for
 manual intervention.
 
-  >>> upload = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir('dist-upgrader'),
-  ...     "dist-upgrader_20070219.1234_all.changes", MockLogger())
+  >>> insecure_policy = getPolicy(
+  ...     name='insecure', distro='ubuntutest', distrorelease=None)
 
-  >>> mock_options = MockOptions()
-  >>> upload.policy.setOptions(mock_options)
+  >>> upload = NascentUpload(
+  ...     datadir('dist-upgrader/dist-upgrader_20070219.1234_all.changes'),
+  ...     insecure_policy, mock_logger)
+  DEBUG: Verifying signature on dist-upgrader_20070219.1234_all.changes
+
   >>> upload.process()
   DEBUG: Beginning processing.
-  DEBUG: Checking signature on changes file.
-  DEBUG: Verifying signature on dist-upgrader_20070219.1234_all.changes
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
-  DEBUG: Finding and applying overrides.
   DEBUG: Foo Bar (16) is an uploader for main.
   DEBUG: Finished checking upload.
 
   >>> success, msgs = upload.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
-  DEBUG: Creating a New queue entry
+  DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
 
 Make the just-uploaded librarian file visible:
@@ -262,7 +255,7 @@ Check current archive status:
 
 Publish the custom upload:
 
-  >>> upload.queue_root.realiseUpload(MockLogger())
+  >>> upload.queue_root.realiseUpload(mock_logger)
   DEBUG: Publishing custom dist-upgrader_20070219.1234_all.tar.gz to ubuntutest/breezy-autotest
   ERROR: Queue item ignored: bad version found in '.../dist-upgrader_20070219.1234_all.tar.gz': ('Bad upstream version format', 'foobar')
 

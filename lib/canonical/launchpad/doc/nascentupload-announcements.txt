@@ -50,7 +50,6 @@ the same behaviour than using insecure policy, apart of allowing
 unsigned changes):
 
   >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
   >>> from canonical.archivepublisher.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
