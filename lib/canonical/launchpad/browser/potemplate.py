@@ -431,6 +431,12 @@ class BaseExportView(LaunchpadView):
             def __init__(self, title, value):
                 self.title = title
                 self.value = value
+                self.is_default = False
+                if value == RosettaFileFormat.PO.name:
+                    # Right now, PO format is the default format with exports.
+                    # Once we add more formats support, the default will
+                    # depend on the kind of resource.
+                    self.is_default = True
 
         formats = [
             RosettaFileFormat.PO,

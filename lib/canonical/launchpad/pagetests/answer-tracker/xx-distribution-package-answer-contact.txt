@@ -45,7 +45,7 @@ To register himself as anwer contact, the user clicks on the
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open(
-    ...     'http://launchpad.dev/ubuntu/+source/evolution/+tickets')
+    ...     'http://launchpad.dev/ubuntu/+source/evolution/+questions')
     >>> browser.getLink('Answers').click()
     >>> browser.getLink('Set answer contact').click()
     >>> print browser.title

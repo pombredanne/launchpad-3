@@ -75,6 +75,9 @@ class ContextTitle(SubstitutionHelper):
     def __call__(self, context, view):
         return self.text % context.title
 
+class ContextDisplayname(SubstitutionHelper):
+    def __call__(self, context, view):
+        return self.text % context.displayname
 
 class ContextBrowsername(SubstitutionHelper):
     def __call__(self, context, view):
@@ -120,6 +123,9 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
+branch_edit_subscription = ContextDisplayName(smartquote(
+    'Edit subscription to branch "%s"'))
+
 def branch_index(context, view):
     if context.author:
         return smartquote('"%s" branch by %s in Launchpad') % (
@@ -127,7 +133,8 @@ def branch_index(context, view):
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
-branch_subscription = ContextDisplayName(smartquote('Subscription to branch "%s"'))
+branch_subscription = ContextDisplayName(smartquote(
+    'Subscription to branch "%s"'))
 
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
@@ -432,6 +439,14 @@ karmaaction_index = 'Karma actions'
 karmaaction_edit = 'Edit karma action'
 
 karmacontext_topcontributors = ContextTitle('Top %s Contributors')
+
+language_index = ContextDisplayname("%s in Launchpad")
+
+language_add = 'Add a new Language to Launchpad'
+
+language_admin = ContextDisplayname("Edit %s")
+
+languageset_index = 'Languages in Launchpad'
 
 # launchpad_debug doesn't need a title.
 
