@@ -81,6 +81,6 @@ question.
     ... "Is there a way to configure Thunderbird to display SVG properly?\n")
     >>> user_browser.getControl('Add').click()
     >>> user_browser.url
-    '.../thunderbird/+ticket/...'
+    '.../thunderbird/+question/...'
     >>> print user_browser.title
     Mozilla Thunderbird question #...Problem displaying complex...
