@@ -1,10 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Start script for Launchpad: loads configuration and starts the server.
-
-Usage: runlaunchpad.py [-r librarian,sftp,authserver,buildsequencer] [<zope args>]
-"""
-
 __metaclass__ = type
 __all__ = ['start_launchpad']
 
@@ -22,6 +17,7 @@ from canonical.pidfile import make_pidfile, pidfile_path
 
 
 ROCKETFUEL_ROOT = None
+TWISTD_SCRIPT = None
 
 
 def make_abspath(path):
@@ -58,7 +54,6 @@ class TacFile(object):
 
         self.pre_launch()
 
-        twistd_script = make_abspath('sourcecode/twisted/bin/twistd')
         pidfile = pidfile_path(self.name)
         logfile = self.config.logfile
         tacfile = make_abspath(self.tac_filename)
@@ -151,8 +146,9 @@ def process_arguments(args):
 
 
 def start_launchpad(argv=list(sys.argv)):
-    global ROCKETFUEL_ROOT
+    global ROCKETFUEL_ROOT, TWISTD_SCRIPT
     ROCKETFUEL_ROOT = os.path.dirname(os.path.abspath(argv[0]))
+    TWISTD_SCRIPT = make_abspath('sourcecode/twisted/bin/twistd')
 
     # Disgusting hack to use our extended config file schema rather than the
     # Z3 one. TODO: Add command line options or other to Z3 to enable overriding
