@@ -139,6 +139,10 @@ components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
                            filetransfer.ISFTPServer)
 
 
+class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
+    """UnauthorizedLogin which should be reported to the user."""
+
+
 class Realm:
     implements(IRealm)
 
@@ -211,15 +215,14 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
             self._ebBadAuth(ConchError('auth returned none'))
         d.addCallbacks(self._cbFinishedAuth)
         d.addErrback(self._ebMaybeBadAuth)
-        # The following if statement and consequence do not appear in the
-        # original Twisted source.
-        if self.method == 'publickey':
-            d.addErrback(self._ebLogToBanner)
+        # The following line does not appear in the original Twisted source.
+        d.addErrback(self._ebLogToBanner)
         d.addErrback(self._ebBadAuth)
         # Not in original Twisted method
         return d
 
     def _ebLogToBanner(self, reason):
+        reason.trap(UserDisplayedUnauthorizedLogin)
         self.sendBanner(reason.getErrorMessage())
         return reason
 
@@ -259,7 +262,7 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
 
     def _checkUserExistence(self, userDict, credentials):
         if len(userDict) == 0:
-            raise UnauthorizedLogin(
+            raise UserDisplayedUnauthorizedLogin(
                 "No such Launchpad account: %s" % credentials.username)
 
         authorizedKeys = self.authserver.getSSHKeys(credentials.username)
@@ -278,7 +281,7 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             return False
 
         if len(keys) == 0:
-            raise UnauthorizedLogin(
+            raise UserDisplayedUnauthorizedLogin(
                 "Launchpad user %r doesn't have a registered SSH key"
                 % credentials.username)
 
