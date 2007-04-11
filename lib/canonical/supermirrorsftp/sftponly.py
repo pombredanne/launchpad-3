@@ -194,8 +194,8 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         self.transport.sendPacket(userauth.MSG_USERAUTH_BANNER,
                                   NS(bytes) + NS(language))
 
-    # XXX - Copied from twisted/conch/ssh/userauth.py, with the final line
-    # added. In Twisted r19857 and earlier, this method does not return a
+    # XXX - Copied from twisted/conch/ssh/userauth.py, with modifications
+    # noted. In Twisted r19857 and earlier, this method does not return a
     # Deferred, but should. See http://twistedmatrix.com/trac/ticket/2528 for
     # progress.
     # -- Jonathan Lange, 2007-03-19
@@ -211,17 +211,17 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
             self._ebBadAuth(ConchError('auth returned none'))
         d.addCallbacks(self._cbFinishedAuth)
         d.addErrback(self._ebMaybeBadAuth)
+        # The following if statement and consequence do not appear in the
+        # original Twisted source.
         if self.method == 'publickey':
             d.addErrback(self._ebLogToBanner)
         d.addErrback(self._ebBadAuth)
+        # Not in original Twisted method
         return d
 
     def _ebLogToBanner(self, reason):
         self.sendBanner(reason.getErrorMessage())
         return reason
-
-    def _ebBadAuth(self, reason):
-        return userauth.SSHUserAuthServer._ebBadAuth(self, reason)
 
 
 class Factory(factory.SSHFactory):
