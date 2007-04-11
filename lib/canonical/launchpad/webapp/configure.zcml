@@ -101,12 +101,70 @@
         name="count"
         />
 
+    <!-- TALES macro: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PageMacroDispatcher"
+        name="macro"
+        />
+
     <!-- TALES htmlform: namespace -->
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.HTMLFormAPI"
         name="htmlform"
+        />
+
+    <!-- TALES image: namespace -->
+    <adapter
+        for="*"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ObjectImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IKarmaCategory"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.KarmaCategoryImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTask"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMilestone"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MilestoneImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBuild"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BuildImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.ISpecification"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SpecificationImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
+        for="canonical.launchpad.browser.PillarSearchItem"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PillarSearchItemAPI"
+        name="image"
         />
 
     <!-- TALES fmt: namespace -->
@@ -121,15 +179,17 @@
         name="fmt"
         />
 
-    <!-- The next directive should be registered for 'int' only.
-        However, there's a bug in adapter registration that stops
-        this working.  To be fixed in ZopeX3 RSN.
-        XXX: SteveAlexander, 2005-05-21.
-        -->
     <adapter
-        for="*"
+        for="int"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.DBSchemaAPI"
+        name="lp"
+        />
+
+    <adapter
+        for="dict"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.GotoStructuralObject"
         name="lp"
         />
 
@@ -183,23 +243,9 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBugTask"
+        for="canonical.launchpad.interfaces.IPerson"
         provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IMilestone"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
-        name="fmt"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBuild"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BuildFormatterAPI"
+        factory="canonical.launchpad.webapp.tales.PersonFormatterAPI"
         name="fmt"
         />
 
@@ -322,7 +368,7 @@
         permission="zope.Public"
         template="../templates/rdf-macros.pt"
         />
-
+<!--
     <content
         class="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter">
         <factory id="zope.da.LaunchpadDA" />
@@ -335,7 +381,7 @@
             interface="zope.app.rdb.interfaces.IZopeDatabaseAdapterManagement"
             />
     </content>
-
+-->
     <!-- Launchpad publication machinery. We have customized publication
     and requests that need to be hooked up.
     -->
@@ -408,6 +454,12 @@
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
         handler="canonical.database.revision.confirm_dbrevision_on_startup"
+        />
+
+    <!-- Confirm that no main thread event handlers use the connection cache -->
+    <subscriber
+        for="zope.app.appsetup.IProcessStartingEvent"
+        handler="canonical.launchpad.webapp.adapter.break_main_thread_db_access"
         />
 
     <subscriber

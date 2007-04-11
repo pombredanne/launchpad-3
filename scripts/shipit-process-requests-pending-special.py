@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 """Script to process requests with a PENDINGSPECIAL status.

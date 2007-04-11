@@ -249,6 +249,7 @@ person uploaded (where he isn't the maintainer).
     >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
     ...            sprelease.version)
+    (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
     (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
@@ -267,7 +268,8 @@ for a Person:
 
   >>> carlos = getUtility(IPersonSet).getByName('carlos')
   >>> [pt.pofile.title for pt in carlos.translation_history]
-  [u'Spanish (es) translation of man in Ubuntu Hoary package "evolution"',
+  [u'Spanish (es) translation of alsa-utils in alsa-utils trunk',
+   u'Spanish (es) translation of man in Ubuntu Hoary package "evolution"',
    u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
    u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
    u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
@@ -328,11 +330,16 @@ Next, Carlos has three incomplete specs *related* to him:
 
 Carlos has 2 specifications assigned to him:
 
-    >>> filter = [SpecificationFilter.ASSIGNEE]
-    >>> for spec in carlos.specifications(filter=filter):
+    >>> for spec in carlos.assigned_specs:
     ...     print spec.name
     svg-support
     extension-manager-upgrades
+
+But from these two, only one has started.
+
+    >>> [(spec.name, spec.is_started)
+    ...  for spec in carlos.assigned_specs_in_progress]
+    [(u'svg-support', True)]
 
 Just for fun, lets check the SAB. He should have one spec for which he
 is the approver.
@@ -411,6 +418,37 @@ To check if a person is an Ubuntero, use IPerson.is_ubuntero:
 
     >>> foobar.is_ubuntero
     True
+
+
+Translators for a given language
+--------------------------------
+
+We can get the list of translators that did some translation in Launchpad and
+expressed their interest for a concrete language.
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     ILanguageSet, IPersonSet, IKarmaCacheManager)
+
+  # Sample data is not complete for this test, so we need to note that another
+  # Spanish translator expressed its interest on doing Spanish translations.
+  # That other person is Foo Bar (name16).
+  >>> personset = getUtility(IPersonSet)
+  >>> foo_bar = personset.getByName('name16')
+  >>> print foo_bar.displayname
+  Foo Bar
+  >>> languageset = getUtility(ILanguageSet)
+  >>> spanish = languageset.getLanguageByCode('es')
+  >>> foo_bar.addLanguage(spanish)
+  >>> translators = personset.getTranslatorsByLanguage(spanish)
+  >>> for translator in translators:
+  ...     karma = 0
+  ...     for karma_category_cache in translator.karma_category_caches:
+  ...         if (karma_category_cache.category.name == 'translations'):
+  ...             karma = karma_category_cache.karmavalue
+  ...     print (translator.displayname, karma)
+  (u'Foo Bar', 164)
+  (u'Carlos Perell\xf3 Mar\xedn', 9)
+
 
 Branches
 --------

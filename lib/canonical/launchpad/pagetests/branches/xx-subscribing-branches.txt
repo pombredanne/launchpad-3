@@ -1,0 +1,123 @@
+= Helper Functions =
+
+A quick helper function to list the subscribed people.
+
+  >>> def print_subscribers(contents):
+  ...     portlet = find_tags_by_class(contents, 'person')[0]
+  ...     people = portlet.fetch('a')
+  ...     for person in people:
+  ...         print person.renderContents()
+
+Another to print the informational message.
+
+  >>> def print_informational_message(contents):
+  ...     message = find_tags_by_class(contents, 'informational message')
+  ...     if message:
+  ...         print message[0].renderContents()
+
+= Subscribing to Branches =
+
+In order to subscribe to a branch, the user must be logged in.
+
+  >>> anon_browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main')
+  >>> anon_browser.getLink('Subscribe')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+Let us subscribe to one of the branches. First, let's make sure we can see the
+link "Subscribe" from a branch's page.
+
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+
+Initially there should be no subscribers.
+
+  >>> print_subscribers(browser.contents)
+  >>> browser.getLink('Subscribe').click()
+
+On the subscribe page there is a cancel button.  This will take us back
+to the main branch page, and not subscribe us.
+
+  >>> browser.getControl('Cancel').click()
+  >>> print_subscribers(browser.contents)
+  >>> print_informational_message(browser.contents)
+  >>> browser.title
+  '\xe2\x80\x9cGNOME Terminal Mainline\xe2\x80\x9d branch in Launchpad'
+
+Now we do want to subscribe, so back to the subscription page.
+
+  >>> browser.getLink('Subscribe').click()
+
+At this stage the defaults that are set for subscriptions
+are fairly arbitrary, so we'll explicitly choose the values.
+
+  >>> level_control = browser.getControl(name='field.notification_level')
+  >>> level_control.value = ['Branch attribute notifications only']
+  >>> diff_control = browser.getControl(name='field.max_diff_lines')
+  >>> diff_control.value = ['1000 lines']
+
+Now, post the subscription form. We should see a message that we have just
+subscribed.
+
+  >>> browser.getControl('Subscribe').click()
+  >>> print_informational_message(browser.contents)
+  You have subscribed to this branch with: 
+  <ul><li>Only send notifications for branch attribute changes such
+  as name, description and whiteboard.
+  </li></ul>
+
+There should be only one person subscribed to the branch now.  
+
+  >>> print_subscribers(browser.contents)
+  Sample Person
+
+Now the link should say "Edit Subscription" in the actions menu.
+Lets go to that page.
+
+  >>> browser.getLink('Edit Subscription').click()
+
+Clicking 'Cancel' should take us back to the branch page, and not
+alter anything to do with our subscription.
+
+  >>> browser.getControl('Cancel').click()
+  >>> print_informational_message(browser.contents)
+  >>> print_subscribers(browser.contents)
+  Sample Person
+
+Now back to the editing page to change the details of our subscription.
+
+  >>> browser.getLink('Edit Subscription').click()
+
+Let's change our subscription to getting emails for modifications, and diffs,
+and limit our diffs to 5000 lines.
+
+  >>> level_control = browser.getControl(name='field.notification_level')
+  >>> level_control.value = ['Branch attribute and revision notifications']
+  >>> diff_control = browser.getControl(name='field.max_diff_lines')
+  >>> diff_control.value = ['5000 lines']
+  >>> browser.getControl('Change').click()
+
+Now we should be taken back to the main branch page, with a nice
+informational message for us to see.
+
+  >>> print_informational_message(browser.contents)
+  Subscription updated to: <ul><li>Send notifications for both branch attribute updates
+  and new revisions added to the branch.
+  </li><li>Limit the generated diff to 5000 lines.
+  </li></ul>
+
+  >>> print_subscribers(browser.contents)
+  Sample Person
+
+We do not really want to be subscribed. We load the edit subcription page.
+
+  >>> browser.getLink('Edit Subscription').click()
+
+And when we post this form, we see a message saying we are no longer a
+subscriber.
+
+  >>> browser.getControl('Unsubscribe').click()
+  >>> print_informational_message(browser.contents)
+  You have unsubscribed from this branch.
+  >>> print_subscribers(browser.contents)

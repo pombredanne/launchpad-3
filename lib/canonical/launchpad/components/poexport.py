@@ -500,7 +500,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # modifications.
             UTC = pytz.timezone('UTC')
             dt = datetime.datetime.now(UTC)
-            header[EXPORT_DATE_HEADER] = dt.strftime('%F %R%z')
+            header[EXPORT_DATE_HEADER] = dt.strftime('%F %T%z')
 
             # Create the new PO file.
 

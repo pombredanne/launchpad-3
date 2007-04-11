@@ -1,7 +1,6 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
@@ -90,26 +89,21 @@
     <browser:page
       name="+listing-compact"
       template="../templates/specification-listing-compact.pt" />
-  </browser:pages>
-
-  <browser:pages
-      for="canonical.launchpad.interfaces.ISpecification"
-      permission="zope.Public">
     <browser:page
-        name="+portlet-details"
-        template="../templates/specification-portlet-details.pt" />
+      name="+portlet-lifecycle"
+      template="../templates/specification-portlet-lifecycle.pt" />
     <browser:page
-        name="+portlet-subscribers"
-        template="../templates/specification-portlet-subscribers.pt" />
+      name="+portlet-subscribers"
+      template="../templates/specification-portlet-subscribers.pt" />
     <browser:page
-        name="+portlet-dependencies"
-        template="../templates/specification-portlet-dependencies.pt" />
+      name="+portlet-dependencies"
+      template="../templates/specification-portlet-dependencies.pt" />
     <browser:page
-        name="+portlet-blocked"
-        template="../templates/specification-portlet-blocked.pt" />
+      name="+portlet-blocked"
+      template="../templates/specification-portlet-blocked.pt" />
     <browser:page
-        name="+portlet-feedbackqueue"
-        template="../templates/specification-portlet-feedbackqueue.pt" />
+      name="+portlet-feedbackqueue"
+      template="../templates/specification-portlet-feedbackqueue.pt" />
     <browser:page
         name="+portlet-branches"
         template="../templates/specification-portlet-branches.pt" />
@@ -144,14 +138,10 @@
     template="../templates/specification-addsubscriber.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+retarget"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationRetargetingView"
-    label="Retarget specification"
-    fields="product distribution"
-    keyword_arguments="product distribution"
     permission="launchpad.Edit"
     template="../templates/specification-retargeting.pt"
     />
@@ -175,7 +165,7 @@
     name="+edit"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
-    label="Edit specification details"
+    label="Edit title and summary"
     fields="name title specurl summary informational whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-edit.pt">
@@ -296,16 +286,6 @@
       class="zope.app.form.browser.TextAreaWidget"
       height="5" />
   </browser:editform>
-
-  <browser:editform
-    name="+admin"
-    schema="canonical.launchpad.interfaces.ISpecification"
-    class="canonical.launchpad.browser.SpecificationEditView"
-    label="Administer specification"
-    fields="name goalstatus"
-    permission="launchpad.Admin"
-    template="../templates/specification-edit.pt"
-  />
 
   <browser:addform
     name="+requestfeedback"
@@ -433,15 +413,21 @@
   <browser:pages
     for="canonical.launchpad.interfaces.ISpecificationSet"
     permission="zope.Public">
-    <browser:page
-      name="+portlet-overview"
-      template="../templates/specifications-portlet-overview.pt" />
-    <browser:page
+    <!-- browser:page
       name="+portlet-details"
-      template="../templates/specifications-portlet-details.pt" />
+      template="../templates/specifications-portlet-details.pt" / -->
+    <browser:page
+      name="+portlet-latestcompleted"
+      template="../templates/specifications-portlet-latestcompleted.pt" />
+    <browser:page
+      name="+portlet-latestregistered"
+      template="../templates/specifications-portlet-latestregistered.pt" />
     <browser:page
       name="+portlet-sprints"
       template="../templates/specifications-portlet-sprints.pt" />
+    <browser:page
+      name="+portlet-stats"
+      template="../templates/specifications-portlet-stats.pt" />
   </browser:pages>
 
   <browser:page
@@ -449,7 +435,15 @@
     for="canonical.launchpad.interfaces.ISpecificationSet"
     permission="zope.Public"
     template="../templates/specifications-index.pt"
-    class="canonical.launchpad.browser.HasSpecificationsView"
+    class="canonical.launchpad.browser.SpecificationSetView"
+    />
+
+  <browser:page
+    name="+new"
+    for="canonical.launchpad.interfaces.ISpecificationSet"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-new.pt"
+    class="canonical.launchpad.browser.SpecificationNewView"
     />
 
   <!-- SpecificationDelta -->
@@ -458,6 +452,13 @@
   </content>
 
 </facet>
+
+<adapter
+  provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+  for="canonical.launchpad.interfaces.ISpecification"
+  factory="canonical.launchpad.browser.SpecificationSHP"
+  permission="zope.Public"
+  />
 
 <subscriber
    for="canonical.launchpad.interfaces.ISpecification

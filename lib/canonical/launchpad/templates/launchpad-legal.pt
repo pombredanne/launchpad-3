@@ -1,18 +1,12 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
   <body>
-    <metal:heading fill-slot="pageheading">
+    <div metal:fill-slot="main">
       <h1>Legalese</h1>
-    </metal:heading>
 
-<div metal:fill-slot="main">
-
-    <p class="documentDescription">Terms and conditions of use for this web
-    site, and the Launchpad system. Please read carefully.</p>
+    <p class="documentDescription">
+      These are the terms and conditions of use for this web site, and the
+      Launchpad system.
+    </p>
 
   <h2>General copyright</h2>
 
@@ -57,8 +51,22 @@
     as long as accreditation and the Launchpad URL are given along with the
     data.</p>
 
+  <h2>Automated querying</h2>
+
+  <p>We allow you to use scripts or robots to access the data contained on this
+  website subject to the following conditions:</p>
+  <ul>
+    <li>Contact information for the organization running the script must be
+  included in the 'User-Agent' HTTP header.</li>
+
+    <li>If you think you will be requesting significantly more pages
+    in a given period of time than a regular user, you should discuss
+    this concern with us beforehand by sending an email to
+    <a href="mailto:automated_access@launchpad.net">
+       automated_access@launchpad.net</a>.
+  </ul>
+
 </div>
 
 </body>
 </html>
-</tal:layout>

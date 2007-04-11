@@ -62,6 +62,8 @@ class POTemplateNavigation(Navigation):
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
+    # XXX 20061004 mpt: A POTemplate is not a structural object. It should
+    # inherit all navigation from its product or distro release.
 
     usedfor = IPOTemplate
 
@@ -96,16 +98,16 @@ class POTemplateAppMenus(POFileAppMenus):
     links = ['overview', 'upload', 'download', 'edit', 'administer']
 
     def download(self):
-        text = 'Download Translations'
+        text = 'Download translations'
         return Link('+export', text, icon='download')
 
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
-        text = 'Admin Edit'
+        text = 'Administer'
         return Link('+admin', text, icon='edit')
 
 

@@ -31,6 +31,11 @@
     />
 
   <vocabulary
+    name="BranchSubscriptionDiffSize"
+    factory="canonical.launchpad.vocabularies.BranchSubscriptionDiffSizeVocabulary"
+    />
+
+  <vocabulary
     name="BranchSubscriptionNotificationLevel"
     factory="canonical.launchpad.vocabularies.BranchSubscriptionNotificationLevelVocabulary"
     />
@@ -271,6 +276,11 @@
     />
 
   <vocabulary
+    name="ProjectProductsUsingMalone"
+    factory="canonical.launchpad.vocabularies.project_products_using_malone_vocabulary_factory"
+    />
+
+  <vocabulary
     name="RemoteBugTaskStatus"
     factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
     />
@@ -341,23 +351,28 @@
     />
 
   <vocabulary
-    name="TicketAction"
-    factory="canonical.launchpad.vocabularies.TicketActionVocabulary"
+    name="TextDirection"
+    factory="canonical.launchpad.vocabularies.TextDirectionVocabulary"
     />
 
   <vocabulary
-    name="TicketPriority"
-    factory="canonical.launchpad.vocabularies.TicketPriorityVocabulary"
+    name="QuestionAction"
+    factory="canonical.launchpad.vocabularies.QuestionActionVocabulary"
     />
 
   <vocabulary
-    name="TicketSort"
-    factory="canonical.launchpad.vocabularies.TicketSortVocabulary"
+    name="QuestionPriority"
+    factory="canonical.launchpad.vocabularies.QuestionPriorityVocabulary"
     />
 
   <vocabulary
-    name="TicketStatus"
-    factory="canonical.launchpad.vocabularies.TicketStatusVocabulary"
+    name="QuestionSort"
+    factory="canonical.launchpad.vocabularies.QuestionSortVocabulary"
+    />
+
+  <vocabulary
+    name="QuestionStatus"
+    factory="canonical.launchpad.vocabularies.QuestionStatusVocabulary"
     />
 
   <vocabulary

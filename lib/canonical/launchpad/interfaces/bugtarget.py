@@ -23,6 +23,7 @@ class IBugTarget(Interface):
     bugtargetname = Attribute("A display name for this bug target")
 
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
+    closed_bugtasks = Attribute("A list of closed bugTasks for this target.")
     inprogress_bugtasks = Attribute("A list of in-progress bugTasks for this target.")
     critical_bugtasks = Attribute("A list of critical BugTasks for this target.")
     unconfirmed_bugtasks = Attribute("A list of Unconfirmed BugTasks for this target.")
@@ -64,6 +65,15 @@ class IBugTarget(Interface):
         number of open bugs having that tag. Only the bugs that the user
         has permission to see are counted, and only tags having open
         bugs will be returned.
+        """
+
+    def getBugCounts(user, statuses=None):
+        """Return a dict with the number of bugs in each possible status.
+
+            :user: Only bugs the user has permission to view will be
+                   counted.
+            :statuses: Only bugs with these statuses will be counted. If
+                       None, all statuses will be included.
         """
 
 

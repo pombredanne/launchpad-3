@@ -277,6 +277,9 @@ class CustomDropdownWidget(DropdownWidget):
 #
 
 class POMsgSetFacets(StandardLaunchpadFacets):
+    # XXX 20061004 mpt: A POMsgSet is not a structural object. It should
+    # inherit all navigation from its product or distro release.
+
     usedfor = IPOMsgSet
     defaultlink = 'translations'
     enable_only = ['overview', 'translations']
@@ -319,11 +322,11 @@ class POMsgSetAppMenus(ApplicationMenu):
         return Link('../+translate', text, icon='languages')
 
     def switchlanguages(self):
-        text = 'Switch Languages'
+        text = 'Switch languages'
         return Link('../../', text, icon='languages')
 
     def upload(self):
-        text = 'Upload a File'
+        text = 'Upload a file'
         return Link('../+upload', text, icon='edit')
 
     def download(self):
@@ -331,7 +334,7 @@ class POMsgSetAppMenus(ApplicationMenu):
         return Link('../+export', text, icon='download')
 
     def viewtemplate(self):
-        text = 'View Template'
+        text = 'View template'
         return Link('../../', text, icon='languages')
 
 #
@@ -965,7 +968,7 @@ class POMsgSetView(LaunchpadView):
                              count_lines(translation) > 1 or
                              count_lines(self.singular_text) > 1 or
                              count_lines(self.plural_text) > 1)
-            self.translation_dictionaries.append({
+            translation_entry = {
                 'plural_index': index,
                 'active_translation': text_to_html(
                     active, self.context.potmsgset.flags()),
@@ -974,7 +977,18 @@ class POMsgSetView(LaunchpadView):
                 'suggestion_block': self.suggestion_blocks[index],
                 'store_flag': index in self.plural_indices_to_store,
                 'is_multi_line': is_multi_line
-                })
+                }
+
+            if self.message_must_be_hidden:
+                # We must hide the translation because it may have private
+                # info that we don't want to show to anoymous users.
+                translation_entry['active_translation'] = u'''
+                    To prevent privacy issues, this translation is not
+                    available to anonymous users,<br />
+                    if you want to see it, please, <a href="+login">log in</a>
+                    first.'''
+
+            self.translation_dictionaries.append(translation_entry)
 
     def _buildAllSuggestions(self, index):
         """Builds all suggestions for a certain plural form index.
@@ -1014,6 +1028,15 @@ class POMsgSetView(LaunchpadView):
                 pruners_merged = pruners_merged.union(pruner)
             return dict((k, v) for (k, v) in main.iteritems()
                         if k not in pruners_merged)
+
+        if self.message_must_be_hidden:
+            # We must hide all suggestions because it may have private
+            # info that we don't want to show to anoymous users.
+            non_editor = self._buildSuggestions(None, [])
+            elsewhere = self._buildSuggestions(None, [])
+            wiki = self._buildSuggestions(None, [])
+            alt_lang_suggestions = self._buildSuggestions(None, [])
+            return non_editor, elsewhere, wiki, alt_lang_suggestions
 
         wiki = self.context.getWikiSubmissions(index)
         wiki_translations = build_dict(wiki)
@@ -1104,6 +1127,25 @@ class POMsgSetView(LaunchpadView):
     def is_plural(self):
         """Return whether there are plural forms."""
         return self.context.potmsgset.plural_text is not None
+
+    @cachedproperty
+    def message_must_be_hidden(self):
+        """Whether the message must be hidden.
+
+        Messages are always shown to logged-in users.
+
+        Messages that are likely to contain email addresses
+        are shown only to logged-in users, and not to anonymous users.
+        """
+        if self.user is not None:
+            # Always show messages to logged-in users.
+            return False
+        # For anonymous users, check the msgid.
+        return self.msgid in [
+            u'translation-credits',
+            u'_: EMAIL OF TRANSLATORS<img alt=""' +
+                u' src="/@@/translation-newline" /><br/>\nYour emails'
+            ]
 
     @cachedproperty
     def sequence(self):

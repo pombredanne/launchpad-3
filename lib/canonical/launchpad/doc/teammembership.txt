@@ -39,15 +39,17 @@ XXX: This doctest needs a lot of cleanups!
     ...     foobar, 't5', 't5',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
 
-One of our users (Salgado) wants to join the t3 and t4 teams.
+== Adding new members ==
+
+One way of adding new members to a team is by having the user himself join the
+team he wants.
 
     >>> salgado = personset.getByName('salgado')
     >>> salgado.join(t3)
-    True
     >>> salgado.join(t4)
-    True
 
-But t3 is a MODERATED team, so somebody has to approve Salgado as a member:
+Note that since t3 is a MODERATED team, Salgado is not really added as a
+member of that team --somebody has to approve his membership first:
 
     >>> [m.displayname for m in t4.allmembers]
     [u'Foo Bar', u'Guilherme Salgado']
@@ -58,19 +60,65 @@ But t3 is a MODERATED team, so somebody has to approve Salgado as a member:
     >>> [m.displayname for m in t3.allmembers]
     [u'Foo Bar', u'Guilherme Salgado']
 
-Now we add t3 as a member of t2. But t3 is a team, and because teams take no
-actions, it can't actually "join" t2. Instead, an administrator of t2 has
-to addMember() it.
+The join() method is not allowed for teams whose subscription policy is
+RESTRICTED. And it'll be a no-op in case the user has already joined the
+given team.
 
-    >>> t3.join(t2)
+    >>> launchpad = personset.getByName('launchpad')
+    >>> launchpad.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED
+    True
+    >>> salgado.join(launchpad)
+    Traceback (most recent call last):
+    ...
+    JoinNotAllowed: This is a restricted team
+
+    >>> salgado.join(t3)
+    >>> salgado in t3.activemembers
+    True
+    >>> salgado.join(t4)
+    >>> salgado in t4.activemembers
+    True
+
+Also note that the join() method must only be called from an person object;
+never from a team, because teams can't perform actions in launchpad, so it
+doesn't make sense to have a team joining another one. (Hint: see below a way
+to add a team as a member of another one)
+
+    >>> t2.join(t3)
     Traceback (most recent call last):
     ...
     AssertionError: Teams take no actions in Launchpad...
 
-    >>> t2.addMember(t3, reviewer)
+Another API for adding members is ITeam.addMember(), which ensures the given
+person has a membership entry for that team, regardless of whether the person
+was already an active/inactive member or has never been a member before.
 
-By making t3 a member of t2, that means that all members of t3 will also be
-added as a member of t2.
+    >>> sabdfl = personset.getByName('sabdfl')
+    >>> t2.addMember(t3, reviewer=sabdfl)
+
+    >>> t3.addMember(
+    ...     salgado, reviewer=sabdfl, status=TeamMembershipStatus.ADMIN)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import ITeamMembershipSet
+    >>> membershipset = getUtility(ITeamMembershipSet)
+    >>> flush_database_updates()
+    >>> membership = membershipset.getByPersonAndTeam(salgado, t3)
+    >>> membership.reviewer == sabdfl
+    True
+    >>> membership.status == TeamMembershipStatus.ADMIN
+    True
+    >>> salgado in t3.activemembers
+    True
+
+    >>> marilize = personset.getByName('marilize')
+    >>> t3.addMember(
+    ...     marilize, reviewer=sabdfl, status=TeamMembershipStatus.PROPOSED)
+    >>> flush_database_updates()
+    >>> marilize in t3.activemembers
+    False
+
+By making t3 a member of t2, it means that all members of t3 will also be
+added as members of t2.
 
     >>> [m.displayname for m in t2.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't3']
@@ -104,7 +152,6 @@ members too.
     >>> [m.displayname for m in t4.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
 
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 After adding all this mess, this is what we have:
@@ -131,7 +178,6 @@ to check the path from a team to another one.
     [u't3', u't2', u't5']
     >>> [team.name for team in salgado.findPathToTeam(t3)]
     [u't3']
-
 
 t2 can't use its leave() method to leave t5 because it's a team and teams
 take no actions. One of t5 administrators have to go and remove t2 from t5
@@ -231,8 +277,6 @@ made using the setStatus() method.
 Foo Bar asked to join Warty Security Team on 2006-01-26 and he's been doing
 good work, so we'll approve his membership.
 
-    >>> from canonical.launchpad.interfaces import ITeamMembershipSet
-    >>> membershipset = getUtility(ITeamMembershipSet)
     >>> warty_team = getUtility(IPersonSet).getByName('name20')
     >>> membership = membershipset.getByPersonAndTeam(foobar, warty_team)
     >>> print membership.status.title
@@ -399,24 +443,34 @@ And you can check which direct memberships a team has by using activememberships
     ...  for membership in t3.activememberships]
     [(u'cprov', 'Approved'), (u'name16', 'Administrator')]
 
-A team has a number of other methods that return what people are members
-of it, all based on Person._getMembersByStatus:
+A team has a number of other methods that return the people which are members
+of it, all based on Person.getMembersByStatus:
 
-    >>> [(membership.person.name, membership.status.title)
-    ...     for membership in t3.declinedmembers]
-    []
+    >>> [person.unique_displayname for person in t3.approvedmembers]
+    [u'Celso Providelo (cprov)']
 
 (which is the same as saying
 
-    # We want to use a private method here, so we'll remove the security
-    # proxy from t3
-    >>> naked_t3 = removeSecurityProxy(t3)
-    >>> declined = TeamMembershipStatus.DECLINED
-    >>> [(membership.person.name, membership.status.title)
-    ...  for membership in naked_t3._getMembersByStatus(declined)]
-    []
+    >>> [person.unique_displayname
+    ...  for person in t3.getMembersByStatus(TeamMembershipStatus.APPROVED)]
+    [u'Celso Providelo (cprov)']
 
 except shorter)
+
+We can also change the sort order of the results of getMembersByStatus.
+
+    >>> cprov.leave(t3)
+    >>> flush_database_updates()
+
+    >>> deactivated = TeamMembershipStatus.DEACTIVATED
+    >>> [person.unique_displayname
+    ...  for person in t3.getMembersByStatus(deactivated)]
+    [u'Celso Providelo (cprov)', u'Guilherme Salgado (salgado)']
+
+    >>> orderBy = '-TeamMembership.datejoined'
+    >>> [person.unique_displayname
+    ...  for person in t3.getMembersByStatus(deactivated, orderBy=orderBy)]
+    [u'Guilherme Salgado (salgado)', u'Celso Providelo (cprov)']
 
 Another convenient method is getEffectiveAdministrators(), which returns the
 admin members plus the owner in case he is not one of the admin members.
@@ -432,7 +486,7 @@ admin members plus the owner in case he is not one of the admin members.
     >>> owner = shipit_admins.teamowner
     >>> list(shipit_admins.getEffectiveAdministrators()) == [owner]
     True
-      
+    
 == Querying a person for team participation ==
 
 Team membership is direct; team participation is indirect, people being

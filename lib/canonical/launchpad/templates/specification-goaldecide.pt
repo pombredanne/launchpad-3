@@ -11,33 +11,23 @@
   <div tal:replace="structure context/goal/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h3>Consider goal for
-      <span tal:replace="context/goal/title">Firefox 1.0</span></h3>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
-  <h1 tal:content="context/title">Spec title</h1>
+      <div>
+        <img alt="" src="/@@/blueprint" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
+  <h1>Accept as <span tal:replace="context/goal/name">1.0
+                </span> series goal?</h1>
 
   <form method="POST" tal:attributes="action request/URL">
 
-    <div class="documentDescription">
-      Approve or decline this specification as a goal for 
-      <span tal:replace="context/goal/title">UBZ</span>.
-    </div>
-
     <div>
-              
-      <div>
-        <strong>Specification summary:</strong>
-      </div>
 
-      <p class="discreet" tal:content="context/summary">
+      <h2>Blueprint summary</h2>
+
+      <p tal:content="context/summary">
         Spec summary here
       </p>
 
@@ -45,23 +35,24 @@
 
     <p>
       This goal was proposed by
-      <img src="/@@/user/">
-      <a tal:attributes="href context/goal_proposer/fmt:url"
-         tal:content="context/goal_proposer/browsername">Foo Bar</a>
-      on
-      <span tal:replace="context/date_goal_proposed/fmt:date">2006-12-13</span>.
+      <a tal:replace="structure context/goal_proposer/fmt:link">Foo Bar</a>
+      <span
+        tal:attributes="title context/date_goal_proposed/fmt:datetime"
+        tal:content="context/date_goal_proposed/fmt:displaydate">
+        2006-12-13
+      </span>.
       <tal:already_decided condition="context/goal_decider">
         It was previously marked "<span tal:replace="context/goalstatus/title">
         Approved</span>" as a goal by
-        <img src="/@@/user/">
-        <a tal:attributes="href context/goal_decider/fmt:url"
-           tal:content="context/goal_decider/browsername">Foo Bar</a>
-        on
+        <a tal:replace="structure context/goal_decider/fmt:link">Foo Bar</a>
         <span
-          tal:replace="context/date_goal_decided/fmt:date">2006-12-13</span>.
+          tal:attributes="title context/date_goal_decided/fmt:datetime"
+          tal:content="context/date_goal_decided/fmt:displaydate">
+          2006-12-13
+        </span>.
       </tal:already_decided>
     </p>
-              
+
     <div class="actions">
       <input
         type="submit"

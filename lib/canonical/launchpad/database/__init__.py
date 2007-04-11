@@ -11,6 +11,7 @@ from canonical.launchpad.database.productrelease import *
 from canonical.launchpad.database.project import *
 from canonical.launchpad.database.projectbounty import *
 from canonical.launchpad.database.poll import *
+from canonical.launchpad.database.answercontact import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugbranch import *
 from canonical.launchpad.database.bugcve import *
@@ -70,6 +71,7 @@ from canonical.launchpad.database.manifest import *
 from canonical.launchpad.database.manifestentry import *
 from canonical.launchpad.database.manifestancestry import *
 from canonical.launchpad.database.branch import *
+from canonical.launchpad.database.branchrevision import *
 from canonical.launchpad.database.branchsubscription import *
 from canonical.launchpad.database.build import *
 from canonical.launchpad.database.builder import *
@@ -92,7 +94,6 @@ from canonical.launchpad.database.spokenin import *
 from canonical.launchpad.database.sprint import *
 from canonical.launchpad.database.sprintattendance import *
 from canonical.launchpad.database.sprintspecification import *
-from canonical.launchpad.database.supportcontact import *
 from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
@@ -104,11 +105,11 @@ from canonical.launchpad.database.vpotexport import *
 from canonical.launchpad.database.karma import *
 from canonical.launchpad.database.teammembership import *
 from canonical.launchpad.database.temporaryblobstorage import *
-from canonical.launchpad.database.ticket import *
-from canonical.launchpad.database.ticketbug import *
-from canonical.launchpad.database.ticketmessage import *
-from canonical.launchpad.database.ticketreopening import *
-from canonical.launchpad.database.ticketsubscription import *
+from canonical.launchpad.database.question import *
+from canonical.launchpad.database.questionbug import *
+from canonical.launchpad.database.questionmessage import *
+from canonical.launchpad.database.questionreopening import *
+from canonical.launchpad.database.questionsubscription import *
 from canonical.launchpad.database.poexportrequest import *
 from canonical.launchpad.database.developmentmanifest import *
 from canonical.launchpad.database.distrocomponentuploader import *

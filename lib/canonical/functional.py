@@ -3,7 +3,6 @@
 """Alter the standard functional testing environment for Launchpad."""
 
 from cStringIO import StringIO
-import doctest
 import httplib
 import logging
 import sys
@@ -12,19 +11,18 @@ import xmlrpclib
 
 import zope.app.testing.functional
 from zope.app.testing.functional import (
-    FunctionalTestSetup, HTTPCaller, ZopePublication, SimpleCookie)
+    FunctionalTestSetup, HTTPCaller, ZopePublication)
 from zope.security.management import endInteraction, queryInteraction
 
 from zope.testing import doctest
 from zope.testing.loggingsupport import Handler
-from zope.testbrowser.testing import Browser
 
 from canonical.config import config
 from canonical.chunkydiff import elided_source
-from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interaction import (
     get_current_principal, setupInteraction)
-from canonical.testing import reset_logging, FunctionalLayer
+from canonical.testing import FunctionalLayer
+
 
 class NewFunctionalTestSetup(FunctionalTestSetup):
     """Wrap standard FunctionalTestSetup to ensure it is only called
@@ -38,6 +36,7 @@ class NewFunctionalTestSetup(FunctionalTestSetup):
                 """
         super(NewFunctionalTestSetup, self).__init__(*args, **kw)
 FunctionalTestSetup = NewFunctionalTestSetup
+
 
 class FunctionalTestCase(unittest.TestCase):
     """Functional test case.
@@ -100,31 +99,6 @@ class MockRootFolder:
         pass
 
 
-class UnstickyCookieHTTPCaller(HTTPCaller):
-    """HTTPCaller propogates cookies between subsequent requests.
-    This is a nice feature, except it triggers a bug in Launchpad where
-    sending both Basic Auth and cookie credentials raises an exception
-    (Bug 39881).
-    """
-    def __init__(self, *args, **kw):
-        if kw.get('debug'):
-            self._debug = True
-            del kw['debug']
-        else:
-            self._debug = False
-        HTTPCaller.__init__(self, *args, **kw)
-    def __call__(self, *args, **kw):
-        if self._debug:
-            import pdb; pdb.set_trace()
-        try:
-            return HTTPCaller.__call__(self, *args, **kw)
-        finally:
-            self.resetCookies()
-
-    def resetCookies(self):
-        self.cookies = SimpleCookie()
-
-
 def FunctionalDocFileSuite(*paths, **kw):
     kwsetUp = kw.get('setUp')
 
@@ -159,26 +133,6 @@ def FunctionalDocFileSuite(*paths, **kw):
             fs.connection = fs.db.open()
         root = fs.connection.root()
         root[ZopePublication.root_name] = MockRootFolder()
-        # Out tests report being on a different port
-        test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
-        test.globs['debug_http'] = UnstickyCookieHTTPCaller(
-                port=9000,debug=True
-                )
-        # Set up our Browser objects with handleErrors set to False, since
-        # that gives a tracebacks instead of unhelpful error messages.
-        def setupBrowser(auth=None):
-            browser = Browser()
-            browser.handleErrors = False
-            if auth is not None:
-                browser.addHeader("Authorization", auth)
-            return browser
-
-        test.globs['browser'] = setupBrowser()
-        test.globs['anon_browser'] = setupBrowser()
-        test.globs['user_browser'] = setupBrowser(
-            auth="Basic test@canonical.com:test")
-        test.globs['admin_browser'] = setupBrowser(
-            auth="Basic foo.bar@canonical.com:test")
 
         if stdout_logging:
             log = StdoutHandler('')

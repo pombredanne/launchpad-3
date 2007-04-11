@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -51,28 +50,21 @@
         template="../templates/distributionmirror-index.pt">
     </browser:page>
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IDistributionMirror"
-        schema="canonical.launchpad.interfaces.IDistributionMirror"
         permission="launchpad.Edit"
-        label="Change mirror details"
         class="canonical.launchpad.browser.DistributionMirrorEditView"
-        fields="name displayname description http_base_url ftp_base_url
-                rsync_base_url speed country content official_candidate"
         template="../templates/distributionmirror-edit.pt">
-    </browser:editform>
+    </browser:page>
 
-    <browser:editform
+    <browser:page
         name="+mark-official"
         for="canonical.launchpad.interfaces.IDistributionMirror"
-        schema="canonical.launchpad.interfaces.IDistributionMirror"
         permission="launchpad.Admin"
-        label="Mark as Official"
         class="canonical.launchpad.browser.DistributionMirrorOfficialApproveView"
-        fields="official_approved"
         template="../templates/distributionmirror-mark-official.pt">
-    </browser:editform>
+    </browser:page>
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistributionMirror"

@@ -11,8 +11,9 @@ from canonical.launchpad.browser.binarypackagerelease import *
 from canonical.launchpad.browser.bounty import *
 from canonical.launchpad.browser.bountysubscription import *
 from canonical.launchpad.browser.branch import *
+from canonical.launchpad.browser.branchlisting import *
 from canonical.launchpad.browser.branchref import *
-from canonical.launchpad.browser.branchtarget import *
+from canonical.launchpad.browser.branchsubscription import *
 from canonical.launchpad.browser.bug import *
 from canonical.launchpad.browser.buglinktarget import *
 from canonical.launchpad.browser.bugattachment import *
@@ -43,7 +44,9 @@ from canonical.launchpad.browser.distrorelease import *
 from canonical.launchpad.browser.distroreleasebinarypackage import *
 from canonical.launchpad.browser.distroreleaselanguage import *
 from canonical.launchpad.browser.distroreleasesourcepackagerelease import *
+from canonical.launchpad.browser.branding import *
 from canonical.launchpad.browser.karma import *
+from canonical.launchpad.browser.language import *
 from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.logintoken import *
 from canonical.launchpad.browser.message import *
@@ -77,8 +80,8 @@ from canonical.launchpad.browser.sprintspecification import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.teammembership import *
 from canonical.launchpad.browser.temporaryblobstorage import *
-from canonical.launchpad.browser.ticket import *
-from canonical.launchpad.browser.tickettarget import *
+from canonical.launchpad.browser.question import *
+from canonical.launchpad.browser.questiontarget import *
 from canonical.launchpad.browser.build import *
 from canonical.launchpad.browser.builder import *
 from canonical.launchpad.browser.translationgroup import *

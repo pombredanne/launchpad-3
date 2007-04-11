@@ -27,13 +27,10 @@ class IPackaging(IHasOwner):
 
     productseries = Choice(
         title=_('Product Series'), required=True,
-        vocabulary="ProductSeries", description=_("The branch or "
-        "product series that this is a packaging of. We expressly "
-        "need to know the branch because you might have packages "
-        "of two different branches of a product in the same release "
-        "of a distribution, if for example you have packages of both "
-        "GiMP 2.0 and GiMP 2.1 in the distro, it is important to make "
-        "sure this link is to the correct branch."))
+        vocabulary="ProductSeries", description=_(
+        "The product series for this source package. The same distribution "
+        "release may package two different series of the same product as "
+        "different source packages."))
 
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,

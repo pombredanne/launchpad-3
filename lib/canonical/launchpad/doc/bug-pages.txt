@@ -51,15 +51,14 @@ comment, of the bug report.
 
     >>> ubuntu_filebug.initialize()
     SQLObjectCreatedEvent: <Bug at ...>
-    
+
     >>> launchbag.clear()
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> search_params = BugTaskSearchParams(
     ...     searchtext="bin pkg", user=current_user)
 
-    >>> latest_ubuntu_bugtask = ubuntu.searchTasks(
-    ...     search_params)[0]
+    >>> latest_ubuntu_bugtask = ubuntu.searchTasks(search_params)[0]
 
 The user specified a binary package name, so that's been added to the
 bug description and the first comment:
@@ -232,7 +231,7 @@ duplicate link remains in the current context.
 
 
     >>> bug_page_view = getView(
-    ...     bug_five_in_firefox, "+portlet-duplicates", request)
+    ...     bug_five_in_firefox.bug, "+portlet-duplicates", request)
 
     >>> bug_six = bugset.get(6)
 
@@ -248,7 +247,7 @@ and see how the returned link changes.
     >>> bug_two.duplicateof = 5
 
     >>> bug_page_view = getView(
-    ...     bug_five_in_firefox, "+portlet-duplicates", request)
+    ...     bug_five_in_firefox.bug, "+portlet-duplicates", request)
 
     >>> print bug_page_view.getDupeBugLink(bug_two)
     http://.../bugs/2
@@ -459,6 +458,7 @@ the list changes.
 
     >>> login("no-priv@canonical.com")
 
+    >>> current_user = getUtility(ILaunchBag).user
     >>> ubuntu_warty = ubuntu.getRelease("warty")
     >>> firefox_trunk = firefox.getSeries("trunk")
 

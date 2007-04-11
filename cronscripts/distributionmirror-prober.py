@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 """Script to probe distribution mirrors and check how up-to-date they are."""
@@ -12,6 +12,7 @@ from twisted.internet import reactor
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.lp import AUTOCOMMIT_ISOLATION
 from canonical.lp.dbschema import MirrorContent
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
@@ -55,6 +56,9 @@ class DistroMirrorProber(LaunchpadScript):
         self.parser.add_option('--no-owner-notification',
             dest='no_owner_notification', default=False, action='store_true',
             help='Do not send failure notification to mirror owners.')
+        self.parser.add_option('--no-remote-hosts',
+            dest='no_remote_hosts', default=False, action='store_true',
+            help='Do not try to connect to any host other than localhost.')
 
     def main(self):
         if self.options.content_type == 'archive':
@@ -68,10 +72,18 @@ class DistroMirrorProber(LaunchpadScript):
                 'Wrong value for argument --content-type: %s'
                 % self.options.content_type)
 
+        # Using a script argument to control a config variable is not a great
+        # idea, but to me this seems better than passing the no_remote_hosts
+        # value through a lot of method/function calls, until it reaches the
+        # probe() method.
+        if self.options.no_remote_hosts:
+            config.distributionmirrorprober.localhost_only = True
+
         self.logger.info('Probing %s Mirrors' % content_type.title)
 
         mirror_set = getUtility(IDistributionMirrorSet)
 
+        self.txn.set_isolation_level(AUTOCOMMIT_ISOLATION)
         self.txn.begin()
 
         results = mirror_set.getMirrorsToProbe(
@@ -106,12 +118,10 @@ class DistroMirrorProber(LaunchpadScript):
             self.logger.info('Probed %d mirrors.' % len(probed_mirrors))
         else:
             self.logger.info('No mirrors to probe.')
-        self.txn.commit()
 
         # Now that we finished probing all mirrors, we check if any of these
         # mirrors appear to have no content mirrored, and, if so, mark them as
         # disabled and notify their owners.
-        self.txn.begin()
         expected_iso_images_count = len(get_expected_cdimage_paths())
         notify_owner = not self.options.no_owner_notification
         for mirror in probed_mirrors:
@@ -127,6 +137,11 @@ class DistroMirrorProber(LaunchpadScript):
                     mirror.enabled = True
                     self.logger.info('Enabled %s' % canonical_url(mirror))
 
+        # XXX: This should be done in LaunchpadScript.lock_and_run() when the
+        # isolation used is AUTOCOMMIT_ISOLATION. Also note that replacing
+        # this with a flush_database_updates() doesn't have the same effect,
+        # it seems.
+        # -- Guilherme Salgado, 2007-04-03
         self.txn.commit()
         self.logger.info('Done.')
 

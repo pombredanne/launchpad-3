@@ -5,7 +5,7 @@
   ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> team_admin_browser.open(
   ...     'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080')
-  >>> team_admin_browser.getLink('Add New Option').click()
+  >>> team_admin_browser.getLink('Add new option').click()
   >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080/+newoption'
 
@@ -28,7 +28,7 @@
   And here we see the option listed as one of the active options for this
   poll.
 
-  >>> team_admin_browser.getLink('Show Option Details').click()
+  >>> team_admin_browser.getLink('Show option details').click()
   >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080/+options'
 
@@ -40,7 +40,7 @@
   If we try to add a new option without providing a title, we'll get an error
   message because the title is required.
 
-  >>> team_admin_browser.getLink('Add New Option').click()
+  >>> team_admin_browser.getLink('Add new option').click()
   >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080/+newoption'
 

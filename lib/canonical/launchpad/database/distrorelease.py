@@ -68,13 +68,15 @@ from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.specification import Specification
-from canonical.launchpad.database.queue import DistroReleaseQueue
+from canonical.launchpad.database.specification import (
+    HasSpecificationsMixin, Specification)
+from canonical.launchpad.database.queue import (
+    DistroReleaseQueue, PackageUploadQueue)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
 
 
-class DistroRelease(SQLBase, BugTargetBase):
+class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     """A particular release of a distribution."""
     implements(IDistroRelease, IHasBuildRecords, IHasQueueItems, IPublishing)
 
@@ -90,6 +92,7 @@ class DistroRelease(SQLBase, BugTargetBase):
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
     releasestatus = EnumCol(notNull=True, schema=DistributionReleaseStatus)
+    date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
@@ -108,8 +111,6 @@ class DistroRelease(SQLBase, BugTargetBase):
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
 
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'distrorelease',
-                            orderBy=['dateexpected', 'name'])
     architectures = SQLMultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')
@@ -121,6 +122,18 @@ class DistroRelease(SQLBase, BugTargetBase):
     sections = SQLRelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
+
+    @property
+    def all_milestones(self):
+        """See IDistroRelease."""
+        return Milestone.selectBy(
+            distrorelease=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IDistroRelease."""
+        return Milestone.selectBy(
+            distrorelease=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
     def drivers(self):
@@ -903,7 +916,8 @@ class DistroRelease(SQLBase, BugTargetBase):
 
         return distro_sprs
 
-    def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
+    def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
+                         signing_key=None):
         """See IDistroRelease."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
@@ -917,10 +931,15 @@ class DistroRelease(SQLBase, BugTargetBase):
         changes_file = file_alias_set.create(changesfilename,
             len(changesfilecontent), StringIO(changesfilecontent),
             'text/plain')
-        return DistroReleaseQueue(distrorelease=self,
-                                  status=DistroReleaseQueueStatus.NEW,
-                                  pocket=pocket,
-                                  changesfile=changes_file)
+
+        return DistroReleaseQueue(
+            distrorelease=self, status=DistroReleaseQueueStatus.NEW,
+            pocket=pocket, changesfile=changes_file,
+            signing_key=signing_key)
+
+    def getPackageUploadQueue(self, state):
+        """See IDistroRelease."""
+        return PackageUploadQueue(self, state)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None):
@@ -1072,6 +1091,10 @@ class DistroRelease(SQLBase, BugTargetBase):
             "allow filing a bug on a distribution release in the "
             "not-too-distant future. For now, you probably meant to file "
             "the bug on the distribution instead.")
+
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return 'BugTask.distrorelease = %s' % sqlvalues(self)
 
     def initialiseFromParent(self):
         """See IDistroRelease."""

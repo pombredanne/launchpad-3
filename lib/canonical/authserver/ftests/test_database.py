@@ -165,8 +165,8 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
 
     def test_getBranchesForUser(self):
         # Although user 12 has lots of branches in the sample data, they only
-        # have one push branch: a branch named "pushed" on the "gnome-terminal"
-        # product.
+        # have three push branches: "pushed", "mirrored" and "scanned" on the
+        # "gnome-terminal" product.
         storage = DatabaseUserDetailsStorageV2(None)
         branches = storage._getBranchesForUserInteraction(self.cursor, 12)
         self.assertEqual(1, len(branches))
@@ -174,7 +174,9 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         gnomeTermID, gnomeTermName, gnomeTermBranches = gnomeTermProduct
         self.assertEqual(6, gnomeTermID)
         self.assertEqual('gnome-terminal', gnomeTermName)
-        self.assertEqual([(25, 'pushed')], gnomeTermBranches)
+        self.assertEqual(
+            set([(25, 'pushed'), (26, 'mirrored'), (27, 'scanned')]),
+            set(gnomeTermBranches))
 
     def test_getBranchesForUserNullProduct(self):
         # getBranchesForUser returns branches for hosted branches with no
@@ -333,16 +335,9 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         # FIXME: there should probably be some SSH keys in the sample data,
         #        so that this test wouldn't need to add some.
 
-        # Add test SSH keys
         self.cursor.execute(
-            "INSERT INTO SSHKey (person, keytype, keytext, comment) "
-            "VALUES ("
-            "  1, "
-            "  %d,"
-            "  'garbage123',"
-            "  'mark@hbd.com')"
-            % (dbschema.SSHKeyType.DSA.value, )
-        )
+            "SELECT keytext FROM SSHKey WHERE person = 1")
+        [keytext] = self.cursor.fetchone()
 
         # Add test push mirror access
         self.cursor.execute(
@@ -356,18 +351,18 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         storage = DatabaseUserDetailsStorage(None)
         keys = storage._getSSHKeysInteraction(self.cursor,
                                               'marks-archive@example.com')
-        self.assertEqual([('DSA', 'garbage123')], keys)
+        self.assertEqual([('DSA', keytext)], keys)
 
         # Fred's SSH key should also have access to an archive with his email
         # address
         keys = storage._getSSHKeysInteraction(self.cursor, 'mark@hbd.com')
-        self.assertEqual([('DSA', 'garbage123')], keys)
+        self.assertEqual([('DSA', keytext)], keys)
 
         # Fred's SSH key should also have access to an archive whose name
         # starts with his email address + '--'.
         keys = storage._getSSHKeysInteraction(self.cursor,
                                               'mark@hbd.com--2005')
-        self.assertEqual([('DSA', 'garbage123')], keys)
+        self.assertEqual([('DSA', keytext)], keys)
 
         # No-one should have access to wilma@hbd.com
         keys = storage._getSSHKeysInteraction(self.cursor, 'wilma@hbd.com')
@@ -504,17 +499,41 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.connection.commit()
 
         results = self.storage._getBranchPullQueueInteraction(self.cursor)
+
+        # The first item in the row is the id.
+        results_dict = dict((row[0], row) for row in results)
+
         # We verify that a selection of expected branches are included
         # in the results, each triggering a different pull_url algorithm.
         #   a vcs-imports branch:
-        self.assertTrue((14, 'http://escudero.ubuntu.com:680/0000000e')
-                        in results)
+        self.assertEqual(results_dict[14],
+                         (14, 'http://escudero.ubuntu.com:680/0000000e',
+                          u'vcs-imports/evolution/main'))
         #   a pull branch:
-        self.assertTrue((15, 'http://example.com/gnome-terminal/main')
-                        in results)
+        self.assertEqual(results_dict[15],
+                         (15, 'http://example.com/gnome-terminal/main',
+                          u'name12/gnome-terminal/main'))
         #   a hosted SFTP push branch:
-        self.assertTrue((25, '/tmp/sftp-test/branches/00/00/00/19')
-                        in results)
+        self.assertEqual(results_dict[25],
+                         (25, '/tmp/sftp-test/branches/00/00/00/19',
+                          u'name12/gnome-terminal/pushed'))
+
+    def test_getBranchPullQueueNoLinkedProduct(self):
+        # If a branch doesn't have an associated product the unique name
+        # returned should have +junk in the product segment. See
+        # Branch.unique_name for precedent.
+        self.setSeriesDateLastSynced(3, now_minus='1 second')
+        self.setBranchLastMirrorAttempt(14, now_minus='1 day')
+        self.connection.commit()
+
+        results = self.storage._getBranchPullQueueInteraction(self.cursor)
+
+        # The first item in the row is the id.
+        results_dict = dict((row[0], row) for row in results)
+
+        # branch 3 is a branch without a product.
+        branch_id, url, unique_name = results_dict[3]
+        self.assertEqual(unique_name, 'spiv/+junk/trunk')
 
     def test_getBranchPullQueueOrdering(self):
         # Test that rows where last_mirror_attempt IS NULL are listed first, and
@@ -735,7 +754,8 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         """Whether the branch with this id is present in the pull queue."""
         results = self.storage._getBranchPullQueueInteraction(self.cursor)
         return branch_id in (
-            result_branch_id for result_branch_id, result_pull_url in results)
+            result_branch_id
+            for result_branch_id, result_pull_url, unique_name in results)
 
     def setSeriesDateLastSynced(self, series_id, value=None, now_minus=None):
         """Helper to set the datelastsynced of a ProductSeries.

@@ -7,12 +7,11 @@
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/distrorelease/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-hctstatus" />
+    <div tal:replace="structure context/@@+portlet-upstream" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-releases" />
-    <div tal:replace="structure context/@@+portlet-translations" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

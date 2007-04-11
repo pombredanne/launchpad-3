@@ -10,7 +10,7 @@ import zope.exceptions
 import zope.app.publication.interfaces
 import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
-from zope.schema import Int, Choice
+from zope.schema import Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -20,22 +20,54 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 # entire codebase and fix where the import should come from.
 #   -- kiko, 2007-02-08
 from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag)
+    NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag, IBreadcrumb,
+    IBasicLaunchpadRequest, IAfterTraverseEvent, AfterTraverseEvent,
+    IBeforeTraverseEvent, BeforeTraverseEvent,
+    )
 
 __all__ = [
-    'NotFoundError', 'ILaunchpadRoot', 'ILaunchBag', 'IOpenLaunchBag',
-    'NameNotAvailable', 'UnexpectedFormData',
-    'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
-    'IBazaarApplication', 'IPasswordEncryptor', 'IReadZODBAnnotation',
-    'IWriteZODBAnnotation', 
-    'IZODBAnnotation',
-    'IHasOwner', 'IHasDrivers', 'IHasAssignee', 'IHasProduct',
-    'IHasProductAndAssignee',
-    'IAging', 'IHasDateCreated', 'IHasBug',
-    'ICrowd', 'ILaunchpadCelebrities',
+    'AfterTraverseEvent',
+    'BeforeTraverseEvent',
+    'IAfterTraverseEvent',
+    'IAging',
+    'IAppFrontPageSearchForm',
     'IAuthApplication',
-    'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
-    'IHasSecurityContact'
+    'IBasicLaunchpadRequest',
+    'IBazaarApplication',
+    'IBeforeTraverseEvent',
+    'IBreadcrumb',
+    'ICrowd',
+    'IHasAppointedDriver',
+    'IHasAssignee',
+    'IHasBug',
+    'IHasDateCreated',
+    'IHasDrivers',
+    'IHasIcon',
+    'IHasLogo',
+    'IHasMugshot',
+    'IHasOwner',
+    'IHasProduct',
+    'IHasProductAndAssignee',
+    'IHasSecurityContact',
+    'ILaunchBag',
+    'ILaunchpadCelebrities',
+    'ILaunchpadRoot',
+    'IMaloneApplication',
+    'IOpenLaunchBag',
+    'IPasswordChangeApp',
+    'IPasswordEncryptor',
+    'IPasswordResets',
+    'IReadZODBAnnotation',
+    'IRegistryApplication',
+    'IRosettaApplication',
+    'IShipItApplication',
+    'IStructuralHeaderPresentation',
+    'IStructuralObjectPresentation',
+    'IWriteZODBAnnotation',
+    'IZODBAnnotation',
+    'NameNotAvailable',
+    'NotFoundError',
+    'UnexpectedFormData',
     ]
 
 
@@ -67,9 +99,11 @@ class ILaunchpadCelebrities(Interface):
     bug_importer = Attribute("The bug importer.")
     landscape = Attribute("The Landscape project.")
     launchpad = Attribute("The Launchpad product.")
-    support_tracker_janitor = Attribute("The Support Tracker Janitor.")
+    answer_tracker_janitor = Attribute("The Answer Tracker Janitor.")
     team_membership_janitor = Attribute("The Team Membership Janitor.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
+    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
+    ubuntu_release_mirror = Attribute("The main release mirror for Ubuntu.")
 
 
 class ICrowd(Interface):
@@ -94,10 +128,17 @@ class ICrowd(Interface):
 class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
 
+    def searchTasks(search_params):
+        """Search IBugTasks with the given search parameters."""
+
     bug_count = Attribute("The number of bugs recorded in Malone")
     bugwatch_count = Attribute("The number of links to external bug trackers")
     bugextref_count = Attribute("The number of links to outside URL's")
     bugtask_count = Attribute("The number of bug tasks in Malone")
+    projects_with_bugs_count = Attribute("The number of products and "
+        "distributions which have bugs in Launchpad.")
+    shared_bug_count = Attribute("The number of bugs that span multiple "
+        "products and distributions")
     bugtracker_count = Attribute("The number of bug trackers in Malone")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
     latest_bugs = Attribute("The latest 5 bugs filed.")
@@ -110,6 +151,9 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translatable_products():
         """Return a list of the translatable products."""
+
+    def featured_products():
+        """Return a sample of all the translatable products."""
 
     def translatable_distroreleases():
         """Return a list of the distroreleases in launchpad for which
@@ -250,6 +294,13 @@ class IHasDrivers(Interface):
     drivers = Attribute("A list of drivers")
 
 
+class IHasAppointedDriver(Interface):
+    """An object that has an appointed driver."""
+
+    driver = Choice(
+        title=_("Driver"), required=False, vocabulary='ValidPersonOrTeam')
+
+
 class IHasAssignee(Interface):
     """An object that has an assignee."""
 
@@ -283,6 +334,30 @@ class IHasSecurityContact(Interface):
         required=False, vocabulary='ValidPersonOrTeam')
 
 
+class IHasIcon(Interface):
+    """An object that can have a custom icon."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    icon = Attribute("The 14x14 icon.")
+
+
+class IHasLogo(Interface):
+    """An object that can have a custom logo."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    logo = Attribute("The 64x64 logo.")
+
+
+class IHasMugshot(Interface):
+    """An object that can have a custom mugshot."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    mugshot = Attribute("The 192x192 mugshot.")
+
+
 class IAging(Interface):
     """Something that gets older as time passes."""
 
@@ -297,5 +372,41 @@ class IHasDateCreated(Interface):
     """Something created on a certain date."""
 
     datecreated = Attribute("The date on which I was created.")
+
+
+class IStructuralHeaderPresentation(Interface):
+    """Adapter that defines how a structural object is presented in the UI
+    as a heading."""
+
+    def getIntroHeading():
+        """Any heading introduction needed (e.g. "Ubuntu source package:")."""
+
+    def getMainHeading():
+        """can be None"""
+
+
+class IStructuralObjectPresentation(IStructuralHeaderPresentation):
+    """Adapter that defines how a structural object is presented in the UI."""
+
+    def listChildren(num):
+        """List up to num children.  Return empty string for none of these"""
+
+    def countChildren():
+        """Return the total number of children."""
+
+    def listAltChildren(num):
+        """List up to num alternative children.  Return None if alt children are not supported"""
+
+    def countAltChildren():
+        """Return the total number of alt children.  Will be called only if listAltChildren returns something."""
+
+
+class IAppFrontPageSearchForm(Interface):
+    """Schema for the app-specific front page search question forms."""
+
+    search_text = TextLine(title=_('Search text'), required=False)
+
+    scope = Choice(title=_('Search scope'), required=False,
+                   vocabulary='DistributionOrProductOrProject')
 
 
