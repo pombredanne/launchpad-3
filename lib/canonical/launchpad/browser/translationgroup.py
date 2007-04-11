@@ -112,24 +112,37 @@ class TranslationGroupView:
 
 
 class TranslationGroupAddTranslatorView(LaunchpadFormView):
+    """View class for the "appoint a translator" page"""
+
     schema = ITranslator
     field_names = ['language', 'translator']
 
     @action("Add", name="add")
     def add_action(self, action, data):
+        """Appoint a translator to do translations for given language
+
+        Create a translator who, within this group, will be responsible for
+        the selected language.  Within a translation group, a language can
+        have at most one translator.  Of course the translator may be either a
+        person or a group, however.
+        """
         language = data.get('language')
         translator = data.get('translator')
         getUtility(ITranslatorSet).new(self.context, language, translator)
+        next_url = canonical_url(self.context)
 
     def validate(self, data):
+        """Do not allow an appointment to overwrite an existing translator
+
+        We don't allow a translator to be appointed for a language that
+        already has a translator within that group.  If we did, it would be
+        too easy accidentally to replace a translator, e.g. by picking the
+        wrong language in this form.
+        """
         language = data.get('language')
         if self.context.query_translator(language):
             self.setFieldError('language',
                 "There is already a translator for this language")
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
 
 
 class TranslationGroupSetAddView(AddView):
