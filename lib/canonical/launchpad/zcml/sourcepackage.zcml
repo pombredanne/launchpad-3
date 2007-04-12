@@ -86,7 +86,7 @@
             />
         <browser:page
             name="+gethelp"
-            facet="overview"
+            facet="answers"
             template="../templates/sourcepackage-gethelp.pt"
             />
         <browser:page
@@ -130,10 +130,6 @@
             facet="overview"
             template="../templates/sourcepackage-portlet-details.pt"
             />
-        <browser:page
-            name="+portlet-translations"
-            facet="translations"
-            template="../templates/sourcepackage-portlet-translations.pt"
         />
 
     </browser:pages>

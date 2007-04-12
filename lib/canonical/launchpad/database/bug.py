@@ -170,7 +170,7 @@ class Bug(SQLBase):
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
     questions = SQLRelatedJoin('Question', joinColumn='bug',
-        otherColumn='ticket', intermediateTable='TicketBug',
+        otherColumn='question', intermediateTable='QuestionBug',
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')
 
@@ -558,9 +558,12 @@ class Bug(SQLBase):
             raise NominationError(
                 "This bug cannot be nominated for %s" % target_displayname)
 
-        return BugNomination(
+        nomination = BugNomination(
             owner=owner, bug=self, distrorelease=distrorelease,
             productseries=productseries)
+        if nomination.canApprove(owner):
+            nomination.approve(owner)
+        return nomination
 
     def canBeNominatedFor(self, nomination_target):
         """See IBug."""

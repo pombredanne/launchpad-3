@@ -166,16 +166,6 @@
       template="../templates/distrorelease-portlet-lifecycle.pt"
       />
     <browser:page
-      name="+portlet-translations"
-      facet="translations"
-      template="../templates/distrorelease-portlet-translations.pt"
-      />
-    <browser:page
-      name="+portlet-langstats"
-      facet="translations"
-      template="../templates/distrorelease-portlet-langstats.pt"
-      />
-    <browser:page
       name="+portlet-aboutlangs"
       facet="translations"
       template="../templates/distrorelease-portlet-aboutlangs.pt" />
