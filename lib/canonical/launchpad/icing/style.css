@@ -506,8 +506,8 @@ ul#menuroot li.selected a.breadcrumb {
     color: #000000;
 }
 
-/* Under the location bar is a Help tab that expands when clicked. */
-#help-panel {
+/* Under the location bar is a Help widget that expands when clicked. */
+#help {
   clear: both;
   position: absolute;
   top: 27px;
@@ -515,6 +515,7 @@ ul#menuroot li.selected a.breadcrumb {
   width: 300px;
   z-index: 100;
 }
+/* The widget has two parts. First, the tab itself. */
 #help-tab {
   background: url(help-tab.gif);
   color: #fff;
@@ -523,36 +524,39 @@ ul#menuroot li.selected a.breadcrumb {
   width: 32px;
   height: 62px;
 }
+/* Second, the help panel, which takes up the rest of the 300px. */
+#help-panel {float: left; width: 268px;}
+/* The help panel needs to be longer than the tab -- 70px will do. */
 #help-content {
-  float: left;
-  width: 268px; /* = 300px - 32px */
-}
-#help-text {
   background: #fff url(help_bg.gif) top right repeat-y;
-  min-height: 100px;
+  margin: 0;
+  padding: 0;
+  min-height: 70px;
 }
-#help-text * {padding: 0 10px;}
-#help-text * * {padding: 0;}
-
+/* IE6 and lower ignore "min-height", but treat "height" as min-height. */
+* html #help-content {height: 70px;}
+/* The "help-text" element exists only to provide padding. */
+/* The "1px" is because Gecko malfunctions if the top padding is 0. */
+#help-text {padding: 1px 14px 6px 10px;}
+/* The "help-bottom" element exists to provide the rounded bottom border. */
 #help-bottom {
+  clear: both;
   font-size: 1px;
   height: 6px;
   background: url(help-bottom.gif) bottom right no-repeat;
 }
-/* IE6 and lower ignore "height", but treat "height" as min-height. */
-* html #help-content {height: 100px;}
 /* When the tab is opened, the triangle in it swivels to show it's a toggle. */
-#help-panel.open #help-tab {background: url(help-tab-open.gif);}
-/* When the tab is closed, the help content is not displayed. */
-#help-panel.closed {width: 32px;}
-#help-panel.closed #help-content {display: none;}
+#help.open #help-tab {background: url(help-tab-open.gif);}
+/* When the tab is closed, the help panel is not displayed. */
+#help.closed {width: 32px;}
+#help.closed #help-panel {display: none;}
 
 /*
 Showing the help panel all the time would be in the way,
 and there shouldn't be a "Help" tab that does nothing.
 So it's hidden initially, and then revealed if JavaScript is available. 
 */
-#help-panel {visibility: hidden;}
+#help {visibility: hidden;}
 
 /* The rest of the page keeps clear of the collapsed help panel. */
 #nonhelp {margin: 0 20px 0 38px;}
