@@ -15,6 +15,10 @@ __all__ = [
     'ChrootManagerError',
     'SyncSource',
     'SyncSourceError',
+    'PackageLocationError',
+    'PackageLocation',
+    'CopyPackageHelperError',
+    'CopyPackageHelper',
     ]
 
 import apt_pkg
@@ -26,15 +30,12 @@ import stat
 import sys
 import tempfile
 
-from sqlobject import SQLObjectMoreThanOneResultError
 from zope.component import getUtility
 
-from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
-    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet,
-    IDistributionSet)
+    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet)
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority)
 
@@ -1079,3 +1080,256 @@ class SyncSource:
                 raise SyncSourceError(
                     "%s: size mismatch (%s [actual] vs. %s [expected])."
                     % (filename, actual_size, expected_size))
+
+
+class PackageLocationError(Exception):
+    """Raised when something went wrong when building PackageLocation."""
+
+
+class PackageLocation:
+    """Object used to model locations when copying publications.
+
+    It groups distribution + distrorelease + pocket in a way they
+    can be easily manipulated and compared.
+    """
+    distribution = None
+    distrorelease = None
+    pocket = None
+
+    def __init__(self, distribution_name, suite_name):
+        """Store given parameters.
+
+        Build LP objects and expand suite_name into distrorelease + pocket.
+        """
+        try:
+            self.distribution = getUtility(IDistributionSet)[distribution_name]
+        except NotFoundError, err:
+            raise PackageLocationError(
+                "Could not find distribution %s" % err)
+
+        if suite_name is not None:
+            suite = self.distribution.getDistroReleaseAndPocket(suite_name)
+            self.distrorelease, self.pocket = suite
+        else:
+            self.distrorelease = self.distribution.currentrelease
+            self.pocket = PackagePublishingPocket.RELEASE
+
+    def __eq__(self, other):
+        if (self.distribution.id == other.distribution.id and
+            self.distrorelease.id == other.distrorelease.id and
+            self.pocket.value == other.pocket.value):
+            return True
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __str__(self):
+        return '%s/%s/%s' % (self.distribution.name, self.distrorelease.name,
+                             self.pocket.name)
+
+    def __repr__(self):
+        return self.__str__()
+
+
+class CopyPackageHelperError(Exception):
+    """Raised when something went wrong during a package copy."""
+
+
+class CopyPackageHelper:
+    synced = False
+    target_source = None
+    target_binaries = []
+    copied_source = None
+    copied_binaries = []
+
+    def __init__(self, sourcename, sourceversion, from_suite, to_suite,
+                 from_distribution_name, to_distribution_name,
+                 confirm_all, comment, include_binaries, logger):
+        self.sourcename = sourcename
+        self.sourceversion = sourceversion
+        self.from_suite = from_suite
+        self.to_suite = to_suite
+        self.from_distribution_name = from_distribution_name
+        self.to_distribution_name = to_distribution_name
+
+        self.confirm_all = confirm_all
+        self.comment = comment
+        self.include_binaries = include_binaries
+        self.logger = logger
+
+    def _buildLocations(self):
+        """Build PackageLocation for context FROM and TO.
+
+        Result is stored in self.from_location and self.to_location.
+        """
+        try:
+            self.from_location = PackageLocation(
+                self.from_distribution_name, self.from_suite)
+            self.to_location = PackageLocation(
+                self.to_distribution_name, self.to_suite)
+        except PackageLocationError, err:
+            raise CopyPackageHelperError(err)
+
+        if self.from_location == self.to_location:
+            raise CopyPackageHelperError(
+                "Can not sync between the same locations: '%s' to '%s'" % (
+                self.from_location, self.to_location))
+
+    def _buildSource(self):
+        """Build a DistroReleaseSourcePackageRelease for the given parameters
+
+        Result is stored in self.target_source.
+        """
+        sourcepackage = self.from_location.distrorelease.getSourcePackage(
+            self.sourcename)
+
+        if sourcepackage is None:
+            raise CopyPackageHelperError(
+                "Could not find any version of '%s' in %s" % (
+                self.sourcename, self.from_location))
+
+        if self.sourceversion is None:
+            self.target_source = sourcepackage.currentrelease
+        else:
+            self.target_source = sourcepackage[self.sourceversion]
+
+        if self.target_source is None:
+            raise CopyPackageHelperError(
+                "Could not find '%s/%s' in %s" % (
+                self.sourcename, self.sourceversion,
+                self.from_location))
+
+    def _buildBinaries(self):
+        """Build a set of DistroArchReleaseBinaryPackage for the context source.
+
+        Asserts self.target_source is already initialised.
+        Result is stored in self.target_binaries.
+        """
+        assert self.target_source is not None, (
+            "target_source needs to be initialised first.")
+        # Obtain names of all distinct binary packages names
+        # produced by the target_source
+        binary_name_set = set(
+            [binary.name for binary in self.target_source.binaries])
+
+        # Get the binary packages in each distroarchrelease and store them
+        # in target_binaries for later.
+        for binary_name in binary_name_set:
+            all_archs = self.from_location.distrorelease.architectures
+            for distroarchrelease in all_archs:
+                darbp = distroarchrelease.getBinaryPackage(binary_name)
+                # only include objects with published binaries
+                try:
+                    current = darbp.current_published
+                except NotFoundError:
+                    pass
+                else:
+                    self.target_binaries.append(darbp)
+
+    def _requestFeedback(self, question='Are you sure', default_answer='yes',
+                         valid_answers=['yes', 'no']):
+        """Command-line helper.
+
+        It uses raw_input to collect user feedback.
+
+        If self.confirm_all is activated the default answer is returned,
+        otherwise the user input will be requested and returned.
+
+        If valid_answers list is specified it will loop until one of the
+        options is entered.
+        """
+        if self.confirm_all:
+            return default_answer
+
+        answer = None
+        if valid_answers:
+            display_answers = '[%s]' % (', '.join(valid_answers))
+            full_question = '%s ? %s ' % (question, display_answers)
+            while answer not in valid_answers:
+                answer = raw_input(full_question)
+        else:
+            full_question = '%s ? ' % question
+            answer = raw_input(full_question)
+        return answer
+
+    def copySource(self):
+        """Copy context source and store correspondent reference.
+
+        Asserts self.target_source is already initialised
+        Reference to the destination copy will be store in
+        self.copied_source.
+        """
+        assert self.target_source is not None, (
+            "target_source needs to be initialised first.")
+
+        self.logger.info("Performing source copy.")
+
+        source_copy = self.target_source.copyTo(
+            distrorelease=self.to_location.distrorelease,
+            pocket=self.to_location.pocket)
+
+        # Retrieve and store the IDRSPR for the target location
+        to_distrorelease = self.to_location.distrorelease
+        self.copied_source = to_distrorelease.getSourcePackageRelease(
+            source_copy.sourcepackagerelease)
+
+        self.synced = True
+        self.logger.info("Copied: %s" % self.copied_source.title)
+
+    def copyBinary(self, binary):
+        """Copy given binary to target location if possible.
+
+        Store reference to the copied binary in the target location.
+        """
+        # copyTo will raise NotFoundError if the architecture in
+        # question is not present in destination or if the binary
+        # is not published it source location. Both situations are
+        # safe, so that's why we swallow this error.
+        try:
+            binary_copy = binary.copyTo(
+                distrorelease=self.to_location.distrorelease,
+                pocket=self.to_location.pocket)
+        except NotFoundError:
+            pass
+        else:
+            # Retrieve and store the IDARBPR for the target location.
+            darbp = binary_copy.distroarchrelease.getBinaryPackage(
+                binary_copy.binarypackagerelease.name)
+            bin_version = binary_copy.binarypackagerelease.version
+            binary_copied = darbp[bin_version]
+            self.copied_binaries.append(binary_copied)
+
+            self.synced = True
+            self.logger.info("Copied: %s" % binary_copied.title)
+
+    def performCopy(self):
+        """Execute package copy procedure.
+
+        Build location and target objects.
+        Request user feedback is not suppressed by given parameters.
+        Copy source publication and optionally related binary publications
+        according to the given parameters.
+        """
+        self._buildLocations()
+        self._buildSource()
+
+        self.logger.info("Syncing '%s' TO '%s'" % (self.target_source.title,
+                                                   self.to_location))
+        self.logger.info("Comment: %s" % self.comment)
+        self.logger.info("Include Binaries: %s" % self.include_binaries)
+
+        confirmation = self._requestFeedback()
+        if confirmation != 'yes':
+            self.logger.info("Ok, see you later")
+            return
+
+        self.copySource()
+
+        if self.include_binaries:
+            self.logger.info("Performing binary copy.")
+            self._buildBinaries()
+            for binary in self.target_binaries:
+                self.copyBinary(binary)
+            self.logger.info(
+                "%d binaries copied." % len(self.copied_binaries))

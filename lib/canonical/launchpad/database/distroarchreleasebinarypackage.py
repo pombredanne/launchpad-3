@@ -259,10 +259,14 @@ class DistroArchReleaseBinaryPackage:
 
     def copyTo(self, distrorelease, pocket):
         """See IDistroArchReleaseBinaryPackage."""
-        # may raise NOT FOUND
+        # Both lookups may raise NotFoundError; it should be handled in
+        # the caller.
         current = self.current_published
-        # may raise NOT FOUND
         target_dar = distrorelease[current.distroarchrelease.architecturetag]
+
+        assert current.distroarchrelease.distrorelease == distrorelease, (
+            "For now we only allow copy between pockets in the same "
+            "distrorelease.")
 
         copy = SecureBinaryPackagePublishingHistory(
             binarypackagerelease=current.binarypackagerelease,

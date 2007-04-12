@@ -226,6 +226,11 @@ class DistroReleaseSourcePackageRelease:
     def copyTo(self, distrorelease, pocket):
         """See IDistroReleaseSourcePackageRelease."""
         current = self.current_published
+
+        assert current.distrorelease == distrorelease, (
+            "For now we only allow copy between pockets in the same "
+            "distroelease.")
+
         copy = SecureSourcePackagePublishingHistory(
             distrorelease=distrorelease,
             pocket=pocket,
