@@ -264,11 +264,6 @@ class DistroArchReleaseBinaryPackage:
         current = self.current_published
         target_dar = distrorelease[current.distroarchrelease.architecturetag]
 
-        # julian XXX ummm, the tests don't pass unless this is commented!
-        #assert current.distroarchrelease.distrorelease == distrorelease, (
-        #    "For now we only allow copy between pockets in the same "
-        #    "distrorelease.")
-
         copy = SecureBinaryPackagePublishingHistory(
             binarypackagerelease=current.binarypackagerelease,
             distroarchrelease=target_dar,
