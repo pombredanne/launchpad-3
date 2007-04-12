@@ -508,22 +508,20 @@ ul#menuroot li.selected a.breadcrumb {
 
 /* Under the location bar is a Help tab that expands when clicked. */
 #help-panel {
-  background: #cff;
   clear: both;
   position: absolute;
-  top: 47px;
+  top: 27px;
   left: 0;
   width: 300px;
   z-index: 100;
 }
-
-#help-panel h2 {
-  background: #fff url(help_ttl_closed.gif);
+#help-tab {
+  background: url(help-tab.gif);
   color: #fff;
   float: right;
   font-size: 1px;
   width: 32px;
-  height: 80px;
+  height: 62px;
 }
 #help-content {
   background: #fff url(help_bottom_bg.gif) left bottom no-repeat;
@@ -532,9 +530,11 @@ ul#menuroot li.selected a.breadcrumb {
   padding: 0 10px;
   width: 248px; /* = 300px - 32px - 2 * 10px */
 }
-/* IE6 and lower ignores "height" but treats "height" as min-height: */
+/* IE6 and lower ignore "height" but treat "height" as min-height. */
 * html #help-content {height: 100px;}
-
+/* When the tab is opened, the triangle in it swivels to show it's a toggle. */
+#help-panel.open #help-tab {background: url(help-tab-open.gif);}
+/* When the tab is closed, the help content is not displayed. */
 #help-panel.closed {width: 32px;}
 #help-panel.closed #help-content {display: none;}
 
