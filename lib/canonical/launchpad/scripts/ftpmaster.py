@@ -1112,7 +1112,7 @@ class PackageLocation:
                 suite = self.distribution.getDistroReleaseAndPocket(suite_name)
             except NotFoundError, err:
                 raise PackageLocationError(
-                    "Could not fund suite %s" % err)
+                    "Could not find suite %s" % err)
             else:
                 self.distrorelease, self.pocket = suite
         else:
