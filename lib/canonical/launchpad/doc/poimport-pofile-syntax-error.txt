@@ -111,15 +111,15 @@ There is one email and it's for the error we produced.
   >>> print msg.get_payload(decode=True)
   Hello Mark Shuttleworth,
   <BLANKLINE>
-  On ..., you uploaded a file with
-  Welsh (cy) translations for firefox in Mozilla Firefox trunk to Launchpad.
+  On ..., you uploaded a file with Welsh (cy) translations for firefox in
+  Mozilla Firefox trunk to Launchpad.
   <BLANKLINE>
   We were unable to import the file because of errors in its format.
   <BLANKLINE>
-  You can check your file for correct formatting with the 'msgfmt'
-  command. Please fix any errors raised by msgfmt and upload the file
-  again. If you check the file and you don't find any error in it,
-  please file a question at https://answers.launchpad.net/
+  You can check your file for correct formatting with the 'msgfmt' command.
+  Please fix any errors raised by msgfmt and upload the file again. If you
+  check the file and you don't find any error in it, please look for an
+  answer or file a question at https://answers.launchpad.net/rosetta/
   <BLANKLINE>
   For your convenience, you can get the file you uploaded at:
   http://localhost:58000/.../firefox-cy.po
