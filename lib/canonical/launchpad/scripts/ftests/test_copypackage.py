@@ -109,19 +109,52 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             copied_binary.title,
             u'mozilla-firefox 0.9 (i386 binary) in ubuntu hoary')
 
+    def assertRaisesWithContent(self, exception, exception_content, func, *args):
+        """Check if the given exception is raised with given content.
+
+        If the expection isn't raised or the exception_content doesn't match
+        what was raised the RaisesWithContentError local exception is raised.
+        """
+        class RaisesWithContentError(Exception):
+            """Raised by assertRaisesWithContent procedure."""
+
+        if len(args):
+            arguments = args
+        else:
+            arguments = []
+
+        exception_name = str(exception).split('.')[-1]
+
+        try:
+            func(*args)
+        except exception, err:
+            try:
+                self.assertEqual(str(err), exception_content)
+            except AssertionError:
+                raise RaisesWithContentError(
+                    "'%s' content doesn't match: \"%s\" != \"%s\""
+                    % (exception_name, str(err), exception_content))
+        else:
+            raise RaisesWithContentError(
+                "'%s' was not raised" % exception_name)
+
     def testSourceLookupFailure(self):
         """Check if it raises when the target source can't be found."""
         copy_helper = self.getCopyHelper(sourcename='zaphod')
 
-        self.assertRaises(
-            CopyPackageHelperError, copy_helper.performCopy)
+        self.assertRaisesWithContent(
+            CopyPackageHelperError,
+            "Could not find any version of 'zaphod' in ubuntu/warty/RELEASE",
+            copy_helper.performCopy)
 
     def testBadDistro(self):
         """Check if it raises if the distro is invalid."""
         copy_helper = self.getCopyHelper(from_distribution_name="beeblebrox")
 
-        self.assertRaises(
-            CopyPackageHelperError, copy_helper.performCopy)
+        self.assertRaisesWithContent(
+            CopyPackageHelperError,
+            "Could not find distribution 'beeblebrox'",
+            copy_helper.performCopy)
 
     def testBadSuite(self):
         """Check that it fails when specifying a bad distro release."""
