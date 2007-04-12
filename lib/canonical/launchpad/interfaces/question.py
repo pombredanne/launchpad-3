@@ -12,7 +12,6 @@ __all__ = [
     'IQuestionChangeStatusForm',
     'IQuestionCollection',
     'IQuestionSet',
-    'IQuestionTransferForm',
     'QUESTION_STATUS_DEFAULT_SEARCH'
     ]
 
@@ -115,6 +114,7 @@ class IQuestion(IHasOwner):
         title=_('Status Whiteboard'), required=False,
         description=_('Up-to-date notes on the status of the question.'))
     # other attributes
+    # sinzui change this to Object?
     target = Attribute(
         'The IQuestionTarget that is associated to this question.')
 
@@ -364,9 +364,6 @@ class IQuestion(IHasOwner):
         :comment: A string or IMessage containing the comment.
         :datecreated: Date for the message. Defaults to the current time.
         """
-        
-    def transfer(question_target, user, comment, datecreated=None):
-        """Transfer the question to another IQuestionTarget."""
 
     # subscription-related methods
     def subscribe(person):
@@ -497,24 +494,5 @@ class IQuestionChangeStatusForm(Interface):
     message = Text(
         title=_('Message'),
         description=_('Enter an explanation for the status change'),
-        required=True)
-        
-class IQuestionTransferForm(Interface):
-    """Form schema for transferring a question."""
-
-#     questiontarget = Object(title=_("Project"),
-#         description=_(
-#             'Enter or choose a project to transfer this question to.'),
-#         schema=IQuestionTarget, 
-#         required=True)
-            
-    questiontarget = Choice(title=_('Project'),
-        description=_(
-            'Enter or choose a project to transfer this question to.'),
-        vocabulary='DistributionOrProduct',
-        required=False)
-                   
-    message = Text(title=_('Message'), 
-        description=_('Enter an explanation for transfering this question.'),
         required=True)
 

@@ -18,7 +18,6 @@ __all__ = [
     'QuestionRejectView',
     'QuestionSetView',
     'QuestionSubscriptionView',
-    'QuestionTransferView',
     'QuestionWorkflowView',
     ]
 
@@ -47,7 +46,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadStatisticSet,
     IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionSet,
-    IQuestionTransferForm, IQuestionTarget, UnexpectedFormData)
+    IQuestionTarget, UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
@@ -57,6 +56,7 @@ from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
 from canonical.widgets.project import ProjectScopeWidget
+from canonical.widgets.bug import FileBugTargetWidget
 
 
 class QuestionSetNavigation(Navigation):
@@ -419,11 +419,12 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
 
     schema = IQuestion
     label = 'Edit question'
-    field_names = ["title", "description", "sourcepackagename",
-                   "priority", "assignee", "whiteboard"]
+    field_names = ["title", "description", "distribution", "sourcepackagename",
+                   "product", "target", "priority", "assignee", "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)
+    custom_widget('target', FileBugTargetWidget)
 
     def setUpFields(self):
         """Select the subset of fields to display.
@@ -434,8 +435,9 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
         """
         LaunchpadEditFormView.setUpFields(self)
 
-        if self.context.distribution is None:
-            self.form_fields = self.form_fields.omit("sourcepackagename")
+        #if self.context.distribution is None:
+        self.form_fields = self.form_fields.omit(["distribution", 
+            "sourcepackagename", "product"])
 
         # Add the language field with a vocabulary specialized for display
         # purpose.
@@ -789,43 +791,6 @@ class SearchAllQuestionsView(SearchQuestionsView):
             return _('There are no questions with the requested statuses.')
 
 
-class QuestionTransferView(LaunchpadFormView):
-    """A view for transfering questions to other QuestionTargets."""
-    
-    schema = IQuestionTransferForm
-    custom_widget('questiontarget', ProjectScopeWidget)
-
-    @property
-    def target_css_class(self):
-        """The CSS class for used in the scope widget."""
-        if self.questiontarget_error:
-            return 'error'
-        else:
-            return None
-
-    @property
-    def questiontarget_error(self):
-        """The error message for the scope widget."""
-        return self.getWidgetError('target')
-            
-    def validate(self, data):
-        """See LaunchpadFormView."""
-        if 'message' not in data:
-            self.setFieldError(
-                'message', _('You must provide an explanation message.'))
-        if data['questiontarget'] is None:
-            self.setFieldError('questiontarget', _('You must choose a project.'))
-
-    @action(_('Transfer'))
-    def transfer_action(self, action, data):
-        """Transfer the question to another QuestionTarget."""
-        self.context.transfer(self.project, self.user, data['message'])
-        self.request.response.addNotification(
-            _('You have transferred the question.'))
-        self.request.response.redirect(canonical_url(self.context))
-        return ''
-
-
 class QuestionContextMenu(ContextMenu):
 
     usedfor = IQuestion
@@ -835,7 +800,6 @@ class QuestionContextMenu(ContextMenu):
         'changestatus',
         'history',
         'subscription',
-        'transfer',
         'linkbug',
         'unlinkbug',
         'makebug',
@@ -870,10 +834,6 @@ class QuestionContextMenu(ContextMenu):
             text = 'Subscribe'
             icon = 'mail'
         return Link('+subscribe', text, icon=icon)
-        
-    def transfer(self):
-        text = 'Transfer question'
-        return Link('+transfer', text, icon='edit')
 
     def linkbug(self):
         text = 'Link existing bug'
@@ -902,5 +862,4 @@ class QuestionSetContextMenu(ContextMenu):
     def finddistro(self):
         text = 'Find distribution'
         return Link('/distros', text, icon='search')
-
 

@@ -23,7 +23,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from canonical.launchpad.interfaces import (
     IBugLinkTarget, InvalidQuestionStateError, ILanguage, ILanguageSet,
     ILaunchpadCelebrities, IMessage, IPerson, IProduct, IQuestion,
-    IQuestionSet, IQuestionTarget,
+    IQuestionSet,
     QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
@@ -138,7 +138,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         joinColumn='question')
 
     # attributes
-    @property
+    # sinzui, add a mutator
     def target(self):
         """See IQuestion."""
         if self.product:
@@ -148,6 +148,23 @@ class Question(SQLBase, BugLinkTargetMixin):
                 self.sourcepackagename.name)
         else:
             return self.distribution
+            
+    def _settarget(self, question_target, disribution=None):
+        """See IQuestion."""
+        assert IQuestionTarget.providedBy(question_target), (
+            "The target must be an IQuestionTarget")
+        if IProduct.providedBy(question_target):
+            self.product = question_target
+        elif ISourcepackage.providedBy(question_target):
+            self.sourcepackagename = question_target.name
+            self.distribution = distribution
+        elif IDistribution.providedBy(question_target):
+            self.distribution = question_target
+        else:
+            raise AssertionError("Unknown IQuestionTarget type of %s" %
+                question_target)
+
+    target = property(target, _settarget, doc=target.__doc__)
 
     @property
     def followup_subject(self):
@@ -361,24 +378,6 @@ class Question(SQLBase, BugLinkTargetMixin):
         self.answerer = None
         self.dateanswered = None
         return msg
-        
-    def transfer(self, question_target, user, comment, datecreated=None):
-        """See IQuestion."""
-        assert IQuestionTarget.providedBy(question_target), (
-            "The target must be an IQuestionTarget")
-        if IProduct.providedBy(question_target):
-            self.product = question_target
-        elif ISourcepackage.providedBy(question_target):
-            self.sourcepackagename = question_target.name
-        elif IDistribution.providedBy(question_target):
-            self.distribution = question_target
-        else:
-            raise AssertionError("Unknown IQuestionTarget type of %s" %
-                question_target)
-        return self._newMessage(
-            user, comment, datecreated=datecreated,
-            action=QuestionAction.COMMENT, new_status=self.status,
-            update_question_dates=False)
 
     # subscriptions
     def subscribe(self, person):
