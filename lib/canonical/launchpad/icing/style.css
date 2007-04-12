@@ -524,13 +524,22 @@ ul#menuroot li.selected a.breadcrumb {
   height: 62px;
 }
 #help-content {
-  background: #fff url(help_bottom_bg.gif) left bottom no-repeat;
   float: left;
-  min-height: 100px;
-  padding: 0 10px;
-  width: 248px; /* = 300px - 32px - 2 * 10px */
+  width: 268px; /* = 300px - 32px */
 }
-/* IE6 and lower ignore "height" but treat "height" as min-height. */
+#help-text {
+  background: #fff url(help_bg.gif) top right repeat-y;
+  min-height: 100px;
+}
+#help-text * {padding: 0 10px;}
+#help-text * * {padding: 0;}
+
+#help-bottom {
+  font-size: 1px;
+  height: 6px;
+  background: url(help-bottom.gif) bottom right no-repeat;
+}
+/* IE6 and lower ignore "height", but treat "height" as min-height. */
 * html #help-content {height: 100px;}
 /* When the tab is opened, the triangle in it swivels to show it's a toggle. */
 #help-panel.open #help-tab {background: url(help-tab-open.gif);}
