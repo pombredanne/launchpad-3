@@ -1,0 +1,30 @@
+= Displaying an Unknown importance after switching to using Malone =
+
+When project doesn't use Malone as its official bugtracker, it's
+possible for its bugs to have an Unknown importance.
+
+    >>> admin_browser.open('http://launchpad.dev/debian/+launchpad')
+    >>> admin_browser.getControl('Uses Malone Officially').selected
+    False
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/debian/+source/evolution/+bug/7/+editstatus')
+    >>> main = find_main_content(user_browser.contents)
+    >>> lock_icon = main.find('img', {'src': '/@@/locked'})
+    >>> print extract_text(lock_icon.parent)
+    Unknown
+
+If the project switches to use Malone as its bug tracker, the importance
+will still have an Unknown value.
+
+    >>> admin_browser.open('http://launchpad.dev/debian/+launchpad')
+    >>> admin_browser.getControl('Uses Malone Officially').selected = True
+    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/debian'
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/debian/+source/evolution/+bug/7/+editstatus')
+    >>> main = find_main_content(user_browser.contents)
+    >>> lock_icon = main.find('img', {'src': '/@@/locked'})
+    >>> print extract_text(lock_icon.parent)
+    Unknown
