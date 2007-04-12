@@ -366,7 +366,7 @@ class ShippingRequest(SQLBase):
     def getRequestsWithSameAddressFromOtherUsers(self, limit=5):
         """See IShippingRequest"""
         query = """
-            SELECT DISTINCT ShippingRequest.id
+            SELECT ShippingRequest.id
             FROM ShippingRequest
             JOIN RequestedCDs ON ShippingRequest.id = RequestedCDs.request
             WHERE normalized_address = %(address)s
@@ -379,13 +379,8 @@ class ShippingRequest(SQLBase):
                 denied=ShippingRequestStatus.DENIED, country=self.country,
                 cancelled=ShippingRequestStatus.CANCELLED,
                 release=self.distrorelease)
-        cur = cursor()
-        cur.execute(str(query))
-        ids = ",".join(str(id) for [id] in cur.fetchall())
-        if not ids:
-            return ShippingRequest.select("1 = 2")
         return ShippingRequest.select(
-            "id IN (%s)" % ids, limit=limit, orderBy='-daterequested')
+            "id IN (%s)" % query, limit=limit, orderBy='-daterequested')
 
 
 class ShippingRequestSet:
