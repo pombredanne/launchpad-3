@@ -65,7 +65,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             confirm_all, comment, include_binaries, logger)
 
     def testSimpleAction(self):
-        """Check how CopyPackageHelper behaves on a succesfully copy."""
+        """Check how CopyPackageHelper behaves on a successful copy."""
         copy_helper = self.getCopyHelper()
 
         # Check default values
@@ -110,8 +110,38 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             u'mozilla-firefox 0.9 (i386 binary) in ubuntu hoary')
 
     def testSourceLookupFailure(self):
-        """Check if it raises when the target source can be found."""
+        """Check if it raises when the target source can't be found."""
         copy_helper = self.getCopyHelper(sourcename='zaphod')
+
+        self.assertRaises(
+            CopyPackageHelperError, copy_helper.performCopy)
+
+    def testBadDistro(self):
+        """Check if it raises if the distro is invalid."""
+        copy_helper = self.getCopyHelper(from_distribution_name="beeblebrox")
+
+        self.assertRaises(
+            CopyPackageHelperError, copy_helper.performCopy)
+
+    def testBadSuite(self):
+        """Check that it fails when specifying a bad distro release."""
+        copy_helper = self.getCopyHelper(from_suite="slatibartfast")
+
+        self.assertRaises(
+            CopyPackageHelperError, copy_helper.performCopy)
+
+    def testFailIfSameLocations(self):
+        """Check that it fails if the source and destination package locations
+        are the same."""
+        copy_helper = self.getCopyHelper(from_suite='warty', to_suite='warty')
+
+        self.assertRaises(
+            CopyPackageHelperError, copy_helper.performCopy)
+
+    def testFailIfValidPackageButNotInSpecifiedSuite(self):
+        """Check that we fail if the package is valid but does not exist in the
+        specified distro release."""
+        copy_helper = self.getCopyHelper(from_suite="breezy-autotest")
 
         self.assertRaises(
             CopyPackageHelperError, copy_helper.performCopy)
