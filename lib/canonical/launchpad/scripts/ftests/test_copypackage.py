@@ -109,33 +109,21 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             copied_binary.title,
             u'mozilla-firefox 0.9 (i386 binary) in ubuntu hoary')
 
-    def assertRaisesWithContent(self, exception, exception_content, func, *args):
+    def assertRaisesWithContent(self, 
+                                exception, exception_content, func, *args):
         """Check if the given exception is raised with given content.
 
         If the expection isn't raised or the exception_content doesn't match
-        what was raised the RaisesWithContentError local exception is raised.
+        what was raised an AssertionError is raised.
         """
-        class RaisesWithContentError(Exception):
-            """Raised by assertRaisesWithContent procedure."""
-
-        if len(args):
-            arguments = args
-        else:
-            arguments = []
-
         exception_name = str(exception).split('.')[-1]
 
         try:
             func(*args)
         except exception, err:
-            try:
-                self.assertEqual(str(err), exception_content)
-            except AssertionError:
-                raise RaisesWithContentError(
-                    "'%s' content doesn't match: \"%s\" != \"%s\""
-                    % (exception_name, str(err), exception_content))
+            self.assertEqual(str(err), exception_content)
         else:
-            raise RaisesWithContentError(
+            raise AssertionError(
                 "'%s' was not raised" % exception_name)
 
     def testSourceLookupFailure(self):
@@ -160,24 +148,30 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         """Check that it fails when specifying a bad distro release."""
         copy_helper = self.getCopyHelper(from_suite="slatibartfast")
 
-        self.assertRaises(
-            CopyPackageHelperError, copy_helper.performCopy)
+        self.assertRaisesWithContent(
+            CopyPackageHelperError,
+            "Could not find suite 'slatibartfast'",
+            copy_helper.performCopy)
 
     def testFailIfSameLocations(self):
         """Check that it fails if the source and destination package locations
         are the same."""
         copy_helper = self.getCopyHelper(from_suite='warty', to_suite='warty')
 
-        self.assertRaises(
-            CopyPackageHelperError, copy_helper.performCopy)
+        self.assertRaisesWithContent(
+            CopyPackageHelperError, 
+            "Can not sync between the same locations: 'ubuntu/warty/RELEASE' to 'ubuntu/warty/RELEASE'",
+            copy_helper.performCopy)
 
     def testFailIfValidPackageButNotInSpecifiedSuite(self):
         """Check that we fail if the package is valid but does not exist in the
         specified distro release."""
         copy_helper = self.getCopyHelper(from_suite="breezy-autotest")
 
-        self.assertRaises(
-            CopyPackageHelperError, copy_helper.performCopy)
+        self.assertRaisesWithContent(
+            CopyPackageHelperError,
+            "Could not find 'mozilla-firefox/None' in ubuntu/breezy-autotest/RELEASE",
+            copy_helper.performCopy)
 
 
 def test_suite():
