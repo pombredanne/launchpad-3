@@ -127,16 +127,21 @@ def get_services_to_run(requested_services):
     If no names are given, then the list of services to run comes from the
     launchpad configuration.
 
-    If names are given, then only services matching those names are given.
+    If names are given, then only run the services matching those names.
     """
     if len(requested_services) == 0:
         return [svc for svc in SERVICES.values() if svc.shouldLaunch()]
     return [SERVICES[name] for name in requested_services]
 
 
-def process_arguments(args):
+def split_out_runlaunchpad_arguments(args):
     """Split the given command-line arguments into services to start and Zope
     arguments.
+
+    The runlaunchpad script can take an optional '-r services,...' argument. If
+    this argument is present, then the value is returned as the first element
+    of the return tuple. The rest of the arguments are returned as the second
+    element of the return tuple.
 
     Returns a tuple of the form ([service_name, ...], remaining_argv).
     """
@@ -158,7 +163,7 @@ def start_launchpad(argv=list(sys.argv)):
 
     # We really want to replace this with a generic startup harness.
     # However, this should last us until this is developed
-    services, argv = process_arguments(argv[1:])
+    services, argv = split_out_runlaunchpad_arguments(argv[1:])
     services = get_services_to_run(services)
     for service in services:
         service.launch()
