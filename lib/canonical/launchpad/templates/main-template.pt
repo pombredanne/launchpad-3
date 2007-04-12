@@ -265,17 +265,13 @@
         </ul>
       </div><!--id="globalfooter"-->
     </div><!--id="nonhelp"-->
-    <div id="help_panel" class="closed">
-      <div class="help1">
-        <div class="help2">
-          <p metal:define-slot="help">
-            Sorry, help isn&rsquo;t available for this page.
-          </p>
-        </div>
-        <a href="#" class="open-close">Help</a>
-        <br class="clear" />
+    <div id="help-panel" class="closed">
+      <h2 id="help-tab">Help</h2>
+      <div id="help-content">
+        <p metal:define-slot="help">
+          Sorry, help isn&rsquo;t available for this page.
+        </p>
       </div>
-      <div class="bottom">&nbsp;</div>
     </div>
     <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root">
