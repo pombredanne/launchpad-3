@@ -518,7 +518,7 @@ ul#menuroot li.selected a.breadcrumb {
 /* The widget has two parts. First, the tab itself. */
 #help-tab {
   background: url(help-tab.gif);
-  color: #fff;
+  color: #f7f7f7;
   float: right;
   font-size: 1px;
   width: 32px;
