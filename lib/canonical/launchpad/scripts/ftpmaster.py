@@ -1108,8 +1108,13 @@ class PackageLocation:
                 "Could not find distribution %s" % err)
 
         if suite_name is not None:
-            suite = self.distribution.getDistroReleaseAndPocket(suite_name)
-            self.distrorelease, self.pocket = suite
+            try:
+                suite = self.distribution.getDistroReleaseAndPocket(suite_name)
+            except NotFoundError, err:
+                raise PackageLocationError(
+                    "Could not fund suite %s" % err)
+            else:
+                self.distrorelease, self.pocket = suite
         else:
             self.distrorelease = self.distribution.currentrelease
             self.pocket = PackagePublishingPocket.RELEASE
