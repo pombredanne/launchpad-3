@@ -3473,6 +3473,12 @@ class ShipItDistroRelease(DBSchema):
         The Feisty Fawn release.
         """)
 
+    GUTSY = Item(5, """
+        7.10 (Gutsy Gibbon)
+
+        The Gutsy Gibbon release.
+        """)
+
 
 class TextDirection(DBSchema):
     """The base text direction for a language."""
