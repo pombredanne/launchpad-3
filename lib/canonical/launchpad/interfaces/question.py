@@ -116,12 +116,12 @@ class IQuestion(IHasOwner):
         description=_('Up-to-date notes on the status of the question.'))
     # other attributes
     target = Object(title=_('Project'), required=True, schema=IBugTarget,
-        description=_('The product, distribution, or source package the'
+        description=_('The distribution, source package, or product the '
                       'question is pertains to.'))
 
     # joins
     subscriptions = Attribute(
-        'The set of subscriptions to this quesiton.')
+        'The set of subscriptions to this question.')
     reopenings = Attribute(
         "Records of times when this question was reopened.")
     messages = List(
@@ -327,8 +327,8 @@ class IQuestion(IHasOwner):
         """
 
     can_reopen = Attribute(
-        'Whether the question state is a state where the question owner '
-        'could reopen it.')
+        'Whether the question state is a state where the question owner could '
+        'reopen it.')
 
     def reopen(comment, datecreated=None):
         """Reopen a question that was ANSWERED, EXPIRED or SOLVED.

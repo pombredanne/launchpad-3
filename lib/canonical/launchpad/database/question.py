@@ -103,8 +103,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     status = EnumCol(
         schema=QuestionStatus, notNull=True, default=QuestionStatus.OPEN)
     priority = EnumCol(
-        schema=QuestionPriority, notNull=True, 
-        default=QuestionPriority.NORMAL)
+        schema=QuestionPriority, notNull=True, default=QuestionPriority.NORMAL)
     assignee = ForeignKey(
         dbName='assignee', notNull=False, foreignKey='Person', default=None)
     answerer = ForeignKey(
