@@ -110,7 +110,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dbName='translationgroup', foreignKey='TranslationGroup', notNull=False,
         default=None)
     translationpermission = EnumCol(
-        dbName='translationpermission', notNull=True, 
+        dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(
         dbName='lucilleconfig', notNull=False, default=None)
@@ -123,7 +123,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         intermediateTable='DistributionBounty')
     uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution', prejoins=["uploader", "component"])
-    official_answers = BoolCol(dbName='official_answers', notNull=True, 
+    official_answers = BoolCol(dbName='official_answers', notNull=True,
         default=False)
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
@@ -548,10 +548,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            'Language.id = Ticket.language AND '
-            'Ticket.distribution = %s AND '
-            'Ticket.sourcepackagename IS NULL' % sqlvalues(self.id),
-            clauseTables=['Ticket'], distinct=True))
+            'Language.id = Question.language AND '
+            'Question.distribution = %s AND '
+            'Question.sourcepackagename IS NULL' % sqlvalues(self.id),
+            clauseTables=['Question'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""

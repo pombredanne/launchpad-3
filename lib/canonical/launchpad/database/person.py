@@ -416,37 +416,37 @@ class Person(SQLBase, HasSpecificationsMixin):
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            '''Language.id = language AND Ticket.id IN (
-            SELECT id FROM Ticket
+            '''Language.id = language AND Question.id IN (
+            SELECT id FROM Question
                      WHERE owner = %(personID)s OR answerer = %(personID)s OR
                            assignee = %(personID)s
-            UNION SELECT ticket FROM TicketSubscription
+            UNION SELECT question FROM QuestionSubscription
                   WHERE person = %(personID)s
-            UNION SELECT ticket
-                    FROM TicketMessage JOIN Message ON (message = Message.id)
+            UNION SELECT question
+                    FROM QuestionMessage JOIN Message ON (message = Message.id)
                    WHERE owner = %(personID)s
             )''' % sqlvalues(personID=self.id),
-            clauseTables=['Ticket'], distinct=True))
+            clauseTables=['Question'], distinct=True))
 
     def getDirectAnswerQuestionTargets(self):
         """See IPerson."""
         answer_contacts = AnswerContact.select(
-            '''SupportContact.person = %s''' % sqlvalues(self.id))
-        return self._assembleAnswerContacts(answer_contacts)
-        
+            'person = %s' % sqlvalues(self))
+        return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
+
     def getTeamAnswerQuestionTargets(self):
         """See IPerson."""
         answer_contacts = AnswerContact.select(
-            '''SupportContact.person = TeamParticipation.team
+            '''AnswerContact.person = TeamParticipation.team
             AND TeamParticipation.person = %(personID)s
-            AND SupportContact.person != %(personID)s''' % sqlvalues(
+            AND AnswerContact.person != %(personID)s''' % sqlvalues(
                 personID=self.id),
             clauseTables=['TeamParticipation'], distinct=True)
-        return self._assembleAnswerContacts(answer_contacts)
-    
-    def _assembleAnswerContacts(self, answer_contacts):
+        return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
+
+    def _getQuestionTargetsFromAnswerContacts(self, answer_contacts):
         """Return a list of valid IQuestionTargets.
-        
+
         Provided AnswerContact query results, a distinct list of Products,
         Distributions, and SourcePackages is returned.
         """
@@ -464,12 +464,12 @@ class Person(SQLBase, HasSpecificationsMixin):
                 target = answer_contact.distribution
             else:
                 raise AssertionError('Unknown IQuestionTarget.')
-            
+
             if not target in targets:
                 targets.append(target)
-            
-        return targets      
-    
+
+        return targets
+
     @property
     def branches(self):
         """See IPerson."""
@@ -718,12 +718,12 @@ class Person(SQLBase, HasSpecificationsMixin):
         the given limit.
         """
         # We want this person's total karma on a given context (that is,
-        # across all different categories) here; that's why we use a 
+        # across all different categories) here; that's why we use a
         # "KarmaCache.category IS NULL" clause here.
         query = """
             SELECT PillarName.name, KarmaCache.karmavalue
             FROM KarmaCache
-            JOIN PillarName ON 
+            JOIN PillarName ON
                 COALESCE(KarmaCache.distribution, -1) =
                 COALESCE(PillarName.distribution, -1)
                 AND
@@ -1827,49 +1827,49 @@ class PersonSet:
 
         # Update only the AnswerContacts that will not conflict
         cur.execute('''
-            UPDATE SupportContact
+            UPDATE AnswerContact
             SET person=%(to_id)d
             WHERE person=%(from_id)d
                 AND distribution IS NULL
                 AND product NOT IN (
                     SELECT product
-                    FROM SupportContact
+                    FROM AnswerContact
                     WHERE person = %(to_id)d
                     )
             ''' % vars())
         cur.execute('''
-            UPDATE SupportContact
+            UPDATE AnswerContact
             SET person=%(to_id)d
             WHERE person=%(from_id)d
                 AND distribution IS NOT NULL
                 AND (distribution, sourcepackagename) NOT IN (
                     SELECT distribution,sourcepackagename
-                    FROM SupportContact
+                    FROM AnswerContact
                     WHERE person = %(to_id)d
                     )
             ''' % vars())
         # and delete those left over
         cur.execute('''
-            DELETE FROM SupportContact WHERE person=%(from_id)d
+            DELETE FROM AnswerContact WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('supportcontact', 'person'))
+        skip.append(('answercontact', 'person'))
 
         # Update only the QuestionSubscriptions that will not conflict
         cur.execute('''
-            UPDATE TicketSubscription
+            UPDATE QuestionSubscription
             SET person=%(to_id)d
-            WHERE person=%(from_id)d AND ticket NOT IN
+            WHERE person=%(from_id)d AND question NOT IN
                 (
-                SELECT ticket
-                FROM TicketSubscription
+                SELECT question
+                FROM QuestionSubscription
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
         # and delete those left over
         cur.execute('''
-            DELETE FROM TicketSubscription WHERE person=%(from_id)d
+            DELETE FROM QuestionSubscription WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('ticketsubscription', 'person'))
+        skip.append(('questionsubscription', 'person'))
 
         # Update only the MentoringOffers that will not conflict
         cur.execute('''

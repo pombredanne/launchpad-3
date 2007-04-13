@@ -91,7 +91,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     implements(IQuestion, IBugLinkTarget)
 
-    _table = 'Ticket'
+    _table = 'Question'
     _defaultOrder = ['-priority', 'datecreated']
 
     # db field names
@@ -129,14 +129,14 @@ class Question(SQLBase, BugLinkTargetMixin):
     subscriptions = SQLMultipleJoin('QuestionSubscription',
         joinColumn='question', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
-        joinColumn='ticket', otherColumn='person',
-        intermediateTable='TicketSubscription', orderBy='name')
+        joinColumn='question', otherColumn='person',
+        intermediateTable='QuestionSubscription', orderBy='name')
     bug_links = SQLMultipleJoin('QuestionBug',
         joinColumn='question', orderBy='id')
-    bugs = SQLRelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
-        intermediateTable='TicketBug', orderBy='id')
+    bugs = SQLRelatedJoin('Bug', joinColumn='question', otherColumn='bug',
+        intermediateTable='QuestionBug', orderBy='id')
     messages = SQLMultipleJoin('QuestionMessage', joinColumn='question',
-        prejoins=['message'], orderBy=['TicketMessage.id'])
+        prejoins=['message'], orderBy=['QuestionMessage.id'])
     reopenings = SQLMultipleJoin('QuestionReopening', orderBy='datecreated',
         joinColumn='question')
 
@@ -223,7 +223,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_request_info(self):
         """See IQuestion."""
-        return self.status in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+        return self.status in [
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
             QuestionStatus.ANSWERED]
 
     @notify_question_modified()
@@ -259,7 +260,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_give_answer(self):
         """See IQuestion."""
-        return self.status in [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+        return self.status in [
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
             QuestionStatus.ANSWERED]
 
     @notify_question_modified()
@@ -284,7 +286,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.answerer = user
             self.answer = msg
             self.owner.assignKarma(
-                'ticketownersolved', product=self.product,
+                'questionownersolved', product=self.product,
                 distribution=self.distribution,
                 sourcepackagename=self.sourcepackagename)
         return msg
@@ -292,7 +294,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_confirm_answer(self):
         """See IQuestion."""
-        if self.status not in [QuestionStatus.OPEN, QuestionStatus.ANSWERED, 
+        if self.status not in [
+            QuestionStatus.OPEN, QuestionStatus.ANSWERED,
             QuestionStatus.NEEDSINFO]:
             return False
 
@@ -322,11 +325,11 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.answer = answer
 
             self.owner.assignKarma(
-                'ticketansweraccepted', product=self.product,
+                'questionansweraccepted', product=self.product,
                 distribution=self.distribution,
                 sourcepackagename=self.sourcepackagename)
             self.answerer.assignKarma(
-                'ticketanswered', product=self.product,
+                'questionanswered', product=self.product,
                 distribution=self.distribution,
                 sourcepackagename=self.sourcepackagename)
         return msg
@@ -528,8 +531,8 @@ class QuestionSet:
 
     def getQuestionLanguages(self):
         """See IQuestionSet"""
-        return set(Language.select('Language.id = Ticket.language',
-            clauseTables=['Ticket'], distinct=True))
+        return set(Language.select('Language.id = Question.language',
+            clauseTables=['Question'], distinct=True))
 
     @staticmethod
     def new(title=None, description=None, owner=None,
@@ -605,22 +608,22 @@ class QuestionSearch:
             # We accept either a product or an iterable of products.
             if IProduct.providedBy(self.product):
                 constraints.append(
-                    'Ticket.product = %s' % sqlvalues(self.product))
+                    'Question.product = %s' % sqlvalues(self.product))
             else:
-                constraints.append('Ticket.product IN (%s)' % ", ".join(
+                constraints.append('Question.product IN (%s)' % ", ".join(
                     sqlvalues(*self.product)))
         elif self.distribution:
             constraints.append(
-                'Ticket.distribution = %s' % sqlvalues(self.distribution))
+                'Question.distribution = %s' % sqlvalues(self.distribution))
             if self.sourcepackagename:
                 constraints.append(
-                    'Ticket.sourcepackagename = %s' % sqlvalues(
+                    'Question.sourcepackagename = %s' % sqlvalues(
                         self.sourcepackagename))
         elif self.project:
             constraints.append("""
-                Ticket.product = Product.id AND 
+                Question.product = Product.id AND
                 Product.project = %s""" % sqlvalues(self.project))
-        
+
         return constraints
 
     def getTableJoins(self):
@@ -636,20 +639,20 @@ class QuestionSearch:
         """Create the joins needed to select constraints on the messages by a
         particular person."""
         joins = [
-            ('LEFT OUTER JOIN TicketMessage '
-             'ON TicketMessage.ticket = Ticket.id'),
-            ('LEFT OUTER JOIN Message ON TicketMessage.message = Message.id '
+            ('LEFT OUTER JOIN QuestionMessage '
+             'ON QuestionMessage.question = Question.id'),
+            ('LEFT OUTER JOIN Message ON QuestionMessage.message = Message.id '
              'AND Message.owner = %s' % sqlvalues(person))]
         if self.project:
             joins.extend(self.getProductJoins())
-            
+
         return joins
-             
+
     def getProductJoins(self):
         """Create the joins needed to select contrains on progects by a
         particular project."""
         return [('JOIN Product '
-                 'ON Ticket.product = Product.id')]
+                 'ON Question.product = Product.id')]
 
     def getConstraints(self):
         """Return a list of SQL constraints to use for this search."""
@@ -658,18 +661,18 @@ class QuestionSearch:
 
         if self.search_text is not None:
             constraints.append(
-                'Ticket.fti @@ ftq(%s)' % quote(self.search_text))
+                'Question.fti @@ ftq(%s)' % quote(self.search_text))
 
         if self.status:
-            constraints.append('Ticket.status IN %s' % sqlvalues(
+            constraints.append('Question.status IN %s' % sqlvalues(
                 list(self.status)))
 
         if self.needs_attention_from:
             constraints.append('''(
-                (Ticket.owner = %(person)s
-                    AND Ticket.status IN %(owner_status)s)
-                OR (Ticket.owner != %(person)s AND
-                    Ticket.status = %(open_status)s AND
+                (Question.owner = %(person)s
+                    AND Question.status IN %(owner_status)s)
+                OR (Question.owner != %(person)s AND
+                    Question.status = %(open_status)s AND
                     Message.owner = %(person)s)
                 )''' % sqlvalues(
                     person=self.needs_attention_from,
@@ -679,7 +682,7 @@ class QuestionSearch:
 
         if self.language:
             constraints.append(
-                'Ticket.language IN (%s)'
+                'Question.language IN (%s)'
                     % ', '.join(sqlvalues(*self.language)))
 
         return constraints
@@ -698,10 +701,10 @@ class QuestionSearch:
         else:
             # QuestionTarget will vary.
             return ['owner', 'product', 'distribution', 'sourcepackagename']
-            
+
     def getPrejoinClauseTables(self):
         """Return a list of tables that are in the contraints"""
-        if self.getConstraints().count('Ticket.product = Product.id'):
+        if self.getConstraints().count('Question.product = Product.id'):
             return ['product']
         return []
 
@@ -714,22 +717,22 @@ class QuestionSearch:
             else:
                 sort = QuestionSort.NEWEST_FIRST
         if sort is QuestionSort.NEWEST_FIRST:
-            return "-Ticket.datecreated"
+            return "-Question.datecreated"
         elif sort is QuestionSort.OLDEST_FIRST:
-            return "Ticket.datecreated"
+            return "Question.datecreated"
         elif sort is QuestionSort.STATUS:
-            return ["Ticket.status", "-Ticket.datecreated"]
+            return ["Question.status", "-Question.datecreated"]
         elif sort is QuestionSort.RELEVANCY:
             if self.search_text:
                 # SQLConstant is a workaround for bug 53455
                 return [SQLConstant(
-                            "-rank(Ticket.fti, ftq(%s))" % quote(
+                            "-rank(Question.fti, ftq(%s))" % quote(
                                 self.search_text)),
-                        "-Ticket.datecreated"]
+                        "-Question.datecreated"]
             else:
-                return "-Ticket.datecreated"
+                return "-Question.datecreated"
         elif sort is QuestionSort.RECENT_OWNER_ACTIVITY:
-            return ['-Ticket.datelastquery']
+            return ['-Question.datelastquery']
         else:
             raise AssertionError, "Unknown QuestionSort value: %s" % sort
 
@@ -739,11 +742,12 @@ class QuestionSearch:
         constraints = self.getConstraints()
         if constraints:
             query += (
-                'Ticket.id IN (SELECT Ticket.id FROM Ticket %s WHERE %s)' % (
-                    '\n'.join(self.getTableJoins()),
-                    ' AND '.join(constraints)))
+                'Question.id IN ('
+                    'SELECT Question.id FROM Question %s WHERE %s)' % (
+                        '\n'.join(self.getTableJoins()),
+                        ' AND '.join(constraints)))
         return Question.select(
-            query, prejoins=self.getPrejoins(), 
+            query, prejoins=self.getPrejoins(),
             prejoinClauseTables=self.getPrejoinClauseTables(),
             orderBy=self.getOrderByClause())
 
@@ -776,7 +780,7 @@ class QuestionTargetSearch(QuestionSearch):
         """See QuestionSearch."""
         constraints = QuestionSearch.getConstraints(self)
         if self.owner:
-            constraints.append('Ticket.owner = %s' % self.owner.id)
+            constraints.append('Question.owner = %s' % self.owner.id)
 
         return constraints
 
@@ -844,9 +848,9 @@ class QuestionPersonSearch(QuestionSearch):
 
         if QuestionParticipation.SUBSCRIBER in self.participation:
             joins.append(
-                'LEFT OUTER JOIN TicketSubscription '
-                'ON TicketSubscription.ticket = Ticket.id'
-                ' AND TicketSubscription.person = %s' % sqlvalues(
+                'LEFT OUTER JOIN QuestionSubscription '
+                'ON QuestionSubscription.question = Question.id'
+                ' AND QuestionSubscription.person = %s' % sqlvalues(
                     self.person))
 
         if QuestionParticipation.COMMENTER in self.participation:
@@ -857,11 +861,11 @@ class QuestionPersonSearch(QuestionSearch):
         return joins
 
     queryByParticipationType = {
-        QuestionParticipation.ANSWERER: "Ticket.answerer = %s",
-        QuestionParticipation.SUBSCRIBER: "TicketSubscription.person = %s",
-        QuestionParticipation.OWNER: "Ticket.owner = %s",
+        QuestionParticipation.ANSWERER: "Question.answerer = %s",
+        QuestionParticipation.SUBSCRIBER: "QuestionSubscription.person = %s",
+        QuestionParticipation.OWNER: "Question.owner = %s",
         QuestionParticipation.COMMENTER: "Message.owner = %s",
-        QuestionParticipation.ASSIGNEE: "Ticket.assignee = %s"}
+        QuestionParticipation.ASSIGNEE: "Question.assignee = %s"}
 
     def getConstraints(self):
         """See QuestionSearch."""

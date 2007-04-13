@@ -630,8 +630,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = ITeam
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'editemail', 'polls', 'add_poll', 'joinleave',
-             'reassign', 'common_packages']
+             'mugshots', 'add_member', 'editemail', 'polls', 'add_poll',
+             'joinleave', 'reassign', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -656,6 +656,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def members(self):
         target = '+members'
         text = 'Show all members'
+        return Link(target, text, icon='people')
+
+    def mugshots(self):
+        target = '+mugshots'
+        text = 'Show group photo'
         return Link(target, text, icon='people')
 
     @enabled_with_permission('launchpad.Edit')

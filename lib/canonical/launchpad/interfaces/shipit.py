@@ -331,13 +331,13 @@ class IShippingRequest(Interface):
         """
 
     def addressIsDuplicated():
-        """Return True if there is more than one request made from another
-        user using the same address as this one.
+        """Return True if there is one or more requests made from another
+        user using the same address and distrorelease as this one.
         """
 
     def getRequestsWithSameAddressFromOtherUsers():
         """Return all non-cancelled non-denied requests with the same address
-        as this one but with a different recipient.
+        and distrorelease as this one but with a different recipient.
         """
 
 
