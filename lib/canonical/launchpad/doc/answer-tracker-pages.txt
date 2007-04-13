@@ -399,7 +399,9 @@ whiteboard.
     ...     'field.title': 'Better Title',
     ...     'field.language': 'en',
     ...     'field.description': 'A better description.',
-    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.target': 'package',
+    ...     'field.target.distribution': 'ubuntu',
+    ...     'field.target.package': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
     ...     'field.whiteboard': 'Some note',
     ...     'field.priority': 'Wishlist'})
@@ -450,7 +452,9 @@ priority fields will be updated:
     ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
-    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.target': 'package',
+    ...     'field.target.distribution': 'ubuntu',
+    ...     'field.target.package': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
     ...     'field.whiteboard': 'Some note',
     ...     'field.priority': 'Wishlist'})
@@ -472,7 +476,10 @@ a distribution question:
     ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
-    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.target': 'product',
+    ...     'field.target.distribution': '',
+    ...     'field.target.package': 'mozilla-firefox',
+    ...     'field.target.product': 'firefox',
     ...     'field.assignee': '',
     ...     'field.whiteboard': '',
     ...     'field.priority': 'Normal'})

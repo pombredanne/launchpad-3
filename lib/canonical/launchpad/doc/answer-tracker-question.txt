@@ -120,23 +120,21 @@ The question can be transferred to a new IQuestionTarget.
     >>> thunderbird = getUtility(IProductSet)['thunderbird']
     >>> thunderbird_question_target = IQuestionTarget(thunderbird)
     >>> firefox_question.target = thunderbird_question_target
-    >>> firefox_question.target == thunderbird
-    True
+    >>> print firefox_question.target.displayname
+    Mozilla Thunderbird
         
 There are no restrictions to the number of IQuestionTargets that
 a question can be transferred to.
     
     >>> ubuntu_question_target = IQuestionTarget(ubuntu)
     >>> firefox_question.target = ubuntu_question_target
-    >>> firefox_question.target == ubuntu_question_target
-    True
+    >>> print firefox_question.target.displayname
+    Ubuntu
     
     >>> evolution_package_question_target = IQuestionTarget(evolution_package)
     >>> firefox_question.target = evolution_package_question_target
-    >>> firefox_question.target.name == evolution_package_question_target.name
-    True
-    >>> firefox_question.target == ubuntu_question_target
-    False
+    >>> print firefox_question.target.displayname
+    evolution in ubuntu
     
     >>> firefox_question.target = firefox
 

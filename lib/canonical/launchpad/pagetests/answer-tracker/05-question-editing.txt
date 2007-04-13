@@ -57,7 +57,7 @@ Any logged in user can change the question source package on the
 
   >>> user_browser.open('http://launchpad.dev/ubuntu/+question/5')
   >>> user_browser.getLink('Edit question').click()
-  >>> user_browser.getControl('Source Package').value = 'linux-source-2.6.15'
+  >>> user_browser.getControl('Package').value = 'linux-source-2.6.15'
   >>> user_browser.getControl('Continue').click()
 
   >>> soup = BeautifulSoup(user_browser.contents)

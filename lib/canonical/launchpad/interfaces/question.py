@@ -327,8 +327,8 @@ class IQuestion(IHasOwner):
         """
 
     can_reopen = Attribute(
-        'Whether the question state is a state where the question owner could '
-        'reopen it.')
+        'Whether the question state is a state where the question owner '
+        'could reopen it.')
 
     def reopen(comment, datecreated=None):
         """Reopen a question that was ANSWERED, EXPIRED or SOLVED.

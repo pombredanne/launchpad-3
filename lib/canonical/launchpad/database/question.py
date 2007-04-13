@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""Question models."""
+
 __metaclass__ = type
 __all__ = [
     'SimilarQuestionsSearch',
@@ -65,8 +67,9 @@ class notify_question_modified:
     """
 
     def __call__(self, func):
-        """Return the decorator."""
+        """Return the SQLObjectModifiedEvent decorator."""
         def notify_question_modified(self, *args, **kwargs):
+            """Create the SQLObjectModifiedEvent decorator."""
             old_question = Snapshot(self, providing=providedBy(self))
             msg = func(self, *args, **kwargs)
 
@@ -100,7 +103,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     status = EnumCol(
         schema=QuestionStatus, notNull=True, default=QuestionStatus.OPEN)
     priority = EnumCol(
-        schema=QuestionPriority, notNull=True, default=QuestionPriority.NORMAL)
+        schema=QuestionPriority, notNull=True, 
+        default=QuestionPriority.NORMAL)
     assignee = ForeignKey(
         dbName='assignee', notNull=False, foreignKey='Person', default=None)
     answerer = ForeignKey(
@@ -367,8 +371,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_reopen(self):
         """See IQuestion."""
-        return self.status in [QuestionStatus.ANSWERED, QuestionStatus.EXPIRED,
-            QuestionStatus.SOLVED]
+        return self.status in [QuestionStatus.ANSWERED, 
+            QuestionStatus.EXPIRED, QuestionStatus.SOLVED]
 
     @notify_question_modified()
     def reopen(self, comment, datecreated=None):
@@ -411,7 +415,8 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getDirectSubscribers(self):
         """See IQuestion."""
-        return sorted(self.subscribers, key=operator.attrgetter('displayname'))
+        return sorted(
+            self.subscribers, key=operator.attrgetter('displayname'))
 
     def getIndirectSubscribers(self):
         """See IQuestion."""
@@ -562,8 +567,8 @@ class QuestionSearch:
     is used to retrieve the questions matching the search criteria.
     """
 
-    def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
-                 language=None, needs_attention_from=None, sort=None,
+    def __init__(self, search_text=None, needs_attention_from=None, sort=None,
+                 status=QUESTION_STATUS_DEFAULT_SEARCH, language=None, 
                  product=None, distribution=None, sourcepackagename=None,
                  project=None):
         self.search_text = search_text
@@ -755,7 +760,8 @@ class QuestionTargetSearch(QuestionSearch):
                  needs_attention_from=None, product=None, distribution=None,
                  sourcepackagename=None, project=None):
         assert (product is not None or distribution is not None or
-            project is not None), ("Missing a product or distribution context.")
+            project is not None), ("Missing a product, distribution or "
+                                   "project context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
             needs_attention_from=needs_attention_from, sort=sort,
