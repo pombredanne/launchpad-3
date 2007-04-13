@@ -189,10 +189,6 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         sourcepackagerelease is an ISourcePackageRelease.
         """
 
-    def findBinariesByName(name):
-        """Return an iterator over binary packages with a name that matches
-        this one."""
-
     def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
                              include_pending=False, exclude_pocket=None):
         """Given a SourcePackageName, return a list of the currently
