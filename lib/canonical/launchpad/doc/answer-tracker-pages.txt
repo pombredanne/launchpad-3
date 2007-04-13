@@ -387,10 +387,10 @@ outside of the comment workflow.
 
 == QuestionEditView ==
 
-QuestionEditView available through '+edit' is used to edit most question
-fields. It can be used to edit the question title and description and also
-its metadata like language, priority, assignee, source package and
-whiteboard.
+QuestionEditView available through '+edit' is used to edit most 
+question fields. It can be used to edit the question title and 
+description and also its metadata like language, priority, assignee, 
+distribution, source package, product and whiteboard.
 
     >>> login('test@canonical.com')
     >>> question_three.sourcepackagename = None
@@ -484,12 +484,14 @@ a distribution question:
     ...     'field.whiteboard': '',
     ...     'field.priority': 'Normal'})
     >>> request.method = 'POST'
-    >>> view = getView(firefox_question, '+edit', request)
+    >>> view = getView(question_three, '+edit', request)
     >>> view.initialize()
     >>> view.errors
     []
-    >>> firefox_question.sourcepackagename is None
+    >>> question_three.sourcepackagename is None
     True
+    >>> print question_three.product.name
+    firefox
 
     # Clear out the pending notifications.
     >>> notifications = pop_notifications()
