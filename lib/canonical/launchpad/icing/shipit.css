@@ -11,6 +11,8 @@ body {margin: 0; padding: 0;}
 
 div.body {padding: 0em 1em;}
 
+.discreet, .lesser {font-size: smaller;}
+
 /* --- Error, warning, and info messages --- */
 
 .error, .warning, .informational {

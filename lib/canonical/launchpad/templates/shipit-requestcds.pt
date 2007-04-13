@@ -187,6 +187,9 @@
         <br />
         <div tal:define="widget nocall:view/reason_widget">
           <label>Why are you requesting these CDs?</label>
+          <div style="color: #999; font-size: smaller">
+            (Your answer must be in English)
+          </div>
           <span metal:use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
         </div>
 
