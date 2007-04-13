@@ -37,6 +37,11 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         returncode, out, err = self.runCopyPackage(
             extra_args=['-s', 'warty', 'mozilla-firefox',
                         '--to-suite', 'hoary', '-b'])
+        # Need to print these or you can't see what happened if the 
+        # return code is bad:
+        if returncode != 0:
+            print "stdout: %s" % out
+            print "stderr: %s" % err
         self.assertEqual(0, returncode)
 
 
@@ -63,7 +68,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         Allow tests to use a set of default options and pass a inactive logger
         to CopyHelper.
         """
-        logger = QuietLogger()
+        logger = self.QuietLogger()
         return CopyPackageHelper(
             sourcename, sourceversion, from_suite, to_suite,
             from_distribution_name, to_distribution_name,
