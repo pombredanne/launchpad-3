@@ -95,9 +95,6 @@ class ChangesFile(SignableTagFile):
                 "Format out of acceptable range for changes file. Range "
                 "1.5 - 2.0, format %g" % format)
 
-        self.maintainer = self.parse_address(self._dict['maintainer'])
-        self.changed_by = self.parse_address(self._dict['changed-by'])
-
         match_changes = re_changes_file_name.match(self.filename)
         if match_changes is None:
             raise UploadError(
@@ -111,14 +108,28 @@ class ChangesFile(SignableTagFile):
         else:
             self.process_signature()
 
+    def process_addresses(self):
+        """Parse addresses and build person objects.
+
+        Process 'maintainer' and 'changed_by' addresses separately and return
+        an iterator over all exceptions generated while processing them.
+        """
+        try:
+            self.maintainer = self.parse_address(self._dict['maintainer'])
+        except UploadError, error:
+            yield error
+
+        try:
+            self.changed_by = self.parse_address(self._dict['changed-by'])
+        except UploadError, error:
+            yield error
+
     def process_files(self):
         """Build objects for each file mentioned in this changesfile.
 
-        This method is an error generator, i.e, exceptions occurred during
-        it processing time will be available for raising once it has
-        processed all mentioned files.
+        This method is an error generator, i.e, it returns an iterator over all
+        exceptions that are generated while processing all mentioned files.
         """
-
         files = []
         for fileline in self._dict['files'].strip().split("\n"):
             # files lines from a changes file are always of the form:
@@ -177,9 +188,9 @@ class ChangesFile(SignableTagFile):
     def verify(self):
         """Run all the verification checks on the changes data.
 
-        It is also an exception generator, i.e., all errors occurred during
-        the verification will be available for raise at the end of the
-        procedure.
+        This method is an error generator, i.e, it returns an iterator over all
+        exceptions that are generated while verifying the changesfile
+        consistency.
         """
         self.logger.debug("Verifying the changes file.")
 

@@ -107,7 +107,7 @@ class NascentUploadFile:
 
         self.size = int(size)
         self.component_name, self.section_name = (
-            self.split_component_and_section(component_and_section))
+            self.splitComponentAndSection(component_and_section))
 
         self.librarian = getUtility(ILibraryFileAliasSet)
 
@@ -143,7 +143,7 @@ class NascentUploadFile:
         """Whether or not the file is present on disk."""
         return os.path.exists(self.filepath)
 
-    def split_component_and_section(self, component_and_section):
+    def splitComponentAndSection(self, component_and_section):
         """Split the component out of the section."""
         if "/" not in component_and_section:
             return "main", component_and_section
@@ -153,7 +153,7 @@ class NascentUploadFile:
     # DB storage helpers
     #
 
-    def store_in_database(self):
+    def storeInDatabase(self):
         """Implement this to store this representation in the database."""
         raise NotImplementedError
 
@@ -162,7 +162,11 @@ class NascentUploadFile:
     #
 
     def verify(self):
-        """Implemented locally."""
+        """Implemented locally.
+
+        It does specific checks acording the subclass type and returns
+        an iterator over all the encountered errors and warnings.
+        """
         raise NotImplementedError
 
     def checkNameIsTaintFree(self):
@@ -242,12 +246,13 @@ class CustomUploadFile(NascentUploadFile):
         """Verify CustomUploadFile.
 
         Simply check is the given section is allowed for custom uploads.
+        It returns an iterator over all the encountered errors and warnings.
         """
         if self.section_name not in self.custom_sections:
             yield UploadError(
                 "Unsupported custom section name %r" % self.section_name)
 
-    def store_in_database(self):
+    def storeInDatabase(self):
         """Create and return the corresponding LibraryFileAlias reference."""
         libraryfile = self.librarian.create(
             self.filename, self.size,
@@ -316,7 +321,7 @@ class SourceUploadFile(PackageUploadFile):
     def verify(self):
         """Verify the uploaded source file.
 
-        All exception should be accumulated in its generator.
+        It returns an iterator over all the encountered errors and warnings.
         """
         self.logger.debug("Verifying source file %s" % self.filename)
 
@@ -424,10 +429,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
     def verify(self):
         """Verify the contents of the .deb or .udeb as best we can.
 
-        Run the specified set of checks and collect errors.
-
-        All legit exceptions happened during the file verification are
-        stored and returned to the callsite once the method is finished.
+        It returns an iterator over all the encountered errors and warnings.
         """
         self.logger.debug("Verifying binary %s" % self.filename)
 
@@ -503,7 +505,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 % (self.filename, file_package, control_package))
 
     def verifyVersion(self):
-        """Check if contro version matches the changesfile and is valid."""
+        """Check if control version matches the changesfile and is valid."""
         control_version = self.control.get("Version", '')
         if not re_valid_version.match(control_version):
             yield UploadError("%s: invalid version number %r." % (
@@ -555,7 +557,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
     def verifySection(self):
         """Check the section & priority match those in changesfile."""
         control_section_and_component = self.control.get('Section', '')
-        control_component, control_section = self.split_component_and_section(
+        control_component, control_section = self.splitComponentAndSection(
             control_section_and_component)
         if ((control_component, control_section) !=
             (self.component_name, self.section_name)):
@@ -705,7 +707,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
 #   Database relationship methods
 #
 
-    def find_sourcepackagerelease(self):
+    def findSourcePackageRelease(self):
         """Return the respective ISourcePackagRelease for this binary upload.
 
         It inspect publication in the targeted DistroRelease and also the
@@ -715,7 +717,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         Verifications on the designed source are delayed because for
         mixed_uploads (source + binary) we do not have the source stored
-        in DB yet (see verify_sourcepackagerelease).
+        in DB yet (see verifySourcepackagerelease).
         """
         distrorelease = self.policy.distrorelease
         spphs = distrorelease.getPublishedReleases(
@@ -753,7 +755,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         return sourcepackagerelease
 
-    def verify_sourcepackagerelease(self, sourcepackagerelease):
+    def verifySourcePackageRelease(self, sourcepackagerelease):
         """Check if the given ISourcePackageRelease matches the context."""
         assert 'source' in self.changes.architectures, (
             "It should be a mixed upload, but no source part was found.")
@@ -770,7 +772,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 "control file"
                 % (sourcepackagerelease.name, self.filename, self.source_name))
 
-    def find_build(self, sourcepackagerelease):
+    def findBuild(self, sourcepackagerelease):
         """Find and return a build for the given archtag, cached on policy.
 
         To find the right build, we try these steps, in order, until we have
@@ -819,7 +821,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         return build
 
-    def store_in_database(self, build):
+    def storeInDatabase(self, build):
         """Insert this binary release and build into the database."""
         # Reencode everything we are supplying, because old packages
         # contain latin-1 text and that sucks.

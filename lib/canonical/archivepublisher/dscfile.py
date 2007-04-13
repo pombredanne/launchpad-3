@@ -58,7 +58,8 @@ class SignableTagFile:
         the pyme signature as a three-tuple
         """
         self.logger.debug("Verifying signature on %s" % self.filename)
-        assert os.path.exists(self.filepath)
+        assert os.path.exists(self.filepath), (
+            "File not found: %s" % self.filepath)
 
         try:
             sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
@@ -105,11 +106,15 @@ class SignableTagFile:
         if person is None and self.policy.create_people:
             package = self._dict['source']
             version = self._dict['version']
+            if self.policy.distrorelease and self.policy.pocket:
+                policy_suite = ('%s/%s' % (self.policy.distrorelease.name,
+                                           self.policy.pocket.name))
+            else:
+                policy_suite = '(unknown)'
             person = getUtility(IPersonSet).ensurePerson(
                 email, name, PersonCreationRationale.SOURCEPACKAGEUPLOAD,
-                comment=('when the %s_%s package was uploaded to %s/%s'
-                         % (package, version, self.policy.distrorelease.name,
-                            self.policy.pocket.name)))
+                comment=('when the %s_%s package was uploaded to %s'
+                         % (package, version, policy_suite)))
 
         if person is None:
             raise UploadError("Unable to identify '%s':<%s> in launchpad"
@@ -215,13 +220,13 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     def verify(self):
         """Verify the uploaded .dsc file.
 
-        Should raise no exceptions unless unforeseen issues occur. Errors will
-        be accumulated in the rejection message.
+        This method is an error generator, i.e, it returns an iterator over all
+        exceptions that are generated while processing DSC file checks.
         """
         for error in SourceUploadFile.verify(self):
             yield error
 
-        # check size and checksum of the DSC file itself
+        # Check size and checksum of the DSC file itself
         try:
             self.checkSizeAndCheckSum()
         except UploadError, error:
@@ -289,10 +294,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 "('%s') in .changes."
                 % (self.filename, self.dsc_version, self.version))
 
-        for error in self.check_files():
+        for error in self.checkFiles():
             yield error
 
-    def check_files(self):
+    def checkFiles(self):
         """Check if mentioned files are present and match.
 
         We don't use the NascentUploadFile.verify here, only verify size
@@ -355,11 +360,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 "Files specified in DSC are broken or missing, "
                 "skipping package unpack verification.")
         else:
-            for error in self.unpack_and_check_source():
+            for error in self.unpackAndCheckSource():
                 # Pass on errors found when unpacking the source.
                 yield error
 
-    def unpack_and_check_source(self):
+    def unpackAndCheckSource(self):
         """Verify uploaded source using dpkg-source."""
         self.logger.debug("Verifying uploaded source package by unpacking it.")
 
@@ -413,7 +418,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         self.logger.debug("Done")
 
-    def store_in_database(self):
+    def storeInDatabase(self):
         """Store DSC information as a SourcePackageRelease record.
 
         It reencodes all fields extracted from DSC because old packages

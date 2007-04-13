@@ -92,41 +92,99 @@ a error generator
 
 === ChangesFile Parsing Addresses ===
 
-Going back to the upload itself, at a very basic level a ChangesFile
-allows us to probe the contents of the changes file to see things like
-the maintainer.
+Address parsing is implemented by the SignableTagFile class, which
+is base for ChangesFile and DSCFile.
 
-  >>> ed_mixed_changes.maintainer['rfc822']
-  'James Troup <james@nocrew.org>'
+  >>> from canonical.archivepublisher.dscfile import SignableTagFile
+  >>> sig_file = SignableTagFile()
 
-We can parse addresses and look them up in launchpad.
+Note that the policy.{distrorelease, pocket} must be already
+initialised before issuing any parse request, otherwise we can't
+generate proper PERSON_CREATION_RATIONALE_MESSAGES.
 
-  >>> addr = ed_mixed_changes.parse_address(
-  ...     "Foo Bar <foo.bar@canonical.com>")
+  >>> sig_file_policy = getPolicy(name='insecure', distro='ubuntu')
+  >>> sig_file_policy.setDistroReleaseAndPocket('hoary')
+  >>> sig_file.policy = sig_file_policy
+
+Some fields extracted from the tag_file are required, they are always
+present in ChangesFile and DSCFile:
+
+  >>> sig_file._dict = {}
+  >>> sig_file._dict['source'] = 'some-source'
+  >>> sig_file._dict['version'] = '6.6.6'
+
+
+After initiliasing sig_file we can parse addresses and look them up in
+Launchpad:
+
+  >>> addr = sig_file.parse_address("Foo Bar <foo.bar@canonical.com>")
   >>> addr['person'].displayname
   u'Foo Bar'
   >>> addr['person'].creation_comment is None
   True
 
+
 If the address is unparsable, we get an error.
 
-  >>> ed_mixed_changes.parse_address("Cannot Parse Me <FOOO>")
+  >>> sig_file.parse_address("Cannot Parse Me <FOOO>")
   Traceback (most recent call last):
   ...
   UploadError: Cannot Parse Me <FOOO>: no @ found in email address part.
 
+
 If the email address is not yet registered and policy.create_people is True,
 a new Person will be created.
 
-  >>> ed_mixed_changes.policy.create_people
+  >>> sig_file.policy.create_people
   True
 
-  >>> addr = ed_mixed_changes.parse_address("Baz <baz@canonical.com>")
+  >>> addr = sig_file.parse_address("Baz <baz@canonical.com>")
   >>> addr['person'].creation_rationale.name
   'SOURCEPACKAGEUPLOAD'
 
   >>> addr['person'].creation_comment
-  u'when the ed_0.2-20 package was uploaded to hoary/RELEASE'
+  u'when the some-source_6.6.6 package was uploaded to hoary/RELEASE'
+
+
+If the use an un-initialised policy to create a launchpad person the
+creation_rationale will still be possible, however missing important
+information, the upload target:
+
+  >>> sig_file.policy.distrorelease = None
+
+  >>> addr = sig_file.parse_address("Bar <bar@canonical.com>")
+  >>> addr['person'].creation_rationale.name
+  'SOURCEPACKAGEUPLOAD'
+
+  >>> addr['person'].creation_comment
+  u'when the some-source_6.6.6 package was uploaded to (unknown)'
+
+
+On ChangesFile objects we can have access to the enhanced address_structure
+corresponding to the RFC-822 mentioned after performing 'process_address':
+
+  >>> ed_mixed_changes.maintainer is None
+  True
+
+  >>> errors = ed_mixed_changes.process_addresses()
+  >>> len(list(errors))
+  0
+
+As we can see, this method also return an error generator.
+
+The built address_structure contains values that will be used during
+the upload processing:
+
+  >>> ed_mixed_changes.maintainer['rfc822']
+  'James Troup <james@nocrew.org>'
+  >>> ed_mixed_changes.maintainer['rfc2047']
+  'James Troup <james@nocrew.org>'
+  >>> ed_mixed_changes.maintainer['name']
+  'James Troup'
+  >>> ed_mixed_changes.maintainer['email']
+  'james@nocrew.org'
+  >>> ed_mixed_changes.maintainer['person']
+  <Person ...>
 
 
 === Signature Traces ===

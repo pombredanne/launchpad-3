@@ -79,7 +79,7 @@ class NascentUpload:
     native = False
     hasorig = False
 
-    # Defined if we successfully do_accept() and store_objects_in_database()
+    # Defined if we successfully do_accept() and storeObjectsInDatabase()
     queue_root = None
 
     def __init__(self, changesfile_path, policy, logger):
@@ -124,6 +124,11 @@ class NascentUpload:
         except NotFoundError:
             self.reject(
                 "Unable to find distrorelease: %s" % self.changes.suite_name)
+
+        # We need to process changesfile addresses at this point because
+        # we depend on an already initialised policy (distrorelease and pocket
+        # set) to have proper person 'creation rationale' messages
+        self.run_and_collect_errors(self.changes.process_addresses)
 
         self.run_and_collect_errors(self.changes.process_files)
 
@@ -750,7 +755,7 @@ class NascentUpload:
             interpolations['RECIPIENT'] = ", ".join(recipients)
             interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
 
-            self.store_objects_in_database()
+            self.storeObjectsInDatabase()
 
             # NEW, Auto-APPROVED and UNAPPROVED source uploads targeted to
             # section 'translations' should not generate any emails.
@@ -885,7 +890,7 @@ class NascentUpload:
     # Inserting stuff in the database
     #
 
-    def store_objects_in_database(self):
+    def storeObjectsInDatabase(self):
         """Insert this nascent upload into the database."""
 
         # Queue entries are created in the NEW state by default; at the
@@ -903,13 +908,13 @@ class NascentUpload:
         spr = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            spr = self.changes.dsc.store_in_database()
+            spr = self.changes.dsc.storeInDatabase()
             self.queue_root.addSource(spr)
 
         if self.binaryful:
 
             for custom_file in self.changes.custom_files:
-                libraryfile = custom_file.store_in_database()
+                libraryfile = custom_file.storeInDatabase()
                 self.queue_root.addCustom(
                     libraryfile, custom_file.custom_type)
 
@@ -922,14 +927,14 @@ class NascentUpload:
                     assert self.policy.can_upload_mixed, (
                         "Current policy does not allow mixed uploads.")
                     assert spr, "No sourcepackagerelease was found."
-                    binary_package_file.verify_sourcepackagerelease(spr)
+                    binary_package_file.verifySourcePackageRelease(spr)
                 else:
-                    spr = binary_package_file.find_sourcepackagerelease()
+                    spr = binary_package_file.findSourcePackageRelease()
 
-                build = binary_package_file.find_build(spr)
+                build = binary_package_file.findBuild(spr)
                 assert self.queue_root.pocket == build.pocket, (
                     "Binary was not build for the claimed pocket.")
-                binary_package_file.store_in_database(build)
+                binary_package_file.storeInDatabase(build)
                 self.queue_root.addBuild(build)
 
         if not self.is_new:
