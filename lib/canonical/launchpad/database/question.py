@@ -21,10 +21,10 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, InvalidQuestionStateError, ILanguage, ILanguageSet,
-    ILaunchpadCelebrities, IMessage, IPerson, IProduct, IQuestion,
-    IQuestionSet,
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, IDistribution, IDistributionSourcePackage, 
+    InvalidQuestionStateError, ILanguage, ILanguageSet, ILaunchpadCelebrities,
+    IMessage, IPerson, IProduct, IQuestion, IQuestionSet, IQuestionTarget, 
+    ISourcePackage, QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -138,7 +138,6 @@ class Question(SQLBase, BugLinkTargetMixin):
         joinColumn='question')
 
     # attributes
-    # sinzui, add a mutator
     def target(self):
         """See IQuestion."""
         if self.product:
@@ -149,17 +148,23 @@ class Question(SQLBase, BugLinkTargetMixin):
         else:
             return self.distribution
             
-    def _settarget(self, question_target, disribution=None):
-        """See IQuestion."""
+    def _settarget(self, question_target):
+        """See IQuestion.target."""
         assert IQuestionTarget.providedBy(question_target), (
             "The target must be an IQuestionTarget")
         if IProduct.providedBy(question_target):
             self.product = question_target
-        elif ISourcepackage.providedBy(question_target):
-            self.sourcepackagename = question_target.name
-            self.distribution = distribution
+            self.distribution = None
+            self.sourcepackagename = None
+        elif (ISourcePackage.providedBy(question_target) or
+                IDistributionSourcePackage.providedBy(question_target)):
+            self.product = None
+            self.distribution = question_target.distribution
+            self.sourcepackagename = question_target.sourcepackagename
         elif IDistribution.providedBy(question_target):
+            self.product = None
             self.distribution = question_target
+            self.sourcepackagename = None
         else:
             raise AssertionError("Unknown IQuestionTarget type of %s" %
                 question_target)

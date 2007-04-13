@@ -115,8 +115,7 @@ It is also possible to adapt a question to its IQuestionTarget.
     >>> verifyObject(IQuestionTarget, target)
     True
     
-The question can be transferred to a new IQuestionTarget. The transfer
-does not change the question's status.
+The question can be transferred to a new IQuestionTarget.
 
     >>> thunderbird = getUtility(IProductSet)['thunderbird']
     >>> thunderbird_question_target = IQuestionTarget(thunderbird)
@@ -124,9 +123,21 @@ does not change the question's status.
     >>> firefox_question.target == thunderbird
     True
         
-There are no restrictions to the number of IQuestionTarget that
+There are no restrictions to the number of IQuestionTargets that
 a question can be transferred to.
-
+    
+    >>> ubuntu_question_target = IQuestionTarget(ubuntu)
+    >>> firefox_question.target = ubuntu_question_target
+    >>> firefox_question.target == ubuntu_question_target
+    True
+    
+    >>> evolution_package_question_target = IQuestionTarget(evolution_package)
+    >>> firefox_question.target = evolution_package_question_target
+    >>> firefox_question.target.name == evolution_package_question_target.name
+    True
+    >>> firefox_question.target == ubuntu_question_target
+    False
+    
     >>> firefox_question.target = firefox
 
 == Subscriptions and Notifications ==

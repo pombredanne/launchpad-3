@@ -429,15 +429,12 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     def setUpFields(self):
         """Select the subset of fields to display.
 
-        - Exclude the sourcepackagename field when question doesn't have a
-        distribution.
         - Exclude fields that the user doesn't have permission to modify.
         """
         LaunchpadEditFormView.setUpFields(self)
 
-        #if self.context.distribution is None:
-        self.form_fields = self.form_fields.omit(["distribution", 
-            "sourcepackagename", "product"])
+        self.form_fields = self.form_fields.omit("distribution", 
+            "sourcepackagename", "product")
 
         # Add the language field with a vocabulary specialized for display
         # purpose.

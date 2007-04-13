@@ -21,6 +21,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.questionmessage import IQuestionMessage
 from canonical.lp.dbschema import QuestionStatus, QuestionPriority
 
@@ -114,9 +115,9 @@ class IQuestion(IHasOwner):
         title=_('Status Whiteboard'), required=False,
         description=_('Up-to-date notes on the status of the question.'))
     # other attributes
-    # sinzui change this to Object?
-    target = Attribute(
-        'The IQuestionTarget that is associated to this question.')
+    target = Object(title=_('Project'), required=True, schema=IBugTarget,
+        description=_('The product, distribution, or source package the'
+                      'question is pertains to.'))
 
     # joins
     subscriptions = Attribute(
