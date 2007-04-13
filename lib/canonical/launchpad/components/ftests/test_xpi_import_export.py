@@ -170,13 +170,14 @@ class XpiTestCase(LaunchpadZopelessTestCase):
 
         self.failUnlessEqual(
             [potmsgset.sourcecomment for potmsgset in potmsgsets],
-            [None, u"Translators, don't play with fire!", None, None,
+            [None, u"Translators, don't play with fire!",
+             u'This is just a comment, not a comment for translators', None,
              u"Translators, if you're older than six, don't translate this",
-             None, None, None, u"Default key in en_US: 'M'",
-             u"Default key in en_US: 'm'",
-             u'Translators, what you are seeing now is a lovely, awesome,'
-                 u' multiline comment aimed at you directly from the streets'
-                 u' of a .properties file'])
+             None, None, u'This is a DTD file inside a subdirectory',
+             u"Default key in en_US: 'M'", u"Default key in en_US: 'm'",
+             u'Translators, what you are seeing now is a lovely, awesome,' +
+                 u' multiline comment aimed at you directly from the' +
+                 u' streets of a .properties file'])
 
         # This format doesn't support any functionality like .po flags.
         self.failUnlessEqual(

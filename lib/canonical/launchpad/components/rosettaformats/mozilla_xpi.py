@@ -6,6 +6,7 @@ __all__ = [
     'MozillaSupport'
     ]
 
+import codecs
 import os
 import re
 
@@ -20,6 +21,9 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.interfaces import ITranslationImport
 from canonical.lp.dbschema import RosettaImportStatus, RosettaFileFormat
 from canonical.launchpad.scripts import logger
+
+class UnsupportedEncoding(Exception):
+    """Raised when files use non standard encodings."""
 
 
 class LocalizableFile (DictMixin):
@@ -117,25 +121,33 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
     Extracts all entities along with comments and source references.
     """
     def __init__(self, parser, filename, messages):
-        self.started = 0
+        self.started = False
         self.lastcomment = None
         self.messages = messages
         self.filename = filename
         xmldtd.WFCDTD.__init__(self, parser)
 
     def dtd_start(self):
-        self.started = 1
+        self.started = True
 
     def dtd_end(self):
-        self.started = 0
+        self.started = False
 
     def handle_comment(self, contents):
-        if not self.started: return
-        if contents.strip().startswith('LOCALIZATION NOTE'):
-            self.lastcomment = contents
+        if not self.started:
+            return
+
+        # Comments would be multiline.
+        for line in contents.split(u'\n'):
+            line = line.strip()
+            if self.lastcomment is not None:
+                self.lastcomment = u'%s %s' % (self.lastcomment, line)
+            elif len(line) > 0:
+                self.lastcomment = line
 
     def new_general_entity(self, name, value):
-        if not self.started: return
+        if not self.started:
+            return
         # XXX CarlosPerelloMarin 20070326: xmldtd parser does an inline
         # parsing which means that the content is all in a single line so we
         # don't have a way to show the line number with the source reference.
@@ -150,6 +162,7 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         self.started += 1
         self.lastcomment = None
 
+
 class DtdFile (LocalizableFile):
     """Class for reading translatable messages from a .dtd file.
 
@@ -161,6 +174,14 @@ class DtdFile (LocalizableFile):
         self.filename = filename
         self.logger = logger
 
+        # .dtd files are supposed to be using UTF-8 encoding, if the file is
+        # using another encoding, it's against the standard so we reject it
+        try:
+            content = content.decode('utf-8')
+        except UnicodeDecodeError:
+            # It's not in UTF-8.
+            raise UnsupportedEncoding
+
         parser=dtdparser.DTDParser()
         parser.set_error_handler(utils.ErrorCounter())
         dtd = MozillaDtdConsumer(parser, filename, self._data)
@@ -168,31 +189,41 @@ class DtdFile (LocalizableFile):
         parser.parse_string(content)
 
 
-
 class PropertyFile (LocalizableFile):
     """Class for reading translatable messages from a .properties file.
+
     It behaves as an iterator over messages in the file, indexed by keys
     from the .properties file.
     """
 
     def __init__(self, filename, content, logger=None):
         """Constructs a dictionary from a .properties file.
-        XXX
-        It expects a file-like object "content_file".
-        "filename" is used for source code references.
+
+        :arg filename: The file name where the content came from.
+        :arg content: The file content that we want to parse.
+        :arg logger: A logger object to log events, or None.
         """
         self.filename = filename
         self._data = []
         self.logger = logger
 
-        # .properties files are defined to be unicode-escaped, but
-        # also allow direct UTF-8
-        udata = content.decode('utf-8')
+        # .properties files are supposed to be unicode-escaped, but we know
+        # that there are some .xpi language packs that instead, use UTF-8.
+        # That's against the specification, but Mozilla applications accept
+        # it anyway, so we try to support it too.
+        # To do this support, we read the text as being in UTF-8
+        # because unicode-escaped looks like ASCII files.
+        try:
+            content = content.decode('utf-8')
+        except UnicodeDecodeError:
+            # It's not in UTF-8, and thus not valid ASCII and broken
+            # unicode-escaped too.
+            raise UnsupportedEncoding
 
         count = 0
         lastcomment = None
 
-        lines = udata.split("\n")
+        lines = content.split("\n")
         for line in lines:
             # Ignore empty and comment lines
             if not len(line.strip()) or line[0]=='#' or line[0]=='!':
@@ -218,10 +249,10 @@ class PropertyFile (LocalizableFile):
 
             count += 1
             self._data.append({
-                'msgid' : key,
+                'msgid' : key.strip(),
                 'sourcerefs' : [
                     "%s:%d(%s)" % (self.filename, count, key)],
-                'content' : value,
+                'content' : value.strip(),
                 'order' : count,
                 'comment' : lastcomment
                 })
@@ -286,6 +317,10 @@ class MozillaSupport:
             msg['obsolete'] = False
             msg['sourcecomment'] = None
 
+            # Add source comments
+            if xpimsg['comment'] is not None:
+                msg['sourcecomment'] = xpimsg['comment']
+
             if (msgid.endswith('.accesskey') or
                 msgid.endswith('.commandkey')):
                 # Special case accesskeys and commandkeys:
@@ -302,9 +337,6 @@ class MozillaSupport:
             if xpimsg['sourcerefs'] and len(xpimsg['sourcerefs']):
                 msg['filerefs'] = u' '.join(xpimsg['sourcerefs'])
 
-            # Add source comments
-            if xpimsg['comment'] is not None:
-                msg['sourcecomment'] = xpimsg['comment']
             messages.append(msg)
 
         return {
