@@ -6,7 +6,7 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IShipmentSet', 'ShippingRequestPriority', 'IShipItReport',
            'IShipItReportSet', 'IShippingRequestAdmin', 'IShippingRequestEdit',
            'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
-           'IShippingRequestUser']
+           'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE']
 
 from zope.schema import Bool, Choice, Int, Datetime, TextLine
 from zope.interface import Interface, Attribute, implements
@@ -30,6 +30,8 @@ from canonical.launchpad import _
 # The maximum number of requests in a single shipping run
 SOFT_MAX_SHIPPINGRUN_SIZE = 10000
 
+MAX_CDS_FOR_UNTRUSTED_PEOPLE = 5
+
 
 def _validate_positive_int(value):
     """Return True if the given value is a positive integer.
@@ -49,8 +51,8 @@ class ShipItConstants:
     ubuntu_url = 'https://shipit.ubuntu.com'
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
-    current_distrorelease = ShipItDistroRelease.DAPPER
-    max_size_for_auto_approval = 15
+    current_distrorelease = ShipItDistroRelease.FEISTY
+    max_size_for_auto_approval = 39
 
 
 class IEmptyDefaultChoice(IChoice):
@@ -329,13 +331,13 @@ class IShippingRequest(Interface):
         """
 
     def addressIsDuplicated():
-        """Return True if there is more than one request made from another
-        user using the same address as this one.
+        """Return True if there is one or more requests made from another
+        user using the same address and distrorelease as this one.
         """
 
     def getRequestsWithSameAddressFromOtherUsers():
         """Return all non-cancelled non-denied requests with the same address
-        as this one but with a different recipient.
+        and distrorelease as this one but with a different recipient.
         """
 
 
@@ -497,11 +499,16 @@ class IStandardShipItRequestSet(Interface):
     def new(flavour, quantityx86, quantityamd64, quantityppc, isdefault):
         """Create and return a new StandardShipItRequest."""
 
-    def getAll():
-        """Return all standard ShipIt requests."""
+    def getByFlavour(flavour, user):
+        """Return the standard ShipIt requests for the given flavour and user.
 
-    def getByFlavour(flavour):
-        """Return all standard ShipIt requests for the given flavour."""
+        If the given user is trusted in Shipit, then all options of that
+        flavour are returned. Otherwise, only the options with less than
+        MAX_CDS_FOR_UNTRUSTED_PEOPLE CDs are returned.
+
+        To find out whether a user has made contributions or not, we use the
+        is_trusted_on_shipit property of IPerson.
+        """
 
     def get(id, default=None):
         """Return the StandardShipItRequest with the given id.
@@ -512,6 +519,10 @@ class IStandardShipItRequestSet(Interface):
     def getAllGroupedByFlavour():
         """Return a dictionary mapping ShipItFlavours to the 
         StandardShipItRequests of that flavour.
+
+        This is used in the admin interface to show all StandardShipItRequests
+        to the shipit admins, so it doesn't need to check whether the user is
+        trusted on shipit or not.
         """
 
     def getByNumbersOfCDs(flavour, quantityx86, quantityamd64, quantityppc):
