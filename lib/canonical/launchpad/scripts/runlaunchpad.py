@@ -60,7 +60,7 @@ class TacFile(object):
 
         args = [
             sys.executable,
-            twistd_script,
+            TWISTD_SCRIPT,
             "--no_save",
             "--nodaemon",
             "--python", tacfile,
