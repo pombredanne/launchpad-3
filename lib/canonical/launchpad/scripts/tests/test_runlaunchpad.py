@@ -13,7 +13,7 @@ import unittest
 
 from canonical.config import config
 from canonical.launchpad.scripts.runlaunchpad import (
-    get_services_to_run, process_arguments, SERVICES)
+    get_services_to_run, SERVICES, split_out_runlaunchpad_arguments)
 
 
 class CommandLineArgumentProcessing(unittest.TestCase):
@@ -24,7 +24,7 @@ class CommandLineArgumentProcessing(unittest.TestCase):
 
     def test_no_parameter(self):
         """Given no arguments, return no services and no Zope arguments."""
-        self.assertEqual(([], []), process_arguments([]))
+        self.assertEqual(([], []), split_out_runlaunchpad_arguments([]))
 
     def test_run_options(self):
         """Services to run are specified with an optional `-r` option.
@@ -32,7 +32,8 @@ class CommandLineArgumentProcessing(unittest.TestCase):
         If a service is specified, it should appear as the first value in the
         returned tuple.
         """
-        self.assertEqual((['foo'], []), process_arguments(['-r', 'foo']))
+        self.assertEqual(
+            (['foo'], []), split_out_runlaunchpad_arguments(['-r', 'foo']))
 
     def test_run_lots_of_things(self):
         """The `-r` option can be used to specify multiple services.
@@ -40,7 +41,8 @@ class CommandLineArgumentProcessing(unittest.TestCase):
         Multiple services are separated with commas. e.g. `-r foo,bar`.
         """
         self.assertEqual(
-            (['foo', 'bar'], []), process_arguments(['-r', 'foo,bar']))
+            (['foo', 'bar'], []),
+            split_out_runlaunchpad_arguments(['-r', 'foo,bar']))
 
     def test_run_with_zope_params(self):
         """Any arguments after the initial `-r` option should be passed
@@ -48,7 +50,8 @@ class CommandLineArgumentProcessing(unittest.TestCase):
         """
         self.assertEqual(
             (['foo', 'bar'], ['-o', 'foo', '--bar=baz']),
-            process_arguments(['-r', 'foo,bar', '-o', 'foo', '--bar=baz']))
+            split_out_runlaunchpad_arguments(['-r', 'foo,bar', '-o', 'foo',
+                                              '--bar=baz']))
 
     def test_run_with_only_zope_params(self):
         """If no `-r` option is given, then all of the options should be passed
@@ -56,7 +59,7 @@ class CommandLineArgumentProcessing(unittest.TestCase):
         """
         self.assertEqual(
             ([], ['-o', 'foo', '--bar=baz']),
-            process_arguments(['-o', 'foo', '--bar=baz']))
+            split_out_runlaunchpad_arguments(['-o', 'foo', '--bar=baz']))
 
 
 class ServersToStart(unittest.TestCase):
@@ -67,7 +70,7 @@ class ServersToStart(unittest.TestCase):
                         config.buildsequencer,
                         config.authserver,
                         config.supermirrorsftp]
-        self.old_launch_values = [config.launch for config in self.configs]
+        self.old_launch_values = [conf.launch for conf in self.configs]
         new_launch_values = [True, False, False, False]
         for conf, launch_value in zip(self.configs, new_launch_values):
             conf.launch = launch_value
