@@ -17,7 +17,7 @@ __all__ = [
     'SyncSourceError',
     'PackageLocationError',
     'PackageLocation',
-    'CopyPackageHelperError',
+    'PackageCopyError',
     'CopyPackageHelper',
     ]
 
@@ -1137,8 +1137,10 @@ class PackageLocation:
         return self.__str__()
 
 
-class CopyPackageHelperError(Exception):
-    """Raised when something went wrong during a package copy."""
+class PackageCopyError(Exception):
+    """Raised when a package copy operation failed.  The textual content
+    should explain the error.
+    """
 
 
 class CopyPackageHelper:
@@ -1174,10 +1176,10 @@ class CopyPackageHelper:
             self.to_location = PackageLocation(
                 self.to_distribution_name, self.to_suite)
         except PackageLocationError, err:
-            raise CopyPackageHelperError(err)
+            raise PackageCopyError(err)
 
         if self.from_location == self.to_location:
-            raise CopyPackageHelperError(
+            raise PackageCopyError(
                 "Can not sync between the same locations: '%s' to '%s'" % (
                 self.from_location, self.to_location))
 
@@ -1190,7 +1192,7 @@ class CopyPackageHelper:
             self.sourcename)
 
         if sourcepackage is None:
-            raise CopyPackageHelperError(
+            raise PackageCopyError(
                 "Could not find any version of '%s' in %s" % (
                 self.sourcename, self.from_location))
 
@@ -1200,7 +1202,7 @@ class CopyPackageHelper:
             self.target_source = sourcepackage[self.sourceversion]
 
         if self.target_source is None:
-            raise CopyPackageHelperError(
+            raise PackageCopyError(
                 "Could not find '%s/%s' in %s" % (
                 self.sourcename, self.sourceversion,
                 self.from_location))
