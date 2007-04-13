@@ -884,8 +884,8 @@ class NascentUpload:
                 summary.append(" OK: %s" % uploaded_file.filename)
                 if isinstance(uploaded_file, DSCFile):
                     summary.append("     -> Component: %s Section: %s" % (
-                        uploaded_file.component,
-                        uploaded_file.section))
+                        uploaded_file.component.name,
+                        uploaded_file.section.name))
 
         return "\n".join(summary)
 
