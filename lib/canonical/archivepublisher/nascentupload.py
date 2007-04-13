@@ -126,8 +126,8 @@ class NascentUpload:
                 "Unable to find distrorelease: %s" % self.changes.suite_name)
 
         # We need to process changesfile addresses at this point because
-        # we depend on an already initialised policy (distrorelease and pocket
-        # set) to have proper person 'creation rationale' messages
+        # we depend on an already initialised policy (distrorelease
+        # and pocket set) to have proper person 'creation rationale'.
         self.run_and_collect_errors(self.changes.process_addresses)
 
         self.run_and_collect_errors(self.changes.process_files)
@@ -190,6 +190,9 @@ class NascentUpload:
                 "release in the '%s' state." % (
                 self.policy.pocket.name,
                 self.policy.distrorelease.releasestatus.name))
+
+        # Perform policy checks
+        self.policy.checkUpload(self)
 
         # That's all folks.
         self.logger.debug("Finished checking upload.")

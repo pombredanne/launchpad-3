@@ -37,7 +37,7 @@ class BrokenUploadPolicy(AbstractUploadPolicy):
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
 
-    def setDistroReleaseAndPocket(self, dr_name):
+    def checkUpload(self, upload):
         """Raise an exception upload processing is not expecting."""
         raise Exception("Exception raised by BrokenUploadPolicy for testing.")
 
