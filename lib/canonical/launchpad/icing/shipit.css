@@ -2,9 +2,9 @@
 
 html {
   position: relative;
-  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
+  font-family: sans-serif, "Lucida Grande", "Trebuchet MS";
   font-size: 12pt;
-  color: #656565;
+  color: black;
   background-color: #FFFFFF;
 }
 body {margin: 0; padding: 0;}
