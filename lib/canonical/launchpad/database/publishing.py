@@ -401,6 +401,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             )
 
     @property
+    def meta_distroreleasesourcepackagerelease(self):
+        """see ISourcePackagePublishingHistory."""
+        return self.distrorelease.getSourcePackageRelease( 
+            self.sourcepackagerelease 
+            )
+
+    @property
     def meta_supersededby(self):
         """see ISourcePackagePublishingHistory."""
         if not self.supersededby:

@@ -27,9 +27,10 @@ class QuestionReopening(SQLBase):
 
     implements(IQuestionReopening)
 
-    _table = 'TicketReopening'
+    _table = 'QuestionReopening'
 
-    question = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
+    question = ForeignKey(
+        dbName='question', foreignKey='Question', notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     reopener = ForeignKey(dbName='reopener', foreignKey='Person',
         notNull=True)

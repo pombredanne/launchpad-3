@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
-    IBugBranch)
+    IBugBranch, ILanguage, ILanguageSet)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -58,7 +58,7 @@ class EditBugNominationStatus(AuthorizationBase):
     usedfor = IBugNomination
 
     def checkAuthenticated(self, user):
-        return check_permission("launchpad.Driver", self.obj.target)
+        return self.obj.canApprove(user)
 
 
 class EditByOwnersOrAdmins(AuthorizationBase):
@@ -880,4 +880,14 @@ def can_admin_team(team, user):
             if user.inTeam(person):
                 return True
     return False
+
+
+class AdminLanguageSet(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ILanguageSet
+
+
+class AdminLanguage(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ILanguage
 

@@ -144,7 +144,7 @@ database ID for the milestone, so we find the ID:
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/ubuntu/+source/mozilla-firefox/+bug/1
+  Location: http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
 
 
 Verify that the bug now has the milestone set on the view page:

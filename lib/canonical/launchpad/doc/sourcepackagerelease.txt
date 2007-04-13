@@ -299,6 +299,9 @@ correspondent to the alias (long) we already have.
    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
    >>> file_alias = getUtility(ILibraryFileAliasSet)[alias]
 
+   >>> spr_test = SourcePackageRelease.get(20)
+   >>> spr_test.name
+   u'pmount'
    >>> spr_test.attachTranslationFiles(file_alias, True)
 
 The commit is needed to see the new entries

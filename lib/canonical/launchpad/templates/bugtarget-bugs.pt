@@ -4,6 +4,10 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="malone"
 >
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript" src="/+icing/FormatAndColor.js"></script>
+    <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
+  </metal:block>
   <body>
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="search_url string:+bugs;
@@ -14,13 +18,10 @@
       />
 
       <div class="columns">
-        <div id="bugs-chart" class="two column left" height="200" width="200">
-          <script type="text/javascript" src="/@@/MochiKit/Color.js"></script>
-          <script type="text/javascript" src="/@@/MochiKit/Format.js"></script>
-          <script type="text/javascript" src="/@@/PlotKit/PlotKit_Packed.js"></script>
           <script type="text/javascript"
                tal:content="structure view/getChartJavascript">
           </script>
+        <div id="bugs-chart" class="two column left" height="200" width="200">
           <noscript>
           <ul>
             <li tal:repeat="bug_count view/bug_count_items"

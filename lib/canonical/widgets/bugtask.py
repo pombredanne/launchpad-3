@@ -14,16 +14,14 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
-    IDisplayWidget, IInputWidget, InputErrors, ConversionError,
-    WidgetInputError)
+    IDisplayWidget, IInputWidget, InputErrors, WidgetInputError,
+    ConversionError)
 from zope.schema.interfaces import ValidationError, InvalidValue
 from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
 
 from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import canonical_url
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
 
 class BugTaskAssigneeWidget(Widget):
@@ -420,9 +418,9 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
             try:
                 return self.convertTokensToValues([input])[0]
             except InvalidValue:
-                raise LaunchpadValidationError(
+                raise ConversionError(
                     "Launchpad doesn't know of any source package named"
-                    " '%s' in %s.", input, distribution.displayname)
+                    " '%s' in %s." % (input, distribution.displayname))
         return source
 
 

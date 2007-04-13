@@ -209,24 +209,6 @@ class SourcePackageRelease(SQLBase):
         return upload_distro.searchTasks(params).count()
 
     @property
-    def binaries(self):
-        clauseTables = ['SourcePackageRelease', 'BinaryPackageRelease',
-                        'Build']
-        query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
-                 ' AND BinaryPackageRelease.build = Build.id '
-                 ' AND Build.sourcepackagerelease = %i' % self.id)
-        return BinaryPackageRelease.select(
-            query, prejoinClauseTables=['Build'],
-            clauseTables=clauseTables, orderBy="-SourcePackageRelease.id")
-
-    @property
-    def meta_binaries(self):
-        """See ISourcePackageRelease."""
-        return [binary.build.distroarchrelease.distrorelease.getBinaryPackage(
-                                    binary.binarypackagename)
-                for binary in self.binaries]
-
-    @property
     def current_publishings(self):
         """See ISourcePackageRelease."""
         from canonical.launchpad.database.distroreleasesourcepackagerelease \

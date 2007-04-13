@@ -300,6 +300,63 @@ class TestPublisher(TestNativePublishingBase):
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
 
+    def testCarefulDominationOnDevelopmentRelease(self):
+        """Test the careful domination procedure.
+
+        Check if it works on a development release.
+        A SUPERSEDED published source should be moved to PENDINGREMOVAL.
+        """
+        from canonical.archivepublisher.publishing import Publisher
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            self.ubuntutest.main_archive)
+
+        pub_source = self.getPubSource(
+            status=PackagePublishingStatus.SUPERSEDED)
+
+        publisher.B_dominate(True)
+        self.layer.txn.commit()
+
+        # Retrieve the publishing record again otherwise it would remain
+        # unchanged since domination procedure purges caches and does
+        # other bad things for sqlobject.
+        from canonical.launchpad.database.publishing import (
+            SourcePackagePublishingHistory)
+        pub_source = SourcePackagePublishingHistory.get(pub_source.id)
+
+        # Publishing record got scheduled for removal
+        self.assertEqual(
+            pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
+
+    def testCarefulDominationOnObsoleteRelease(self):
+        """Test the careful domination procedure.
+
+        Check if it works on a obsolete release.
+        A SUPERSEDED published source should be moved to PENDINGREMOVAL.
+        """
+        from canonical.archivepublisher.publishing import Publisher
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            self.ubuntutest.main_archive)
+
+        self.ubuntutest['breezy-autotest'].releasestatus = (
+            DistributionReleaseStatus.OBSOLETE)
+
+        pub_source = self.getPubSource(
+            status=PackagePublishingStatus.SUPERSEDED)
+
+        publisher.B_dominate(True)
+        self.layer.txn.commit()
+
+        # See comment above.
+        from canonical.launchpad.database.publishing import (
+            SourcePackagePublishingHistory)
+        pub_source = SourcePackagePublishingHistory.get(pub_source.id)
+
+        # Publishing record got scheduled for removal.
+        self.assertEqual(
+            pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
+
     def testReleaseFile(self):
         """Test release file writing.
 

@@ -149,6 +149,13 @@ class DistroReleaseSourcePackageRelease:
                 clauseTables=clauseTables)
 
     @property
+    def meta_binaries(self):
+        """See IDistroReleaseSourcePackageRelease."""
+        return [self.distrorelease.getBinaryPackage(
+                    binary.binarypackagename)
+                for binary in self.binaries]
+
+    @property
     def changesfile(self):
         """See IDistroReleaseSourcePackageRelease."""
         clauseTables = [

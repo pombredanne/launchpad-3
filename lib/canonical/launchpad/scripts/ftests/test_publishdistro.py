@@ -48,6 +48,14 @@ class TestPublishDistro(TestNativePublishingBase):
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'foo')
 
+    def assertExists(self, path):
+        """Assert if the given path exists."""
+        self.assertTrue(os.path.exists(path), "Not Found: '%s'" % path)
+
+    def assertNotExists(self, path):
+        """Assert if the given path does not exist."""
+        self.assertFalse(os.path.exists(path), "Found: '%s'" % path)
+
     def testRunWithSuite(self):
         """Try to run publish-distro with restricted suite option.
 
@@ -69,7 +77,7 @@ class TestPublishDistro(TestNativePublishingBase):
         self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
-        self.assertEqual(False, os.path.exists(foo_path))
+        self.assertNotExists(foo_path)
 
         baz_path = "%s/main/b/baz/baz.dsc" % self.pool_dir
         self.assertEqual('baz', open(baz_path).read().strip())
@@ -112,6 +120,42 @@ class TestPublishDistro(TestNativePublishingBase):
             config.personalpackagearchive.root, name16.name,
             'ubuntutest/pool/main/b/bar/bar.dsc')
         self.assertEqual('bar', open(bar_path).read().strip())
+
+    def testRunWithEmptySuites(self):
+        """Try a publish-distro run on empty suites in careful_apt mode
+
+        Expect it to create all indexes, including current 'Release' file
+        for the empty suites specified.
+        """
+        rc, out, err = self.runPublishDistro(
+            ['-A', '-s', 'hoary-test-updates', '-s', 'hoary-test-backports'])
+
+        self.assertEqual(0, rc)
+
+        # Check "Release" files
+        release_path = "%s/hoary-test-updates/Release" % self.config.distsroot
+        self.assertExists(release_path)
+
+        release_path = "%s/hoary-test-backports/Release" % self.config.distsroot
+        self.assertExists(release_path)
+
+        release_path = "%s/hoary-test/Release" % self.config.distsroot
+        self.assertNotExists(release_path)
+
+        # Check some index files
+        index_path = (
+            "%s/hoary-test-updates/main/binary-i386/Packages"
+            % self.config.distsroot)
+        self.assertExists(index_path)
+
+        index_path = (
+            "%s/hoary-test-backports/main/binary-i386/Packages"
+            % self.config.distsroot)
+        self.assertExists(index_path)
+
+        index_path = (
+            "%s/hoary-test/main/binary-i386/Packages" % self.config.distsroot)
+        self.assertNotExists(index_path)
 
 
 def test_suite():

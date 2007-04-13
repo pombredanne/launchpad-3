@@ -187,7 +187,7 @@ class Publisher(object):
                 if not force_domination:
                     if not self.isDirty(distrorelease, pocket):
                         self.log.debug("Skipping domination for %s/%s" %
-                                   (distrorelease.name, pocket))
+                                   (distrorelease.name, pocket.name))
                         continue
                     if not distrorelease.isUnstable():
                         # We're not doing a full run and the
@@ -236,7 +236,7 @@ class Publisher(object):
                 if not is_careful:
                     if not self.isDirty(distrorelease, pocket):
                         self.log.debug("Skipping release files for %s/%s" %
-                                   (distrorelease.name, pocket))
+                                       (distrorelease.name, pocket.name))
                         continue
                     if not distrorelease.isUnstable():
                         # See comment in B_dominate
@@ -316,6 +316,18 @@ class Publisher(object):
             mode = stat.S_IMODE(os.stat(package_index_path).st_mode)
             os.chmod(package_index_path, mode | stat.S_IWGRP)
 
+    def isAllowed(self, distrorelease, pocket):
+        """Whether or not the given suite should be considered.
+
+        Return True either if the self.allowed_suite is empty (was not
+        specified in command line) or if the given suite is included in it.
+
+        Otherwise, return False.
+        """
+        if (self.allowed_suites and
+            (distrorelease.name, pocket) not in self.allowed_suites):
+            return False
+        return True
 
     def _writeDistroRelease(self, distrorelease, pocket):
         """Write out the Release files for the provided distrorelease."""

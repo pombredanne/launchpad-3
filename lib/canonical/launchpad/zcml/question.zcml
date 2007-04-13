@@ -65,7 +65,7 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.IQuestion"
-    path_expression="string:+ticket/${id}"
+    path_expression="string:+question/${id}"
     attribute_to_parent="target"
     rootsite="answers"
     />
@@ -183,7 +183,7 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.IQuestionSet"
-    path_expression="string:support"
+    path_expression="string:questions"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     rootsite="answers"
     />
@@ -201,9 +201,16 @@
     />
 
   <browser:page
+    name="+ask-a-question-button"
+    for="canonical.launchpad.interfaces.IQuestionSet"
+    permission="zope.Public"
+    template="../templates/null.pt"
+    />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IQuestionSet"
     class="canonical.launchpad.browser.SearchAllQuestionsView"
-    name="+tickets"
+    name="+questions"
     permission="zope.Public"
     />
 
