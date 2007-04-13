@@ -146,11 +146,14 @@ class LaunchpadFormView(LaunchpadView):
 
     @property
     def action_url(self):
-        """ Set the default action URL for the form.
+        """ Set the default action URL for the form."""
 
-        This must be done after instantiation as the URL can be different
-        when called via a page template.
-        """
+        # XXX: 20070413 bac
+        # Rather than use a property it is tempting to just cache the value of
+        # request.getURL.  This caching cannot be done in __init__ as the full
+        # URL has not been traversed at instantiation time.  It could be
+        # done in 'initialize' if the functionality for initialization and
+        # form processing are split.
         return self.request.getURL()
 
     @property
