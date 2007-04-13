@@ -8,7 +8,7 @@ Any administrator of a team can add new members to that team.
     >>> browser.url
     'http://launchpad.dev/~landscape-developers/+addmember'
     >>> browser.getControl('New member').value = 'cprov'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Add Member').click()
 
     >>> for tag in find_tags_by_class(browser.contents,
     ...                               'informational message'):
@@ -30,33 +30,50 @@ Let's make sure that 'cprov' is now an Approved member of 'landscape-developers'
 If the new member is already an approved member of that team, we'll say that.
 
     >>> browser.url
-    'http://launchpad.dev/%7Elandscape-developers/+addmember?added=28'
+    'http://launchpad.dev/%7Elandscape-developers/+addmember'
     >>> browser.getControl('New member').value = 'cprov'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Add Member').click()
 
-    >>> for tag in find_tags_by_class(browser.contents, 'error message'):
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
+    There is 1 error.
     Celso Providelo (cprov) is already a member of Landscape Developers.
 
+The new member can't be a team without active members.
+
+    # Ideally we should do this using the web UI, but doing it this way is a
+    # lot simpler.
+    >>> from canonical.lp.dbschema import TeamMembershipStatus
+    >>> carlos = Person.byName('carlos')
+    >>> ubuntu_translators = Person.byName('ubuntu-translators')
+    >>> tm = TeamMembership.selectOneBy(
+    ...     personID=carlos.id, teamID=ubuntu_translators.id)
+    >>> tm.setStatus(
+    ...     TeamMembershipStatus.DEACTIVATED, ubuntu_translators.teamowner)
+    >>> tm.syncUpdate()
+
+    >>> browser.getControl('New member').value = 'ubuntu-translators'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    You can't add a team that doesn't have any active members.
 
 On the other hand, if the member is among the inactive/proposed members of
 the team, we'll simply change the membership's status and say that it was
 successfully added.
 
-    # Ideally we should do this using the web UI, but doing it this way is a
-    # lot simpler.
-    >>> from canonical.lp.dbschema import TeamMembershipStatus
     >>> tm = TeamMembership.selectOneBy(personID=cprov.id, teamID=team.id)
     >>> tm.setStatus(TeamMembershipStatus.DEACTIVATED, team.teamowner)
     >>> tm.syncUpdate()
 
     >>> browser.url
-    'http://launchpad.dev/%7Elandscape-developers/+addmember?notadded=28'
+    'http://launchpad.dev/%7Elandscape-developers/+addmember'
     >>> browser.getControl('New member').value = 'cprov'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Add Member').click()
 
     >>> for tag in find_tags_by_class(browser.contents,
     ...                               'informational message'):
     ...     print tag.renderContents()
     Celso Providelo (cprov) was added as a member of Landscape Developers.
-
