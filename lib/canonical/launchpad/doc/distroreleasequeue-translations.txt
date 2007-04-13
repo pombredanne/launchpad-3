@@ -11,16 +11,8 @@ uploaded into the system.
   >>> from canonical.lp.dbschema import PackagePublishingPocket
 
   >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
-  >>> from canonical.archivepublisher.tests import datadir
-
-  >>> class MockLogger:
-  ...     def debug(self, s):
-  ...         print "DEBUG:", s
-
-  >>> class MockOptions:
-  ...     distro = "ubuntu"
-  ...     distrorelease = "dapper"
+  >>> from canonical.archivepublisher.tests import (
+  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
@@ -53,7 +45,7 @@ queue:
   # We are going to import the pmount build into RELEASE pocket.
   >>> pmount_sourcepackagename = getUtility(ISourcePackageNameSet)['pmount']
   >>> source_package_release = dapper.createUploadedSourcePackageRelease(
-  ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner, UTC_NOW,
+  ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner,
   ...     None, None, 'i386', Component.get(1), dapper.owner,
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
   ...     Manifest.get(1), None, None, None, None)
@@ -69,22 +61,21 @@ queue:
   ...     embargo=False)
 
   # Do the upload into the system.
-  >>> pmount_upload = NascentUpload(findPolicyByName('buildd'),
-  ...     datadir(''), "pmount_0.9.7-2ubuntu2_amd64.changes", MockLogger())
-  >>> pmount_upload.changes_filename == datadir("pmount_0.9.7-2ubuntu2_amd64.changes")
-  True
 
   >>> build = source_package_release.createBuild(
   ...      dapper_amd64, PackagePublishingPocket.RELEASE)
-  >>> mock_options = MockOptions()
-  >>> mock_options.buildid = build.id
-  >>> pmount_upload.policy.setOptions(mock_options)
-  >>> pmount_upload.policy.can_upload_binaries = True
-  >>> pmount_upload.policy.can_upload_mixed = True
+
+  >>> buildd_policy = getPolicy(
+  ...     name='buildd', distro='ubuntu', distrorelease='dapper',
+  ...     buildid=build.id)
+
+  >>> pmount_upload = NascentUpload(
+  ...     datadir('pmount_0.9.7-2ubuntu2_amd64.changes'),
+  ...     buildd_policy, mock_logger)
+  DEBUG: Changes file can be unsigned.
 
   >>> pmount_upload.process()
   DEBUG: Beginning processing.
-  DEBUG: Changes file can be unsigned, storing None
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Verifying binary pmount_0.9.7-2ubuntu2_amd64.deb
@@ -96,21 +87,21 @@ queue:
   DEBUG: Finished checking upload.
 
   # It was not rejected.
-  >>> pmount_upload.rejected
+  >>> pmount_upload.is_rejected
   False
 
   >>> success, msgs = pmount_upload.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Changes file is unsigned, adding changer as recipient
+  DEBUG: Creating queue entry
   DEBUG: Build ... found
-  DEBUG: Creating a New queue entry
 
   # And all things worked.
   >>> success
   True
 
   # Ensure 'deb' is NEW and 'translation' is recognized, i.e., ACCEPTED
-  >>> print pmount_upload.build_summary()
+  >>> print pmount_upload.getNotificationSummary()
   NEW: pmount_0.9.7-2ubuntu2_amd64.deb
   OK: pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz
 

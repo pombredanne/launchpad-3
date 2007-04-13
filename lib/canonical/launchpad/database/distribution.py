@@ -65,7 +65,7 @@ from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
     get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH,\
-    IHasGotchiAndEmblem)
+    IHasLogo, IHasMugshot, IHasIcon)
 
 from sourcerer.deb.version import Version
 
@@ -76,13 +76,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasSprintsMixin, KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IHasBuildRecords, IQuestionTarget, IHasGotchiAndEmblem)
+        IDistribution, IHasBuildRecords, IQuestionTarget,
+        IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
-    default_gotchi_resource = '/@@/distribution-mugshot'
-    default_gotchi_heading_resource = '/@@/distribution-heading'
-    default_emblem_resource = '/@@/distribution'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
     displayname = StringCol(notNull=True)
@@ -90,11 +88,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
+    mugshot = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
-    gotchi_heading = ForeignKey(
+    logo = ForeignKey(
         dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -108,22 +106,25 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     mirror_admin = ForeignKey(
         dbName='mirror_admin', foreignKey='Person', notNull=True)
-    translationgroup = ForeignKey(dbName='translationgroup',
-        foreignKey='TranslationGroup', notNull=False, default=None)
-    translationpermission = EnumCol(dbName='translationpermission',
-        notNull=True, schema=TranslationPermission,
-        default=TranslationPermission.OPEN)
-    lucilleconfig = StringCol(dbName='lucilleconfig', notNull=False,
-                              default=None)
-    upload_sender = StringCol(dbName='upload_sender', notNull=False,
-                              default=None)
-    upload_admin = ForeignKey(dbName='upload_admin', foreignKey='Person',
-                              default=None, notNull=False)
+    translationgroup = ForeignKey(
+        dbName='translationgroup', foreignKey='TranslationGroup', notNull=False,
+        default=None)
+    translationpermission = EnumCol(
+        dbName='translationpermission', notNull=True,
+        schema=TranslationPermission, default=TranslationPermission.OPEN)
+    lucilleconfig = StringCol(
+        dbName='lucilleconfig', notNull=False, default=None)
+    upload_sender = StringCol(
+        dbName='upload_sender', notNull=False, default=None)
+    upload_admin = ForeignKey(
+        dbName='upload_admin', foreignKey='Person', default=None, notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
     uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution', prejoins=["uploader", "component"])
+    official_answers = BoolCol(dbName='official_answers', notNull=True,
+        default=False)
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
@@ -547,9 +548,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            'Language.id = language AND distribution = %s AND '
-            'sourcepackagename IS NULL' % sqlvalues(self),
-            clauseTables=['Ticket'], distinct=True))
+            'Language.id = Question.language AND '
+            'Question.distribution = %s AND '
+            'Question.sourcepackagename IS NULL' % sqlvalues(self.id),
+            clauseTables=['Question'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""
@@ -868,7 +870,7 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, gotchi, gotchi_heading, emblem):
+            members, owner, mugshot=None, logo=None, icon=None):
         return Distribution(
             name=name,
             displayname=displayname,
@@ -879,7 +881,7 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
-            gotchi=gotchi,
-            gotchi_heading=gotchi_heading,
-            emblem=emblem)
+            mugshot=mugshot,
+            logo=logo,
+            icon=icon)
 

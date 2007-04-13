@@ -30,7 +30,7 @@
           <tal:bugtask tal:repeat="bugtask bugtaskcve/bugtasks">
             <tr>
               <td style="padding-left: 3em">
-                  <span tal:replace="structure bugtask/fmt:icon" />
+                  <span tal:replace="structure bugtask/image:icon" />
                   <span tal:replace="bugtask/targetname" />
               </td>
               <td>

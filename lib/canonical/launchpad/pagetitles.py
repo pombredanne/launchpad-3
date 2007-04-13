@@ -75,6 +75,9 @@ class ContextTitle(SubstitutionHelper):
     def __call__(self, context, view):
         return self.text % context.title
 
+class ContextDisplayname(SubstitutionHelper):
+    def __call__(self, context, view):
+        return self.text % context.displayname
 
 class ContextBrowsername(SubstitutionHelper):
     def __call__(self, context, view):
@@ -120,6 +123,9 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
+branch_edit_subscription = ContextDisplayName(smartquote(
+    'Edit subscription to branch "%s"'))
+
 def branch_index(context, view):
     if context.author:
         return smartquote('"%s" branch by %s in Launchpad') % (
@@ -127,7 +133,8 @@ def branch_index(context, view):
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
-branch_subscription = ContextDisplayName(smartquote('Subscription to branch "%s"'))
+branch_subscription = ContextDisplayName(smartquote(
+    'Subscription to branch "%s"'))
 
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
@@ -433,6 +440,14 @@ karmaaction_edit = 'Edit karma action'
 
 karmacontext_topcontributors = ContextTitle('Top %s Contributors')
 
+language_index = ContextDisplayname("%s in Launchpad")
+
+language_add = 'Add a new Language to Launchpad'
+
+language_admin = ContextDisplayname("Edit %s")
+
+languageset_index = 'Languages in Launchpad'
+
 # launchpad_debug doesn't need a title.
 
 def launchpad_addform(context, view):
@@ -512,6 +527,37 @@ malone_filebug = "Report a bug"
 
 # malone_template is a means to include the mainmaster template
 
+# marketing_about_template is used by the marketing pages
+
+marketing_answers_about = "About Answers"
+
+marketing_answers_faq = "FAQs about Answers"
+
+marketing_blueprints_about = "About Blueprints"
+
+marketing_blueprints_faq = "FAQs about Blueprints"
+
+marketing_bugs_about = "About Bugs"
+
+marketing_bugs_faq = "FAQs about Bugs"
+
+marketing_code_about = "About Code"
+
+marketing_code_faq = "FAQs about Code"
+
+# marketing_faq_template is used by the marketing pages
+
+marketing_home = "About Launchpad"
+
+# marketing_main_template is used by the marketing pages
+
+def marketing_tour(context, view):
+    return view.pagetitle
+
+marketing_translations_about = "About Translations"
+
+marketing_translations_faq = "FAQs about Translations"
+
 # messagechunk_snippet is a fragment
 
 # messages_index is a redirect
@@ -526,17 +572,20 @@ milestone_edit = ContextTitle('Edit %s')
 
 notification_test = 'Notification test'
 
-# object_pots is a fragment.
-
-object_potemplatenames = ContextDisplayName('Template names for %s')
-
-object_reassignment = ContextTitle('Reassign %s')
+object_branding = ContextDisplayName('Change the images used to represent '
+    '%s in Launchpad')
 
 object_driver = ContextTitle('Appoint the driver for %s')
 
 object_launchpadusage = ContextTitle('Launchpad usage by %s')
 
 object_milestones = ContextTitle(smartquote("%s's milestones"))
+
+# object_pots is a fragment.
+
+object_potemplatenames = ContextDisplayName('Template names for %s')
+
+object_reassignment = ContextTitle('Reassign %s')
 
 oops = 'Oops!'
 
@@ -547,6 +596,9 @@ people_index = 'People and teams in Launchpad'
 
 def people_list(context, view):
     return view.header
+
+person_answer_contact_for = ContextDisplayName(
+    'Projects for which %s is an answer contact')    
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
@@ -584,7 +636,11 @@ person_editwikinames = ContextDisplayName(smartquote("%s's wiki names"))
 
 person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
 
-person_index = ContextDisplayName('%s in Launchpad')
+def person_index(context, view):
+    if context.is_valid_person_or_team:
+        return '%s in Launchpad' % context.displayname
+    else:
+        return "%s's contributions to Free Software" % context.displayname
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
@@ -775,6 +831,8 @@ rosetta_about = 'About Rosetta'
 
 rosetta_index = 'Launchpad Translations'
 
+rosetta_products = 'Products with Translations in Launchpad'
+
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
 def productseries_edit(context, view):
@@ -903,6 +961,8 @@ specification_linkbug = ContextTitle(
   u'Link blueprint \N{left double quotation mark}%s'
   u'\N{right double quotation mark} to a bug report')
 
+specification_new = 'Register a proposal as a blueprint in Launchpad'
+
 specification_unlinkbugs = 'Remove links to bug reports'
 
 specification_retargeting = 'Attach blueprint to a different project or distribution'
@@ -1012,6 +1072,8 @@ team_join = ContextBrowsername('Join %s')
 team_leave = ContextBrowsername('Leave %s')
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
+
+team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
 
 def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (

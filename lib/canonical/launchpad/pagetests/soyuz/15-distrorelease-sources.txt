@@ -68,7 +68,7 @@ We can see 'mozilla-firefox' is published once in pocket RELEASE:
       </p>
       <ul>
         <li>
-         <a href="http://localhost/ubuntu/warty/+source/mozilla-firefox/0.9">mozilla-firefox 0.9</a>
+         <a href="/ubuntu/warty/+source/mozilla-firefox/0.9">mozilla-firefox 0.9</a>
         </li>
       </ul>
     </dd>
@@ -87,9 +87,9 @@ Product and Branches:
       <a href="/firefox">Mozilla Firefox</a>
     </li>
     <li><b>Branch: </b>
-      <a href="http://localhost/firefox/trunk">trunk</a><br />
+      <a href="/firefox/trunk">trunk</a><br />
     </li>
-    <small>(<a href="http://localhost/ubuntu/warty/+source/mozilla-firefox/+packaging">update</a>)</small>
+    <small>(<a href="/ubuntu/warty/+source/mozilla-firefox/+packaging">update</a>)</small>
   </ul>
 
 The user can also download the files for the "currentrelease" (last

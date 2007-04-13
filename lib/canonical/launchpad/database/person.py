@@ -29,6 +29,7 @@ from canonical.database.sqlbase import (
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
 
+from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
@@ -50,8 +51,8 @@ from canonical.launchpad.interfaces import (
     ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
     ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH, IProduct,
-    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasGotchiAndEmblem,
-    JoinNotAllowed)
+    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasLogo, IHasMugshot,
+    IHasIcon, JoinNotAllowed)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -64,7 +65,8 @@ from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
-from canonical.launchpad.database.shipit import ShippingRequest
+from canonical.launchpad.database.shipit import (
+    MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT, ShippingRequest)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import (
@@ -92,7 +94,7 @@ class ValidPersonOrTeamCache(SQLBase):
 class Person(SQLBase, HasSpecificationsMixin):
     """A Person."""
 
-    implements(IPerson, ICalendarOwner, IHasGotchiAndEmblem)
+    implements(IPerson, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot)
 
     sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
     _defaultOrder = sortingColumns
@@ -102,11 +104,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
+    mugshot = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
-    gotchi_heading = ForeignKey(
+    logo = ForeignKey(
         dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
@@ -176,38 +178,6 @@ class Person(SQLBase, HasSpecificationsMixin):
         SQLBase._init(self, *args, **kw)
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
-
-    # IHasGotchiAndEmblem attributes
-    @property
-    def default_emblem_resource(self):
-        return self._getDefaultIconResource()
-
-    @property
-    def default_gotchi_resource(self):
-        return self._getDefaultIconResource('mugshot')
-
-    @property
-    def default_gotchi_heading_resource(self):
-        return self._getDefaultIconResource('heading')
-
-    def _getDefaultIconResource(self, suffix=''):
-        """Return the zope3 resource for the icon of this person with the
-        given suffix.
-
-        The suffix must be one of '', 'mini', 'heading' or 'mugshot'.
-        """
-        assert suffix in ('', 'mini', 'heading', 'mugshot')
-        if self.isTeam():
-            img = '/@@/team'
-        else:
-            if self.is_valid_person:
-                img = '/@@/person'
-            else:
-                img = '/@@/person-inactive'
-        if suffix:
-            return "%s-%s" % (img, suffix)
-        else:
-            return img
 
     # specification-related joins
     @property
@@ -446,17 +416,59 @@ class Person(SQLBase, HasSpecificationsMixin):
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            '''Language.id = language AND Ticket.id IN (
-            SELECT id FROM Ticket
+            '''Language.id = language AND Question.id IN (
+            SELECT id FROM Question
                      WHERE owner = %(personID)s OR answerer = %(personID)s OR
                            assignee = %(personID)s
-            UNION SELECT ticket FROM TicketSubscription
+            UNION SELECT question FROM QuestionSubscription
                   WHERE person = %(personID)s
-            UNION SELECT ticket
-                    FROM TicketMessage JOIN Message ON (message = Message.id)
+            UNION SELECT question
+                    FROM QuestionMessage JOIN Message ON (message = Message.id)
                    WHERE owner = %(personID)s
             )''' % sqlvalues(personID=self.id),
-            clauseTables=['Ticket'], distinct=True))
+            clauseTables=['Question'], distinct=True))
+
+    def getDirectAnswerQuestionTargets(self):
+        """See IPerson."""
+        answer_contacts = AnswerContact.select(
+            'person = %s' % sqlvalues(self))
+        return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
+
+    def getTeamAnswerQuestionTargets(self):
+        """See IPerson."""
+        answer_contacts = AnswerContact.select(
+            '''AnswerContact.person = TeamParticipation.team
+            AND TeamParticipation.person = %(personID)s
+            AND AnswerContact.person != %(personID)s''' % sqlvalues(
+                personID=self.id),
+            clauseTables=['TeamParticipation'], distinct=True)
+        return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
+
+    def _getQuestionTargetsFromAnswerContacts(self, answer_contacts):
+        """Return a list of valid IQuestionTargets.
+
+        Provided AnswerContact query results, a distinct list of Products,
+        Distributions, and SourcePackages is returned.
+        """
+        targets = []
+        for answer_contact in answer_contacts:
+            if answer_contact.product is not None:
+                target = answer_contact.product
+            elif answer_contact.sourcepackagename is not None:
+                assert answer_contact.distribution is not None, (
+                    "Missing distribution.")
+                distribution = answer_contact.distribution
+                target = distribution.getSourcePackage(
+                    answer_contact.sourcepackagename)
+            elif answer_contact.distribution is not None:
+                target = answer_contact.distribution
+            else:
+                raise AssertionError('Unknown IQuestionTarget.')
+
+            if not target in targets:
+                targets.append(target)
+
+        return targets
 
     @property
     def branches(self):
@@ -630,6 +642,12 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         return self.teamowner is not None
 
+    @cachedproperty
+    def is_trusted_on_shipit(self):
+        """See IPerson."""
+        min_entries = MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT
+        return Karma.selectBy(person=self).count() >= min_entries
+
     def shippedShipItRequestsOfCurrentRelease(self):
         """See IPerson."""
         query = '''
@@ -681,7 +699,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         return getUtility(IBugTaskSet).search(search_params, *args)
 
-    def getProjectsAndCategoriesContributedTo(self, limit=10):
+    def getProjectsAndCategoriesContributedTo(self, limit=5):
         """See IPerson."""
         contributions = []
         results = self._getProjectsWithTheMostKarma(limit=limit)
@@ -700,12 +718,12 @@ class Person(SQLBase, HasSpecificationsMixin):
         the given limit.
         """
         # We want this person's total karma on a given context (that is,
-        # across all different categories) here; that's why we use a 
+        # across all different categories) here; that's why we use a
         # "KarmaCache.category IS NULL" clause here.
         query = """
             SELECT PillarName.name, KarmaCache.karmavalue
             FROM KarmaCache
-            JOIN PillarName ON 
+            JOIN PillarName ON
                 COALESCE(KarmaCache.distribution, -1) =
                 COALESCE(PillarName.distribution, -1)
                 AND
@@ -1127,6 +1145,18 @@ class Person(SQLBase, HasSpecificationsMixin):
             Person.id = TeamParticipation.team
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
+            """ % sqlvalues(self.id),
+            clauseTables=['TeamParticipation'],
+            orderBy=Person.sortingColumns)
+
+    @property
+    def teams_with_icons(self):
+        """See IPerson."""
+        return Person.select("""
+            Person.id = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            AND Person.teamowner IS NOT NULL
+            AND Person.emblem IS NOT NULL
             """ % sqlvalues(self.id),
             clauseTables=['TeamParticipation'],
             orderBy=Person.sortingColumns)
@@ -1604,6 +1634,12 @@ class PersonSet:
             orderBy=["Person.displayname", "Person.name"])
         return contributors
 
+    def latest_teams(self, limit=5):
+        """See IPersonSet."""
+        return Person.select("Person.teamowner IS NOT NULL",
+            orderBy=['-datecreated'], limit=limit)
+
+
     def merge(self, from_person, to_person):
         """Merge a person into another.
 
@@ -1791,49 +1827,49 @@ class PersonSet:
 
         # Update only the AnswerContacts that will not conflict
         cur.execute('''
-            UPDATE SupportContact
+            UPDATE AnswerContact
             SET person=%(to_id)d
             WHERE person=%(from_id)d
                 AND distribution IS NULL
                 AND product NOT IN (
                     SELECT product
-                    FROM SupportContact
+                    FROM AnswerContact
                     WHERE person = %(to_id)d
                     )
             ''' % vars())
         cur.execute('''
-            UPDATE SupportContact
+            UPDATE AnswerContact
             SET person=%(to_id)d
             WHERE person=%(from_id)d
                 AND distribution IS NOT NULL
                 AND (distribution, sourcepackagename) NOT IN (
                     SELECT distribution,sourcepackagename
-                    FROM SupportContact
+                    FROM AnswerContact
                     WHERE person = %(to_id)d
                     )
             ''' % vars())
         # and delete those left over
         cur.execute('''
-            DELETE FROM SupportContact WHERE person=%(from_id)d
+            DELETE FROM AnswerContact WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('supportcontact', 'person'))
+        skip.append(('answercontact', 'person'))
 
         # Update only the QuestionSubscriptions that will not conflict
         cur.execute('''
-            UPDATE TicketSubscription
+            UPDATE QuestionSubscription
             SET person=%(to_id)d
-            WHERE person=%(from_id)d AND ticket NOT IN
+            WHERE person=%(from_id)d AND question NOT IN
                 (
-                SELECT ticket
-                FROM TicketSubscription
+                SELECT question
+                FROM QuestionSubscription
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
         # and delete those left over
         cur.execute('''
-            DELETE FROM TicketSubscription WHERE person=%(from_id)d
+            DELETE FROM QuestionSubscription WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('ticketsubscription', 'person'))
+        skip.append(('questionsubscription', 'person'))
 
         # Update only the MentoringOffers that will not conflict
         cur.execute('''
@@ -2105,6 +2141,26 @@ class PersonSet:
         # flush its caches.
         flush_database_caches()
 
+    def getTranslatorsByLanguage(self, language):
+        """See IPersonSet."""
+        # XXX CarlosPerelloMarin 20070331: The KarmaCache table doesn't have a
+        # field to store karma per language, so we are actually returning the
+        # people with the most translation karma that have this language
+        # selected in their preferences.  See bug #102257 for more info.
+        return Person.select('''
+            PersonLanguage.person = Person.id AND
+            PersonLanguage.language = %s AND
+            KarmaCache.person = Person.id AND
+            KarmaCache.product IS NULL AND
+            KarmaCache.project IS NULL AND
+            KarmaCache.sourcepackagename IS NULL AND
+            KarmaCache.distribution IS NULL AND
+            KarmaCache.category = KarmaCategory.id AND
+            KarmaCategory.name = 'translations'
+            ''' % sqlvalues(language), orderBy=['-KarmaCache.karmavalue'],
+            clauseTables=[
+                'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
+
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'
@@ -2193,6 +2249,7 @@ class JabberID(SQLBase):
     implements(IJabberID)
 
     _table = 'JabberID'
+    _defaultOrder = ['jabberid']
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     jabberid = StringCol(dbName='jabberid', notNull=True)
