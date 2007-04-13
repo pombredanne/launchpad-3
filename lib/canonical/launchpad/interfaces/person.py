@@ -392,6 +392,8 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
+    is_trusted_on_shipit = Bool(
+        title=_('Is this a trusted person on shipit?'))
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
