@@ -107,6 +107,76 @@ across the whole system.
     >>> print mm.mentoring_offers.count()
     2
 
+== Mentoring lists do not include private items ==
+
+When a bug is marked private, it drops off the mentoring lists.
+
+   >>> bug2.private
+   False
+   >>> bug2.private = True
+   >>> syncUpdate(bug2)
+   >>> bug2.private
+   True
+
+So, now that Bug #2 is private it should no longer appear in the list of
+mentorships offered by foo_bar:
+
+   >>> for offer in lpteam.team_mentorships:
+   ...     print offer.target.title
+   Facilitate mass installs  of Ubuntu using Netboot configuration
+
+Let's make sure it is off all of the lists:
+
+   >>> for offertarget in [foo_bar, uproj, ubuntu_prod, debian, ubuntu, mm]:
+   ...     for offer in offertarget.mentoring_offers:
+   ...         if offer.target.title == 'Blackhole Trash folder':
+   ...             print 'Failed! Private bug showed in listing.'
+
+
+# NB these comments can be removed when we have private specs, which should
+# drop off the lists too.
+
+#And lets see if we can eliminate the spec by making that complete too.
+#
+#   >>> spec1.private
+#   False
+#   >>> spec1.private = True
+#   >>> syncUpdate(spec1)
+#   >>> spec1.private
+#   True
+#   >>> print foo_bar.mentoring_offers.count()
+#   0
+
+#And both offers should have disappeared from ALL the listings we looked at
+#earlier:
+#
+#   >>> print lpteam.team_mentorships.count()
+#   0
+#   >>> print uproj.mentoring_offers.count()
+#   0
+#   >>> print ubuntu_prod.mentoring_offers.count()
+#   0
+#   >>> print debian.mentoring_offers.count()
+#   0
+#   >>> print ubuntu.mentoring_offers.count()
+#   0
+
+#The mentorship manager should also no longer show those items:
+#
+#   >>> print mm.mentoring_offers.count()
+#   0
+
+
+OK, let's mark the bug public again:
+
+   >>> bug2.private
+   True
+   >>> bug2.private = False
+   >>> syncUpdate(bug2)
+   >>> bug2.private
+   False
+
+
 == Mentoring lists include only incomplete items ==
 
 When a spec or a bug is completed, it drops off the mentoring lists.
