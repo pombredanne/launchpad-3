@@ -1585,3 +1585,6 @@ th.descending {
 .cloud-shade-light {
   color: #b8b8ff;
 }
+
+.vcsimportSUCCESS {} /* inherited text color */
+.vcsimportFAILURE {color: Red;}

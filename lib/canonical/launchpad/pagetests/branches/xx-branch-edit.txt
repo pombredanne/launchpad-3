@@ -103,8 +103,8 @@ The branch page is displayed with the new status and the whiteboard content:
   >>> print status_tag.renderContents()
   Merged
   >>> whiteboard_tag = find_tag_by_id(contents, 'branch-whiteboard-value')
-  >>> print whiteboard_tag.renderContents()
-  <p>The brave shall prevail. Ka'plah!</p>
+  >>> print extract_text(whiteboard_tag)
+  The brave shall prevail. Ka'plah!
 
 Set the branch status back to its initial state.
 
