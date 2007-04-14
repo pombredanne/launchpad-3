@@ -69,9 +69,11 @@ class MentoringOfferSet:
             clauseTables=['Specification'],
             distinct=True)
         via_bugs = MentoringOffer.select("""
+            BugTask.bug = Bug.id AND
+            Bug.private IS FALSE AND
             BugTask.bug = MentoringOffer.bug AND NOT (
             """ + BugTask.completeness_clause + ")",
-            clauseTables=['BugTask'],
+            clauseTables=['BugTask', 'Bug'],
             distinct=True)
         return via_specs.union(via_bugs)
 

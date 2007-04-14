@@ -433,7 +433,7 @@ class LaunchpadRootNavigation(Navigation):
         'codeofconduct': ICodeOfConductSet,
         'distros': IDistributionSet,
         'karmaaction': IKarmaActionSet,
-        '+mentorship': IMentoringOfferSet,
+        '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
         'potemplatenames': IPOTemplateNameSet,
         'projects': IProductSet,

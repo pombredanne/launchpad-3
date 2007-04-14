@@ -46,9 +46,7 @@
           </span>
         </td>
         <td>
-          <img src="/@@/person-mini" />
-          <a tal:content="offer/owner/browsername"
-             tal:attributes="href offer/owner/fmt:url">foobar</a>
+          <a tal:replace="structure offer/owner/fmt:link">foobar</a>
         </td>
         <td>
           <div tal:replace="structure offer/target/@@+listing-column" />

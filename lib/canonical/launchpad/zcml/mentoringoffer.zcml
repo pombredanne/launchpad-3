@@ -29,7 +29,7 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.IMentoringOfferSet"
-    path_expression="string:+mentorship"
+    path_expression="string:+mentoring"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 

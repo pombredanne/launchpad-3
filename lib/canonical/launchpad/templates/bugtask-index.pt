@@ -35,7 +35,9 @@
         <a tal:attributes="href context/bug/owner/fmt:url"
            tal:content="context/bug/owner/browsername">Foo Bar</a>
       </div>
-      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
+      <h1><img src="/@@/locked-large" title="Private"
+               tal:condition="context/bug/private"
+          /><span tal:replace="context/bug/title">Foo doesn't work</span></h1>
 
   <tal:block condition="view/reportBugInContext" />
 
@@ -128,9 +130,7 @@
     <p>
       <b>Mentors:</b>
       <tal:block repeat="mentoring_offer mentoring_offers">
-        <img src="/@@/person-mini">
-        <a tal:attributes="href mentoring_offer/owner/fmt:url"
-           tal:content="mentoring_offer/owner/browsername">foobar</a>
+        <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
       </tal:block>
     </p>
     <tal:block condition="not: context/bug/is_complete">

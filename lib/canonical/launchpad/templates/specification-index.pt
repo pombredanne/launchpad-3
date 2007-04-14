@@ -144,9 +144,7 @@
     <p>
       <b>Mentors:</b>
       <tal:block repeat="mentoring_offer mentoring_offers">
-        <img src="/@@/person-mini">
-        <a tal:attributes="href mentoring_offer/owner/fmt:url"
-           tal:content="mentoring_offer/owner/browsername">foobar</a>
+        <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
       </tal:block>
     </p>
     <tal:block condition="not: context/is_complete">

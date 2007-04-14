@@ -230,7 +230,7 @@ And for a distribution
 We also have the special Mentorship Manager. This is only acessible to
 launchpad Admins:
 
-  >>> user_browser.open('http://launchpad.dev/+mentorship/')
+  >>> user_browser.open('http://launchpad.dev/+mentoring/')
   Traceback (most recent call last):
     ...
   Unauthorized:...
@@ -239,7 +239,7 @@ launchpad Admins:
 When we login as an admin, we can see listed here all the outstanding
 mentorship offers:
 
-  >>> admin_browser.open('http://launchpad.dev/+mentorship/')
+  >>> admin_browser.open('http://launchpad.dev/+mentoring/')
   >>> print admin_browser.title
   Mentoring available in the Launchpad Mentorship Manager
   >>> 'Blackhole Trash folder' in admin_browser.contents
@@ -247,6 +247,104 @@ mentorship offers:
   >>> 'cluster-installation' in admin_browser.contents
   True
 
+
+== Mentorships on private bugs ==
+
+When a bug for which mentoring was offered is marked private, it
+will no longer show up on any of these listings.
+
+We are going to now poke into the back of the db's head, and "privatise" the
+bug we have been using.
+
+   >>> from canonical.launchpad.interfaces import IPersonSet, IBugSet
+   >>> from canonical.launchpad.interfaces import IDistributionSet
+   >>> from canonical.launchpad.ftests import login, logout, syncUpdate
+   >>> from canonical.lp.dbschema import BugTaskStatus
+   >>> from canonical.database.sqlbase import flush_database_updates
+   >>> login('foo.bar@canonical.com')
+   >>> from zope.component import getUtility
+   >>> distroset = getUtility(IDistributionSet)
+   >>> personset = getUtility(IPersonSet)
+   >>> bugset = getUtility(IBugSet)
+   >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+   >>> kubuntu = distroset.getByName('kubuntu')
+   >>> bug_2 = bugset.get(2)
+   >>> bug_2.private
+   False
+   >>> bug_2.private = True
+   >>> syncUpdate(bug_2)
+   >>> bug_2.private
+   True
+   >>> logout()
+
+Right, brain surgery completed. The bug is now private.
+
+This bug should not show in the "mentorship available" listing:
+
+  >>> admin_browser.open('http://launchpad.dev/+mentoring')
+  >>> print admin_browser.title
+  Mentoring available in the Launchpad Mentorship Manager
+  >>> 'Blackhole Trash folder' in admin_browser.contents
+  False
+
+  #>>> 'cluster-installation' in admin_browser.contents
+  #False
+
+Nor in any of the listings which previously showed the bug:
+
+  >>> anon_browser.open('http://launchpad.dev/~one-membership/+mentoring')
+  >>> print anon_browser.title
+  Mentoring offered by One Membership
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+
+  #>>> 'cluster-installation' in anon_browser.contents
+  #False
+
+Including on the page for the team which is the beneficiary
+of this mentorship.
+
+  >>> anon_browser.open('http://launchpad.dev/~simple-team/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available for newcomers to Simple Team
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+
+  #>>> 'cluster-installation' in anon_browser.contents
+  #False
+
+Or the listing of mentorships available for a product:
+
+  >>> anon_browser.open('http://launchpad.dev/ubuntu-product/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available in Ubuntu
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+
+Or for a project:
+
+  >>> anon_browser.open('http://launchpad.dev/ubuntu-project/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available in the Ubuntu Project
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+
+Or for a distribution:
+
+  >>> anon_browser.open('http://launchpad.dev/debian/+mentoring')
+  >>> print anon_browser.title
+  Mentoring available in Debian
+  >>> 'Blackhole Trash folder' in anon_browser.contents
+  False
+
+Let's make this bug public again:
+
+   >>> login('foo.bar@canonical.com')
+   >>> bug_2.private = False
+   >>> syncUpdate(bug_2)
+   >>> bug_2.private
+   False
+   >>> logout()
 
 == Completed mentorships ==
 
@@ -257,23 +355,11 @@ successes" list (if the mentorship was offered less than a year ago).
 We are going to now poke into the back of the db's head, and "complete" the
 bug and the blueprint we have been using.
 
-   >>> from canonical.launchpad.interfaces import IPersonSet, IBugSet
-   >>> from canonical.launchpad.interfaces import IDistributionSet
-   >>> from canonical.launchpad.ftests import login, logout, syncUpdate
-   >>> from canonical.lp.dbschema import BugTaskStatus
    >>> from canonical.lp.dbschema import SpecificationDelivery
-   >>> from canonical.database.sqlbase import flush_database_updates
    >>> login('foo.bar@canonical.com')
-   >>> from zope.component import getUtility
-   >>> distroset = getUtility(IDistributionSet)
-   >>> personset = getUtility(IPersonSet)
-   >>> bugset = getUtility(IBugSet)
-   >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
-   >>> kubuntu = distroset.getByName('kubuntu')
-   >>> bug_2 = bugset.get(2)
+   >>> spec_1 = kubuntu.getSpecification('cluster-installation')
    >>> bug_2.is_complete
    False
-   >>> spec_1 = kubuntu.getSpecification('cluster-installation')
    >>> spec_1.is_complete
    False
    >>> for task in bug_2.bugtasks:
@@ -294,7 +380,7 @@ Right, brain surgery completed. The spec and the bug are now complete.
 So, first, these completed items should show up in the Mentorship Manager's
 "recent successes" listing:
 
-  >>> admin_browser.open('http://launchpad.dev/+mentorship/+success')
+  >>> admin_browser.open('http://launchpad.dev/+mentoring/+success')
   >>> print admin_browser.title
   Successful mentorships over the past year.
   >>> 'Blackhole Trash folder' in admin_browser.contents
@@ -304,7 +390,7 @@ So, first, these completed items should show up in the Mentorship Manager's
 
 But not in the "mentorship available" listing:
 
-  >>> admin_browser.open('http://launchpad.dev/+mentorship')
+  >>> admin_browser.open('http://launchpad.dev/+mentoring')
   >>> print admin_browser.title
   Mentoring available in the Launchpad Mentorship Manager
   >>> 'Blackhole Trash folder' in admin_browser.contents
