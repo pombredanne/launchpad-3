@@ -67,12 +67,12 @@
           </td>
           <td>
             <span class="sortkey"
-              tal:content="string: entry/untranslatedCount}">
+              tal:content="entry/untranslatedCount">
               0
             </span>
             <span
               tal:condition="entry/untranslatedCount"
-              tal:content="string: entry/untranslatedCount"
+              tal:content="entry/untranslatedCount"
               >
               0
             </span>
