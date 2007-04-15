@@ -1,0 +1,48 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Releases</h1>
+    <tal:has-releases condition="context/releases">
+    <ul>
+      <li class="distrorelease" tal:repeat="release context/releases">
+        <a tal:attributes="href release/fmt:url">
+          <tal:version replace="release/version" />
+          (<tal:codename replace="release/displayname" />)
+        </a>
+        <div tal:content="release/summary" />
+        <div>
+          <strong>Status:</strong>
+          <span tal:replace="release/releasestatus/title" />
+        </div>
+        <div tal:condition="release/parentrelease">
+          <strong>Derives from:</strong>
+          <a tal:attributes="href release/parentrelease/fmt:url">
+            <tal:distro
+              replace="release/parentrelease/distribution/displayname" />
+            <tal:distrorelease replace="release/parentrelease/displayname" />
+          </a>
+        </div>
+        <br />
+      </li>
+    </ul>
+    </tal:has-releases>
+
+    <tal:no-releases condition="not: context/releases">
+    <p><tal:name replace="context/displayname" /> has no releases registered
+      yet.
+    </p>
+    </tal:no-releases>
+</div>
+</body>
+</html>
+

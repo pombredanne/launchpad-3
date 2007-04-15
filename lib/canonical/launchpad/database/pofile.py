@@ -846,12 +846,17 @@ class DummyPOFile(RosettaStats):
     implements(IPOFile)
 
     def __init__(self, potemplate, language, variant=None, owner=None):
+        self.id = None
         self.potemplate = potemplate
         self.language = language
         self.variant = variant
-        self.last_touched_pomsgset = None
+        self.description = None
+        self.topcomment = None
+        self.header = None
+        self.fuzzyheader = False
         self.lasttranslator = None
-        self.contributors = []
+        self.license = None
+        self.lastparsed = None
 
         # The default POFile owner is the Rosetta Experts team unless the
         # given owner has rights to write into that file.
@@ -860,6 +865,14 @@ class DummyPOFile(RosettaStats):
         else:
             self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
 
+        self.path = u'unknown'
+        self.exportfile = None
+        self.datecreated = None
+        self.last_touched_pomsgset = None
+        self.contributors = []
+        self.from_sourcepackagename = None
+        self.pomsgsets = None
+
 
     def __getitem__(self, msgid_text):
         pomsgset = self.getPOMsgSet(msgid_text, only_current=True)
@@ -867,6 +880,10 @@ class DummyPOFile(RosettaStats):
             raise NotFoundError(msgid_text)
         else:
             return pomsgset
+
+    def __iter__(self):
+        """See IPOFile."""
+        return iter(self.currentMessageSets())
 
     def messageCount(self):
         return self.potemplate.messageCount()
@@ -924,6 +941,10 @@ class DummyPOFile(RosettaStats):
 
         return DummyPOMsgSet(self, potmsgset)
 
+    def getPOMsgSetsNotInTemplate(self):
+        """See IPOFile."""
+        return None
+
     def getPOTMsgSetTranslated(self, slice=None):
         """See IPOFile."""
         return None
@@ -935,6 +956,14 @@ class DummyPOFile(RosettaStats):
     def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
         return self.potemplate.getPOTMsgSets(slice)
+
+    def getPOTMsgSetWithErrors(self, slice=None):
+        """See IPOFile."""
+        return None
+
+    def hasMessageID(self, msgid):
+        """See IPOFile."""
+        raise NotImplementedError
 
     def currentCount(self):
         return 0
@@ -976,6 +1005,70 @@ class DummyPOFile(RosettaStats):
 
     def untranslatedPercentage(self):
         return 100.0
+
+    def validExportCache(self):
+        """See IPOFile."""
+        return False
+
+    def updateExportCache(self, contents):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def export(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def exportToFileHandle(self, filehandle, included_obsolete=True):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def uncachedExport(self, included_obsolete=True, export_utf8=False):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def invalidateCache(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def createMessageSetFromMessageSet(self, potmsgset):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def createMessageSetFromText(self, text):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def translated(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def untranslated(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def expireAllMessages(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def updateStatistics(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def updateHeader(self, new_header):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def isPORevisionDateOlder(self, header):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def getNextToImport(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def importFromQueue(self, logger=None):
+        """See IPOFile."""
+        raise NotImplementedError
 
 
 class POFileSet:

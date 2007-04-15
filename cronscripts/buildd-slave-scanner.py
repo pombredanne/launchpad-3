@@ -64,6 +64,8 @@ class SlaveScanner(LaunchpadScript):
 if __name__ == '__main__':
     script = SlaveScanner('slave-scanner', dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
-    script.run()
-    script.unlock()
+    try:
+        script.run()
+    finally:
+        script.unlock()
 
