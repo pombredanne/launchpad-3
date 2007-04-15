@@ -43,6 +43,7 @@
           <th>Template Name</th>
           <th>Length</th>
           <th>Status</th>
+          <th>Untranslated</th>
           <th>Last Edited</th>
           <th>By</th>
         </tr>
@@ -63,6 +64,21 @@
             <span class="sortkey" tal:content="entry/translatedPercentage"/>
             <span style="white-space: nowrap"
                   tal:content="structure entry/@@+barchart" />
+          </td>
+          <td>
+            <span class="sortkey"
+              tal:content="string: entry/untranslatedCount}">
+              0
+            </span>
+            <span
+              tal:condition="entry/untranslatedCount"
+              tal:content="string: entry/untranslatedCount"
+              >
+              0
+            </span>
+            <tal:block condition="not: entry/untranslatedCount">
+                &mdash;
+            </tal:block>
           </td>
           <td>
             <span class="sortkey"
