@@ -188,13 +188,13 @@ class Build(SQLBase):
                                    architecturespecific):
         """See IBuild."""
         return BinaryPackageRelease(build=self,
-                                    binarypackagenameID=binarypackagename,
+                                    binarypackagename=binarypackagename,
                                     version=version,
                                     summary=summary,
                                     description=description,
                                     binpackageformat=binpackageformat,
-                                    componentID=component,
-                                    sectionID=section,
+                                    component=component,
+                                    section=section,
                                     priority=priority,
                                     shlibdeps=shlibdeps,
                                     depends=depends,

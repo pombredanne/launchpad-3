@@ -220,7 +220,9 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         allowed_suites.add(('hoary-test', PackagePublishingPocket.UPDATES))
 
         publisher = Publisher(self._logger, self._config, self._dp,
-                              self._distribution, allowed_suites=allowed_suites)
+                              self._distribution, allowed_suites=allowed_suites,
+                              archive=self._archive)
+
         fa = FTPArchiveHandler(self._logger, self._config, self._dp,
                                self._distribution, publisher)
 

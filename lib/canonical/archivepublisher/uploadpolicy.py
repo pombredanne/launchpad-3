@@ -58,6 +58,7 @@ class AbstractUploadPolicy:
     """
 
     policies = {}
+    options = None
 
     def __init__(self):
         """Prepare a policy..."""
@@ -65,6 +66,7 @@ class AbstractUploadPolicy:
         self.distro = None
         self.distrorelease = None
         self.pocket = None
+        self.archive = None
         self.unsigned_changes_ok = False
         self.unsigned_dsc_ok = False
         self.create_people = True
@@ -85,13 +87,21 @@ class AbstractUploadPolicy:
             self.setDistroReleaseAndPocket(options.distrorelease)
 
     def setDistroReleaseAndPocket(self, dr_name):
-        """Set the distrorelease and pocket from the provided name."""
+        """Set the distrorelease and pocket from the provided name.
+
+        It also sets self.archive to the distrorelease main_archive.
+        """
         if self.distrorelease is not None:
+            assert self.archive is not None, "Archive must be set."
             # We never override the policy
             return
+
         self.distroreleasename = dr_name
         (self.distrorelease,
          self.pocket) = self.distro.getDistroReleaseAndPocket(dr_name)
+
+        if self.archive is None:
+            self.archive = self.distrorelease.main_archive
 
     @property
     def announcelist(self):
@@ -101,10 +111,6 @@ class AbstractUploadPolicy:
             getattr(self, 'distrorelease', None) is not None):
             announce_list = self.distrorelease.changeslist
         return announce_list
-
-    def considerSigner(self, signer, signingkey):
-        """Consider the signer."""
-        # We do nothing here but our subclasses may override us.
 
     def checkUpload(self, upload):
         """Mandatory policy checks on NascentUploads."""
@@ -118,33 +124,6 @@ class AbstractUploadPolicy:
                     "Not permitted to upload to the %s pocket in a "
                     "release in the '%s' state." % (
                     self.pocket.name, self.distrorelease.releasestatus.name))
-
-        # all policies permit upload of a single custom
-        if upload.single_custom:
-            # refuses any further checks
-            return
-
-        # Currently the only check we make is that if the upload is binaryful
-        # we don't allow more than one build.
-        # XXX: dsilvers: 20051014: We'll want to refactor to remove this limit
-        # but it's not too much of a hassle for now.
-        # bug 3158
-        considered_archs = [arch_name for arch_name in upload.archs
-                            if not arch_name.endswith("_translations")]
-        if upload.binaryful:
-            max = 1
-            if upload.sourceful:
-                # When sourceful, the tools add 'source' to the architecture
-                # list in the upload. Thusly a sourceful upload with one build
-                # has two architectures listed.
-                max = 2
-            if 'all' in considered_archs:
-                # Sometimes we get 'i386 all' which would count as two archs
-                # so if 'all' is present, we bump the permitted number up
-                # by one.
-                max += 1
-            if len(considered_archs) > max:
-                upload.reject("Policy permits only one build per upload.")
 
         # reject PPA uploads by default
         self.rejectPPAUploads(upload)
@@ -166,33 +145,6 @@ class AbstractUploadPolicy:
         """Implement any policy-specific checks in child."""
         raise NotImplemented(
             "Policy specific checks must be implemented in child policies.")
-
-    def filterRecipients(self, upload, recipients):
-        """Filter any recipients we feel we need to.
-
-        Individual policies may override this if they see fit.
-
-        The default is to return all the recipients unchanged.
-        """
-        return recipients
-
-    def filterInterpolations(self, upload, interpolations):
-        """Filter any interpolations we feel necessary.
-
-        Individual policies may override this if they see fit.
-
-        The default is to return all the interpolations unchanged.
-        """
-        return interpolations
-
-    def getDefaultPermittedComponents(self):
-        """Return the set of components this distrorelease permits.
-
-        By default all components registered since the upload will pass
-        through the 'override engine' later.
-        """
-        return set(
-            component.name for component in getUtility(IComponentSet))
 
     def autoApprove(self, upload):
         """Return whether the upload should be automatically approved.

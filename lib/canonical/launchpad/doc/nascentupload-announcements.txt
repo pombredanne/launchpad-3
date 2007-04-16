@@ -44,39 +44,28 @@ address:
   >>> hoary.releasestatus = DistributionReleaseStatus.DEVELOPMENT
   >>> hoary.changeslist = "hoary-announce@lists.ubuntu.com"
 
-The policy we feed to to the nascent upload needs to have its command
-line options passed in and a local loggers:
-
-  >>> class MockOptions:
-  ...     distro = "ubuntu"
-  ...     distrorelease = "hoary"
-
-  >>> class MockLogger:
-  ...     def debug(self, s):
-  ...         print "DEBUG:", s
-
-  >>> class MockMunchyLogger:
-  ...     def debug(self, s):
-  ...         pass
 
 NEW source upload to RELEASE pocket via 'sync' policy (it presents
 the same behaviour than using insecure policy, apart of allowing
 unsigned changes):
 
   >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
-  >>> from canonical.archivepublisher.tests import datadir
+  >>> from canonical.archivepublisher.tests import (
+  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+
+  >>> sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distrorelease='hoary')
 
   >>> netapplet_src = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('suite/bar_1.0-1'),
-  ...     "bar_1.0-1_source.changes", MockMunchyLogger())
-  >>> netapplet_src.policy.setOptions(MockOptions())
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
   >>> netapplet_src.process()
-  >>> netapplet_src.logger = MockLogger()
+
+  >>> netapplet_src.logger = mock_logger
   >>> result, msgs = netapplet_src.do_accept()
   DEBUG: Building recipients list.
   ...
-  DEBUG: Creating a New queue entry
+  DEBUG: Creating queue entry
 
   >>> len(msgs)
   1
@@ -99,17 +88,20 @@ Make the uploaded orig file available to librarian lookups
 NEW binary upload to RELEASE pocket via 'sync' policy (we need to
 override sync policy to allow binary uploads):
 
+  >>> modified_sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distrorelease='hoary')
+  >>> modified_sync_policy.can_upload_binaries = True
+
   >>> netapplet_src = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('suite/bar_1.0-1_binary'),
-  ...     "bar_1.0-1_i386.changes", MockMunchyLogger())
-  >>> netapplet_src.policy.setOptions(MockOptions())
-  >>> netapplet_src.policy.can_upload_binaries = True
+  ...     datadir('suite/bar_1.0-1_binary/bar_1.0-1_i386.changes'),
+  ...     modified_sync_policy, mock_logger_quiet)
   >>> netapplet_src.process()
-  >>> netapplet_src.logger = MockLogger()
+
+  >>> netapplet_src.logger = mock_logger
   >>> result, msgs = netapplet_src.do_accept()
   DEBUG: Building recipients list.
   ...
-  DEBUG: Creating a New queue entry
+  DEBUG: Creating queue entry
 
 We simply ignores messages generated at this step because they are not
 going to exist in production. We simply need this binary to be published
@@ -124,21 +116,19 @@ this series *known* in hoary:
 
 NEW source uploads for 'translations' section via sync policy:
 
-  >>> lang_pack = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('language-packs'),
-  ...     "language-pack-pt_1.0-1_source.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "hoary"
-  >>> lang_pack.policy.setOptions(local_options)
-  >>> lang_pack.process()
-  >>> lang_pack.rejected
-  False
+  >>> modified_sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distrorelease='hoary')
 
-  >>> lang_pack.logger = MockLogger()
+  >>> lang_pack = NascentUpload(
+  ...     datadir('language-packs/language-pack-pt_1.0-1_source.changes'),
+  ...     modified_sync_policy, mock_logger_quiet)
+  >>> lang_pack.process()
+
+  >>> lang_pack.logger = mock_logger
   >>> result, msgs = lang_pack.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Changes file is unsigned, adding changer as recipient
-  DEBUG: Creating a New queue entry
+  DEBUG: Creating queue entry
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
   >>> lang_pack.queue_root.status.name
@@ -158,21 +148,19 @@ Accept and publish this series:
 
 AUTO_APPROVED source uploads for 'translations' section:
 
-  >>> lang_pack = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('language-packs'),
-  ...     "language-pack-pt_1.0-2_source.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "hoary"
-  >>> lang_pack.policy.setOptions(local_options)
-  >>> lang_pack.process()
-  >>> lang_pack.rejected
-  False
+  >>> modified_sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distrorelease='hoary')
 
-  >>> lang_pack.logger = MockLogger()
+  >>> lang_pack = NascentUpload(
+  ...     datadir('language-packs/language-pack-pt_1.0-2_source.changes'),
+  ...     modified_sync_policy, mock_logger_quiet)
+  >>> lang_pack.process()
+
+  >>> lang_pack.logger = mock_logger
   >>> result, msgs = lang_pack.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Changes file is unsigned, adding changer as recipient
-  DEBUG: Creating a New queue entry
+  DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
@@ -199,21 +187,24 @@ Import the test keys to use 'insecure' policy.
 
 UNAPPROVED source uploads for 'translations' section via insecure:
 
-  >>> lang_pack = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir('language-packs'),
-  ...     "language-pack-pt_1.0-3_source.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "hoary-updates"
-  >>> lang_pack.policy.setOptions(local_options)
-  >>> lang_pack.process()
-  >>> lang_pack.rejected
-  False
+  >>> insecure_policy = getPolicy(
+  ...     name='insecure', distro='ubuntu', distrorelease=None)
+  >>> insecure_policy.setDistroReleaseAndPocket('hoary-updates')
 
-  >>> lang_pack.logger = MockLogger()
+  >>> lang_pack = NascentUpload(
+  ...     datadir('language-packs/language-pack-pt_1.0-3_source.changes'),
+  ...     insecure_policy, mock_logger_quiet)
+  >>> lang_pack.process()
+
+  >>> print lang_pack.rejection_message
+
+
+
+  >>> lang_pack.logger = mock_logger
   >>> result, msgs = lang_pack.do_accept()
   DEBUG: Building recipients list.
   ...
-  DEBUG: Creating a New queue entry
+  DEBUG: Creating queue entry
   DEBUG: Setting it to UNAPPROVED
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
@@ -229,14 +220,16 @@ UNAPPROVED message was also skipped for an upload targeted to
 
 AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
 
+  >>> modified_sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distrorelease=None)
+  >>> modified_sync_policy.setDistroReleaseAndPocket('hoary-backports')
+
   >>> netapplet_src = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('suite/bar_1.0-4'),
-  ...     "bar_1.0-4_source.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "hoary-backports"
-  >>> netapplet_src.policy.setOptions(local_options)
+  ...     datadir('suite/bar_1.0-4/bar_1.0-4_source.changes'),
+  ...     modified_sync_policy, mock_logger_quiet)
   >>> netapplet_src.process()
-  >>> netapplet_src.logger = MockLogger()
+
+  >>> netapplet_src.logger = mock_logger
   >>> result, msgs = netapplet_src.do_accept()
   DEBUG: Building recipients list.
   ...
@@ -258,18 +251,17 @@ checks:
 
 AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
 
+
+  >>> security_policy = getPolicy(
+  ...     name='security', distro='ubuntu', distrorelease=None)
+  >>> security_policy.setDistroReleaseAndPocket('hoary-security')
+
   >>> netapplet_src = NascentUpload(
-  ...     findPolicyByName('security'), datadir('suite/bar_1.0-2'),
-  ...     "bar_1.0-2_source.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "hoary-security"
-  >>> netapplet_src.policy.setOptions(local_options)
-
+  ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
+  ...     security_policy, mock_logger_quiet)
   >>> netapplet_src.process()
-  >>> netapplet_src.rejected
-  False
 
-  >>> netapplet_src.logger = MockLogger()
+  >>> netapplet_src.logger = mock_logger
   >>> result, msgs = netapplet_src.do_accept()
   DEBUG: Building recipients list.
   ...
@@ -294,17 +286,16 @@ checks:
 
 AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
 
-  >>> netapplet_bin = NascentUpload(
-  ...     findPolicyByName('security'), datadir('suite/bar_1.0-2_binary'),
-  ...     "bar_1.0-2_i386.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "hoary-security"
-  >>> netapplet_bin.policy.setOptions(local_options)
-  >>> netapplet_bin.process()
-  >>> netapplet_bin.rejected
-  False
+  >>> security_policy = getPolicy(
+  ...     name='security', distro='ubuntu', distrorelease=None)
+  >>> security_policy.setDistroReleaseAndPocket('hoary-security')
 
-  >>> netapplet_bin.logger = MockLogger()
+  >>> netapplet_bin = NascentUpload(
+  ...     datadir('suite/bar_1.0-2_binary/bar_1.0-2_i386.changes'),
+  ...     security_policy, mock_logger_quiet)
+  >>> netapplet_bin.process()
+
+  >>> netapplet_bin.logger = mock_logger
   >>> result, msgs = netapplet_bin.do_accept()
   DEBUG: Building recipients list.
   ...

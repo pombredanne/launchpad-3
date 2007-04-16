@@ -265,7 +265,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
 
         self.assertLogContains(
             "Exception while accepting: Attempt to upload binaries "
-            "specifying build 22, where they don't fit")
+            "specifying build 22, where they don't fit.")
 
 
 def test_suite():

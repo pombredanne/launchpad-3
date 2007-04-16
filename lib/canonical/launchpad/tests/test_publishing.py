@@ -96,7 +96,6 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             component=component,
             section=self.section,
             urgency=SourcePackageUrgency.LOW,
-            dateuploaded=UTC_NOW,
             version=version,
             builddepends=builddepends,
             builddependsindep=builddependsindep,

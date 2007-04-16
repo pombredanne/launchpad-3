@@ -134,7 +134,6 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_comp = getUtility(IComponentSet)['universe']
   >>> arg_sect = getUtility(ISectionSet)['web']
   >>> arg_key = getUtility(IGPGKeySet).get(1)
-  >>> arg_dateuploaded = UTC_NOW
   >>> arg_maintainer = hoary.owner
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
@@ -162,7 +161,7 @@ ISourcePackageRelease, it will automatically set the
 'uploaddistrorelease' to the API entry point, in this case Hoary.
 
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
-  ...     arg_name, version, arg_maintainer, arg_dateuploaded,
+  ...     arg_name, version, arg_maintainer, 
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
   ...     arg_urgency, changelog, dsc, arg_key, arg_sect, arg_manifest,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,

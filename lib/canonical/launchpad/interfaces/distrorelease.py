@@ -191,13 +191,15 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         sourcepackagerelease is an ISourcePackageRelease.
         """
 
-    def getPublishedReleases(sourcepackage_or_name, pocket=None,
+    def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
                              include_pending=False, exclude_pocket=None,
                              archive=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
 
         If pocket is not specified, we look in all pockets.
+
+        If version is not specified, return packages with any version.
 
         if exclude_pocket is specified we exclude results matching that pocket.
 
@@ -234,11 +236,11 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def createUploadedSourcePackageRelease(
-        sourcepackagename, version, maintainer, dateuploaded, builddepends,
+        sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
         changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries, archive):
+        dsc_binaries, archive, dateuploaded=None):
         """Create an uploads SourcePackageRelease
 
         Set this distrorelease set to be the uploadeddistrorelease.
@@ -246,7 +248,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         All arguments are mandatory, they are extracted/built when
         processing and uploaded source package:
 
-         * dateuploaded: timestamp, usually UTC_NOW
+         * dateuploaded: timestamp, if not provided will be UTC_NOW
          * sourcepackagename: ISourcePackageName
          * version: string, a debian valid version
          * maintainer: IPerson designed as package maintainer
@@ -267,7 +269,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
          * dsc_format: string, DSC format version field
          * dsc_binaries:  string, DSC binaries field
          * archive: IArchive to where the upload was targeted
-
+         * dateuploaded: optional datetime, if omitted assumed nowUTC
         """
 
     def getComponentByName(name):

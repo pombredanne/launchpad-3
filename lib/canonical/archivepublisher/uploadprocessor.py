@@ -47,15 +47,16 @@ above, failed being worst).
 
 __metaclass__ = type
 
-import os
 from email import message_from_string
+import os
+import shutil
 
 from zope.component import getUtility
 
 from canonical.launchpad.mail import sendmail
 from canonical.encoding import ascii_smash
 from canonical.archivepublisher.nascentupload import (
-    NascentUpload, UploadError)
+    NascentUpload, FatalUploadError)
 from canonical.archivepublisher.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces import IDistributionSet, IPersonSet
@@ -200,8 +201,9 @@ class UploadProcessor:
         the source ones should always be considered first.
         """
         changes_files = []
+
         for dirpath, dirnames, filenames in os.walk(upload_path):
-            relative_path = dirpath[len(upload_path)+1:]
+            relative_path = dirpath[len(upload_path) + 1:]
             for filename in filenames:
                 if filename.endswith(".changes"):
                     changes_files.append(os.path.join(relative_path, filename))
@@ -210,13 +212,16 @@ class UploadProcessor:
     def processChangesFile(self, upload_path, changes_file):
         """Process a single changes file.
 
-        This is done by creating an upload policy object and a
-        NascentUpload object, and then activating them. See nascentupload.py
-        and uploadpolicy.py.
+        This is done by obtaining the appropriate upload policy (according
+        to command-line options and the value in the .distro file beside
+        the upload, if present), creating a NascentUpload object and calling
+        its process method.
 
         We obtain the context for this processing from the relative path,
         within the upload folder, of this changes file. This influences
         our creation both of upload policy and the NascentUpload object.
+
+        See nascentupload.py for the gory details.
 
         Returns a value from UploadStatusEnum, or re-raises an exception
         from NascentUpload.
@@ -238,21 +243,18 @@ class UploadProcessor:
         self.log.debug("Finding fresh policy")
         self.options.distro = distro.name
         policy = findPolicyByOptions(self.options)
+        policy.archive = archive
 
         # The path we want for NascentUpload is the path to the folder
         # containing the changes file (and the other files referenced by it).
-        changes_dir = os.path.join(upload_path, relative_path)
-        changes_file = os.path.basename(changes_file)
-        upload = NascentUpload(
-            policy, changes_dir, changes_file, self.log, archive)
+        changesfile_path = os.path.join(upload_path, changes_file)
+        upload = NascentUpload(changesfile_path, policy, self.log)
 
         if error is not None:
             upload.reject(str(e))
 
         try:
-            self.ztm.begin()
-            self.log.info("Processing upload %s" % upload.changes_filename)
-
+            self.log.info("Processing upload %s" % upload.changes.filename)
             result = UploadStatusEnum.ACCEPTED
 
             try:
@@ -262,7 +264,7 @@ class UploadProcessor:
                               "%s " % e)
                 self.log.debug("UploadPolicyError escaped upload.process",
                                exc_info=True)
-            except UploadError, e:
+            except FatalUploadError, e:
                 upload.reject("UploadError escaped upload.process: %s" % e)
                 self.log.debug("UploadError escaped upload.process",
                                exc_info=True)
@@ -279,7 +281,7 @@ class UploadProcessor:
                 self.log.exception("Unhandled exception processing upload")
                 upload.reject("Unhandled exception processing upload: %s" % e)
 
-            if upload.rejected:
+            if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
                 mails = upload.do_reject()
                 self.ztm.abort()
@@ -322,7 +324,7 @@ class UploadProcessor:
             self.options.base_fsroot, subdir_name, pathname)
         self.log.debug("Moving upload directory %s to %s" %
             (upload, target_path))
-        os.rename(upload, target_path)
+        shutil.move(upload, target_path)
 
         distro_filename = upload + ".distro"
         if os.path.isfile(distro_filename):
@@ -330,7 +332,7 @@ class UploadProcessor:
                                        os.path.basename(distro_filename))
             self.log.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))
-            os.rename(distro_filename, target_path)
+            shutil.move(distro_filename, target_path)
 
     def sendMails(self, mails):
         """Send the mails provided using the launchpad mail infrastructure."""
