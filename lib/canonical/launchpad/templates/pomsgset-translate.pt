@@ -96,7 +96,7 @@
 
         </form>
         <!-- Paging doodads. -->
-        <tal:navigation replace="structure view/batchnav/@@+navigation-links-upper" />
+        <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
       </tal:havepluralforms>
     </div>
 
