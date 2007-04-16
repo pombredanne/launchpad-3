@@ -5,23 +5,29 @@ At first there should be no translators in the polyglot group.
   ...   'http://translations.launchpad.dev/translations/groups/polyglot/')
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
   ...     print tag.renderContents()
-  <BLANKLINE>
   There are no translators appointed in this group yet.
-  <BLANKLINE>
 
-Now, let's appoint a translator. First see if we can display the
-appointments page.
+Verify that the appointments form displays, and offers the option to appoint
+a translator.
 
   >>> browser.getLink('Appoint').click()
   >>> browser.url
   'http://translations.launchpad.dev/translations/groups/polyglot/+appoint'
 
-Now let's make an appointment. Hoary Gnome Team will translate into
-Abkhasian. We should get redirected back to the group page.
+Appoint a translator. Hoary Gnome Team will translate into Abkhasian.
 
   >>> browser.getControl('Language').value=['ab']
   >>> browser.getControl('Translator').value='name21'
   >>> browser.getControl('Add').click()
+
+We should get redirected back to the group page.
+
+  >>> browser.url
+  'http://translations.launchpad.dev/translations/groups/polyglot/'
+
+  >>> browser.getLink('Appoint').click()
+  >>> browser.url
+  'http://translations.launchpad.dev/translations/groups/polyglot/+appoint'
 
 And let's appoint No Privileges user for Afrikaans too.
 
@@ -31,18 +37,10 @@ And let's appoint No Privileges user for Afrikaans too.
 
 Now we should see both of those appointments on the polyglot page:
 
-  >>> print http(r"""
-  ... GET /translations/groups/polyglot/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...The PolyGlot Translation Group...
-  ...
-        <td>Abkhazian</td>
-        <td><a href=".../~name21">Hoary Gnome Team</a>
-  ...
-        <td>Afrikaans</td>
-        <td><a href=".../~no-priv">No Privileges Person</a>
-  ...
-  ...href="+appoint"...Appoint...
+  >>> find_main_content(browser.contents)
+  <...Abkhazian...Hoary Gnome Team...
+  ...Afrikaans...No Privileges Person...
+
+  >>> browser.url
+  'http://translations.launchpad.dev/translations/groups/polyglot/'
 
