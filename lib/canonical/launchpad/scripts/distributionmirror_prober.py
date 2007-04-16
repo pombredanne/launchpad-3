@@ -141,6 +141,7 @@ class ProberFactory(protocol.ClientFactory):
         self._deferred = defer.Deferred()
         self.timeout = timeout
         self.setURL(url.encode('ascii'))
+        self.connector = None
 
     def probe(self):
         # NOTE: We don't want to issue connections to any outside host when
@@ -168,7 +169,8 @@ class ProberFactory(protocol.ClientFactory):
     def failWithTimeoutError(self):
         host_timeouts[self.request_host] += 1
         self.failed(ProberTimeout(self.url, self.timeout))
-        self.connector.disconnect()
+        if self.connector:
+            self.connector.disconnect()
 
     def startedConnecting(self, connector):
         self.connector = connector
