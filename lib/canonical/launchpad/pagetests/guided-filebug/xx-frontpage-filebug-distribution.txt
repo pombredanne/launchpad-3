@@ -40,6 +40,25 @@ page.
     >>> user_browser.title
     'Bug #... in Ubuntu: ...Evolution crashes...'
 
+== Bug on distribution, later switching to product ==
+
+Bug #103364 fixes a problem where a bug is entered for a distribution
+but is later changed to a product. This causes an OOPS, so let's check
+it stays fixed.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/')
+    >>> user_browser.getLink('Report a bug').click()
+    >>> user_browser.getControl('Distribution').selected = True
+    >>> user_browser.getControl('Summary').value = 'Foo'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.contents
+    '...No similar bugs were found...'
+
+    >>> user_browser.getControl('Product').selected = True
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.contents
+    'XXX something else here'
+
 == Advanced filebug page ==
 
 From the frontpage's filebug page it's possible to go to the advanced
