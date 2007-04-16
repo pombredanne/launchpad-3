@@ -931,7 +931,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         query = """
             Person.id = TeamParticipation.team AND
             TeamParticipation.person = %s AND
-            TeamParticipation.team <> %s
+            TeamParticipation.team != %s
             """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
@@ -940,7 +940,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         query = """
             Person.id = TeamParticipation.person AND
             TeamParticipation.team = %s AND
-            TeamParticipation.person <> %s AND
+            TeamParticipation.person != %s AND
             Person.teamowner IS NOT NULL
             """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
