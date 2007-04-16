@@ -106,6 +106,20 @@ IPerson, which is the common use case when checking permissions.
     >>> lifeless.inTeam(vcs_imports) and ddaa.inTeam(vcs_imports)
     True
 
+That method can also be used to check that a given IPerson is a member of
+itself. We can do that because people and teams have TeamParticipation entries
+for themselves.
+
+    >>> ddaa.inTeam(ddaa)
+    True
+    >>> ddaa.hasParticipationEntryFor(ddaa)
+    True
+
+    >>> vcs_imports.inTeam(vcs_imports)
+    True
+    >>> vcs_imports.hasParticipationEntryFor(vcs_imports)
+    True
+
 The inTeam method is cached to avoid unnecessary database lookups - this
 was a cause of a number of timeouts
 

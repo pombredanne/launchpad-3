@@ -190,10 +190,8 @@ CREATE OR REPLACE FUNCTION you_are_your_own_member() RETURNS trigger
 LANGUAGE plpgsql AS
 $$
     BEGIN
-        IF NEW.teamowner IS NULL THEN
-            INSERT INTO TeamParticipation (person, team)
-                VALUES (NEW.id, NEW.id);
-        END IF;
+        INSERT INTO TeamParticipation (person, team)
+            VALUES (NEW.id, NEW.id);
         RETURN NULL;
     END;
 $$;
