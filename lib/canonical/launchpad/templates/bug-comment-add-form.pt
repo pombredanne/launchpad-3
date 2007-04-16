@@ -1,5 +1,12 @@
-    <div metal:use-macro="context/@@launchpad_form/form">
-      <table class="form" metal:fill-slot="widgets">
+<div metal:use-macro="context/@@launchpad_form/form">
+  <div class="form" metal:fill-slot="widgets">
+    <div
+      tal:condition="context/bug/duplicateof"
+      class="warning message"
+    >
+      Remember, this bug report is a duplicate.
+      Comment here only if you think the duplicate status is incorrect.
+    </div>
 
         <table>
           <tal:subject
@@ -48,7 +55,7 @@
           </table>
         </fieldset>
 
-      </table>
+      </div>
 
       <div class="actions" metal:fill-slot="buttons">
         <input tal:replace="structure view/actions/field.actions.save/render" />
