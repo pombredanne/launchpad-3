@@ -156,23 +156,6 @@
     </div>
   </tal:not-logged-in>
 
-      <div class="next">
-        <h2>What next?</h2>
-        <ul>
-          <li>
-            <a tal:attributes="href context/target/fmt:url">
-              More bugs in
-              <tal:target replace="context/target/displayname" />
-            </a>
-          </li>
-          <li>
-            <a tal:attributes="href string:${context/target/fmt:url}/+filebug">
-              Report a bug about
-              <tal:target replace="context/target/displayname" />
-            </a>
-          </li>
-        </ul>
-      </div>
     </div>
   </body>
 </html>
