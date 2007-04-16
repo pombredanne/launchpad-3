@@ -72,7 +72,7 @@
             </span>
             <span
               tal:condition="entry/untranslatedCount"
-              tal:content="entry/untranslatedCount"
+              tal:replace="entry/untranslatedCount"
               >
               0
             </span>
