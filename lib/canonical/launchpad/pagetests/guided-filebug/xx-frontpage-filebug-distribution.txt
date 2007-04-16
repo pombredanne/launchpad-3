@@ -51,13 +51,17 @@ it stays fixed.
     >>> user_browser.getControl('Distribution').selected = True
     >>> user_browser.getControl('Summary').value = 'Foo'
     >>> user_browser.getControl('Continue').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/bugs/+filebug'
     >>> user_browser.contents
     '...No similar bugs were found...'
 
     >>> user_browser.getControl('Product').selected = True
     >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/bugs/+filebug'
     >>> user_browser.contents
-    'XXX something else here'
+    '...Required input is missing...'
 
 == Advanced filebug page ==
 
