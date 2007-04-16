@@ -1913,7 +1913,10 @@ class BugTaskSOP(StructuralObjectPresentation):
 
     def getMainHeading(self):
         bugtask = self.context
-        return 'Bug #%s in %s' % (bugtask.bug.id, bugtask.targetname)
+        if INullBugTask.providedBy(bugtask):
+            return 'Bug #%s is not in %s' % (bugtask.bug.id, bugtask.targetname)
+        else:
+            return 'Bug #%s in %s' % (bugtask.bug.id, bugtask.targetname)
 
     def listChildren(self, num):
         return []
