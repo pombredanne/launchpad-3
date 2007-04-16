@@ -39,14 +39,9 @@ Genuine (not connection related) errors still work normally, too.
 
     >>> cur.execute("SELECT garbage invalid sql;")
     Traceback (most recent call last):
-      File "/home/barry/projects/launchpad/mybranch/lib/zope/testing/doctest.py", line 1256, in __run
+    ....
     <BLANKLINE>
-      File "<doctest test_reconnector.txt[14]>", line 1, in ?
-        cur.execute("SELECT garbage invalid sql;")
-      File "/home/barry/projects/launchpad/testsuiterepair/lib/canonical/database/reconnect.py", line 78, in execute
-        return self.orig.execute(*args, **kwargs)
-      File "/home/barry/projects/launchpad/testsuiterepair/lib/canonical/ftests/pgsql.py", line 106, in execute
-        return self.__dict__['real_cursor'].execute(*args, **kwargs)
+    ...
     ProgrammingError: ERROR:  syntax error at or near "invalid"
     LINE 1: SELECT garbage invalid sql;
                            ^
