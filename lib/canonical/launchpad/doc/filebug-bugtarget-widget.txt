@@ -29,9 +29,7 @@ When the request is empty, the widet doesn't have any input:
     >>> widget.hasValidInput()
     False
     >>> widget.error()
-    Traceback (most recent call last):
-    ...
-    UnexpectedFormData: No valid option was selected.
+    ''
 
 It's a radio widget, so it assumes that it always will have input, so if
 it doesn't it raises UnexpectedFormData
