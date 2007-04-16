@@ -211,8 +211,10 @@
     </ul>
   </tal:related-bugs>
 
+      <div class="next">
+
   <h2>Nearby</h2>
-  <ul style="list-style: none">
+  <ul>
     <li tal:condition="context/product">
       <a tal:attributes="href string:${context/product/fmt:url}/+branches">
         Other <tal:product replace="context/product/displayname" /> branches
@@ -233,7 +235,10 @@
       </tal:no-author>
     </li>
   </ul>
-</div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
+
+      </div>
+      
+</div>
 
 <metal:block fill-slot="help">
 

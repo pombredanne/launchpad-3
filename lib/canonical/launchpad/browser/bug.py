@@ -134,7 +134,7 @@ class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-             'nominate', 'addbranch', 'linktocve', 'unlinkcve', 'filebug',
+             'nominate', 'addbranch', 'linktocve', 'unlinkcve',
              'activitylog']
 
     def __init__(self, context):

@@ -80,7 +80,6 @@ h3 {font-size: 1.15em; margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors 
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h5 {font-size: 1em;    margin: 0;              padding: 0;}
 h6 {font-size: 1em;    margin: 0;              padding: 0;}
-h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: smaller;}
@@ -226,6 +225,8 @@ strong span {
 hr {
   display: none;
 }
+
+div.next {border-top: 1px solid #ccc; margin: 4em 0 0;}
 
 /* === Page layout === */
 
