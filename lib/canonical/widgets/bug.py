@@ -209,6 +209,15 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
         else:
             raise AssertionError('Not a valid value: %r' % value)
 
+    def error(self):
+        """See zope.app.form.interfaces.IBrowserWidget."""
+        try:
+            self.getInputValue()
+        except InputErrors, error:
+            return error.doc()
+        else:
+            return ''
+
     def __call__(self):
         """See zope.app.form.interfaces.IBrowserWidget."""
         self.setUpOptions()

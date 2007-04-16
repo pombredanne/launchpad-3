@@ -28,6 +28,10 @@ When the request is empty, the widet doesn't have any input:
     False
     >>> widget.hasValidInput()
     False
+    >>> widget.error()
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: No valid option was selected.
 
 It's a radio widget, so it assumes that it always will have input, so if
 it doesn't it raises UnexpectedFormData
@@ -64,6 +68,8 @@ by getInputValue().
     ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
+    >>> widget.error()
+    ''
     >>> selected_distribution = widget.getInputValue()
     >>> IDistribution.providedBy(selected_distribution)
     True
@@ -83,6 +89,8 @@ raised.
     ...
     LaunchpadValidationError: There is no distribution named 'invalid'
                               registered in Launchpad
+    >>> print widget.error()
+    There is no distribution named 'invalid' registered in Launchpad
 
 If no distribution name is given at all, a MissingInput error is raised.
 
@@ -95,6 +103,8 @@ If no distribution name is given at all, a MissingInput error is raised.
     Traceback (most recent call last):
     ...
     MissingInputError:...
+    >>> widget.error() # XXX shouldn't this have something?
+    ''
 
 == Selecting a package ==
 
@@ -109,6 +119,8 @@ source package is returned.
     ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
+    >>> widget.error()
+    ''
     >>> selected_package = widget.getInputValue()
     >>> IDistributionSourcePackage.providedBy(selected_package)
     True
@@ -129,6 +141,8 @@ If a non-existant package is selected, a widget error is raised.
     ...
     LaunchpadValidationError: There is no source package name 'non-existant'
                               published in Ubuntu
+    >>> print widget.error()
+    There is no source package name 'non-existant' published in Ubuntu
 
 The same error is displayed when an existing source package name that
 isn't published is selected.
@@ -143,7 +157,8 @@ isn't published is selected.
     ...
     LaunchpadValidationError: There is no source package name 'thunderbird'
                               published in Ubuntu
-
+    >>> print widget.error()
+    There is no source package name 'thunderbird' published in Ubuntu
 
 == Selecting a product ==
 
@@ -156,6 +171,8 @@ If a product is selected, the product with the given name is returned.
     ...     IFrontPageBugAddForm['bugtarget'], LaunchpadTestRequest(form=form))
     >>> widget.hasInput()
     True
+    >>> widget.error()
+    ''
     >>> selected_product = widget.getInputValue()
     >>> IProduct.providedBy(selected_product)
     True
@@ -174,6 +191,8 @@ If a non-existant product name is entered, a widget error is raised.
     ...
     LaunchpadValidationError: There is no project named 'non-existant'
                               registered in Launchpad
+    >>> print widget.error()
+    There is no project named 'non-existant' registered in Launchpad
 
 If no product name is given at all, a widget error is raised.
 
@@ -186,6 +205,8 @@ If no product name is given at all, a widget error is raised.
     Traceback (most recent call last):
     ...
     LaunchpadValidationError: Please enter a project name
+    >>> print widget.error()
+    Please enter a project name
 
 == setRenderedValue() ==
 
