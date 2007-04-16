@@ -1857,6 +1857,12 @@ class BugTaskTableRowView(LaunchpadView):
         return (
             IDistroBugTask.providedBy(self.context) and
             self.context.sourcepackagename)
+
+    def shouldShowDistributionIcon(self):
+        """Should we show the distribution icon?"""
+        return (
+            IDistroBugTask.providedBy(self.context) and
+            not self.context.sourcepackagename)
         
     def shouldShowProductIcon(self):
         """Should we show the product icon?"""

@@ -21,24 +21,17 @@
         />
       </tal:not-conjoined-task>
     </td>
-    <td style="margin: 0; padding: 0" tal:condition="not:indent_task">
-      <span style="display: block; padding: 0.25em">
-        <img src="/@@/package-source" alt=""
-             tal:condition="view/shouldShowPackageIcon" />
-        <img src="/@@/product" alt=""
-             tal:condition="view/shouldShowProductIcon" />
-        <tal:not-conjoined-task tal:condition="not: context/conjoined_master">
-          <a
-            tal:attributes="href context/target/fmt:url"
-            tal:content="context/targetname"
-          />
-        </tal:not-conjoined-task>
-        <tal:conjoined-task
-            tal:condition="context/conjoined_master"
-            tal:replace="context/targetname">
-          evolution (Ubuntu)
-        </tal:conjoined-task>
-      </span>
+    <td tal:condition="not:indent_task">
+      <img src="/@@/distribution" alt=""
+           tal:condition="view/shouldShowDistributionIcon" />
+      <img src="/@@/package-source" alt=""
+           tal:condition="view/shouldShowPackageIcon" />
+      <img src="/@@/product" alt=""
+           tal:condition="view/shouldShowProductIcon" />
+      <a
+        tal:attributes="href context/target/fmt:url"
+        tal:content="context/targetname"
+      />
     </td>
 
     <tal:conjoined-task condition="context/conjoined_master">
@@ -62,7 +55,7 @@
         "
       ><img
         tal:attributes="id string:${form_row_id}-edit"
-        src="/@@/arrowDown"
+        src="/@@/bug-status-expand"
         alt=""
       /></a>
       <tal:status replace="context/status/title">$BugTask.status</tal:status>
@@ -77,7 +70,7 @@
         "
       ><img
         tal:attributes="id string:${form_row_id}-edit"
-        src="/@@/arrowDown"
+        src="/@@/bug-status-expand"
         alt=""
       /></a>
       <tal:importance replace="context/importance/title" />
@@ -124,7 +117,7 @@
         "
       ><img
         tal:attributes="id string:${form_row_id}-edit"
-        src="/@@/arrowDown"
+        src="/@@/bug-status-expand"
         alt="[edit]"
       /></a>
     </td>

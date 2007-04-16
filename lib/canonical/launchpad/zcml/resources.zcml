@@ -54,6 +54,9 @@
     <resource name="bug-wishlist" file="../images/bug-wishlist.png" />
     <resource name="bug-undecided" file="../images/bug-undecided.png" />
     <resource name="bug-remote" file="../images/bug-remote.png" />
+    <resource name="bug-status-collapse"
+              file="../images/bug-status-collapse.png" />
+    <resource name="bug-status-expand" file="../images/bug-status-expand.png" />
     <resource name="bug-unknown" file="../images/bug.png" />
     <resource name="bullet" file="../images/bullet.png" />
     <resource name="copy" file="../images/copy.png" />
