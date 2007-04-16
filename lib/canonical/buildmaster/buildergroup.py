@@ -529,16 +529,22 @@ class BuilderGroup:
             failed_dir = os.path.join(root, "failed-to-move")
             if not os.path.exists(failed_dir):
                 os.mkdir(failed_dir)
-            os.rename(upload_dir, os.path.join(failed_dir,
-                                               upload_leaf))
+            os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
 
         self.logger.debug("Uploader returned %d" % result_code)
 
-        self.logger.debug("Gathered build of %s completely"
-                          % queueItem.name)
-        # store build info
-        queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
-        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
+        build = queueItem.build
+        assert build.buildstate == dbschema.BuildStatus.FULLYBUILT, (
+            "Build %s was not updated during the upload time." % build.id)
+        assert len(build.binarypackages) > 0, (
+            "Build %s has no binaries uploaded." % build.id)
+
+        self.logger.debug("Gathered build %s completely" % queueItem.name)
+
+        # Store build info, build record was already updated during
+        # th;5Ae binary upload
+        self.storeBuildInfo(
+            queueItem, slave, librarian, buildid, dependencies)
         queueItem.destroySelf()
 
         # release the builder

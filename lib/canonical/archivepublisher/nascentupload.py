@@ -128,9 +128,9 @@ class NascentUpload:
         # We need to process changesfile addresses at this point because
         # we depend on an already initialised policy (distrorelease
         # and pocket set) to have proper person 'creation rationale'.
-        self.run_and_collect_errors(self.changes.process_addresses)
+        self.run_and_collect_errors(self.changes.processAddresses)
 
-        self.run_and_collect_errors(self.changes.process_files)
+        self.run_and_collect_errors(self.changes.processFiles)
 
         for uploaded_file in self.changes.files:
             self.run_and_check_error(uploaded_file.checkNameIsTaintFree)
@@ -174,7 +174,7 @@ class NascentUpload:
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
 
-        signer_components = self.process_signer_acl()
+        signer_components = self.processSignerAcl()
         if not self.is_new:
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
@@ -469,7 +469,7 @@ class NascentUpload:
         self.logger.debug("Decision: %s" % in_keyring)
         return in_keyring
 
-    def process_signer_acl(self):
+    def processSignerAcl(self):
         """Work out what components the signer is permitted to upload to and
         verify that all files are either NEW or are targetted at those
         components only.
@@ -921,6 +921,7 @@ class NascentUpload:
                 self.queue_root.addCustom(
                     libraryfile, custom_file.custom_type)
 
+            builds_found = []
             for binary_package_file in self.changes.binary_package_files:
                 if self.sourceful:
                     # The reason we need to do this verification
@@ -938,7 +939,13 @@ class NascentUpload:
                 assert self.queue_root.pocket == build.pocket, (
                     "Binary was not build for the claimed pocket.")
                 binary_package_file.storeInDatabase(build)
-                self.queue_root.addBuild(build)
+                builds_found.append(build)
+
+            assert len(set([b.id for b in builds_found])) == 1, (
+                "Upload contains binaries from different builds.")
+
+            build = builds_found[0]
+            self.queue_root.addBuild(build)
 
         if not self.is_new:
             # if it is known (already overridden properly), move it to

@@ -90,8 +90,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         """Check if Soyuz copes with delayed binary uploads.
 
         The binaries are build asynchronously, which means we can't
-        predict if all binaries of a given source will be delivered
-        within the same publication cycle.
+        predict if the builds for all architectures of a given source
+        will be delivered within the same publication cycle.
 
         Find more information on bug #89846.
         """
@@ -105,7 +105,7 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'i386 build of foo 1.0-1 in ubuntu breezy RELEASE',
             build_used.title)
-        self.assertEqual('NEEDSBUILD', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
 
         # Force immediate publication.
         queue_item = self._findQueue()
@@ -121,7 +121,7 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'powerpc build of foo 1.0-1 in ubuntu breezy RELEASE',
             build_used.title)
-        self.assertEqual('NEEDSBUILD', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

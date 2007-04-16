@@ -267,6 +267,7 @@ following states: FAILEDTOBUILD and CHROOTWAIT
   ...         self.pocket = tmp_build.pocket
   ...         self.title = 'Mock Build'
   ...         self.notification_sent = False
+  ...         self.binarypackages = ['one', 'two', 'three']
   ...     @property
   ...     def distrorelease(self):
   ...         return self.distroarchrelease.distrorelease
@@ -422,7 +423,14 @@ Let's check the procedures to verify/collect running build process:
   WAITING - OK -> builder has finished the job and is waiting for
   master to collect its results
 
-  >>> bqItem10 = MockBuildQueue(8, builder10, MockBuild(8))
+  >>> mock_build = MockBuild(8)
+  >>> bqItem10 = MockBuildQueue(8, builder10, mock_build)
+
+As if the buildstate was updated by the time the binary was uploaded:
+
+  >>> from canonical.lp.dbschema import BuildStatus
+  >>> mock_build.buildstate = BuildStatus.FULLYBUILT
+
   >>> buildergroup.updateBuild(bqItem10, librarian)
   >>> bqItem10.build.builder is not None
   True
