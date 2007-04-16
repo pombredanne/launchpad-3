@@ -154,6 +154,10 @@ class ShipItRequestView(GeneralFormView):
         ShipItFlavour.KUBUNTU: config.shipit.kubuntu_from_email_address}
 
     should_show_custom_request = False
+    # This only exists so that our tests can simulate the creation (through
+    # the web UI) of requests containing CDs of releases other than the
+    # current one.
+    release = ShipItConstants.current_distrorelease
 
     # Field names that are part of the schema but don't exist in our
     # context object.
@@ -472,7 +476,8 @@ class ShipItRequestView(GeneralFormView):
         # flagged as pending approval, meaning that somebody will have to
         # check (and possibly change) its approved quantities before it can be
         # shipped.
-        current_order.setQuantities({self.flavour: quantities})
+        current_order.setQuantities(
+            {self.flavour: quantities}, distrorelease=self.release)
 
         # Make sure that subsequent queries will see the RequestedCDs objects
         # created/updated when we set the order quantities above.

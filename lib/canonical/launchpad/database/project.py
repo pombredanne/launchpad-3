@@ -259,10 +259,10 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getQuestionLanguages(self):
         """See IQuestionCollection."""
         return set(Language.select("""
-            Language.id = Ticket.language AND 
-            Ticket.product = Product.id AND
+            Language.id = Question.language AND
+            Question.product = Product.id AND
             Product.project = %s""" % sqlvalues(self.id),
-            clauseTables=['Ticket', 'Product'], distinct=True))
+            clauseTables=['Question', 'Product'], distinct=True))
 
 
 class ProjectSet:

@@ -928,7 +928,7 @@ as part of their name or displayname, or the beginning of
 one of its email addresses.
 
     >>> sorted(person.name for person in vocab.search('support'))
-    [u'support-tracker-janitor', u'ubuntu-team']
+    [u'ubuntu-team']
 
 Dave hasn't validated his email address; he's not a valid Person.
 
