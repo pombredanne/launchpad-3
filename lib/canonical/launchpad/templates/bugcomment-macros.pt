@@ -5,7 +5,7 @@
     <tal:comment_has_owner>
       <tal:comment_owner replace="structure comment/owner/fmt:link" />
     </tal:comment_has_owner>
-    said
+    wrote
     <span
       tal:attributes="title comment/datecreated/fmt:datetime"
       tal:content="comment/datecreated/fmt:displaydate">
