@@ -5,10 +5,13 @@ that context. For example, bug #3 isn't reported on Evolution, but we
 can still access bug #3 in the Evolution context.
 
     >>> user_browser.open('http://launchpad.dev/products/evolution/+bug/3')
+    >>> user_browser.title
+    '...Bug #3 is not in Evolution...'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
+    ...     print extract_text(message.renderContents())
     This bug is not recorded as needing to be fixed in the
-    <a href="...">evolution (upstream)</a> project.
+    Evolution
+    project.
     ...
 
 We can still add a comment to the bug.

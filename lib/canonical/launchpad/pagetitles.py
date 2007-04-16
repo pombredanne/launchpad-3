@@ -49,8 +49,12 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 class BugTaskPageTitle:
     def __call__(self, context, view):
-        return smartquote('Bug #%d in %s: "%s"') % (
-            context.bug.id, context.targetname, context.bug.title)
+        if view.isReportedInContext():
+            return smartquote('Bug #%d in %s: "%s"') % (
+                context.bug.id, context.targetname, context.bug.title)
+        else:
+            return smartquote('Bug #%d is not in %s: "%s"') % (
+                context.bug.id, context.targetname, context.bug.title)
 
 
 class SubstitutionHelper:
