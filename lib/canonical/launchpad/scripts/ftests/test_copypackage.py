@@ -10,13 +10,15 @@ import unittest
 from canonical.config import config
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts.ftpmaster import (
-    CopyPackageHelperError, CopyPackageHelper)
+    PackageCopyError, CopyPackageHelper)
 
 class TestCopyPackageScript(LaunchpadZopelessTestCase):
     """Test the copy-package.py script."""
 
     def runCopyPackage(self, extra_args=[]):
-        """Run copy-package.py, returning the result and output."""
+        """Run copy-package.py, returning the result and output.
+        Returns a tuple of the process's return code, stdout output and
+        stderr output."""
         script = os.path.join(
             config.root, "scripts", "ftpmaster-tools", "copy-package.py")
         args = [sys.executable, script, '-y']
@@ -30,16 +32,31 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         """Try a simple copy-package.py run.
 
         Uses the default case, copy mozilla-firefox source with binaries
-        from warty to hoary
+        from warty to hoary.
         """
         returncode, out, err = self.runCopyPackage(
             extra_args=['-s', 'warty', 'mozilla-firefox',
                         '--to-suite', 'hoary', '-b'])
+        # Need to print these or you can't see what happened if the 
+        # return code is bad:
+        if returncode != 0:
+            print "stdout: %s" % out
+            print "stderr: %s" % err
         self.assertEqual(0, returncode)
 
 
 class TestCopyPackage(LaunchpadZopelessTestCase):
     """Test the CopyPackageHelper class."""
+
+    class QuietLogger:
+        """A logger that doesn't log anything.  Useful where you need to
+        provide a logger object but don't actually want any output."""
+        def debug(self, args):
+            pass
+        def info(self, args):
+            pass
+        def error(self, args):
+            pass
 
     def getCopyHelper(self, sourcename='mozilla-firefox', sourceversion=None,
                       from_suite='warty', to_suite='hoary',
@@ -51,14 +68,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         Allow tests to use a set of default options and pass a inactive logger
         to CopyHelper.
         """
-        class QuietLogger:
-            def debug(self, args):
-                pass
-            def info(self, args):
-                pass
-            def error(self, args):
-                pass
-        logger = QuietLogger()
+        logger = self.QuietLogger()
         return CopyPackageHelper(
             sourcename, sourceversion, from_suite, to_suite,
             from_distribution_name, to_distribution_name,
@@ -68,42 +78,51 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         """Check how CopyPackageHelper behaves on a successful copy."""
         copy_helper = self.getCopyHelper()
 
-        # Check default values
+        # Check default values.  This ensures we know that they are invalid
+        # to start with and expect them to get re-populated after the copy.
         self.assertEqual(copy_helper.synced, False)
         self.assertEqual(bool(copy_helper.copied_source), False)
         self.assertEqual(len(copy_helper.copied_binaries), 0)
 
         copy_helper.performCopy()
 
-        # Check locations
+        # Check locations.  They should be the same as the defaults defined
+        # in the getCopyHelper method.
         self.assertEqual(
             str(copy_helper.from_location), 'ubuntu/warty/RELEASE')
         self.assertEqual(
             str(copy_helper.to_location), 'ubuntu/hoary/RELEASE')
 
-        # Check target source
+        # Check target source title - this should be the package name in
+        # the sample data for our source package.
         self.assertEqual(
             copy_helper.target_source.title,
             u'mozilla-firefox 0.9 (source) in ubuntu warty')
 
-        # Check target binaries
+        # Check target binaries.  The default source we're using 
+        # (mozilla-firefox) only has one binary and we're checking its title
+        # to be as expected.
         target_binary = copy_helper.target_binaries[0]
         self.assertEqual(
             target_binary.title,
             u'Binary Package "mozilla-firefox" in The Warty Warthog '
             'Release for i386 (x86)')
 
-        # Check stored results
+        # Check stored results.  The data should be "synced" (written to the
+        # database, the copied_source should be valid and the number of binaries
+        # copied should be one.
         self.assertEqual(copy_helper.synced, True)
         self.assertEqual(bool(copy_helper.copied_source), True)
         self.assertEqual(len(copy_helper.copied_binaries), 1)
 
-        # Inspect copied source
+        # Inspect copied source, its title should be the same as the original
+        # source.
         self.assertEqual(
             copy_helper.copied_source.title,
             u'mozilla-firefox 0.9 (source) in ubuntu hoary')
 
-        # Inspect copied binary
+        # Inspect copied binary, its title should be the same as the original
+        # binary.
         copied_binary = copy_helper.copied_binaries[0]
         self.assertEqual(
             copied_binary.title,
@@ -131,7 +150,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         copy_helper = self.getCopyHelper(sourcename='zaphod')
 
         self.assertRaisesWithContent(
-            CopyPackageHelperError,
+            PackageCopyError,
             "Could not find any version of 'zaphod' in ubuntu/warty/RELEASE",
             copy_helper.performCopy)
 
@@ -140,7 +159,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         copy_helper = self.getCopyHelper(from_distribution_name="beeblebrox")
 
         self.assertRaisesWithContent(
-            CopyPackageHelperError,
+            PackageCopyError,
             "Could not find distribution 'beeblebrox'",
             copy_helper.performCopy)
 
@@ -149,7 +168,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         copy_helper = self.getCopyHelper(from_suite="slatibartfast")
 
         self.assertRaisesWithContent(
-            CopyPackageHelperError,
+            PackageCopyError,
             "Could not find suite 'slatibartfast'",
             copy_helper.performCopy)
 
@@ -159,7 +178,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         copy_helper = self.getCopyHelper(from_suite='warty', to_suite='warty')
 
         self.assertRaisesWithContent(
-            CopyPackageHelperError, 
+            PackageCopyError, 
             "Can not sync between the same locations: 'ubuntu/warty/RELEASE' to 'ubuntu/warty/RELEASE'",
             copy_helper.performCopy)
 
@@ -169,7 +188,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         copy_helper = self.getCopyHelper(from_suite="breezy-autotest")
 
         self.assertRaisesWithContent(
-            CopyPackageHelperError,
+            PackageCopyError,
             "Could not find 'mozilla-firefox/None' in ubuntu/breezy-autotest/RELEASE",
             copy_helper.performCopy)
 

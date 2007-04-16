@@ -9,7 +9,7 @@ import _pythonpath
 from canonical.launchpad.scripts.base import (LaunchpadScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.scripts.ftpmaster import (
-    CopyPackageHelperError, CopyPackageHelper)
+    PackageCopyError, CopyPackageHelper)
 from canonical.lp import READ_COMMITTED_ISOLATION
 
 
@@ -84,7 +84,7 @@ class CopyPackage(LaunchpadScript):
 
         try:
             copy_helper.performCopy()
-        except CopyPackageHelperError, err:
+        except PackageCopyError, err:
             raise LaunchpadScriptFailure(err)
 
         if copy_helper.synced and not self.options.dryrun:

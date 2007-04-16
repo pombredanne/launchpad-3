@@ -28,7 +28,7 @@ series is working.
       <tr>
   <BLANKLINE>
           <td>
-            <a href="http://.../evolution/trunk/+pots/evolution-2.2/af/+translate">Afrikaans</a>
+            <a href="/evolution/trunk/+pots/evolution-2.2/af/+translate">Afrikaans</a>
           </td>
           <td class="amount">22</td>
   ...

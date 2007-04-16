@@ -13,6 +13,14 @@
       classes="TeamNavigation PersonNavigation"
       />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonDynMenu"
+      attribute="__call__"
+      name="+menudata"
+      />
+
   <adapter
       provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
       for="canonical.launchpad.interfaces.IPerson"
@@ -23,9 +31,6 @@
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
-      <allow attributes="
-          default_gotchi_resource default_gotchi_heading_resource
-          default_emblem_resource" />
       <require
           permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />
@@ -42,7 +47,7 @@
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
       layer="canonical.launchpad.layers.AnswersLayer"
-      name="+tickets"
+      name="+questions"
       />
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
@@ -118,6 +123,13 @@
       class="canonical.launchpad.browser.PersonEditView"
       permission="launchpad.Edit"
       template="../templates/person-edit.pt" />
+
+  <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonBrandingView"
+      permission="launchpad.Edit"
+      template="../templates/object-branding.pt" />
 
   <browser:page
       name="+edithomepage"
@@ -393,7 +405,7 @@
     facet="branches"
     name="+registeredbranches"
     template="../templates/person-branches.pt" />
- 
+
   <browser:page
       for="canonical.launchpad.interfaces.IPerson"
       permission="zope.Public"
@@ -413,6 +425,13 @@
       />
 
   <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
+    name="+mugshots"
+    template="../templates/team-mugshots.pt"
+    />
+
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.Edit"
       class="canonical.launchpad.browser.TeamEmailView"
@@ -424,6 +443,13 @@
       name="+edit"
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.TeamEditView"
+      permission="launchpad.Edit"
+      template="../templates/team-edit.pt" />
+
+  <browser:page
+      name="+branding"
+      for="canonical.launchpad.interfaces.ITeam"
+      class="canonical.launchpad.browser.TeamBrandingView"
       permission="launchpad.Edit"
       template="../templates/team-edit.pt" />
 
@@ -457,7 +483,7 @@
       class="canonical.launchpad.browser.PersonView"
       name="+polls"
       template="../templates/team-polls.pt"
-      />      
+      />
 
   <browser:generalform
       name="+newpoll"
@@ -669,46 +695,94 @@
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonSearchQuestionsView"
-    name="+tickets"
+    name="+questions"
     permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+tickets"
+    new_name="+questions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.SearchAnsweredQuestionsView"
-    name="+answeredtickets"
+    name="+answeredquestions"
     permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+answeredtickets"
+    new_name="+answeredquestions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.SearchAssignedQuestionsView"
-    name="+assignedtickets"
+    name="+assignedquestions"
     permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+assignedtickets"
+    new_name="+assignedquestions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.SearchCommentedQuestionsView"
-    name="+commentedtickets"
+    name="+commentedquestions"
     permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+commentedtickets"
+    new_name="+commentedquestions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.SearchCreatedQuestionsView"
-    name="+createdtickets"
+    name="+createdquestions"
     permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+createdtickets"
+    new_name="+createdquestions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.SearchNeedAttentionQuestionsView"
-    name="+needattentiontickets"
+    name="+needattentionquestions"
     permission="zope.Public"
+    />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+needattentiontickets"
+    new_name="+needattentionquestions"
+    rootsite="answers"
     />
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.SearchSubscribedQuestionsView"
-    name="+subscribedtickets"
+    name="+subscribedquestions"
     permission="zope.Public"
     />
-
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+subscribedtickets"
+    new_name="+subscribedquestions"
+    rootsite="answers"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonAnswerContactForView"
+    name="+answer-contact-for"
+    permission="zope.Public"
+    template="../templates/person-answer-contact-for.pt"
+    />
   <browser:menus
     module="canonical.launchpad.browser"
     classes="PersonAnswersMenu"

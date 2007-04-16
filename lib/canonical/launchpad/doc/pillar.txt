@@ -102,7 +102,7 @@ Right now this search is done across Products, Projects and Distributions.
     ...            % (row['type'], row['title'], row['name'], rank))
     distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
     project: Ubuntu (ubuntu-product) [relevance: perfect]
-    project: The Ubuntu Project (ubuntu-project) [relevance: high]
+    project group: The Ubuntu Project (ubuntu-project) [relevance: high]
     distribution: Ubuntu Test (ubuntutest) [relevance: low]
     project: The Evolution Groupware Application (evolution) [relevance: low]
     project: The Gnome Panel Applets (applets) [relevance: low]

@@ -7,8 +7,8 @@
 
 <div metal:fill-slot="main">
 
+  <span tal:replace="structure context/image:mugshot" />
   <h1 tal:content="context/title">Name of product</h1>
-  <span tal:replace="structure context/fmt:icon" />
 
   <div class="documentDescription" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
@@ -52,14 +52,17 @@
         <div class="portlet">
           <h2>Timeline</h2>
 
-  <div class="project series" tal:repeat="series view/sorted_serieslist">
+          <div class="project series"
+               tal:repeat="series view/sorted_serieslist">
 
-    <div tal:define="is_focus python:context.development_focus == series"
-         tal:attributes="class python:is_focus and 'highlighted' or 'unhighlighted'">
-       <metal:series use-macro="series/@@+macros/detailed_display" />
-    </div>
+            <div tal:define="
+                   is_focus python:context.development_focus == series"
+                 tal:attributes="
+                   class python:is_focus and 'highlighted' or 'unhighlighted'">
+              <metal:series use-macro="series/@@+macros/detailed_display" />
+            </div>
 
-  </div>
+          </div>
 
         </div>
         <div
