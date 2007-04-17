@@ -51,15 +51,14 @@ comment, of the bug report.
 
     >>> ubuntu_filebug.initialize()
     SQLObjectCreatedEvent: <Bug at ...>
-    
+
     >>> launchbag.clear()
 
     >>> current_user = getUtility(ILaunchBag).user
     >>> search_params = BugTaskSearchParams(
     ...     searchtext="bin pkg", user=current_user)
 
-    >>> latest_ubuntu_bugtask = ubuntu.searchTasks(
-    ...     search_params)[0]
+    >>> latest_ubuntu_bugtask = ubuntu.searchTasks(search_params)[0]
 
 The user specified a binary package name, so that's been added to the
 bug description and the first comment:
@@ -126,20 +125,20 @@ To add new comments, users POST to the +addcomment page:
     >>> request = LaunchpadTestRequest(form={
     ...                 "field.subject": latest_ubuntu_bugtask.bug.title,
     ...                 "field.comment": "I can reproduce this bug.",
-    ...                 'FORM_SUBMIT': 'Save Changes'})
+    ...                 'field.actions.save': 'Save Changes'})
     ...             })
     >>> ubuntu_addcomment = getView(latest_ubuntu_bugtask, "+addcomment-form", request)
-    >>> ubuntu_addcomment.process_form()
+    >>> ubuntu_addcomment.initialize()
 
 They may even, by mistake, post the same comment twice:
 
     >>> request = LaunchpadTestRequest(form={
     ...                 "field.subject": latest_ubuntu_bugtask.bug.title,
     ...                 "field.comment": "I can reproduce this bug.",
-    ...                 'FORM_SUBMIT': 'Save Changes'})
+    ...                 'field.actions.save': 'Save Changes'})
     ...             })
     >>> ubuntu_addcomment = getView(latest_ubuntu_bugtask, "+addcomment-form", request)
-    >>> ubuntu_addcomment.process_form()
+    >>> ubuntu_addcomment.initialize()
 
 Comments are cached in the view, so we need to flush updates and then
 grab a new view to actually see them:
@@ -459,6 +458,7 @@ the list changes.
 
     >>> login("no-priv@canonical.com")
 
+    >>> current_user = getUtility(ILaunchBag).user
     >>> ubuntu_warty = ubuntu.getRelease("warty")
     >>> firefox_trunk = firefox.getSeries("trunk")
 

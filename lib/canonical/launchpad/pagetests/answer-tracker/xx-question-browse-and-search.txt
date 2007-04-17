@@ -20,13 +20,24 @@ He discovers that there are no questions on the Kubuntu Answers page:
     >>> from BeautifulSoup import BeautifulSoup
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions for Kubuntu with the requested statuses.
+    
+The same is true for Projects that do not have Products.
+
+    >>> browser.open('http://launchpad.dev/aaa')
+    >>> browser.getLink('Answers').click()
+    >>> print browser.title
+    Questions for the Test Project
+    
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> print find_main_content(browser.contents).first('p').renderContents()
+    There are no questions for the Test Project with the requested statuses.
 
 == Browsing Questions ==
 
 He realises that support for Kubuntu is probably going on in the Ubuntu
 Answers page and goes there to check.
 
-    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.title
     'Questions for Ubuntu'
 
@@ -129,7 +140,7 @@ whenever he has Firefox open. Luckily for Average Joe, searching for
 similar questions is easy: on the question listing page, he just
 enters his search key and hit the 'Search' button.
 
-    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getControl(name='field.search_text').value = 'firefox is slow'
     >>> browser.getControl('Search').click()
 
@@ -174,7 +185,7 @@ source package's question listing.
     # We should use goBack() here but can't because of ZC #645:
     # zope.testbrowser truncates document content after goBack().
     #>>> browser.goBack()
-    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getLink('mozilla-firefox').click()
     >>> browser.title
     'Questions for mozilla-firefox in ubuntu'
@@ -210,7 +221,7 @@ In the actions menu, we find links to some common reports.
 Nice Guy likes helping others. He uses the 'Open' link to view the most
 recent questions on Mozilla Firefox.
 
-    >>> browser.open('http://launchpad.dev/firefox/+tickets')
+    >>> browser.open('http://launchpad.dev/firefox/+questions')
     >>> browser.getLink('Open').click()
     >>> print browser.title
     Open questions for Mozilla Firefox
@@ -246,7 +257,7 @@ A random user has a problem with firefox in Ubuntu. He uses the
 similar problems. (This listing includes both 'Answered' and 'Solved'
 questions.)
 
-    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> browser.getLink('Answered').click()
     >>> print browser.title
     Answered questions for Ubuntu
@@ -278,7 +289,7 @@ He needs to login to access that page:
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
-    ...     '+tickets')
+    ...     '+questions')
     >>> anon_browser.getLink('My questions').click()
     Traceback (most recent call last):
       ...
@@ -290,7 +301,7 @@ He needs to login to access that page:
     ...     'Authorization', 'Basic test@canonical.com:test')
     >>> sample_person_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
-    ...     '+tickets')
+    ...     '+questions')
     >>> sample_person_browser.getLink('My questions').click()
     >>> print sample_person_browser.title
     Questions you asked about mozilla-firefox in ubuntu
@@ -325,7 +336,8 @@ The exact question he was searching for is displayed!
 If the user didn't make any questions on the product, a message
 informing him of this fact is displayed.
 
-    >>> sample_person_browser.open('http://launchpad.dev/gnomebaker/+tickets')
+    >>> sample_person_browser.open(
+    ...     'http://launchpad.dev/gnomebaker/+questions')
     >>> sample_person_browser.getLink('My questions').click()
     >>> print find_main_content(
     ...     sample_person_browser.contents).first('p').renderContents()
@@ -341,14 +353,14 @@ information and that are now back in the 'Open' state.
 
 He needs to login to access that page:
 
-    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> anon_browser.getLink('Need attention').click()
     Traceback (most recent call last):
       ...
     Unauthorized...
 
     >>> sample_person_browser.open(
-    ...     'http://launchpad.dev/distros/ubuntu/+tickets')
+    ...     'http://launchpad.dev/distros/ubuntu/+questions')
     >>> sample_person_browser.getLink('Need attention').click()
     >>> print sample_person_browser.title
     Questions needing your attention for Ubuntu
@@ -374,7 +386,7 @@ If there is no questions needing the user's attention, a message
 informing him of this fact is displayed.
 
     >>> sample_person_browser.open(
-    ...    'http://launchpad.dev/products/gnomebaker/+tickets')
+    ...    'http://launchpad.dev/products/gnomebaker/+questions')
     >>> sample_person_browser.getLink('Need attention').click()
     >>> print find_main_content(
     ...     sample_person_browser.contents).first('p').renderContents()
@@ -430,7 +442,7 @@ The listing is searchable and can restrict also the list of displayed
 questions to a particular status:
 
     # goBack() doesn't work.
-    >>> browser.open('http://launchpad.dev/~name16/+tickets')
+    >>> browser.open('http://launchpad.dev/~name16/+questions')
     >>> browser.getControl(name='field.search_text').value = 'Firefox'
     >>> browser.getControl(name='field.status').value = ['Solved', 'Invalid']
     >>> browser.getControl('Search').click()
@@ -571,7 +583,7 @@ The same standard reports than on regular QuestionTarget are available:
     Answered questions for the Mozilla Project
 
     # The next two reports are only available to a logged-in user.
-    >>> user_browser.open('http://launchpad.dev/mozilla/+tickets')
+    >>> user_browser.open('http://launchpad.dev/mozilla/+questions')
     >>> user_browser.getLink('My questions').click()
     >>> print user_browser.title
     Questions you asked about the Mozilla Project
@@ -593,7 +605,7 @@ questions ever filed on Launchpad.
     Questions matching "firefox"
 
     >>> print browser.url
-    http://answers.launchpad.dev/support/+tickets?...
+    http://answers.launchpad.dev/questions/+questions?...
 
 The results are displayed in a format similar to the Person reports:
 there is an 'In' column displaying where the questions were filed.

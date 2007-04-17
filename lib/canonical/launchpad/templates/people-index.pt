@@ -143,7 +143,7 @@
                   </td>
                   <td tal:content="person/name">foobar</td>
                   <td class="amount" tal:content="person/karma">34</td>
-                </tr>    
+                </tr>
               </tbody>
             </table>
           </tal:block>

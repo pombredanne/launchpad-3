@@ -5,12 +5,10 @@
   >>> browser.url
   'http://shipit.ubuntu.dev/requests'
 
-  Let's see the two pending requests we have for Dapper CDs.
+  Let's see the two pending requests we have for Feisty CDs.
 
-  >>> browser.getControl(name='statusfilter').value
-  ['PENDING']
-  >>> browser.getControl(name='releasefilter').value
-  ['DAPPER']
+  >>> browser.getControl(name='statusfilter').value = ['PENDING']
+  >>> browser.getControl(name='releasefilter').value = ['FEISTY']
   >>> browser.getControl('Show').click()
   >>> print browser.contents
   <!DOCTYPE...
@@ -128,36 +126,3 @@
   >>> browser.getControl(name='field.kubuntu_quantityamd64approved').value
   '2'
 
-  We don't ship Edgy CDs through shipit, but we still want to allow shipit
-  admins to make Edgy requests on behalf of a few "special" people, like
-  LoCo teams.
-
-  >>> browser.open('http://shipit.ubuntu.dev/adminrequest?release=edgy')
-  >>> browser.url
-  'http://shipit.ubuntu.dev/adminrequest?release=edgy'
-
-  >>> print browser.contents
-  <...
-  ...<h1>...Make a new Edgy...Request...</h1>
-  ...
-
-  >>> browser.getControl(name='field.ubuntu_quantityx86').value = '15'
-
-  >>> browser.getControl('Name:').value = 'Guilherme Salgado'
-  >>> browser.getControl('Address:').value = 'Rua Clovis Bevilacqua, 145'
-  >>> browser.getControl('City/Town/etc:').value = 'Sao Jose dos Campos'
-  >>> browser.getControl('Phone:').value = '39414258'
-  >>> browser.getControl('Country:').value = ['31']
-  >>> browser.getControl('Postcode:').value = '12242790'
-
-  >>> browser.getControl('Request').click()
-  >>> browser.url
-  'http://shipit.ubuntu.dev/requests/21'
-
-  >>> 'Status: approved (unshipped)' in browser.contents
-  True
-
-  >>> print browser.contents
-  <...
-  ...<h1>...Edgy...Request...</h1>...
-  ...

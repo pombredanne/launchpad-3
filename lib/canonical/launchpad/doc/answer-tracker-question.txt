@@ -56,6 +56,17 @@ IQuestionTarget attribute.
 (The complete IQuestionTarget interface is documented in
 ../interfaces/ftests/questiontarget.txt.)
 
+== Official usage ==
+
+A product or distribution may be offically supported by the community 
+using the Answer Tracker. This status is set by the official_answers
+attribute on the IProduct and IDistribution.
+
+    >>> ubuntu.official_answers
+    True
+    >>> firefox.official_answers
+    True
+    
 == IQuestion ==
 
 Questions are manipulated through the IQuestion interface:

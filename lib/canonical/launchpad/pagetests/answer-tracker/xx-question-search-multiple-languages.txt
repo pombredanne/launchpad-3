@@ -8,7 +8,7 @@ in English, in one of the language configured in his browser,
 or inferred from GeoIP information. In this example, only English
 questions will be shown.
 
-    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(anon_browser.contents)
@@ -71,7 +71,7 @@ languages will be displayed and no warning nor 'All Languages' control
 will appear:
 
     >>> anon_browser.addHeader('Accept-Language', 'es')
-    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+tickets')
+    >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
 
     >>> anon_browser.getControl('All Languages')
     Traceback (most recent call last):

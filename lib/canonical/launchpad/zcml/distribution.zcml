@@ -13,7 +13,7 @@
             set_attributes="displayname title summary description
                             translationgroup translationpermission
                             driver members owner bugcontact
-                            official_malone official_rosetta
+                            official_malone official_rosetta official_answers
                             security_contact upload_admin upload_sender
                             mirror_admin homepage_content icon logo
                             mugshot"
@@ -32,7 +32,7 @@
         classes="
             DistributionFacets DistributionOverviewMenu DistributionBugsMenu
             DistributionBountiesMenu DistributionSpecificationsMenu
-            DistributionTranslationsMenu DistributionSetFacets 
+            DistributionTranslationsMenu DistributionSetFacets
             DistributionSetContextMenu
             "
             />
@@ -61,7 +61,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         layer="canonical.launchpad.layers.AnswersLayer"
-        name="+tickets"
+        name="+questions"
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"

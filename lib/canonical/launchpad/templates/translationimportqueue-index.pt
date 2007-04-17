@@ -157,6 +157,7 @@
                name="handle_queue"
                value="Change Status" />
       </form>
+      <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
     </tal:block>
   </tal:block>
 
