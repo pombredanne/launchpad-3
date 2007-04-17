@@ -18,7 +18,7 @@ __all__ = [
     'PackageLocationError',
     'PackageLocation',
     'PackageCopyError',
-    'CopyPackageHelper',
+    'PackageCopier',
     ]
 
 import apt_pkg
@@ -42,6 +42,10 @@ from canonical.lp.dbschema import (
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
+from canonical.launchpad.scripts.base import (LaunchpadScript,
+    LaunchpadScriptFailure)
+from canonical.lp import READ_COMMITTED_ISOLATION
+
 
 # XXX cprov 20060502: Redefining same regexp code from dak_utils,
 # we do not expose it via imports of this module. As soon as we
@@ -1143,27 +1147,118 @@ class PackageCopyError(Exception):
     """
 
 
-class CopyPackageHelper:
+class PackageCopier(LaunchpadScript):
     synced = False
     target_source = None
     target_binaries = []
     copied_source = None
     copied_binaries = []
 
-    def __init__(self, sourcename, sourceversion, from_suite, to_suite,
-                 from_distribution_name, to_distribution_name,
-                 confirm_all, comment, include_binaries, logger):
-        self.sourcename = sourcename
-        self.sourceversion = sourceversion
-        self.from_suite = from_suite
-        self.to_suite = to_suite
-        self.from_distribution_name = from_distribution_name
-        self.to_distribution_name = to_distribution_name
+    usage = '%prog -s warty mozilla-firefox --to-suite hoary'
+    description = 'MOVE or COPY a published package to another suite.'
 
-        self.confirm_all = confirm_all
-        self.comment = comment
-        self.include_binaries = include_binaries
-        self.logger = logger
+    def __init__(self, name=None, dbuser=None, test_args=None, logger=None):
+        LaunchpadScript.__init__(self, name=name, dbuser=dbuser, 
+                                 test_args=test_args)
+        if logger is not None:
+            self.logger = logger
+
+    def add_my_options(self):
+
+        self.parser.add_option(
+            '-n', '--dry-run', dest='dryrun', default=False,
+            action='store_true', help='Do not commit changes.')
+
+        self.parser.add_option(
+            '-y', '--confirm-all', dest='confirm_all',
+            default=False, action='store_true',
+            help='Do not prompt the user for questions.')
+
+        self.parser.add_option(
+            '-c', '--comment', dest='comment', default='',
+            action='store', help='Copy comment.')
+
+        self.parser.add_option(
+            '-b', '--include-binaries', dest='include_binaries',
+            default=False, action='store_true',
+            help='Whether to copy related binaries or not')
+
+        self.parser.add_option(
+            '-d', '--from-distribution', dest='from_distribution_name',
+            default='ubuntu', action='store',
+            help='Optional source distribution.')
+
+        self.parser.add_option(
+            '--to-distribution', dest='to_distribution_name',
+            default='ubuntu', action='store',
+            help='Optional destination distribution.')
+
+        self.parser.add_option(
+            '-s', '--from-suite', dest='from_suite', default=None,
+            action='store', help='Optional source suite.')
+
+        self.parser.add_option(
+            '--to-suite', dest='to_suite', default=None,
+            action='store', help='Optional destination suite.')
+
+        self.parser.add_option(
+            '-e', '--sourceversion', dest='sourceversion', default=None,
+            action='store',
+            help='Optional Source Version, defaults to the current version.')
+
+    # Script entry point.
+    def main(self):
+
+        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+
+        if len(self.args) != 1:
+            raise LaunchpadScriptFailure(
+                "At least one non-option argument must be given, "
+                "the sourcename.")
+
+        self.setOptions()
+
+        try:
+            self.doCopy()
+        except PackageCopyError, err:
+            raise LaunchpadScriptFailure(err)
+
+        if self.synced and not self.options.dryrun:
+            self.txn.commit()
+        else:
+            self.logger.info('Nothing to commit.')
+            self.txn.abort()
+
+        self.logger.info('Done.')
+        self.logger.info(
+            'Archive changes will by applied in the next publishing cycle')
+        self.logger.info('Be patient.')
+
+    # API entry point
+    def setOptions(self):
+        """Set the program options from the command line arguments."""
+        self.sourcename = self.args[0]
+        self.sourceversion = self.options.sourceversion
+        self.from_suite = self.options.from_suite
+        self.to_suite = self.options.to_suite
+        self.from_distribution_name = self.options.from_distribution_name
+        self.to_distribution_name = self.options.to_distribution_name
+        self.confirm_all = self.options.confirm_all
+        self.comment = self.options.comment
+        self.include_binaries = self.options.include_binaries
+
+    # API entry point
+    def doCopy(self):
+        """Modules using this class outside of its normal usage in the
+        copy-package.py script can call this method to start the copy
+        after first calling setOptions.  
+        
+        In this case the caller can override test_args on __init__
+        to set the command line arguments.
+        """
+        # This can raise PackageCopyError:
+        self._performCopy()
+
 
     def _buildLocations(self):
         """Build PackageLocation for context FROM and TO.
@@ -1310,7 +1405,7 @@ class CopyPackageHelper:
             self.synced = True
             self.logger.info("Copied: %s" % binary_copied.title)
 
-    def performCopy(self):
+    def _performCopy(self):
         """Execute package copy procedure.
 
         Build location and target objects.
