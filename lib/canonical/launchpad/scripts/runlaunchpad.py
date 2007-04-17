@@ -49,7 +49,7 @@ class TacFile(object):
 
     def launch(self):
         # Don't run the server if it wasn't asked for. 
-        if not self.config.launch:
+        if self.config is None or not self.config.launch:
             return
 
         self.pre_launch()
