@@ -542,7 +542,8 @@ class BuilderGroup:
         clear_current_connection_cache()
 
         cur = cursor()
-        iso_level = cur.execute('show transaction_isolation')
+        cur.execute('show transaction_isolation')
+        iso_level = cur.fetchall()
         self.log.debug('Isolation: %s' % iso_level)
 
         build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
