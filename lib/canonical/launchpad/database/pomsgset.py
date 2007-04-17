@@ -380,10 +380,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 self.publishedfuzzy = fuzzy
                 self.publishedcomplete = complete
                 if has_changed or self.isfuzzy:
-                    # We would need to update isfuzzy and iscomplete because
-                    # either the translations in Launchpad changed or are
-                    # fuzzy so we would got some improved information from
-                    # upstream.
+                    # If the upstream translation has changed or we don't have
+                    # a valid translation in Launchpad, then we need to update
+                    # the status flags because we would get some improved
+                    # information from upstream.
                     matches = 0
                     for pluralform in range(self.pluralforms):
                         if (self.getActiveSubmission(pluralform) ==
@@ -407,11 +407,22 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             force_edition_rights=False, force_suggestion=False):
         """Record a translation submission by the given person.
 
-        If "published" then this is a submission noticed in the published po
-        file, otherwise it is a rosetta submission. It is assumed that any
-        new submission will become the active translation (branding?), and
-        if published is true then it will also become the published
-        submission.
+        :arg person: Who submitted this entry.
+        :arg text: The translation submitted or None if there is no
+            translation.
+        :arg is_fuzzy: Whether this translation has the fuzzy flag set.
+        :arg pluralform: The plural form number that this translation is for.
+        :arg published: Whether this is a submission noticed in the published
+            po file, otherwise it is a launchpad submission. It should NOT be
+            set for an arbitrary po file upload, it should ONLY be set if this
+            is genuinely the published po file.
+        :arg validation_status: A value of TranslationValidationStatus that
+            indicates the status of the translation.
+        :arg force_edition_rights: A flag that 'forces' that this submition is
+            handled as coming from an editor, no matter whether it's really
+            from an editor.
+        :arg force_suggestion: Whether this translation must not change the
+            active translation in Launchpad and just be added as a suggestion.
 
         This is THE KEY method in the whole of rosetta. It deals with the
         sighting or submission of a translation for a pomsgset and plural
@@ -426,19 +437,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         nothing at all. Note that it may return a submission that was
         created previously, if it decides that there is not enough new
         information in this submission to justify recording it.
-
-        The "published" field indicates whether or not this has come from
-        the published po file. It should NOT be set for an arbitrary po
-        file upload, it should ONLY be set if this is genuinely the
-        published po file.
-
-        The "validation_status" field is a value of
-        TranslationValidationStatus that indicates the status of the
-        translation.
-
-        The "force_edition_rights" is a flag that 'forces' that this submition
-        is handled as coming from an editor, no matter if it's really an
-        editor or not
         """
         # Is the person allowed to edit translations?
         is_editor = (force_edition_rights or
@@ -597,13 +595,21 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                     (not is_fuzzy and
                      published_submission == active_submission and
                      self.isfuzzy == self.publishedfuzzy)):
-                    # We must update the translation in Rosetta.
+                    # We must update the translation in Launchpad when: either
+                    # we lack or don't use the active translation in Launchpad
+                    # or the new published translation we got could be used as
+                    # a valid one and previous active translation in Launchpad
+                    # matches with previous published translation.
                     self.setActiveSubmission(pluralform, submission)
             elif not force_suggestion:
                 # It's not a published submission and we are not forcing the
                 # submission to be a suggestion, so we should apply the active
                 # submission change.
                 self.setActiveSubmission(pluralform, submission)
+            else:
+                # We are forcing the submission as as a suggestion, and thus,
+                # the active submission is not changed.
+                pass
 
         # We need this syncUpdate so we don't set self.isfuzzy to the wrong
         # value because cache problems. See bug #102382 as an example of what
