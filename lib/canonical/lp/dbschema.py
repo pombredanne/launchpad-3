@@ -3051,6 +3051,18 @@ class BuildStatus(DBSchema):
         available builders.
         """)
 
+    FAILEDTOUPLOAD = Item(7, """
+        Failed to upload
+
+        Build record is an historic account of a build that could not be
+        uploaded correctly. It's mainly genereated by failures in
+        process-upload which quietly rejects the binary upload resulted
+        by the build procedure.
+        In those cases all the build historic information will be stores (
+        buildlog, datebuilt, duration, builder, etc) and the buildd admins
+        will be notified via process-upload about the reason of the rejection.
+        """)
+
 
 class MirrorContent(DBSchema):
     """The content that is mirrored."""

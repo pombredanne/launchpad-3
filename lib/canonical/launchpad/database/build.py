@@ -131,6 +131,7 @@ class Build(SQLBase):
             BuildStatus.FAILEDTOBUILD,
             BuildStatus.MANUALDEPWAIT,
             BuildStatus.CHROOTWAIT,
+            BuildStatus.FAILEDTOUPLOAD,
             ]
 
         return self.buildstate in failed_buildstates

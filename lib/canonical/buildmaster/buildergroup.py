@@ -525,20 +525,27 @@ class BuilderGroup:
 
         self.logger.debug("Invoking uploader on %s" % root)
         self.logger.debug("%s" % uploader_argv)
-        uploader_process = subprocess.Popen(uploader_argv,
-                                            stdout=subprocess.PIPE)
-        # nothing would be written to the stdout/stderr, but it's safe
-        stdout, stderr = uploader_process.communicate()
-        result_code = uploader_process.returncode
 
+        uploader_process = subprocess.Popen(
+            uploader_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Nothing should be written to the stdout/stderr, but it's safe
+        stdout, stderr = uploader_process.communicate()
+
+        # XXX cprov 20070417: we do not check uploader_result_code
+        # anywhere. We need to find out what will be best strategy
+        # when it failed HARD (there is a hige effort in process-upload
+        # to not return error, it only happen when the code is broken)
+        uploader_result_code = uploader_process.returncode
+        self.logger.debug("Uploader returned %d" % uploader_result_code)
+
+        # Quick and dirty hack to carry on on process-upload failures
         if os.path.exists(upload_dir):
             self.logger.debug("The upload directory did not get moved.")
             failed_dir = os.path.join(root, "failed-to-move")
             if not os.path.exists(failed_dir):
                 os.mkdir(failed_dir)
             os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
-
-        self.logger.debug("Uploader returned %d" % result_code)
 
         # XXX cprov 20070417: The famous 'flush_updates+commit+clear_cache'
         # will make visible the DB changes done in process-upload. It is
@@ -563,30 +570,18 @@ class BuilderGroup:
         # admins attention. Even when we have a FULLYBUILT build record,
         # if it is not related with at least one binary, there is also
         # a problem.
-        # For both situations we will mark the builder as FAILED and abort
-        # the builder update procedure, the references to the build in LP
-        # will be preserved (build record will remain in BUILDING) and the
-        # builder will retain the build results (binaries), so we will
-        # have a chance to reuse them once we fix the issue.
-        # The builder failure_notes will contain some information to help
-        # to track the problem.
-        #
-        # See failBuilder for notes about notification in those cases.
+        # For both situations we will mark the builder as FAILEDTOUPLOAD
+        # and the and update the build details (datebuilt, duration,
+        # buildlog, builder) in LP. We expect process-upload has sent
+        # a email to the buildd-admins list containing all the information
+        # required to reprocess the binary upload manually.
         build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
-
-        if build.buildstate != dbschema.BuildStatus.FULLYBUILT:
-            self.failBuilder(queueItem.builder,
-                             "Build %s remained %s after bianry upload."
-                             % (build.id, build.buildstate.name))
-            return
-
-        if len(build.binarypackages) == 0:
-            self.failBuilder(queueItem.builder,
-                             "Build %s is not related with any binary."
-                             % build.id)
-            return
-
-        self.logger.debug("Gathered build %s completely" % queueItem.name)
+        if (build.buildstate != dbschema.BuildStatus.FULLYBUILT or
+            len(build.binarypackages) == 0):
+            build.buildstate = dbschema.BuildStatus.FAILEDTOUPLOAD
+            self.logger.debug("Build %s upload failed." % build.id)
+        else:
+            self.logger.debug("Gathered build %s completely" % queueItem.name)
 
         # Store build info, build record was already updated during
         # the binary upload
