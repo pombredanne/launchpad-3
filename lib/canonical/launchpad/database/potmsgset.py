@@ -299,6 +299,5 @@ class POTMsgSet(SQLBase):
         """See IPOTMsgSet."""
         return self.primemsgid_.msgid in [
             u'translation-credits',
-            u'_: EMAIL OF TRANSLATORS<img alt=""' +
-                u' src="/@@/translation-newline" /><br/>\nYour emails'
+            u'_: EMAIL OF TRANSLATORS\nYour emails'
             ]
