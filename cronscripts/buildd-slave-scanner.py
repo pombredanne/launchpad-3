@@ -18,7 +18,7 @@ from canonical.buildmaster.master import (
 from canonical.launchpad.scripts.base import (LaunchpadScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import IDistroArchReleaseSet
-
+from canonical.lp import READ_COMMITTED_ISOLATION
 
 class SlaveScanner(LaunchpadScript):
 
@@ -28,6 +28,8 @@ class SlaveScanner(LaunchpadScript):
         if self.args:
             raise LaunchpadScriptFailure(
                 "Unhandled arguments %s" % repr(self.args))
+
+        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
 
         buildMaster = BuilddMaster(self.logger, self.txn)
 

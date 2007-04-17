@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces import (
     IBuildQueueSet, IBuildSet, IBuilderSet, pocketsuffix
     )
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import clear_current_connection_cache
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.buildd.slave import BuilderStatus
 
@@ -533,7 +534,11 @@ class BuilderGroup:
 
         self.logger.debug("Uploader returned %d" % result_code)
 
-        build = queueItem.build
+        # Retrive the up-to-date build record and perform consistency
+        # checks.
+        clear_current_connection_cache()
+        build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
+
         assert build.buildstate == dbschema.BuildStatus.FULLYBUILT, (
             "Build %s was not updated during the upload time." % build.id)
         assert len(build.binarypackages) > 0, (
@@ -542,7 +547,7 @@ class BuilderGroup:
         self.logger.debug("Gathered build %s completely" % queueItem.name)
 
         # Store build info, build record was already updated during
-        # th;5Ae binary upload
+        # the binary upload
         self.storeBuildInfo(
             queueItem, slave, librarian, buildid, dependencies)
         queueItem.destroySelf()
