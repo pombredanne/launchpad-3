@@ -382,7 +382,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 if has_changed or self.isfuzzy:
                     # If the upstream translation has changed or we don't have
                     # a valid translation in Launchpad, then we need to update
-                    # the status flags because we would get some improved
+                    # the status flags because we can get some improved
                     # information from upstream.
                     matches = 0
                     for pluralform in range(self.pluralforms):
@@ -595,11 +595,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                     (not is_fuzzy and
                      published_submission == active_submission and
                      self.isfuzzy == self.publishedfuzzy)):
-                    # We must update the translation in Launchpad when: either
-                    # we lack or don't use the active translation in Launchpad
-                    # or the new published translation we got could be used as
-                    # a valid one and previous active translation in Launchpad
-                    # matches with previous published translation.
+                    # Either we lack or don't use the active translation in
+                    # Launchpad, or the new published translation we got could
+                    # be used as a valid one, and previous active translation
+                    # in Launchpad matches with previous published translation.
                     self.setActiveSubmission(pluralform, submission)
             elif not force_suggestion:
                 # It's not a published submission and we are not forcing the
