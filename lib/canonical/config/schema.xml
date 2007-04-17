@@ -241,6 +241,20 @@ k            </description>
             </description>
             <example>beta.launchpad.net</example>
         </key>
+        <key name="non_restricted_hostname" datatype="string"
+	     default="launchpad.net">
+	    <description>
+	        If restrict_to_team is set (such as on the beta
+	        website), then this indicates the hostname suffix for
+	        the non-restricted version of Launchpad.  Replacing
+	        config.launchpad.vhosts.mainsite.hostname with this
+	        value in a URI should give a valid host.
+
+		This is intended to provide a way for non beta-testers
+		to get back to the production instance if they are
+		given a beta URL.
+	    </description>
+	</key>
     </sectiontype>
     <sectiontype name="gina_target">
         <description>
