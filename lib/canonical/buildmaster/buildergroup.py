@@ -544,7 +544,7 @@ class BuilderGroup:
         cur = cursor()
         cur.execute('show transaction_isolation')
         iso_level = cur.fetchall()
-        self.log.debug('Isolation: %s' % iso_level)
+        self.logger.debug('Isolation: %s' % iso_level)
 
         build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
 
