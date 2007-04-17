@@ -40,8 +40,7 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         # Need to print these or you can't see what happened if the 
         # return code is bad:
         if returncode != 0:
-            print "stdout: %s" % out
-            print "stderr: %s" % err
+            print "\nStdout:\n%s\nStderr\n%s\n" % (out, err)
         self.assertEqual(0, returncode)
 
 
@@ -85,8 +84,6 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         copier = PackageCopier(name='copy-package', test_args=test_args,
                                logger=logger)
-        copier.setOptions()
-
         return copier
 
     def testSimpleAction(self):
@@ -143,12 +140,12 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             copied_binary.title,
             u'mozilla-firefox 0.9 (i386 binary) in ubuntu hoary')
 
-    def assertRaisesWithContent(self, 
-                                exception, exception_content, func, *args):
+    def assertRaisesWithContent(self, exception, exception_content, 
+                                func, *args):
         """Check if the given exception is raised with given content.
 
-        If the expection isn't raised or the exception_content doesn't match
-        what was raised an AssertionError is raised.
+        If the expection isn't raised or the exception_content doesn't 
+        match what was raised an AssertionError is raised.
         """
         exception_name = str(exception).split('.')[-1]
 
@@ -188,23 +185,27 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             copy_helper.doCopy)
 
     def testFailIfSameLocations(self):
-        """Check that it fails if the source and destination package locations
-        are the same."""
+        """Check that it fails if the source and destination package 
+        locations are the same.
+        """
         copy_helper = self.getCopier(from_suite='warty', to_suite='warty')
 
         self.assertRaisesWithContent(
             PackageCopyError, 
-            "Can not sync between the same locations: 'ubuntu/warty/RELEASE' to 'ubuntu/warty/RELEASE'",
+            "Can not sync between the same locations: 'ubuntu/warty/RELEASE'"
+            " to 'ubuntu/warty/RELEASE'",
             copy_helper.doCopy)
 
     def testFailIfValidPackageButNotInSpecifiedSuite(self):
-        """Check that we fail if the package is valid but does not exist in the
-        specified distro release."""
+        """Check that we fail if the package is valid but does not 
+        exist in the specified distro release.
+        """
         copy_helper = self.getCopier(from_suite="breezy-autotest")
 
         self.assertRaisesWithContent(
             PackageCopyError,
-            "Could not find 'mozilla-firefox/None' in ubuntu/breezy-autotest/RELEASE",
+            "Could not find 'mozilla-firefox/None' in"
+            " ubuntu/breezy-autotest/RELEASE",
             copy_helper.doCopy)
 
 

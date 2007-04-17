@@ -1216,8 +1216,6 @@ class PackageCopier(LaunchpadScript):
                 "At least one non-option argument must be given, "
                 "the sourcename.")
 
-        self.setOptions()
-
         try:
             self.doCopy()
         except PackageCopyError, err:
@@ -1225,16 +1223,15 @@ class PackageCopier(LaunchpadScript):
 
         if self.synced and not self.options.dryrun:
             self.txn.commit()
+            self.logger.info(
+                'Archive changes will by applied in the next publishing cycle')
+            self.logger.info('Be patient.')
         else:
             self.logger.info('Nothing to commit.')
             self.txn.abort()
 
         self.logger.info('Done.')
-        self.logger.info(
-            'Archive changes will by applied in the next publishing cycle')
-        self.logger.info('Be patient.')
 
-    # API entry point
     def setOptions(self):
         """Set the program options from the command line arguments."""
         self.sourcename = self.args[0]
@@ -1247,18 +1244,44 @@ class PackageCopier(LaunchpadScript):
         self.comment = self.options.comment
         self.include_binaries = self.options.include_binaries
 
-    # API entry point
     def doCopy(self):
-        """Modules using this class outside of its normal usage in the
-        copy-package.py script can call this method to start the copy
-        after first calling setOptions.  
+        """Execute package copy procedure.
+
+        Build location and target objects.
+        Request user feedback is not suppressed by given parameters.
+        Copy source publication and optionally related binary publications
+        according to the given parameters.
+
+        Modules using this class outside of its normal usage in the
+        copy-package.py script can call this method to start the copy.
         
         In this case the caller can override test_args on __init__
         to set the command line arguments.
         """
         # This can raise PackageCopyError:
-        self._performCopy()
+        self.setOptions()
+        self._buildLocations()
+        self._buildSource()
 
+        self.logger.info("Syncing '%s' TO '%s'" % (self.target_source.title,
+                                                   self.to_location))
+        self.logger.info("Comment: %s" % self.comment)
+        self.logger.info("Include Binaries: %s" % self.include_binaries)
+
+        confirmation = self._requestFeedback()
+        if confirmation != 'yes':
+            self.logger.info("Ok, see you later")
+            return
+
+        self.copySource()
+
+        if self.include_binaries:
+            self.logger.info("Performing binary copy.")
+            self._buildBinaries()
+            for binary in self.target_binaries:
+                self.copyBinary(binary)
+            self.logger.info(
+                "%d binaries copied." % len(self.copied_binaries))
 
     def _buildLocations(self):
         """Build PackageLocation for context FROM and TO.
@@ -1405,33 +1428,3 @@ class PackageCopier(LaunchpadScript):
             self.synced = True
             self.logger.info("Copied: %s" % binary_copied.title)
 
-    def _performCopy(self):
-        """Execute package copy procedure.
-
-        Build location and target objects.
-        Request user feedback is not suppressed by given parameters.
-        Copy source publication and optionally related binary publications
-        according to the given parameters.
-        """
-        self._buildLocations()
-        self._buildSource()
-
-        self.logger.info("Syncing '%s' TO '%s'" % (self.target_source.title,
-                                                   self.to_location))
-        self.logger.info("Comment: %s" % self.comment)
-        self.logger.info("Include Binaries: %s" % self.include_binaries)
-
-        confirmation = self._requestFeedback()
-        if confirmation != 'yes':
-            self.logger.info("Ok, see you later")
-            return
-
-        self.copySource()
-
-        if self.include_binaries:
-            self.logger.info("Performing binary copy.")
-            self._buildBinaries()
-            for binary in self.target_binaries:
-                self.copyBinary(binary)
-            self.logger.info(
-                "%d binaries copied." % len(self.copied_binaries))
