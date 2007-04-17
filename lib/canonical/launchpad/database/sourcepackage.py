@@ -176,10 +176,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
 
     def _getPublishingHistory(self, version=None, include_status=None, 
                               exclude_status=None, order_by=None):
-        """Build a query and return a list of SourcePackagePublishingHistory
-        objects.  This is mainly a helper function for this class so that 
-        code is not duplicated.  include_status and exclude_status must be
-        a sequence.
+        """Build a query and return a list of 
+        SourcePackagePublishingHistory objects.  This is mainly a 
+        helper function for this class so that code is not duplicated.
+        include_status and exclude_status must be a sequence.
         """
         clauses = []
         clauses.append(
@@ -212,12 +212,22 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         return SourcePackagePublishingHistory.select(
             query, orderBy=order_by, clauseTables=['SourcePackageRelease'])
 
+    def _getFirstPublishingHistory(self, version=None, include_status=None,
+                                   exclude_status=None, order_by=None):
+        """As _getPublishingHistory, but just returns the first item."""
+        try:
+            package = self._getPublishingHistory(
+                version, include_status, exclude_status, order_by)[0]
+        except IndexError:
+            return None
+        else:
+            return package
+
     @property
     def currentrelease(self):
-        packages = self._getPublishingHistory(
+        latest_package = self._getFirstPublishingHistory(
                      exclude_status=[PackagePublishingStatus.REMOVED])
-        if packages:
-            latest_package = packages[0]
+        if latest_package:
             return DistroReleaseSourcePackageRelease(
                     self.distrorelease, latest_package.sourcepackagerelease)
         else:
@@ -225,11 +235,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
 
     def __getitem__(self, version):
         """See ISourcePackage."""
-        packages = self._getPublishingHistory(
+        latest_package = self._getFirstPublishingHistory(
                      version=version,
                      exclude_status=[PackagePublishingStatus.REMOVED])
-        if packages:
-            latest_package = packages[0]
+        if latest_package:
             return DistroReleaseSourcePackageRelease(
                     self.distrorelease, latest_package.sourcepackagerelease)
         else:

@@ -713,7 +713,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             log.debug("Considering source version %s" % spr.version)
             # changelog may be empty, in which case we don't want to add it
             # to the set as the join would fail below.
-            if spr.changelog:
+            if spr.changelog is not None:
                 sprchangelog.add(spr.changelog)
             binpkgs = BinaryPackageRelease.select("""
                 BinaryPackageRelease.build = Build.id AND

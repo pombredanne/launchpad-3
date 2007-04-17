@@ -7,6 +7,7 @@ __all__ = [
     'SourcePackageSOP',
     'SourcePackageFacets',
     'SourcePackageView',
+    'linkify_changelog'
     ]
 
 # Python standard library imports

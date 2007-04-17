@@ -14,20 +14,7 @@ import re
 
 # Canonical imports
 from canonical.launchpad.webapp import LaunchpadView
-
-
-def linkify_changelog(changelog, sourcepkgnametxt):
-    if changelog is None:
-        return changelog
-    changelog = cgi.escape(changelog)
-    # XXX cprov 20060207: use re.match and fmt:url instead of this nasty
-    # url builder. Also we need an specification describing the syntax for
-    # changelog linkification and processing (mostly bug interface),
-    # bug # 30817
-    changelog = re.sub(r'%s \(([^)]+)\)' % re.escape(sourcepkgnametxt),
-                       r'%s (<a href="\1">\1</a>)' % sourcepkgnametxt,
-                       changelog)
-    return changelog
+from canonical.launchpad.browser import linkify_changelog
 
 
 class SourcePackageReleaseView(LaunchpadView):
