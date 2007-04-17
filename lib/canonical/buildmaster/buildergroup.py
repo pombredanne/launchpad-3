@@ -164,6 +164,11 @@ class BuilderGroup:
         Set builderok as False, store the reason in failnotes and update
         the list of working builders (self.okslaves).
         """
+        # XXX cprov 20070417: ideally we should be able to notify the
+        # the buildd-admins about FAILED builders. One alternative is to
+        # make the buildd_cronscript (slave-scanner, in this case) to exit
+        # with error, for those cases buildd-sequencer automatically sends
+        # an email to admins with the script output.
         builder.failbuilder(reason)
         self.updateOkSlaves()
 
@@ -535,23 +540,51 @@ class BuilderGroup:
 
         self.logger.debug("Uploader returned %d" % result_code)
 
-        # Retrive the up-to-date build record and perform consistency
-        # checks.
+        # XXX cprov 20070417: The famous 'flush_updates+commit+clear_cache'
+        # will make visible the DB changes done in process-upload. It is
+        # not just ugly but expensive in this context.
+        # The whole process were supposed to work appropriatelly (to share
+        # committed changes with the process-upload transaction) if at this
+        # point the transaction isolation level was READ_COMMITTED.
+        # But the debug inserted below show that here the isolation is
+        # 'serializable' despite of being set as suggested in cronscript/
+        # buildd-slave-scanner.py.
         flush_database_updates()
         self.commit()
         clear_current_connection_cache()
-
         cur = cursor()
         cur.execute('show transaction_isolation')
         iso_level = cur.fetchall()
         self.logger.debug('Isolation: %s' % iso_level)
 
+        # Retrive the up-to-date build record and perform consistency
+        # checks. The build record should be updated during the binary
+        # upload processing, if it wasn't something is broken and needs
+        # admins attention. Even when we have a FULLYBUILT build record,
+        # if it is not related with at least one binary, there is also
+        # a problem.
+        # For both situations we will mark the builder as FAILED and abort
+        # the builder update procedure, the references to the build in LP
+        # will be preserved (build record will remain in BUILDING) and the
+        # builder will retain the build results (binaries), so we will
+        # have a chance to reuse them once we fix the issue.
+        # The builder failure_notes will contain some information to help
+        # to track the problem.
+        #
+        # See failBuilder for notes about notification in those cases.
         build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
 
-        assert build.buildstate == dbschema.BuildStatus.FULLYBUILT, (
-            "Build %s was not updated during the upload time." % build.id)
-        assert len(build.binarypackages) > 0, (
-            "Build %s has no binaries uploaded." % build.id)
+        if build.buildstate != dbschema.BuildStatus.FULLYBUILT:
+            self.failBuilder(queueItem.builder,
+                             "Build %s remained %s after bianry upload."
+                             % (build.id, build.buildstate.name))
+            return
+
+        if len(build.binarypackages) == 0:
+            self.failBuilder(queueItem.builder,
+                             "Build %s is not related with any binary."
+                             % build.id)
+            return
 
         self.logger.debug("Gathered build %s completely" % queueItem.name)
 
