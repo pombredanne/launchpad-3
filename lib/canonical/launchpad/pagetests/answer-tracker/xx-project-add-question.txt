@@ -96,7 +96,7 @@ He's shown a list of similar questions in the product selected:
 
 He can see which of his preferred languages are suppported.
 
->>> print sample_browser.getControl('Language').displayOptions
+    >>> print sample_browser.getControl('Language').displayOptions
     ['English (en) *', 'Japanese (ja)']
     
 The user can still change the product against which he's asking the
@@ -147,6 +147,6 @@ question.
     ... "Is there a way to configure Thunderbird to display SVG properly?\n")
     >>> sample_browser.getControl('Add').click()
     >>> sample_browser.url
-    '.../thunderbird/+ticket/...'
+    '.../thunderbird/+question/...'
     >>> print sample_browser.title
     Mozilla Thunderbird question #...Problem displaying complex...

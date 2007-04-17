@@ -60,10 +60,20 @@
                               &raquo; List all translatable projects...</a>
 
                         </div>
-                        <div class="three column right demo">
-
-                            <h2>Languages</h2>
-
+                        <div class="three column right">
+                          <h2>Preferred languages</h2>
+                          <ul class="language">
+                            <li tal:repeat="language view/languages">
+                              <a
+                                tal:attributes="href language/fmt:url"
+                                tal:content="language/englishname">
+                                Spanish
+                              </a>
+                            </li>
+                          </ul>
+                          <a href="/+editmylanguages">
+                            &raquo; Change your preferred languages...
+                          </a>
                         </div>
                         <div
                           id="application-footer"
@@ -81,7 +91,7 @@
       <ul class="info">
         <li>
           <a href="https://help.launchpad.net/RosettaFAQ"
-          >Frequent asked questions</a>
+          >Frequently asked questions</a>
         </li>
       </ul>
     </div>

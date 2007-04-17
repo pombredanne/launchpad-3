@@ -13,7 +13,7 @@ from sqlobject import (
 from canonical.launchpad.interfaces import (
     ILanguageSet, ITranslationGroup, ITranslationGroupSet, NotFoundError)
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -99,11 +99,21 @@ class TranslationGroupSet:
 
     def getByPerson(self, person):
         """See ITranslationGroupSet."""
-        return TranslationGroup.select("""
+        # XXX CarlosPerelloMarin 20070402: direct members query is required
+        # until teams are members of themselves. See bug #30789 for more info.
+        direct = TranslationGroup.select("""
+            Translator.translationgroup = TranslationGroup.id AND
+            Translator.translator = %s
+            """ % sqlvalues(person),
+            clauseTables=["Translator"],
+            orderBy="TranslationGroup.title")
+
+        indirect = TranslationGroup.select("""
             Translator.translationgroup = TranslationGroup.id AND
             Translator.translator = TeamParticipation.team AND
             TeamParticipation.person = %s
-            """ % quote(person),
+            """ % sqlvalues(person),
             clauseTables=["TeamParticipation", "Translator"],
             orderBy="TranslationGroup.title")
 
+        return direct.union(indirect)

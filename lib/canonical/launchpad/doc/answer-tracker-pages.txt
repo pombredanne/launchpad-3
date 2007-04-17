@@ -53,7 +53,7 @@ view page.
     ...     print notice.message
     You have subscribed to this question.
     >>> request.response.getHeader('Location')
-    '.../+ticket/3'
+    '.../+question/3'
 
 Unsubscription works in a similar manner.
 
@@ -67,7 +67,7 @@ Unsubscription works in a similar manner.
     ...     print notice.message
     You have unsubscribed from this question.
     >>> request.response.getHeader('Location')
-    '.../+ticket/3'
+    '.../+question/3'
 
 These two actions didn't generate any notification mails:
 
@@ -132,7 +132,7 @@ redirected back to the question page.
     >>> print firefox_question.status.name
     NEEDSINFO
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 Workflow actions like these will send out notifications to subscribers.
 (Complete notifications testing will be found in
@@ -167,7 +167,7 @@ to the OPEN state.
     >>> print firefox_question.status.name
     OPEN
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 The other user can come back and gives an answer:
 
@@ -183,7 +183,7 @@ The other user can come back and gives an answer:
     >>> print firefox_question.status.name
     ANSWERED
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 Once the question is answered, the set of possible actions for the question
 owner changes. He can now either confirm the answer, answer the problem
@@ -207,7 +207,7 @@ enter a confirmation message at that stage.
     >>> print firefox_question.status.name
     SOLVED
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 Since no confirmation message was given, a default one was used.
 
@@ -230,7 +230,7 @@ Adding a comment doesn't change the status:
     ...     print notification.message
     Thanks for your comment.
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
     >>> print firefox_question.status.name
     SOLVED
 
@@ -257,7 +257,7 @@ If the question owner reopens the question, its status is changed back to
     >>> print firefox_question.status.name
     OPEN
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 When the question owner answers his own question, it is moved straight to
 the SOLVED state.
@@ -272,7 +272,7 @@ the SOLVED state.
     >>> print firefox_question.status.name
     SOLVED
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
     # Clear all notifications.
     >>> notifications = pop_notifications()
