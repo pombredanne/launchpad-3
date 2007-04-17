@@ -499,7 +499,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
                         needs_attention_from=None, unsupported=False):
-        """See IQuestionTarget."""
+        """See IQuestionCollection."""
         return QuestionTargetSearch(
             distribution=self,
             search_text=search_text, status=status,

@@ -73,7 +73,7 @@ class SourcePackageQuestionTargetMixin:
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
                         needs_attention_from=None, unsupported=False):
-        """See IQuestionTarget."""
+        """See IQuestionCollection."""
         return QuestionTargetSearch(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,

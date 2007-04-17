@@ -571,7 +571,6 @@ class QuestionSearch:
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
         self.project = project
-        self.unsupported = unsupported
         
     def getTargetConstraints(self):
         """Return the constraints related to the IQuestionTarget context."""
@@ -737,14 +736,14 @@ class QuestionTargetSearch(QuestionSearch):
 
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
-                 needs_attention_from=None, unsupported=None, project=None, 
+                 needs_attention_from=None, unsupported=False, project=None, 
                  product=None, distribution=None, sourcepackagename=None):
         assert (product is not None or distribution is not None or
             project is not None), ("Missing a product or distribution context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
             needs_attention_from=needs_attention_from, sort=sort, 
-            unsupported=unsupported, project=project, product=product, 
+            project=project, product=product, 
             distribution=distribution, sourcepackagename=sourcepackagename)
 
         if owner:
@@ -759,8 +758,16 @@ class QuestionTargetSearch(QuestionSearch):
         if self.owner:
             constraints.append('Question.owner = %s' % self.owner.id)
         if self.unsupported:
+            if self.product:
+                question_target = self.product
+            elif self.sourcepackagename:
+                question_target = self.distribution.getSourcePackage(
+                    self.sourcepackagename.name)
+            elif self.distribution:
+                question_target = self.distribution
+                
             langs = [str(lang.id) 
-                     for lang in (self.unsupported.getSupportedLanguages())]
+                     for lang in (question_target.getSupportedLanguages())]
             constraints.append('Question.language NOT IN (%s)' % 
                                ', '.join(langs))
 

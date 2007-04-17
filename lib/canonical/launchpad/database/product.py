@@ -316,8 +316,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
-                        needs_attention_from=None, unsupported=None):
-        """See IQuestionTarget."""
+                        needs_attention_from=None, unsupported=False):
+        """See IQuestionCollection."""
         return QuestionTargetSearch(
             product=self,
             search_text=search_text, status=status,

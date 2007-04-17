@@ -337,7 +337,7 @@ OPEN state are also included.
 The 'unsupported' criteria is used to select questions that are in a
 language that is not spoken by any of the Support Contacts.
 
-    >>> for t in target.searchQuestions(unsupported=target):
+    >>> for t in target.searchQuestions(unsupported=True):
     ...     print t.title
     De l'aide S.V.P.
 
