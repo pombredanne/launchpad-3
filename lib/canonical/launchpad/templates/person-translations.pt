@@ -15,9 +15,6 @@
 
   <tal:block define="history view/batchnav/currentBatch">
 
-    <p tal:condition="view/info_message" tal:content="view/info_message"
-      class="informational message">Informational message.</p>
-
     <tal:block condition="history">
 
       <div class="lesser">
@@ -34,18 +31,30 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="record history">
+          <tr tal:repeat="record history"
+	      tal:define="user request/lp:person">
+	    <tal:block define="posubmission record/latest_posubmission;
+			       pomsgset posubmission/pomsgset">
             <td><a tal:content="record/pofile/potemplate/displayname"
                    tal:attributes="href record/pofile/fmt:url">foo bar in package bla</a>
             </td>
             <td tal:content="record/pofile/language/englishname">Spanish</td>
-            <td tal:content="record/latest_posubmission/pomsgset/potmsgset/primemsgid_/msgid" />
-            <td tal:content="record/latest_posubmission/potranslation/translation" />
+            <td tal:content="pomsgset/potmsgset/primemsgid_/msgid" />
+	    <td tal:condition="python:not(user) and
+	       pomsgset.potmsgset.hide_translations_from_anonymous">
+	      To prevent privacy issues, this translation is not
+              available to anonymous users,
+              if you want to see it, please, <a href="+login">log in</a>
+              first.</td>
+	    <td tal:condition="python:user or
+	       not(pomsgset.potmsgset.hide_translations_from_anonymous)"
+		tal:content="posubmission/potranslation/translation" />
             <td>
             <span
               tal:attributes="title record/date_last_touched/fmt:datetime"
               tal:content="record/date_last_touched/fmt:approximatedate" />
             </td>
+	    </tal:block>
           </tr>
         </tbody>
       </table>

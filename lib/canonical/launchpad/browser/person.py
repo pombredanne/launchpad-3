@@ -1770,23 +1770,9 @@ class PersonEditSSHKeysView(LaunchpadView):
 
 class PersonTranslationView(LaunchpadView):
     """View for translation-related Person pages."""
-    info_message = None
-
     @cachedproperty
     def batchnav(self):
-        translation_history = []
-
-        some_submissions_are_hidden = False
-        for translation in list(self.context.translation_history):
-            pomsgset = translation.latest_posubmission.pomsgset
-            # If anonymous is browsing, hide sensitive translations
-            if (self.user is None and
-                pomsgset.potmsgset.hide_translations_from_anonymous):
-                some_submissions_are_hidden =  True
-            else:
-                translation_history.append(translation)
-
-        batchnav = BatchNavigator(translation_history,
+        batchnav = BatchNavigator(self.context.translation_history,
                                   self.request)
         # XXX: See bug 60320. Because of a template reference to
         # pofile.potemplate.displayname, it would be ideal to also
@@ -1810,11 +1796,6 @@ class PersonTranslationView(LaunchpadView):
                   for record in batchnav.currentBatch())
         if ids:
             cache = list(getUtility(IPOTemplateSet).getByIDs(ids))
-
-        if some_submissions_are_hidden:
-            self.info_message = _("Some submissions are hidden since they may "
-                                  "contain sensitive data.  You can "
-                                  "log in to see them.")
 
         return batchnav
 
