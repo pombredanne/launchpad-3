@@ -144,7 +144,7 @@ def main():
     while open_readers:
         rlist, wlist, xlist = select(open_readers, [], [], TIMEOUT)
 
-        if len(rlist) == 0:
+        if not rlist:
             if proc.poll() is not None:
                 break
             print 'Tests hung - no output for %d seconds. Killing.' % TIMEOUT
@@ -153,7 +153,6 @@ def main():
             if proc.poll() is not None:
                 print 'Not dead yet! - slaughtering mercilessly'
                 killem(proc.pid, SIGKILL)
-            break
 
         if proc.stdout in rlist:
             chunk = os.read(proc.stdout.fileno(), 1024)
