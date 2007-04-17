@@ -10,7 +10,7 @@ import unittest
 from canonical.config import config
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts.ftpmaster import (
-    PackageCopyError, CopyPackageHelper)
+    PackageCopyError, PackageCopier)
 
 class TestCopyPackageScript(LaunchpadZopelessTestCase):
     """Test the copy-package.py script."""
@@ -58,25 +58,40 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         def error(self, args):
             pass
 
-    def getCopyHelper(self, sourcename='mozilla-firefox', sourceversion=None,
-                      from_suite='warty', to_suite='hoary',
-                      from_distribution_name='ubuntu',
-                      to_distribution_name='ubuntu',
-                      confirm_all=True, comment='42', include_binaries=True):
-        """Return an CopyHelper instance.
+    def getCopier(self, sourcename='mozilla-firefox', sourceversion=None,
+                  from_suite='warty', to_suite='hoary',
+                  from_distribution_name='ubuntu',
+                  to_distribution_name='ubuntu',
+                  confirm_all=True, comment='42', include_binaries=True):
+        """Return a PackageCopier instance.
 
-        Allow tests to use a set of default options and pass a inactive logger
-        to CopyHelper.
+        Allow tests to use a set of default options and pass an 
+        inactive logger to PackageCopier.
         """
         logger = self.QuietLogger()
-        return CopyPackageHelper(
-            sourcename, sourceversion, from_suite, to_suite,
-            from_distribution_name, to_distribution_name,
-            confirm_all, comment, include_binaries, logger)
+        test_args=['-s', from_suite,
+                   '--to-suite', to_suite,
+                   '-d', from_distribution_name,
+                   '--to-distribution', to_distribution_name,
+                   '-c', comment]
+        if confirm_all:
+            test_args.append('-y')
+        if include_binaries:
+            test_args.append('-b')
+        if sourceversion is not None:
+            test_args.extend(['-e', sourceversion])
+
+        test_args.append(sourcename)
+
+        copier = PackageCopier(name='copy-package', test_args=test_args,
+                               logger=logger)
+        copier.setOptions()
+
+        return copier
 
     def testSimpleAction(self):
         """Check how CopyPackageHelper behaves on a successful copy."""
-        copy_helper = self.getCopyHelper()
+        copy_helper = self.getCopier()
 
         # Check default values.  This ensures we know that they are invalid
         # to start with and expect them to get re-populated after the copy.
@@ -84,10 +99,10 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         self.assertEqual(bool(copy_helper.copied_source), False)
         self.assertEqual(len(copy_helper.copied_binaries), 0)
 
-        copy_helper.performCopy()
+        copy_helper.doCopy()
 
         # Check locations.  They should be the same as the defaults defined
-        # in the getCopyHelper method.
+        # in the getCopier method.
         self.assertEqual(
             str(copy_helper.from_location), 'ubuntu/warty/RELEASE')
         self.assertEqual(
@@ -147,50 +162,50 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
     def testSourceLookupFailure(self):
         """Check if it raises when the target source can't be found."""
-        copy_helper = self.getCopyHelper(sourcename='zaphod')
+        copy_helper = self.getCopier(sourcename='zaphod')
 
         self.assertRaisesWithContent(
             PackageCopyError,
             "Could not find any version of 'zaphod' in ubuntu/warty/RELEASE",
-            copy_helper.performCopy)
+            copy_helper.doCopy)
 
     def testBadDistro(self):
         """Check if it raises if the distro is invalid."""
-        copy_helper = self.getCopyHelper(from_distribution_name="beeblebrox")
+        copy_helper = self.getCopier(from_distribution_name="beeblebrox")
 
         self.assertRaisesWithContent(
             PackageCopyError,
             "Could not find distribution 'beeblebrox'",
-            copy_helper.performCopy)
+            copy_helper.doCopy)
 
     def testBadSuite(self):
         """Check that it fails when specifying a bad distro release."""
-        copy_helper = self.getCopyHelper(from_suite="slatibartfast")
+        copy_helper = self.getCopier(from_suite="slatibartfast")
 
         self.assertRaisesWithContent(
             PackageCopyError,
             "Could not find suite 'slatibartfast'",
-            copy_helper.performCopy)
+            copy_helper.doCopy)
 
     def testFailIfSameLocations(self):
         """Check that it fails if the source and destination package locations
         are the same."""
-        copy_helper = self.getCopyHelper(from_suite='warty', to_suite='warty')
+        copy_helper = self.getCopier(from_suite='warty', to_suite='warty')
 
         self.assertRaisesWithContent(
             PackageCopyError, 
             "Can not sync between the same locations: 'ubuntu/warty/RELEASE' to 'ubuntu/warty/RELEASE'",
-            copy_helper.performCopy)
+            copy_helper.doCopy)
 
     def testFailIfValidPackageButNotInSpecifiedSuite(self):
         """Check that we fail if the package is valid but does not exist in the
         specified distro release."""
-        copy_helper = self.getCopyHelper(from_suite="breezy-autotest")
+        copy_helper = self.getCopier(from_suite="breezy-autotest")
 
         self.assertRaisesWithContent(
             PackageCopyError,
             "Could not find 'mozilla-firefox/None' in ubuntu/breezy-autotest/RELEASE",
-            copy_helper.performCopy)
+            copy_helper.doCopy)
 
 
 def test_suite():
