@@ -103,7 +103,7 @@ The Debian task is linked to the newly created bug watch.
     ...     {'href': 'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1/+editstatus'})
     >>> debian_tr = debian_link.parent.parent
     >>> td_tags = debian_tr.findAll('td')
-    >>> target, bugwatch = td_tags[1], td_tags[-1]
+    >>> target, bugwatch = td_tags[0], td_tags[-2]
     >>> print "%s -> %s" % (extract_text(target), extract_text(bugwatch))
     mozilla-firefox (Debian) -> debbugs #1
 

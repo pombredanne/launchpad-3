@@ -39,7 +39,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchBag, IMaloneApplication
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IMaloneApplication, INullBugTask)
 from canonical.launchpad.webapp import smartquote
 from canonical.launchpad.webapp.authorization import check_permission
 
@@ -49,11 +50,13 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 class BugTaskPageTitle:
     def __call__(self, context, view):
-        if view.isReportedInContext():
-            return smartquote('Bug #%d in %s: "%s"') % (
+        # XXX 20070417 mpt: This code is almost identical to
+        # BugTaskSOP.getMainHeading, and should perhaps be factored out.
+        if INullBugTask.providedBy(context):
+            return smartquote('Bug #%s is not in %s: "%s"') % (
                 context.bug.id, context.targetname, context.bug.title)
         else:
-            return smartquote('Bug #%d is not in %s: "%s"') % (
+            return smartquote('Bug #%s in %s: "%s"') % (
                 context.bug.id, context.targetname, context.bug.title)
 
 

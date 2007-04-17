@@ -166,14 +166,15 @@ space in the bug URL it will be stripped.
   ...     '   https://bugzilla.mozilla.org/show_bug.cgi?id=1234   ')
   >>> user_browser.getControl('Indicate bug in alsa-utils').click()
 
-Redirected to the newly created bugtask page
+Launchpad redirects to the newly created bugtask page, with a row for the
+new bug watch.
 
-  >>> user_browser.url
-  'http://bugs.launchpad.dev/alsa-utils/+bug/3'
-
-  >>> print user_browser.contents
-  <...
-  ...alsa-utils (upstream)...
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/alsa-utils/+bug/3'
+    >>> affects_table = find_tags_by_class(user_browser.contents, 'listing')[0]
+    >>> target_cell = affects_table.tbody.tr.td
+    >>> extract_text(target_cell)
+    u'alsa-utils'
 
 And we can check that the remote bug number was stripped.
 

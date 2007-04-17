@@ -34,7 +34,7 @@ case errors, and we'll give an example of one shortly.
     >>> for tag in find_tags_by_class(
     ...     nopriv_browser.contents, 'informational message'):
     ...     print tag
-    <div...Added nominations for: firefox 1.0 (upstream)...
+    <div...Added nominations for: Mozilla Firefox 1.0...
 
 Now, if no-priv, having the form open in another browser window,
 accidentally nominates the bug for firefox 1.0 a second time, an error
@@ -59,4 +59,4 @@ approved and targeted to the release.
     >>> for tag in find_tags_by_class(
     ...     admin_browser.contents, 'informational message'):
     ...     print tag
-    <div...Targeted bug to: firefox trunk (upstream)...
+    <div...Targeted bug to: Mozilla Firefox trunk...

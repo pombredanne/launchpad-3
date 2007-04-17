@@ -48,4 +48,4 @@ Approving a nomination displays a feedback message.
     >>> feedback_msg = find_tags_by_class(
     ...     admin_browser.contents, "informational message")[0]
     >>> print feedback_msg.renderContents()
-    Approved nomination for firefox 1.0 (upstream)
+    Approved nomination for Mozilla Firefox 1.0
