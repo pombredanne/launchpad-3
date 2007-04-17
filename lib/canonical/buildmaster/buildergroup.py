@@ -22,7 +22,8 @@ from canonical.launchpad.interfaces import (
     IBuildQueueSet, IBuildSet, IBuilderSet, pocketsuffix
     )
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import clear_current_connection_cache
+from canonical.database.sqlbase import (
+    flush_database_updates, clear_current_connection_cache, cursor)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.buildd.slave import BuilderStatus
 
@@ -536,7 +537,14 @@ class BuilderGroup:
 
         # Retrive the up-to-date build record and perform consistency
         # checks.
+        flush_database_updates()
+        self.commit()
         clear_current_connection_cache()
+
+        cur = cursor()
+        iso_level = cur.execute('show transaction_isolation')
+        self.log.debug('Isolation: %s' % iso_level)
+
         build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
 
         assert build.buildstate == dbschema.BuildStatus.FULLYBUILT, (
