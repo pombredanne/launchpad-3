@@ -1814,7 +1814,7 @@ class PersonTranslationView(LaunchpadView):
         if some_submissions_are_hidden:
             self.info_message = _("Some submissions are hidden since they may "
                                   "contain sensitive data.  You can "
-                                  "<a href=\"+login\">log in</a> to see them.")
+                                  "log in to see them.")
 
         return batchnav
 
