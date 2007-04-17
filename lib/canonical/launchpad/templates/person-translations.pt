@@ -17,6 +17,9 @@
 
     <tal:block condition="history">
 
+    <p tal:condition="view/info_message" tal:content="view/info_message"
+      class="informational message">Informational message.</p>
+
       <div class="lesser">
         <tal:navigation content="structure view/batchnav/@@+navigation-links-upper" />
       </div>

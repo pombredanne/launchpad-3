@@ -293,3 +293,12 @@ class POTMsgSet(SQLBase):
         # Fix the newline chars.
         return text.replace(text_style, msgid_style)
 
+
+    @property
+    def hide_translations_from_anonymous(self):
+        """See IPOTMsgSet."""
+        return self.primemsgid_.msgid in [
+            u'translation-credits',
+            u'_: EMAIL OF TRANSLATORS<img alt=""' +
+                u' src="/@@/translation-newline" /><br/>\nYour emails'
+            ]
