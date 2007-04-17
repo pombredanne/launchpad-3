@@ -6,7 +6,7 @@ PYTHON=python${PYTHON_VERSION}
 # detection.
 # test_dirs:=$(shell find . -maxdepth 1 -mindepth 1 -name ".arch-ids" -prune -o -type d -print | grep -v pyarch)
 build_dirs:=buildbot bzr cscvs pybaz pygettextpo pygpgme sqlobject twisted zope
-test_dirs:=buildbot bzr cscvs pybaz pygettextpo sqlobject twisted zope
+test_dirs:=buildbot bzr cscvs pybaz pygettextpo sqlobject storm twisted zope
 launchpad_test_dirs:=buildbot pybaz pygettextpo sqlobject zope
 
 all:

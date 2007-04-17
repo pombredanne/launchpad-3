@@ -15,11 +15,13 @@ sourcecode/pybaz
 sourcecode/pygettextpo
 sourcecode/pygpgme
 sourcecode/pytz
+sourcecode/storm
 sourcecode/sourcerer
 sourcecode/sqlobject
 sourcecode/sqlos
 sourcecode/testresources
 sourcecode/zope
+sourcecode/zstorm
 ./botmaster
 ./tags
 database/schema/diagrams/*.ps
