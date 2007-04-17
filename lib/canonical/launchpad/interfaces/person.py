@@ -692,18 +692,18 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
 
     def getDirectAnswerQuestionTargets():
         """Return a list of IQuestionTargets that a person is subscribed to.
-        
-        This will return IQuestionTargets that the person is registered as an 
+
+        This will return IQuestionTargets that the person is registered as an
         answer contact because he subscribed himself.
         """
 
     def getTeamAnswerQuestionTargets():
         """Return a list of IQuestionTargets that are indirectly subscribed to.
-        
-        This will return IQuestionTargets that the person or is registered as an 
-        answer contact because of his membership in a team.
+
+        This will return IQuestionTargets that the person or is registered
+        as an answer contact because of his membership in a team.
         """
-            
+
     def searchQuestions(search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, participation=None,
@@ -930,6 +930,14 @@ class IPersonSet(Interface):
     def merge(from_person, to_person):
         """Merge a person into another."""
 
+    def getTranslatorsByLanguage(language):
+        """Return the list of translators for the given language.
+
+        :arg language: ILanguage object for which we want to get the
+            translators.
+
+        Return None if there is no translator.
+        """
 
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""

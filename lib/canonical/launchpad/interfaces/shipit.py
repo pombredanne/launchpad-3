@@ -6,8 +6,7 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IShipmentSet', 'ShippingRequestPriority', 'IShipItReport',
            'IShipItReportSet', 'IShippingRequestAdmin', 'IShippingRequestEdit',
            'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
-           'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE',
-           'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT']
+           'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE']
 
 from zope.schema import Bool, Choice, Int, Datetime, TextLine
 from zope.interface import Interface, Attribute, implements
@@ -32,7 +31,6 @@ from canonical.launchpad import _
 SOFT_MAX_SHIPPINGRUN_SIZE = 10000
 
 MAX_CDS_FOR_UNTRUSTED_PEOPLE = 5
-MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 def _validate_positive_int(value):
@@ -333,13 +331,13 @@ class IShippingRequest(Interface):
         """
 
     def addressIsDuplicated():
-        """Return True if there is more than one request made from another
-        user using the same address as this one.
+        """Return True if there is one or more requests made from another
+        user using the same address and distrorelease as this one.
         """
 
     def getRequestsWithSameAddressFromOtherUsers():
         """Return all non-cancelled non-denied requests with the same address
-        as this one but with a different recipient.
+        and distrorelease as this one but with a different recipient.
         """
 
 
@@ -357,10 +355,8 @@ class IShippingRequestSet(Interface):
         information about what is a current request.
         """
 
-    def processRequestsPendingSpecial(status=ShippingRequestStatus.DENIED):
-        """Change the status of all PENDINGSPECIAL requests to :status.
-        
-        :status:  Must be either DENIED or APPROVED.
+    def processRequests(status, new_status):
+        """Change the status of requests with the given status to the new one.
 
         Also sends an email to the shipit admins listing all requests that
         were processed.
