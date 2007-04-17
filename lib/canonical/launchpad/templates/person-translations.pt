@@ -15,10 +15,10 @@
 
   <tal:block define="history view/batchnav/currentBatch">
 
-    <tal:block condition="history">
-
     <p tal:condition="view/info_message" tal:content="view/info_message"
       class="informational message">Informational message.</p>
+
+    <tal:block condition="history">
 
       <div class="lesser">
         <tal:navigation content="structure view/batchnav/@@+navigation-links-upper" />
