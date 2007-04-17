@@ -9176,6 +9176,27 @@ INSERT INTO teamparticipation (id, team, person) VALUES (105, 18, 12);
 INSERT INTO teamparticipation (id, team, person) VALUES (106, 20, 12);
 INSERT INTO teamparticipation (id, team, person) VALUES (107, 68, 68);
 INSERT INTO teamparticipation (id, team, person) VALUES (108, 69, 68);
+INSERT INTO teamparticipation (id, team, person) VALUES (109, 59, 59);
+INSERT INTO teamparticipation (id, team, person) VALUES (110, 60, 60);
+INSERT INTO teamparticipation (id, team, person) VALUES (111, 61, 61);
+INSERT INTO teamparticipation (id, team, person) VALUES (112, 64, 64);
+INSERT INTO teamparticipation (id, team, person) VALUES (113, 67, 67);
+INSERT INTO teamparticipation (id, team, person) VALUES (114, 69, 69);
+INSERT INTO teamparticipation (id, team, person) VALUES (115, 243601, 243601);
+INSERT INTO teamparticipation (id, team, person) VALUES (116, 53, 53);
+INSERT INTO teamparticipation (id, team, person) VALUES (117, 55, 55);
+INSERT INTO teamparticipation (id, team, person) VALUES (118, 17, 17);
+INSERT INTO teamparticipation (id, team, person) VALUES (119, 18, 18);
+INSERT INTO teamparticipation (id, team, person) VALUES (120, 19, 19);
+INSERT INTO teamparticipation (id, team, person) VALUES (121, 20, 20);
+INSERT INTO teamparticipation (id, team, person) VALUES (122, 21, 21);
+INSERT INTO teamparticipation (id, team, person) VALUES (123, 24, 24);
+INSERT INTO teamparticipation (id, team, person) VALUES (124, 25, 25);
+INSERT INTO teamparticipation (id, team, person) VALUES (125, 30, 30);
+INSERT INTO teamparticipation (id, team, person) VALUES (126, 31, 31);
+INSERT INTO teamparticipation (id, team, person) VALUES (127, 32, 32);
+INSERT INTO teamparticipation (id, team, person) VALUES (128, 57, 57);
+INSERT INTO teamparticipation (id, team, person) VALUES (129, 58, 58);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;

@@ -43,8 +43,7 @@ When an attachment is submitted, the comment and description are optional.
 
     >>> user_browser.open(
     ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment-form")
-    >>> user_browser.getControl("Include attachment").selected = True
-    >>> user_browser.getControl("File").add_file(
+    >>> user_browser.getControl("Attachment").add_file(
     ...     StringIO("a test file"), "text/plain", "foo.txt")
     >>> user_browser.getControl("Save Changes").click()
 
@@ -56,8 +55,7 @@ A comment and attachment can be submitted in one request.
     >>> user_browser.open(
     ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment-form")
     >>> user_browser.getControl("Comment").value = "this is a comment"
-    >>> user_browser.getControl("Include attachment").selected = True
-    >>> user_browser.getControl("File").add_file(
+    >>> user_browser.getControl("Attachment").add_file(
     ...     StringIO("some file"), "text/plain", "bar.txt")
     >>> user_browser.getControl("Description").value = "some file"
     >>> user_browser.getControl("Save Changes").click()
@@ -72,8 +70,7 @@ You cannot upload an empty attachment.
 
     >>> user_browser.open(
     ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment-form")
-    >>> user_browser.getControl("Include attachment").selected = True
-    >>> user_browser.getControl("File").add_file(
+    >>> user_browser.getControl("Attachment").add_file(
     ...     StringIO(""), "text/plain", "foo.txt")
     >>> user_browser.getControl("Save Changes").click()
 
@@ -89,13 +86,8 @@ You cannot add a comment without a subject.
     ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment-form")
     >>> user_browser.getControl("Subject").value = ""
     >>> user_browser.getControl("Save Changes").click()
-
-(The error message is duplicated because it's shown once at the top of
-the page and once under the field. Ideally, it should not be
-duplicated.)
-
     >>> get_feedback_messages(user_browser)
-    [u'Required input is missing.', u'Required input is missing.']
+    [u'Required input is missing.']
 
 The size of uploaded files is limited with the max_bug_attachment_size
 option in launchpad.conf. In our example, the size is limited to 1024.
@@ -107,8 +99,7 @@ option in launchpad.conf. In our example, the size is limited to 1024.
 
     >>> user_browser.open(
     ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment-form")
-    >>> user_browser.getControl("Include attachment").selected = True
-    >>> user_browser.getControl("File").add_file(
+    >>> user_browser.getControl("Attachment").add_file(
     ...     StringIO("x"*1025), "text/plain", "foo.txt")
     >>> user_browser.getControl("Save Changes").click()
 
@@ -120,8 +111,7 @@ The comment/attach file form is available from a link on the bug page.
     >>> user_browser.open(
     ...     "http://bugs.launchpad.dev/firefox/+bug/1")
     >>> user_browser.getLink("Comment or attach file").click()
-    >>> user_browser.getControl("Include attachment").selected = True
-    >>> user_browser.getControl("File").add_file(
+    >>> user_browser.getControl("Attachment").add_file(
     ...     StringIO("a test file"), "text/plain", "foo.txt")
     >>> user_browser.getControl("Description").value = "some file"
     >>> user_browser.getControl("Save Changes").click()
@@ -139,9 +129,7 @@ And directly on the bug page (after the comments.)
     >>> user_browser.getControl("Subject") is not None
     True
     >>> user_browser.getControl("Comment", index=3).value = "a test comment"
-    >>> user_browser.getControl("Include attachment") is not None
-    True
-    >>> user_browser.getControl("File") is not None
+    >>> user_browser.getControl("Attachment") is not None
     True
     >>> user_browser.getControl("patch") is not None
     True

@@ -1,20 +1,33 @@
-Mass processing of PENDINGSPECIAL requests
-==========================================
+= Mass processing of requests =
 
 Some people will always try to get more CDs from ShipIt just because it's
 easy and free of charge.  To alleviate this problem we'll automatically
-flag all requests made by a given person if, and only if, that person has
-at least two other requests for that same distrorelease and flavour
-already shipped.
+flag some requests with special statuses meaning that we'll likely want to
+deny them. Note that we don't deny them automatically because we want
+these people to feel that there's somebody checking all the requests rather
+than just a system that they can easily game.
 
-These requests will be marked with a PENDINGSPECIAL status and, by default,
-won't show up on the list of pending requests seen by shipit admins.  Then,
-from time to time, if we have too many of these requests we'll run a script
-to either approve or deny them all at once.
+== Pending Special Consideration ==
 
-This script is called shipit-process-requests-pending-special, and it simply
-calls the processRequestsPendingSpecial() method of ShippingRequestSet,
-passing the status to which we should change the requests.
+All requests made by a given person when that person has at least two
+other requests for that same distrorelease and flavour already shipped will
+be flagged with the PENDINGSPECIAL status. By default, they won't show up
+on the list of pending requests seen by shipit admins.  Then, from time to
+time, if we have too many of these requests we'll run a script to either
+approve or deny them all at once.
+
+== Duplicated address ==
+
+When somebody makes a request for CDs of a given distrorelease we check our
+records to see if the shipping address has already been used by another user.
+If it has, the request is marked with the DUPLICATEDADDRESS so that we can
+process them all as a batch later.
+
+== Processing requests with a given status ==
+
+This is done by a script called shipit-process-requests, which simply calls
+the processRequests() method of ShippingRequestSet, passing the status of the
+requests we want to process and the new status of these requests.
 
     >>> from canonical.launchpad.interfaces import IShippingRequestSet
     >>> from canonical.launchpad.database import ShippingRequest
@@ -35,8 +48,8 @@ passing the status to which we should change the requests.
     >>> ShippingRequest.selectBy(status=pendingspecial).count()
     1
 
-    >>> getUtility(IShippingRequestSet).processRequestsPendingSpecial(
-    ...     status=ShippingRequestStatus.DENIED)
+    >>> getUtility(IShippingRequestSet).processRequests(
+    ...     pendingspecial, denied)
     >>> from canonical.launchpad.mail import stub
     >>> import transaction
     >>> transaction.commit()
@@ -60,17 +73,15 @@ passing the status to which we should change the requests.
 
 
 Now, let's run the script as a subprocess, to make sure it denies the
-pending special requests, as we expect it to.
+requests with duplicated address, as we expect it to.
 
-    >>> pending_request.status = pendingspecial
-    >>> pending_request.status == pendingspecial
-    True
+    >>> pending_request.status = ShippingRequestStatus.DUPLICATEDADDRESS
     >>> flush_database_updates()
     >>> transaction.commit()
 
     >>> from subprocess import Popen, PIPE
     >>> process = Popen(
-    ...     'scripts/shipit-process-requests-pending-special.py -q',
+    ...     'scripts/shipit-process-requests.py -q --status=dupe',
     ...     shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     >>> (out, err) = process.communicate()
     >>> out, err

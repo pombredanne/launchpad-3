@@ -355,10 +355,8 @@ class IShippingRequestSet(Interface):
         information about what is a current request.
         """
 
-    def processRequestsPendingSpecial(status=ShippingRequestStatus.DENIED):
-        """Change the status of all PENDINGSPECIAL requests to :status.
-        
-        :status:  Must be either DENIED or APPROVED.
+    def processRequests(status, new_status):
+        """Change the status of requests with the given status to the new one.
 
         Also sends an email to the shipit admins listing all requests that
         were processed.
