@@ -155,13 +155,13 @@ class BranchTraversalMixin:
     * '/~ddaa/bazaar/devel' points to the branch whose owner
     name is 'ddaa', whose product name is 'bazaar', and whose branch name
     is 'devel'.
-    
+
     * '/~sabdfl/+junk/junkcode' points to the branch whose
     owner name is 'sabdfl', with no associated product, and whose branch
     name is 'junkcode'.
 
     * '/~ddaa/+branch/bazaar/devel' redirects to '/~ddaa/bazaar/devel'
-    
+
     """
 
     @stepto('+branch')
@@ -666,8 +666,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = ITeam
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'editemail', 'polls', 'add_poll', 'joinleave',
-             'mentorships', 'reassign', 'common_packages']
+             'mugshots', 'add_member', 'editemail', 'polls', 'add_poll',
+             'joinleave', 'mentorships', 'reassign', 'common_packages',
+             ]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -701,6 +702,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Offers of mentorship for prospective team members'
         return Link(target, text, summary=summary, enabled=enabled,
                     icon='info')
+
+    def mugshots(self):
+        target = '+mugshots'
+        text = 'Show group photo'
+        return Link(target, text, icon='people')
 
     @enabled_with_permission('launchpad.Edit')
     def add_member(self):
@@ -2835,32 +2841,32 @@ class SearchSubscribedQuestionsView(SearchQuestionsView):
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
-                 
+
 class PersonAnswerContactForView(LaunchpadView):
     """View used to show all the IQuestionTargets that an IPerson is an answer
     contact for.
     """
-    
+
     @cachedproperty
     def direct_question_targets(self):
         """List of IQuestionTargets that the context is a direct answer contact.
-        
+
         Sorted alphabetically by title.
         """
         return sorted(
-            self.context.getDirectAnswerQuestionTargets(), 
+            self.context.getDirectAnswerQuestionTargets(),
             key=attrgetter('title'))
 
     @cachedproperty
     def team_question_targets(self):
         """List of IQuestionTargets for the context's team membership.
-        
+
         Sorted alphabetically by title.
         """
         return sorted(
-            self.context.getTeamAnswerQuestionTargets(), 
+            self.context.getTeamAnswerQuestionTargets(),
             key=attrgetter('title'))
-                        
+
     def showRemoveYourselfLink(self):
         """The link is only shown when the page is in the user's own profile."""
         return self.user == self.context
@@ -2877,42 +2883,42 @@ class PersonAnswersMenu(ApplicationMenu):
         summary="Projects for which %s is an answer contact for" % (
             self.context.displayname)
         return Link('+answer-contact-for', 'Answer contact for', summary)
-        
+
     def answered(self):
         summary = 'Questions answered by %s' % self.context.displayname
-        return Link('+answeredtickets', 'Answered', summary, icon='question')
+        return Link('+answeredquestions', 'Answered', summary, icon='question')
 
     def assigned(self):
         summary = 'Questions assigned to %s' % self.context.displayname
-        return Link('+assignedtickets', 'Assigned', summary, icon='question')
+        return Link('+assignedquestions', 'Assigned', summary, icon='question')
 
     def created(self):
         summary = 'Questions asked by %s' % self.context.displayname
-        return Link('+createdtickets', 'Asked', summary, icon='question')
+        return Link('+createdquestions', 'Asked', summary, icon='question')
 
     def commented(self):
         summary = 'Questions commented on by %s' % (
             self.context.displayname)
-        return Link('+commentedtickets', 'Commented', summary, icon='question')
+        return Link('+commentedquestions', 'Commented', summary, icon='question')
 
     def need_attention(self):
         summary = 'Questions needing %s attention' % (
             self.context.displayname)
-        return Link('+needattentiontickets', 'Need attention', summary,
+        return Link('+needattentionquestions', 'Need attention', summary,
                     icon='question')
 
     def subscribed(self):
         text = 'Subscribed'
         summary = 'Questions subscribed to by %s' % (
                 self.context.displayname)
-        return Link('+subscribedtickets', text, summary, icon='question')
+        return Link('+subscribedquestions', text, summary, icon='question')
 
 
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
     extra_columns = ('author', 'product', 'role')
-    
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForPerson(
             self.context, self.selected_lifecycle_status)
@@ -2939,7 +2945,7 @@ class PersonAuthoredBranchesView(BranchListingView):
 
     extra_columns = ('product',)
     title_prefix = 'Authored'
-    
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
             self.context, self.selected_lifecycle_status)
@@ -2950,7 +2956,7 @@ class PersonRegisteredBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
     title_prefix = 'Registered'
-    
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
             self.context, self.selected_lifecycle_status)
@@ -2961,7 +2967,7 @@ class PersonSubscribedBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
     title_prefix = 'Subscribed'
-    
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
             self.context, self.selected_lifecycle_status)
@@ -2974,4 +2980,4 @@ class PersonTeamBranchesView(LaunchpadView):
     def teams_with_branches(self):
         return [team for team in self.context.teams_participated_in
                 if team.branches.count() > 0]
-    
+

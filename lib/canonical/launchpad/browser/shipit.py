@@ -67,15 +67,6 @@ class ShipitFrontPageView(LaunchpadView):
     @property
     def download_or_buy_link(self):
         if self.flavour == ShipItFlavour.UBUNTU:
-            return 'http://www.ubuntu.com/products/GetUbuntu'
-        elif self.flavour == ShipItFlavour.KUBUNTU:
-            return 'http://www.kubuntu.org/download.php'
-        elif self.flavour == ShipItFlavour.EDUBUNTU:
-            return 'http://www.edubuntu.org/Download'
-
-    @property
-    def download_link(self):
-        if self.flavour == ShipItFlavour.UBUNTU:
             return 'http://www.ubuntu.com/download'
         elif self.flavour == ShipItFlavour.KUBUNTU:
             return 'http://www.kubuntu.org/download.php'
@@ -163,6 +154,10 @@ class ShipItRequestView(GeneralFormView):
         ShipItFlavour.KUBUNTU: config.shipit.kubuntu_from_email_address}
 
     should_show_custom_request = False
+    # This only exists so that our tests can simulate the creation (through
+    # the web UI) of requests containing CDs of releases other than the
+    # current one.
+    release = ShipItConstants.current_distrorelease
 
     # Field names that are part of the schema but don't exist in our
     # context object.
@@ -481,7 +476,8 @@ class ShipItRequestView(GeneralFormView):
         # flagged as pending approval, meaning that somebody will have to
         # check (and possibly change) its approved quantities before it can be
         # shipped.
-        current_order.setQuantities({self.flavour: quantities})
+        current_order.setQuantities(
+            {self.flavour: quantities}, distrorelease=self.release)
 
         # Make sure that subsequent queries will see the RequestedCDs objects
         # created/updated when we set the order quantities above.

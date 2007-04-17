@@ -102,7 +102,8 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     displayname = TextLine(
         title=_('Display Name'),
-        description=_("""The name of the project as it would appear in a paragraph."""))
+        description=_("""The name of the project as it would appear in a 
+            paragraph."""))
 
     title = Title(
         title=_('Title'),
@@ -236,13 +237,17 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         If the product doesn't have a bug tracker specified, return the
         project bug tracker instead.
         """
-
+        
     bugtracker = Choice(title=_('Bug Tracker'), required=False,
         vocabulary='BugTracker',
         description=_(
             "The external bug tracker this project uses, if it is not "
             "Launchpad."))
-
+            
+    official_answers = Bool(title=_('Uses Answers Officially'), 
+        required=True, description=_('Check this box to indicate that this '
+            'project officially "uses Answers for community support.'))
+            
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
         'this application officially uses Malone for bug tracking '
@@ -437,9 +442,10 @@ class IProductSet(Interface):
 
 
 class IProductLaunchpadUsageForm(Interface):
-    """Form for indicating whether Rosetta or Malone is used."""
+    """Form for indicating whether Rosetta, Answers, or Malone is used."""
 
     official_rosetta = IProduct['official_rosetta']
+    official_answers = IProduct['official_answers']
     bugtracker = ProductBugTracker(
         title=_('Bug Tracker'),
         description=_('Where are bugs primarily tracked?'),

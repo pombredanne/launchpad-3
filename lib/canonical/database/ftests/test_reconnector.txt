@@ -40,9 +40,8 @@ Genuine (not connection related) errors still work normally, too.
     >>> cur.execute("SELECT garbage invalid sql;")
     Traceback (most recent call last):
     ...
-    ProgrammingError: ERROR:  syntax error at or near "invalid" at character 16
-    <BLANKLINE>
-    SELECT garbage invalid sql;
+    ProgrammingError: ERROR:  syntax error at or near "invalid"
+    ...
 
 Break the connection by stopping the proxy.
 
