@@ -31,13 +31,13 @@
       individuals.
     </summary>
     <screenshot>/+icing/code-tour-screenshot2.png</screenshot>
-    <callout>Both teams and individuals can register their branches of your
-      code, helping you to find all lines of development associated with your
-      project.
-    </callout>
     <callout>Launchpad Code Hosting integrates with Launchpad's other
       applications. If a branch fixes a bug or implements a blueprint,
       Launchpad links the two.
+    </callout>
+    <callout>Both teams and individuals can register their branches of your
+      code, helping you to find all lines of development associated with your
+      project.
     </callout>
     <callout>Each branch's owner can set the status of their branch. This
       status and the branch description help new developers choose which line

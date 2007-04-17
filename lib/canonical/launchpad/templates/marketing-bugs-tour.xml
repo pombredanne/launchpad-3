@@ -17,8 +17,8 @@
     <callout>Launchpad's openoffice.org (Ubuntu) community use Launchpad's bug
       tracker directly. They have assigned Matthias Klose to take
       responsibility for solving the bug as it affects them.
-    </callout>
-    <callout>The upstream OpenOffice.org community and Debian's neon26 team
+
+      The upstream OpenOffice.org community and Debian's neon26 team
       use external bug trackers. Launchpad tracks the status of the bug in
       their trackers but also links to their bug reports, making it easy to
       follow the detail of their progress.

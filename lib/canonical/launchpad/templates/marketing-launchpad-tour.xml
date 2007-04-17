@@ -88,14 +88,15 @@
 
   <screen>
     <title>Registering a project</title>
-    <summary>Registering your project with Launchpad is the first step to
-      improving your collaboration. It's free, quick and easy.
+    <summary>
+      <p>Registering your project with Launchpad is the first step to
+        improving your collaboration. It's free, quick and easy.
+      </p>
+      <p>Once you've told Launchpad about your project, you're ready to
+        start using each of its five tools.
+      </p>
     </summary>
     <screenshot>/+icing/launchpad-tour-screenshot4.png</screenshot>
-    <callout>
-      Once you've told Launchpad about your project, you're ready to start
-      using each of its five tools.
-    </callout>
-    <callout>Let's start with Code Hosting.</callout>
+    <transition>Let's start with Code Hosting.</transition>
   </screen>
 </tour>
