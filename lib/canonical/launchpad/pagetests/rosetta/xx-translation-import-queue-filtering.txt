@@ -7,7 +7,7 @@ Let's add 100 files to the queue so we have enough entries to play with.
   >>> import os.path
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/standalone/xx-translation-import-queue-filtering.tar.gz')
+  ...     'pagetests/rosetta/xx-translation-import-queue-filtering.tar.gz')
   >>> tarball = open(test_file_name)
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')

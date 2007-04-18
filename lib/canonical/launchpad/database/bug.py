@@ -200,6 +200,7 @@ class Bug(SQLBase):
                 return False
         return True
 
+    @property
     def affected_pillars(self):
         """See IBug."""
         result = set()

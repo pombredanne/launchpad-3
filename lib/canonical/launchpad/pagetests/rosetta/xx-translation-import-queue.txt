@@ -18,7 +18,7 @@ Time to do the upload...
     >>> import os.path
     >>> test_file_name = os.path.join(
     ...     os.path.dirname(canonical.launchpad.__file__),
-    ...     'pagetests/standalone/xx-translation-import-queue.tar.gz')
+    ...     'pagetests/rosetta/xx-translation-import-queue.tar.gz')
     >>> tarball = open(test_file_name, "rb")
     >>> upload = ff_owner_browser.getControl('File')
     >>> upload
@@ -211,7 +211,7 @@ Let's check tar.bz2 uploads. They work ;-)
 
   >>> test_file_name = os.path.join(
   ...     os.path.dirname(canonical.launchpad.__file__),
-  ...     'pagetests/standalone/xx-translation-import-queue.tar.bz2')
+  ...     'pagetests/rosetta/xx-translation-import-queue.tar.bz2')
   >>> tarball = open(test_file_name)
 
   >>> evo_owner_browser.getControl('File').add_file(
@@ -234,3 +234,5 @@ decent error message:
   ...     print tag
   <div...Your upload was ignored because you didn't select a file....
   ...Please select a file and try again.</div>...
+
+
