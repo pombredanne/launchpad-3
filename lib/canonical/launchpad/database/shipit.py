@@ -361,20 +361,26 @@ class ShippingRequest(SQLBase):
 
     def addressIsDuplicated(self):
         """See IShippingRequest"""
-        return self.getRequestsWithSameAddressFromOtherUsers().count() > 1
+        return self.getRequestsWithSameAddressFromOtherUsers().count() > 0
 
     def getRequestsWithSameAddressFromOtherUsers(self, limit=5):
         """See IShippingRequest"""
         query = """
-            normalized_address = %(address)s
-            AND country = %(country)s
-            AND recipient != %(recipient)s
-            AND status NOT IN (%(cancelled)s, %(denied)s)
+            SELECT ShippingRequest.id
+            FROM ShippingRequest
+            JOIN RequestedCDs ON ShippingRequest.id = RequestedCDs.request
+            WHERE normalized_address = %(address)s
+                AND country = %(country)s
+                AND recipient != %(recipient)s
+                AND status NOT IN (%(cancelled)s, %(denied)s)
+                AND RequestedCDs.distrorelease = %(release)s
             """ % sqlvalues(
                 address=self.normalized_address, recipient=self.recipient,
                 denied=ShippingRequestStatus.DENIED, country=self.country,
-                cancelled=ShippingRequestStatus.CANCELLED)
-        return ShippingRequest.select(query, limit=limit)
+                cancelled=ShippingRequestStatus.CANCELLED,
+                release=self.distrorelease)
+        return ShippingRequest.select(
+            "id IN (%s)" % query, limit=limit, orderBy='-daterequested')
 
 
 class ShippingRequestSet:
@@ -389,21 +395,19 @@ class ShippingRequestSet:
         except (SQLObjectNotFound, ValueError):
             return default
 
-    def processRequestsPendingSpecial(
-            self, status=ShippingRequestStatus.DENIED):
+    def processRequests(self, status, new_status):
         """See IShippingRequestSet"""
-        if status == ShippingRequestStatus.APPROVED:
+        if new_status == ShippingRequestStatus.APPROVED:
             action = 'approved'
             method_name = 'approve'
-        elif status == ShippingRequestStatus.DENIED:
+        elif new_status == ShippingRequestStatus.DENIED:
             action = 'denied'
             method_name = 'deny'
         else:
             raise AssertionError(
-                'status must be either APPROVED or DENIED: %r' % status)
+                'new_status must be APPROVED or DENIED: %r' % new_status)
 
-        requests = ShippingRequest.selectBy(
-            status=ShippingRequestStatus.PENDINGSPECIAL)
+        requests = ShippingRequest.selectBy(status=status)
         request_messages = []
         for request in requests:
             info = ("Request #%d, made by '%s' containing %d CDs\n(%s)"
@@ -413,8 +417,8 @@ class ShippingRequestSet:
             getattr(request, method_name)()
         template = get_email_template('shipit-mass-process-notification.txt')
         body = template % {
-            'requests_info': "\n".join(request_messages), 'action': action,
-            'pending_special': ShippingRequestStatus.PENDINGSPECIAL}
+            'requests_info': "\n".join(request_messages),
+            'action': action, 'status': status}
         to_addr = shipit_admins = config.shipit.admins_email_address
         from_addr = config.shipit.ubuntu_from_email_address
         subject = "Report of auto-%s requests" % action

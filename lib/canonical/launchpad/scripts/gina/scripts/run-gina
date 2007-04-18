@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SRV=/srv/launchpad.ubuntu.com
+SRV=/srv/staging.launchpad.net
 
 cd $SRV
 
