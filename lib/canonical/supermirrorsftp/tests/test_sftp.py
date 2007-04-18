@@ -211,7 +211,8 @@ class MockChecker(SSHPublicKeyDatabase):
     error_message = u'error message'
 
     def requestAvatarId(self, credentials):
-        return failure.Failure(UnauthorizedLogin('error message'))
+        return failure.Failure(
+            sftponly.UserDisplayedUnauthorizedLogin('error message'))
 
 
 class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
@@ -324,7 +325,8 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
         :return: Deferred. You must return this from your test.
         """
         d = self.assertFailure(
-            self.checker.requestAvatarId(creds), UnauthorizedLogin)
+            self.checker.requestAvatarId(creds),
+            sftponly.UserDisplayedUnauthorizedLogin)
         d.addCallback(
             lambda exception: self.assertEqual(str(exception), error_message))
         return d
@@ -349,18 +351,23 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
 
     def test_wrongKey(self):
         # When you sign into an existing account using the wrong key, you
-        # should be told that the key you're using doesn't match any of the
-        # keys that Launchpad has for that account.
+        # should *not* be informed of the wrong key. This is because SSH often
+        # tries several keys as part of normal operation.
 
         # Cheat a little and also don't provide a valid signature. This is OK
         # because the "no matching public key" failure occurs before the
         # "bad signature" failure.
         creds = SSHPrivateKey(self.valid_login, 'ssh-dss', 'invalid key',
                               None, None)
-        return self.assertLoginError(
-            creds,
-            "Your SSH key does not match any key registered for Launchpad "
-            "user %s" % (self.valid_login,))
+        d = self.assertFailure(
+            self.checker.requestAvatarId(creds),
+            UnauthorizedLogin)
+        d.addCallback(
+            lambda exception:
+            self.failIf(isinstance(exception,
+                                   sftponly.UserDisplayedUnauthorizedLogin),
+                        "Should not be a UserDisplayedUnauthorizedLogin"))
+        return d
 
 
 def test_suite():
