@@ -17,32 +17,33 @@ from canonical.archivepublisher.uploadpolicy import AbstractUploadPolicy
 from canonical.archivepublisher.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database import GPGKey, Person
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.ftests import (
+    import_public_test_keys, syncUpdate)
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IDistroReleaseSet)
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
     DistributionReleaseStatus, DistroReleaseQueueStatus,
-    PackagePublishingStatus, GPGKeyAlgorithm)
+    PackagePublishingStatus, PackagePublishingPocket)
 from canonical.testing import LaunchpadZopelessLayer
-from canonical.zeca.ftests.harness import ZecaTestSetup
 
 
 class BrokenUploadPolicy(AbstractUploadPolicy):
     """A broken upload policy, to test error handling."""
-    
+
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
         self.name = "broken"
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
 
-    def setDistroReleaseAndPocket(self, dr_name):
+    def checkUpload(self, upload):
         """Raise an exception upload processing is not expecting."""
         raise Exception("Exception raised by BrokenUploadPolicy for testing.")
 
 
-class TestUploadProcessor(unittest.TestCase):
-    """Functional tests for uploadprocessor.py."""
+class TestUploadProcessorBase(unittest.TestCase):
+    """Base class for functional tests over uploadprocessor.py."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -52,7 +53,7 @@ class TestUploadProcessor(unittest.TestCase):
         self.test_files_dir = os.path.join(config.root,
             "lib/canonical/archivepublisher/tests/data/suite")
 
-        self.keyserver_setup = False
+        import_public_test_keys()
 
         self.options = MockOptions()
         self.options.base_fsroot = self.queue_folder
@@ -66,32 +67,44 @@ class TestUploadProcessor(unittest.TestCase):
 
     def tearDown(self):
         rmtree(self.queue_folder)
-        if self.keyserver_setup:
-            ZecaTestSetup().tearDown()
 
-    def setupKeyserver(self):
-        """Set up the keyserver."""
-        ZecaTestSetup().setUp()
-        g = GPGKey(owner=Person.byName('kinnison'), keyid='20687895',
-                   fingerprint='961F4EB829D7D304A77477822BC8401620687895',
-                   keysize=1024, algorithm=GPGKeyAlgorithm.D, active=True,
-                   can_encrypt=True)
-        self.keyserver_setup = True
+    def assertLogContains(self, line):
+        """Assert if a given line is present in the log messages."""
+        self.assertTrue(line in self.log.lines)
 
     def setupBreezy(self):
+        """Create a fresh distrorelease in ubuntu.
+
+        Use *initialiseFromParent* procedure to create 'breezy'
+        on ubuntu based on the last 'breezy-autotest'.
+
+        Also sets 'changeslist' and 'nominatedarchindep' properly.
+        """
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = ubuntu['breezy-autotest']
-        from canonical.launchpad.database import DistroReleaseSet
-        drs = DistroReleaseSet()
-        breezy = drs.new(ubuntu, 'breezy', 'Breezy Badger',
-                         'The Breezy Badger', 'Black and White', 'Someone',
-                         '5.10', bat, bat.owner)
+        dr_set = getUtility(IDistroReleaseSet)
+        breezy = dr_set.new(
+            ubuntu, 'breezy', 'Breezy Badger',
+            'The Breezy Badger', 'Black and White', 'Someone',
+            '5.10', bat, bat.owner)
         breezy_i386 = breezy.newArch('i386', bat['i386'].processorfamily,
                                      True, breezy.owner)
         breezy.nominatedarchindep = breezy_i386
         breezy.changeslist = 'breezy-changes@ubuntu.com'
         breezy.initialiseFromParent()
         self.breezy = breezy
+
+
+class TestUploadProcessor(TestUploadProcessorBase):
+    """Basic tests on uploadprocessor class.
+
+    * Check if the rejection message is send even when an unexpected
+      exception occur when processing the upload.
+    * Check if known uploads targeted to a FROZEN distrorelease
+      end up in UNAPPROVED queue.
+
+    This test case is able to setup a fresh distrorelease in Ubuntu.
+    """
 
     def testRejectionEmailForUnhandledException(self):
         """Test there's a rejection email when nascentupload breaks.
@@ -150,11 +163,10 @@ class TestUploadProcessor(unittest.TestCase):
 
         See bug 58187.
         """
-        # Extra setup for breezy and Daniel's keys
-        self.setupKeyserver()
+        # Extra setup for breezy
         self.setupBreezy()
         self.layer.txn.commit()
-        
+
         # Set up the uploadprocessor with appropriate options and logger
         uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
@@ -169,11 +181,12 @@ class TestUploadProcessor(unittest.TestCase):
         uploadprocessor.processChangesFile(
             os.path.join(self.queue_folder, "incoming", "bar_1.0-1"),
             "bar_1.0-1_source.changes")
-        
+
         # Check it went ok to the NEW queue and all is going well so far.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        foo_bar = "Foo Bar <foo.bar@canonical.com>"
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
-        self.assertTrue(daniel in to_addrs)
+        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
         self.assertTrue(
             "NEW" in raw_msg, "Expected email containing NEW: %s" % raw_msg)
 
@@ -194,14 +207,13 @@ class TestUploadProcessor(unittest.TestCase):
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
         self.breezy.releasestatus = DistributionReleaseStatus.FROZEN
-
         self.layer.txn.commit()
-        
+
         # Place a newer version of bar into the queue.
         os.system("cp -a %s %s" %
             (os.path.join(self.test_files_dir, "bar_1.0-2"),
              os.path.join(self.queue_folder, "incoming")))
-        
+
         # Try to process it
         uploadprocessor.processChangesFile(
             os.path.join(self.queue_folder, "incoming", "bar_1.0-2"),
@@ -210,9 +222,11 @@ class TestUploadProcessor(unittest.TestCase):
         # Verify we get an email talking about awaiting approval.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
-        self.assertTrue(daniel in to_addrs)
+        foo_bar = "Foo Bar <foo.bar@canonical.com>"
+        self.assertEqual([e.strip() for e in to_addrs], [foo_bar, daniel])
         self.assertTrue("This upload awaits approval" in raw_msg,
-                        "Expected an 'upload awaits approval' email.")
+                        "Expected an 'upload awaits approval' email.\n"
+                        "Got:\n%s" % raw_msg)
 
         # And verify that the queue item is in the unapproved state.
         queue_items = self.breezy.getQueueItems(

@@ -45,13 +45,14 @@ above, failed being worst).
 
 __metaclass__ = type
 
-import os
 from email import message_from_string
+import os
+import shutil
 
 from canonical.launchpad.mail import sendmail
 from canonical.encoding import ascii_smash
 from canonical.archivepublisher.nascentupload import (
-    NascentUpload, UploadError)
+    NascentUpload, FatalUploadError)
 from canonical.archivepublisher.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 
@@ -62,7 +63,7 @@ __all__ = ['UploadProcessor']
 
 class UploadStatusEnum:
     """Possible results from processing an upload.
-    
+
     ACCEPTED: all goes well, we commit nascentupload's changes to the db
     REJECTED: nascentupload gives a well-formed rejection error,
               we send a rejection email and rollback.
@@ -75,7 +76,7 @@ class UploadStatusEnum:
 
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
-    
+
     def __init__(self, options, ztm, log):
         self.options = options
         self.ztm = ztm
@@ -83,7 +84,7 @@ class UploadProcessor:
 
     def processUploadQueue(self):
         """Search for uploads, and process them.
-        
+
 	Uploads are searched for in the 'incoming' directory inside the
         base_fsroot.
 
@@ -98,7 +99,7 @@ class UploadProcessor:
                 if not os.path.exists(full_subdir):
                     self.log.debug("Creating directory %s" % full_subdir)
                     os.mkdir(full_subdir)
-                
+
             fsroot = os.path.join(self.options.base_fsroot, "incoming")
             uploads_to_process = self.locateDirectories(fsroot)
             self.log.debug("Checked in %s, found %s"
@@ -110,7 +111,7 @@ class UploadProcessor:
         finally:
             self.log.debug("Rolling back any remaining transactions.")
             self.ztm.abort()
-            
+
     def processUpload(self, fsroot, upload):
         """Process an upload's changes files, and move it to a new directory.
 
@@ -129,14 +130,14 @@ class UploadProcessor:
                 upload, self.options.leafname))
             return
 
-        upload_path = os.path.join(fsroot, upload)        
+        upload_path = os.path.join(fsroot, upload)
         changes_files = self.locateChangesFiles(upload_path)
 
         # Keep track of the various results
         some_failed = False
         some_rejected = False
         some_accepted = False
-        
+
         for changes_file in changes_files:
             self.log.debug("Considering changefile %s" % changes_file)
             try:
@@ -153,7 +154,7 @@ class UploadProcessor:
                 self.log.error("Unhandled exception from processing an upload",
                                exc_info=True)
                 some_failed = True
-                
+
         if some_failed:
             destination = "failed"
         elif some_rejected:
@@ -174,7 +175,7 @@ class UploadProcessor:
         # PoppyInterface for the other locking place.
         fsroot_lock = GlobalLock(os.path.join(fsroot, ".lock"))
         try:
-            fsroot_lock.acquire()
+            fsroot_lock.acquire(blocking=True)
             dir_names = os.listdir(fsroot)
         finally:
             fsroot_lock.release()
@@ -193,7 +194,7 @@ class UploadProcessor:
             if filename.endswith(".changes"):
                 changes_files.append(filename)
         return changes_files
-                
+
     def processChangesFile(self, upload_path, changes_file):
         """Process a single changes file.
 
@@ -201,7 +202,7 @@ class UploadProcessor:
         to command-line options and the value in the .distro file beside
         the upload, if present), creating a NascentUpload object and calling
         its process method.
-        
+
         See nascentupload.py for the gory details.
 
         Returns a value from UploadStatusEnum, or re-raises an exception
@@ -225,15 +226,14 @@ class UploadProcessor:
 
         # Restore original value for self.options.distro
         self.options.distro = options_distro
-        
-        upload = NascentUpload(policy, upload_path, changes_file, self.log)
+
+        changesfile_path = os.path.join(upload_path, changes_file)
+        upload = NascentUpload(changesfile_path, policy, self.log)
 
         try:
-            self.ztm.begin()
-            self.log.info("Processing upload %s" % upload.changes_filename)
-
+            self.log.info("Processing upload %s" % upload.changes.filename)
             result = UploadStatusEnum.ACCEPTED
-            
+
             try:
                 upload.process()
             except UploadPolicyError, e:
@@ -241,7 +241,7 @@ class UploadProcessor:
                               "%s " % e)
                 self.log.debug("UploadPolicyError escaped upload.process",
                                exc_info=True)
-            except UploadError, e:
+            except FatalUploadError, e:
                 upload.reject("UploadError escaped upload.process: %s" % e)
                 self.log.debug("UploadError escaped upload.process",
                                exc_info=True)
@@ -257,8 +257,8 @@ class UploadProcessor:
                 # with no email.
                 self.log.exception("Unhandled exception processing upload")
                 upload.reject("Unhandled exception processing upload: %s" % e)
-                                
-            if upload.rejected:
+
+            if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
                 mails = upload.do_reject()
                 self.ztm.abort()
@@ -271,7 +271,7 @@ class UploadProcessor:
                                   "Aborting partial accept.")
                     self.ztm.abort()
                 self.sendMails(mails)
-                
+
             if self.options.dryrun:
                 self.log.info("Dry run, aborting transaction.")
                 self.ztm.abort()
@@ -291,7 +291,6 @@ class UploadProcessor:
         This includes moving the given upload directory and moving the
         matching .distro file, if it exists.
         """
-        
         if self.options.keep or self.options.dryrun:
             self.log.debug("Keeping contents untouched")
             return
@@ -302,7 +301,7 @@ class UploadProcessor:
             self.options.base_fsroot, subdir_name, pathname)
         self.log.debug("Moving upload directory %s to %s" %
             (upload, target_path))
-        os.rename(upload, target_path)
+        shutil.move(upload, target_path)
 
         distro_filename = upload + ".distro"
         if os.path.isfile(distro_filename):
@@ -310,16 +309,18 @@ class UploadProcessor:
                                        os.path.basename(distro_filename))
             self.log.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))
-            os.rename(distro_filename, target_path)
-                
+            shutil.move(distro_filename, target_path)
+
     def sendMails(self, mails):
         """Send the mails provided using the launchpad mail infrastructure."""
         for mail_text in mails:
             mail_message = message_from_string(ascii_smash(mail_text))
+
             if mail_message['To'] is None:
-                self.log.debug("Unable to parse message for rejection!")
-                self.log.debug("This will cause the sendmail() to assert.")
+                self.log.debug("Missing recipient: empty 'To' header")
                 print repr(mail_text)
+                continue
+
             mail_message['X-Katie'] = "Launchpad actually"
 
             logger = self.log.debug
@@ -329,7 +330,7 @@ class UploadProcessor:
             else:
                 sendmail(mail_message)
                 logger("Sent a mail:")
-                
+
             logger("   Subject: %s" % mail_message['Subject'])
             logger("   Recipients: %s" % mail_message['To'])
             logger("   Body:")

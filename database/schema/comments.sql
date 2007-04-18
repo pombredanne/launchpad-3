@@ -3,15 +3,29 @@
   table.
 */
 
+-- AnswerContact
+COMMENT ON TABLE AnswerContact IS 'Defines the answer contact for a given question target. The answer contact will be automatically notified about changes to any questions filed on the question target.';
+
 /* Branch */
 
 COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.whiteboard IS 'Notes on the current status of the branch';
+COMMENT ON COLUMN Branch.summary IS 'A single paragraph description of the branch';
+COMMENT ON COLUMN Branch.lifecycle_status IS 'Authors assesment of the branchs maturity';
+COMMENT ON COLUMN Branch.branch_home_page IS 'This column is unused';
+COMMENT ON COLUMN Branch.landing_target IS 'This column is unused, to be replaced with a BranchLandingTarget table';
+COMMENT ON COLUMN Branch.current_delta_url IS 'This column is unused';
+COMMENT ON COLUMN Branch.current_conflicts_url IS 'This column is unused';
+COMMENT ON COLUMN Branch.current_diff_adds IS 'This column is unused';
+COMMENT ON COLUMN Branch.current_diff_deletes IS 'This column is unused';
+COMMENT ON COLUMN Branch.stats_updated IS 'This column is unused';
 COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
 COMMENT ON COLUMN Branch.last_mirrored IS 'The time when the branch was last mirrored.';
 COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when it was last mirrored.';
 COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scanned.';
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
+COMMENT ON COLUMN Branch.mirror_request_time IS 'The time when a user requested that we mirror this branch (NULL if not requested). This will be set automatically by pushing to a hosted branch. Once mirrored, it will be set back to NULL.';
 
 /* BranchSubscription*/
 
@@ -53,8 +67,10 @@ COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
 COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
 COMMENT ON COLUMN BugTag.tag IS 'The text representation of the tag.';
 
-/* BugTask */
+/* OfficialBugTag */
+COMMENT ON TABLE OfficialBugTag IS 'Bug tags that have been officially endorced by this product''s or distribution''s lead';
 
+/* BugTask */
 COMMENT ON TABLE BugTask IS 'Links a given Bug to a particular (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.targetnamecache IS 'A cached value of the target name of this bugtask, to make it easier to sort and search on the target name.';
 COMMENT ON COLUMN BugTask.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
@@ -202,6 +218,11 @@ active.';
 COMMENT ON TABLE LaunchpadStatistic IS 'A store of system-wide statistics or other integer values, keyed by names. The names are unique and the values can be any integer. Each field has a place to store the timestamp when it was last updated, so it is possible to know how far out of date any given statistic is.';
 
 
+-- MentoringOffer
+COMMENT ON TABLE MentoringOffer IS 'An offer to provide mentoring if someone wa nts to help get a specific bug fixed or blueprint implemented. These offers are specifically associated with a team in which the offeror is a member, so it beco mes possible to encourage people who want to join a team to start by working on things that existing team members are willing to mentor.';
+COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer of mentoring is associated. We associate each offer of mentoring with a team, de signated as "the team which will most benefit from the bug fix or spec implement ation", and this then allows us to provide a list of work for which mentoring is available for prospective members of those teams. This is really the "onramp" i dea - the list is the "onramp" to membership in the relevant team.';
+
+
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
 COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who createed this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product. Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
@@ -221,6 +242,7 @@ COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of thi
 COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product.';
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
+COMMENT ON COLUMN Product.official_answers IS 'Whether or not this product upstream uses Answers officialy. This is useful to help indicate whether or not that a question will receive an answer.';
 COMMENT ON COLUMN Product.bugcontact IS 'Person who will be automatically subscribed to bugs targetted to this product';
 COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
@@ -353,6 +375,7 @@ COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. 
 COMMENT ON TABLE POTMsgSet IS 'POTMsgSet: This table is stores a collection of msgids without their translations and all kind of information associated to that set of messages that could be found in a potemplate file.';
 
 COMMENT ON COLUMN POTMsgSet.primemsgid IS 'The id of a pomgsid that identify this message set.';
+COMMENT ON COLUMN POTMsgSet.alternative_msgid IS 'The alternative (non-English-based) id of a pomgsid that identifies this message set.';
 COMMENT ON COLUMN POTMsgSet."sequence" IS 'The position of this message set inside the potemplate.';
 COMMENT ON COLUMN POTMsgSet.potemplate IS 'The potemplate where this message set is stored.';
 COMMENT ON COLUMN POTMsgSet.commenttext IS 'The comment text that is associated to this message set.';
@@ -370,6 +393,8 @@ COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName 
 COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.path IS 'The path to the .pot source file inside the tarball tree, including the filename.';
 COMMENT ON COLUMN POTemplate.from_sourcepackagename IS 'The sourcepackagename from where the last .pot file came (only if it\'s different from POTemplate.sourcepackagename)';
+COMMENT ON COLUMN POTemplate.source_file IS 'Reference to Librarian file storing the last uploaded template file.';
+COMMENT ON COLUMN POTemplate.source_file_format IS 'File format for the Librarian file referenced in "source_file" column.';
 
 -- POTemplateName
 COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';
@@ -384,23 +409,6 @@ COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of t
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
-
--- POSelection
-COMMENT ON TABLE POSelection IS 'This table captures the full set
-of all the translations ever submitted for a given pomsgset and pluralform.
-It also indicates which of those is currently active.';
-COMMENT ON COLUMN POSelection.pomsgset IS 'The messageset for
-which we are recording a selection.';
-COMMENT ON COLUMN POSelection.pluralform IS 'The pluralform of
-this selected translation.';
-COMMENT ON COLUMN POSelection.activesubmission IS 'The submission which made
-this the active translation in rosetta for this pomsgset and pluralform.';
-COMMENT ON COLUMN POSelection.publishedsubmission IS 'The submission in which
-we noted this as the current translation published in revision control (or
-in the public po files for this translation template, in the package or
-tarball or branch which is considered the source of it).';
-COMMENT ON COLUMN POSelection.reviewer IS 'The person that approved POSelection.activesubmission.';
-COMMENT ON COLUMN POSelection.date_reviewed IS 'When POSelection.activesubmission was reviewed.';
 
 -- POSubmission
 COMMENT ON TABLE POSubmission IS 'This table records the fact
@@ -422,6 +430,8 @@ translation. This indicates whether the translation was in a pofile that we
 parsed (probably one published in a package or branch or tarball), or was
 submitted through the web.';
 COMMENT ON COLUMN POSubmission.validationstatus IS 'Says whether or not we have validated this translation. Its value is specified by dbschema.TranslationValidationStatus, with 0 the value that says this row has not been validated yet.';
+COMMENT ON COLUMN POSubmission.active IS 'Whether this submission is being used in Rosetta.';
+COMMENT ON COLUMN POSubmission.published IS 'Whether this submission is the current translation published in revision control (or in the public po files for this translation template, in the package or tarball or branch which is considered the source of it).';
 
 -- POMsgSet
 COMMENT ON COLUMN POMsgSet.publishedfuzzy IS 'This indicates that this
@@ -440,7 +450,8 @@ same status for the last published pofile we pulled in.';
 COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
 Rosetta has an active translation for every expected plural form of this
 message set.';
-
+COMMENT ON COLUMN POMsgSet.reviewer IS 'The person who last reviewd the translations for this message.';
+COMMENT ON COLUMN POMsgSet.date_reviewed IS 'Last time this message was reviewed.';
 
 /* Sprint */
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -467,44 +478,44 @@ COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or dec
 COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
 
 
-/* Ticket */
-COMMENT ON TABLE Ticket IS 'A trouble ticket, or support request, for a distribution or for an application. Such tickets are created by end users who need support on a particular feature or package or product.';
-COMMENT ON COLUMN Ticket.assignee IS 'The person who has been assigned to resolve this support ticket. Note that there is no requirement that every ticket be assigned somebody. Anybody can chip in to help resolve a ticket, and if they think they have done so we call them the "answerer".';
-COMMENT ON COLUMN Ticket.answerer IS 'The person who last claimed to have "answered" this support ticket, giving a response that they believe should be sufficient to close the ticket. This will move the status of the ticket to "answered". Note that the only person who can actually set the status to "closed" (other than an admin) is the person who made the support request.';
-COMMENT ON COLUMN Ticket.answer IS 'The TicketMessage that was accepted by the submitter as the "answer" the request.';
-COMMENT ON COLUMN Ticket.product IS 'The upstream product to which this support request is related. Note that a support request MUST be linked either to a product, or to a distribution. In future, we may allow a request to be linked to both.';
-COMMENT ON COLUMN Ticket.distribution IS 'The distribution for which a support request was filed. Note that a request MUST be linked either to a product or a distribution, and in future, we may allow it to be linked to both.';
-COMMENT ON COLUMN Ticket.sourcepackagename IS 'An optional source package name. This only makes sense if the ticket is bound to a distribution. It then allows us to guess the correct upstream product, allowing the user to "publish this request upstream too".';
-COMMENT ON COLUMN Ticket.datelastquery IS 'The date we last saw a comment from the requester (owner).';
-COMMENT ON COLUMN Ticket.datelastresponse IS 'The date we last saw a comment from somebody other than the requester.';
-COMMENT ON COLUMN Ticket.dateaccepted IS 'The date we "confirmed" or "accepted" this support request. It is usually set to the date of the first response by someone other than the requester. This allows us to track the time between first request and first response.';
-COMMENT ON COLUMN Ticket.datedue IS 'The date this ticket is "due", if such a date can be established. Usually this will be set automatically on the basis of a support contract SLA commitment.';
-COMMENT ON COLUMN Ticket.dateanswered IS 'The date this ticket was last "answered", in the sense of receiving a comment from someone other than the requester that they considered sufficient to close the ticket.';
-COMMENT ON COLUMN Ticket.dateclosed IS 'The date the requester marked this ticket CLOSED.';
-COMMENT ON COLUMN Ticket.language IS 'The language of the ticket''s title and description.';
-COMMENT ON COLUMN Ticket.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the ticket. So its a useful way for projects to add their own semantics or metadata to the support tracker.';
+/* Question */
+COMMENT ON TABLE Question IS 'A question, or support request, for a distribution or for an application. Such questions are created by end users who need support on a particular feature or package or product.';
+COMMENT ON COLUMN Question.assignee IS 'The person who has been assigned to resolve this question. Note that there is no requirement that every question be assigned somebody. Anybody can chip in to help resolve a question, and if they think they have done so we call them the "answerer".';
+COMMENT ON COLUMN Question.answerer IS 'The person who last claimed to have "solved" this support question, giving a response that the owner believe should be sufficient to close the question. This will move the status of the question to "SOLVED". Note that the only person who can actually set the status to SOLVED is the person who asked the question.';
+COMMENT ON COLUMN Question.answer IS 'The QuestionMessage that was accepted by the submitter as the "answer" to the question';
+COMMENT ON COLUMN Question.product IS 'The upstream product to which this quesiton is related. Note that a quesiton MUST be linked either to a product, or to a distribution.';
+COMMENT ON COLUMN Question.distribution IS 'The distribution for which a question was filed. Note that a request MUST be linked either to a product or a distribution.';
+COMMENT ON COLUMN Question.sourcepackagename IS 'An optional source package name. This only makes sense if the question is bound to a distribution.';
+COMMENT ON COLUMN Question.datelastquery IS 'The date we last saw a comment from the requester (owner).';
+COMMENT ON COLUMN Question.datelastresponse IS 'The date we last saw a comment from somebody other than the requester.';
+COMMENT ON COLUMN Question.dateaccepted IS 'The date we "confirmed" or "accepted" this question. It is usually set to the date of the first response by someone other than the requester. This allows us to track the time between first request and first response.';
+COMMENT ON COLUMN Question.datedue IS 'The date this question is "due", if such a date can be established. Usually this will be set automatically on the basis of a support contract SLA commitment.';
+COMMENT ON COLUMN Question.dateanswered IS 'The date this question was last "answered", in the sense of receiving a comment from someone other than the requester that the requester considered sufficient to close the question.';
+COMMENT ON COLUMN Question.dateclosed IS 'The date the requester marked this question CLOSED.';
+COMMENT ON COLUMN Question.language IS 'The language of the question''s title and description.';
+COMMENT ON COLUMN Question.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the question. So its a useful way for projects to add their own semantics or metadata to the Answer Tracker.';
 
-/* TicketBug */
+/* QuestionBug */
 
-COMMENT ON TABLE TicketBug IS 'A link between a ticket and a bug, showing that the bug is somehow related to this support request.';
+COMMENT ON TABLE QuestionBug IS 'A link between a question and a bug, showing that the bug is somehow related to this question.';
 
-/* TicketMessage */
+/* QuestionMessage */
 
-COMMENT ON TABLE TicketMessage IS 'A link between a support ticket and a message. This means that the message will be displayed on the ticket page.';
-COMMENT ON COLUMN TicketMessage.action IS 'The action on the ticket that was done with this message. This is a value from the TicketAction enum.';
-COMMENT ON COLUMN TicketMessage.new_status IS 'The status of the ticket after this message.';
+COMMENT ON TABLE QuestionMessage IS 'A link between a question and a message. This means that the message will be displayed on the question page.';
+COMMENT ON COLUMN QuestionMessage.action IS 'The action on the question that was done with this message. This is a value from the QuestionAction enum.';
+COMMENT ON COLUMN QuestionMessage.new_status IS 'The status of the question after this message.';
 
-/* TicketReopening */
+/* QuestionReopening */
 
-COMMENT ON TABLE TicketReopening IS 'A record of the times when a ticket was re-opened. In each case we store the time that it happened, the person who did it, and the person who had previously answered / rejected the ticket.';
-COMMENT ON COLUMN TicketReopening.reopener IS 'The person who reopened the ticket.';
-COMMENT ON COLUMN TicketReopening.answerer IS 'The person who was previously listed as the answerer of the ticket.';
-COMMENT ON COLUMN TicketReopening.priorstate IS 'The state of the ticket before it was reopened. You can reopen a ticket that is ANSWERED, or CLOSED, or REJECTED.';
+COMMENT ON TABLE QuestionReopening IS 'A record of the times when a question was re-opened. In each case we store the time that it happened, the person who did it, and the person who had previously answered / rejected the question.';
+COMMENT ON COLUMN QuestionReopening.reopener IS 'The person who reopened the question.';
+COMMENT ON COLUMN QuestionReopening.answerer IS 'The person who was previously listed as the answerer of the question.';
+COMMENT ON COLUMN QuestionReopening.priorstate IS 'The state of the question before it was reopened. You can reopen a question that is ANSWERED, or CLOSED, or REJECTED.';
 
 
-/* TicketSubscription */
+/* QuestionSubscription */
 
-COMMENT ON TABLE TicketSubscription IS 'A subscription of a person to a particular support request.';
+COMMENT ON TABLE QuestionSubscription IS 'A subscription of a person to a particular question.';
 
 
 /* DistroReleaseLanguage */
@@ -570,6 +581,8 @@ COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically s
 COMMENT ON COLUMN Distribution.security_contact IS 'The person or team who handles security-related issues in the distribution.';
 COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribution uses Rosetta for its official translation team and coordination.';
 COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
+COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product upstream uses Answers officialy.';
+
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
 
 /* DistroRelease */
@@ -654,20 +667,6 @@ COMMENT ON COLUMN SourcePackageRelease.dsc_standards_version IS 'DSC standards v
 COMMENT ON COLUMN SourcePackageRelease.dsc_format IS 'DSC format version (such as "1.0").';
 COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed binary-names produce by this source.';
 
-/* SourcePackagePublishing and BinaryPackagePublishing */
-
-COMMENT ON COLUMN SourcePackagePublishing.datepublished IS 'This column contains the timestamp at which point the SourcePackageRelease progressed from a pending publication to being published in the respective DistroRelease';
-
-COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'This column is only used when the the publishing record is PendingRemoval. It indicates the earliest time that this record can be removed. When a publishing record is removed, the files it embodies are made candidates for removal from the pool.';
-
-COMMENT ON COLUMN SourcePackagePublishing.datepublished IS 'This column contains the timestamp at which point the Build progressed from a pending publication to being published in the respective DistroRelease';
-
-COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'This column is only used when the the publishing record is PendingRemoval. It indicates the earliest time that this record can be removed. When a publishing record is removed, the files it embodies are made candidates for removal from the pool.';
-
-COMMENT ON COLUMN SourcePackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
-
-COMMENT ON COLUMN BinaryPackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
-
 -- SecureBinaryPackagePublishingHistory
 COMMENT ON TABLE SecureBinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.binarypackagerelease IS 'The binarypackage being published.';
@@ -741,15 +740,9 @@ COMMENT ON COLUMN KarmaCache.Person IS 'The person which performed the actions o
 COMMENT ON COLUMN KarmaCache.Category IS 'The category of the actions.';
 COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of this category performed by this person on this context (product/distribution).';
 COMMENT ON COLUMN Karma.product IS 'The Product on which a person performed an action that resulted on this karma.';
+COMMENT ON COLUMN Karma.product IS 'The Project to which this Product belongs.  An entry on this table with a non-NULL Project and a NULL Product represents the total karma of the person across all products of that project..';
 COMMENT ON COLUMN Karma.distribution IS 'The Distribution on which a person performed an action that resulted on this karma.';
 COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a person performed an action that resulted on this karma.';
-
--- KarmaPersonCategoryCacheView
-COMMENT ON VIEW KarmaPersonCategoryCacheView IS 'A View to store a cached value of a person\'s karma points, grouped by the action category.';
-COMMENT ON COLUMN KarmaPersonCategoryCacheView.id IS 'The id in this view is the smallest id of all KarmaCache entries for a given person and category. We need to do this because SQLObject requires an id column and we use a GROUP BY when creating the view.';
-COMMENT ON COLUMN KarmaPersonCategoryCacheView.Person IS 'The person which performed the actions of this category, and thus got the karma.';
-COMMENT ON COLUMN KarmaPersonCategoryCacheView.Category IS 'The category of the actions.';
-COMMENT ON COLUMN KarmaPersonCategoryCacheView.KarmaValue IS 'The karma points of all actions of this category performed by this person.';
 
 -- Person
 COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
@@ -811,8 +804,6 @@ COMMENT ON COLUMN MessageChunk.sequence IS 'Order of a particular chunk. Chunks 
 -- Comments on Lucille views
 COMMENT ON VIEW SourcePackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a sourcepackagerelease and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
 COMMENT ON VIEW BinaryPackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a binarypackage and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
-COMMENT ON VIEW SourcePackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying SourcePackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
-COMMENT ON VIEW BinaryPackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying BinaryPackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
 
 -- SourcePackageRelease
 
@@ -1029,31 +1020,9 @@ COMMENT ON COLUMN LibraryFileAlias.mimetype IS 'The mime type of the file. E.g. 
 COMMENT ON COLUMN LibraryFileAlias.expires IS 'The expiry date of this file. If NULL, this item may be removed as soon as it is no longer referenced. If set, the item will not be removed until this date. Once the date is passed, the file may be removed from disk even if this item is still being referenced (in which case content.deleted will be true)';
 COMMENT ON COLUMN LibraryFileAlias.last_accessed IS 'Roughly when this file was last retrieved from the Librarian. Initially set to this item''s creation date.';
 
--- PackagePublishing
-
-COMMENT ON VIEW BinaryPackagePublishing IS 'PackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes binarypackages in distroarchreleases. This view represents the publishing of each binarypackage not yet deleted from the distroarchrelease.';
-COMMENT ON COLUMN BinaryPackagePublishing.binarypackagerelease IS 'The binarypackage which is being published';
-COMMENT ON COLUMN BinaryPackagePublishing.distroarchrelease IS 'The distroarchrelease in which the binarypackage is published';
-COMMENT ON COLUMN BinaryPackagePublishing.component IS 'The component in which the binarypackage is published';
-COMMENT ON COLUMN BinaryPackagePublishing.section IS 'The section in which the binarypackage is published';
-COMMENT ON COLUMN BinaryPackagePublishing.priority IS 'The priority at which the binarypackage is published';
-COMMENT ON COLUMN BinaryPackagePublishing.scheduleddeletiondate IS 'The datetime at which this publishing entry is scheduled to be removed from the distroarchrelease';
-COMMENT ON COLUMN BinaryPackagePublishing.status IS 'The current status of the packagepublishing record. For example "PUBLISHED" "PENDING" or "PENDINGREMOVAL"';
-
--- SourcePackagePublishing
-
-COMMENT ON VIEW SourcePackagePublishing IS 'SourcePackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes sourcepackagereleases in distroreleases. This table represents the currently active publishing of each sourcepackagerelease. For history see SecureSourcePackagePublishingHistory.';
-COMMENT ON COLUMN SourcePackagePublishing.distrorelease IS 'The distrorelease which is having the sourcepackagerelease being published into it.';
-COMMENT ON COLUMN SourcePackagePublishing.sourcepackagerelease IS 'The sourcepackagerelease being published into the distrorelease.';
-COMMENT ON COLUMN SourcePackagePublishing.status IS 'The current status of the sourcepackage publishing record. For example "PUBLISHED" "PENDING" or "PENDINGREMOVAL"';
-COMMENT ON COLUMN SourcePackagePublishing.component IS 'The component in which the sourcepackagerelease is published';
-COMMENT ON COLUMN SourcePackagePublishing.section IS 'The section in which the sourcepackagerelease is published';
-COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'The datetime at which this publishing entry is scheduled to be removed from the distrorelease.';
-COMMENT ON COLUMN SourcePackagePublishing.datepublished IS 'THIS COLUMN IS PROBABLY UNUSED';
-
 -- SourcePackageReleaseFile
 
-COMMENT ON TABLE SourcePackageReleaseFile IS 'SourcePackageReleaseFile: A soyuz source package release file. This table links sourcepackagerelease records to the files which comprise the input.';
+COMMENT ON TABLE SourcePackageReleaseFile IS 'SourcePackageReleaseFile: A soyuz source package release file. This table links sourcepackagereleasehistory records to the files which comprise the input.';
 COMMENT ON COLUMN SourcePackageReleaseFile.libraryfile IS 'The libraryfilealias embodying this file';
 COMMENT ON COLUMN SourcePackageReleaseFile.filetype IS 'The type of the file. E.g. TAR, DIFF, DSC';
 COMMENT ON COLUMN SourcePackageReleaseFile.sourcepackagerelease IS 'The sourcepackagerelease that this file belongs to';
@@ -1277,6 +1246,8 @@ COMMENT ON COLUMN ShippingRequest.addressline2 IS 'The address (second line) to 
 COMMENT ON COLUMN ShippingRequest.organization IS 'The organization requesting the CDs.';
 COMMENT ON COLUMN ShippingRequest.recipientdisplayname IS 'Used as the recipient\'s name when a request is made by a ShipIt admin in behalf of someone else';
 COMMENT ON COLUMN ShippingRequest.shipment IS 'The corresponding Shipment record for this request, generated on export.';
+COMMENT ON COLUMN ShippingRequest.normalized_address IS 'The normalized
+address of this request. It is maintained by a trigger because it''s safer than hacking sqlobject''s internals (specially because we sometimes update data behind sqlobject''s back).';
 
 -- RequestedCDs
 COMMENT ON TABLE RequestedCDs IS 'The requested CDs of a Shipping Request.';
@@ -1319,6 +1290,7 @@ COMMENT ON COLUMN ShippingRun.requests_count IS 'A cache of the number of reques
 -- Language
 COMMENT ON TABLE Language IS 'A human language.';
 COMMENT ON COLUMN Language.code IS 'The ISO 639 code for this language';
+COMMENT ON COLUMN Language.uuid IS 'Mozilla language pack unique ID';
 COMMENT ON COLUMN Language.englishname IS 'The english name for this language';
 COMMENT ON COLUMN Language.nativename IS 'The name of this language in the language itself';
 COMMENT ON COLUMN Language.pluralforms IS 'The number of plural forms this language has';
@@ -1385,6 +1357,7 @@ COMMENT ON COLUMN MirrorProbeRecord.date_created IS 'The date and time the probe
 COMMENT ON TABLE TranslationImportQueueEntry IS 'Queue with translatable resources pending to be imported into Rosetta.';
 COMMENT ON COLUMN TranslationImportQueueEntry.path IS 'The path (included the filename) where this file was stored when we imported it.';
 COMMENT ON COLUMN TranslationImportQueueEntry.content IS 'The file content that is being imported.';
+COMMENT ON COLUMN TranslationImportQueueEntry.format IS 'The file format of the content that is being imported.';
 COMMENT ON COLUMN TranslationImportQueueEntry.importer IS 'The person that did the import.';
 COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp when the import was done.';
 COMMENT ON COLUMN TranslationImportQueueEntry.distrorelease IS 'The distribution release related to this import.';
@@ -1395,9 +1368,6 @@ COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile wher
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
 COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the import: 1 Approved, 2 Imported, 3 Deleted, 4 Failed, 5 Needs Review, 6 Blocked.';
-
--- SupportContact
-COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given ticket target. The support contact will be automatically subscribed to every support request filed on the ticket target.';
 
 -- PersonalPackageArchive
 COMMENT ON TABLE PersonalPackageArchive IS 'Contains the information about the archives generated based on personal packages.';
@@ -1450,4 +1420,17 @@ COMMENT ON COLUMN POFileTranslator.date_last_touched IS 'When the most recent su
 COMMENT ON TABLE NameBlacklist IS 'A list of regular expressions used to blacklist names.';
 COMMENT ON COLUMN NameBlacklist.regexp IS 'A Python regular expression. It will be compiled with the IGNORECASE, UNICODE and VERBOSE flags. The Python search method will be used rather than match, so ^ markers should be used to indicate the start of a string.';
 COMMENT ON COLUMN NameBlacklist.comment IS 'An optional comment on why this regexp was entered. It should not be displayed to non-admins and its only purpose is documentation.';
+
+-- ScriptActivity
+COMMENT ON TABLE ScriptActivity IS 'Records of successful runs of scripts ';
+COMMENT ON COLUMN ScriptActivity.name IS 'The name of the script';
+COMMENT ON COLUMN ScriptActivity.hostname IS 'The hostname of the machine where the script was run';
+COMMENT ON COLUMN ScriptActivity.date_started IS 'The date at which the script started';
+COMMENT ON COLUMN ScriptActivity.date_completed IS 'The date at which the script completed';
+
+-- RevisionProperty
+COMMENT ON TABLE RevisionProperty IS 'A collection of name and value pairs that appear on a revision.';
+COMMENT ON COLUMN RevisionProperty.revision IS 'The revision which has properties.';
+COMMENT ON COLUMN RevisionProperty.name IS 'The name of the property.';
+COMMENT ON COLUMN RevisionProperty.value IS 'The value of the property.';
 

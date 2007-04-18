@@ -487,7 +487,16 @@ class POHeader(dict, POMessage):
                         POSyntaxWarning(self._lineno, 'Invalid header entry.'))
                     continue
                 field = field.strip()
-                value = self[field]
+                try:
+                    value = self[field]
+                except KeyError:
+                    # The header has an entry with ':' but otherwise
+                    # unrecognized: it happens with plural form formulae
+                    # split into two lines, yet containing C-style ':' operator
+                    # log it and continue with next entry.
+                    logging.warning(
+                        POSyntaxWarning(self._lineno, 'Invalid header entry.'))
+                    continue
                 text.append(u'%s: %s' % (field, self[field]))
                 printed.add(field)
             for field in self.keys():
@@ -802,8 +811,22 @@ class POParser(object):
         output = ''
         while string:
             if string[0] == '"':
-                # Reached the end of the quoted string.
-                string = string[1:]
+                # Reached the end of the quoted string.  It's rare, but there
+                # may be another quoted string on the same line.  It should be
+                # suffixed to what we already have, with any whitespace
+                # between the strings removed.
+                string = string[1:].lstrip()
+                if not string:
+                    # End of line, end of string: the normal case
+                    break
+                if string[0] == '"':
+                    # Start of a new string.  We've already swallowed the
+                    # closing quote and any intervening whitespace; now
+                    # swallow the re-opening quote and go on as if the string
+                    # just went on normally
+                    string = string[1:]
+                    continue
+
                 # if there is any non-string data afterwards, raise an
                 # exception
                 if string and not string.isspace():

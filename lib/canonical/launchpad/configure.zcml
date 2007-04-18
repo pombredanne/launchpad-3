@@ -13,12 +13,6 @@
   <include package="canonical.launchpad.xmlrpc" />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IProductSet"
-    path_expression="string:products"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"
     path_expression="string:people"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
@@ -44,7 +38,7 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.IProjectSet"
-    path_expression="string:projects"
+    path_expression="string:projectgroups"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
@@ -105,9 +99,8 @@
       />
 
   <browser:resourceDirectory
-      name="MochiKit"
-      directory="../../contrib/MochiKit"
+      name="PlotKit"
+      directory="../../contrib/PlotKit"
       />
-
 
 </configure>

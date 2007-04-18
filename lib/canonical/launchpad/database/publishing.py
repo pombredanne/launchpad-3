@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 __all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
-           'SourcePackagePublishingView', 'BinaryPackagePublishingView',
            'SecureSourcePackagePublishingHistory',
            'SecureBinaryPackagePublishingHistory',
            'SourcePackagePublishingHistory',
@@ -19,18 +18,21 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW, nowUTC
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import (
+    PackagePublishingPriority, PackagePublishingStatus,
+    PackagePublishingPocket)
+
 from canonical.launchpad.interfaces import (
-    ISourcePackagePublishingView, IBinaryPackagePublishingView,
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
     PoolFileOverwriteError)
-from canonical.lp.dbschema import (
-    EnumCol, PackagePublishingPriority, PackagePublishingStatus,
-    PackagePublishingPocket)
+
 
 
 # XXX cprov 20060818: move it away, perhaps archivepublisher/pool.py
@@ -86,7 +88,7 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey="Distribution",
-                              unique=False, default=None,
+                              unique=False,
                               notNull=True)
 
     sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
@@ -96,25 +98,22 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
         dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
-                                         unique=False, default=None,
-                                         notNull=True)
+                                         unique=False, notNull=True)
 
     componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True)
+                              notNull=True)
 
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True)
+                                  notNull=True)
 
     distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True)
+                                  notNull=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               default=None, notNull=True,
-                               schema=PackagePublishingStatus)
+                               notNull=True, schema=PackagePublishingStatus)
 
     pocket = EnumCol(dbName='pocket', unique=False,
-                     default=None, notNull=True,
-                     schema=PackagePublishingPocket)
+                     notNull=True, schema=PackagePublishingPocket)
 
 
 class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
@@ -130,8 +129,8 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey="Distribution",
-                              unique=False, default=None,
-                              notNull=True, immutable=True)
+                              unique=False, notNull=True,
+                              immutable=True)
 
     binarypackagepublishing = ForeignKey(dbName='binarypackagepublishing',
         foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
@@ -140,84 +139,27 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
         dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
-                                         unique=False, default=None,
-                                         notNull=True, immutable=True)
+                                         unique=False, notNull=True,
+                                         immutable=True)
 
     componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True, immutable=True)
+                              notNull=True, immutable=True)
 
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True, immutable=True)
+                                  notNull=True, immutable=True)
 
     distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True, immutable=True)
+                                  notNull=True, immutable=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               default=None, notNull=True, immutable=True,
+                               notNull=True, immutable=True,
                                schema=PackagePublishingStatus)
 
     architecturetag = StringCol(dbName='architecturetag', unique=False,
-                                default=None, notNull=True, immutable=True)
+                                notNull=True, immutable=True)
 
     pocket = EnumCol(dbName='pocket', unique=False,
-                     default=None, notNull=True,
-                     schema=PackagePublishingPocket)
-
-
-class SourcePackagePublishingView(SQLBase):
-    """Source package information published and thus due for putting on disk.
-    """
-
-    implements(ISourcePackagePublishingView)
-
-    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True, immutable=True)
-    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True, immutable=True)
-    componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True, immutable=True)
-    sectionname = StringCol(dbName='sectionname', unique=False, default=None,
-                            notNull=True, immutable=True)
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey="Distribution",
-                              unique=False, default=None,
-                              notNull=True, immutable=True)
-    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               default=None, notNull=True, immutable=True,
-                               schema=PackagePublishingStatus)
-    pocket = EnumCol(dbName='pocket', unique=False, default=None,
-                     notNull=True, immutable=True,
-                     schema=PackagePublishingPocket)
-
-
-class BinaryPackagePublishingView(SQLBase):
-    """Binary package information published and thus due for putting on disk.
-    """
-
-    implements(IBinaryPackagePublishingView)
-
-    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True)
-    binarypackagename = StringCol(dbName='binarypackagename', unique=False,
-                                  default=None, notNull=True)
-    componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True)
-    sectionname = StringCol(dbName='sectionname', unique=False, default=None,
-                            notNull=True)
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey="Distribution",
-                              unique=False, default=None,
-                              notNull=True)
-    # XXX: this should really be an EnumCol but the publisher needs to be
-    # updated to cope with the change. -- kiko, 2006-08-16
-    priority = IntCol(dbName='priority', unique=False, default=None,
-                      notNull=True)
-    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               default=None, notNull=True,
-                               schema=PackagePublishingStatus)
-    pocket = EnumCol(dbName='pocket', unique=False, default=None,
-                     notNull=True, immutable=True,
-                     schema=PackagePublishingPocket)
+                     notNull=True, schema=PackagePublishingPocket)
 
 
 class ArchiveSafePublisherBase:
@@ -233,7 +175,7 @@ class ArchiveSafePublisherBase:
             # already published (usually when we use -C
             # publish-distro.py option)
             self.status = PackagePublishingStatus.PUBLISHED
-            self.datepublished = nowUTC
+            self.datepublished = UTC_NOW
 
 
 class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
@@ -447,6 +389,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """see ISourcePackagePublishingHistory."""
         return self.distrorelease.distribution.getSourcePackageRelease(
             self.sourcepackagerelease
+            )
+
+    @property
+    def meta_distroreleasesourcepackagerelease(self):
+        """see ISourcePackagePublishingHistory."""
+        return self.distrorelease.getSourcePackageRelease( 
+            self.sourcepackagerelease 
             )
 
     @property

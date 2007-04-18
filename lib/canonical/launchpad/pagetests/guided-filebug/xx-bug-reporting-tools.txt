@@ -10,7 +10,6 @@ the bug to Launchpad.
     >>> extra_filebug_data = open(
     ...     os.path.join(testfiles, 'extra_filebug_data.msg'))
 
-
     NOTE: The form names are used instead of their labels here, because
           external tools depend on them.
     >>> anon_browser.open('http://launchpad.dev/+storeblob')
@@ -53,6 +52,8 @@ information will be added to the bug automatically.
 After the user fills in the summary and click on the button, we'll still
 be on the same URL, with the token present.
 
+    >>> user_browser.getControl('Summary').value
+    ''
     >>> user_browser.getControl('Summary').value = 'A new bug'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url == filebug_url
@@ -77,7 +78,7 @@ information specified in the extra filebug data.
     ...     'A bug description.')
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...'
+    'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...'
 
 Some extra text was appended to the description.
 
@@ -96,14 +97,14 @@ Two attachments were added.
     attachment1
     Attachment description.
 
-And four comments were added, including the two empty comments that were
+And three comments were added, including the empty comment that was
 created for the attachments.
 
     >>> def print_comments(page):
     ...     main_content = find_main_content(page)
     ...     for comment in main_content('div', 'boardCommentBody'):
-    ...         if comment.li:
-    ...             print "Attachment: %s" % comment.li.a.renderContents()
+    ...         for li_tag in comment('li'):
+    ...             print "Attachment: %s" % li_tag.a.renderContents()
     ...         print comment.div.renderContents()
     ...         print "-"*40
     >>> print_comments(user_browser.contents)
@@ -112,7 +113,6 @@ created for the attachments.
     <p>This should be added as another comment.</p>
     ----------------------------------------
     Attachment: attachment1
-    ----------------------------------------
     Attachment: Attachment description.
     ----------------------------------------
 
@@ -138,7 +138,7 @@ bug.
     ...     'An advanced bug description.')
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
-    'http://launchpad.dev/firefox/+bug/...'
+    'http://bugs.launchpad.dev/firefox/+bug/...'
 
     >>> print find_tag_by_id(
     ...     user_browser.contents, 'bug-description').renderContents()
@@ -154,22 +154,41 @@ Two attachments were added.
     attachment1
     Attachment description.
 
-And four comments were added, including the two empty comments that were
+And three comments were added, including the empty comment that was
 created for the attachments.
 
-    >>> def print_comments(page):
-    ...     main_content = find_main_content(page)
-    ...     for comment in main_content('div', 'boardCommentBody'):
-    ...         if comment.li:
-    ...             print "Attachment: %s" % comment.li.a.renderContents()
-    ...         print comment.div.renderContents()
-    ...         print "-----------------------------------------"
     >>> print_comments(user_browser.contents)
     <p>This should be added as a comment.</p>
-    -----------------------------------------
+    ----------------------------------------
     <p>This should be added as another comment.</p>
-    -----------------------------------------
+    ----------------------------------------
     Attachment: attachment1
-    -----------------------------------------
     Attachment: Attachment description.
-    -----------------------------------------
+    ----------------------------------------
+
+=== Initial bug summary ===
+
+If the uploaded message contains a Subject field in the initial headers,
+that will be used to automatically fill in a suggested title.
+
+    >>> extra_filebug_data_with_subject = open(
+    ...     os.path.join(testfiles, 'extra_filebug_data_subject.msg'))
+    >>> anon_browser.open('http://launchpad.dev/+storeblob')
+    >>> anon_browser.getControl(name='field.blob').add_file(
+    ...     extra_filebug_data_with_subject, 'not/important', 'not.important')
+    >>> anon_browser.getControl(name='FORM_SUBMIT').click()
+    >>> blob_token = anon_browser.headers['X-Launchpad-Blob-Token']
+
+    >>> user_browser.open(
+    ...    'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug/'
+    ...     '%s' % blob_token)
+
+    >>> user_browser.getControl('Summary').value
+    'Initial bug summary'
+
+The user can of course change the summary if he wants to.
+
+    >>> user_browser.getControl('Summary').value = 'Another summary'
+    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl('Summary').value
+    'Another summary'

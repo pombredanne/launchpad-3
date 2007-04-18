@@ -6,6 +6,8 @@ __metaclass__ = type
 
 __all__ = [
     'DistroReleaseNavigation',
+    'DistroReleaseDynMenu',
+    'DistroReleaseSOP',
     'DistroReleaseFacets',
     'DistroReleaseView',
     'DistroReleaseEditView',
@@ -22,6 +24,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
     enabled_with_permission, GetitemNavigation, stepthrough)
+from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.launchpad.interfaces import (
     IDistroReleaseLanguageSet, IDistroRelease, ICountry, IDistroReleaseSet,
@@ -29,6 +32,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -72,6 +76,29 @@ class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return self.context.getBinaryPackage(name)
 
 
+class DistroReleaseSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.fullreleasename
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: list architectures, alphabetically
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        # XXX mpt 20061004: list releases, most recent first
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
+
+
 class DistroReleaseFacets(StandardLaunchpadFacets):
 
     usedfor = IDistroRelease
@@ -82,11 +109,11 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'support', 'packaging', 
+    links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
              'add_port', 'add_milestone', 'admin', 'builds', 'queue']
 
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -97,30 +124,30 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
-        text = 'Change Registrant'
+        text = 'Change registrant'
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def add_milestone(self):
-        text = 'Add Milestone'
+        text = 'Add milestone'
         summary = 'Register a new milestone for this release'
         return Link('+addmilestone', text, summary, icon='add')
 
     def packaging(self):
-        text = 'Upstream Links'
+        text = 'Upstream links'
         return Link('+packaging', text, icon='info')
 
     # A search link isn't needed because the distro release overview
     # has a search form.
 
-    def support(self):
-        text = 'Request Support'
-        url = canonical_url(self.context.distribution) + '/+addticket'
+    def answers(self):
+        text = 'Ask a question'
+        url = canonical_url(self.context.distribution) + '/+addquestion'
         return Link(url, text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def add_port(self):
-        text = 'Add Port'
+        text = 'Add architecture'
         return Link('+addport', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
@@ -129,12 +156,11 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         return Link('+admin', text, icon='edit')
 
     def builds(self):
-        text = 'View Builds'
+        text = 'Show builds'
         return Link('+builds', text, icon='info')
 
-    @enabled_with_permission('launchpad.AnyPerson')
     def queue(self):
-        text = 'View Uploads'
+        text = 'Show uploads'
         return Link('+queue', text, icon='info')
 
 
@@ -145,10 +171,10 @@ class DistroReleaseBugsMenu(ApplicationMenu):
     links = ['new', 'cve']
 
     def new(self):
-        return Link('+filebug', 'Report a Bug', icon='add')
+        return Link('+filebug', 'Report a bug', icon='add')
 
     def cve(self):
-        return Link('+cve', 'CVE Reports', icon='cve')
+        return Link('+cve', 'CVE reports', icon='cve')
 
 
 class DistroReleaseSpecificationsMenu(ApplicationMenu):
@@ -158,24 +184,24 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
     links = ['roadmap', 'table', 'setgoals', 'listdeclined',]
 
     def listall(self):
-        text = 'Show All'
+        text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
 
     def listapproved(self):
-        text = 'Show Approved'
+        text = 'List approved blueprints'
         return Link('+specs?acceptance=accepted', text, icon='info')
 
     def listproposed(self):
-        text = 'Show Proposed'
+        text = 'List proposed blueprints'
         return Link('+specs?acceptance=proposed', text, icon='info')
 
     def listdeclined(self):
-        text = 'Show Declined'
+        text = 'List declined blueprints'
         summary = 'Show the goals which have been declined'
         return Link('+specs?acceptance=declined', text, icon='info')
 
     def setgoals(self):
-        text = 'Set Goals'
+        text = 'Set release goals'
         summary = 'Approve or decline feature goals that have been proposed'
         return Link('+setgoals', text, icon='info')
 
@@ -320,4 +346,11 @@ class DistroReleaseAddView(AddView):
 
     def nextURL(self):
         return self._nextURL
+
+
+class DistroReleaseDynMenu(DynMenu):
+
+    def mainMenu(self):
+        for architecture in self.context.architectures:
+            yield self.makeBreadcrumbLink(architecture)
 

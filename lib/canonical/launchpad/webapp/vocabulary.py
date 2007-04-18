@@ -13,11 +13,15 @@ __all__ = [
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
     'NamedSQLObjectHugeVocabulary',
+    'sortkey_ordered_vocab_factory',
+    'CountableIterator',
+    'BatchedCountableIterator',
     'vocab_factory'
 ]
 
+import operator
+
 from sqlobject import AND, CONTAINSSTRING
-from sqlos.interfaces import ISelectResults
 
 from zope.interface import implements, Attribute
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -61,7 +65,7 @@ class CountableIterator:
 
         Arguments:
             - count: number of items in the iterator
-            - iterator: the iterable we wrap
+            - iterator: the iterable we wrap; normally a ISelectResults
             - item_wrapper: a callable that will be invoked for each
               item we return.
         """
@@ -74,12 +78,23 @@ class CountableIterator:
         return self._count
 
     def __iter__(self):
+        """Iterate over my items.
+
+        This is used when building the <select> menu of options that is
+        generated when we post a form.
+        """
+        # XXX: we can actually raise an AssertionError here because we
+        # shouldn't need to iterate over all the results, ever; this is
+        # currently here because popup.py:matches() doesn't slice into
+        # the results, though it should. -- kiko, 2007-01-18
         for item in self._iterator:
             yield self._item_wrapper(item)
 
     def __getitem__(self, arg):
-        # This is actually required because BatchNavigator will attempt
-        # to slice into us; we just pass on the buck.
+        """Return a slice or item of my collection.
+
+        This is used by BatchNavigator when it slices into us; we just
+        pass on the buck down to our _iterator."""
         for item in self._iterator[arg]:
             yield self._item_wrapper(item)
 
@@ -88,8 +103,39 @@ class CountableIterator:
         # should probably change that to either check for the presence
         # of a count() method, or for a simpler interface than
         # ISelectResults, but I'm not going to do that today.
-        #   -- kiko, 2006-01-16
+        #   -- kiko, 2007-01-16
         return self._count
+
+
+class BatchedCountableIterator(CountableIterator):
+    """A wrapping iterator with a hook to create descriptions for its terms."""
+    # XXX: note that this class doesn't use the item_wrapper at all. I
+    # hate compatibility shims. We can't remove it from the __init__
+    # because it is always supplied by NamedSQLObjectHugeVocabulary, and
+    # we don't want child classes to have to reimplement it.  This
+    # probably indicates we need to reconsider how these classes are
+    # split.. -- kiko, 2007-01-18
+    def __iter__(self):
+        """See CountableIterator"""
+        return iter(self.getTermsWithDescriptions(self._iterator))
+
+    def __getitem__(self, arg):
+        """See CountableIterator"""
+        item = self._iterator[arg]
+        if isinstance(arg, slice):
+            return self.getTermsWithDescriptions(item)
+        else:
+            return self.getTermsWithDescriptions([item])[0]
+
+    def getTermsWithDescriptions(self, results):
+        """Return SimpleTerms with their titles properly fabricated.
+
+        This is a hook method that allows subclasses to implement their
+        own [complex] calculations for what the term's title might be.
+        It takes an iterable set of results based on that searchForTerms
+        of the corresponding vocabulary does.
+        """
+        raise NotImplementedError
 
 
 class SQLObjectVocabularyBase:
@@ -119,7 +165,7 @@ class SQLObjectVocabularyBase:
     # searchForTerms for popup functionality so I have chosen to just do
     # that. It is possible that a better solution would be to have the
     # search functionality produce a new vocabulary restricted to the
-    # desired subset. -- kiko, 2006-01-16
+    # desired subset. -- kiko, 2007-01-16
     def searchForTerms(self, query=None):
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
@@ -155,14 +201,14 @@ class SQLObjectVocabularyBase:
         if zisinstance(obj, SQLBase):
             clause = self._table.q.id == obj.id
             if self._filter:
-                # XXX: this code is untested -- kiko, 2006-01-16
+                # XXX: this code is untested -- kiko, 2007-01-16
                 clause = AND(clause, self._filter)
             found_obj = self._table.selectOne(clause)
             return found_obj is not None and found_obj == obj
         else:
             clause = self._table.q.id == int(obj)
             if self._filter:
-                # XXX: this code is untested -- kiko, 2006-01-16
+                # XXX: this code is untested -- kiko, 2007-01-16
                 clause = AND(clause, self._filter)
             found_obj = self._table.selectOne(clause)
             return found_obj is not None
@@ -214,14 +260,20 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     Provides all methods required by IHugeVocabulary, although it
     doesn't actually specify this interface since it may not actually
     be huge and require the custom widgets.
-
-    May still want to override toTerm to provide a nicer title and
-    search to search on titles or descriptions.
     """
     _orderBy = 'name'
 
     def toTerm(self, obj):
-        return SimpleTerm(obj.id, obj.name, obj.name)
+        """See SQLObjectVocabularyBase.
+
+        This implementation uses name as a token instead of the object's
+        ID, and tries to be smart about deciding to present an object's
+        title if it has one.
+        """
+        if getattr(obj, "title", None) is None:
+            return SimpleTerm(obj, obj.name, obj.name)
+        else:
+            return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
         clause = self._table.q.name == token
@@ -248,15 +300,36 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
     _orderBy = 'name'
     displayname = None
+    # The iterator class will be used to wrap the results; its iteration
+    # methods should return SimpleTerms, as the reference implementation
+    # CountableIterator does.
+    iterator = CountableIterator
 
     def __init__(self, context=None):
         NamedSQLObjectVocabulary.__init__(self, context)
         if self.displayname is None:
             self.displayname = 'Select %s' % self.__class__.__name__
 
+    def search(self, query):
+        # XXX: this is a transitional shim; we're going to get rid of
+        # search() altogether, but for now we've only done it for the
+        # NamedSQLObjectHugeVocabulary. -- kiko, 2007-01-17
+        raise NotImplementedError
 
-# TODO: Make DBSchema classes provide an interface, so we can adapt IDBSchema
-# to IVocabulary
+    def searchForTerms(self, query):
+        if not query:
+            return self.emptySelectResults()
+
+        query = query.lower()
+        clause = CONTAINSSTRING(self._table.q.name, query)
+        if self._filter:
+            clause = AND(clause, self._filter)
+        results = self._table.select(clause, orderBy=self._orderBy)
+        return self.iterator(results.count(), results, self.toTerm)
+
+
+# TODO: Make DBSchema classes provide an interface, so we can directly
+# adapt IDBSchema to IVocabulary
 def vocab_factory(schema, noshow=[]):
     """Factory for IDBSchema -> IVocabulary adapters.
 
@@ -276,3 +349,17 @@ def vocab_factory(schema, noshow=[]):
         return SimpleVocabulary.fromItems(items)
     return factory
 
+def sortkey_ordered_vocab_factory(schema, noshow=[]):
+    """Another factory for IDBSchema -> IVocabulary.
+
+    This function returns a callable object that creates a vocabulary
+    from a dbschema ordered by that schema's sortkey.
+    """
+    def factory(context, schema=schema, noshow=noshow):
+        """Adapt IDBSchema to IVocabulary."""
+        items = [(item.title, item)
+                 for item in sorted(
+                     schema.items, key=operator.attrgetter('sortkey'))
+                 if item not in noshow]
+        return SimpleVocabulary.fromItems(items)
+    return factory

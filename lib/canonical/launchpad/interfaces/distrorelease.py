@@ -14,14 +14,15 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
-    IHasOwner, IHasDrivers, IBugTarget, ISpecificationGoal)
+    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
+    ISpecificationGoal)
 
-from canonical.lp.dbschema import DistroReleaseQueueStatus
 from canonical.launchpad.validators.email import valid_email
 
 from canonical.launchpad import _
 
-class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
+class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
+                     ISpecificationGoal):
     """A specific release of an operating system distribution."""
     id = Attribute("The distrorelease's unique number.")
     name = TextLine(
@@ -61,6 +62,7 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         description=_("The Parent Distribution Release."), required=True,
         vocabulary='DistroRelease')
     owner = Attribute("Owner")
+    date_created = Attribute("The date this release was registered.")
     driver = Choice(
         title=_("Driver"),
         description=_(
@@ -72,7 +74,6 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         title=_("Changeslist"), required=True,
         description=_("The changes list address for the distrorelease."),
         constraint=valid_email)
-    state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
@@ -86,8 +87,12 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
     nominatedarchindep = Attribute(
         "Distroarchrelease designed to build architeture independent "
         "packages whithin this distrorelease context.")
-    milestones = Attribute(
-        'The milestones associated with this distrorelease.')
+    milestones = Attribute(_(
+        "The visible release milestones associated with this distrorelease, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All release milestones associated with this distrorelease, ordered "
+        "by date expected."))
     drivers = Attribute(
         'A list of the people or teams who are drivers for this release. '
         'This list is made up of any drivers or owners from this '
@@ -143,26 +148,17 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         IDistroReleaseSourcePackageRelease instances
         """
 
-    def traverse(name):
-        """Traverse across a distrorelease in Launchpad. This looks for
-        special URL items, like +sources or +packages, then goes on to
-        traverse using __getitem__."""
-
     def __getitem__(archtag):
         """Return the distroarchrelease for this distrorelease with the
         given architecturetag.
         """
 
-    def updateStatistics():
+    def updateStatistics(ztm):
         """Update all the Rosetta stats for this distro release."""
 
     def updatePackageCount():
         """Update the binary and source package counts for this distro
         release."""
-
-    def findSourcesByName(name):
-        """Return an iterator over source packages with a name that matches
-        this one."""
 
     def getSourcePackage(name):
         """Return a source package in this distro release by name.
@@ -193,16 +189,14 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         sourcepackagerelease is an ISourcePackageRelease.
         """
 
-    def findBinariesByName(name):
-        """Return an iterator over binary packages with a name that matches
-        this one."""
-
-    def getPublishedReleases(sourcepackage_or_name, pocket=None,
+    def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
                              include_pending=False, exclude_pocket=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
 
         If pocket is not specified, we look in all pockets.
+
+        If version is not specified, return packages with any version.
 
         if exclude_pocket is specified we exclude results matching that pocket.
 
@@ -235,11 +229,11 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         """
 
     def createUploadedSourcePackageRelease(
-        sourcepackagename, version, maintainer, dateuploaded, builddepends,
+        sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
         changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries):
+        dsc_binaries, dateuploaded=None):
         """Create an uploads SourcePackageRelease
 
         Set this distrorelease set to be the uploadeddistrorelease.
@@ -247,7 +241,7 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         All arguments are mandatory, they are extracted/built when
         processing and uploaded source package:
 
-         * dateuploaded: timestamp, usually UTC_NOW
+         * dateuploaded: timestamp, if not provided will be UTC_NOW
          * sourcepackagename: ISourcePackageName
          * version: string, a debian valid version
          * maintainer: IPerson designed as package maintainer
@@ -338,14 +332,19 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         DistroReleaseBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket, changesfilename, changesfilecontent):
+    def createQueueEntry(pocket, changesfilename, changesfilecontent,
+                         signingkey=None):
         """Create a queue item attached to this distrorelease and the given
         pocket.
 
         The default state is NEW, sorted sqlobject declaration, any
         modification should be performed via Queue state-machine.
+
         The changesfile argument should be the text of the .changes for this
         upload. The contents of this may be used later.
+
+        'signingkey' is the IGPGKey used to sign the changesfile or None if
+        the changesfile is unsigned.
         """
 
     def newArch(architecturetag, processorfamily, official, owner):
@@ -383,7 +382,7 @@ class IDistroRelease(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
           in the initialisation of a derivative.
         """
 
-    def copyMissingTranslationsFromParent(ztm=None):
+    def copyMissingTranslationsFromParent():
         """Copy any translation done in parent that we lack.
 
         If there is another translation already added to this one, we ignore

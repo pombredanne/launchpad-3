@@ -5,10 +5,6 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>
-        &ldquo;<tal:branch replace="context/displayname">Name</tal:branch>&rdquo;
-        branch
-      </h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -19,61 +15,52 @@
 
 <div metal:fill-slot="main">
 
+  <h1>&#8220;<tal:branch replace="context/displayname" />&#8221; branch</h1>
+
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
     notice goes here
   </p>
 
-  <p class="highlighted" tal:condition="context/summary"
-     tal:content="context/summary">
+  <table tal:condition="context/url">
+    <tal:comment condition="nothing">
+      <!-- This is a mirror branch, display two URLs -->
+    </tal:comment>
+    <caption style="margin-top:1ex" class="discreet">
+      These URLs are intended for use with the
+      <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
+    </caption>
+    <tbody>
+      <tr><th>Location:</th><td tal:content="context/url" /></tr>
+      <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
+    </tbody>
+  </table>
+
+  <table tal:condition="not:context/url">
+    <tal:comment condition="nothing">
+      <!-- This is a hosted or import branch, one URL -->
+    </tal:comment>
+    <caption style="margin-top:1ex" class="discreet">
+      This URL is intended for use with the
+      <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
+    </caption>
+    <tbody>
+      <tr>
+	<th>Hosted on Launchpad:</th>
+	<td tal:content="view/supermirror_url" />
+      </tr>
+    </tbody>
+  </table>
+
+  <p tal:condition="context/summary" tal:content="context/summary">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
   </p>
 
-  <p class="highlighted" tal:condition="not:context/summary">
-    <i>This branch has no summary.</i>
-  </p>
-
-  <tal:comment condition="nothing">
-    <!-- Branch URLs -->
-  </tal:comment>
-  <tal:pull-branch condition="context/url">
-    <tal:comment condition="nothing">
-      <!-- This is a mirror branch, display two URLs -->
-    </tal:comment>
-    <div>
-      <b>Location:</b>
-      <span class="lesser" tal:content="context/url">
-        http://example.com/bzr/foo/foo.dev
-      </span>
-    </div>
-    <div>
-      <b>Mirror:</b>
-      <span class="lesser" tal:content="view/supermirror_url">
-        http://bazaar.launchpad.net/~user/product/branch
-      </span>
-    </div>
-    <p class="discreet lesser">
-      These URLs are intended for use with the
-      <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
-    </p>
-  </tal:pull-branch>
-
   <tal:hosted-branch condition="not:context/url">
     <tal:comment condition="nothing">
-      <!-- This is an upload branch, one URL and upload directions -->
+      <!-- This is a hosted branch, display upload directions -->
     </tal:comment>
-    <div>
-      <b>Hosted on Launchpad:</b>
-      <span class="lesser" tal:content="view/supermirror_url" class="lesser">
-        http://bazaar.launchpad.net/~user/product/branch
-      </span>
-    </div>
-    <p class="discreet lesser">
-      This URL is intended for use with the
-      <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
-    </p>
-
     <tal:not-logged-in condition="not:view/user">
       <tal:comment condition="nothing">
         <!-- The user is not logged in -->
@@ -109,7 +96,7 @@
           <a tal:attributes="href context/owner/fmt:url"
              tal:content="context/owner/browsername">Team</a>
           can upload to this branch.
-          <a href="http://code.launchpad.dev/~landscape-developers/+join">Join
+          <a tal:attributes="href string:${context/owner/fmt:url}/+join">Join
             the team</a>.
         </p>
       </tal:cannot-upload>
@@ -118,33 +105,42 @@
         <tal:comment condition="nothing">
           <!-- The user is logged in and can upload to the branch -->
         </tal:comment>
-        <div id="upload-directions">
+        <p id="upload-directions">
           You can <b>upload</b> to this branch at:
-          <span class="lesser" tal:content="view/upload_url">
-            sftp://name12@bazaar.canonical.com/~name12/gnome-terminal/pushed
+          <span tal:content="view/upload_url">
+            sftp://name12@bazaar.launchpad.net/~name12/gnome-terminal/pushed
           </span>
-        </div>
+        </p>
         <tal:comment condition="nothing">
           <!-- Directions to set the SSH key -->
         </tal:comment>
         <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
           To authenticate with the Launchpad branch upload service, you need
-          to <a href="http://code.launchpad.dev/~name12/+editsshkeys">
+          to <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
             register a SSH key </a>.
         </p>
       </tal:can-upload>
     </tal:logged-in>
+    <tal:comment condition="nothing">
+      <!-- End of upload directions -->
+    </tal:comment>
   </tal:hosted-branch>
 
   <tal:comment condition="nothing">
     <!-- XXX This style attribute is evil, but bold text makes the mirror error
-    difficult to read. Checked with mpt about that. - David Allouche 2006-04-09
-    -->
+    difficult to read. Checked with mpt about that.
+    - David Allouche 2006-04-09 -->
   </tal:comment>
-  <p tal:condition="context/mirror_failures"
+  <p tal:condition="view/mirror_of_ssh" id="mirror-of-ssh"
        class="warning message" style="font-weight: normal">
-    Launchpad could not mirror this branch at
-    <span tal:replace="context/last_mirror_attempt/fmt:datetime" />.
+    Launchpad cannot mirror this branch because its URL uses sftp or bzr+ssh.
+  </p>
+  <p tal:condition="view/show_mirror_failure" id="mirror-failure"
+       class="warning message" style="font-weight: normal">
+    Launchpad could not mirror this branch
+    <span
+      tal:attributes="title context/last_mirror_attempt/fmt:datetime"
+      tal:content="context/last_mirror_attempt/fmt:displaydate" />.
     <span tal:condition="context/mirror_status_message">
       The error was:
       <span tal:replace="context/mirror_status_message">Error 1</span>
@@ -154,39 +150,51 @@
     </span>
   </p>
 
-  <p class="highlighted lesser" tal:condition="context/whiteboard">
-    <b>Whiteboard:</b>
-    <span id="branch-whiteboard-value"
-      tal:content="context/whiteboard">whiteboard</span>
-  </p>
+  <tal:whiteboard condition="context/whiteboard">
+    <h2>Whiteboard</h2>
+    <div id="branch-whiteboard-value"
+      tal:content="structure context/whiteboard/fmt:text-to-html">
+      Whiteboard text goes here.
+    </div>
+  </tal:whiteboard>
 
-  <h2>Recent revisions</h2>
+  <h2 style="clear: both;">Recent revisions</h2>
 
   <p tal:condition="not:context/revision_count">
-    This branch has not been scanned for revisions yet, or no revisions were
-    found on the last scan. Branches are scanned at least once a day.
+    <tal:not-mirrored condition="not:context/last_mirrored">
+      <tal:mirror condition="context/url">
+        This branch has not been mirrored yet.
+      </tal:mirror>
+      <tal:no-mirror condition="not:context/url">
+        This branch has not been published yet.
+      </tal:no-mirror>
+    </tal:not-mirrored>
+    <tal:mirrored condition="context/last_mirrored">
+      <tal:not-scanned condition="not:context/last_scanned">
+        This branch has not been scanned yet.
+      </tal:not-scanned>
+      <tal:scanned condition="context/last_scanned">
+        This branch is empty.
+      </tal:scanned>
+    </tal:mirrored>
   </p>
 
   <tal:history-available condition="context/revision_count">
-  <table class="listing">
-    <thead>
-      <tr>
-        <th colspan="2">Revision</th>
-        <th tal:condition="view/user">Author</th>
-        <th>Message</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="rev_no context/latest_revisions">
-        <td tal:content="rev_no/sequence">1</td>
-        <td tal:content="rev_no/revision/revision_date/fmt:date">2005-10-05</td>
-        <td tal:condition="view/user"
-            tal:content="rev_no/revision/revision_author/name"
-            >John Doe &lt;jdoe@example.com&gt;</td>
-        <td tal:content="rev_no/revision/log_body">The revision commit message.</td>
-      </tr>
-    </tbody>
-  </table>
+  <ol>
+    <li tal:repeat="rev_no context/latest_revisions"
+        tal:attributes="value rev_no/sequence; id string:rev${rev_no/sequence}">
+      <div>
+        By <strong tal:content="rev_no/revision/revision_author/name">
+          John Doe &lt;john.doe@example.com&gt;</strong> <span
+            tal:attributes="title rev_no/revision/revision_date/fmt:datetime"
+            tal:content="rev_no/revision/revision_date/fmt:displaydate"
+            >2005-10-05 14:34:22 WST</span>
+      </div>
+      <p tal:replace="structure rev_no/revision/log_body/fmt:text-to-html">
+        The revision commit message.
+      </p>
+    </li>
+  </ol>
   </tal:history-available>
 
   <tal:related-bugs condition="context/related_bugs">
@@ -236,7 +244,7 @@
   <ul>
     <li>Mirror branches are primarily hosted somewhere else on the internet.
       You can register a mirror branch from the page of a person or of a
-      product. Launchpad will create a mirror of this branch and pull changes
+      project. Launchpad will create a mirror of this branch and pull changes
       every day from the URL provided in the branch details.</li>
 
     <li>Upload branches are primarily hosted on Launchpad. You can create an
@@ -252,8 +260,8 @@
     or upload data, you can reassign a branch to a team.</p>
 
   <p>The URL of the branch on <code>bazaar.launchpad.net</code> is based on the
-    short name of the registrant, product and branch. If you change any of
-    those short names or assign the branch to a different product or person or
+    short name of the registrant, project and branch. If you change any of
+    those short names or assign the branch to a different project or person or
     team, the URL will change.</p>
 
   <p>Subscribing to a branch will make it appear in your personal branch
@@ -273,3 +281,4 @@
 
 </body>
 </html>
+<!-- 1-0 done -->

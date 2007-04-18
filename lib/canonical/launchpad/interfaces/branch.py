@@ -5,9 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
-    'IBranchLifecycleFilter'
+    'IBranchDelta',
+    'IBranchLifecycleFilter',
+    'IBranchBatchNavigator',
     ]
 
 from zope.interface import Interface, Attribute
@@ -20,28 +23,49 @@ from canonical.lp.dbschema import (BranchLifecycleStatus,
                                    BranchLifecycleStatusFilter)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Summary, Whiteboard
+from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
-from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 
-class BranchUrlField(TextLine):
 
-    def _validate(self, url):
+DEFAULT_BRANCH_STATUS_IN_LISTING = (
+    BranchLifecycleStatus.NEW,
+    BranchLifecycleStatus.EXPERIMENTAL,
+    BranchLifecycleStatus.DEVELOPMENT,
+    BranchLifecycleStatus.MATURE)
+
+
+class BranchURIField(URIField):
+
+    def _validate(self, value):
         # import here to avoid circular import
         from canonical.launchpad.webapp import canonical_url
-        url = url.rstrip('/')
-        TextLine._validate(self, url)
-        if IBranch.providedBy(self.context) and self.context.url == url:
-            return # url was not changed
-        if (url + '/').startswith(config.launchpad.supermirror_root):
+        from canonical.launchpad.webapp.uri import URI
+
+        super(BranchURIField, self)._validate(value)
+        # URIField has already established that we have a valid URI
+        uri = URI(value)
+        supermirror_root = URI(config.launchpad.supermirror_root)
+        launchpad_domain = config.launchpad.vhosts.mainsite.hostname
+        if (supermirror_root.contains(uri)
+            or uri.underDomain(launchpad_domain)):
             message = _(
                 "Don't manually register a bzr branch on "
-                "<code>bazaar.launchpad.net</code>. Create it by SFTP, and it "
-                "is registered automatically.")
+                "<code>%s</code>. Create it by SFTP, and it "
+                "is registered automatically." % uri.host)
             raise LaunchpadValidationError(message)
-        branch = getUtility(IBranchSet).getByUrl(url)
+
+        if IBranch.providedBy(self.context) and self.context.url == str(uri):
+            return # url was not changed
+
+        if uri.path == '/':
+            message = _(
+                "URLs for branches cannot point to the root of a site.")
+            raise LaunchpadValidationError(message)
+
+        branch = getUtility(IBranchSet).getByUrl(str(uri))
         if branch is not None:
             message = _(
                 "The bzr branch <a href=\"%s\">%s</a> is already registered "
@@ -49,6 +73,10 @@ class BranchUrlField(TextLine):
             raise LaunchpadValidationError(
                 message, canonical_url(branch), branch.displayname)
 
+
+class IBranchBatchNavigator(ITableBatchNavigator):
+    """A marker interface for registering the appropriate branch listings."""
+    
 
 class IBranch(IHasOwner):
     """A Bazaar branch."""
@@ -67,22 +95,23 @@ class IBranch(IHasOwner):
         title=_('Summary'), required=False, description=_("A "
         "single-paragraph description of the branch. This will be "
         "displayed on the branch page."))
-    url = BranchUrlField(
+    url = BranchURIField(
         title=_('Branch URL'), required=True,
+        allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
+        allow_userinfo=False,
+        allow_query=False,
+        allow_fragment=False,
+        trailing_slash=False,
         description=_("The URL where the Bazaar branch is hosted. This is "
             "the URL used to checkout the branch. The only branch format "
             "supported is that of the Bazaar revision control system, see "
-            "www.bazaar-vcs.org for more information."),
-        constraint=valid_webref)
+            "www.bazaar-vcs.org for more information."))
 
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
     mirror_status_message = Text(
         title=_('The last message we got when mirroring this branch '
                 'into supermirror.'), required=False, readonly=False)
-    started_at = Int(title=_('Started At'), required=False,
-        description=_("The number of the first revision"
-                      " to display on that branch."))
 
     # People attributes
     """Product owner, it can either a valid Person or Team
@@ -99,12 +128,6 @@ class IBranch(IHasOwner):
         title=_('Product'), required=False, vocabulary='Product',
         description=_("The product this branch belongs to."))
     product_name = Attribute("The name of the product, or '+junk'.")
-    branch_product_name = Attribute(
-        "The product name specified within the branch.")
-    product_locked = Bool(
-        title=_("Product Locked"),
-        description=_("Whether the product name specified within the branch "
-                      " is overriden by the product name set in Launchpad."))
 
     # Display attributes
     unique_name = Attribute(
@@ -116,16 +139,12 @@ class IBranch(IHasOwner):
 
 
     # Home page attributes
-    home_page = TextLine(
+    home_page = URIField(
         title=_('Web Page'), required=False,
+        allowed_schemes=['http', 'https', 'ftp'],
+        allow_userinfo=False,
         description=_("The URL of a web page describing the branch, "
-                      "if there is such a page."), constraint=valid_webref)
-    branch_home_page = Attribute(
-        "The home page URL specified within the branch.")
-    home_page_locked = Bool(
-        title=_("Home Page Locked"),
-        description=_("Whether the home page specified within the branch "
-                      " is overriden by the home page set in Launchpad."))
+                      "if there is such a page."))
 
     # Stats and status attributes
     lifecycle_status = Choice(
@@ -140,28 +159,7 @@ class IBranch(IHasOwner):
         " Abandoned: no longer considered relevant by the author."
         " New: unspecified maturity."))
 
-    landing_target = Choice(
-        title=_('Landing Target'), vocabulary='Branch',
-        required=False, default=None,
-        description=_(
-        "The target branch the author would like to see this branch merged "
-        "into eventually"))
-
-    current_delta_url = Attribute(
-        "URL of a page showing the delta produced "
-        "by merging this branch into the landing branch.")
-    current_diff_adds = Attribute(
-        "Count of lines added in merge delta.")
-    current_diff_deletes = Attribute(
-        "Count of lines deleted in the merge delta.")
-    current_conflicts_url = Attribute(
-        "URL of a page showing the conflicts produced "
-        "by merging this branch into the landing branch.")
-    current_activity = Attribute("Current branch activity.")
-    stats_updated = Attribute("Last time the branch stats were updated.")
-
     # Mirroring attributes
-
     last_mirrored = Datetime(
         title=_("Last time this branch was successfully mirrored."),
         required=False)
@@ -193,7 +191,6 @@ class IBranch(IHasOwner):
         description=_("The number of revisions in the branch")
         )
 
-    cache_url = Attribute("Private mirror of the branch, for internal use.")
     warehouse_url = Attribute(
         "URL for accessing the branch by ID. "
         "This is for in-datacentre services only and allows such services to "
@@ -209,12 +206,19 @@ class IBranch(IHasOwner):
     spec_links = Attribute("Specifications linked to this branch")
 
     # Joins
-    revision_history = Attribute("The sequence of revisions in that branch.")
+    revision_history = Attribute(
+        """The sequence of BranchRevision for the mainline of that branch.
+
+        They are ordered with the most recent revision first, and the list
+        only contains those in the "leftmost tree", or in other words
+        the revisions that match the revision history from bzrlib for this
+        branch.
+        """)
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
-    def has_subscription(person):
-        """Is this person subscribed to the branch?"""
+    date_created = Datetime(
+        title=_('Date Created'), required=True, readonly=True)
 
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
@@ -223,31 +227,34 @@ class IBranch(IHasOwner):
         """Revisions in the history that are more recent than timestamp."""
 
     # subscription-related methods
-    def subscribe(person):
+    def subscribe(person, notification_level, max_diff_lines):
         """Subscribe this person to the branch.
 
         :return: new or existing BranchSubscription."""
 
+    def getSubscription(person):
+        """Return the BranchSubscription for this person."""
+
+    def hasSubscription(person):
+        """Is this person subscribed to the branch?"""
+
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
 
-    # revision number manipulation
-    def getRevisionNumber(sequence):
-        """Gets the RevisionNumber for the given sequence number.
+    def getBranchRevision(sequence):
+        """Gets the BranchRevision for the given sequence number.
 
-        If no such RevisionNumber exists, None is returned.
+        If no such BranchRevision exists, None is returned.
         """
 
-    def createRevisionNumber(sequence, revision):
-        """Create a RevisionNumber mapping sequence to revision."""
+    def createBranchRevision(sequence, revision):
+        """Create a new BranchRevision for this branch."""
 
-    def truncateHistory(from_rev):
-        """Truncate the history of the given branch.
+    def getTipRevision():
+        """Returns the Revision associated with the last_scanned_id.
 
-        RevisionNumber objects with sequence numbers greater than or
-        equal to from_rev are destroyed.
-
-        Returns True if any RevisionNumber objects were destroyed.
+        Will return None if last_scanned_id is None, or if the id
+        is not found (as in a ghost revision).
         """
 
     def updateScannedDetails(revision_id, revision_count):
@@ -256,6 +263,41 @@ class IBranch(IHasOwner):
         A single entry point that is called solely from the branch scanner
         script.
         """
+
+    def getAttributeNotificationAddresses():
+        """Return a list of email addresses of interested subscribers.
+
+        Only branch subscriptions that specified an interest in
+        attribute notifications will have specified email addresses added.
+        """
+
+    def getRevisionNotificationDetails():
+        """Return a map of max diff size to a list of email addresses.
+        
+        Only branch subscriptions that specified an interest in
+        revision notifications will have their specified email addresses added.
+
+        If a user has subscribed to a branch directly, the settings
+        that the user specifies overrides the settings of a team that the
+        user is a member of.
+        """
+        
+    def getScannerData():
+        """Retrieve the full ancestry of a branch for the branch scanner.
+
+        The branch scanner script is the only place where we need to retrieve
+        all the BranchRevision rows for a branch. Since the ancestry of some
+        branches is into the tens of thousands we don't want to materialise
+        BranchRevision instances for each of these.
+
+        :return: tuple of three items.
+            1. Ancestry set of bzr revision-ids.
+            2. History list of bzr revision-ids. Similar to the result of
+               bzrlib.Branch.revision_history().
+            3. Dictionnary mapping bzr bzr revision-ids to the database ids of
+               the corresponding BranchRevision rows for this branch.
+        """
+
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
@@ -269,7 +311,11 @@ class IBranchSet(Interface):
     def __iter__():
         """Return an iterator that will go through all branches."""
 
-    all = Attribute("All branches in the system.")
+    def count():
+        """Return the number of branches in the database."""
+
+    def countBranchesWithAssociatedBugs():
+        """Return the number of branches that have bugs associated."""
 
     def get(branch_id, default=None):
         """Return the branch with the given id.
@@ -279,10 +325,10 @@ class IBranchSet(Interface):
 
     def new(name, owner, product, url, title,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None):
+            summary=None, home_page=None, date_created=None):
         """Create a new branch."""
 
-    def getByUniqueName(self, unique_name, default=None):
+    def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
 
         Return the default value if no match was found.
@@ -299,6 +345,135 @@ class IBranchSet(Interface):
 
     def getBranchesToScan():
         """Return an iterator for the branches that need to be scanned."""
+
+    def getProductDevelopmentBranches(products):
+        """Return branches that are associated with the products dev series.
+
+        The branches will be either the import branches if imported, or
+        the user branches if native.
+        """
+
+    def getActiveUserBranchSummaryForProducts(products):
+        """Return the branch count and last commit time for the products.
+
+        Only active branches are counted (i.e. not Merged or Abandoned),
+        and only non import branches are counted.
+        """
+
+    def getRecentlyChangedBranches(branch_count):
+        """Return a list of branches that have been recently updated.
+
+        The list will contain at most branch_count items, and excludes
+        branches owned by the vcs-imports user.
+        """
+
+    def getRecentlyImportedBranches(branch_count):
+        """Return a list of branches that have been recently imported.
+
+        The list will contain at most branch_count items, and only
+        has branches owned by the vcs-imports user.
+        """
+
+    def getRecentlyRegisteredBranches(branch_count):
+        """Return a list of branches that have been recently registered.
+
+        The list will contain at most branch_count items.
+        """
+
+    def getLastCommitForBranches(branches):
+        """Return a map of branch to last commit time."""
+
+    def getBranchesForOwners(people):
+        """Return the branches that are owned by the people specified."""
+
+    def getBranchesForPerson(
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches associated with person with appropriate lifecycle.
+
+        XXX: thumper 2007-03-23
+        The intent here is to just show interesting branches for the
+        person.
+        Following a chat with lifeless we'd like this to be listed and
+        ordered by interest and last activity where activity is defined
+        as linking a bug or spec, changing the status of said link,
+        updating ui attributes of the branch, committing code to the
+        branch.
+        Branches of most interest to a person are their subscribed
+        branches, and the branches that they have registered and authored.
+
+        All branches that are either registered or authored by person
+        are shown, as well as their subscribed branches.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
+        
+    def getBranchesAuthoredByPerson(
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches authored by person with appropriate lifecycle.
+
+        Only branches that are authored by the person are returned.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
+        
+    def getBranchesRegisteredByPerson(
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches registered by person with appropriate lifecycle.
+
+        Only branches registered by the person but *NOT* authored by
+        the person are returned.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
+        
+    def getBranchesSubscribedByPerson(
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches subscribed by person with appropriate lifecycle.
+
+        All branches where the person has subscribed to the branch
+        are returned.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
+        
+    def getBranchesForProduct(
+        product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        """Branches associated with product with appropriate lifecycle.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+        """
+
+
+class IBranchDelta(Interface):
+    """The quantitative changes made to a branch that was edited or altered."""
+
+    branch = Attribute("The IBranch, after it's been edited.")
+    user = Attribute("The IPerson that did the editing.")
+
+    # fields on the branch itself, we provide just the new changed value
+    name = Attribute("Old and new names or None.")
+    title = Attribute("Old and new branch titles or None.")
+    summary = Attribute("The branch summary or None.")
+    url = Attribute("Old and new branch URLs or None.")
+    whiteboard = Attribute("The branch whiteboard or None.")
+    lifecycle_status = Attribute("Old and new lifecycle status, or None.")
+    revision_count = Attribute("Old and new revision counts, or None.")
+    last_scanned_id = Attribute("The revision id of the tip revision.")
 
 
 class IBranchLifecycleFilter(Interface):

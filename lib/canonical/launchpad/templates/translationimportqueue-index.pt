@@ -37,7 +37,7 @@
           </option>
           <option value="products"
             tal:attributes="selected request/htmlform:target/selected/products">
-            Only Products
+            Only Upstream Projects
           </option>
           <option value="distros"
             tal:attributes="selected request/htmlform:target/selected/distros">
@@ -118,17 +118,22 @@
               </td>
               <td>
                 <tal:block condition="entry/required:launchpad.Admin">
-                  [<a tal:attributes="href entry/fmt:url">Edit</a>]
+                  <a tal:attributes="href entry/fmt:url"
+                    ><img src="/@@/edit" title="Change this entry" /></a>
                 </tal:block>
               </td>
             </tr>
             <tr class="discreet secondary">
               <td colspan="3">
-                Uploaded by 
+                Uploaded by
                 <a tal:content="entry/importer/browsername"
                    tal:attributes="href entry/importer/fmt:url"
                    >Mark Shuttleworth</a>
-                on <span tal:content="entry/dateimported/fmt:datetime">date</span>
+                <span
+                  tal:attributes="title entry/dateimported/fmt:datetime"
+                  tal:content="entry/dateimported/fmt:displaydate">
+                  2006-07-19
+                </span>
               </td>
             </tr>
             <tal:comment replace="nothing">
@@ -152,6 +157,7 @@
                name="handle_queue"
                value="Change Status" />
       </form>
+      <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
     </tal:block>
   </tal:block>
 

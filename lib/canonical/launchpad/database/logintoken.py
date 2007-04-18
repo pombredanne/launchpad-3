@@ -11,16 +11,19 @@ from zope.component import getUtility
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, AND
 
 from canonical.config import config
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import LoginTokenType
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet)
-from canonical.lp.dbschema import LoginTokenType, EnumCol
 from canonical.launchpad.validators.email import valid_email
 
 
@@ -76,32 +79,56 @@ class LoginToken(SQLBase):
 
     def sendGPGValidationRequest(self, key):
         """See ILoginToken."""
-        formatted_uids = ''
-        for email in key.emails:
-            formatted_uids += '\t%s\n' % email
+        separator = '\n    '
+        formatted_uids = '    ' + separator.join(key.emails)
 
         assert self.tokentype in (LoginTokenType.VALIDATEGPG,
                                   LoginTokenType.VALIDATESIGNONLYGPG)
 
+        # Craft the confirmation message that will be sent to the user.  There
+        # are two chunks of text that will be concatenated together into a
+        # single text/plain part.  The first chunk will be the clear text
+        # instructions providing some extra help for those people who cannot
+        # read the encrypted chunk that follows.  The encrypted chunk will
+        # have the actual confirmation token in it, however the ability to
+        # read this is highly dependent on the mail reader being used, and how
+        # that MUA is configured.
+
+        # Here are the instructions that need to be encrypted.
         template = get_email_template('validate-gpg.txt')
-        fromaddress = format_address("Launchpad OpenPGP Key Confirmation",
-                                     config.noreply_from_address)
         replacements = {'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
                         'displayname': key.displayname, 
                         'fingerprint': key.fingerprint,
                         'uids': formatted_uids,
                         'token_url': canonical_url(self)}
-        message = template % replacements
 
-        # encrypt message if requested
+        token_text = template % replacements
+        salutation = 'Hello,\n\n'
+        instructions = ''
+        closing = """
+Thanks,
+
+The Launchpad Team
+launchpad@ubuntu.com"""
+
+        # Encrypt this part's content if requested.
         if key.can_encrypt:
             gpghandler = getUtility(IGPGHandler)
-            message = gpghandler.encryptContent(message.encode('utf-8'),
-                                                key.fingerprint)
+            token_text = gpghandler.encryptContent(token_text.encode('utf-8'),
+                                                   key.fingerprint)
+            # In this case, we need to include some clear text instructions
+            # for people who do not have an MUA that can decrypt the ASCII
+            # armored text.
+            instructions = get_email_template('gpg-cleartext-instructions.txt')
 
-        subject = "Launchpad: Confirm your OpenPGP Key"
-        simple_sendmail(fromaddress, str(self.email), subject, message)
+        # Concatenate the message parts and send it.
+        text = salutation + instructions + token_text + closing
+        simple_sendmail(format_address('Launchpad OpenPGP Key Confirmation',
+                                       config.noreply_from_address),
+                        str(self.email),
+                        'Launchpad: Confirm your OpenPGP Key',
+                        text)
 
     def sendPasswordResetEmail(self):
         """See ILoginToken."""

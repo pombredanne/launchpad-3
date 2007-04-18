@@ -1,5 +1,4 @@
-Product
-=======
+= Product =
 
 Launchpad keeps track of the "upstream" world as well as the "distro" world.
 The anchorpiece of the "upstream" world is the Product, which is a piece of
@@ -89,20 +88,30 @@ You can also use the IProductSet to see some statistics on products.
     >>> print productset.count_bounties()
     2
     >>> print productset.count_buggy()
-    4
+    5
     >>> print productset.count_reviewed()
     1
 
 It provides information on all the translatables available, too:
 
-    >>> for product in productset.translatables():
+    >>> for product in productset.getTranslatables():
     ...    print product.name
+    alsa-utils
     evolution
-    netapplet
 
 
-External Bug Tracker
---------------------
+== Package links ==
+
+The packaging table allows us to list source and distro source packages
+related to a certain upstream:
+
+   >>> alsa = productset.getByName('alsa-utils')
+   >>> [(sp.name, sp.distrorelease.name) for sp in alsa.sourcepackages]
+   [(u'alsa-utils', u'sid'), (u'alsa-utils', u'warty')]
+   >>> [(sp.name, sp.distribution.name) for sp in alsa.distrosourcepackages]
+   [(u'alsa-utils', u'debian'), (u'alsa-utils', u'ubuntu')]
+
+== External Bug Tracker ==
 
 If a product doesn't use Malone, it can specify that it uses an
 external bug tracker. It can either use its own bug tracker, or use its
@@ -157,8 +166,21 @@ None will of course be returned.
     True
 
 
-Product Creation
-================
+== Answer Tracking ==
+
+Firefox uses the Answer Tracker as the official application to provide
+answers to questions.
+
+    >>> firefox.official_answers
+    True
+    
+Alsa does not use Launchpad to track answers.
+
+    >>> alsa.official_answers
+    False
+
+
+== Product Creation ==
 
 We can create new products with the createProduct() method:
 
@@ -185,8 +207,7 @@ This series is set as the development focus for the product:
     True
 
 
-Specification Listings
-======================
+== Specification Listings ==
 
 We should be able to get lists of specifications in different states
 related to a product.
@@ -226,3 +247,48 @@ We can filter for specifications that contain specific text:
  e4x
 
 
+== Milestones ==
+
+We can use IProduct.milestones to get all milestones associated with any
+ProductSeries of a product.
+
+    >>> from datetime import datetime
+    >>> [milestone.name for milestone in firefox.milestones]
+    [u'1.0']
+
+    >>> firefox_one_zero = firefox.getSeries('1.0')
+    >>> firefox_milestone = firefox_one_zero.newMilestone(
+    ...     name='1.0-rc1', dateexpected=datetime(2018, 10, 1))
+
+They're ordered by dateexpected.
+
+    >>> [(milestone.name, milestone.dateexpected.strftime('%Y-%m-%d'))
+    ...  for milestone in firefox.milestones]
+    [(u'1.0-rc1', '2018-10-01'), (u'1.0', '2056-10-16')]
+
+Only milestones which have visible=True are returned by the .milestones
+property.
+
+    >>> firefox_milestone.visible = False
+    >>> flush_database_updates()
+    >>> [milestone.name for milestone in firefox.milestones]
+    [u'1.0']
+
+To get all milestones of a given product we have the .all_milestones property.
+
+    >>> [milestone.name for milestone in firefox.all_milestones]
+    [u'1.0-rc1', u'1.0']
+
+== Products With Branches ==
+
+We can also find all the products that have branches.
+
+ >>> productset.getProductsWithBranches().count()
+ 5
+ >>> for product in productset.getProductsWithBranches():
+ ...     print product.name
+ evolution
+ firefox
+ gnome-terminal
+ iso-codes
+ thunderbird

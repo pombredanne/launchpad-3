@@ -2,8 +2,15 @@
 
 __metaclass__ = type
 
-__all__ = ['TeamEditView', 'TeamEmailView', 'TeamAddView', 'TeamMembersView',
-           'TeamMemberAddView', 'ProposedTeamMembersEditView']
+__all__ = [
+    'ProposedTeamMembersEditView',
+    'TeamAddView',
+    'TeamBrandingView',
+    'TeamEditView',
+    'TeamEmailView',
+    'TeamMemberAddView',
+    'TeamMembersView',
+    ]
 
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -13,27 +20,27 @@ from zope.component import getUtility
 from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    action, canonical_url, custom_widget, LaunchpadEditFormView)
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet,
-    ITeamMembershipSet)
+    ITeam, ITeamMembershipSet)
 
 
-class TeamEditView(SQLObjectEditView):
+class TeamEditView(LaunchpadEditFormView):
 
-    def __init__(self, context, request):
-        SQLObjectEditView.__init__(self, context, request)
-        self.team = context
+    schema = ITeam
+    field_names = [
+        'name', 'displayname', 'teamdescription',
+        'defaultmembershipperiod', 'defaultrenewalperiod',
+        'subscriptionpolicy']
 
-    def changed(self):
-        """Redirect to the team  page.
-
-        We need this because people can now change team names, and this will
-        make their canonical_url to change too.
-        """
-        self.request.response.redirect(canonical_url(self.context))
+    @action('Save', name='save')
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 def generateTokenAndValidationEmail(email, team):
@@ -228,6 +235,12 @@ class ProposedTeamMembersEditView:
         self.request.response.redirect('%s/+members' % canonical_url(team))
 
 
+class TeamBrandingView(BrandingChangeView):
+
+    schema = ITeam
+    field_names = ['icon', 'logo', 'mugshot']
+
+
 class TeamMemberAddView(AddView):
 
     def __init__(self, context, request):
@@ -265,12 +278,6 @@ class TeamMemberAddView(AddView):
             self.alreadyMember = newmember
             return
 
-        expires = team.defaultexpirationdate
-        if newmember.hasMembershipEntryFor(team):
-            team.setMembershipData(
-                newmember, approved, reviewer=self.user, expires=expires)
-        else:
-            team.addMember(newmember, reviewer=self.user, status=approved)
-
+        team.addMember(newmember, reviewer=self.user, status=approved)
         self.addedMember = newmember
 

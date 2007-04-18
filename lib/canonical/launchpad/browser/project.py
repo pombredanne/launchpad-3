@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Project-related View Classes"""
 
@@ -6,17 +6,27 @@ __metaclass__ = type
 
 __all__ = [
     'ProjectAddProductView',
-    'ProjectAddTicketView',
+    'ProjectAddQuestionView',
     'ProjectAddView',
-    'ProjectLatestTicketsView',
+    'ProjectBrandingView',
     'ProjectNavigation',
+    'ProjectDynMenu',
     'ProjectEditView',
+    'ProjectReviewView',
     'ProjectSetNavigation',
+    'ProjectSOP',
+    'ProjectFacets',
+    'ProjectOverviewMenu',
+    'ProjectSpecificationsMenu',
+    'ProjectBountiesMenu',
+    'ProjectAnswersMenu',
+    'ProjectTranslationsMenu',
+    'ProjectSetContextMenu',
+    'ProjectEditView',
+    'ProjectAddProductView',
     'ProjectSetView',
     'ProjectRdfView',
     ]
-
-from urllib import quote as urlquote
 
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextWidget
@@ -27,19 +37,22 @@ from zope.formlib import form
 from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ICalendarOwner, IPerson, IProduct, IProductSet, IProject, IProjectSet,
-    ILaunchpadRoot, NotFoundError)
-from canonical.launchpad import helpers
-from canonical.launchpad.browser.editview import SQLObjectEditView
+    ICalendarOwner, IProduct, IProductSet, IProject, IProjectSet,
+    NotFoundError)
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.browser.ticket import TicketAddView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.question import QuestionAddView
+from canonical.launchpad.browser.questiontarget import (
+    QuestionTargetFacetMixin, QuestionCollectionAnswersMenu)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
-    Navigation, RedirectionNavigation, StandardLaunchpadFacets, structured)
+    Navigation, StandardLaunchpadFacets, structured)
+from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.launchpad.helpers import shortlist
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -56,22 +69,89 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
         return self.context.getProduct(name)
 
 
-class ProjectSetNavigation(RedirectionNavigation):
+class ProjectDynMenu(DynMenu):
+
+    menus = {
+        '': 'mainMenu',
+        'related': 'relatedMenu',
+        }
+
+    MAX_SUB_PROJECTS = 8
+
+    def relatedMenu(self):
+        """Show items related to this project.
+
+        Show a link to the project, and then
+        the contents of the project menu, excluding the current
+        product from the project's list of products.
+        """
+        yield self.makeLink(self.context.title, target=self.context)
+        for link in self.mainMenu():
+            yield link
+
+    def mainMenu(self, excludeproduct=None):
+        """List products within this project.
+
+        List up to MAX_SUB_PROJECTS products.  If there are more than that
+        number of products, list up to MAX_SUB_PROJECTS products with
+        releases, and give a link to a page showing all products.
+
+        Pass a Product instance in as 'excludeproduct' so that it will be
+        excluded from the menu.
+
+        """
+        products = shortlist(self.context.products, 25)
+        num_products = len(products)
+        if excludeproduct is None:
+            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS
+        else:
+            MAX_SUB_PROJECTS = self.MAX_SUB_PROJECTS + 1
+        if num_products < MAX_SUB_PROJECTS:
+            for product in products:
+                if product != excludeproduct:
+                    yield self.makeBreadcrumbLink(product)
+        else:
+            # XXX: SteveAlexander, 2007-03-27.
+            # Use a database API for products-with-releases that prejoins.
+            count = 0
+            for product in products:
+                if product != excludeproduct and product.releases:
+                    yield self.makeBreadcrumbLink(product)
+                    count += 1
+                    if count >= self.MAX_SUB_PROJECTS:
+                        break
+            yield self.makeLink('See all %s related projects...' % num_products)
+
+
+class ProjectSetNavigation(Navigation):
 
     usedfor = IProjectSet
 
     def breadcrumb(self):
         return 'Projects'
 
-    @property
-    def redirection_root_url(self):
-        return canonical_url(getUtility(ILaunchpadRoot))
-
     def traverse(self, name):
         # Raise a 404 on an invalid project name
-        if self.context.getByName(name) is None:
+        project = self.context.getByName(name)
+        if project is None:
             raise NotFoundError(name)
-        return RedirectionNavigation.traverse(self, name)
+        return self.redirectSubTree(canonical_url(project))
+
+
+class ProjectSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.title
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: Products, alphabetically
+        return list(self.context.products[:num])
+
+    def listAltChildren(self, num):
+        return None
 
 
 class ProjectSetContextMenu(ContextMenu):
@@ -81,20 +161,21 @@ class ProjectSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def register(self):
-        text = 'Register a Project'
+        text = 'Register a project'
         return Link('+new', text, icon='add')
 
     def listall(self):
-        text = 'List All Projects'
+        text = 'List all projects'
         return Link('+all', text, icon='list')
 
 
-class ProjectFacets(StandardLaunchpadFacets):
+class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProject."""
 
     usedfor = IProject
 
-    enable_only = ['overview', 'bugs', 'specifications']
+    enable_only = [
+        'overview', 'bugs', 'specifications', 'answers', 'translations']
 
     def calendar(self):
         target = '+calendar'
@@ -108,30 +189,45 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'driver', 'reassign', 'rdf', 'changetranslators']
+    links = [
+        'edit', 'branding', 'driver', 'reassign',
+        'top_contributors', 'administer', 'rdf']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Project Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change Admin'
+        text = 'Change owner'
         return Link('+reassign', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def driver(self):
         text = 'Appoint driver'
         summary = 'Someone with permission to set goals for all products'
         return Link('+driver', text, summary, icon='edit')
 
+    def top_contributors(self):
+        text = 'List top contributors'
+        return Link('+topcontributors', text, icon='info')
+
     def rdf(self):
         text = structured(
             'Download <abbr title="Resource Description Framework">'
-            'RDF</abbr> Metadata')
+            'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
 
-    def changetranslators(self):
-        text = 'Change Translators'
-        return Link('+changetranslators', text, icon='edit')
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+review', text, icon='edit')
 
 
 class ProjectBountiesMenu(ApplicationMenu):
@@ -141,11 +237,11 @@ class ProjectBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a Bounty'
+        text = 'Register a bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
-        text = 'Link Existing Bounty'
+        text = 'Link existing bounty'
         return Link('+linkbounty', text, icon='edit')
 
 
@@ -156,11 +252,11 @@ class ProjectSpecificationsMenu(ApplicationMenu):
     links = ['listall', 'doc', 'roadmap', 'assignments',]
 
     def listall(self):
-        text = 'List All'
+        text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
 
     def doc(self):
-        text = 'Documentation'
+        text = 'List documentation'
         summary = 'Show all completed informational specifications'
         return Link('+documentation', text, summary, icon="info")
 
@@ -173,14 +269,39 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, icon='info')
 
 
+class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
+    """Menu for the answers facet of projects."""
+
+    usedfor = IProject
+    facet = 'answers'
+    links = QuestionCollectionAnswersMenu.links + ['new']
+
+    def new(self):
+        text = 'Ask a question'
+        return Link('+addquestion', text, icon='add')
+
+
+class ProjectTranslationsMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'translations'
+    links = ['changetranslators']
+
+    def changetranslators(self):
+        text = 'Change translators'
+        return Link('+changetranslators', text, icon='edit')
+
+
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
+    label = "Change project details"
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
         'homepageurl', 'bugtracker', 'sourceforgeproject',
         'freshmeatproject', 'wikiurl']
+
 
     @action('Change Details', name='change')
     def edit(self, action, data):
@@ -196,6 +317,13 @@ class ProjectEditView(LaunchpadEditFormView):
             return canonical_url(getUtility(IProjectSet))
 
 
+
+class ProjectReviewView(ProjectEditView):
+
+    label = "Review upstream project details"
+    field_names = ['name', 'owner', 'active', 'reviewed']
+
+
 class ProjectAddProductView(LaunchpadFormView):
 
     schema = IProduct
@@ -208,7 +336,7 @@ class ProjectAddProductView(LaunchpadFormView):
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
 
-    label = "Register a product in this project"
+    label = "Register a new project that is part of this initiative"
     product = None
 
     @action(_('Add'), name='add')
@@ -285,7 +413,7 @@ class ProjectAddView(LaunchpadFormView):
 
     schema = IProject
     field_names = ['name', 'displayname', 'title', 'summary',
-                   'description', 'homepageurl']
+                   'description', 'homepageurl',]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project with Launchpad')
     project = None
@@ -294,19 +422,26 @@ class ProjectAddView(LaunchpadFormView):
     def add_action(self, action, data):
         """Create the new Project from the form details."""
         self.project = getUtility(IProjectSet).new(
-            name=data['name'].lower(),
+            name=data['name'].lower().strip(),
             displayname=data['displayname'],
             title=data['title'],
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
-            owner=self.user)
+            owner=self.user,
+            )
         notify(ObjectCreatedEvent(self.project))
 
     @property
     def next_url(self):
         assert self.project is not None, 'No project has been created'
         return canonical_url(self.project)
+
+
+class ProjectBrandingView(BrandingChangeView):
+
+    schema = IProject
+    field_names = ['icon', 'logo', 'mugshot']
 
 
 class ProjectRdfView(object):
@@ -336,14 +471,14 @@ class ProjectRdfView(object):
         return encodeddata
 
 
-class ProjectAddTicketView(TicketAddView):
-    """View that handles creation of a ticket from an IProject context."""
+class ProjectAddQuestionView(QuestionAddView):
+    """View that handles creation of a question from an IProject context."""
 
-    search_field_names = ['product'] + TicketAddView.search_field_names
+    search_field_names = ['product'] + QuestionAddView.search_field_names
 
     def setUpFields(self):
         # Add a 'product' field to the beginning of the form.
-        TicketAddView.setUpFields(self)
+        QuestionAddView.setUpFields(self)
         self.form_fields = self.createProductField() + self.form_fields
 
     def createProductField(self):
@@ -351,35 +486,25 @@ class ProjectAddTicketView(TicketAddView):
         return form.Fields(
             Choice(
                 __name__='product', vocabulary='ProjectProducts',
-                title=_('Product'),
+                title=_('Project'),
                 description=_(
-                    'Choose the product for which you need support.'),
+                    '${context} is a group of projects, which specific '
+                    'project do you have a question about?',
+                    mapping=dict(context=self.context.title)),
                 required=True),
             render_context=self.render_context)
 
     @property
     def pagetitle(self):
         """The current page title."""
-        return _('Request support with a product from ${project}',
+        return _('Ask a question about a project in ${project}',
                  mapping=dict(project=self.context.displayname))
 
     @property
-    def ticket_target(self):
-        """The ITicketTarget to use is the selected product."""
+    def question_target(self):
+        """The IQuestionTarget to use is the selected product."""
         if self.widgets['product'].hasValidInput():
             return self.widgets['product'].getInputValue()
         else:
             return None
 
-
-# XXX flacoste 2006-12-13 This should be removed and the
-# TicketTargetLatestTicketsView used instead once we add a
-# searchTickets() method to IProject. This will happen when
-# fixing bug #4935 (/projects/whatever/+tickets returns NotFound error)
-class ProjectLatestTicketsView:
-    """Empty view to allow rendering of the default template used by
-    TicketAddView.
-    """
-
-    def __call__(self):
-        return u''

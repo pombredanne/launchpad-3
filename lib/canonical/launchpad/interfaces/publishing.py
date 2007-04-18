@@ -7,8 +7,6 @@ __metaclass__ = type
 __all__ = [
     'ISourcePackageFilePublishing',
     'IBinaryPackageFilePublishing',
-    'ISourcePackagePublishingView',
-    'IBinaryPackagePublishingView',
     'ISecureSourcePackagePublishingHistory',
     'ISecureBinaryPackagePublishingHistory',
     'ISourcePackagePublishingHistory',
@@ -160,13 +158,6 @@ class IBaseSourcePackagePublishing(Interface):
             )
 
 
-class ISourcePackagePublishingView(IBaseSourcePackagePublishing):
-    """Source package publishing information neatened up a bit"""
-    sectionname = TextLine(
-            title=_('Section name'), required=True, readonly=True,
-            )
-
-
 class ISourcePackageFilePublishing(IBaseSourcePackagePublishing):
     """Source package release files and their publishing status"""
     sourcepackagepublishing = Int(
@@ -270,6 +261,10 @@ class ISourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
         "Return an IDistribuitionSourcePackageRelease meta object "
         "correspondent to the supersededby attribute. if supersededby "
         "is None return None.")
+    meta_distroreleasesourcepackagerelease = Attribute(
+        "Return an IDistroReleaseSourcePackageRelease meta object "
+        "correspondent to the sourcepackagerelease attribute inside "
+        "a specific distrorelease")
 
     def publishedBinaries():
         """Return all resulted IBinaryPackagePublishingHistory.
@@ -300,19 +295,6 @@ class IBaseBinaryPackagePublishing(Interface):
             )
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
-            )
-
-
-class IBinaryPackagePublishingView(IBaseBinaryPackagePublishing):
-    """Binary package publishing information neatened up a bit"""
-    binarypackagename = TextLine(
-            title=_('Binary package name'), required=True, readonly=True,
-            )
-    sectionname = TextLine(
-            title=_('Section name'), required=True, readonly=True,
-            )
-    priority = Int(
-            title=_('Priority'), required=True, readonly=True,
             )
 
 

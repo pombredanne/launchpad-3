@@ -53,6 +53,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        class="canonical.launchpad.browser.LaunchpadRootIndexView"
         name="index.html"
         template="launchpad/templates/root-index.pt"
         permission="zope.Public"
@@ -131,7 +132,7 @@
     <!-- virtual host: answers -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="support"
+        name="questions"
         layer="canonical.launchpad.layers.AnswersLayer"
         />
     <browser:page

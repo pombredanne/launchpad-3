@@ -52,9 +52,9 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
         "Return binaries resulted from this sourcepackagerelease and  "
         "published in this distrorelease.")
 
-    was_uploaded = Attribute("True or False, indicating whether or not "
-        "a source package of this name was ever uploaded to this "
-        "distrorelease.")
+    meta_binaries = Attribute(
+        "Return meta binaries resulting from this sourcepackagerelease and "
+        "published in this distrorelease.")
 
     current_published = Attribute("is last SourcePackagePublishing record "
                                   "that is in PUBLISHED status.")

@@ -3,7 +3,9 @@
 from twisted.conch import avatar
 from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
+from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
+from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
 from twisted.internet import defer
@@ -60,13 +62,15 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         self._productIDs = {}
         self._productNames = {}
 
-        self.filesystem = FileSystem(SFTPServerRoot(self))
+        # XXX: See AdaptFileSystemUserToISFTP below.
+        #  -- Andrew Bennetts 2007-01-26.
+        self.filesystem = None
 
         # Set the only channel as a session that only allows requests for
         # subsystems...
         self.channelLookup = {'session': SubsystemOnlySession}
         # ...and set the only subsystem to be SFTP.
-        self.subsystemLookup = {'sftp': filetransfer.FileTransferServer}
+        self.subsystemLookup = {'sftp': BazaarFileTransferServer}
 
     def fetchProductID(self, productName):
         """Fetch the product ID for productName.
@@ -98,6 +102,8 @@ class SFTPOnlyAvatar(avatar.ConchUser):
     def _cbRememberProductID(self, productID, productName):
         if productID is None:
             return None
+        # XXX: Why convert the number to a string here?
+        #  -- Andrew Bennetts, 2007-01-26
         productID = str(productID)
         self._productIDs[productName] = productID
         self._productNames[productID] = productName
@@ -117,13 +123,30 @@ class SFTPOnlyAvatar(avatar.ConchUser):
             r = func(*args, **kw)
         return r
 
+    def makeFileSystem(self):
+        return FileSystem(SFTPServerRoot(self))
 
-components.registerAdapter(sftp.AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
+# XXX This is nasty.  We want a filesystem per SFTP session, not per avatar, so
+# we let the standard adapter grab a per avatar object, and immediately override
+# with the one we want it to use.
+# -- Andrew Bennetts, 2007-01-26
+class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
+    def __init__(self, avatar):
+        sftp.AdaptFileSystemUserToISFTP.__init__(self, avatar)
+        self.filesystem = avatar.makeFileSystem()
+
+components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
                            filetransfer.ISFTPServer)
+
+
+class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
+    """UnauthorizedLogin which should be reported to the user."""
 
 
 class Realm:
     implements(IRealm)
+
+    avatarFactory = SFTPOnlyAvatar
 
     def __init__(self, homeDirsRoot, authserver):
         self.homeDirsRoot = homeDirsRoot
@@ -159,15 +182,54 @@ class Realm:
 
         # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
-            avatar = SFTPOnlyAvatar(avatarId, self.homeDirsRoot, userDict,
-                                    self.authserver)
+            avatar = self.avatarFactory(avatarId, self.homeDirsRoot, userDict,
+                                        self.authserver)
             return interfaces[0], avatar, lambda: None
         return deferred.addCallback(gotUserDict)
 
 
+class SSHUserAuthServer(userauth.SSHUserAuthServer):
+
+    def __init__(self, transport=None):
+        self.transport = transport
+
+    def sendBanner(self, text, language='en'):
+        bytes = '\r\n'.join(text.encode('UTF8').splitlines() + [''])
+        self.transport.sendPacket(userauth.MSG_USERAUTH_BANNER,
+                                  NS(bytes) + NS(language))
+
+    # XXX - Copied from twisted/conch/ssh/userauth.py, with modifications
+    # noted. In Twisted r19857 and earlier, this method does not return a
+    # Deferred, but should. See http://twistedmatrix.com/trac/ticket/2528 for
+    # progress.
+    # -- Jonathan Lange, 2007-03-19
+    def ssh_USERAUTH_REQUEST(self, packet):
+        user, nextService, method, rest = getNS(packet, 3)
+        if user != self.user or nextService != self.nextService:
+            self.authenticatedWith = [] # clear auth state
+        self.user = user
+        self.nextService = nextService
+        self.method = method
+        d = self.tryAuth(method, user, rest)
+        if not d:
+            self._ebBadAuth(ConchError('auth returned none'))
+        d.addCallbacks(self._cbFinishedAuth)
+        d.addErrback(self._ebMaybeBadAuth)
+        # The following line does not appear in the original Twisted source.
+        d.addErrback(self._ebLogToBanner)
+        d.addErrback(self._ebBadAuth)
+        # Not in original Twisted method
+        return d
+
+    def _ebLogToBanner(self, reason):
+        reason.trap(UserDisplayedUnauthorizedLogin)
+        self.sendBanner(reason.getErrorMessage())
+        return reason
+
+
 class Factory(factory.SSHFactory):
     services = {
-        'ssh-userauth': userauth.SSHUserAuthServer,
+        'ssh-userauth': SSHUserAuthServer,
         'ssh-connection': connection.SSHConnection
     }
 
@@ -195,13 +257,21 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         self.authserver = authserver
 
     def checkKey(self, credentials):
+        d = self.authserver.getUser(credentials.username)
+        return d.addCallback(self._checkUserExistence, credentials)
+
+    def _checkUserExistence(self, userDict, credentials):
+        if len(userDict) == 0:
+            raise UserDisplayedUnauthorizedLogin(
+                "No such Launchpad account: %s" % credentials.username)
+
         authorizedKeys = self.authserver.getSSHKeys(credentials.username)
 
-        # Add callback to try find the authorised key
-        authorizedKeys.addCallback(self._cb_hasAuthorisedKey, credentials)
+        # Add callback to try find the authorized key
+        authorizedKeys.addCallback(self._checkForAuthorizedKey, credentials)
         return authorizedKeys
-                
-    def _cb_hasAuthorisedKey(self, keys, credentials):
+
+    def _checkForAuthorizedKey(self, keys, credentials):
         if credentials.algName == 'ssh-dss':
             wantKeyType = 'DSA'
         elif credentials.algName == 'ssh-rsa':
@@ -209,6 +279,11 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
         else:
             # unknown key type
             return False
+
+        if len(keys) == 0:
+            raise UserDisplayedUnauthorizedLogin(
+                "Launchpad user %r doesn't have a registered SSH key"
+                % credentials.username)
 
         for keytype, keytext in keys:
             if keytype != wantKeyType:
@@ -219,8 +294,38 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             except binascii.Error:
                 continue
 
-        return False
-        
+        raise UnauthorizedLogin(
+            "Your SSH key does not match any key registered for Launchpad "
+            "user %s" % credentials.username)
+
+
+class BazaarFileTransferServer(filetransfer.FileTransferServer):
+
+    def __init__(self, data=None, avatar=None):
+        filetransfer.FileTransferServer.__init__(self, data, avatar)
+        self._dirtyBranches = set()
+        self.client.filesystem.root.setListenerFactory(self.makeListener)
+        self._launchpad = self.client.avatar._launchpad
+
+    def makeListener(self, branchID):
+        def flag_as_dirty():
+            self.branchDirtied(branchID)
+        return flag_as_dirty
+
+    def branchDirtied(self, branchID):
+        self._dirtyBranches.add(branchID)
+
+    def sendMirrorRequests(self):
+        """Request that all changed branches be mirrored. Return a deferred
+        which fires when each request has received a response from the server.
+        """
+        deferreds = [self._launchpad.requestMirror(branch)
+                     for branch in self._dirtyBranches]
+        return defer.gatherResults(deferreds)
+
+    def connectionLost(self, reason):
+        self.sendMirrorRequests()
+
 
 if __name__ == "__main__":
     # Run doctests.

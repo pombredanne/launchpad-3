@@ -1,13 +1,4 @@
-
-<input type="text"
-    tal:attributes="value view/formToken;
-                    id view/name;
-                    name view/name;
-                    size view/displayWidth;
-                    maxlength view/displayMaxWidth;
-                    onKeyPress view/onKeyPress;
-                    style view/style;
-                    class view/cssClass" />
+<tal:input replace="structure view/inputField" />
 
 <tal:search_results tal:condition="not: view/hasValidInput">
   <select
@@ -19,9 +10,10 @@
         tal:attributes="value match/token;
             selected python:path('match/token') == path('view/formToken');
             onclick string:this.form['${view/name}'].value = this.value"
-        tal:content="match/title"
+        tal:content="string:${match/token}: ${match/title}"
         />
   </select>
 </tal:search_results>
 
-(<a tal:attributes="href view/popupHref">Choose&hellip;</a>)
+<tal:chooseLink replace="structure view/chooseLink" />
+

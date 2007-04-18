@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['SourcePackageRelease']
@@ -15,31 +15,33 @@ from zope.component import getUtility
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.helpers import shortlist
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.searchbuilder import any
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+
 from canonical.lp.dbschema import (
-    EnumCol, SourcePackageUrgency, SourcePackageFormat,
-    SourcePackageFileType, BuildStatus, TicketStatus,
+    SourcePackageUrgency, SourcePackageFormat,
+    SourcePackageFileType, BuildStatus, QuestionStatus,
     PackagePublishingStatus)
 
+from canonical.librarian.interfaces import ILibrarianClient
+
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
     BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
     )
-
+from canonical.launchpad.database.question import Question
+from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
 
-from canonical.launchpad.database.ticket import Ticket
-from canonical.launchpad.database.build import Build
-from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory)
-
-from canonical.launchpad.database.files import SourcePackageReleaseFile
-from canonical.librarian.interfaces import ILibrarianClient
 
 class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)
@@ -68,17 +70,15 @@ class SourcePackageRelease(SQLBase):
         default=SourcePackageFormat.DPKG, notNull=True)
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='uploaddistrorelease')
-    # XXX cprov 20060926: Those fields are set as notNull and required in
+    # XXX cprov 20060926: Those fields should be notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old
     # records doesn't satisfy this condition. We will sort it before using
     # landing 'NoMoreAptFtparchive' implementation for main archive. For
     # PPA (primary target) we don't need populate old records.
-    dsc_maintainer_rfc822 = StringCol(
-        dbName='dsc_maintainer_rfc822', notNull=True)
-    dsc_standards_version = StringCol(
-        dbName='dsc_standards_version', notNull=True)
-    dsc_format = StringCol(dbName='dsc_format', notNull=True)
-    dsc_binaries = StringCol(dbName='dsc_binaries', notNull=True)
+    dsc_maintainer_rfc822 = StringCol(dbName='dsc_maintainer_rfc822')
+    dsc_standards_version = StringCol(dbName='dsc_standards_version')
+    dsc_format = StringCol(dbName='dsc_format')
+    dsc_binaries = StringCol(dbName='dsc_binaries')
 
     # MultipleJoins
     builds = SQLMultipleJoin('Build', joinColumn='sourcepackagerelease',
@@ -189,18 +189,6 @@ class SourcePackageRelease(SQLBase):
         else:
             return None
 
-    @property
-    def open_ticket_count(self):
-        """See ISourcePackageRelease."""
-        results = Ticket.select("""
-            status = %s AND
-            distribution = %s AND
-            sourcepackagename = %s
-            """ % sqlvalues(TicketStatus.OPEN,
-                            self.uploaddistrorelease.distribution.id,
-                            self.sourcepackagename.id))
-        return results.count()
-
     def countOpenBugsInUploadedDistro(self, user):
         """See ISourcePackageRelease."""
         upload_distro = self.uploaddistrorelease.distribution
@@ -212,24 +200,6 @@ class SourcePackageRelease(SQLBase):
         #   -- kiko, 2006-03-07
         params.omit_dupes = True
         return upload_distro.searchTasks(params).count()
-
-    @property
-    def binaries(self):
-        clauseTables = ['SourcePackageRelease', 'BinaryPackageRelease',
-                        'Build']
-        query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
-                 ' AND BinaryPackageRelease.build = Build.id '
-                 ' AND Build.sourcepackagerelease = %i' % self.id)
-        return BinaryPackageRelease.select(query,
-                                           prejoinClauseTables=['Build'],
-                                           clauseTables=clauseTables)
-
-    @property
-    def meta_binaries(self):
-        """See ISourcePackageRelease."""
-        return [binary.build.distroarchrelease.distrorelease.getBinaryPackage(
-                                    binary.binarypackagename)
-                for binary in self.binaries]
 
     @property
     def current_publishings(self):

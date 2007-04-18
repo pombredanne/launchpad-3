@@ -10,19 +10,24 @@ import pytz
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
+
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
 from canonical.config import config
+
+from canonical.lp.dbschema import TeamMembershipStatus
+
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
     ITeamMembership, ITeamParticipation, ITeamMembershipSet)
-
-from canonical.lp.dbschema import EnumCol, TeamMembershipStatus
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
 
 class TeamMembership(SQLBase):
@@ -62,6 +67,61 @@ class TeamMembership(SQLBase):
         """See ITeamMembership"""
         return self.status == TeamMembershipStatus.EXPIRED
 
+    def sendExpirationWarningEmail(self):
+        """See ITeamMembership"""
+        assert self.dateexpires is not None, (
+            'This membership has no expiration date')
+        assert self.dateexpires > datetime.now(pytz.timezone('UTC')), (
+            "This membership's expiration date must be in the future: %s"
+            % self.dateexpires.strftime('%Y-%m-%d'))
+        member = self.person
+        if member.isTeam():
+            to_addrs = contactEmailAddresses(member.teamowner)
+            templatename = 'membership-expiration-warning-impersonal.txt'
+        else:
+            templatename = 'membership-expiration-warning-personal.txt'
+            to_addrs = format_address(
+                member.displayname, member.preferredemail.email)
+        team = self.team
+        subject = 'Launchpad: %s team membership about to expire' % team.name
+
+        admins_names = []
+        admins = team.getEffectiveAdministrators()
+        assert admins.count() >= 1
+        if admins.count() == 1:
+            admin = admins[0]
+            contact_admins_text = (
+                "To prevent this membership from expiring, you should "
+                "contact\nthe team's administrator, %s.\n<%s>"
+                % (admin.unique_displayname, canonical_url(admin)))
+        else:
+            for admin in admins:
+                admins_names.append(
+                    "%s <%s>"
+                    % (admin.unique_displayname, canonical_url(admin)))
+
+            contact_admins_text = (
+                "To prevent this membership from expiring, you should get "
+                "in touch\nwith one of the team's administrators:\n")
+            contact_admins_text += "\n".join(admins_names)
+
+        formatter = DurationFormatterAPI(
+            self.dateexpires - datetime.now(pytz.timezone('UTC')))
+        replacements = {
+            'member_name': member.unique_displayname,
+            'member_displayname': member.displayname,
+            'team_url': canonical_url(team),
+            'contact_admins_text': contact_admins_text,
+            'team_name': team.unique_displayname,
+            'team_admins': '\n'.join(admins_names),
+            'expiration_date': self.dateexpires.strftime('%Y-%m-%d'),
+            'approximate_duration': formatter.approximateduration()}
+
+        msg = get_email_template(templatename) % replacements
+        from_addr = format_address(
+            "Launchpad Team Membership Notifier", config.noreply_from_address)
+        simple_sendmail(from_addr, to_addrs, subject, msg)
+
     def setStatus(self, status, reviewer, reviewercomment=None):
         """See ITeamMembership"""
         assert status != self.status, (
@@ -80,12 +140,10 @@ class TeamMembership(SQLBase):
         # is allowed. All allowed transitions are in the TeamMembership spec.
         if self.status in [admin, approved]:
             assert status in [admin, approved, expired, deactivated]
-        elif self.status in [deactivated]:
-            assert status in [approved]
-        elif self.status in [expired]:
-            assert status in [approved]
+        elif self.status in [deactivated, expired]:
+            assert status in [proposed, approved]
         elif self.status in [proposed]:
-            assert status in [approved, declined]
+            assert status in [approved, admin, declined]
         elif self.status in [declined]:
             assert status in [proposed, approved]
 
@@ -94,15 +152,17 @@ class TeamMembership(SQLBase):
         self.reviewer = reviewer
         self.reviewercomment = reviewercomment
 
+        if (old_status not in [admin, approved]
+            and status in [admin, approved]):
+            # Inactive member has become active; update datejoined
+            self.datejoined = datetime.now(pytz.timezone('UTC'))
+
         self.syncUpdate()
 
-        # XXX: The logic here is not correct, as deactivated or expired
-        # members should be able to propose themselves as members.
-        # https://launchpad.net/bugs/5997
-        if ((status == approved and self.status != admin) or
-            (status == admin and self.status != approved)):
+        if status in [admin, approved]:
             _fillTeamParticipation(self.person, self.team)
-        elif status in [deactivated, expired]:
+        else:
+            assert status in [proposed, declined, deactivated, expired]
             _cleanTeamParticipation(self.person, self.team)
 
         # When a member proposes himself, a more detailed notification is
@@ -200,14 +260,13 @@ class TeamMembershipSet:
             return default
         return result
 
-    def getMembershipsToExpire(self):
+    def getMembershipsToExpire(self, when=None):
         """See ITeamMembershipSet"""
-        now = datetime.now(pytz.timezone('UTC'))
-        query = """
-            dateexpires <= %s
-            AND status IN (%s, %s)
-            """ % sqlvalues(now, TeamMembershipStatus.ADMIN,
-                            TeamMembershipStatus.APPROVED)
+        if when is None:
+            when = datetime.now(pytz.timezone('UTC'))
+        query = ("dateexpires <= %s AND status IN (%s, %s)"
+                 % sqlvalues(when, TeamMembershipStatus.ADMIN,
+                             TeamMembershipStatus.APPROVED))
         return TeamMembership.select(query)
 
     def getTeamMembersCount(self, team):
@@ -283,13 +342,9 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
     each superteam of <team>.
     """
     for subteam in team.getSubTeams():
-        # There's no need to worry for the case where person == subteam because
-        # a team doesn't have a teamparticipation entry for itself and then a
-        # call to team.hasParticipationEntryFor(team) will always return
-        # False.
-        if person.hasParticipationEntryFor(subteam):
-            # This is an indirect member of this team and thus it should
-            # be kept as so.
+        if person.hasParticipationEntryFor(subteam) and person != subteam:
+            # This is an indirect member of the given team, so we must not
+            # remove his participation entry for that team.
             return
 
     result = TeamParticipation.selectOneBy(person=person, team=team)
@@ -309,7 +364,7 @@ def _fillTeamParticipation(member, team):
     table can be found in the TeamParticipationUsage spec.
     """
     members = [member]
-    if member.teamowner is not None:
+    if member.isTeam():
         # The given member is, in fact, a team, and in this case we must 
         # add all of its members to the given team and to its superteams.
         members.extend(member.allmembers)

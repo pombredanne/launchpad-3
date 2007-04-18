@@ -18,8 +18,9 @@ with the IBugTaskSet utility.
 The IDistroReleaseSet utility is accessed in the usual fashion:
 
     >>> from zope.component import getUtility
+    >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistroReleaseSet, IDistributionSet)
+    ...     IDistroRelease, IDistroReleaseSet, IDistributionSet)
     >>> distroreleaseset = getUtility(IDistroReleaseSet)
 
 To retrieve a specific release of a distribution, use IDistroReleaseSet.get:
@@ -55,6 +56,13 @@ Or IDistroReleaseSet.findByVersion:
     >>> for distrorelease in distroreleaseset.findByVersion("5.04"):
     ...     print distrorelease.name
     hoary
+
+We verify that a distrorelease does in fact fully provide IDistroRelease:
+
+    >>> verifyObject(IDistroRelease, warty)
+    True
+    >>> IDistroRelease.providedBy(warty)
+    True
 
 To search the set of IDistroReleases, use IDistroReleaseSet.search:
 
@@ -158,6 +166,8 @@ other things) the uploader for validating incoming uploads.
    web
    editors
    admin
+   devel
+   translations
 
    >>> from canonical.launchpad.interfaces import (
    ...    IComponentSet, ISectionSet)
@@ -179,7 +189,9 @@ other things) the uploader for validating incoming uploads.
    web
    editors
    admin
+   devel
    python
+   translations
 
 
 DistroReleases can be initialised from their parents
@@ -257,9 +269,6 @@ Check the content IDRSPR binaries & builds attributes:
    >>> bumpy_firefox_sp.currentrelease.binaries.count()
    1
 
-   >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.binaries.count()
-   2
-
    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
    ...     print bin.id, bin.title, bin.build.distroarchrelease.title
    12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
@@ -285,9 +294,7 @@ distribution release:
    >>> for translatable in translatables:
    ...    print translatable.name
    evolution
-   evolution
    mozilla
-   pmount
    pmount
 
 Packages can be linked to upstream productseries in specific
@@ -318,7 +325,6 @@ netapplet are translatable in Hoary.
 DistroRelease can build meta objects for packages
 -------------------------------------------------
 
-   >>> from zope.interface.verify import verifyObject
    >>> from canonical.launchpad.interfaces import (
    ...     ISourcePackage,
    ...     IDistroReleaseBinaryPackage,
@@ -358,10 +364,8 @@ Entire publishing history:
 
 Most recent published history row:
 
-   >>> spph = pmount_srcrel.current_published
-   Traceback (most recent call last):
-   ...
-   NotFoundError: u'Source package pmount not published in hoary'
+   >>> pmount_srcrel.current_published is None
+   True
 
    >>> netapplet_srcrel =  hoary.getSourcePackage('netapplet').currentrelease
    >>> spph = netapplet_srcrel.current_published
@@ -425,24 +429,43 @@ The main one is to clone what we have in its parent distribution:
 
    >>> humpy.copyMissingTranslationsFromParent()
 
-   >>> len(hoary.potemplates)
-   5
-   >>> len(humpy.potemplates)
-   5
+Note that only current PO templates are copied from the distribution parent:
 
-Check one by one and compare the exported text. We define a function because
-we will need it later for other tests.
+   >>> len(hoary.potemplates) > len(hoary.currentpotemplates)
+   True
+   >>> len(humpy.potemplates) == len(humpy.currentpotemplates)
+   True
+   >>> len(humpy.potemplates) == len(hoary.currentpotemplates)
+   True
+
+Define a couple of functions we will need to compare the files from the parent
+and child distro release.
+
+   >>> def get_diff(old_file, new_file):
+   ...     from canonical.launchpad.helpers import test_diff
+   ...     # Get content as list of lines, removing X-Rosetta-Export-Date
+   ...     # lines to prevent time bombs in tests.
+   ...     old_file_lines = [line for line in old_file.split('\n')
+   ...                       if not line.startswith('"X-Rosetta-Export-Date:')]
+   ...     new_file_lines = [line for line in new_file.split('\n')
+   ...                       if not line.startswith('"X-Rosetta-Export-Date:')]
+   ...
+   ...     for i in range(len(old_file_lines)):
+   ...         if old_file_lines[i] != new_file_lines[i]:
+   ...             # The output is different.
+   ...             return u"Output doesn't match:\n\n %s\n" % test_diff(
+   ...                 old_file_lines, new_file_lines)
+   ...     return u''
 
    >>> def compare_translations(orig_distrorelease, dest_distrorelease):
    ...
-   ...     from difflib import unified_diff
    ...
    ...     orig_templates = sorted(
-   ...         orig_distrorelease.potemplates,
-   ...         key=lambda x: x.potemplatename.name)
+   ...         orig_distrorelease.currentpotemplates,
+   ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
    ...     dest_templates = sorted(
    ...         dest_distrorelease.potemplates,
-   ...         key=lambda x: x.potemplatename.name)
+   ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
    ...
    ...     output_text = u''
    ...     for i in range(len(orig_templates)):
@@ -451,39 +474,26 @@ we will need it later for other tests.
    ...         if old_template.priority != new_template.priority:
    ...             output_text += u'Priority of %s is different from %s\n' % (
    ...                 old_template.title, new_template.title)
-   ...         output = '\n'.join(list(unified_diff(
-   ...             old_template.export().split('\n'),
-   ...             new_template.export().split('\n'))))
-   ...         output = output.decode('UTF-8')
-   ...         if len(output) > 0:
-   ...             output_text += (
-   ...                 u'%s is different than its parent %s:\n%s' % (
-   ...                     new_template.title, old_template.title, output))
-   ...             return output_text
+   ...         output = get_diff(old_template.export(), new_template.export())
+   ...         if output != u'':
+   ...            output_text += output
    ...         for old_pofile in old_template.pofiles:
    ...             new_pofile = new_template.getPOFileByLang(
    ...                 old_pofile.language.code, old_pofile.variant)
-   ...             old_pofile_content = old_pofile.uncachedExport(
-   ...                     included_obsolete=False,
-   ...                     force_utf8=True).split('\n')
-   ...             new_pofile_content = new_pofile.uncachedExport(
-   ...                     included_obsolete=False,
-   ...                     force_utf8=True).split('\n')
-   ...             output = '\n'.join(list(unified_diff(
-   ...                 old_pofile_content, new_pofile_content)))
-   ...             output = output.decode('UTF-8')
-   ...             if len(output) > 0:
-   ...                 output_text += (
-   ...                     u'%s is different than its parent %s:\n%s' % (
-   ...                         new_pofile.title, old_pofile.title, output))
-   ...                 return output_text
+   ...             old_pofile_data = old_pofile.uncachedExport(
+   ...                 included_obsolete=False,force_utf8=True)
+   ...             new_pofile_data = new_pofile.uncachedExport(
+   ...                 included_obsolete=False, force_utf8=True)
+   ...             output = get_diff(old_pofile_data, new_pofile_data)
+   ...             if output is not None:
+   ...                 output_text += output
    ...     return output_text
 
 Let's compare what we have in our parent distro release and the new one just
 created. We should get no differences at all.
 
-   >>> compare_translations(hoary, humpy) == u''
-   True
+   >>> print compare_translations(hoary, humpy)
+   <BLANKLINE>
 
 Now, we are going to test how to migrate updates from Hoary to Humpy. To do
 this test, we will add some new translations to Hoary, migrate them to Humpy
@@ -552,12 +562,12 @@ release for the rosetta count of translations:
 We can see now that the changes are detected.
 
     >>> print compare_translations(hoary, humpy)
-    Spanish (es) translation of evolution-2.2 in Ubuntu Humpy Hippo package "evolution" is different than its parent Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":
-    ---
+    Output doesn't match:
     <BLANKLINE>
-    +++
+    --- expected
+    +++ actual
     <BLANKLINE>
-    @@ -31,11 +31,11 @@
+    @@ -30,11 +30,11 @@
     <BLANKLINE>
      #: a11y/addressbook/ea-addressbook-view.c:103
      #: a11y/addressbook/ea-minicard-view.c:119
@@ -572,7 +582,7 @@ We can see now that the changes are detected.
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
      #, fuzzy
-    @@ -44,7 +44,7 @@
+    @@ -43,7 +43,7 @@
     <BLANKLINE>
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:102
@@ -590,12 +600,12 @@ Let's migrate the updates.
 Now, we should have only the update from Humpy as a difference
 
     >>> print compare_translations(hoary, humpy)
-    Spanish (es) translation of evolution-2.2 in Ubuntu Humpy Hippo package "evolution" is different than its parent Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":
-    ---
+    Output doesn't match:
     <BLANKLINE>
-    +++
+    --- expected
+    +++ actual
     <BLANKLINE>
-    @@ -35,7 +35,7 @@
+    @@ -34,7 +34,7 @@
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:101
      msgid "current addressbook folder"
@@ -621,12 +631,12 @@ And we can see that the change is not migrated to Humpy because we already got
 a change directly there that we should not overwrite.
 
     >>> print compare_translations(hoary, humpy)
-    Spanish (es) translation of evolution-2.2 in Ubuntu Humpy Hippo package "evolution" is different than its parent Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution":
-    ---
+    Output doesn't match:
     <BLANKLINE>
-    +++
+    --- expected
+    +++ actual
     <BLANKLINE>
-    @@ -35,7 +35,7 @@
+    @@ -34,7 +34,7 @@
     <BLANKLINE>
      #: a11y/addressbook/ea-minicard-view.c:101
      msgid "current addressbook folder"
@@ -873,12 +883,12 @@ With a distrorelease, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
  >>> for spec in krunch.specifications(filter=filter):
  ...     print spec.name, spec.goalstatus.title
  kde-desktopfile-langpacks Proposed
- 
+
  >>> filter=[SpecificationFilter.DECLINED]
  >>> for spec in krunch.specifications(filter=filter):
  ...     print spec.name, spec.goalstatus.title
  krunch-desktop-plan Declined
- 
+
 
 And if we ask just for specs, we get BOTH the incomplete and the complete
 ones that have been accepted.
@@ -986,10 +996,20 @@ IDistroRelease provides the 'getLastUpload' method which returns a
 list of last 5 (five) IDistroReleaseSourcePackageRelease (IDRSPR)
 uploaded and published in its context.
 
-  >>> last_uploads = breezy_autotest.getLastUploads()
+  >>> warty = ubuntu['warty']
+  >>> last_uploads = warty.getLastUploads()
 
 Each element is a IDistroReleaseSourcePackageRelease instance:
 
   >>> for upload in last_uploads:
   ...     print upload.name, upload.version
   mozilla-firefox 0.9
+
+Also, empty results (caused obviously by lack of sample data or very
+earlier development state of a distrorelease) are possible:
+
+  >>> breezy_autotest = ubuntu['breezy-autotest']
+  >>> last_uploads = breezy_autotest.getLastUploads()
+
+  >>> len(last_uploads) == 0
+  True

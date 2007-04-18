@@ -8,10 +8,13 @@ import unittest
 
 from zope.interface.verify import verifyObject
 
+from canonical.database.sqlbase import sqlvalues
+
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 from canonical.authserver.interfaces import (
-    IUserDetailsStorage, IBranchDetailsStorage)
+    IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
+    IUserDetailsStorageV2)
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     DatabaseBranchDetailsStorage)
@@ -37,6 +40,10 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
                                      DatabaseUserDetailsStorage(None)))
+        self.failUnless(verifyObject(IUserDetailsStorageV2,
+                                     DatabaseUserDetailsStorageV2(None)))
+        self.failUnless(verifyObject(IHostedBranchStorage,
+                                     DatabaseUserDetailsStorageV2(None)))
 
     def test_getUser(self):
         # Getting a user should return a valid dictionary of details
@@ -158,8 +165,8 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
 
     def test_getBranchesForUser(self):
         # Although user 12 has lots of branches in the sample data, they only
-        # have one push branch: a branch named "pushed" on the "gnome-terminal"
-        # product.
+        # have three push branches: "pushed", "mirrored" and "scanned" on the
+        # "gnome-terminal" product.
         storage = DatabaseUserDetailsStorageV2(None)
         branches = storage._getBranchesForUserInteraction(self.cursor, 12)
         self.assertEqual(1, len(branches))
@@ -167,7 +174,9 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         gnomeTermID, gnomeTermName, gnomeTermBranches = gnomeTermProduct
         self.assertEqual(6, gnomeTermID)
         self.assertEqual('gnome-terminal', gnomeTermName)
-        self.assertEqual([(25, 'pushed')], gnomeTermBranches)
+        self.assertEqual(
+            set([(25, 'pushed'), (26, 'mirrored'), (27, 'scanned')]),
+            set(gnomeTermBranches))
 
     def test_getBranchesForUserNullProduct(self):
         # getBranchesForUser returns branches for hosted branches with no
@@ -227,6 +236,34 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         TestDatabaseSetup.setUp(self)
         # This is the salt for Mark's password in the sample data.
         self.salt = '\xf4;\x15a\xe4W\x1f'
+
+    def _getTime(self, row_id):
+        self.cursor.execute("""
+            SELECT mirror_request_time FROM Branch
+            WHERE id = %d""" % row_id)
+        [mirror_request_time] = self.cursor.fetchone()
+        return mirror_request_time
+
+    def test_initialMirrorRequest(self):
+        # The default 'mirror_request_time' for a newly created hosted branch
+        # should be None.
+        storage = DatabaseUserDetailsStorageV2(None)
+        branchID = storage._createBranchInteraction(self.cursor, 1, None,
+                                                    'foo')
+        self.assertEqual(self._getTime(branchID), None)
+
+    def test_requestMirror(self):
+        # requestMirror should set the mirror_request_time field to be the
+        # current time.
+        hosted_branch_id = 25
+        # make sure the sample data is sane
+        self.assertEqual(self._getTime(hosted_branch_id), None)
+
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(self.cursor, hosted_branch_id)
+        self.cursor.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+        [current_db_time] = self.cursor.fetchone()
+        self.assertEqual(current_db_time, self._getTime(hosted_branch_id))
 
     def test_authUser(self):
         # Authenticating a user with the right password should work
@@ -298,16 +335,9 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         # FIXME: there should probably be some SSH keys in the sample data,
         #        so that this test wouldn't need to add some.
 
-        # Add test SSH keys
         self.cursor.execute(
-            "INSERT INTO SSHKey (person, keytype, keytext, comment) "
-            "VALUES ("
-            "  1, "
-            "  %d,"
-            "  'garbage123',"
-            "  'mark@hbd.com')"
-            % (dbschema.SSHKeyType.DSA.value, )
-        )
+            "SELECT keytext FROM SSHKey WHERE person = 1")
+        [keytext] = self.cursor.fetchone()
 
         # Add test push mirror access
         self.cursor.execute(
@@ -321,18 +351,18 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         storage = DatabaseUserDetailsStorage(None)
         keys = storage._getSSHKeysInteraction(self.cursor,
                                               'marks-archive@example.com')
-        self.assertEqual([('DSA', 'garbage123')], keys)
+        self.assertEqual([('DSA', keytext)], keys)
 
         # Fred's SSH key should also have access to an archive with his email
         # address
         keys = storage._getSSHKeysInteraction(self.cursor, 'mark@hbd.com')
-        self.assertEqual([('DSA', 'garbage123')], keys)
+        self.assertEqual([('DSA', keytext)], keys)
 
         # Fred's SSH key should also have access to an archive whose name
         # starts with his email address + '--'.
         keys = storage._getSSHKeysInteraction(self.cursor,
                                               'mark@hbd.com--2005')
-        self.assertEqual([('DSA', 'garbage123')], keys)
+        self.assertEqual([('DSA', keytext)], keys)
 
         # No-one should have access to wilma@hbd.com
         keys = storage._getSSHKeysInteraction(self.cursor, 'wilma@hbd.com')
@@ -469,17 +499,41 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.connection.commit()
 
         results = self.storage._getBranchPullQueueInteraction(self.cursor)
+
+        # The first item in the row is the id.
+        results_dict = dict((row[0], row) for row in results)
+
         # We verify that a selection of expected branches are included
         # in the results, each triggering a different pull_url algorithm.
         #   a vcs-imports branch:
-        self.assertTrue((14, 'http://escudero.ubuntu.com:680/0000000e')
-                        in results)
+        self.assertEqual(results_dict[14],
+                         (14, 'http://escudero.ubuntu.com:680/0000000e',
+                          u'vcs-imports/evolution/main'))
         #   a pull branch:
-        self.assertTrue((15, 'http://example.com/gnome-terminal/main')
-                        in results)
+        self.assertEqual(results_dict[15],
+                         (15, 'http://example.com/gnome-terminal/main',
+                          u'name12/gnome-terminal/main'))
         #   a hosted SFTP push branch:
-        self.assertTrue((25, '/tmp/sftp-test/branches/00/00/00/19')
-                        in results)
+        self.assertEqual(results_dict[25],
+                         (25, '/tmp/sftp-test/branches/00/00/00/19',
+                          u'name12/gnome-terminal/pushed'))
+
+    def test_getBranchPullQueueNoLinkedProduct(self):
+        # If a branch doesn't have an associated product the unique name
+        # returned should have +junk in the product segment. See
+        # Branch.unique_name for precedent.
+        self.setSeriesDateLastSynced(3, now_minus='1 second')
+        self.setBranchLastMirrorAttempt(14, now_minus='1 day')
+        self.connection.commit()
+
+        results = self.storage._getBranchPullQueueInteraction(self.cursor)
+
+        # The first item in the row is the id.
+        results_dict = dict((row[0], row) for row in results)
+
+        # branch 3 is a branch without a product.
+        branch_id, url, unique_name = results_dict[3]
+        self.assertEqual(unique_name, 'spiv/+junk/trunk')
 
     def test_getBranchPullQueueOrdering(self):
         # Test that rows where last_mirror_attempt IS NULL are listed first, and
@@ -590,6 +644,36 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(row[2], 0)
         self.assertEqual(row[3], 'rev-1')
 
+    def test_mirrorComplete_resets_mirror_request(self):
+        # After successfully mirroring a branch, mirror_request_time should be
+        # set to NULL.
+
+        # Request that 25 (a hosted branch) be mirrored. This sets
+        # mirror_request_time.
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(self.cursor, 25)
+
+        # Simulate successfully mirroring branch 25
+        self.storage._startMirroringInteraction(self.cursor, 25)
+        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
+
+        self.assertEqual(None, self.getMirrorRequestTime(25))
+
+    def test_mirrorFailed_resets_mirror_request(self):
+        # After failing to mirror a branch, mirror_request_time for that branch
+        # should be set to NULL.
+
+        # Request that 25 (a hosted branch) be mirrored. This sets
+        # mirror_request_time.
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(self.cursor, 25)
+
+        # Simulate successfully mirroring branch 25
+        self.storage._startMirroringInteraction(self.cursor, 25)
+        self.storage._mirrorFailedInteraction(self.cursor, 25, 'failed')
+
+        self.assertEqual(None, self.getMirrorRequestTime(25))
+
     def test_mirrorComplete_resets_failure_count(self):
         # this increments the failure count ...
         self.test_mirrorFailed()
@@ -608,31 +692,70 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
 
-    def test_always_try_mirroring_hosted_branches(self):
-        # Return all hosted branches every run, regardless of
-        # last_mirror_attempt.  This is a short-term fix for bug #48813; see the
-        # comment in _getBranchPullQueueInteraction.
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
+    def test_unrequested_hosted_branches(self):
+        # Hosted branches that haven't had a mirror requested should NOT be
+        # included in the branch queue
 
         # Branch 25 is a hosted branch.
-        branch_ids = [branch_id for branch_id, pull_url in results]
-        self.failUnless(25 in branch_ids)
-        
+        # Double check that its mirror_request_time is NULL. The sample data
+        # should guarantee this.
+        self.assertEqual(None, self.getMirrorRequestTime(25))
+
         # Mark 25 as recently mirrored.
         self.storage._startMirroringInteraction(self.cursor, 25)
         self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
-        
-        # 25 should still be in the pull list
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
-        branch_ids = [branch_id for branch_id, pull_url in results]
-        self.failUnless(25 in branch_ids,
-                        "hosted branch no longer in pull list")
+
+        self.failIf(self.isBranchInPullQueue(25),
+                    "Shouldn't be in queue until mirror requested")
+
+    def test_requested_hosted_branches(self):
+        # Hosted branches that HAVE had a mirror requested should be in
+        # the branch queue
+
+        # Mark 25 (a hosted branch) as recently mirrored.
+        self.storage._startMirroringInteraction(self.cursor, 25)
+        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
+
+        # Request a mirror
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(self.cursor, 25)
+
+        self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
+
+    def test_mirror_stale_hosted_branches(self):
+        # Hosted branches which haven't been mirrored for a whole day should be
+        # mirrored even if they haven't asked for it.
+
+        # Branch 25 is a hosted branch, hasn't been mirrored for over 1 day
+        # and has not had a mirror requested
+        self.failUnless(self.isBranchInPullQueue(25))
+
+        # Mark 25 as recently mirrored.
+        self.storage._startMirroringInteraction(self.cursor, 25)
+        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
+
+        # 25 should only be in the pull queue if a mirror has been requested
+        self.failIf(self.isBranchInPullQueue(25),
+                    "hosted branch no longer in pull list")
+
+    def getMirrorRequestTime(self, branch_id):
+        """Return the value of mirror_request_time for the branch with the
+        given id.
+
+        :param branch_id: The id of a row in the Branch table. An int.
+        :return: A timestamp or None.
+        """
+        self.cursor.execute(
+            "SELECT mirror_request_time FROM branch WHERE id = %s"
+            % sqlvalues(branch_id))
+        return self.cursor.fetchone()[0]
 
     def isBranchInPullQueue(self, branch_id):
         """Whether the branch with this id is present in the pull queue."""
         results = self.storage._getBranchPullQueueInteraction(self.cursor)
         return branch_id in (
-            result_branch_id for result_branch_id, result_pull_url in results)
+            result_branch_id
+            for result_branch_id, result_pull_url, unique_name in results)
 
     def setSeriesDateLastSynced(self, series_id, value=None, now_minus=None):
         """Helper to set the datelastsynced of a ProductSeries.

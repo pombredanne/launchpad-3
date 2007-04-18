@@ -7,10 +7,12 @@ import os
 import shutil
 import tempfile
 from unittest import TestCase, TestLoader
+from sha import sha
 
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistroReleaseQueueSet)
 from canonical.launchpad.mail import stub
@@ -22,10 +24,19 @@ from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket,
     DistroReleaseQueueStatus, DistributionReleaseStatus)
 from canonical.testing import LaunchpadZopelessLayer
+from canonical.librarian.utils import filechunks
 
 
 class TestQueueBase(TestCase):
     """Base methods for queue tool test classes."""
+
+    def setUp(self):
+        # Switch database user and set isolation level to READ COMMIITTED
+        # to avoid SERIALIZATION exceptions with the Librarian.
+        LaunchpadZopelessLayer.alterConnection(
+                dbuser=self.dbuser,
+                isolation=READ_COMMITTED_ISOLATION
+                )
 
     def _test_display(self, text):
         """Store output from queue tool for inspection."""
@@ -57,6 +68,7 @@ class TestQueueTool(TestQueueBase):
     def setUp(self):
         """Create contents in disk for librarian sampledata."""
         fillLibrarianFile(1)
+        TestQueueBase.setUp(self)
 
     def tearDown(self):
         """Remove test contents from disk."""
@@ -227,34 +239,79 @@ class TestQueueTool(TestQueueBase):
 
         Further details in bug #59443
         """
-        # make breezy-autotest CURRENT in order to accept upload
-        # to BACKPORTS
+        # Make breezy-autotest CURRENT in order to accept upload
+        # to BACKPORTS.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
         breezy_autotest.releasestatus = DistributionReleaseStatus.CURRENT
 
-        # ensure breezy-autotest is set
+        # Store the targeted queue item for future inspection.
+        # Ensure it is what we expect.
+        target_queue = breezy_autotest.getQueueItems(
+            status=DistroReleaseQueueStatus.UNAPPROVED,
+            pocket= PackagePublishingPocket.BACKPORTS)[0]
+        self.assertEqual(10, target_queue.id)
+
+        # Ensure breezy-autotest is set.
         self.assertEqual(
             u'autotest_changes@ubuntu.com', breezy_autotest.changeslist)
 
-        # create contents for the respective changesfile in librarian.
-        fillLibrarianFile(1)
-
-        # accept the sampledata item
+        # Accept the sampledata item.
         queue_action = self.execute_command(
             'accept', queue_name='unapproved',
             suite_name='breezy-autotest-backports', no_mail=False)
 
-        # only one item considered
+        # Only one item considered.
         self.assertEqual(1, queue_action.items_size)
 
-        # One email was sent
+        # One email was sent.
         self.assertEqual(1, len(stub.test_emails))
 
-        # sent to the default recipient only, not the breezy-autotest
+        # Previously stored reference should have new state now
+        self.assertEqual('ACCEPTED', target_queue.status.name)
+
+        # Email sent to the default recipient only, not the breezy-autotest
         # announcelist.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         self.assertEqual([queue_action.default_recipient], to_addrs)
+
+    def testQueueDoesNotSendAnyEmailsForTranslations(self):
+        """Check if no emails are sent when accepting translations.
+
+        Queue tool should not send any emails to source uploads targeted to
+        'translation' section.
+        They are the 'language-pack-*' and 'language-support-*' sources.
+
+        Further details in bug #57708
+        """
+        # Make breezy-autotest CURRENT in order to accept upload
+        # to PROPOSED.
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        breezy_autotest.releasestatus = DistributionReleaseStatus.CURRENT
+
+        # Store the targeted queue item for future inspection.
+        # Ensure it is what we expect.
+        target_queue = breezy_autotest.getQueueItems(
+            status=DistroReleaseQueueStatus.UNAPPROVED,
+            pocket= PackagePublishingPocket.PROPOSED)[0]
+        self.assertEqual(12, target_queue.id)
+        source = target_queue.sources[0].sourcepackagerelease
+        self.assertEqual('translations', source.section.name)
+
+        # Accept the sampledata item.
+        queue_action = self.execute_command(
+            'accept', queue_name='unapproved',
+            suite_name='breezy-autotest-proposed', no_mail=False)
+
+        # Only one item considered.
+        self.assertEqual(1, queue_action.items_size)
+
+        # Previously stored reference should have new state now
+        self.assertEqual('ACCEPTED', target_queue.status.name)
+
+        # No email was sent.
+        self.assertEqual(0, len(stub.test_emails))
 
     def assertQueueLength(self, expected_length, distro_release, status, name):
         self.assertEqual(
@@ -364,6 +421,7 @@ class TestQueueToolInJail(TestQueueBase):
         self._home = os.path.abspath('')
         self._jail = tempfile.mkdtemp()
         os.chdir(self._jail)
+        TestQueueBase.setUp(self)
 
     def tearDown(self):
         """Remove test contents from disk.
@@ -379,6 +437,15 @@ class TestQueueToolInJail(TestQueueBase):
         """Return a list of files present in jail."""
         return os.listdir(self._jail)
 
+    def _getsha1(self,filename):
+        """Return a sha1 hex digest of a file"""
+        file_sha = sha()
+        opened_file = open(filename,"r")
+        for chunk in filechunks(opened_file):
+            file_sha.update(chunk)
+        opened_file.close()
+        return file_sha.hexdigest()
+
     def testFetchActionByIDDoNotOverwriteFilesystem(self):
         """Check if queue fetch action doesn't overwrite files.
 
@@ -388,20 +455,50 @@ class TestQueueToolInJail(TestQueueBase):
 
         Instead of overwrite a file in the working directory queue will
         fail, raising a CommandRunnerError.
+
+        bug 67014: Don't complain if files are the same
         """
         queue_action = self.execute_command('fetch 1')
         self.assertEqual(
             ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
 
-        # acquire last modification time
-        mtime = os.stat(self._listfiles()[0]).st_mtime
+        # checksum the existing file
+        existing_sha1 = self._getsha1(self._listfiles()[0])
 
-        # fetch will raise and not overwrite the file in disk
-        self.assertRaises(
+        # fetch will NOT raise and not overwrite the file in disk
+        self.execute_command('fetch 1')
+
+        # checksum file again
+        new_sha1 = self._getsha1(self._listfiles()[0])
+
+        # Check that the file has not changed (we don't care if it was
+        # re-written, just that it's not changed)
+        self.assertEqual(existing_sha1,new_sha1)
+
+    def testFetchActionRaisesErrorIfDifferentFileAlreadyFetched(self):
+        """Check that fetching a file that has already been fetched
+        raises an error if they are not the same file.  (bug 67014)
+        """
+        CLOBBERED="you're clobbered"
+
+        queue_action = self.execute_command('fetch 1')
+        self.assertEqual(
+            ['mozilla-firefox_0.9_i386.changes'], self._listfiles())
+
+        # clobber the existing file, fetch it again and expect an exception
+        f = open(self._listfiles()[0],"w")
+        f.write(CLOBBERED)
+        f.close()
+
+        self.assertRaises( 
             CommandRunnerError, self.execute_command, 'fetch 1')
 
-        # check if the file wasn't modified (mtime continues the same)
-        self.assertEqual(mtime, os.stat(self._listfiles()[0]).st_mtime)
+        # make sure the file has not changed
+        f = open(self._listfiles()[0],"r")
+        line = f.read()
+        f.close()
+
+        self.assertEqual(CLOBBERED,line)
 
     def testFetchActionByNameDoNotOverwriteFilesystem(self):
         """Same as testFetchActionByIDDoNotOverwriteFilesystem

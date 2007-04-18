@@ -1,9 +1,4 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
   <body>
     <metal:heading fill-slot="pageheading">
       <h1>Launchpad FAQ</h1>
@@ -28,6 +23,8 @@
     * Do I need a translation team?
     * Can I add my KikoLinux distro to Soyuz?
     -->
+
+      <h1>Frequently asked questions</h1>
 
     <dl class="faq" style="max-width: 60em">
 
@@ -200,7 +197,7 @@
             We intend to release all of Launchpad as Free Software gradually,
             though it may be years before that is finished.
             So far we have released
-            <a href="https://launchpad.net/launchpad-cscvs">CSCVS</a>
+            <a href="https://launchpad.net/launchpad-cscvs">CSCVS</a>,
             for mirroring CVS/Subversion trees to Bazaar.
           </p>
           <p>
@@ -211,19 +208,6 @@
             <a href="http://sqlobject.org/">SQLObject</a>,
             and <a href="http://twistedmatrix.com/trac/">Twisted</a>.
           </p>
-
-<p>
-            If you are keen on seeing Launchpad components published as
-            free software sooner, rather than later, and you have good
-            Python and Zope3 skills, we are happy to provide code access
-            and accept patches that use Zope 3's component architecture
-            to factor out individual Launchpad applications and make it
-            easier to release chunks of Launchpad.  That is a lot of
-            hard work, but it would make it possible to release the
-            Registry, and the parts of Rosetta that are used for
-            upstream translation.
-            </p>
-            </dd>
 
         <dt>Launchpad is down for maintenance.  How long before it comes back?</dt>
             <dd>
@@ -285,4 +269,3 @@
 
 </body>
 </html>
-</tal:layout>
