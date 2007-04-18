@@ -301,5 +301,7 @@ class POTMsgSet(SQLBase):
         # everywhere where hide_translations_from_anonymous is used
         return self.primemsgid_.msgid in [
             u'translation-credits',
+            u'translator-credits',
+            u'translator_credits',
             u'_: EMAIL OF TRANSLATORS\nYour emails'
             ]
