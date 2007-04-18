@@ -56,7 +56,7 @@ class MarketingSubnavigationView:
 
     @property
     def faq_selected_class(self):
-        """Return True when the current is the +faq page."""
+        """Return True when the current page is the +faq page."""
         if str(self.request.URL).endswith('+faq'):
             return 'class="current"'
         return ""
@@ -91,7 +91,7 @@ class MarketingSubnavigationView:
 
 
 class MarketingBreadcrumbNameView:
-    """View helper for the breadcrumbs on the marketing pages."""
+    """View helper for the breadcrumbs text on the marketing pages."""
 
     def __call__(self):
         """Render the name that should appear in the current breadcrumb."""

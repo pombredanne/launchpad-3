@@ -96,6 +96,8 @@ class LaunchpadTourView(LaunchpadView):
             node.find('headline'), default=screen['title'])
         screen['summary'] = get_node_html_text(node.find('summary'))
         screen['screenshot'] = get_node_text(node.find('screenshot'))
+
+        # Callouts are numbered using that counter in _createCallout.
         self._callout_number = 1
         screen['callouts'] = [
             self._createCallout(callout)
@@ -115,6 +117,8 @@ class LaunchpadTourView(LaunchpadView):
             callout['left'] = int(node.get('left', 0))
         except ValueError:
             callout['left'] = 0
+
+        # Callouts are numbered from 1 in each screen.
         callout['number'] = self._callout_number
         self._callout_number += 1
         return callout
