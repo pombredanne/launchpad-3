@@ -196,14 +196,14 @@
           <p>
             We intend to release all of Launchpad as Free Software gradually,
             though it may be years before that is finished.
-            So far we have released
+             So far we have released
             <a href="https://launchpad.net/launchpad-cscvs">CSCVS</a>,
             for mirroring CVS/Subversion trees to Bazaar.
           </p>
           <p>
             Launchpad&rsquo;s development has, however, involved us making many
             contributions to other Free Software projects. These include
-            <a href="">Zope</a>,
+            <a href="http://zope.org/">Zope</a>,
             <a href="http://bazaar-vcs.org/">Bazaar</a>,
             <a href="http://sqlobject.org/">SQLObject</a>,
             and <a href="http://twistedmatrix.com/trac/">Twisted</a>.
