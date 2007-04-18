@@ -32,7 +32,8 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 def get_node_text(node, default=None):
     """Return the text content of an XML node.
 
-    If the element is missing, returns the default value."""
+    If the element is missing, returns the default value.
+    """
 
     if node is not None:
         return node.text

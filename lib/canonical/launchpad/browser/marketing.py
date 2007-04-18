@@ -21,6 +21,9 @@ class MarketingSubnavigationView:
     def application_name(self):
         """Return the application name based on the layer we are in."""
         request = self.request
+
+        # It is important to test LaunchpadLayer last because all other
+        # layers extends from it.
         if CodeLayer.providedBy(request):
             return 'Code'
         elif BugsLayer.providedBy(request):
