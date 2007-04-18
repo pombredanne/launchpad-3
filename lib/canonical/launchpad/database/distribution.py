@@ -789,16 +789,30 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 distinct=True,
                 orderBy="id")
             if publishing is not None:
-                # Get the first published binary package.
-                # XXX: is the first record the most appropriate?
-                binaries = list(publishing.publishedBinaries()[:1])
-                if binaries:
-                    binarypackagename = \
-                        binaries[0].binarypackagerelease.binarypackagename
-                else:
-                    binarypackagename = None
-
-                return (sourcepackagename, binarypackagename)
+                # Attempt to find a published binary package of the
+                # same name. Try the current release first.
+                publishedpackage = PublishedPackage.selectFirstBy(
+                    sourcepackagename=sourcepackagename.name,
+                    binarypackagename=sourcepackagename.name,
+                    distrorelease=self.currentrelease,
+                    orderBy=['-id'])
+                if publishedpackage is None:
+                    # Try any release next. XXX could we just do this
+                    # first? I'm just following the pattern that was
+                    # here before (e.g. see the search for a binary
+                    # package below).
+                    publishedpackage = PublishedPackage.selectFirstBy(
+                        sourcepackagename=sourcepackagename.name,
+                        binarypackagename=sourcepackagename.name,
+                        distribution=self,
+                        orderBy=['-id'])
+                if publishedpackage is not None:
+                    binarypackagename = BinaryPackageName.byName(
+                        publishedpackage.binarypackagename)
+                    return (sourcepackagename, binarypackagename)
+                # No binary with a similar name, so just return None
+                # rather than returning some arbitrary binary package.
+                return (sourcepackagename, None)
 
         # At this point we don't have a published source package by
         # that name, so let's try to find a binary package and work
