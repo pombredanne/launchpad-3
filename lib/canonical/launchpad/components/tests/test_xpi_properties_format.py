@@ -41,7 +41,7 @@ class BaseEncodingPropertyFileTest(unittest.TestCase):
 
 
 class UTF8PropertyFileTest(BaseEncodingPropertyFileTest):
-    """Test class for property file format.
+    """Test class for utf-8 property file format.
 
     This test makes sure that we handle UTF-8 encoding files.
     """
@@ -53,7 +53,7 @@ class UTF8PropertyFileTest(BaseEncodingPropertyFileTest):
 
 
 class UnicodeEscapedPropertyFileTest(BaseEncodingPropertyFileTest):
-    """Test class for property file format.
+    """Test class for unicode-escaped property file format.
 
     This test makes sure that we handle unicode escaped files.
     """
@@ -65,7 +65,7 @@ class UnicodeEscapedPropertyFileTest(BaseEncodingPropertyFileTest):
 
 
 class Latin1PropertyFileTest(unittest.TestCase):
-    """Test class for property file format.
+    """Test class for latin1 property file format.
 
     This test makes sure that we detect bad encodings.
     """
@@ -87,11 +87,37 @@ class Latin1PropertyFileTest(unittest.TestCase):
         self.assertEqual(detected, True)
 
 
+class TrailingBackslashPropertyFileTest(unittest.TestCase):
+    """Test class for property file format with trailing backslash.
+
+    A trailing backslash as last char in the line continue the string in the
+    following document line.
+    """
+
+    content = '''
+default-first-title-mac=Introd\
+ucci\u00F3n
+'''
+
+    def runTest(self):
+        property_file = PropertyFile('test.properties', dedent(self.content))
+
+        count = 0
+        for message in property_file._data:
+            if message['msgid'] == u'default-first-title-mac':
+                self.assertEqual(message['content'], u'Introducci\xf3n')
+                count += 1
+
+        # Validate that we actually found the strings so the test is really
+        # passing.
+        self.assertEqual(count, 1)
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(UTF8PropertyFileTest())
     suite.addTest(UnicodeEscapedPropertyFileTest())
     suite.addTest(Latin1PropertyFileTest())
+    suite.addTest(TrailingBackslashPropertyFileTest())
     return suite
 
 if __name__ == '__main__':

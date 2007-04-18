@@ -3,7 +3,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'MozillaSupport'
+    'MozillaSupport',
+    'ProperySyntaxError'
     ]
 
 import codecs
@@ -189,12 +190,51 @@ class DtdFile (LocalizableFile):
         parser.parse_string(content)
 
 
+class ProperySyntaxError(Exception):
+    """Syntax error in a property file."""
+    def __init__(self, lno=None, msg=None):
+        self.lno = lno
+        self.msg = msg
+
+    def __str__(self):
+        if self.msg is not None:
+            return self.msg
+        if self.lno is None:
+            return 'Property file: syntax error on an unknown line'
+        else:
+            return 'Property file: syntax error on entry at line %d' % self.lno
+
+
+def valid_property_msgid(msgid):
+    """Whether the given msgid follows the restrictions to be valid."""
+    if u' ' in msgid:
+        # It cannot have white spaces.
+        return False
+    else:
+        return True
+
+
 class PropertyFile (LocalizableFile):
     """Class for reading translatable messages from a .properties file.
 
     It behaves as an iterator over messages in the file, indexed by keys
     from the .properties file.
     """
+
+    license_block_text = u'END LICENSE BLOCK'
+    escape_map = {
+        'a': '\a',
+        'b': '\b',
+        'f': '\f',
+        'n': '\n',
+        'r': '\r',
+        't': '\t',
+        'v': '\v',
+        '"': '"',
+        '\'': '\'',
+        '\\': '\\',
+        }
+
 
     def __init__(self, filename, content, logger=None):
         """Constructs a dictionary from a .properties file.
@@ -206,6 +246,16 @@ class PropertyFile (LocalizableFile):
         self.filename = filename
         self._data = []
         self.logger = logger
+
+        # Parse the content.
+        self.parse(content)
+
+    def parse(self, content):
+        """Parse given content as a property file.
+
+        Once the parse is done, self._data has a list of the available
+        messages.
+        """
 
         # .properties files are supposed to be unicode-escaped, but we know
         # that there are some .xpi language packs that instead, use UTF-8.
@@ -220,43 +270,137 @@ class PropertyFile (LocalizableFile):
             # unicode-escaped too.
             raise UnsupportedEncoding
 
-        count = 0
-        lastcomment = None
+        # Now, to "normalize" all to the same encoding, we encode to
+        # unicode-escape first, and then decode it to unicode
+        # XXX: Danilo 2006-08-01: we _might_ get performance
+        # improvements if we reimplement this to work directly,
+        # though, it will be hard to beat C-based de/encoder
+        content = content.encode('unicode_escape').decode('unicode_escape')
 
-        lines = content.split("\n")
-        for line in lines:
-            # Ignore empty and comment lines
-            if not len(line.strip()) or line[0]=='#' or line[0]=='!':
-                if len(line.strip()) and line[0] in ('#', '!'):
-                    if lastcomment:
-                        lastcomment += ' ' + line[1:].strip()
-                        if 'END LICENSE BLOCK' in lastcomment:
-                            lastcomment = None
+        line_num = 0
+        is_multi_line_comment = False
+        last_comment = None
+        last_comment_line_num = 0
+        ignore_comment = False
+        is_message = False
+        translation = u''
+        for line in content.split(u'\n'):
+            line_num += 1
+            if not is_multi_line_comment:
+                if line.startswith(u'#'):
+                    # It's a whole line comment.
+                    ignore_comment = False
+                    line = line[2:]
+                    if last_comment:
+                        last_comment = u'%s %s' % (last_comment, line)
                     else:
-                        lastcomment = line[1:].strip()
-                else:
-                    # reset comment on empty lines
-                    lastcomment = None
-                continue
-            (key, value) = line.split('=', 1)
+                        last_comment = line
+                    last_comment_line_num = line_num
+                    continue
+                elif len(line) == 0:
+                    # It's an empty line. Reset any previous comment we have.
+                    last_comment = None
+                    last_comment_line_num = 0
+                    ignore_comment = False
+            while line:
+                if is_multi_line_comment:
+                    if line.startswith(u'*/'):
+                        # The comment ended, we jump the closing tag and
+                        # continue with the parsing.
+                        line = line[2:]
+                        is_multi_line_comment = False
+                        last_comment_line_num = line_num
+                        if ignore_comment:
+                            last_comment = None
+                            ignore_comment = False
+                    elif line.startswith(self.license_block_text):
+                        # It's a comment with a license notice, this
+                        # comment can be ignored.
+                        ignore_comment = True
+                        # Jump the whole tag
+                        line = line[len(self.license_block_text):]
+                    else:
+                        # Store the character.
+                        if last_comment is None:
+                            last_comment = line[0]
+                        else:
+                            last_comment = u'%s %s' % (last_comment, line[0])
+                        # Jump the processed char.
+                        line = line[1:]
+                    continue
+                elif line.startswith(u'//'):
+                    # It's an 'end of the line comment'
+                    last_comment = line[2:]
+                    last_comment_line_num = line_num
+                    # Jump to next line
+                    break
+                elif line.startswith(u'/*'):
+                    # It's a multi line comment
+                    is_multi_line_comment = True
+                    ignore_comment = False
+                    # Jump the comment starting tag
+                    line = line[2:]
+                    continue
+                elif is_message:
+                    if line[0] == '\\' and line[1] in escape_map:
+                        # We got one of the special escaped chars we know about, we
+                        # unescape them using the mapping table we have.
+                        translation += escape_map[line[1]]
+                        line = line[2:]
+                        continue
+                    elif line[0] == '\\':
+                        # It's an unknown escaped char.
+                        raise PropertySyntaxError(
+                            line_num, u"unknown escaped char: '%s'" % line[:2])
+                    elif line[0] in ('"', '\''):
+                        raise PropertySyntaxError(
+                            line_num,
+                            u'Double or single quotes must be escaped')
+                    else:
+                        # Store the char and continue.
+                        translation += line[0]
+                        line = line[1:]
+                        continue
+                elif u'=' in line:
+                    # Looks like a message string.
+                    (key, value) = line.split('=', 1)
+                    # Remove leading and trailing white spaces.
+                    key = key.strip()
 
-            # Now, to "normalize" all to the same encoding, we encode to
-            # unicode-escape first, and then decode it to unicode
-            # XXX: Danilo 2006-08-01: we _might_ get performance
-            # improvements if we reimplement this to work directly,
-            # though, it will be hard to beat C-based de/encoder
-            value = value.encode('unicode_escape').decode('unicode_escape')
+                    if valid_property_msgid(key):
+                        is_message = True
+                        # Jump the msgid, control chars and leading white
+                        # space.
+                        line = value.lstrip()
+                        continue
+                    else:
+                        raise PropertySyntaxError(
+                            line_num, u"invalid msgid: '%s'" % key)
+            if is_message:
+                # We just parsed a message, so we need to add it to the list
+                # of messages.
+                if ignore_comment or last_comment_line_num < line_num - 1:
+                    # We must ignore the comment or either the comment is not
+                    # the last thing before this message or is not in the same
+                    # line as this message.
+                    last_comment = None
+                    ignore_comment = False
 
-            count += 1
-            self._data.append({
-                'msgid' : key.strip(),
-                'sourcerefs' : [
-                    "%s:%d(%s)" % (self.filename, count, key)],
-                'content' : value.strip(),
-                'order' : count,
-                'comment' : lastcomment
-                })
-            lastcomment = None
+                self._data.append({
+                    'msgid' : key,
+                    'sourcerefs' : [
+                        "%s:%d(%s)" % (self.filename, line_num, key)],
+                    'content' : translation.strip(),
+                    'order' : line_num,
+                    'comment' : last_comment
+                    })
+
+                # Reset status vars.
+                last_comment = None
+                last_comment_line_num = 0
+                is_message = False
+                translation = u''
+
 
 class MozillaSupport:
     implements(ITranslationImport)

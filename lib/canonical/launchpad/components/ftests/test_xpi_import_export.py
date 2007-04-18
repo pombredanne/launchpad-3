@@ -154,18 +154,18 @@ class XpiTestCase(LaunchpadZopelessTestCase):
              u'en-US.xpi/chrome/en-US.jar/test1.dtd(foozilla.play.fire)',
              u'en-US.xpi/chrome/en-US.jar/test1.dtd(foozilla.play.ice)',
              u'en-US.xpi/chrome/en-US.jar/test1.properties:1(foozilla.title)',
-             u'en-US.xpi/chrome/en-US.jar/test1.properties:2'
-                 u'(foozilla.happytitle)',
              u'en-US.xpi/chrome/en-US.jar/test1.properties:3'
+                 u'(foozilla.happytitle)',
+             u'en-US.xpi/chrome/en-US.jar/test1.properties:4'
                  u'(foozilla.nocomment)',
-             u'en-US.xpi/chrome/en-US.jar/test1.properties:4(foozilla.utf8)',
+             u'en-US.xpi/chrome/en-US.jar/test1.properties:5(foozilla.utf8)',
              u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd'
                  u'(foozilla.menu.title)',
              u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd'
                  u'(foozilla.menu.accesskey)',
              u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd'
                  u'(foozilla.menu.commandkey)',
-             u'en-US.xpi/chrome/en-US.jar/subdir/test2.properties:1'
+             u'en-US.xpi/chrome/en-US.jar/subdir/test2.properties:6'
                  u'(foozilla_something)'])
 
         self.failUnlessEqual(
