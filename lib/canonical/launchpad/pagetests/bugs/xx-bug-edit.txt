@@ -28,9 +28,9 @@ And now we show that any logged-in user can edit public bugs.
   >>> browser.url
   'http://.../debian/+source/mozilla-firefox/+bug/3'
   >>> print browser.contents
-  <...New Summary...
+  <...testbug...
+  ...New Summary...
   ...New description...
-  ...testbug...
 
 
 Editing bug tags
@@ -51,7 +51,7 @@ the tag.
   >>> user_browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
   >>> print user_browser.contents
-  <...The tag "new-tag" hasn't yet been used by firefox (upstream) before.
+  <...The tag "new-tag" hasn't yet been used by Mozilla Firefox before.
   Is this a new tag?...
 
 Here we can confirm that we want to add the tag, or change the tag name

@@ -8,12 +8,10 @@ even if the user was trying to set the milestone value.
     >>> browser.getControl("Milestone").value = ["1"]
     >>> browser.getControl("Save Changes").click()
 
-    >>> milestone_ignored_message = (
-    ...     "The milestone setting was ignored because you reassigned the bug "
-    ...     "to a new product")
-
-    >>> milestone_ignored_message in browser.contents
-    True
+    >>> print browser.contents
+    <...
+    ...The milestone setting was ignored because you reassigned the bug to...
+    ...Evolution...
 
 (Revert the change we just made.)
 
@@ -24,7 +22,7 @@ even if the user was trying to set the milestone value.
 (The "ignore" message doesn't appear when the user didn't set a
 milestone.)
 
-    >>> milestone_ignored_message not in browser.contents
+    >>> 'The milestone setting was ignored' not in browser.contents
     True
 
 Likewise, reassigning a bugtask to a different product will clear the
@@ -38,9 +36,7 @@ milestone value, if one was set.
     >>> browser.getControl("Product").value = "evolution"
     >>> browser.getControl("Save Changes").click()
 
-    >>> milestone_cleared_message = (
-    ...     "The bug report for evolution (upstream) was removed from the "
-    ...     "Mozilla Firefox: 1.0 milestone because it was reassigned to a new "
-    ...     "product")
-    >>> milestone_cleared_message in  browser.contents
-    True
+    >>> print browser.contents
+    <...
+    ...The Mozilla Firefox: 1.0 milestone setting has been removed...
+    ...because you reassigned the bug to Evolution...

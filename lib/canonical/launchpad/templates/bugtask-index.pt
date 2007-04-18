@@ -15,18 +15,34 @@
 
 <div metal:fill-slot="main">
 
-      <div>
+      <div style="float: left;">
         <tal:icon replace="structure context/image:icon" />
-        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>,
+        Bug #<tal:bug replace="context/bug/id">3252543</tal:bug><tal:nickname
+        condition="context/bug/name">
+        (<tal:nicknametext replace="context/bug/name" />)</tal:nickname>,
         first reported
         <span
           tal:attributes="title context/bug/datecreated/fmt:datetime"
           tal:content="context/bug/datecreated/fmt:displaydate" />
         by
-        <a tal:attributes="href context/bug/owner/fmt:url"
-           tal:content="context/bug/owner/browsername">Foo Bar</a>
+        <tal:reporter replace="structure context/bug/owner/fmt:link" />
       </div>
-      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
+      <div
+        tal:condition="context/bug/security_related"
+        style="float: right; color: #c00;"
+      >
+        <img alt="" src="/@@/warning" />
+        <strong>Security vulnerability</strong>
+      </div>
+      <h1 style="clear: both;">
+        <img
+          tal:condition="context/bug/private"
+          alt="[private]"
+          src="/@@/locked-large"
+          title="This bug can be seen only by the bug subscribers."
+        />
+        <tal:title replace="context/bug/title" />
+      </h1>
 
   <tal:block condition="view/reportBugInContext" />
 

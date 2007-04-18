@@ -54,7 +54,6 @@
           onclick string:return toggleFormVisibility('${form_row_id}')
         "
       ><img
-        tal:attributes="id string:${form_row_id}-edit"
         src="/@@/bug-status-expand"
         alt=""
       /></a>
@@ -69,7 +68,6 @@
           onclick string:return toggleFormVisibility('${form_row_id}')
         "
       ><img
-        tal:attributes="id string:${form_row_id}-edit"
         src="/@@/bug-status-expand"
         alt=""
       /></a>
@@ -116,7 +114,6 @@
           onclick string:return toggleFormVisibility('${form_row_id}')
         "
       ><img
-        tal:attributes="id string:${form_row_id}-edit"
         src="/@@/bug-status-expand"
         alt="[edit]"
       /></a>
