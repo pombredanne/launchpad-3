@@ -52,6 +52,30 @@ class TestIsolation(unittest.TestCase):
         self.txn.set_isolation_level(SERIALIZABLE_ISOLATION)
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
+    def test_commit(self):
+        # Change the isolation level
+        self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
+        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
+
+        con = self.txn.conn()
+        cur = con.cursor()
+        cur.execute("UPDATE Person SET password=NULL")
+        con.commit()
+        self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
+
+    def test_rollback(self):
+        # Change the isolation level
+        self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
+        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
+
+        con = self.txn.conn()
+        cur = con.cursor()
+        cur.execute("UPDATE Person SET password=NULL")
+        con.rollback()
+        self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
+
 
 def test_suite():
     suite = unittest.TestSuite()
