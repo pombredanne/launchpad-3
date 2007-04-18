@@ -74,13 +74,18 @@ class SourcePackageQuestionTargetMixin:
                         language=None, sort=None, owner=None,
                         needs_attention_from=None, unsupported=False):
         """See IQuestionCollection."""
+        if unsupported:
+            unsupported_target = self;
+        else:
+            unsupported_target = None
+            
         return QuestionTargetSearch(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             search_text=search_text, status=status,
             language=language, sort=sort, owner=owner,
             needs_attention_from=needs_attention_from,
-            unsupported=unsupported).getResults()
+            unsupported_target=unsupported_target).getResults()
 
     def findSimilarQuestions(self, title):
         """See IQuestionTarget."""

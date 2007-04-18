@@ -482,7 +482,7 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
     
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
-        return dict(language=None, languages='All', unsupported=self.context)
+        return dict(language=None, languages='All', unsupported=True)
 
 
 class ManageAnswerContactView(GeneralFormView):

@@ -251,7 +251,7 @@ not mean that indirect subscribers (Answer Contacts) to an
 IQuestionTarget speak that language. IQuestionTarget can return a list
 Questions in languages that are not supported
 
-    >>> unsupported_questions = firefox.searchQuestions(unsupported=firefox)
+    >>> unsupported_questions = firefox.searchQuestions(unsupported=True)
     >>> sorted([question.title for question in unsupported_questions])
     [u'Problemas de Impress\xe3o no Firefox']
    
@@ -262,7 +262,7 @@ Questions in languages that are not supported
 
     >>> warty_question_target = IQuestionTarget(ubuntu_warty)
     >>> unsupported_questions = warty_question_target.searchQuestions(
-    ...     unsupported=warty_question_target)
+    ...     unsupported=True)
     >>> sorted([question.title for question in unsupported_questions])
     [u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)']
 

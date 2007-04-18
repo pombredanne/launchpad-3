@@ -547,7 +547,7 @@ class QuestionSearch:
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, needs_attention_from=None, sort=None,
                  product=None, distribution=None, sourcepackagename=None,
-                 project=None, unsupported=None):
+                 project=None):
 
         self.search_text = search_text
 
@@ -581,13 +581,8 @@ class QuestionSearch:
         constraints = []
 
         if self.product:
-            # We accept either a product or an iterable of products.
-            if IProduct.providedBy(self.product):
-                constraints.append(
-                    'Question.product = %s' % sqlvalues(self.product))
-            else:
-                constraints.append('Question.product IN (%s)' % ", ".join(
-                    sqlvalues(*self.product)))
+            constraints.append(
+                'Question.product = %s' % sqlvalues(self.product))
         elif self.distribution:
             constraints.append(
                 'Question.distribution = %s' % sqlvalues(self.distribution))
@@ -736,8 +731,9 @@ class QuestionTargetSearch(QuestionSearch):
 
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
-                 needs_attention_from=None, unsupported=False, project=None, 
-                 product=None, distribution=None, sourcepackagename=None):
+                 needs_attention_from=None, unsupported_target=None,  
+                 project=None, product=None, distribution=None, 
+                 sourcepackagename=None):
         assert (product is not None or distribution is not None or
             project is not None), ("Missing a product or distribution context.")
         QuestionSearch.__init__(
@@ -750,24 +746,17 @@ class QuestionTargetSearch(QuestionSearch):
             assert IPerson.providedBy(owner), (
                 "expected IPerson, got %r" % owner)
         self.owner = owner
-        self.unsupported = unsupported
+        self.unsupported_target = unsupported_target
 
     def getConstraints(self):
         """See QuestionSearch."""
         constraints = QuestionSearch.getConstraints(self)
         if self.owner:
             constraints.append('Question.owner = %s' % self.owner.id)
-        if self.unsupported:
-            if self.product:
-                question_target = self.product
-            elif self.sourcepackagename:
-                question_target = self.distribution.getSourcePackage(
-                    self.sourcepackagename.name)
-            elif self.distribution:
-                question_target = self.distribution
-                
+        if self.unsupported_target is not None:
             langs = [str(lang.id) 
-                     for lang in (question_target.getSupportedLanguages())]
+                     for lang in (
+                        self.unsupported_target.getSupportedLanguages())]
             constraints.append('Question.language NOT IN (%s)' % 
                                ', '.join(langs))
 
@@ -811,8 +800,7 @@ class QuestionPersonSearch(QuestionSearch):
 
     def __init__(self, person, search_text=None,
                  status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
-                 sort=None, participation=None, needs_attention=False,
-                 unsupported=None):
+                 sort=None, participation=None, needs_attention=False):
         if needs_attention:
             needs_attention_from = person
         else:
@@ -820,8 +808,7 @@ class QuestionPersonSearch(QuestionSearch):
 
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
-            needs_attention_from=needs_attention_from, 
-            unsupported=unsupported, sort=sort)
+            needs_attention_from=needs_attention_from, sort=sort)
 
         assert IPerson.providedBy(person), "expected IPerson, got %r" % person
         self.person = person
