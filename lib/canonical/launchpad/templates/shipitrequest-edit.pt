@@ -44,22 +44,22 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="request dupe_requests">
+          <tr tal:repeat="dupe_request dupe_requests">
             <td>
-              <a tal:attributes="href request/fmt:url">
-                <span tal:replace="request/daterequested/fmt:date" />
+              <a tal:attributes="href dupe_request/fmt:url">
+                <span tal:replace="dupe_request/daterequested/fmt:date" />
               </a>
             </td>
-            <td><span tal:replace="request/recipientdisplayname" /></td>
+            <td tal:content="dupe_request/recipientdisplayname" />
             <td>
-              <span tal:replace="request/getTotalCDs" />
-              (<tal:flavours repeat="flavour request/getContainedFlavours"
+              <span tal:replace="dupe_request/getTotalCDs" />
+              (<tal:flavours repeat="flavour dupe_request/getContainedFlavours"
                 ><span tal:replace="flavour/title"
                   >Ubuntu</span><span tal:condition="not: repeat/flavour/end"
                     >,</span></tal:flavours>)
             </td>
-            <td><span tal:replace="request/getTotalApprovedCDs" />
-            <td><span tal:replace="request/status_desc" /></td>
+            <td tal:content="dupe_request/getTotalApprovedCDs" />
+            <td tal:content="dupe_request/status_desc" />
           </tr>
         </tbody>
       </table>
