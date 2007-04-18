@@ -102,26 +102,28 @@
 
     <table class="listing" style="width: auto; margin-left: 0"
            tal:attributes="cols view/ordered_architectures/count:len">
-      <tr>
       <thead>
-        <th>&nbsp;</th>
-        <tal:headers repeat="arch view/ordered_architectures">
-          <th tal:content="arch/title" />
-        </tal:headers>
+        <tr>
+          <th>&nbsp;</th>
+          <tal:headers repeat="arch view/ordered_architectures">
+            <th tal:content="arch/title" />
+          </tal:headers>
+        </tr>
       </thead>
-      </tr>
-      <tr tal:repeat="row view/quantities_matrix">
-        <tal:block repeat="cell row">
-          <tal:is-header condition="repeat/cell/start">
-            <th tal:content="cell" />
-          </tal:is-header>
-          <tal:is-not-header condition="not: repeat/cell/start">
-            <td style="text-align: right">
-              <span tal:replace="cell" />
-            </td>
-          </tal:is-not-header>
-        </tal:block>
-      </tr>
+      <tbody>
+        <tr tal:repeat="row view/quantities_matrix">
+          <tal:block repeat="cell row">
+            <tal:is-header condition="repeat/cell/start">
+              <th tal:content="cell" />
+            </tal:is-header>
+            <tal:is-not-header condition="not: repeat/cell/start">
+              <td style="text-align: right">
+                <span tal:replace="cell" />
+              </td>
+            </tal:is-not-header>
+          </tal:block>
+        </tr>
+      </tbody>
     </table>
 
     <tal:can-be-changed condition="view/contextCanBeModified">
