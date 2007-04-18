@@ -23,9 +23,10 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
-    flush_database_updates, clear_current_connection_cache, cursor)
+    flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.buildd.slave import BuilderStatus
+
 
 class BuildDaemonError(Exception):
     """The class of errors raised by the buildd classes"""
@@ -547,22 +548,11 @@ class BuilderGroup:
                 os.mkdir(failed_dir)
             os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
 
-        # XXX cprov 20070417: The famous 'flush_updates+commit+clear_cache'
-        # will make visible the DB changes done in process-upload. It is
-        # not just ugly but expensive in this context.
-        # The whole process were supposed to work appropriatelly (to share
-        # committed changes with the process-upload transaction) if at this
-        # point the transaction isolation level was READ_COMMITTED.
-        # But the debug inserted below show that here the isolation is
-        # 'serializable' despite of being set as suggested in cronscript/
-        # buildd-slave-scanner.py.
+        # The famous 'flush_updates + clear_cache' will make visible the
+        # DB changes done in process-upload, considering that the
+        # transaction was set with READ_COMMITED_ISOLATION isolation level.
         flush_database_updates()
-        self.commit()
         clear_current_connection_cache()
-        cur = cursor()
-        cur.execute('show transaction_isolation')
-        iso_level = cur.fetchall()
-        self.logger.debug('Isolation: %s' % iso_level)
 
         # Retrive the up-to-date build record and perform consistency
         # checks. The build record should be updated during the binary

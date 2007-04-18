@@ -29,8 +29,6 @@ class SlaveScanner(LaunchpadScript):
             raise LaunchpadScriptFailure(
                 "Unhandled arguments %s" % repr(self.args))
 
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
-
         buildMaster = BuilddMaster(self.logger, self.txn)
 
         self.logger.info("Setting Builders.")
@@ -67,7 +65,7 @@ if __name__ == '__main__':
     script = SlaveScanner('slave-scanner', dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
     try:
-        script.run()
+        script.run(isolation=READ_COMMITTED_ISOLATION)
     finally:
         script.unlock()
 
