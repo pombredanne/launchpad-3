@@ -20,11 +20,12 @@ Let's make sure that 'cprov' is now an Approved member of 'landscape-developers'
 
     >>> from canonical.launchpad.database import Person, TeamMembership
     >>> cprov = Person.byName('cprov')
-    >>> team = Person.byName('landscape-developers')
-    >>> tm = TeamMembership.selectOneBy(personID=cprov.id, teamID=team.id)
-    >>> tm.statusname
+    >>> landscape_team = Person.byName('landscape-developers')
+    >>> cprov_landscape_membership = TeamMembership.selectOneBy(
+    ...     personID=cprov.id, teamID=landscape_team.id)
+    >>> cprov_landscape_membership.statusname
     'Approved'
-    >>> cprov.inTeam(team)
+    >>> cprov.inTeam(landscape_team)
     True
 
 If the new member is already an approved member of that team, we'll say that.
@@ -46,11 +47,11 @@ The new member can't be a team without active members.
     >>> from canonical.lp.dbschema import TeamMembershipStatus
     >>> carlos = Person.byName('carlos')
     >>> ubuntu_translators = Person.byName('ubuntu-translators')
-    >>> tm = TeamMembership.selectOneBy(
+    >>> carlos_translators_membership = TeamMembership.selectOneBy(
     ...     personID=carlos.id, teamID=ubuntu_translators.id)
-    >>> tm.setStatus(
+    >>> carlos_translators_membership.setStatus(
     ...     TeamMembershipStatus.DEACTIVATED, ubuntu_translators.teamowner)
-    >>> tm.syncUpdate()
+    >>> carlos_translators_membership.syncUpdate()
 
     >>> browser.getControl('New member').value = 'ubuntu-translators'
     >>> browser.getControl('Add Member').click()
@@ -64,9 +65,9 @@ On the other hand, if the member is among the inactive/proposed members of
 the team, we'll simply change the membership's status and say that it was
 successfully added.
 
-    >>> tm = TeamMembership.selectOneBy(personID=cprov.id, teamID=team.id)
-    >>> tm.setStatus(TeamMembershipStatus.DEACTIVATED, team.teamowner)
-    >>> tm.syncUpdate()
+    >>> cprov_landscape_membership.setStatus(
+    ...     TeamMembershipStatus.DEACTIVATED, landscape_team.teamowner)
+    >>> cprov_landscape_membership.syncUpdate()
 
     >>> browser.url
     'http://launchpad.dev/%7Elandscape-developers/+addmember'

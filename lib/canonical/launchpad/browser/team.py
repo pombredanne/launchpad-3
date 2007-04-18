@@ -248,8 +248,13 @@ class TeamMemberAddView(LaunchpadFormView):
     label = "Select the new member"
 
     def validate(self, data):
+        """Verify new member.
+
+        This checks that the new member has some active members and is not
+        already an active team member.
+        """
         newmember = data.get('newmember')
-        error = ""
+        error = None
         if newmember is not None:
             if newmember.isTeam() and not newmember.activemembers:
                 error = _("You can't add a team that doesn't have any active"
@@ -264,10 +269,12 @@ class TeamMemberAddView(LaunchpadFormView):
 
     @action(u"Add Member", name="add")
     def add_action(self, action, data):
+        """Add the new member to the team."""
         newmember = data['newmember']
         # If we get to this point with the member being the team itself,
         # it means the ValidTeamMemberVocabulary is broken.
-        assert newmember != self.context, newmember
+        assert newmember != self.context, (
+            "Can't add team to itself: %s" % newmember)
 
         self.context.addMember(newmember, reviewer=self.user,
                                status=TeamMembershipStatus.APPROVED)
