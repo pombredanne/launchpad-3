@@ -6,7 +6,7 @@ import unittest
 from textwrap import dedent
 
 from canonical.launchpad.components.rosettaformats.mozilla_xpi import (
-    PropertyFile, UnsupportedEncoding)
+    PropertyFile, UnsupportedEncoding, PropertySyntaxError)
 
 class BaseEncodingPropertyFileTest(unittest.TestCase):
     """Test class for property file format.
@@ -112,12 +112,85 @@ ucci\u00F3n
         # passing.
         self.assertEqual(count, 1)
 
+
+class UnescapedDoubleQuotePropertyFileTest(unittest.TestCase):
+    """Test class for property file format with unescaped double quote.
+
+    Quotes must be escaped this test makes sure that we raise the right
+    exception when that's not true.
+    """
+
+    content = '''
+        default-first-title-mac = Something "new"
+        '''
+
+    def runTest(self):
+        detected = False
+        try:
+            property_file = PropertyFile(
+                'test.properties', dedent(self.content))
+        except PropertySyntaxError:
+            detected = True
+
+        # Whether the unescaped char was detected.
+        self.assertEqual(detected, True)
+
+
+class UnescapedSingleQuotePropertyFileTest(unittest.TestCase):
+    """Test class for property file format with unescaped single quote.
+
+    Quotes must be escaped this test makes sure that we raise the right
+    exception when that's not true.
+    """
+
+    content = '''
+        default-first-title-mac = Something 'new'
+        '''
+
+    def runTest(self):
+        detected = False
+        try:
+            property_file = PropertyFile(
+                'test.properties', dedent(self.content))
+        except PropertySyntaxError:
+            detected = True
+
+        # Whether the unescaped char was detected.
+        self.assertEqual(detected, True)
+
+
+class EscapedQuotesPropertyFileTest(unittest.TestCase):
+    """Test class for property file format with escaped quotes.
+
+    Escaped quotes must be stored unescaped.
+    """
+
+    content = u'default-first-title-mac = \\\'Something\\\' \\\"more\\\"'
+
+    def runTest(self):
+        property_file = PropertyFile('test.properties', dedent(self.content))
+
+        count = 0
+        for message in property_file._data:
+            if message['msgid'] == u'default-first-title-mac':
+                self.assertEqual(
+                    message['content'], u'\'Something\' \"more\"')
+                count += 1
+
+        # Validate that we actually found the strings so the test is really
+        # passing.
+        self.assertEqual(count, 1)
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(UTF8PropertyFileTest())
     suite.addTest(UnicodeEscapedPropertyFileTest())
     suite.addTest(Latin1PropertyFileTest())
     suite.addTest(TrailingBackslashPropertyFileTest())
+    suite.addTest(UnescapedDoubleQuotePropertyFileTest())
+    suite.addTest(UnescapedSingleQuotePropertyFileTest())
+    suite.addTest(EscapedQuotesPropertyFileTest())
     return suite
 
 if __name__ == '__main__':

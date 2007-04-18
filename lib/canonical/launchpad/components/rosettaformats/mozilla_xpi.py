@@ -190,7 +190,7 @@ class DtdFile (LocalizableFile):
         parser.parse_string(content)
 
 
-class ProperySyntaxError(Exception):
+class PropertySyntaxError(Exception):
     """Syntax error in a property file."""
     def __init__(self, lno=None, msg=None):
         self.lno = lno
@@ -219,6 +219,9 @@ class PropertyFile (LocalizableFile):
 
     It behaves as an iterator over messages in the file, indexed by keys
     from the .properties file.
+
+    The file format is described at:
+    http://www.mozilla.org/projects/l10n/mlp_chrome.html#text
     """
 
     license_block_text = u'END LICENSE BLOCK'
