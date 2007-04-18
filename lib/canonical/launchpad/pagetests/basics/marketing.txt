@@ -9,7 +9,7 @@ From Launchpad's front page, you can access a "marketing microsite"
     >>> browser.url
     'http://launchpad.dev/+about'
 
-That features three large tabs: "Overview", "Log In / Register", and
+That features three large tabs: "Overview", "Join Launchpad", and
 "Take a tour".
 
     >>> navigation = find_tag_by_id(browser.contents, 'navigation')
@@ -19,7 +19,7 @@ That features three large tabs: "Overview", "Log In / Register", and
     >>> print home_link['href']
     http://launchpad.dev/+about
 
-    >>> account_link = browser.getLink('Log In / Register')
+    >>> account_link = browser.getLink('Join Launchpad')
     >>> account_link.url
     'http://launchpad.dev/+about/+login'
 

@@ -67,7 +67,7 @@
                     tal:condition="not: request/lp:person"
                     ><a href="+login"
                         tal:attributes="href string:${request/URL}/+login"
-                        >Log In / Register</a></li>
+                        >Join Launchpad</a></li>
                 <li id="liTour"><a href="/+tour"
                                    tal:attributes="href string:${mainsite_url}+tour;
                                    class python:request.getURL().startswith(mainsite_url + '+tour') and 'current' or ''"
