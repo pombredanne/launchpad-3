@@ -13,11 +13,6 @@
 
 <div metal:fill-slot="main">
 
-      <div>
-        <img alt="" src="/@@/blueprint" />
-        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
-      </div>
-
   <h1>Give feedback on this blueprint</h1>
 
   <p class="documentDescription">

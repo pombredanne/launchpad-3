@@ -188,11 +188,11 @@ We display badges for associated bugs.
   ...     print anchors[0].get('href')
   ...     for anchor in anchors[1:]:
   ...        print "  Bug:", anchor.get('href')
-  http://code.launchpad.dev/~name12/firefox/main
-    Bug: http://launchpad.dev/bugs/4
-    Bug: http://launchpad.dev/bugs/5
-  http://code.launchpad.dev/~name12/gnome-terminal/2.6
-  http://code.launchpad.dev/~name12/gnome-terminal/main
-  http://code.launchpad.dev/~name12/gnome-terminal/klingon
-  http://code.launchpad.dev/~launchpad/gnome-terminal/launchpad
-  http://code.launchpad.dev/~name12/gnome-terminal/mirrored
+  /~name12/firefox/main
+    Bug: http://bugs.launchpad.dev/bugs/4
+    Bug: http://bugs.launchpad.dev/bugs/5
+  /~name12/gnome-terminal/2.6
+  /~name12/gnome-terminal/main
+  /~name12/gnome-terminal/klingon
+  /~launchpad/gnome-terminal/launchpad
+  /~name12/gnome-terminal/mirrored

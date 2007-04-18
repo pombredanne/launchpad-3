@@ -11,7 +11,7 @@ administrator and his subscription never expires.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
   >>> browser.reload()
-  >>> url = 'http://launchpad.dev/~ubuntu-team/+member/kamion'
+  >>> url = '/~ubuntu-team/+member/kamion'
   >>> browser.getLink(url=url).click()
 
   >>> "Colin Watson's membership status in Ubuntu Team" in browser.contents
@@ -97,7 +97,7 @@ subscription never expires, but he can demote himself.
   ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> jdub_browser.open('http://launchpad.dev/~ubuntu-team/+members')
 
-  >>> url = 'http://launchpad.dev/~ubuntu-team/+member/jdub' 
+  >>> url = '/~ubuntu-team/+member/jdub' 
   >>> jdub_browser.getLink(url=url).click()
 
   >>> "Jeff Waugh's membership status in Ubuntu Team" in jdub_browser.contents
@@ -132,7 +132,7 @@ If two people try to accept him as a member at the same time, the first one
 should succeed and the second one receive a nice error message.
 
   >>> browser.open('http://launchpad.dev/~name18/+members')
-  >>> url = 'http://launchpad.dev/~name18/+member/justdave'
+  >>> url = '/~name18/+member/justdave'
   >>> browser.getLink(url=url).click()
 
   >>> second_browser = Browser()
@@ -140,7 +140,7 @@ should succeed and the second one receive a nice error message.
 
   >>> second_browser.addHeader(
   ...     'Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> second_browser.open(url)
+  >>> second_browser.open('http://launchpad.dev' + url)
 
 Approve the membership in the first browser.
 

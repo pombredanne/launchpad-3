@@ -1,0 +1,21 @@
+<html metal:use-macro="view/macro:page/applicationhome"
+      i18n:domain="specifications">
+
+<body>
+
+<h1 metal:fill-slot="heading">Blueprint tracking</h1>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form" />
+
+</div>
+
+</body>
+</html>

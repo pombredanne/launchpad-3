@@ -92,10 +92,9 @@ class BugNominationView(LaunchpadFormView):
             nomination = self.context.bug.addNomination(
                 target=release, owner=self.user)
 
-            # If the user has the permission to approve or decline the
-            # nomination, then approve the nomination right now.
-            if check_permission("launchpad.Driver", nomination):
-                nomination.approve(self.user)
+            # If the user has the permission to approve the nomination,
+            # then nomination was approved automatically.
+            if nomination.isApproved():
                 approved_nominations.append(nomination.target.bugtargetname)
             else:
                 nominated_releases.append(release.bugtargetname)
