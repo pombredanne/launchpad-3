@@ -1804,6 +1804,19 @@ class PersonTranslationView(LaunchpadView):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
 
+    def should_display_message(self, pomsgset):
+        """Should a certain POMsgSet be displayed.
+
+        It's used only on the view to check if a user is not logged in,
+        and if she isn't, hide messages which may contain sensitive data
+        such as email addresses.
+        """
+        # Show all messages for logged-in users
+        if self.user:
+            return True
+        # For anonymous users, don't show sensitive messages
+        return not(pomsgset.potmsgset.hide_translations_from_anonymous)
+
 
 class PersonGPGView(LaunchpadView):
     """View for the GPG-related actions for a Person
