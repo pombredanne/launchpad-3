@@ -34,7 +34,7 @@ page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
-    'Bug #... in evolution (upstream): ...Evolution crashes...'
+    'Bug #... in Evolution: ...Evolution crashes...'
 
 == Advanced filebug page ==
 
@@ -54,4 +54,4 @@ filebug page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
-    'Bug #... in evolution (upstream): ...Evolution crashes...'
+    'Bug #... in Evolution: ...Evolution crashes...'

@@ -45,7 +45,7 @@ page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/...'
     >>> user_browser.title
-    'Bug #... in firefox (upstream): ...SVG causes Firefox to crash...'
+    'Bug #... in Mozilla Firefox: ...SVG causes Firefox to crash...'
 
 == Advanced filebug page ==
 
@@ -67,4 +67,4 @@ filebug page and file a bug directly.
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
-    'Bug #... in evolution (upstream): ...Evolution crashes...'
+    'Bug #... in Evolution: ...Evolution crashes...'

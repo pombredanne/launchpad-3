@@ -12,7 +12,6 @@ can still access bug #3 in the Evolution context.
     This bug is not recorded as needing to be fixed in the
     Evolution
     project.
-    ...
 
 We can still add a comment to the bug.
 
