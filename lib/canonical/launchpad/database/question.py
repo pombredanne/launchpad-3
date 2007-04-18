@@ -235,7 +235,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def can_give_answer(self):
         """See IQuestion."""
         return self.status in [
-            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, 
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
             QuestionStatus.ANSWERED]
 
     @notify_question_modified()
@@ -269,7 +269,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def can_confirm_answer(self):
         """See IQuestion."""
         if self.status not in [
-            QuestionStatus.OPEN, QuestionStatus.ANSWERED, 
+            QuestionStatus.OPEN, QuestionStatus.ANSWERED,
             QuestionStatus.NEEDSINFO]:
 
             return False
@@ -349,7 +349,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def can_reopen(self):
         """See IQuestion."""
         return self.status in [
-            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED, 
+            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED,
             QuestionStatus.SOLVED]
 
     @notify_question_modified()
@@ -548,7 +548,6 @@ class QuestionSearch:
                  language=None, needs_attention_from=None, sort=None,
                  product=None, distribution=None, sourcepackagename=None,
                  project=None):
-
         self.search_text = search_text
 
         if zope_isinstance(status, Item):
@@ -571,7 +570,7 @@ class QuestionSearch:
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
         self.project = project
-        
+
     def getTargetConstraints(self):
         """Return the constraints related to the IQuestionTarget context."""
         if self.sourcepackagename:

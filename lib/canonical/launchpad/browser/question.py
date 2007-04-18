@@ -249,7 +249,7 @@ class QuestionSupportLanguageMixin:
             key=attrgetter('englishname'))
 
     def createLanguageField(self):
-        """Create a field to edit a question language using a special vocabulary.
+        """Create a field with a special vocabulary to edit a question language.
 
         :param the_form: The form that will use this field.
         :return: A form.Fields instance containing the language field.
@@ -295,7 +295,8 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 
     custom_widget('title', TextWidget, displayWidth=40)
 
-    search_template = ViewPageTemplateFile('../templates/question-add-search.pt')
+    search_template = ViewPageTemplateFile(
+        '../templates/question-add-search.pt')
 
     add_template = ViewPageTemplateFile('../templates/question-add.pt')
 
@@ -644,7 +645,7 @@ class QuestionWorkflowView(LaunchpadFormView):
         if msgid is None:
             raise UnexpectedFormData('missing answer_id')
         try:
-            data['answer']= self.context.messages[int(msgid)]
+            data['answer'] = self.context.messages[int(msgid)]
         except ValueError:
             raise UnexpectedFormData('invalid answer_id: %s' % msgid)
         except IndexError:

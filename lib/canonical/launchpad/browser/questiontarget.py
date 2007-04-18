@@ -116,33 +116,6 @@ class QuestionCollectionOpenCountView:
         return unicode(open_questions.count())
 
 
-class NotRequiredRadioWidget(LaunchpadRadioWidget):
-    """A radio widget that does not create a '(no value)' item.
-    
-    Create a radio widget that only displays the vocabulary items when the
-    required param is set to False for the Field.
-    """
-
-    def renderItems(self, value):
-        """Render the items in the vocabulary only."""
-
-        if value == self._missing:
-            value = self.context.missing_value
-
-        if (value == self.context.missing_value
-            and getattr(self, 'firstItem', False)
-            and len(self.vocabulary) > 0
-            and self.context.required):
-            # Grab the first item from the iterator:
-            values = [iter(self.vocabulary).next().value]
-        else:
-            values = [value]
-
-        items = self.renderItemsWithValues(values)
-
-        return items
-
-
 class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     """View that can filter the target's question in a batched listing.
 
@@ -151,8 +124,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     schema = ISearchQuestionsForm
 
-    custom_widget('languages', NotRequiredRadioWidget, 
-                  orientation='horizontal')
+    custom_widget('languages', LaunchpadRadioWidget, orientation='horizontal')
     custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
@@ -170,7 +142,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     def setUpFields(self):
         """See LaunchpadFormView."""
         LaunchpadFormView.setUpFields(self)
-        self.form_fields = self.createLanguagesField() + self.form_fields
+        if self.show_languages_radio:
+            self.form_fields = self.createLanguagesField() + self.form_fields
 
     def setUpWidgets(self):
         """See LaunchpadFormView."""
@@ -188,10 +161,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         Create a specialized vocabulary based on the user's preferred languages.
         If the user is anonymous, the languages submited in the browser's
         request will be used.
-        """
-        # XXX: sinzui 2007-04-06 Insert English as the first element, to make 
-        # it the default one. We probably want to remove English because 
-        # of Bug #81369 to show only user preferred languages        
+        """    
         languages = set()
         for lang in request_languages(self.request):
             if not is_english_variant(lang):
@@ -201,17 +171,16 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             languages.add(self.context.language.displayname)
         languages = list(languages)
         languages.insert(0, getUtility(ILanguageSet)['en'].displayname)
-        preferred_term = SimpleTerm('Preferred', ', '.join(languages))
-        all_term = SimpleTerm('All', _('All Languages'))
+        preferred_term = SimpleTerm(
+            'Preferred', 'Preferred', ', '.join(languages))
+        all_term = SimpleTerm('All', 'All', _('All Languages'))
         
         return form.Fields(
                 Choice(
                     __name__='languages',
                     title=_('View Languages'),
                     vocabulary=SimpleVocabulary([all_term, preferred_term]),
-                    default='Preferred',
-                    missing_value='Preferred',
-                    required=False,
+                    required=True,
                     description=_(
                         'The languages to filter the search results by.')),
                 custom_widget=self.custom_widgets['languages'],
@@ -588,6 +557,7 @@ class QuestionCollectionAnswersMenu(ApplicationMenu):
             {'field.status': statuses,
              'field.sort': sort,
              'field.search_text': '',
+             'field.languages': 'Preferred',
              'field.actions.search': 'Search',
              'field.status': statuses}, doseq=True)
 
