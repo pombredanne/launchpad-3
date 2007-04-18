@@ -5,6 +5,9 @@
 __metaclass__ = type
 __all__ = []
 
+import os.path
+from subprocess import Popen, PIPE, STDOUT
+import sys
 import unittest
 
 from canonical.database.sqlbase import (
@@ -75,6 +78,14 @@ class TestIsolation(unittest.TestCase):
         cur.execute("UPDATE Person SET password=NULL")
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
+
+    def test_script(self):
+        script = os.path.join(os.path.dirname(__file__), 'script_isolation.py')
+        cmd = [sys.executable, script]
+        process = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
+        (script_output, _empty) = process.communicate()
+        self.failUnlessEqual(process.returncode, 0, 'Error: ' + script_output)
+        self.failUnlessEqual(script_output, 'read committed\n')
 
 
 def test_suite():
