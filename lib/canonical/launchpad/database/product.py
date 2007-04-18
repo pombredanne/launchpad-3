@@ -319,7 +319,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
                         needs_attention_from=None, unsupported=False):
         """See IQuestionCollection."""
         if unsupported:
-            unsupported_target = self;
+            unsupported_target = self
         else:
             unsupported_target = None
             
