@@ -224,6 +224,11 @@ k            </description>
             only launchpad admins may access the site.
             </description>
         </key>
+        <key name="http_proxy" datatype="string" default="http://squid.internal:3128/">
+            <description>
+                Proxy to be used when issuing HTTP requests.
+            </description>
+        </key>
         <section name="*" type="launchpad_session" attribute="session"
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
@@ -608,6 +613,12 @@ k            </description>
             <description>
                 The time in seconds that the mirror prober will wait for a
                 reply.
+            </description>
+        </key>
+        <key name="use_proxy" datatype="boolean" default="true">
+            <description>
+                Should we set an http_proxy environment variable before
+                running the prober?
             </description>
         </key>
         <key name="localhost_only" datatype="boolean" default="false">
