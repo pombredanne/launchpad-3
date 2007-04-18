@@ -1807,9 +1807,10 @@ class PersonTranslationView(LaunchpadView):
     def should_display_message(self, pomsgset):
         """Should a certain POMsgSet be displayed.
 
-        It's used only to check if a user is not logged in, and if she isn't,
-        returns False for messages which may contain sensitive data such as
-        email addresses.
+        Return False if user is not logged in and message may contain
+        sensitive data such as email addresses.
+
+        Otherwise, return True.
         """
         # Show all messages for logged-in users
         if self.user:
