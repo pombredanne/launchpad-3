@@ -60,19 +60,15 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
     def getCopier(self, sourcename='mozilla-firefox', sourceversion=None,
                   from_suite='warty', to_suite='hoary',
                   from_distribution_name='ubuntu',
-                  to_distribution_name='ubuntu',
-                  confirm_all=True, comment='42', include_binaries=True):
+                  confirm_all=True, include_binaries=True):
         """Return a PackageCopier instance.
 
         Allow tests to use a set of default options and pass an 
         inactive logger to PackageCopier.
         """
-        logger = self.QuietLogger()
         test_args=['-s', from_suite,
                    '--to-suite', to_suite,
-                   '-d', from_distribution_name,
-                   '--to-distribution', to_distribution_name,
-                   '-c', comment]
+                   '-d', from_distribution_name ]
         if confirm_all:
             test_args.append('-y')
         if include_binaries:
@@ -82,8 +78,8 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         test_args.append(sourcename)
 
-        copier = PackageCopier(name='copy-package', test_args=test_args,
-                               logger=logger)
+        copier = PackageCopier(name='copy-package', test_args=test_args)
+        copier.logger = self.QuietLogger()
         return copier
 
     def testSimpleAction(self):
@@ -108,13 +104,13 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         # Check target source title - this should be the package name in
         # the sample data for our source package.
         self.assertEqual(
-            copy_helper.target_source.title,
+            copy_helper.from_source.title,
             u'mozilla-firefox 0.9 (source) in ubuntu warty')
 
         # Check target binaries.  The default source we're using 
         # (mozilla-firefox) only has one binary and we're checking its title
         # to be as expected.
-        target_binary = copy_helper.target_binaries[0]
+        target_binary = copy_helper.from_binaries[0]
         self.assertEqual(
             target_binary.title,
             u'Binary Package "mozilla-firefox" in The Warty Warthog '

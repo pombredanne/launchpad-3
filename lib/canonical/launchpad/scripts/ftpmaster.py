@@ -1123,22 +1123,16 @@ class PackageLocation:
             self.distrorelease = self.distribution.currentrelease
             self.pocket = PackagePublishingPocket.RELEASE
 
-    def __eq__(self, other):
+    def isEqual(self, other):
         if (self.distribution.id == other.distribution.id and
             self.distrorelease.id == other.distrorelease.id and
             self.pocket.value == other.pocket.value):
             return True
         return False
 
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
     def __str__(self):
         return '%s/%s/%s' % (self.distribution.name, self.distrorelease.name,
                              self.pocket.name)
-
-    def __repr__(self):
-        return self.__str__()
 
 
 class PackageCopyError(Exception):
@@ -1148,20 +1142,18 @@ class PackageCopyError(Exception):
 
 
 class PackageCopier(LaunchpadScript):
-    synced = False
-    target_source = None
-    target_binaries = []
-    copied_source = None
-    copied_binaries = []
 
     usage = '%prog -s warty mozilla-firefox --to-suite hoary'
     description = 'MOVE or COPY a published package to another suite.'
 
-    def __init__(self, name=None, dbuser=None, test_args=None, logger=None):
-        LaunchpadScript.__init__(self, name=name, dbuser=dbuser, 
+    def __init__(self, name=None, dbuser=None, test_args=None):
+        LaunchpadScript.__init__(self, name=name, dbuser=dbuser,
                                  test_args=test_args)
-        if logger is not None:
-            self.logger = logger
+        self.synced = False
+        self.from_source = None
+        self.from_binaries = []
+        self.copied_source = None
+        self.copied_binaries = []
 
     def add_my_options(self):
 
@@ -1172,41 +1164,31 @@ class PackageCopier(LaunchpadScript):
         self.parser.add_option(
             '-y', '--confirm-all', dest='confirm_all',
             default=False, action='store_true',
-            help='Do not prompt the user for questions.')
-
-        self.parser.add_option(
-            '-c', '--comment', dest='comment', default='',
-            action='store', help='Copy comment.')
+            help='Do not prompt the user for confirmation.')
 
         self.parser.add_option(
             '-b', '--include-binaries', dest='include_binaries',
             default=False, action='store_true',
-            help='Whether to copy related binaries or not')
+            help='Whether to copy related binaries or not.')
 
         self.parser.add_option(
             '-d', '--from-distribution', dest='from_distribution_name',
             default='ubuntu', action='store',
-            help='Optional source distribution.')
-
-        self.parser.add_option(
-            '--to-distribution', dest='to_distribution_name',
-            default='ubuntu', action='store',
-            help='Optional destination distribution.')
+            help='Source distribution.')
 
         self.parser.add_option(
             '-s', '--from-suite', dest='from_suite', default=None,
-            action='store', help='Optional source suite.')
+            action='store', help='Source suite.')
 
         self.parser.add_option(
             '--to-suite', dest='to_suite', default=None,
-            action='store', help='Optional destination suite.')
+            action='store', help='Destination suite.')
 
         self.parser.add_option(
             '-e', '--sourceversion', dest='sourceversion', default=None,
             action='store',
             help='Optional Source Version, defaults to the current version.')
 
-    # Script entry point.
     def main(self):
 
         self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
@@ -1227,22 +1209,10 @@ class PackageCopier(LaunchpadScript):
                 'Archive changes will by applied in the next publishing cycle')
             self.logger.info('Be patient.')
         else:
-            self.logger.info('Nothing to commit.')
+            self.logger.info('Dry run, so nothing to commit.')
             self.txn.abort()
 
         self.logger.info('Done.')
-
-    def setOptions(self):
-        """Set the program options from the command line arguments."""
-        self.sourcename = self.args[0]
-        self.sourceversion = self.options.sourceversion
-        self.from_suite = self.options.from_suite
-        self.to_suite = self.options.to_suite
-        self.from_distribution_name = self.options.from_distribution_name
-        self.to_distribution_name = self.options.to_distribution_name
-        self.confirm_all = self.options.confirm_all
-        self.comment = self.options.comment
-        self.include_binaries = self.options.include_binaries
 
     def doCopy(self):
         """Execute package copy procedure.
@@ -1258,90 +1228,96 @@ class PackageCopier(LaunchpadScript):
         In this case the caller can override test_args on __init__
         to set the command line arguments.
         """
+        self.sourcename = self.args[0]
         # This can raise PackageCopyError:
-        self.setOptions()
-        self._buildLocations()
-        self._buildSource()
+        self.from_location, self.to_location = self._buildLocations()
+        self.from_source = self._buildSource(
+            self.from_location, 
+            self.sourcename,
+            self.options.sourceversion)
 
-        self.logger.info("Syncing '%s' TO '%s'" % (self.target_source.title,
+        self.logger.info("Syncing '%s' TO '%s'" % (self.from_source.title,
                                                    self.to_location))
-        self.logger.info("Comment: %s" % self.comment)
-        self.logger.info("Include Binaries: %s" % self.include_binaries)
+        self.logger.info("Include Binaries: %s" % self.options.include_binaries)
 
-        confirmation = self._requestFeedback()
-        if confirmation != 'yes':
+        if not self.options.confirm_all and not self._requestFeedback():
             self.logger.info("Ok, see you later")
             return
 
-        self.copySource()
+        self.copied_source = self.copySource(self.from_source, self.to_location)
 
-        if self.include_binaries:
+        if self.options.include_binaries:
             self.logger.info("Performing binary copy.")
-            self._buildBinaries()
-            for binary in self.target_binaries:
-                self.copyBinary(binary)
+            self.from_binaries = self._buildBinaries(self.from_source, 
+                self.from_location)
+            for binary in self.from_binaries:
+                binary_copied = self.copyBinary(binary, self.to_location)
+                self.copied_binaries.append(binary_copied)
             self.logger.info(
                 "%d binaries copied." % len(self.copied_binaries))
 
     def _buildLocations(self):
         """Build PackageLocation for context FROM and TO.
 
-        Result is stored in self.from_location and self.to_location.
+        Returns result as a tuple.
         """
         try:
-            self.from_location = PackageLocation(
-                self.from_distribution_name, self.from_suite)
-            self.to_location = PackageLocation(
-                self.to_distribution_name, self.to_suite)
+            from_location = PackageLocation(
+                self.options.from_distribution_name, self.options.from_suite)
+            # from_distribution_name intentionally used here as we currently
+            # only support moving within the same distro:
+            to_location = PackageLocation(
+                self.options.from_distribution_name, self.options.to_suite)
         except PackageLocationError, err:
             raise PackageCopyError(err)
 
-        if self.from_location == self.to_location:
+        if from_location.isEqual(to_location):
             raise PackageCopyError(
                 "Can not sync between the same locations: '%s' to '%s'" % (
-                self.from_location, self.to_location))
+                from_location, to_location))
+        return (from_location, to_location)
 
-    def _buildSource(self):
+    def _buildSource(self, from_location, sourcename, sourceversion):
         """Build a DistroReleaseSourcePackageRelease for the given parameters
 
-        Result is stored in self.target_source.
+        Result is returned.
         """
-        sourcepackage = self.from_location.distrorelease.getSourcePackage(
-            self.sourcename)
+        sourcepackage = from_location.distrorelease.getSourcePackage(
+            sourcename)
 
         if sourcepackage is None:
             raise PackageCopyError(
                 "Could not find any version of '%s' in %s" % (
-                self.sourcename, self.from_location))
+                sourcename, from_location))
 
-        if self.sourceversion is None:
-            self.target_source = sourcepackage.currentrelease
+        if sourceversion is None:
+            target_source = sourcepackage.currentrelease
         else:
-            self.target_source = sourcepackage[self.sourceversion]
+            target_source = sourcepackage[sourceversion]
 
-        if self.target_source is None:
+        if target_source is None:
             raise PackageCopyError(
                 "Could not find '%s/%s' in %s" % (
-                self.sourcename, self.sourceversion,
-                self.from_location))
+                sourcename, self.options.sourceversion,
+                from_location))
+        return target_source
 
-    def _buildBinaries(self):
-        """Build a set of DistroArchReleaseBinaryPackage for the context source.
+    def _buildBinaries(self, from_source, from_location):
+        """Build a set of DistroArchReleaseBinaryPackage for the 
+        context source.
 
-        Asserts self.target_source is already initialised.
-        Result is stored in self.target_binaries.
+        Result is returned.
         """
-        assert self.target_source is not None, (
-            "target_source needs to be initialised first.")
+        target_binaries = []
         # Obtain names of all distinct binary packages names
         # produced by the target_source
         binary_name_set = set(
-            [binary.name for binary in self.target_source.binaries])
+            [binary.name for binary in from_source.binaries])
 
         # Get the binary packages in each distroarchrelease and store them
         # in target_binaries for later.
         for binary_name in binary_name_set:
-            all_archs = self.from_location.distrorelease.architectures
+            all_archs = from_location.distrorelease.architectures
             for distroarchrelease in all_archs:
                 darbp = distroarchrelease.getBinaryPackage(binary_name)
                 # only include objects with published binaries
@@ -1350,62 +1326,49 @@ class PackageCopier(LaunchpadScript):
                 except NotFoundError:
                     pass
                 else:
-                    self.target_binaries.append(darbp)
+                    target_binaries.append(darbp)
+        return target_binaries
 
-    def _requestFeedback(self, question='Are you sure', default_answer='yes',
-                         valid_answers=['yes', 'no']):
+    def _requestFeedback(self, question='Are you sure'):
         """Command-line helper.
 
         It uses raw_input to collect user feedback.
 
-        If self.confirm_all is activated the default answer is returned,
-        otherwise the user input will be requested and returned.
-
-        If valid_answers list is specified it will loop until one of the
-        options is entered.
+        Return True if the user typed 'yes' or False for 'no'.
         """
-        if self.confirm_all:
-            return default_answer
-
         answer = None
-        if valid_answers:
-            display_answers = '[%s]' % (', '.join(valid_answers))
-            full_question = '%s ? %s ' % (question, display_answers)
-            while answer not in valid_answers:
-                answer = raw_input(full_question)
-        else:
-            full_question = '%s ? ' % question
+        valid_answers = ['yes', 'no']
+        display_answers = '[%s]' % (', '.join(valid_answers))
+        full_question = '%s ? %s ' % (question, display_answers)
+        while answer not in valid_answers:
             answer = raw_input(full_question)
-        return answer
+        return answer=='yes'
 
-    def copySource(self):
+    def copySource(self, from_source, to_location):
         """Copy context source and store correspondent reference.
 
-        Asserts self.target_source is already initialised
-        Reference to the destination copy will be store in
-        self.copied_source.
+        Reference to the destination copy will be returned.
         """
-        assert self.target_source is not None, (
-            "target_source needs to be initialised first.")
-
         self.logger.info("Performing source copy.")
 
-        source_copy = self.target_source.copyTo(
-            distrorelease=self.to_location.distrorelease,
-            pocket=self.to_location.pocket)
+        source_copy = from_source.copyTo(
+            distrorelease=to_location.distrorelease,
+            pocket=to_location.pocket)
 
         # Retrieve and store the IDRSPR for the target location
-        to_distrorelease = self.to_location.distrorelease
-        self.copied_source = to_distrorelease.getSourcePackageRelease(
+        to_distrorelease = to_location.distrorelease
+        copied_source = to_distrorelease.getSourcePackageRelease(
             source_copy.sourcepackagerelease)
 
         self.synced = True
-        self.logger.info("Copied: %s" % self.copied_source.title)
+        self.logger.info("Copied: %s" % copied_source.title)
 
-    def copyBinary(self, binary):
+        return copied_source
+
+    def copyBinary(self, binary, to_location):
         """Copy given binary to target location if possible.
 
-        Store reference to the copied binary in the target location.
+        Return reference to the copied binary.
         """
         # copyTo will raise NotFoundError if the architecture in
         # question is not present in destination or if the binary
@@ -1413,8 +1376,8 @@ class PackageCopier(LaunchpadScript):
         # safe, so that's why we swallow this error.
         try:
             binary_copy = binary.copyTo(
-                distrorelease=self.to_location.distrorelease,
-                pocket=self.to_location.pocket)
+                distrorelease=to_location.distrorelease,
+                pocket=to_location.pocket)
         except NotFoundError:
             pass
         else:
@@ -1423,8 +1386,7 @@ class PackageCopier(LaunchpadScript):
                 binary_copy.binarypackagerelease.name)
             bin_version = binary_copy.binarypackagerelease.version
             binary_copied = darbp[bin_version]
-            self.copied_binaries.append(binary_copied)
 
             self.synced = True
             self.logger.info("Copied: %s" % binary_copied.title)
-
+            return binary_copied

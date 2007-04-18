@@ -90,10 +90,7 @@ class LaunchpadScript:
                                    description=self.description)
         scripts.logger_options(self.parser, default=self.loglevel)
         self.add_my_options()
-        if test_args is not None:
-            self.options, self.args = self.parser.parse_args(args=test_args)
-        else:
-            self.options, self.args = self.parser.parse_args()
+        self.options, self.args = self.parser.parse_args(args=test_args)
         self.logger = scripts.logger(self.options, name)
 
         self.lockfilepath = os.path.join(LOCK_PATH, self.lockfilename)
