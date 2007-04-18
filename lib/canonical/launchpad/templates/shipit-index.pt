@@ -23,8 +23,13 @@
           <tal:is-open condition="view/is_open">
           <p>ShipIt lets you request 
             <strong><span tal:replace="view/flavour/title" />
-            6.06 LTS (Dapper Drake)</strong> CDs that will be posted to
+            7.04 (Feisty Fawn)</strong> CDs that will be posted to
             you free of charge.
+          </p>
+          <p class="informational message">
+            Note that these CDs will only be shipped after
+            <span tal:replace="view/flavour/title" /> 7.04 is released
+            (April 19th).
           </p>
           <p
             tal:condition="view/announcement|nothing"

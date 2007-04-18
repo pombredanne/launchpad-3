@@ -1,5 +1,4 @@
-Distributions
-=============
+= Distributions =
 
 From the DerivationOverview spec
 <https://launchpad.canonical.com/DerivationOverview>:
@@ -40,7 +39,6 @@ Let's make sure a distribution object properly implements its interfaces.
     True
     >>> verifyObject(IDistribution, gentoo)
     True
-
 
 Once you've got a distribution, you can retrieve a source package if you
 have a SourcePackageName object for it.
@@ -90,8 +88,8 @@ You can list development distroreleases:
     ...     print devdist.name
     hoary
 
-Guessing package names
-======================
+
+== Guessing package names ==
 
 IDistribution allows us to retrieve packages by name, returning a tuple
 of Source/BinaryPackageName instances published within this
@@ -191,8 +189,7 @@ name even if it differs:
     >>> map(pnn, ubuntu.guessPackageNames('linux-2.6.12'))
     [u'linux-source-2.6.15', u'linux-2.6.12']
 
-Distribution Sorting
-====================
+== Distribution Sorting ==
 
 If you ask for all the distributions in the DistributionSet you should get
 Ubuntu first and the rest alphabetically:
@@ -208,8 +205,7 @@ Ubuntu first and the rest alphabetically:
     ubuntutest
 
 
-Searching for DistributionSourcePackages
-----------------------------------------
+=== Searching for DistributionSourcePackages ===
 
 The distribution also allows you to look for source packages that match
 a certain string through the magic of fti. For instance:
@@ -229,8 +225,7 @@ and even on substrings:
     1
 
 
-Finding distroreleases and pockets from distribution names
-----------------------------------------------------------
+=== Finding distroreleases and pockets from distribution names ===
 
 A distribution knows what distroreleases it has. Those distroreleases have
 pockets which have suffixes used by the archive publisher. Because we sometimes
@@ -275,9 +270,7 @@ raise NotFoundError for us
     NotFoundError: 'hoary-bullshit'
 
 
-
-Upload related stuff
---------------------
+=== Upload related stuff ===
 
 When uploading to a distribution we need to query its uploaders. Each
 uploader record is in fact a DistroComponentUploader record which
@@ -314,23 +307,26 @@ incomplete source is uploaded).
     AssertionError: searching in an explicitly empty space is pointless
 
 
-Launchpad Usage
----------------
+=== Launchpad Usage ===
 
-A distribution can specify if it uses Malone or Rosetta officially.
-Ubuntu uses both Malone and Rosetta:
+A distribution can specify if it uses Malone, Rosetta, or Answers 
+officially. Ubuntu uses all of them:
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu.official_malone
     True
     >>> ubuntu.official_rosetta
     True
-
-While Debian uses neither:
+    >>> ubuntu.official_answers
+    True
+    
+While Debian uses none:
 
     >>> debian.official_malone
     False
     >>> debian.official_rosetta
+    False
+    >>> debian.official_answers
     False
 
 Gentoo only uses Malone
@@ -339,11 +335,11 @@ Gentoo only uses Malone
     True
     >>> print gentoo.official_rosetta
     False
+    >>> print gentoo.official_answers
+    False
 
 
-
-Specification Listings
-======================
+=== Specification Listings ===
 
 We should be able to get lists of specifications in different states
 related to a distro.
@@ -430,7 +426,6 @@ We can get only valid specs (those that are not obsolete or superseded):
  >>> for spec in kubuntu.valid_specifications:
  ...     print spec.name
  kde-desktopfile-langpacks
-
 
 == Milestones ==
 

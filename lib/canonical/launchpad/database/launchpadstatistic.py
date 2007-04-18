@@ -165,7 +165,7 @@ class LaunchpadStatisticSet:
         cur = cursor()
         cur.execute(
             "SELECT COUNT(DISTINCT product) + COUNT(DISTINCT distribution) "
-            "FROM Ticket")
+            "FROM Question")
         self.update("projects_with_questions_count", cur.fetchone()[0] or 0)
         ztm.commit()
 

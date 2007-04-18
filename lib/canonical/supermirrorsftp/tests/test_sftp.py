@@ -211,7 +211,8 @@ class MockChecker(SSHPublicKeyDatabase):
     error_message = u'error message'
 
     def requestAvatarId(self, credentials):
-        return failure.Failure(UnauthorizedLogin('error message'))
+        return failure.Failure(
+            sftponly.UserDisplayedUnauthorizedLogin('error message'))
 
 
 class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
@@ -262,6 +263,21 @@ class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
                              MockChecker.error_message + u'\r\n')
         return d.addCallback(check)
 
+    def test_unsupportedAuthMethodNotLogged(self):
+        # Trying various authentication methods is a part of the normal
+        # operation of the SSH authentication protocol. We should not spam the
+        # client with warnings about this, as whenever it becomes a problem, we
+        # can rely on the SSH client itself to report it to the user.
+        d = self.user_auth.ssh_USERAUTH_REQUEST(
+            NS('jml') + NS('') + NS('none') + NS(''))
+
+        def check(ignored):
+            # Check that we received only a FAILRE.
+            [(message_type, data)] = self.transport.packets
+            self.assertEqual(message_type, userauth.MSG_USERAUTH_FAILURE)
+
+        return d.addCallback(check)
+
 
 class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
     """Tests for the SFTP server authentication mechanism.
@@ -309,7 +325,8 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
         :return: Deferred. You must return this from your test.
         """
         d = self.assertFailure(
-            self.checker.requestAvatarId(creds), UnauthorizedLogin)
+            self.checker.requestAvatarId(creds),
+            sftponly.UserDisplayedUnauthorizedLogin)
         d.addCallback(
             lambda exception: self.assertEqual(str(exception), error_message))
         return d
@@ -334,18 +351,23 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
 
     def test_wrongKey(self):
         # When you sign into an existing account using the wrong key, you
-        # should be told that the key you're using doesn't match any of the
-        # keys that Launchpad has for that account.
+        # should *not* be informed of the wrong key. This is because SSH often
+        # tries several keys as part of normal operation.
 
         # Cheat a little and also don't provide a valid signature. This is OK
         # because the "no matching public key" failure occurs before the
         # "bad signature" failure.
         creds = SSHPrivateKey(self.valid_login, 'ssh-dss', 'invalid key',
                               None, None)
-        return self.assertLoginError(
-            creds,
-            "Your SSH key does not match any key registered for Launchpad "
-            "user %s" % (self.valid_login,))
+        d = self.assertFailure(
+            self.checker.requestAvatarId(creds),
+            UnauthorizedLogin)
+        d.addCallback(
+            lambda exception:
+            self.failIf(isinstance(exception,
+                                   sftponly.UserDisplayedUnauthorizedLogin),
+                        "Should not be a UserDisplayedUnauthorizedLogin"))
+        return d
 
 
 def test_suite():

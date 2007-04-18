@@ -65,6 +65,7 @@ from canonical.launchpad.interfaces import (
     ICveSet,
     IDistributionSet,
     IKarmaActionSet,
+    ILanguageSet,
     ILaunchBag,
     ILaunchpadCelebrities,
     ILaunchpadRoot,
@@ -423,6 +424,13 @@ class LaunchpadRootNavigation(Navigation):
 
     usedfor = ILaunchpadRoot
 
+    @stepto('support')
+    def redirect_support(self):
+        """Redirect /support to Answers root site."""
+        target_url= canonical_url(
+            getUtility(ILaunchpadRoot), rootsite='answers')
+        return RedirectionView(target_url, self.request, status=301)
+
     stepto_utilities = {
         'people': IPersonSet,
         'distros': IDistributionSet,
@@ -438,11 +446,12 @@ class LaunchpadRootNavigation(Navigation):
         'registry': IRegistryApplication,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
-        'support': IQuestionSet,
+        'questions': IQuestionSet,
         'translations': IRosettaApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,
         '+code': IBazaarApplication,
+        '+languages': ILanguageSet,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,

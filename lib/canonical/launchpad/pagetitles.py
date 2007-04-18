@@ -75,6 +75,9 @@ class ContextTitle(SubstitutionHelper):
     def __call__(self, context, view):
         return self.text % context.title
 
+class ContextDisplayname(SubstitutionHelper):
+    def __call__(self, context, view):
+        return self.text % context.displayname
 
 class ContextBrowsername(SubstitutionHelper):
     def __call__(self, context, view):
@@ -436,6 +439,14 @@ karmaaction_index = 'Karma actions'
 karmaaction_edit = 'Edit karma action'
 
 karmacontext_topcontributors = ContextTitle('Top %s Contributors')
+
+language_index = ContextDisplayname("%s in Launchpad")
+
+language_add = 'Add a new Language to Launchpad'
+
+language_admin = ContextDisplayname("Edit %s")
+
+languageset_index = 'Languages in Launchpad'
 
 # launchpad_debug doesn't need a title.
 
@@ -1061,6 +1072,8 @@ team_join = ContextBrowsername('Join %s')
 team_leave = ContextBrowsername('Leave %s')
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
+
+team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
 
 def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (

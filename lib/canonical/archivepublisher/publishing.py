@@ -128,7 +128,7 @@ class Publisher(object):
                 if not force_domination:
                     if not self.isDirty(distrorelease, pocket):
                         self.log.debug("Skipping domination for %s/%s" %
-                                   (distrorelease.name, pocket))
+                                   (distrorelease.name, pocket.name))
                         continue
                     if not distrorelease.isUnstable():
                         # We're not doing a full run and the
@@ -157,7 +157,7 @@ class Publisher(object):
                 if not is_careful:
                     if not self.isDirty(distrorelease, pocket):
                         self.log.debug("Skipping release files for %s/%s" %
-                                   (distrorelease.name, pocket))
+                                       (distrorelease.name, pocket.name))
                         continue
                     if not distrorelease.isUnstable():
                         # See comment in B_dominate
@@ -168,6 +168,19 @@ class Publisher(object):
     def isDirty(self, distrorelease, pocket):
         """True if a publication has happened in this release and pocket."""
         if not (distrorelease.name, pocket) in self.dirty_pockets:
+            return False
+        return True
+
+    def isAllowed(self, distrorelease, pocket):
+        """Whether or not the given suite should be considered.
+
+        Return True either if the self.allowed_suite is empty (was not
+        specified in command line) or if the given suite is included in it.
+
+        Otherwise, return False.
+        """
+        if (self.allowed_suites and
+            (distrorelease.name, pocket) not in self.allowed_suites):
             return False
         return True
 

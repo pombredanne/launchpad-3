@@ -28,11 +28,22 @@ ALSA is listed in the page among featured projects:
 
 Homepage also includes a list of languages.
 
-  >>> '>Languages</h2>' in browser.contents
-  True
 
-(XXX This should include a test that the list includes various languages.)
-
+  >>> preferred_languages_column = find_tags_by_class(
+  ...     browser.contents, 'three column right')[0]
+  >>> print preferred_languages_column
+  <...
+  ...Preferred languages...
+  <a href="/+languages/af">Afrikaans</a>
+  ...
+  <a href="/+languages/st">Sotho, Southern</a>
+  ...
+  <a href="/+languages/xh">Xhosa</a>
+  ...
+  <a href="/+languages/zu">Zulu</a>
+  ...
+  <a href="/+editmylanguages">
+  ...Change your preferred language...
 
 There is also an "About" page that talks about how Rosetta works.
 

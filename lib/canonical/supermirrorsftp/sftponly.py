@@ -139,6 +139,10 @@ components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
                            filetransfer.ISFTPServer)
 
 
+class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
+    """UnauthorizedLogin which should be reported to the user."""
+
+
 class Realm:
     implements(IRealm)
 
@@ -194,8 +198,8 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         self.transport.sendPacket(userauth.MSG_USERAUTH_BANNER,
                                   NS(bytes) + NS(language))
 
-    # XXX - Copied from twisted/conch/ssh/userauth.py, with the final line
-    # added. In Twisted r19857 and earlier, this method does not return a
+    # XXX - Copied from twisted/conch/ssh/userauth.py, with modifications
+    # noted. In Twisted r19857 and earlier, this method does not return a
     # Deferred, but should. See http://twistedmatrix.com/trac/ticket/2528 for
     # progress.
     # -- Jonathan Lange, 2007-03-19
@@ -211,12 +215,16 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
             self._ebBadAuth(ConchError('auth returned none'))
         d.addCallbacks(self._cbFinishedAuth)
         d.addErrback(self._ebMaybeBadAuth)
+        # The following line does not appear in the original Twisted source.
+        d.addErrback(self._ebLogToBanner)
         d.addErrback(self._ebBadAuth)
+        # Not in original Twisted method
         return d
 
-    def _ebBadAuth(self, reason):
+    def _ebLogToBanner(self, reason):
+        reason.trap(UserDisplayedUnauthorizedLogin)
         self.sendBanner(reason.getErrorMessage())
-        return userauth.SSHUserAuthServer._ebBadAuth(self, reason)
+        return reason
 
 
 class Factory(factory.SSHFactory):
@@ -254,7 +262,7 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
 
     def _checkUserExistence(self, userDict, credentials):
         if len(userDict) == 0:
-            raise UnauthorizedLogin(
+            raise UserDisplayedUnauthorizedLogin(
                 "No such Launchpad account: %s" % credentials.username)
 
         authorizedKeys = self.authserver.getSSHKeys(credentials.username)
@@ -273,7 +281,7 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             return False
 
         if len(keys) == 0:
-            raise UnauthorizedLogin(
+            raise UserDisplayedUnauthorizedLogin(
                 "Launchpad user %r doesn't have a registered SSH key"
                 % credentials.username)
 

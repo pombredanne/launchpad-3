@@ -23,19 +23,13 @@ For further info about DDTP see:
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
-  >>> from canonical.archivepublisher.tests import datadir
-
   >>> distro_release_set = getUtility(IDistroReleaseSet)
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
 
-  >>> import logging
-
-  >>> class MockOptions:
-  ...     distro = "ubuntutest"
-  ...     distrorelease = None
+  >>> from canonical.archivepublisher.nascentupload import NascentUpload
+  >>> from canonical.archivepublisher.tests import (
+  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
@@ -48,58 +42,43 @@ we need to access and modify DistroReleaseQueue records and other tables.
 First, test the rejection of a missapplied changesfile name, which
 doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
 
+  >>> sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntutest', distrorelease=None)
+
   >>> upload = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('ddtp-tarball'),
-  ...     "translations-main_20060728.changes",
-  ...     logging.getLogger())
-  >>> mock_options = MockOptions()
-  >>> upload.policy.setOptions(mock_options)
-
-  >>> from canonical.archivepublisher.nascentupload import UploadError
-  >>> try:
-  ...    upload.process()
-  ... except UploadError, info:
-  ...    print 'BOOM:', info
-  BOOM: translations-main_20060728.changes -> missapplied changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
-
+  ...     datadir('ddtp-tarball/translations-main_20060728.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  Traceback (most recent call last):
+  ...
+  FatalUploadError: translations-main_20060728.changes -> inappropriate changesfile name, should follow "<pkg>_<version>_<arch>.changes" format
 
 Now do a proper upload into the system.
 
-  >>> class MockLogger:
-  ...     def debug(self, s):
-  ...         print "DEBUG:", s
+  >>> insecure_policy = getPolicy(
+  ...     name='insecure', distro='ubuntutest', distrorelease=None)
 
   >>> upload = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir('ddtp-tarball'),
-  ...     "translations-main_20060728_all.changes",
-  ...     MockLogger())
+  ...     datadir('ddtp-tarball/translations-main_20060728_all.changes'),
+  ...     insecure_policy, mock_logger)
+  DEBUG: Verifying signature on translations-main_20060728_all.changes
 
-
-  >>> upload.changes_filename == datadir(
-  ...     "ddtp-tarball/translations-main_20060728_all.changes")
-  True
-
-  >>> upload.policy.setOptions(mock_options)
   >>> upload.process()
   DEBUG: Beginning processing.
-  DEBUG: Checking signature on changes file.
-  DEBUG: Verifying signature on translations-main_20060728_all.changes
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
-  DEBUG: Finding and applying overrides.
   DEBUG: Foo Bar (16) is an uploader for main.
   DEBUG: Finished checking upload.
 
 It was not rejected.
 
-  >>> upload.rejected
+  >>> upload.is_rejected
   False
 
   >>> success, msgs = upload.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
-  DEBUG: Creating a New queue entry
+  DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
 
 And all things worked.
@@ -209,17 +188,14 @@ index , the "bn" one, and left the rest untouched, this feature is
 know as "partial update" and will save some storage when fixing specific
 language indexes or adding new ones:
 
-  >>> class QuietLogger:
-  ...     def debug(self, s):
-  ...         pass
+  >>> insecure_policy = getPolicy(
+  ...     name='insecure', distro='ubuntutest', distrorelease=None)
 
   >>> upload = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir('ddtp-tarball'),
-  ...     "translations-main_20060817_all.changes",
-  ...     QuietLogger())
-  >>> upload.policy.setOptions(mock_options)
+  ...     datadir('ddtp-tarball/translations-main_20060817_all.changes'),
+  ...     insecure_policy, mock_logger_quiet)
   >>> upload.process()
-  >>> upload.rejected
+  >>> upload.is_rejected
   False
   >>> success, msgs = upload.do_accept()
   >>> success

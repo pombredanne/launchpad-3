@@ -104,6 +104,9 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     def isApproved():
         """Is this nomination in Approved state?"""
 
+    def canApprove(person):
+        """Is this person allowed to approve the nomination?"""
+
 
 class IBugNominationSet(Interface):
     """The set of IBugNominations."""

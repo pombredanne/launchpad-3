@@ -2,12 +2,16 @@
 
 html {
   position: relative;
-  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
-  font-size: 10pt;
-  color: #656565;
+  font-family: sans-serif, "Lucida Grande", "Trebuchet MS";
+  font-size: 12pt;
+  color: black;
   background-color: #FFFFFF;
 }
 body {margin: 0; padding: 0;}
+
+div.body {padding: 0em 1em;}
+
+.discreet, .lesser {font-size: smaller;}
 
 /* --- Error, warning, and info messages --- */
 
