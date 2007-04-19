@@ -342,11 +342,7 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
     each superteam of <team>.
     """
     for subteam in team.getSubTeams():
-        # There's no need to worry for the case where person == subteam because
-        # a team doesn't have a teamparticipation entry for itself and then a
-        # call to team.hasParticipationEntryFor(team) will always return
-        # False.
-        if person.hasParticipationEntryFor(subteam):
+        if person.hasParticipationEntryFor(subteam) and person != subteam:
             # This is an indirect member of the given team, so we must not
             # remove his participation entry for that team.
             return
