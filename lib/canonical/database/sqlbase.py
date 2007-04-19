@@ -323,6 +323,8 @@ class ZopelessTransactionManager(object):
         # in the transaction. To ensure this is the case, we rollback.
         con.rollback()
         con.set_isolation_level(level)
+        # Make the isolation level stick
+        self.desc.isolation = level
         cur = con.cursor()
         cur.execute('SHOW transaction_isolation')
         isolation_str = cur.fetchone()[0]
