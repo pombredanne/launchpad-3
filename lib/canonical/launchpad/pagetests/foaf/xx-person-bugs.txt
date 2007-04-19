@@ -16,25 +16,44 @@ more than one target (https://launchpad.net/bugs/1357).
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
-        firefox (upstream) Critical Unconfirmed
+        Mozilla Firefox
+        Critical
+        Unconfirmed
     4 Reflow problems with complex page layouts
-        firefox (upstream) Medium Unconfirmed
+        Mozilla Firefox
+        Medium
+        Unconfirmed
     5 Firefox install instructions should be complete
-        mozilla-firefox (Ubuntu Warty) Medium Unconfirmed
+        mozilla-firefox (Ubuntu Warty)
+        Medium
+        Unconfirmed
     1 Firefox does not support SVG
-        mozilla-firefox (Ubuntu) Medium Unconfirmed
+        mozilla-firefox (Ubuntu)
+        Medium
+        Unconfirmed
     2 Blackhole Trash folder
-        mozilla-firefox (Debian Woody) Medium Unconfirmed
+        mozilla-firefox (Debian Woody)
+        Medium
+        Unconfirmed
     9 Thunderbird crashes
-        thunderbird (Ubuntu) Medium Confirmed
+        thunderbird (Ubuntu)
+        Medium
+        Confirmed
     1 Firefox does not support SVG
-        firefox (upstream) Low Unconfirmed
+        Mozilla Firefox
+        Low
+        Unconfirmed
     2 Blackhole Trash folder
-        ubuntu (upstream) Low Unconfirmed
+        Ubuntu
+        Low
+        Unconfirmed
     1 Firefox does not support SVG
-        mozilla-firefox (Debian) Low Confirmed
+        mozilla-firefox (Debian)
+        Low
+        Confirmed
     2 Blackhole Trash folder
-        mozilla-firefox (Debian) Low Confirmed
+        mozilla-firefox (Debian)
+        Low Confirmed
 
 This report is also the default page in the person context on the bugs
 virtual host:
@@ -58,9 +77,13 @@ person.
 
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
-        firefox (upstream) Critical Unconfirmed
+        Mozilla Firefox
+        Critical
+        Unconfirmed
     2 Blackhole Trash folder
-        mozilla-firefox (Debian) Low Confirmed
+        mozilla-firefox (Debian)
+        Low
+        Confirmed
 
 === Reported bugs ===
 
@@ -72,21 +95,37 @@ person.
 
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
-        firefox (upstream) Critical Unconfirmed
+        Mozilla Firefox
+        Critical
+        Unconfirmed
     4 Reflow problems with complex page layouts
-        firefox (upstream) Medium Unconfirmed
+        Mozilla Firefox
+        Medium
+        Unconfirmed
     5 Firefox install instructions should be complete
-        mozilla-firefox (Ubuntu Warty) Medium Unconfirmed
+        mozilla-firefox (Ubuntu Warty)
+        Medium
+        Unconfirmed
     2 Blackhole Trash folder
-        mozilla-firefox (Debian Woody) Medium Unconfirmed
+        mozilla-firefox (Debian Woody)
+        Medium
+        Unconfirmed
     1 Firefox does not support SVG
-        firefox (upstream) Low Unconfirmed
+        Mozilla Firefox
+        Low
+        Unconfirmed
     2 Blackhole Trash folder
-        ubuntu (upstream) Low Unconfirmed
+        Ubuntu
+        Low
+        Unconfirmed
     1 Firefox does not support SVG
-        mozilla-firefox (Debian) Low Confirmed
+        mozilla-firefox (Debian)
+        Low
+        Confirmed
     2 Blackhole Trash folder
-        mozilla-firefox (Debian) Low Confirmed
+        mozilla-firefox (Debian)
+        Low
+        Confirmed
 
 === Subscribed bugs ===
 
@@ -98,13 +137,22 @@ person.
 
     >>> print_bugtasks(anon_browser.contents)
     4 Reflow problems with complex page layouts
-        firefox (upstream) Medium Unconfirmed
+        Mozilla Firefox
+        Medium
+        Unconfirmed
     1 Firefox does not support SVG
-        mozilla-firefox (Ubuntu) Medium Unconfirmed
+        mozilla-firefox (Ubuntu)
+        Medium
+        Unconfirmed
     9 Thunderbird crashes
-        thunderbird (Ubuntu) Medium Confirmed
+        thunderbird (Ubuntu)
+        Medium
+        Confirmed
     1 Firefox does not support SVG
-        firefox (upstream) Low Unconfirmed
+        Mozilla Firefox
+        Low
+        Unconfirmed
     1 Firefox does not support SVG
-        mozilla-firefox (Debian) Low Confirmed
-
+        mozilla-firefox (Debian)
+        Low
+        Confirmed
