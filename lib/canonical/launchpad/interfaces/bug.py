@@ -11,14 +11,18 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
+    'IFrontPageBugAddForm',
+    'IProjectBugAddForm',
     ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.validation import non_duplicate_bug
@@ -31,7 +35,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, assignee=None, datecreated=None,
                  security_related=False, private=False, subscribers=(),
-                 binarypackagename=None):
+                 binarypackagename=None, tags=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -48,6 +52,7 @@ class CreateBugParams:
         self.distribution = None
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
+        self.tags = tags
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -130,19 +135,6 @@ class IBug(IMessageTarget):
     owner = Attribute("The owner's IPerson")
     duplicateof = BugField(
         title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
-    communityscore = Int(
-        title=_('Community Score'), required=True, readonly=True, default=0)
-    communitytimestamp = Datetime(
-        title=_('Community Timestamp'), required=True, readonly=True)
-    hits = Int(
-        title=_('Hits'), required=True, readonly=True, default=0)
-    hitstimestamp = Datetime(
-        title=_('Hits Timestamp'), required=True, readonly=True)
-    activityscore = Int(
-        title=_('Activity Score'), required=True, readonly=True,
-        default=0)
-    activitytimestamp = Datetime(
-        title=_('Activity Timestamp'), required=True, readonly=True)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
         description=_("Make this bug visible only to its subscribers"),
@@ -159,6 +151,8 @@ class IBug(IMessageTarget):
         "The message that was specified when creating the bug")
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
         'ubuntu, then other distroreleases.')
+    affected_pillars = Attribute(
+        'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
@@ -169,7 +163,7 @@ class IBug(IMessageTarget):
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')
     attachments = Attribute("List of bug attachments.")
-    tickets = Attribute("List of support tickets related to this bug.")
+    questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     bug_branches = Attribute(
         "Branches associated with this bug, usually "
@@ -215,7 +209,7 @@ class IBug(IMessageTarget):
         """
 
     def getIndirectSubscribers():
-        """A list of IPersons that are indirectly subscribed to this bug.
+        """Return IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the
         BugSubscription table. This includes bug contacts, subscribers from
@@ -223,21 +217,25 @@ class IBug(IMessageTarget):
         """
 
     def getAlsoNotifiedSubscribers():
-        """A list of IPersons in the "Also notified" subscriber list.
+        """Return IPersons in the "Also notified" subscriber list.
 
         This includes bug contacts and assignees, but not subscribers
         from duplicates.
         """
 
     def getSubscribersFromDuplicates():
-        """A list of IPersons subscribed from dupes of this bug."""
+        """Return IPersons subscribed from dupes of this bug.
+        """
 
-    def notificationRecipientAddresses():
-        """Return the list of email addresses that recieve notifications.
+    def getBugNotificationRecipients(duplicateof=None):
+        """Return a complete INotificationRecipientSet instance.
 
-        If this bug is a duplicate of another bug, the CC'd list of
-        the dup target will be appended to the list of recipient
-        addresses.
+        The INotificationRecipientSet instance will contain details of
+        all recipients for bug notifications sent by this bug; this
+        includes email addresses and textual and header-ready
+        rationales. See
+        canonical.launchpad.interfaces.BugNotificationRecipients for
+        details of this implementation.
         """
 
     def addChangeNotification(text, person):
@@ -288,11 +286,19 @@ class IBug(IMessageTarget):
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
 
+    def getNullBugTask(product=None, productseries=None,
+                    sourcepackagename=None, distribution=None,
+                    distrorelease=None):
+        """Create an INullBugTask and return it for the given parameters."""
+
     def addNomination(owner, target):
         """Nominate a bug for an IDistroRelease or IProductSeries.
 
         :owner: An IPerson.
         :target: An IDistroRelease or IProductSeries.
+
+        The nomination will be automatically approved, if the user has
+        permission to approve it.
 
         This method creates and returns a BugNomination. (See
         canonical.launchpad.database.bugnomination.BugNomination.)
@@ -393,6 +399,21 @@ class IBugAddForm(IBug):
     comment = Text(
         title=_('Further information, steps to reproduce,'
                 ' version information, etc.'),
+        required=True)
+
+
+class IProjectBugAddForm(IBugAddForm):
+    """Create a bug for an IProject."""
+    product = Choice(
+        title=_("Product"), required=True,
+        vocabulary="ProjectProductsUsingMalone")
+
+
+class IFrontPageBugAddForm(IBugAddForm):
+    """Create a bug for any bug target."""
+
+    bugtarget = Object(
+        schema=IBugTarget, title=_("Where did you find the bug?"),
         required=True)
 
 

@@ -10,14 +10,17 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Bytes, Choice, Int, Text, TextLine
+from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Title
+from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
-        IHasOwner, IBugTarget, IHasSpecifications, PillarNameField,
-        valid_emblem, valid_gotchi, valid_webref)
+    IBugTarget, IHasAppointedDriver, IHasOwner, IHasSpecifications,
+    IHasLogo, IHasMugshot, IHasIcon, IKarmaContext, PillarNameField)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.fields import (
+    IconImageUpload, LogoImageUpload, MugshotImageUpload)
 
 
 class ProjectNameField(PillarNameField):
@@ -27,7 +30,8 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasOwner, IBugTarget, IHasSpecifications):
+class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
+               IKarmaContext, IHasSprints, IHasIcon, IHasLogo, IHasMugshot):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -86,16 +90,16 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
             "individual products and series have drivers."),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    homepageurl = TextLine(
+    homepageurl = URIField(
         title=_('Homepage URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The project home page. Please include the http://"""))
 
-    wikiurl = TextLine(
+    wikiurl = URIField(
         title=_('Wiki URL'),
         required=False,
-        constraint=valid_webref,
+        allowed_schemes=['http', 'https', 'ftp'], allow_userinfo=False,
         description=_("""The URL of this project's wiki, if it has one.
             Please include the http://"""))
 
@@ -125,20 +129,30 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
             "be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
 
-    emblem = Bytes(
-        title=_("Emblem"), required=False,
+    icon = IconImageUpload(
+        title=_("Icon"), required=False,
+        default_image_resource='/@@/project',
         description=_(
-            "A small image, max 16x16 pixels and 8k in file size, that can "
-            "be used to refer to this project."),
-        constraint=valid_emblem)
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
+            "that can be used to identify this project. The icon will be "
+            "displayed in Launchpad everywhere that we link to this "
+            "project. For example in listings or tables of active projects."))
 
-    gotchi = Bytes(
-        title=_("Gotchi"), required=False,
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/project-logo',
         description=_(
-            "An image, maximum 150x150 pixels, that will be displayed on "
-            "this project's home page. It should be no bigger than 50k in "
-            "size. "),
-        constraint=valid_gotchi)
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to this project. It should be "
+            "no bigger than 50kb in size."))
+
+    mugshot = MugshotImageUpload(
+        title=_("Brand"), required=False,
+        default_image_resource='/@@/project-mugshot',
+        description=_(
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on this project's home page in Launchpad. It should be no "
+            "bigger than 100kb in size. "))
 
     translationgroup = Choice(
         title = _("Translation group"),
@@ -174,13 +188,20 @@ class IProject(IHasOwner, IBugTarget, IHasSpecifications):
         vocabulary='BugTracker',
         description=_("The bug tracker the products in this project use."))
 
-    products = Attribute(_("An iterator over the Products for this project."))
+    products = Attribute(
+        _("An iterator over the active Products for this project."))
 
     def getProduct(name):
         """Get a product with name `name`."""
 
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this project. Return None.
+        """
+
+    def translatables():
+        """Return an iterator over products that have resources translatables.
+
+        It also should have IProduct.official_rosetta flag set.
         """
 
 
@@ -206,11 +227,12 @@ class IProjectSet(Interface):
     def getByName(name, default=None, ignore_inactive=False):
         """Return the project with the given name, ignoring inactive projects
         if ignore_inactive is True.
-        
+
         Return the default value if there is no such project.
         """
 
-    def new(name, displayname, title, homepageurl, summary, description, owner):
+    def new(name, displayname, title, homepageurl, summary, description,
+            owner, mugshot=None, logo=None, icon=None):
         """Create and return a project with the given arguments."""
 
     def count_all():

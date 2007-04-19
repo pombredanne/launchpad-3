@@ -41,8 +41,17 @@ class SpecNameField(ContentNameField):
 
     def _getByName(self, name):
         if ISpecification.providedBy(self.context):
+            # the context is a spec, so we are editing the spec details and
+            # we want to know if we are change the name whether there is
+            # alread a spec with this name for the target.
             return self.context.target.getSpecification(name)
+        elif ISpecificationSet.providedBy(self.context):
+            # in the case of a form on the spec set, we need to validate at
+            # a higher level, in the form validation routine
+            return None
         else:
+            # the context is a Product or Distro which can tell us if there
+            # are already specs with this name
             return self.context.getSpecification(name)
 
 
@@ -188,9 +197,11 @@ class ISpecification(IHasOwner):
     distribution = Choice(title=_('Distribution'), required=False,
         vocabulary='Distribution')
 
-    target = Field(
-        title=_("The product or distribution to which this spec belongs."),
-        readonly=True)
+    target = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True,
+        vocabulary='DistributionOrProduct')
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
@@ -330,10 +341,10 @@ class ISpecificationSet(IHasSpecifications):
 
     title = Attribute('Title')
 
-    latest_specs = Attribute(
-        "The latest 10 specifications registered in Launchpad.")
+    coming_sprints = Attribute("The next 5 sprints in the system.")
 
-    upcoming_sprints = Attribute("The next 5 sprints in the system.")
+    specification_count = Attribute(
+        "The total number of blueprints in Launchpad")
 
     def __iter__():
         """Iterate over all specifications."""

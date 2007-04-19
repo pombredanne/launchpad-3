@@ -2,14 +2,11 @@
 Personal Home Pages
 ===================
 
-  >>> from zope.testbrowser.testing import Browser
   >>> from canonical.launchpad.database import Person
 
 Carlos can never see name12's email addresses: he has chosen not to disclose
 them.
 
-  >>> browser = Browser()
-  >>> browser.handleErrors = False
   >>> browser.addHeader('Authorization', 'Basic marilize@hbd.com:test')
   >>> browser.open('http://launchpad.dev/~name12')
 
@@ -39,6 +36,7 @@ If you are not logged in, you will not be able to see it:
 
 If you log in, however, you will:
 
+  >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
   >>> browser.handleErrors = False
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
@@ -59,4 +57,44 @@ information:
   ...
   <b>Karma:</b>
   <span id="karma-total">...
+
+
+== Table of contributions ==
+
+A person's home page also displays a table with the contributions made by that
+person. This table includes 5 projects in which this person is most active
+and also the areas in which (s)he worked on each project.
+
+    >>> anon_browser.open('http://launchpad.dev/~name16')
+    >>> table = find_tag_by_id(anon_browser.contents, 'contributions')
+    >>> for tr in table.findAll('tr'):
+    ...     print tr.find('th').find('a').renderContents()
+    ...     for td in tr.findAll('td'):
+    ...         img = td.find('img')
+    ...         if img is not None:
+    ...             print "\t", img['title']
+    The Evolution Groupware ...
+       Bug Management
+       Translations in Rosetta
+    Ubuntu Linux
+       Bug Management
+    Gnome Baker
+       Bug Management
+    Mozilla Thunderbird
+       Bug Management
+    Mozilla Firefox
+       Bug Management
+
+If the person hasn't made any contributions, the table is not present in its
+page.
+
+    >>> anon_browser.open('http://launchpad.dev/~jdub')
+    >>> print find_tag_by_id(anon_browser.contents, 'contributions')
+    None
+
+The same for teams.
+
+    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team')
+    >>> print find_tag_by_id(anon_browser.contents, 'contributions')
+    None
 

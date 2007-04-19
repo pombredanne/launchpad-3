@@ -1,6 +1,6 @@
 = Launchpad Bug Statistics =
 
-On the Bugs front page there is some statistics shown, showing:
+The Bugs front page shows some statistics:
 
   * number of bugs that are filed in Launchpad
   * number of links to external bugs
@@ -8,12 +8,45 @@ On the Bugs front page there is some statistics shown, showing:
   * number of CVE bug links
 
   >>> anon_browser.open('http://bugs.launchpad.dev/')
-  >>> stat_portlet = find_portlet(anon_browser.contents, 'Malone statistics')
-  >>> for text in stat_portlet.div.findAll(text=True):
-  ...   print text
-  10 Bugs
-  10 Remote Bugs
-  5 Bug Trackers
-  0 Web links
-  22 Bug Tasks
-  2 CVE Bug Links
+  >>> statistics = find_tag_by_id(anon_browser.contents, 'application-footer')
+  >>> for text in statistics.findAll(text=True):
+  ...     if text.strip():
+  ...         print text
+  12
+   bugs reported across
+  7
+   projects
+   including
+  10
+   links
+    to
+  5
+   bug trackers
+  4
+   bugs are
+  shared across
+   multiple projects
+    and
+  2
+    bugs are related to
+   CVE entries
+
+
+And offers handy links to a listing of all upstream bug trackers registered in 
+Launchpad
+
+  >>> anon_browser.getLink('bug trackers').click()
+  >>> anon_browser.title
+  'Bug trackers registered in Malone'
+
+and to Launchpad's CVE tracker.
+
+  # We should use goBack() here but can't because of ZC #645:
+  # zope.testbrowser truncates document content after goBack().
+  # Comment shamelessly stolen from Francis' 20-question-buglink.txt pagetest
+  #>>> anon_browser.goBack()
+  >>> anon_browser.open('http://bugs.launchpad.dev/')
+  >>> anon_browser.getLink('CVE entries').click()
+  >>> anon_browser.title
+  'Launchpad CVE tracker'
+

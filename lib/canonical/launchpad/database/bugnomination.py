@@ -24,9 +24,13 @@ from sqlobject import ForeignKey, SQLObjectNotFound
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import (
-    IBugNomination, IBugTaskSet, IBugNominationSet, NotFoundError)
+from canonical.database.enumcol import EnumCol
+
 from canonical.lp import dbschema
+
+from canonical.launchpad.interfaces import (
+    IBugNomination, IBugTaskSet, IBugNominationSet,
+    ILaunchpadCelebrities, NotFoundError)
 
 class BugNomination(SQLBase):
     implements(IBugNomination)
@@ -44,7 +48,7 @@ class BugNomination(SQLBase):
         dbName='productseries', foreignKey='ProductSeries',
         notNull=False, default=None)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    status = dbschema.EnumCol(
+    status = EnumCol(
         dbName='status', notNull=True, schema=dbschema.BugNominationStatus,
         default=dbschema.BugNominationStatus.PROPOSED)
 
@@ -100,6 +104,14 @@ class BugNomination(SQLBase):
         """See IBugNomination."""
         return self.status == dbschema.BugNominationStatus.APPROVED
 
+    def canApprove(self, person):
+        """See IBugNomination."""
+        if person.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            return True
+        for driver in self.target.drivers:
+            if person.inTeam(driver):
+                return True
+        return False
 
 class BugNominationSet:
     """See IBugNominationSet."""

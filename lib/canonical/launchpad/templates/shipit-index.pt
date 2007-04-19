@@ -20,10 +20,16 @@
             Welcome to ShipIt for <tal:flavor replace="view/flavour/title" />
           </h1>
 
+          <tal:is-open condition="view/is_open">
           <p>ShipIt lets you request 
             <strong><span tal:replace="view/flavour/title" />
-            6.06 LTS (Dapper Drake)</strong> CDs that will be posted to
+            7.04 (Feisty Fawn)</strong> CDs that will be posted to
             you free of charge.
+          </p>
+          <p class="informational message">
+            Note that these CDs will only be shipped after
+            <span tal:replace="view/flavour/title" /> 7.04 is released
+            (April 19th).
           </p>
           <p
             tal:condition="view/announcement|nothing"
@@ -43,6 +49,17 @@
           <p>If you have questions about shipments and dates please
           refer to the <a href="http://www.ubuntu.com/support/faq#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607">Ubuntu FAQ</a>.</p>
           <br />
+          </tal:is-open>
+
+          <tal:is-closed condition="not: view/is_open">
+          <p class="informational message">
+            ShipIt is currently closed while we prepare for the
+            <span tal:replace="view/flavour/title" /> 7.04 (Feisty Fawn)
+            release. We'll be back in a few days.
+          </p>
+          <p>To view existing requests, first sign in using your
+          <a href="https://launchpad.net">Launchpad</a> account.
+          </tal:is-closed>
 
           <form name="login" method="POST">
             <table style="max-width: 20em; margin: 0 auto;">

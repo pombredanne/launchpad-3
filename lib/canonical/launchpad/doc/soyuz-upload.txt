@@ -246,7 +246,7 @@ do uploads:
   >>> uploader_team = getUtility(IPersonSet).getByName("ubuntu-team")
   >>> assert uploader_team is not None
 
-  >>> uploader_team.addMember(user)
+  >>> uploader_team.addMember(user, reviewer=uploader_team.teamowner)
 
 
 Assign the loaded GPG key to the katie user.
@@ -294,7 +294,7 @@ just upload number 1.
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
   ...                             "-C", "sync", "-J", upload_dir_1_name,
   ...                             temp_dir],
-  ...                             stdout=subprocess.PIPE, 
+  ...                             stdout=subprocess.PIPE,
   ...                             stderr=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
@@ -314,7 +314,7 @@ Now continue with the real upload.
 
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
   ...                             "-C", "sync", temp_dir],
-  ...                             stdout=subprocess.PIPE, 
+  ...                             stdout=subprocess.PIPE,
   ...                             stderr=subprocess.PIPE)
 
   >>> stdout, stderr = process.communicate()

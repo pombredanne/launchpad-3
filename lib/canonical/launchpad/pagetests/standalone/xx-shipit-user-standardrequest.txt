@@ -224,7 +224,7 @@ It's also possible to cancel an existing request.
   ...Request Cancelled...
   ...Shipped/Cancelled requests...
   ...
-  ...11 CDs requested in...
+  ...11 CDs requested...
   ...
 
   >>> login(ANONYMOUS)
@@ -234,23 +234,15 @@ It's also possible to cancel an existing request.
 
 
 We have Ubuntu and Kubuntu DVDs on amazon. We'll link to them from shipit.
+XXX: They're disabled until we get the links to the Feisty DVDs.
 
-  >>> browser.open('http://shipit.ubuntu.dev/myrequest')
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Ubuntu DVDs...
-  ...http://rcm.amazon.com/...
+  >> browser.open('http://shipit.ubuntu.dev/myrequest')
+  >> print extract_text(find_tag_by_id(browser.contents, 'amazon-links'))
 
-  >>> browser.open('http://shipit.kubuntu.dev/myrequest')
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Kubuntu DVDs...
-  ...http://rcm.amazon.com/...
+  >> browser.open('http://shipit.kubuntu.dev/myrequest')
+  >> print extract_text(find_tag_by_id(browser.contents, 'amazon-links'))
 
 But we don't yet have Edubuntu DVDs on amason. :-(
 
-  >>> browser.open('http://shipit.edubuntu.dev/myrequest')
-  >>> 'Edubuntu DVDs' not in browser.contents
-  True
-  >>> 'amazon.com' not in browser.contents
-  True
+  >> browser.open('http://shipit.edubuntu.dev/myrequest')
+  >> print extract_text(find_tag_by_id(browser.contents, 'amazon-links'))

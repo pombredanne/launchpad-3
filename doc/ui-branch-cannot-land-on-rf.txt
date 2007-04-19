@@ -1,0 +1,5 @@
+This file is to ensure that the UI branch cannot be accidentally landed in
+RocketFuel.
+
+This file is to remain until we have fully launched Launchpad 1.0.
+

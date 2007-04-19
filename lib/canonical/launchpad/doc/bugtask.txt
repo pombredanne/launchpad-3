@@ -184,6 +184,8 @@ For a person:
      u'evolution (Ubuntu)',
      u'evolution (upstream)',
      u'firefox 1.0 (upstream)',
+     u'jokosher (upstream)',
+     u'jokosher (upstream)',
      u'linux-source-2.6.15 (Ubuntu)',
      u'mozilla-firefox (Debian)',
      u'mozilla-firefox (Ubuntu)',
@@ -193,9 +195,60 @@ It's also possible to search bugs that a person is subscribed to:
 
     >>> params = BugTaskSearchParams(user=None, subscriber=foobar, orderby="id")
     >>> [bugtask.bug.id for bugtask in foobar.searchTasks(params)]
-    [7, 7, 9, 9, 10]
+    [7, 7, 9, 9, 10, 11, 12]
 
-To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
+We can even search bugs that a person reported OR that are assigned to that
+person.
+    
+    >>> params_assignee = BugTaskSearchParams(user=None, assignee=foobar)
+    >>> params_owner = BugTaskSearchParams(user=None, owner=foobar)
+
+    >>> for bugtask in foobar.searchTasks(params_assignee, params_owner):
+    ...     assignee = getattr(bugtask.assignee, 'name', None)
+    ...     owner = getattr(bugtask.owner, 'name', None)
+    ...     print bugtask.bug.id, bugtask.targetname, assignee, owner
+     3 mozilla-firefox (Debian) None name16
+     1 mozilla-firefox (Ubuntu) None name16
+     7 evolution (upstream) name16 name16
+     8 mozilla-firefox (Debian) name16 name12
+     9 thunderbird (Ubuntu) None name16
+    10 linux-source-2.6.15 (Ubuntu) None name16
+     2 Ubuntu None name16
+     5 firefox 1.0 (upstream) None name16
+    11 jokosher (upstream) None name16
+    12 jokosher (upstream) None name16
+     1 evolution (Ubuntu) None name16
+
+How about the bugs reported by foobar, the ones he's subscribed to and the
+ones that are assigned to him --all of them together. That makes a nice list
+for a person's +bugs page.
+
+    >>> params_subscriber = BugTaskSearchParams(user=None, subscriber=foobar)
+    >>> for bugtask in foobar.searchTasks(
+    ...         params_assignee, params_owner, params_subscriber):
+    ...     assignee = getattr(bugtask.assignee, 'name', None)
+    ...     owner = getattr(bugtask.owner, 'name', None)
+    ...     subscribed = ""
+    ...     if foobar in bugtask.bug.getDirectSubscribers():
+    ...         subscribed = "Subscribed"
+    ...     print bugtask.bug.id, bugtask.targetname, assignee, owner, subscribed
+     3 mozilla-firefox (Debian) None name16
+     1 mozilla-firefox (Ubuntu) None name16
+     7 evolution (upstream) name16 name16 Subscribed
+     8 mozilla-firefox (Debian) name16 name12
+     9 thunderbird (Ubuntu) None name16 Subscribed
+     9 thunderbird (upstream) None name12 Subscribed
+    10 linux-source-2.6.15 (Ubuntu) None name16 Subscribed
+     2 Ubuntu None name16
+     7 evolution (Debian) None name12 Subscribed
+     5 firefox 1.0 (upstream) None name16
+    11 jokosher (upstream) None name16 Subscribed
+    12 jokosher (upstream) None name16 Subscribed
+     1 evolution (Ubuntu) None name16
+
+
+To provide null-matching search criteria, use
+canonical.launchpad.searchbuilder.NULL:
 
     >>> from canonical.launchpad.searchbuilder import NULL
     >>> params = BugTaskSearchParams(assignee=NULL, user=None)
@@ -290,7 +343,7 @@ Let's get all bugs on either main or universe:
     ...     component=any(main, universe), user=None)
     >>> main_or_universe_tasks = ubuntu.searchTasks(params)
     >>> sorted(bugtask.bug.id for bugtask in main_or_universe_tasks)
-    [1, 10, 11L]
+    [1, 10, 13L]
 
 You can also filter your search on other bugtasks. Let's show only bugs
 where a bug watch is needed. This means that we should show only bugs
@@ -340,7 +393,7 @@ affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
     ...     test_helper.assertShouldBeShownOnNoUpstreamTaskSearch(bugtask)
     ...     print bugtask.bug.id, bugtask.targetname
     10 linux-source-2.6.15 (Ubuntu)
-    11 cnews (Ubuntu)
+    13 cnews (Ubuntu)
 
     >>> test_helper.tearDownBugsElsewhereTests()
 
@@ -779,12 +832,14 @@ The generic tasks are not directly editable.
     >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.REJECTED)
     Traceback (most recent call last):
       ...
-    Unauthorized: (<BugTask at ...>, 'transitionToStatus', 'launchpad.Edit')
+    ConjoinedBugTaskEditError: This task cannot be edited directly, it
+                               should be edited through its conjoined_master.
 
     >>> generic_alsa_utils_task.transitionToAssignee(launchbag.user)
     Traceback (most recent call last):
       ...
-    Unauthorized: (<BugTask at ...>, 'transitionToAssignee', 'launchpad.Edit')
+    ConjoinedBugTaskEditError: This task cannot be edited directly, it
+                               should be edited through its conjoined_master.
 
 
 A conjoined relationship can be broken, though. If the development
@@ -838,10 +893,9 @@ Sometimes we need to be able to render a page for a bug in a context,
 when the bug hasn't actually been filed yet in that context. For cases
 like these, use the NullBugTask object.
 
-    >>> from canonical.launchpad.components.bugtask import NullBugTask
 
     >>> netapplet = productset.get(11)
-    >>> null_bugtask = NullBugTask(bug=bug_one, product=netapplet)
+    >>> null_bugtask = bug_one.getNullBugTask(product=netapplet)
     >>> IUpstreamBugTask.providedBy(null_bugtask)
     True
 
@@ -855,7 +909,7 @@ like these, use the NullBugTask object.
     True
     >>> null_bugtask.datecreated is None
     True
-    >>> null_bugtask.dateassigned is None
+    >>> null_bugtask.date_assigned is None
     True
     >>> null_bugtask.age is None
     True
@@ -898,11 +952,11 @@ The astute reader will have noticed that NullBugTask automatically
 "marked" itself as providing the correct IBugTask interface. Let's see
 two more examples:
 
-    >>> ubuntu_null_bugtask = NullBugTask(bug=bug_one, distribution=ubuntu)
+    >>> ubuntu_null_bugtask = bug_one.getNullBugTask(distribution=ubuntu)
     >>> IDistroBugTask.providedBy(ubuntu_null_bugtask)
     True
 
-    >>> warty_null_bugtask = NullBugTask(bug=bug_one, distrorelease=warty)
+    >>> warty_null_bugtask = bug_one.getNullBugTask(distrorelease=warty)
     >>> IDistroReleaseBugTask.providedBy(warty_null_bugtask)
     True
 
@@ -1027,7 +1081,7 @@ But if we add No Privileges Person to the Ubuntu Team, and because the Ubuntu
 Team *is* subscribed to the bug, No Privileges Person will see the private bug.
 
     >>> login("mark@hbd.com")
-    >>> ubuntu_team.addMember(no_priv)
+    >>> ubuntu_team.addMember(no_priv, reviewer=ubuntu_team.teamowner)
 
     >>> login("no-priv@canonical.com")
     >>> params = BugTaskSearchParams(

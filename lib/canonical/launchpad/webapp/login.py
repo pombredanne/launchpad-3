@@ -176,8 +176,9 @@ class LoginOrRegister:
         If the request has an 'origin' query parameter, that means the user came
         from either the ubuntu wiki or shipit, and thus we return the URL for
         either shipit or the wiki. When there's no 'origin' query parameter, we
-        check the HTTP_REFERER header and if it's in the Launchpad namespace we
-        return that URL, otherwise we return None.
+        check the HTTP_REFERER header and if it's under any URL specified in
+        registered_origins we return it, otherwise we rerturn the current URL
+        without the "/+login" bit.
         """
         request = self.request
         origin = request.get('origin')
@@ -186,12 +187,10 @@ class LoginOrRegister:
         except KeyError:
             referrer = request.getHeader('Referer')
             if referrer:
-                redirectable_referrers = self.registered_origins.values()
-                redirectable_referrers.append(request.getApplicationURL())
-                for url in redirectable_referrers:
+                for url in self.registered_origins.values():
                     if referrer.startswith(url):
                         return referrer
-            return None
+        return request.getURL(1)
 
     def process_login_form(self):
         """Process the form data.

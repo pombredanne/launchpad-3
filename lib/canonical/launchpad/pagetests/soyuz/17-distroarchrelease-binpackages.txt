@@ -33,7 +33,7 @@ this architecture:
   in component main
   and section base
   <BLANKLINE>
-  on 2005-06-18 00:00:00 UTC
+  ...on 2005-06-18...
   <hr />
   </div>
 
@@ -59,15 +59,15 @@ It's also reachable in a more natural way, starting from distribution page:
 
 Then we get to the DistroRelease page:
 
-  >>> browser.getLink("warty 4.10 (CURRENT)").click()
+  >>> browser.getLink(url='/ubuntu/warty').click()
 
 Then the DistroArchRelease page:
 
-  >>> browser.getLink("i386 (official)").click()
+  >>> browser.getLink(url='/ubuntu/warty/i386').click()
 
 Now we are able to use the search box in this page:
 
-  >>> browser.getControl(name="text").value = "moz"
+  >>> browser.getControl(name="text", index=1).value = "moz"
   >>> browser.getControl("Search Packages").click()
 
 Click on the wanted name to get on the DistroArchReleaseBinaryPackageRelease:
@@ -83,8 +83,8 @@ originated itself:
   >>> print find_tag_by_id(browser.contents, 'source')
   <div id="source">
     <ul>
-      <li class="packages">
-        <a href="http://localhost/ubuntu/+source/mozilla-firefox/0.9">mozilla-firefox 0.9 (source) in Test Distro</a>
+      <li class="source package">
+        <a href="/ubuntu/+source/mozilla-firefox/0.9">mozilla-firefox 0.9 (source) in Test Distro</a>
       </li>
     </ul>
   </div>
@@ -94,7 +94,7 @@ librarian URL and size:
 
   >>> print find_tag_by_id(browser.contents, 'files')
   <div id="files">
-    <ul class="packages">
+    <ul class="download">
       <li>
         <a href="http://localhost:58000/40/mozilla-firefox_0.9_i386.deb">mozilla-firefox_0.9_i386.deb</a>
         (3 bytes)

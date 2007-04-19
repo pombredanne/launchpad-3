@@ -12,15 +12,13 @@ from zope.event import notify
 
 from sourcerer.deb.version import Version
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp import (
-    canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu, 
-    enabled_with_permission)
-from canonical.launchpad.interfaces import (
-    IDistributionMirror, validate_distribution_mirror_schema)
-from canonical.launchpad.browser.editview import SQLObjectEditView
+    action, ApplicationMenu, canonical_url, enabled_with_permission,
+    LaunchpadEditFormView, LaunchpadFormView, Link, StandardLaunchpadFacets)
+from canonical.launchpad.interfaces import IDistributionMirror
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.cachedproperty import cachedproperty
 
@@ -39,7 +37,7 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -49,12 +47,12 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
-        text = 'Change Owner'
+        text = 'Change owner'
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
-        text = 'Mark as Official'
+        text = 'Mark as official'
         return Link('+mark-official', text, icon='edit')
 
 
@@ -103,39 +101,52 @@ class DistributionMirrorView(LaunchpadView):
                       key=lambda item: Version(item.distrorelease.version))
 
 
-class DistributionMirrorAddView(GeneralFormView):
+class DistributionMirrorAddView(LaunchpadFormView):
 
-    def validate(self, form_values):
-        validate_distribution_mirror_schema(form_values)
+    schema = IDistributionMirror
+    field_names = ["displayname", "http_base_url", "ftp_base_url",
+                   "rsync_base_url", "speed", "country", "content",
+                   "official_candidate"]
+    label = "Create a new distribution mirror"
 
-    def process(self, owner, displayname, description, speed, country,
-                content, http_base_url, ftp_base_url, rsync_base_url,
-                official_candidate):
+    @action(_("Create Mirror"), name="create")
+    def create_action(self, action, data):
         mirror = self.context.newMirror(
-            owner=owner, speed=speed, country=country, content=content,
-            displayname=displayname, description=description,
-            http_base_url=http_base_url, ftp_base_url=ftp_base_url,
-            rsync_base_url=rsync_base_url,
-            official_candidate=official_candidate)
+            owner=self.user, speed=data['speed'], country=data['country'],
+            content=data['content'], displayname=data['displayname'],
+            http_base_url=data['http_base_url'],
+            ftp_base_url=data['ftp_base_url'],
+            rsync_base_url=data['rsync_base_url'],
+            official_candidate=data['official_candidate'])
 
-        self._nextURL = canonical_url(mirror)
+        self.next_url = canonical_url(mirror)
         notify(ObjectCreatedEvent(mirror))
-        return mirror
-        
-
-class DistributionMirrorOfficialApproveView(SQLObjectEditView):
-
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
 
 
-class DistributionMirrorEditView(SQLObjectEditView):
+class DistributionMirrorOfficialApproveView(LaunchpadEditFormView):
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+    schema = IDistributionMirror
+    field_names = ['official_approved']
+    label = "Mark as official"
 
-    def validate(self, form_values):
-        validate_distribution_mirror_schema(form_values)
+    @action(_("Save"), name="save")
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
+
+class DistributionMirrorEditView(LaunchpadEditFormView):
+
+    schema = IDistributionMirror
+    field_names = ["name", "displayname", "description", "http_base_url",
+                   "ftp_base_url", "rsync_base_url", "speed", "country",
+                   "content", "official_candidate"]
+    label = "Change mirror details"
+
+    @action(_("Save"), name="save")
+    def action_save(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
 
 class DistributionMirrorReassignmentView(ObjectReassignmentView):

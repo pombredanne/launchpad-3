@@ -14,10 +14,6 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <tal:has_packages condition="context/sample_binary_packages">
@@ -27,7 +23,7 @@
          tal:content="context/sourcepackage/name"/>:
     </p>
 
-    <ul class="packages">
+    <ul class="binary package">
       <li tal:repeat="drbp context/sample_binary_packages">
         <a tal:attributes="href drbp/fmt:url">
            <span tal:replace="drbp/name">apache-utils</span>:
@@ -42,6 +38,8 @@
       </li>
     </ul>
   </tal:has_packages>
+
+  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
 
   <h2>Publishing history</h2>
   <table class="listing">
@@ -70,7 +68,7 @@
         <li tal:repeat="file files">
           <a
             tal:content="file/libraryfile/filename"
-            tal:attributes="href file/libraryfile/url">evolution_2.tar.gz</a>
+            tal:attributes="href file/libraryfile/http_url">evolution_2.tar.gz</a>
           (<span tal:replace="file/libraryfile/content/filesize/fmt:bytes" />)
         </li>
      </ul>

@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = ['BugWatch', 'BugWatchSet']
 
 import re
-import cgi
 import urllib
 from urlparse import urlunsplit
 
@@ -17,7 +16,7 @@ from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
 
 from canonical.lp.dbschema import BugTrackerType, BugTaskImportance
 
-from canonical.database.sqlbase import SQLBase, flush_database_updates
+from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -95,6 +94,11 @@ class BugWatch(SQLBase):
                 event = SQLObjectModifiedEvent(
                     linked_bugtask, old_bugtask, ['status'])
                 notify(event)
+
+    def destroySelf(self):
+        """See IBugWatch."""
+        assert self.bugtasks.count() == 0, "Can't delete linked bug watches"
+        SQLBase.destroySelf(self)
 
 
 class BugWatchSet(BugSetBase):
@@ -196,14 +200,25 @@ class BugWatchSet(BugSetBase):
     def parseDebbugsURL(self, scheme, host, path, query):
         """Extract the Debbugs base URL and bug ID."""
         bug_page = 'cgi-bin/bugreport.cgi'
-        if not path.endswith(bug_page):
+        remote_bug = None
+
+        if path.endswith(bug_page):
+            remote_bug = query.get('bug')
+            base_path = path[:-len(bug_page)]
+        elif host == "bugs.debian.org":
+            # Oy, what a hack. debian's tracker allows you to access
+            # bugs by saying http://bugs.debian.org/400848, so support
+            # that shorthand. The reason we need to do this special
+            # check here is because otherwise /any/ URL that ends with
+            # "/number" will appear to match a debbugs URL.
+            remote_bug = path.split("/")[-1]
+            base_path = ''
+        else:
             return None
 
-        remote_bug = query.get('bug')
         if remote_bug is None or not remote_bug.isdigit():
             return None
 
-        base_path = path[:-len(bug_page)]
         base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
 

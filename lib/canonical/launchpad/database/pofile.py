@@ -17,6 +17,7 @@ import logging
 # Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
+from urllib2 import URLError
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
@@ -55,7 +56,8 @@ from canonical.launchpad.components.poimport import (
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.launchpad.webapp import canonical_url
-from canonical.librarian.interfaces import ILibrarianClient
+from canonical.librarian.interfaces import (
+    ILibrarianClient, UploadFailed)
 
 
 def _check_translation_perms(permission, translators, person):
@@ -209,8 +211,9 @@ class POFile(SQLBase, RosettaStats):
                                 default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-    latestsubmission = ForeignKey(foreignKey='POSubmission',
-        dbName='latestsubmission', notNull=False, default=None)
+    last_touched_pomsgset = ForeignKey(
+        foreignKey='POMsgSet', dbName='last_touched_pomsgset',
+        notNull=False, default=None)
 
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='from_sourcepackagename', notNull=False, default=None)
@@ -392,13 +395,13 @@ class POFile(SQLBase, RosettaStats):
             POTMsgSet.sequence > 0 AND
             POMsgSet.potmsgset = POTMsgSet.id AND
             POMsgSet.pofile = %s AND
-            POSelection.pomsgset = POMsgSet.id AND
-            POSelection.publishedsubmission = POSubmission.id AND
+            POSubmission.pomsgset = POMsgSet.id AND
+            POSubmission.published IS TRUE AND
             POSubmission.pluralform = 0 AND
             POSubmission.validationstatus <> %s
             ''' % sqlvalues(self.potemplate.id, self.id,
                             TranslationValidationStatus.OK),
-            clauseTables=['POMsgSet', 'POSelection', 'POSubmission'],
+            clauseTables=['POMsgSet', 'POSubmission'],
             orderBy='POTmsgSet.sequence')
 
         if slice is not None:
@@ -480,15 +483,17 @@ class POFile(SQLBase, RosettaStats):
                 POMsgSet.publishedcomplete = TRUE AND
                 POMsgSet.potmsgset = POTMsgSet.id AND
                 POTMsgSet.sequence > 0 AND
-                ActiveSubmission.id = POSelection.activesubmission AND
-                PublishedSubmission.id = POSelection.publishedsubmission AND
-                POSelection.pomsgset = POMsgSet.id AND
-                ActiveSubmission.datecreated > PublishedSubmission.datecreated
+                active_submission.pomsgset = POMsgSet.id AND
+                active_submission.active IS TRUE AND
+                published_submission.pomsgset = POMsgSet.id AND
+                published_submission.published IS TRUE AND
+                active_submission.pluralform = published_submission.pluralform
+                AND
+                active_submission.datecreated > published_submission.datecreated
                 ''' % sqlvalues(self.id),
-                clauseTables=['POSelection',
-                              'POTMsgSet',
-                              'POSubmission AS ActiveSubmission',
-                              'POSubmission AS PublishedSubmission']).count()
+                clauseTables=['POTMsgSet',
+                              'POSubmission AS active_submission',
+                              'POSubmission AS published_submission']).count()
             if updates != updates_from_first_principles:
                 raise AssertionError('Failure in update statistics.')
 
@@ -650,7 +655,7 @@ class POFile(SQLBase, RosettaStats):
             'elapsedtime': entry_to_import.getElapsedTimeText(),
             'language': self.language.displayname,
             'template': self.potemplate.displayname,
-            'file_link': entry_to_import.content.url,
+            'file_link': entry_to_import.content.http_url,
             'numberofmessages': msgsets_imported,
             'import_title': '%s translations for %s' % (
                 self.language.displayname, self.potemplate.displayname)
@@ -728,11 +733,12 @@ class POFile(SQLBase, RosettaStats):
         if self.exportfile is None:
             return False
 
-        if self.latestsubmission is None:
-            return True
+        if self.last_touched_pomsgset is None:
+            # There are no translations at all, we invalidate the cache just
+            # in case.
+            return False
 
-        change_time = self.latestsubmission.datecreated
-        return change_time < self.exporttime
+        return not self.last_touched_pomsgset.isNewerThan(self.exporttime)
 
     def updateExportCache(self, contents):
         """See IPOFile."""
@@ -791,22 +797,34 @@ class POFile(SQLBase, RosettaStats):
             try:
                 return self.fetchExportCache()
             except LookupError:
-                # XXX: Carlos Perello Marin 20060224 Workaround for bug #1887
-                # Something produces the LookupError exception and we don't
-                # know why. This will allow us to provide an export.
+                # XXX: Carlos Perello Marin 20060224 LookupError is a workaround
+                # for bug #1887. Something produces LookupError exception and
+                # we don't know why. This will allow us to provide an export
+                # in those cases.
+                logging.error(
+                    "Error fetching a cached file from librarian", exc_info=1)
+            except URLError:
+                # There is a problem getting a cached export from Librarian.
+                # Log it and do a full export.
                 logging.warning(
                     "Error fetching a cached file from librarian", exc_info=1)
 
         contents = self.uncachedExport()
 
         if len(contents) == 0:
-            # The export is empty, this is completely broken, raised the
-            # exception.
+            # The export is empty, this is completely broken.
             raise ZeroLengthPOExportError, "Exporting %s" % self.title
 
         if included_obsolete:
             # Update the cache if the request includes obsolete messages.
-            self.updateExportCache(contents)
+            try:
+                self.updateExportCache(contents)
+            except UploadFailed:
+                # For some reason, we were not able to upload the exported
+                # file in librarian, that's fine. It only means that next
+                # time, we will do a full export again.
+                logging.warning(
+                    "Error uploading a cached file into librarian", exc_info=1)
 
         return contents
 
@@ -820,14 +838,6 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         self.exportfile = None
 
-    def recalculateLatestSubmission(self):
-        """See IPOFile."""
-        self.latestsubmission = POSubmission.selectFirst('''
-            POSelection.activesubmission = POSubmission.id AND
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMSgSet.pofile = %s''' % sqlvalues(self),
-            orderBy=['-datecreated'], clauseTables=['POSelection', 'POMsgSet'])
-
 
 class DummyPOFile(RosettaStats):
     """Represents a POFile where we do not yet actually HAVE a POFile for
@@ -836,12 +846,17 @@ class DummyPOFile(RosettaStats):
     implements(IPOFile)
 
     def __init__(self, potemplate, language, variant=None, owner=None):
+        self.id = None
         self.potemplate = potemplate
         self.language = language
         self.variant = variant
-        self.latestsubmission = None
+        self.description = None
+        self.topcomment = None
+        self.header = None
+        self.fuzzyheader = False
         self.lasttranslator = None
-        self.contributors = []
+        self.license = None
+        self.lastparsed = None
 
         # The default POFile owner is the Rosetta Experts team unless the
         # given owner has rights to write into that file.
@@ -850,6 +865,14 @@ class DummyPOFile(RosettaStats):
         else:
             self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
 
+        self.path = u'unknown'
+        self.exportfile = None
+        self.datecreated = None
+        self.last_touched_pomsgset = None
+        self.contributors = []
+        self.from_sourcepackagename = None
+        self.pomsgsets = None
+
 
     def __getitem__(self, msgid_text):
         pomsgset = self.getPOMsgSet(msgid_text, only_current=True)
@@ -857,6 +880,10 @@ class DummyPOFile(RosettaStats):
             raise NotFoundError(msgid_text)
         else:
             return pomsgset
+
+    def __iter__(self):
+        """See IPOFile."""
+        return iter(self.currentMessageSets())
 
     def messageCount(self):
         return self.potemplate.messageCount()
@@ -914,6 +941,10 @@ class DummyPOFile(RosettaStats):
 
         return DummyPOMsgSet(self, potmsgset)
 
+    def getPOMsgSetsNotInTemplate(self):
+        """See IPOFile."""
+        return None
+
     def getPOTMsgSetTranslated(self, slice=None):
         """See IPOFile."""
         return None
@@ -925,6 +956,14 @@ class DummyPOFile(RosettaStats):
     def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
         return self.potemplate.getPOTMsgSets(slice)
+
+    def getPOTMsgSetWithErrors(self, slice=None):
+        """See IPOFile."""
+        return None
+
+    def hasMessageID(self, msgid):
+        """See IPOFile."""
+        raise NotImplementedError
 
     def currentCount(self):
         return 0
@@ -966,6 +1005,70 @@ class DummyPOFile(RosettaStats):
 
     def untranslatedPercentage(self):
         return 100.0
+
+    def validExportCache(self):
+        """See IPOFile."""
+        return False
+
+    def updateExportCache(self, contents):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def export(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def exportToFileHandle(self, filehandle, included_obsolete=True):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def uncachedExport(self, included_obsolete=True, export_utf8=False):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def invalidateCache(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def createMessageSetFromMessageSet(self, potmsgset):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def createMessageSetFromText(self, text):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def translated(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def untranslated(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def expireAllMessages(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def updateStatistics(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def updateHeader(self, new_header):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def isPORevisionDateOlder(self, header):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def getNextToImport(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def importFromQueue(self, logger=None):
+        """See IPOFile."""
+        raise NotImplementedError
 
 
 class POFileSet:

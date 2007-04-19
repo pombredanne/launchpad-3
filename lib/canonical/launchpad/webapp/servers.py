@@ -19,18 +19,18 @@ import zope.publisher.publish
 from zope.publisher.interfaces import IRequest
 
 import canonical.launchpad.layers
-from canonical.launchpad.interfaces import (
-    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
-    IShipItApplication)
+from canonical.launchpad.interfaces import IShipItApplication
+
 from canonical.launchpad.webapp.notifications import (
-        NotificationRequest, NotificationResponse, NotificationList
-        )
+    NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
-        INotificationRequest, INotificationResponse)
+    ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
+    INotificationRequest, INotificationResponse)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
-from canonical.launchpad.webapp.url import Url
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
+from canonical.launchpad.webapp.opstats import OpStats
 
 
 class StepsToGo:
@@ -165,16 +165,24 @@ class LaunchpadRequestPublicationFactory:
         vhrps = []
         # Use a short form of VirtualHostRequestPublication, for clarity.
         VHRP = self.VirtualHostRequestPublication
-        vhrps.append(VHRP('mainsite', LaunchpadBrowserRequest, MainLaunchpadPublication))
-        vhrps.append(VHRP('blueprints', BlueprintBrowserRequest, BlueprintPublication))
+        vhrps.append(VHRP('mainsite', LaunchpadBrowserRequest,
+            MainLaunchpadPublication))
+        vhrps.append(VHRP('blueprints', BlueprintBrowserRequest,
+            BlueprintPublication))
         vhrps.append(VHRP('code', CodeBrowserRequest, CodePublication))
-        vhrps.append(VHRP('translations', TranslationsBrowserRequest, TranslationsPublication))
+        vhrps.append(VHRP('translations', TranslationsBrowserRequest,
+            TranslationsPublication))
         vhrps.append(VHRP('bugs', BugsBrowserRequest, BugsPublication))
-        vhrps.append(VHRP('answers', AnswersBrowserRequest, AnswersPublication))
-        vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest, ShipItPublication))
-        vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest, ShipItPublication))
-        vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest, ShipItPublication))
-        vhrps.append(VHRP('xmlrpc', LaunchpadXMLRPCRequest, MainLaunchpadPublication))
+        vhrps.append(VHRP('answers', AnswersBrowserRequest,
+            AnswersPublication))
+        vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
+            ShipItPublication))
+        vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,
+            ShipItPublication))
+        vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
+            ShipItPublication))
+        vhrps.append(VHRP('xmlrpc', LaunchpadXMLRPCRequest,
+            XMLRPCLaunchpadPublication))
         # Done with using the short form of VirtualHostRequestPublication, so
         # clean up, as we won't need to use it again later.
         del VHRP
@@ -245,12 +253,12 @@ class LaunchpadRequestPublicationFactory:
         vhrp = self._hostname_vhrp[host]
 
         # Get hostname, protocol and port out of rooturl.
-        rooturlobj = Url(vhrp.vhostconfig.rooturl)
+        rooturlobj = URI(vhrp.vhostconfig.rooturl)
 
         requestfactory = ApplicationServerSettingRequestFactory(
             vhrp.requestfactory,
-            rooturlobj.hostname,
-            rooturlobj.addressingscheme,
+            rooturlobj.host,
+            rooturlobj.scheme,
             rooturlobj.port)
         return requestfactory, vhrp.publicationfactory
 
@@ -277,6 +285,17 @@ class BasicLaunchpadRequest:
                 if iface.providedBy(context):
                     return context, iface
         return None, None
+
+    def setInWSGIEnvironment(self, key, value):
+        """Set a key-value pair in the WSGI environment of this request.
+
+        Raises KeyError if the key is already present in the environment.
+        """
+        # This method expects the BasicLaunchpadRequest mixin to be used
+        # with a base that provides self._orig_env.
+        if key in self._orig_env:
+            raise KeyError("'%s' already present in wsgi environment." % key)
+        self._orig_env[key] = value
 
 
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
@@ -329,6 +348,7 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
             else:
                 status = 303
         super(LaunchpadBrowserResponse, self).redirect(location, status=status)
+
 
 def adaptResponseToSession(response):
     """Adapt LaunchpadBrowserResponse to ISession"""
@@ -417,24 +437,73 @@ class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
         return request
 
 
+class LaunchpadAccessLogger(CommonAccessLogger):
+
+    def log(self, task):
+        """Receives a completed task and logs it in launchpad log format.
+
+        task IP address
+        HTTP_X_FORWARDED_FOR
+        HOST
+        datetime task started
+        request string  (1st line of request)
+        response status
+        response bytes written
+        launchpad user id
+        launchpad page id
+        REFERER
+        USER_AGENT
+
+        """
+        request_headers = task.request_data.headers
+        cgi_env = task.getCGIEnvironment()
+
+        x_forwarded_for = request_headers.get('HTTP_X_FORWARDED_FOR', '')
+        host = request_headers.get('HOST', '')
+        start_time = self.log_date_string(task.start_time)
+        first_line = task.request_data.first_line
+        status = task.status
+        bytes_written = task.bytes_written
+        userid = cgi_env.get('launchpad.userid', '')
+        pageid = cgi_env.get('launchpad.pageid', '')
+        referer = request_headers.get('REFERER', '')
+        user_agent = request_headers.get('USER_AGENT', '')
+
+        self.output.logRequest(
+            task.channel.addr[0],
+            ' - "%s" "%s" [%s] "%s" %s %d "%s" "%s" "%s" "%s"\n' % (
+                x_forwarded_for,
+                host,
+                start_time,
+                first_line,
+                status,
+                bytes_written,
+                userid,
+                pageid,
+                referer,
+                user_agent
+                )
+           )
+
+
 http = wsgi.ServerType(
     WSGIHTTPServer,
     WSGIPublisherApplication,
-    CommonAccessLogger,
+    LaunchpadAccessLogger,
     8080,
     True)
 
 pmhttp = wsgi.ServerType(
     PMDBWSGIHTTPServer,
     WSGIPublisherApplication,
-    CommonAccessLogger,
+    LaunchpadAccessLogger,
     8081,
     True)
 
 debughttp = wsgi.ServerType(
     WSGIHTTPServer,
     WSGIPublisherApplication,
-    CommonAccessLogger,
+    LaunchpadAccessLogger,
     8082,
     True,
     requestFactory=DebugLayerRequestFactory)
@@ -444,6 +513,18 @@ debughttp = wsgi.ServerType(
 
 class MainLaunchpadPublication(LaunchpadBrowserPublication):
     """The publication used for the main Launchpad site."""
+
+class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
+    """The publication used for XML-RPC requests."""
+    def handleException(self, object, request, exc_info, retry_allowed=True):
+        LaunchpadBrowserPublication.handleException(
+                self, object, request, exc_info, retry_allowed
+                )
+        OpStats.stats['xml-rpc faults'] += 1
+
+    def endRequest(self, request, object):
+        OpStats.stats['xml-rpc requests'] += 1
+        return LaunchpadBrowserPublication.endRequest(self, request, object)
 
 # ---- blueprint
 

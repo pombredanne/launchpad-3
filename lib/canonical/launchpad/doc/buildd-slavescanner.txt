@@ -510,7 +510,7 @@ The happens with urllib instance, we need to download it to the
 filesystem before uncompress.
 
   >>> import urllib
-  >>> from_web = urllib.urlopen(logfile.url)
+  >>> from_web = urllib.urlopen(logfile.http_url)
   >>> tmp = open(fname, 'wb')
   >>> tmp.write(from_web.read())
   >>> tmp.close()
@@ -533,6 +533,7 @@ Check the log from the uploader run has made it into the upload directory:
   ...                                  'uploader.log'))
 
   >>> print uploader_log.read()
+  INFO    creating lockfile
   DEBUG   Initialising connection.
   DEBUG   Beginning processing
   DEBUG   Creating directory /var/tmp/builddmaster/accepted
@@ -540,6 +541,7 @@ Check the log from the uploader run has made it into the upload directory:
   DEBUG   Creating directory /var/tmp/builddmaster/failed
   ...
   DEBUG   Rolling back any remaining transactions.
+  DEBUG   Removing lock file: /var/lock/process-upload-buildd.lock
   <BLANKLINE>
 
 Remove build upload results root

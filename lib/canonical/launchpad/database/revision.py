@@ -1,19 +1,22 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionNumber',
-           'RevisionSet']
+__all__ = [
+    'Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionProperty',
+    'RevisionSet']
 
 from zope.interface import implements
-from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
+from sqlobject import (
+    ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
 
-from canonical.launchpad.interfaces import (
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionNumber, IRevisionSet)
-from canonical.launchpad.helpers import shortlist
-
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.launchpad.interfaces import (
+    IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
+    IRevisionSet)
+from canonical.launchpad.helpers import shortlist
 
 
 class Revision(SQLBase):
@@ -32,6 +35,8 @@ class Revision(SQLBase):
                             alternateMethodName='byRevisionID')
     revision_date = UtcDateTimeCol(notNull=False)
 
+    properties = SQLMultipleJoin('RevisionProperty', joinColumn='revision')
+
     @property
     def parents(self):
         """See IRevision.parents"""
@@ -46,6 +51,10 @@ class Revision(SQLBase):
         present in the database, using the RevisionSet Zope utility.
         """
         return [parent.parent_id for parent in self.parents]
+
+    def getProperties(self):
+        """See IRevision."""
+        return dict((prop.name, prop.value) for prop in self.properties)
 
 
 class RevisionAuthor(SQLBase):
@@ -70,19 +79,17 @@ class RevisionParent(SQLBase):
     parent_id = StringCol(notNull=True)
 
 
-class RevisionNumber(SQLBase):
-    """The association between a revision and a branch."""
+class RevisionProperty(SQLBase):
+    """A property on a revision. See IRevisionProperty."""
 
-    implements(IRevisionNumber)
+    implements(IRevisionProperty)
 
-    _table = 'RevisionNumber'
-    
-    branch = ForeignKey(
-        dbName='branch', foreignKey='Branch', notNull=True)
+    _table = 'RevisionProperty'
 
-    sequence = IntCol(notNull=True)
     revision = ForeignKey(
         dbName='revision', foreignKey='Revision', notNull=True)
+    name = StringCol(notNull=True)
+    value = StringCol(notNull=True)
 
 
 class RevisionSet:
@@ -93,8 +100,10 @@ class RevisionSet:
         return Revision.selectOneBy(revision_id=revision_id)
 
     def new(self, revision_id, log_body, revision_date, revision_author, owner,
-            parent_ids):
+            parent_ids, properties):
         """See IRevisionSet.new()"""
+        if properties is None:
+            properties = {}
         # create a RevisionAuthor if necessary:
         try:
             author = RevisionAuthor.byName(revision_author)
@@ -113,5 +122,9 @@ class RevisionSet:
             seen_parents.add(parent_id)
             RevisionParent(revision=revision, sequence=sequence,
                            parent_id=parent_id)
-        
+
+        # Create revision properties.
+        for name, value in properties.iteritems():
+            RevisionProperty(revision=revision, name=name, value=value)
+
         return revision

@@ -26,6 +26,26 @@
     <tr>
     <td width="80%">
 
+    <div tal:condition="context/addressIsDuplicated"
+         tal:define="dupe_requests context/getRequestsWithSameAddressFromOtherUsers"
+         class="informational message">
+      <p>
+        There are other requests for CDs of this same release made by other
+        users with this shipping address.
+      </p>
+      <ul>
+        <li tal:repeat="request dupe_requests">
+          <a tal:attributes="href request/fmt:url">
+            <span tal:replace="request/daterequested/fmt:date" />:
+            <span tal:replace="request/getTotalCDs" />
+            CDs requested by
+            <span tal:replace="request/recipientdisplayname" />
+            (<span tal:replace="request/status_desc" />)
+          </a>
+        </li>
+      </ul>
+    </div>
+
     <div tal:condition="view/recipientHasOtherShippedRequests"
          tal:define="shipped_requests
                      context/recipient/shippedShipItRequestsOfCurrentRelease"
@@ -36,7 +56,11 @@
         <tal:block repeat="shipped_request shipped_requests">
           <li tal:condition="python: shipped_request != context">
             <a tal:attributes="href shipped_request/fmt:url">
-              <span tal:replace="shipped_request/daterequested/fmt:date" />:
+              <span
+                tal:attributes="
+                  title shipped_request/daterequested/fmt:datetime"
+                tal:content="
+                  shipped_request/daterequested/fmt:approximatedate" />:
               <span tal:replace="shipped_request/getTotalCDs" />
               <tal:flavours repeat="flavour shipped_request/getContainedFlavours">
                 <span tal:replace="flavour/title" /><span
@@ -165,7 +189,9 @@
       </tr>
       <tr>
         <td align="right"><strong>Date:</strong></td>
-        <td><span tal:replace="context/daterequested/fmt:datetime" /></td>
+        <td><span
+              tal:attributes="title context/daterequested/fmt:datetime"
+              tal:content="context/daterequested/fmt:approximatedate" /></td>
       </tr>
       <tr tal:condition="context/reason">
         <td align="right"><strong>Reason:</strong></td>

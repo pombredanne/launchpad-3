@@ -14,16 +14,14 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
-    IDisplayWidget, IInputWidget, InputErrors, ConversionError,
-    WidgetInputError)
+    IDisplayWidget, IInputWidget, InputErrors, WidgetInputError,
+    ConversionError)
 from zope.schema.interfaces import ValidationError, InvalidValue
 from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
 
 from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import canonical_url
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
 
 class BugTaskAssigneeWidget(Widget):
@@ -177,10 +175,7 @@ class BugTaskAssigneeWidget(Widget):
         field = self.context
         bugtask = field.context
         if bugtask.assignee:
-            if bugtask.assignee.preferredemail is not None:
-                return bugtask.assignee.preferredemail.email
-            else:
-                return bugtask.assignee.browsername
+            return bugtask.assignee.unique_displayname
 
     def selectedRadioButton(self):
         """Return the radio button that should be selected.
@@ -423,9 +418,9 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
             try:
                 return self.convertTokensToValues([input])[0]
             except InvalidValue:
-                raise LaunchpadValidationError(
+                raise ConversionError(
                     "Launchpad doesn't know of any source package named"
-                    " '%s' in %s.", input, distribution.displayname)
+                    " '%s' in %s." % (input, distribution.displayname))
         return source
 
 
@@ -446,7 +441,7 @@ class AssigneeDisplayWidget(BrowserWidget):
             assignee = assignee_field.get(bugtask)
         if assignee:
             person_img = renderElement(
-                'img', style="padding-bottom: 2px", src="/@@/user", alt="")
+                'img', style="padding-bottom: 2px", src="/@@/person", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
                 contents="%s %s" % (person_img, escape(assignee.browsername)))
