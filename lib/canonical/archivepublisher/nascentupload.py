@@ -921,7 +921,9 @@ class NascentUpload:
                 self.queue_root.addCustom(
                     libraryfile, custom_file.custom_type)
 
-            builds_found = []
+            # Container for the build that will be processed.
+            processed_builds = []
+
             for binary_package_file in self.changes.binary_package_files:
                 if self.sourceful:
                     # The reason we need to do this verification
@@ -939,13 +941,20 @@ class NascentUpload:
                 assert self.queue_root.pocket == build.pocket, (
                     "Binary was not build for the claimed pocket.")
                 binary_package_file.storeInDatabase(build)
-                builds_found.append(build)
+                processed_builds.append(build)
 
-            assert len(set([b.id for b in builds_found])) == 1, (
-                "Upload contains binaries from different builds.")
-
-            build = builds_found[0]
-            self.queue_root.addBuild(build)
+            # Perform some checks on processed build(s) if there were any.
+            # Ensure that only binaries for a single build were processed
+            # Then add a respective DistroReleaseQueueBuild entry for it
+            if len(processed_builds) > 0:
+                unique_builds = set([b.id for b in processed_builds])
+                assert len(unique_builds) == 1, (
+                    "Upload contains binaries from different builds. "
+                    "(%s)" % unique_builds)
+                # Use any (the first) IBuild stored as reference.
+                # They are all the same according the previous assertion.
+                considered_build = processed_builds[0]
+                self.queue_root.addBuild(considered_build)
 
         if not self.is_new:
             # if it is known (already overridden properly), move it to
