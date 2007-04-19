@@ -7,10 +7,17 @@ import subprocess
 import sys
 import unittest
 
+import transaction
+
 from canonical.config import config
+from canonical.database.sqlbase import (
+    flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, PackageCopyError, PackageCopier)
+from canonical.launchpad.database.publishing import (
+    SecureSourcePackagePublishingHistory, 
+    SecureBinaryPackagePublishingHistory)
 
 class TestCopyPackageScript(LaunchpadZopelessTestCase):
     """Test the copy-package.py script."""
@@ -34,6 +41,13 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         Uses the default case, copy mozilla-firefox source with binaries
         from warty to hoary.
         """
+        # Count the records in SSPPH and SBPPH to check later that they
+        # increased by one each.
+        num_source_pub = SecureSourcePackagePublishingHistory.select(
+            "True").count()
+        num_bin_pub = SecureBinaryPackagePublishingHistory.select(
+            "True").count()
+
         returncode, out, err = self.runCopyPackage(
             extra_args=['-s', 'warty', 'mozilla-firefox',
                         '--to-suite', 'hoary', '-b'])
@@ -42,6 +56,20 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         if returncode != 0:
             print "\nStdout:\n%s\nStderr\n%s\n" % (out, err)
         self.assertEqual(0, returncode)
+
+        # Test that the database has been modified.  We're only checking
+        # that the number of rows has updated by one; content checks are
+        # done in other tests.
+        flush_database_updates()
+        transaction.commit()
+        clear_current_connection_cache()
+        num_source_pub_after = SecureSourcePackagePublishingHistory.select(
+            "True").count()
+        num_bin_pub_after = SecureBinaryPackagePublishingHistory.select(
+            "True").count()
+
+        self.assertEqual(num_source_pub+1, num_source_pub_after)
+        self.assertEqual(num_bin_pub+1, num_bin_pub_after)
 
 
 class TestCopyPackage(LaunchpadZopelessTestCase):
