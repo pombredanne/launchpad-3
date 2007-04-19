@@ -1123,7 +1123,7 @@ class PackageLocation:
             self.distrorelease = self.distribution.currentrelease
             self.pocket = PackagePublishingPocket.RELEASE
 
-    def isEqual(self, other):
+    def __eq__(self, other):
         if (self.distribution.id == other.distribution.id and
             self.distrorelease.id == other.distrorelease.id and
             self.pocket.value == other.pocket.value):
@@ -1142,18 +1142,23 @@ class PackageCopyError(Exception):
 
 
 class PackageCopier(LaunchpadScript):
+    """This is a LaunchpadScript that copies published packages between
+    distro suites.
+
+    Possible exceptions raised are:
+    PackageLocationError - when the specified package or distro does
+        not exist
+    PackageCopyError - when the copy operation itself has failed
+    LaunchpadScriptError - only raised if entering via main(), ie this
+        code is running as a genuine script.  In this case, this is
+        also the _only_ exception to be raised.
+
+    The test harness doesn't enter via main(), it calls doCopy(), so
+    it only sees the first two exceptions.
+    """
 
     usage = '%prog -s warty mozilla-firefox --to-suite hoary'
     description = 'MOVE or COPY a published package to another suite.'
-
-    def __init__(self, name=None, dbuser=None, test_args=None):
-        LaunchpadScript.__init__(self, name=name, dbuser=dbuser,
-                                 test_args=test_args)
-        self.synced = False
-        self.from_source = None
-        self.from_binaries = []
-        self.copied_source = None
-        self.copied_binaries = []
 
     def add_my_options(self):
 
@@ -1200,10 +1205,10 @@ class PackageCopier(LaunchpadScript):
 
         try:
             self.doCopy()
-        except PackageCopyError, err:
+        except (PackageCopyError, PackageLocationError), err:
             raise LaunchpadScriptFailure(err)
 
-        if self.synced and not self.options.dryrun:
+        if self.options.dryrun:
             self.txn.commit()
             self.logger.info(
                 'Archive changes will by applied in the next publishing cycle')
@@ -1228,56 +1233,63 @@ class PackageCopier(LaunchpadScript):
         In this case the caller can override test_args on __init__
         to set the command line arguments.
         """
-        self.sourcename = self.args[0]
+        sourcename = self.args[0]
+        from_source = None
+        from_binaries = []
+        copied_source = None
+        copied_binaries = []
+
         # This can raise PackageCopyError:
-        self.from_location, self.to_location = self._buildLocations()
-        self.from_source = self._buildSource(
-            self.from_location, 
-            self.sourcename,
+        from_location, to_location = self._findLocations()
+        from_source = self._findSource(
+            from_location, 
+            sourcename,
             self.options.sourceversion)
 
-        self.logger.info("Syncing '%s' TO '%s'" % (self.from_source.title,
-                                                   self.to_location))
+        self.logger.info("Syncing '%s' TO '%s'" % (from_source.title,
+                                                   to_location))
         self.logger.info("Include Binaries: %s" % self.options.include_binaries)
 
-        if not self.options.confirm_all and not self._requestFeedback():
+        if not self.options.confirm_all and not self._getUserConfirmation():
             self.logger.info("Ok, see you later")
             return
 
-        self.copied_source = self.copySource(self.from_source, self.to_location)
+        copied_source = self.copySource(from_source, to_location)
 
         if self.options.include_binaries:
             self.logger.info("Performing binary copy.")
-            self.from_binaries = self._buildBinaries(self.from_source, 
-                self.from_location)
-            for binary in self.from_binaries:
-                binary_copied = self.copyBinary(binary, self.to_location)
-                self.copied_binaries.append(binary_copied)
+            from_binaries = self._findBinaries(from_source, from_location)
+            for binary in from_binaries:
+                binary_copied = self.copyBinary(binary, to_location)
+                copied_binaries.append(binary_copied)
             self.logger.info(
-                "%d binaries copied." % len(self.copied_binaries))
+                "%d binaries copied." % len(copied_binaries))
 
-    def _buildLocations(self):
+        # Information returned mainly for the benefit of the test harness.
+        return (from_location, to_location, from_source, from_binaries,
+                copied_source, copied_binaries)
+
+    def _findLocations(self):
         """Build PackageLocation for context FROM and TO.
 
         Returns result as a tuple.
         """
-        try:
-            from_location = PackageLocation(
-                self.options.from_distribution_name, self.options.from_suite)
-            # from_distribution_name intentionally used here as we currently
-            # only support moving within the same distro:
-            to_location = PackageLocation(
-                self.options.from_distribution_name, self.options.to_suite)
-        except PackageLocationError, err:
-            raise PackageCopyError(err)
+        # These can raise PackageLocationError, but we're happy to pass
+        # it upwards.
+        from_location = PackageLocation(
+            self.options.from_distribution_name, self.options.from_suite)
+        # from_distribution_name intentionally used here as we currently
+        # only support moving within the same distro:
+        to_location = PackageLocation(
+            self.options.from_distribution_name, self.options.to_suite)
 
-        if from_location.isEqual(to_location):
+        if from_location == to_location:
             raise PackageCopyError(
                 "Can not sync between the same locations: '%s' to '%s'" % (
                 from_location, to_location))
         return (from_location, to_location)
 
-    def _buildSource(self, from_location, sourcename, sourceversion):
+    def _findSource(self, from_location, sourcename, sourceversion):
         """Build a DistroReleaseSourcePackageRelease for the given parameters
 
         Result is returned.
@@ -1302,7 +1314,7 @@ class PackageCopier(LaunchpadScript):
                 from_location))
         return target_source
 
-    def _buildBinaries(self, from_source, from_location):
+    def _findBinaries(self, from_source, from_location):
         """Build a set of DistroArchReleaseBinaryPackage for the 
         context source.
 
@@ -1310,17 +1322,17 @@ class PackageCopier(LaunchpadScript):
         """
         target_binaries = []
         # Obtain names of all distinct binary packages names
-        # produced by the target_source
+        # produced by the target_source.
         binary_name_set = set(
             [binary.name for binary in from_source.binaries])
 
         # Get the binary packages in each distroarchrelease and store them
-        # in target_binaries for later.
+        # in target_binaries for returning.
         for binary_name in binary_name_set:
             all_archs = from_location.distrorelease.architectures
             for distroarchrelease in all_archs:
                 darbp = distroarchrelease.getBinaryPackage(binary_name)
-                # only include objects with published binaries
+                # Only include objects with published binaries.
                 try:
                     current = darbp.current_published
                 except NotFoundError:
@@ -1329,7 +1341,7 @@ class PackageCopier(LaunchpadScript):
                     target_binaries.append(darbp)
         return target_binaries
 
-    def _requestFeedback(self, question='Are you sure'):
+    def _getUserConfirmation(self):
         """Command-line helper.
 
         It uses raw_input to collect user feedback.
@@ -1339,10 +1351,10 @@ class PackageCopier(LaunchpadScript):
         answer = None
         valid_answers = ['yes', 'no']
         display_answers = '[%s]' % (', '.join(valid_answers))
-        full_question = '%s ? %s ' % (question, display_answers)
+        full_question = 'Are you sure? %s ' % display_answers
         while answer not in valid_answers:
             answer = raw_input(full_question)
-        return answer=='yes'
+        return answer == 'yes'
 
     def copySource(self, from_source, to_location):
         """Copy context source and store correspondent reference.
@@ -1360,7 +1372,6 @@ class PackageCopier(LaunchpadScript):
         copied_source = to_distrorelease.getSourcePackageRelease(
             source_copy.sourcepackagerelease)
 
-        self.synced = True
         self.logger.info("Copied: %s" % copied_source.title)
 
         return copied_source
@@ -1387,6 +1398,5 @@ class PackageCopier(LaunchpadScript):
             bin_version = binary_copy.binarypackagerelease.version
             binary_copied = darbp[bin_version]
 
-            self.synced = True
             self.logger.info("Copied: %s" % binary_copied.title)
             return binary_copied
