@@ -21,8 +21,7 @@ from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.scripts.distributionmirror_prober import (
-    get_expected_cdimage_paths, probe_archive_mirror, probe_release_mirror,
-    restore_http_proxy)
+    get_expected_cdimage_paths, probe_archive_mirror, probe_release_mirror)
 
 
 class DistroMirrorProber(LaunchpadScript):
@@ -77,6 +76,9 @@ class DistroMirrorProber(LaunchpadScript):
         orig_proxy = os.environ.get('http_proxy')
         if config.distributionmirrorprober.use_proxy:
             os.environ['http_proxy'] = config.launchpad.http_proxy
+            self.logger.debug("Using %s as proxy." % os.environ['http_proxy'])
+        else:
+            self.logger.debug("Not using any proxy.")
 
         # Using a script argument to control a config variable is not a great
         # idea, but to me this seems better than passing the no_remote_hosts
@@ -150,7 +152,6 @@ class DistroMirrorProber(LaunchpadScript):
         # -- Guilherme Salgado, 2007-04-03
         self.txn.commit()
 
-        restore_http_proxy(orig_proxy)
         self.logger.info('Done.')
 
 
