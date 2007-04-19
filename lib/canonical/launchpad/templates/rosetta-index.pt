@@ -23,7 +23,7 @@
                           language. Translators use this simple web
                           interface to contribute translations in a
                           wiki-style of collaboration.
-                          <a href="/+tour">Learn more&#8230;</a>
+                          <a href="/+about">Learn more&#8230;</a>
                         </p>
                         <div class="three column left">
 
@@ -91,7 +91,7 @@
       <ul class="info">
         <li>
           <a href="https://help.launchpad.net/RosettaFAQ"
-          >Frequent asked questions</a>
+          >Frequently asked questions</a>
         </li>
       </ul>
     </div>

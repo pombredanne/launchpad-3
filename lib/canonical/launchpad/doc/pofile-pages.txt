@@ -1,5 +1,4 @@
-POFile View
-===========
+= POFileTranslateView =
 
 On this section, we are going to test the view class for an IPOFile.
 
@@ -240,6 +239,8 @@ Now, we are going to check the alternative language submission.
     >>> pofile_view.second_lang_code
     'fr'
 
+= POFileUploadView = 
+
 Let's check that the upload form sets the right fields.
 
 To be sure that we are using the right entry from the import queue,
@@ -290,7 +291,9 @@ given POFile instead of the one given with the submit.
     >>> pofile_es.path
     u'es.po'
 
-Let's check the traversal code.
+= POFileNavigation =
+
+This class is used to traverse from IPOFile objects to IPOMsgSet ones.
 
     >>> from zope.security.proxy import isinstance
     >>> from canonical.launchpad.browser.pofile import POFileNavigation
@@ -346,4 +349,39 @@ POMsgSet.
     >>> isinstance(navigation.traverse('22'), POMsgSet)
     True
 
-And that's all, folks!
+= POExportView =
+
+POExportView class is used to handle download requests from the web site.
+
+When we get a download request for a file that doesn't have a valid
+cached export, the user is redirected to the index page of the IPOFile.
+
+    >>> potemplate = potemplatesubset['evolution-2.2']
+    >>> pofile_es = potemplate.getPOFileByLang('es')
+    >>> pofile_es.validExportCache()
+    False
+
+    # Request the download.
+    >>> request = LaunchpadTestRequest(form={'format': 'PO' })
+    >>> request.method = 'POST'
+    >>> pofile_view = getView(pofile_es, '+export', request)
+    >>> pofile_view.initialize()
+
+And we are redirected to the index page, as expected:
+
+    >>> print pofile_view.request.response.getHeader('Location')
+    http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es
+
+But when there is an export done before the request, that already has a valid
+cache.
+
+    >>> content = pofile_es.export()
+    >>> pofile_es.validExportCache()
+    True
+
+The request now redirects directly to the librarian URL.
+
+    >>> pofile_view = getView(pofile_es, '+export', request)
+    >>> pofile_view.initialize()
+    >>> print pofile_view.request.response.getHeader('Location')
+    http://localhost:58000/.../es.po

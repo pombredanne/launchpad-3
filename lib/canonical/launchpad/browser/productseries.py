@@ -19,6 +19,8 @@ __all__ = ['ProductSeriesNavigation',
            'get_series_branch_error']
 
 import cgi
+from datetime import datetime
+import pytz
 
 from BeautifulSoup import BeautifulSoup
 
@@ -426,6 +428,56 @@ class ProductSeriesView(LaunchpadView):
             self.request.response.addWarningNotification(
                 "Ignored your upload because the file you uploaded was not"
                 " recognised as a file that can be imported.")
+
+    def hasVcsImportSuccessStatus(self):
+        """Whether we know if the the last import attempt was successful."""
+        return (
+            self.context.importstatus is not None
+            and self.context.importstatus >= ImportStatus.PROCESSING
+            and self.context.datefinished is not None
+            and self.context.datelastsynced is not None
+            and self.context.datefinished >= self.context.datelastsynced)
+
+    def lastVcsImportSuccessful(self):
+        """Whether the last attempt to sync with upstream succeeded."""
+        assert self.context.datefinished is not None
+        assert self.context.datelastsynced is not None
+        return self.context.datefinished == self.context.datelastsynced
+
+    @property
+    def lastVcsImportAttemptAge(self):
+        """How long ago was a vcs-import sync last attempted."""
+        assert self.context.datefinished is not None
+        now = datetime.now(pytz.timezone('UTC'))
+        return now - self.context.datefinished
+
+    def hasVcsImportBranchAge(self):
+        """Whether we know when the published branch was last synced."""
+        if (self.context.datelastsynced is None
+                or self.context.import_branch is None
+                or self.context.import_branch.last_mirrored is None):
+            return False
+        last_mirrored = self.context.import_branch.last_mirrored
+        return (last_mirrored > self.context.datelastsynced
+                or self.context.datepublishedsync is not None)
+
+    @property
+    def currentVcsImportBranchAge(self):
+        """How long ago the published Bazaar branch was last synced."""
+        branch = self.context.import_branch
+        assert branch is not None
+        assert branch.last_mirrored is not None
+        assert self.context.datelastsynced is not None
+        if branch.last_mirrored > self.context.datelastsynced:
+            # Branch was published since last successful sync.
+            timestamp = self.context.datelastsynced
+        else:
+            # The currently published branch still has the data from the
+            # previous sync.
+            timestamp = self.context.datepublishedsync
+        assert timestamp is not None
+        now = datetime.now(pytz.timezone('UTC'))
+        return now - timestamp
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):

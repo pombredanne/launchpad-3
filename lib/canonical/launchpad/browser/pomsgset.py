@@ -825,7 +825,6 @@ class POMsgSetPageView(BaseTranslationView):
     """A view for the page that renders a single translation.
 
     See BaseTranslationView for details on how this works."""
-    __used_for__ = IPOMsgSet
 
     def initialize(self):
         self.pofile = self.context.pofile
@@ -873,7 +872,6 @@ class POMsgSetView(LaunchpadView):
     in which case, we would have up to 100 instances of this class using the
     same information at self.form.
     """
-    __used_for__ = IPOMsgSet
 
     # Instead of registering in ZCML, we indicate the template here and
     # avoid the adapter lookup when constructing these subviews.
