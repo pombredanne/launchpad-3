@@ -10,7 +10,7 @@ import unittest
 from canonical.config import config
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts.ftpmaster import (
-    PackageCopyError, PackageCopier)
+    PackageLocationError, PackageCopyError, PackageCopier)
 
 class TestCopyPackageScript(LaunchpadZopelessTestCase):
     """Test the copy-package.py script."""
@@ -40,8 +40,7 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         # Need to print these or you can't see what happened if the 
         # return code is bad:
         if returncode != 0:
-            print "stdout: %s" % out
-            print "stderr: %s" % err
+            print "\nStdout:\n%s\nStderr\n%s\n" % (out, err)
         self.assertEqual(0, returncode)
 
 
@@ -61,19 +60,15 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
     def getCopier(self, sourcename='mozilla-firefox', sourceversion=None,
                   from_suite='warty', to_suite='hoary',
                   from_distribution_name='ubuntu',
-                  to_distribution_name='ubuntu',
-                  confirm_all=True, comment='42', include_binaries=True):
+                  confirm_all=True, include_binaries=True):
         """Return a PackageCopier instance.
 
         Allow tests to use a set of default options and pass an 
         inactive logger to PackageCopier.
         """
-        logger = self.QuietLogger()
         test_args=['-s', from_suite,
                    '--to-suite', to_suite,
-                   '-d', from_distribution_name,
-                   '--to-distribution', to_distribution_name,
-                   '-c', comment]
+                   '-d', from_distribution_name ]
         if confirm_all:
             test_args.append('-y')
         if include_binaries:
@@ -83,72 +78,60 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
 
         test_args.append(sourcename)
 
-        copier = PackageCopier(name='copy-package', test_args=test_args,
-                               logger=logger)
-        copier.setOptions()
-
+        copier = PackageCopier(name='copy-package', test_args=test_args)
+        copier.logger = self.QuietLogger()
         return copier
 
     def testSimpleAction(self):
         """Check how CopyPackageHelper behaves on a successful copy."""
         copy_helper = self.getCopier()
 
-        # Check default values.  This ensures we know that they are invalid
-        # to start with and expect them to get re-populated after the copy.
-        self.assertEqual(copy_helper.synced, False)
-        self.assertEqual(bool(copy_helper.copied_source), False)
-        self.assertEqual(len(copy_helper.copied_binaries), 0)
-
-        copy_helper.doCopy()
+        (from_location, to_location, from_source, from_binaries,
+            copied_source, copied_binaries) = copy_helper.doCopy()
 
         # Check locations.  They should be the same as the defaults defined
         # in the getCopier method.
-        self.assertEqual(
-            str(copy_helper.from_location), 'ubuntu/warty/RELEASE')
-        self.assertEqual(
-            str(copy_helper.to_location), 'ubuntu/hoary/RELEASE')
+        self.assertEqual(str(from_location), 'ubuntu/warty/RELEASE')
+        self.assertEqual(str(to_location), 'ubuntu/hoary/RELEASE')
 
         # Check target source title - this should be the package name in
         # the sample data for our source package.
-        self.assertEqual(
-            copy_helper.target_source.title,
+        self.assertEqual(from_source.title,
             u'mozilla-firefox 0.9 (source) in ubuntu warty')
 
         # Check target binaries.  The default source we're using 
         # (mozilla-firefox) only has one binary and we're checking its title
         # to be as expected.
-        target_binary = copy_helper.target_binaries[0]
+        target_binary = from_binaries[0]
         self.assertEqual(
             target_binary.title,
             u'Binary Package "mozilla-firefox" in The Warty Warthog '
             'Release for i386 (x86)')
 
-        # Check stored results.  The data should be "synced" (written to the
-        # database, the copied_source should be valid and the number of binaries
-        # copied should be one.
-        self.assertEqual(copy_helper.synced, True)
-        self.assertEqual(bool(copy_helper.copied_source), True)
-        self.assertEqual(len(copy_helper.copied_binaries), 1)
+        # Check stored results.  The copied_source should be valid and 
+        # the number of binaries copied should be one.
+        self.assertEqual(bool(copied_source), True)
+        self.assertEqual(len(copied_binaries), 1)
 
         # Inspect copied source, its title should be the same as the original
         # source.
         self.assertEqual(
-            copy_helper.copied_source.title,
+            copied_source.title,
             u'mozilla-firefox 0.9 (source) in ubuntu hoary')
 
         # Inspect copied binary, its title should be the same as the original
         # binary.
-        copied_binary = copy_helper.copied_binaries[0]
+        copied_binary = copied_binaries[0]
         self.assertEqual(
             copied_binary.title,
             u'mozilla-firefox 0.9 (i386 binary) in ubuntu hoary')
 
-    def assertRaisesWithContent(self, 
-                                exception, exception_content, func, *args):
+    def assertRaisesWithContent(self, exception, exception_content, 
+                                func, *args):
         """Check if the given exception is raised with given content.
 
-        If the expection isn't raised or the exception_content doesn't match
-        what was raised an AssertionError is raised.
+        If the expection isn't raised or the exception_content doesn't 
+        match what was raised an AssertionError is raised.
         """
         exception_name = str(exception).split('.')[-1]
 
@@ -174,7 +157,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         copy_helper = self.getCopier(from_distribution_name="beeblebrox")
 
         self.assertRaisesWithContent(
-            PackageCopyError,
+            PackageLocationError,
             "Could not find distribution 'beeblebrox'",
             copy_helper.doCopy)
 
@@ -183,28 +166,32 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         copy_helper = self.getCopier(from_suite="slatibartfast")
 
         self.assertRaisesWithContent(
-            PackageCopyError,
+            PackageLocationError,
             "Could not find suite 'slatibartfast'",
             copy_helper.doCopy)
 
     def testFailIfSameLocations(self):
-        """Check that it fails if the source and destination package locations
-        are the same."""
+        """Check that it fails if the source and destination package 
+        locations are the same.
+        """
         copy_helper = self.getCopier(from_suite='warty', to_suite='warty')
 
         self.assertRaisesWithContent(
             PackageCopyError, 
-            "Can not sync between the same locations: 'ubuntu/warty/RELEASE' to 'ubuntu/warty/RELEASE'",
+            "Can not sync between the same locations: 'ubuntu/warty/RELEASE'"
+            " to 'ubuntu/warty/RELEASE'",
             copy_helper.doCopy)
 
     def testFailIfValidPackageButNotInSpecifiedSuite(self):
-        """Check that we fail if the package is valid but does not exist in the
-        specified distro release."""
+        """Check that we fail if the package is valid but does not 
+        exist in the specified distro release.
+        """
         copy_helper = self.getCopier(from_suite="breezy-autotest")
 
         self.assertRaisesWithContent(
             PackageCopyError,
-            "Could not find 'mozilla-firefox/None' in ubuntu/breezy-autotest/RELEASE",
+            "Could not find 'mozilla-firefox/None' in"
+            " ubuntu/breezy-autotest/RELEASE",
             copy_helper.doCopy)
 
 

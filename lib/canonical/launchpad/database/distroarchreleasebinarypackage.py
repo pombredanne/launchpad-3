@@ -272,6 +272,7 @@ class DistroArchReleaseBinaryPackage:
             priority=current.priority,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            pocket=pocket
+            pocket=pocket,
+            embargo=False
         )
         return copy
