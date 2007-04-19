@@ -23,7 +23,7 @@ Appoint a translator. Hoary Gnome Team will translate into Abkhasian.
 We should get redirected back to the group page.
 
   >>> browser.url
-  'http://translations.launchpad.dev/translations/groups/polyglot/'
+  'http://translations.launchpad.dev/translations/groups/polyglot'
 
   >>> browser.getLink('Appoint').click()
   >>> browser.url
@@ -42,5 +42,22 @@ Now we should see both of those appointments on the polyglot page:
   ...Afrikaans...No Privileges Person...
 
   >>> browser.url
-  'http://translations.launchpad.dev/translations/groups/polyglot/'
+  'http://translations.launchpad.dev/translations/groups/polyglot'
+
+Appointing a new Abkhazian translator must fail gracefully, not crash as
+it used to do (Bug #52991)
+
+  >>> browser.getLink('Appoint').click()
+  >>> browser.getControl('Language').value=['ab']
+  >>> browser.getControl('Translator').value='name12'
+  >>> browser.getControl('Add').click()
+
+The error means we stay on the appoint page
+
+  >>> browser.url
+  'http://translations.launchpad.dev/translations/groups/polyglot/+appoint'
+
+  >>> for tag in find_tags_by_class(browser.contents, 'message'):
+  ...     print tag
+  <...There is already a translator for this language...
 

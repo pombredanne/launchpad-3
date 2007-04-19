@@ -129,7 +129,6 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
         language = data.get('language')
         translator = data.get('translator')
         getUtility(ITranslatorSet).new(self.context, language, translator)
-        next_url = canonical_url(self.context)
 
     def validate(self, data):
         """Do not allow an appointment to overwrite an existing translator
@@ -143,6 +142,10 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
         if self.context.query_translator(language):
             self.setFieldError('language',
                 "There is already a translator for this language")
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class TranslationGroupSetAddView(AddView):
