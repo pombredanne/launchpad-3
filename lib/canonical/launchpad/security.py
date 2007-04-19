@@ -10,13 +10,13 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
     IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
-    ITranslationGroup, IProduct, IProductSeries, IPOTemplate, IPOFile,
-    IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
-    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IBugAttachment,
-    IPoll, IPollSubset, IPollOption, IProductRelease, IShippingRequest,
-    IShippingRequestSet, IRequestedCDs, IStandardShipItRequestSet,
-    IStandardShipItRequest, IShipItApplication, IShippingRun,
-    ISpecification, IQuestion, ITranslationImportQueueEntry,
+    ITranslationGroup, ITranslationGroupSet, IProduct, IProductSeries,
+    IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
+    ISourcePackage, ILaunchpadCelebrities, IDistroRelease, IBugTracker,
+    IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
+    IShippingRequest, IShippingRequestSet, IRequestedCDs,
+    IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
+    IShippingRun, ISpecification, IQuestion, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
@@ -723,6 +723,11 @@ class EditTranslationGroup(OnlyRosettaExpertsAndAdmins):
         of any language in the group."""
         return (user.inTeam(self.obj.owner) or
                 OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
+
+
+class EditTranslationGroupSet(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ITranslationGroupSet
 
 
 # XXX: Carlos Perello Marin 2005-05-24: This should be using
