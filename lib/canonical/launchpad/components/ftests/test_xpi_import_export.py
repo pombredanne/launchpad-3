@@ -112,77 +112,161 @@ class XpiTestCase(LaunchpadZopelessTestCase):
         # Let's validate the content of the messages.
         potmsgsets = list(self.firefox_template.getPOTMsgSets())
 
-        # First, the list of singular texts.
-        self.failUnlessEqual(
-            [potmsgset.msgid for potmsgset in potmsgsets],
-            [u'foozilla.name', u'foozilla.play.fire', u'foozilla.play.ice',
-             u'foozilla.title', u'foozilla.happytitle', u'foozilla.nocomment',
-             u'foozilla.utf8', u'foozilla.menu.title',
-             u'foozilla.menu.accesskey', u'foozilla.menu.commandkey',
-             u'foozilla_something'])
+        handled_num = 0
+        for message in potmsgsets:
+            if message.msgid == u'foozilla.name':
+                # It's a normal message that lacks any comment.
 
-        # Now, the list of singular ids.
-        self.failUnlessEqual(
-            [potmsgset.singular_text for potmsgset in potmsgsets],
-            [u'FooZilla!', u'Do you want to play with fire?',
-             u'Play with ice?', u'FooZilla Zilla Thingy', u'FooZillingy',
-             u'No Comment', u'\u0414\u0430\u043d=Day', u'MENU',
-             u'foozilla.menu.accesskey', u'foozilla.menu.commandkey',
-             u'SomeZilla'])
+                self.failUnlessEqual(message.singular_text, u'FooZilla!')
 
-        # Plural forms should be None as this format is not able to handle
-        # that.
-        self.failUnlessEqual(
-            [potmsgset.msgid_plural for potmsgset in potmsgsets],
-            [None, None, None, None, None, None, None, None, None, None, None]
-            )
+                # Plural forms should be None as this format is not able to
+                # handle that.
+                self.failUnlessEqual(message.msgid_plural, None)
+                self.failUnlessEqual(message.plural_text, None)
 
-        self.failUnlessEqual(
-            [potmsgset.plural_text for potmsgset in potmsgsets],
-            [None, None, None, None, None, None, None, None, None, None, None]
-            )
+                # There is no way to know whether a comment is from a
+                # translator or a developer comment, so we have comenttext
+                # always as None and store all comments as source comments.
+                self.failUnlessEqual(message.commenttext, None)
 
-        # Let's check the metadata.
-        self.failUnlessEqual(
-            [potmsgset.commenttext for potmsgset in potmsgsets],
-            [None, None, None, None, None, None, None, None, None, None, None]
-            )
+                self.failUnlessEqual(
+                    message.filereferences,
+                    u'en-US.xpi/chrome/en-US.jar/test1.dtd(foozilla.name)')
 
-        self.failUnlessEqual(
-            [potmsgset.filereferences for potmsgset in potmsgsets],
-            [u'en-US.xpi/chrome/en-US.jar/test1.dtd(foozilla.name)',
-             u'en-US.xpi/chrome/en-US.jar/test1.dtd(foozilla.play.fire)',
-             u'en-US.xpi/chrome/en-US.jar/test1.dtd(foozilla.play.ice)',
-             u'en-US.xpi/chrome/en-US.jar/test1.properties:1(foozilla.title)',
-             u'en-US.xpi/chrome/en-US.jar/test1.properties:3'
-                 u'(foozilla.happytitle)',
-             u'en-US.xpi/chrome/en-US.jar/test1.properties:4'
-                 u'(foozilla.nocomment)',
-             u'en-US.xpi/chrome/en-US.jar/test1.properties:5(foozilla.utf8)',
-             u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd'
-                 u'(foozilla.menu.title)',
-             u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd'
-                 u'(foozilla.menu.accesskey)',
-             u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd'
-                 u'(foozilla.menu.commandkey)',
-             u'en-US.xpi/chrome/en-US.jar/subdir/test2.properties:6'
-                 u'(foozilla_something)'])
+                self.failUnlessEqual(message.sourcecomment, None)
 
-        self.failUnlessEqual(
-            [potmsgset.sourcecomment for potmsgset in potmsgsets],
-            [None, u"Translators, don't play with fire!",
-             u'This is just a comment, not a comment for translators', None,
-             u"Translators, if you're older than six, don't translate this",
-             None, None, u'This is a DTD file inside a subdirectory',
-             u"Default key in en_US: 'M'", u"Default key in en_US: 'm'",
-             u'Translators, what you are seeing now is a lovely, awesome,' +
-                 u' multiline comment aimed at you directly from the' +
-                 u' streets of a .properties file'])
+                # This format doesn't support any functionality like .po flags.
+                self.failUnlessEqual(message.flagscomment, u'')
 
-        # This format doesn't support any functionality like .po flags.
-        self.failUnlessEqual(
-            [potmsgset.flagscomment for potmsgset in potmsgsets],
-            [u'', u'', u'', u'', u'', u'', u'', u'', u'', u'', u''])
+                # Note that we handled this message.
+                handled_num += 1
+
+            elif message.msgid == u'foozilla.play.fire':
+                # This one is also a normal message that has a comment.
+
+                self.failUnlessEqual(
+                    message.singular_text, u'Do you want to play with fire?')
+
+                # Plural forms should be None as this format is not able to
+                # handle that.
+                self.failUnlessEqual(message.msgid_plural, None)
+                self.failUnlessEqual(message.plural_text, None)
+
+                # There is no way to know whether a comment is from a
+                # translator or a developer comment, so we have comenttext
+                # always as None and store all comments as source comments.
+                self.failUnlessEqual(message.commenttext, None)
+
+                self.failUnlessEqual(
+                    message.filereferences,
+                    u'en-US.xpi/chrome/en-US.jar/test1.dtd' +
+                        u'(foozilla.play.fire)')
+
+                self.failUnlessEqual(
+                    message.sourcecomment,
+                    u"Translators, don't play with fire!")
+
+                # This format doesn't support any functionality like .po flags.
+                self.failUnlessEqual(message.flagscomment, u'')
+
+                # Note that we handled this message.
+                handled_num += 1
+
+            elif message.msgid == u'foozilla.utf8':
+                # Now, we can see that special UTF-8 chars are extracted
+                # correctly.
+                self.failUnlessEqual(
+                    message.singular_text, u'\u0414\u0430\u043d=Day')
+
+                # Plural forms should be None as this format is not able to
+                # handle that.
+                self.failUnlessEqual(message.msgid_plural, None)
+                self.failUnlessEqual(message.plural_text, None)
+
+                # There is no way to know whether a comment is from a
+                # translator or a developer comment, so we have comenttext
+                # always as None and store all comments as source comments.
+                self.failUnlessEqual(message.commenttext, None)
+
+                self.failUnlessEqual(
+                    message.filereferences,
+                    u'en-US.xpi/chrome/en-US.jar/test1.properties:5' +
+                        u'(foozilla.utf8)')
+
+                self.failUnlessEqual(message.sourcecomment, None)
+
+                # This format doesn't support any functionality like .po flags.
+                self.failUnlessEqual(message.flagscomment, u'')
+
+                # Note that we handled this message.
+                handled_num += 1
+
+            elif message.msgid == u'foozilla.menu.accesskey':
+                # access key is a special notation that is supposed to be
+                # translated with a key shortcut.
+                self.failUnlessEqual(
+                    message.singular_text, u'foozilla.menu.accesskey')
+
+                # Plural forms should be None as this format is not able to
+                # handle that.
+                self.failUnlessEqual(message.msgid_plural, None)
+                self.failUnlessEqual(message.plural_text, None)
+
+                # There is no way to know whether a comment is from a
+                # translator or a developer comment, so we have comenttext
+                # always as None and store all comments as source comments.
+                self.failUnlessEqual(message.commenttext, None)
+
+                self.failUnlessEqual(
+                    message.filereferences,
+                    u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd' +
+                        u'(foozilla.menu.accesskey)')
+
+                # The comment shows the key used when there is no translation,
+                # which is noted as the en_US translation.
+                self.failUnlessEqual(
+                    message.sourcecomment, u"Default key in en_US: 'M'")
+
+                # This format doesn't support any functionality like .po flags.
+                self.failUnlessEqual(message.flagscomment, u'')
+
+                # Note that we handled this message.
+                handled_num += 1
+
+            elif message.msgid == u'foozilla.menu.commandkey':
+                # command key is a special notation that is supposed to be
+                # translated with a key shortcut.
+                self.failUnlessEqual(
+                    message.singular_text, u'foozilla.menu.commandkey')
+
+                # Plural forms should be None as this format is not able to
+                # handle that.
+                self.failUnlessEqual(message.msgid_plural, None)
+                self.failUnlessEqual(message.plural_text, None)
+
+                # There is no way to know whether a comment is from a
+                # translator or a developer comment, so we have comenttext
+                # always as None and store all comments as source comments.
+                self.failUnlessEqual(message.commenttext, None)
+
+                self.failUnlessEqual(
+                    message.filereferences,
+                    u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd' +
+                        u'(foozilla.menu.commandkey)')
+
+                # The comment shows the key used when there is no translation,
+                # which is noted as the en_US translation.
+                self.failUnlessEqual(
+                    message.sourcecomment, u"Default key in en_US: 'm'")
+
+                # This format doesn't support any functionality like .po flags.
+                self.failUnlessEqual(message.flagscomment, u'')
+
+                # Note that we handled this message.
+                handled_num += 1
+
+        # Check that we actually found all messages we are checking here.
+        self.failUnlessEqual(handled_num, 5)
 
 
 def test_suite():

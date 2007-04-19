@@ -5,5 +5,3 @@
      short strings in English -->
 <!ENTITY foozilla.menu.accesskey   "M">
 <!ENTITY foozilla.menu.commandkey   "m">
-
-<!-- XXX: Add multi line strings, escaped stuff, etc.? -->
