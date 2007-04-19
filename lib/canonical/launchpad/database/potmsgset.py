@@ -297,8 +297,8 @@ class POTMsgSet(SQLBase):
     @property
     def hide_translations_from_anonymous(self):
         """See IPOTMsgSet."""
-        # XXX DaniloSegan 20070417 primemsgid_.msgid is pre-joined
-        # everywhere where hide_translations_from_anonymous is used
+        # primemsgid_.msgid is pre-joined everywhere where
+        # hide_translations_from_anonymous is used
         return self.primemsgid_.msgid in [
             u'translation-credits',
             u'translator-credits',

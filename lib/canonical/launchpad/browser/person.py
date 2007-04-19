@@ -1812,10 +1812,8 @@ class PersonTranslationView(LaunchpadView):
 
         Otherwise, return True.
         """
-        # Show all messages for logged-in users
         if self.user:
             return True
-        # For anonymous users, don't show sensitive messages
         return not(pomsgset.potmsgset.hide_translations_from_anonymous)
 
 
