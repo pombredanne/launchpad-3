@@ -141,14 +141,14 @@ def _assignKarmaUsingQuestionContext(person, question, actionname):
     Use the given question's context as the karma context.
     """
     person.assignKarma(
-        actionname, product=question.product, 
+        actionname, product=question.product,
 	distribution=question.distribution,
         sourcepackagename=question.sourcepackagename)
 
 
 def question_created(question, event):
     """Assign karma to the user which created <question>."""
-    _assignKarmaUsingQuestionContext(question.owner, question, 'ticketcreated')
+    _assignKarmaUsingQuestionContext(question.owner, question, 'questionasked')
 
 
 def question_modified(question, event):
@@ -158,22 +158,22 @@ def question_modified(question, event):
 
     if old_question.description != question.description:
         _assignKarmaUsingQuestionContext(
-            user, question, 'ticketdescriptionchanged')
+            user, question, 'questiondescriptionchanged')
 
     if old_question.title != question.title:
-        _assignKarmaUsingQuestionContext(user, question, 'tickettitlechanged')
+        _assignKarmaUsingQuestionContext(user, question, 'questiontitlechanged')
 
 
 QuestionAction2KarmaAction = {
-    QuestionAction.REQUESTINFO: 'ticketrequestedinfo',
-    QuestionAction.GIVEINFO: 'ticketgaveinfo',
+    QuestionAction.REQUESTINFO: 'questionrequestedinfo',
+    QuestionAction.GIVEINFO: 'questiongaveinfo',
     QuestionAction.SETSTATUS: None,
-    QuestionAction.COMMENT: 'ticketcommentadded',
-    QuestionAction.ANSWER: 'ticketgaveanswer',
+    QuestionAction.COMMENT: 'questioncommentadded',
+    QuestionAction.ANSWER: 'questiongaveanswer',
     QuestionAction.CONFIRM: None, # Handled in giveAnswer() and confirmAnswer()
     QuestionAction.EXPIRE: None,
-    QuestionAction.REJECT: 'ticketrejected',
-    QuestionAction.REOPEN: 'ticketreopened',
+    QuestionAction.REJECT: 'questionrejected',
+    QuestionAction.REOPEN: 'questionreopened',
 }
 
 
@@ -189,5 +189,5 @@ def question_comment_added(questionmessage, event):
 def question_bug_added(questionbug, event):
     """Assign karma to the user which added <questionbug>."""
     question = questionbug.question
-    _assignKarmaUsingQuestionContext(event.user, question, 'ticketlinkedtobug')
+    _assignKarmaUsingQuestionContext(event.user, question, 'questionlinkedtobug')
 

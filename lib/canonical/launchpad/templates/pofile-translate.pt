@@ -178,6 +178,8 @@
             </table>
 
           </form>
+          <!-- Paging doodads. -->
+          <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
         </tal:block>
         <p class="discreet">
           Translation status:
