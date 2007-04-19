@@ -765,12 +765,15 @@ class BugSet:
             "Expected either a comment or a msg, but got both")
 
         celebs = getUtility(ILaunchpadCelebrities)
-        if params.product in (celebs.landscape, celebs.redfish):
+        # XXX This list should be determined from a flag in the DB
+        # with a way for LP admins to set the flag when a project
+        # pays us for privacy features. -- elliot, 2007-04-19
+        private_bug_products = (celebs.landscape, celebs.redfish)
+
+        if params.product in private_bug_products:
             # These bugs are always private, because details of the
             # project, like bug reports, are not yet meant to be
             # publically disclosed.
-            # XXX There should be a clean way to enable private
-            # bugs by default for a project. -- elliot, 2007-04-16
             params.private = True
 
         # Store binary package name in the description, because
@@ -807,19 +810,14 @@ class BugSet:
         if params.tags:
             bug.tags = params.tags
 
-        if params.product == celebs.landscape:
-            # Subscribe the Landscape bugcontact to all Landscape bugs,
-            # because all their bugs are private by default, and so will
+        if params.product in private_bug_products:
+            # Subscribe the bugcontact to all bugs,
+            # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.
-            bug.subscribe(celebs.landscape.bugcontact)
-        elif params.product == celebs.redfish:
-            # XXX This will oops if there is not a bug contact set for
-            # the project. We only have two projects now and have made
-            # sure that there is a bugcontact set.
-            # When adding the feature to allow private bugs
-            # by default to be switched on for paying customers that
-            # request it, fix this so that it never oopses.
-            bug.subscribe(celebs.redfish.bugcontact)
+            if params.product.bugcontact:
+                bug.subscribe(params.product.bugcontact)
+            else:
+                bug.subscribe(params.product.owner)
 
         if params.security_related:
             assert params.private, (
