@@ -43,7 +43,7 @@
 
     <h2>Mirror URLs</h2>
 
-    <ul class="webref">
+    <ul class="webref" id="mirror-urls">
       <li tal:condition="context/http_base_url" >
         Web: <a tal:content="context/http_base_url"
                  tal:attributes="href context/http_base_url">http://url/</a>

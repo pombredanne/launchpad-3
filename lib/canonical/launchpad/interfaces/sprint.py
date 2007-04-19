@@ -69,7 +69,8 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
         default_image_resource='/@@/meeting',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this meeting in listings."))
+            "that can be used to identify this meeting. The icon will be "
+            "displayed wherever we list and link to the meeting."))
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
         default_image_resource='/@@/meeting-logo',

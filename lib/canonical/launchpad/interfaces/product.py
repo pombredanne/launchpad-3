@@ -100,7 +100,8 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     displayname = TextLine(
         title=_('Display Name'),
-        description=_("""The name of the project as it would appear in a paragraph."""))
+        description=_("""The name of the project as it would appear in a 
+            paragraph."""))
 
     title = Title(
         title=_('Title'),
@@ -175,7 +176,9 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         default_image_resource='/@@/product',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this project in listings."))
+            "that can be used to identify this project. The icon will be "
+            "displayed next to the project name everywhere in Launchpad that "
+            "we refer to the project and link to it."))
 
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
@@ -232,13 +235,17 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         If the product doesn't have a bug tracker specified, return the
         project bug tracker instead.
         """
-
+        
     bugtracker = Choice(title=_('Bug Tracker'), required=False,
         vocabulary='BugTracker',
         description=_(
             "The external bug tracker this project uses, if it is not "
             "Launchpad."))
-
+            
+    official_answers = Bool(title=_('Uses Answers Officially'), 
+        required=True, description=_('Check this box to indicate that this '
+            'project officially "uses Answers for community support.'))
+            
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
         'this application officially uses Malone for bug tracking '
@@ -345,6 +352,9 @@ class IProductSet(Interface):
 
     title = Attribute("""The set of Products registered in the Launchpad""")
 
+    people = Attribute("The PersonSet, placed here so we can easily render "
+        "the list of latest teams to register on the /products/ page.")
+
     def __iter__():
         """Return an iterator over all the products."""
 
@@ -392,8 +402,15 @@ class IProductSet(Interface):
     def latest(quantity=5):
         """Return the latest products registered in the Launchpad."""
 
-    def translatables():
+    def getTranslatables():
         """Return an iterator over products that have resources translatables.
+        """
+
+    def featuredTranslatables(maximumproducts=8):
+        """Return an iterator over a sample of translatable products.
+
+        maximum_products is a maximum number of products to be displayed
+        on the front page (it will be less if there are no enough products).
         """
 
     def count_all():
@@ -421,10 +438,12 @@ class IProductSet(Interface):
         are both active and reviewed."""
 
 
+
 class IProductLaunchpadUsageForm(Interface):
-    """Form for indicating whether Rosetta or Malone is used."""
+    """Form for indicating whether Rosetta, Answers, or Malone is used."""
 
     official_rosetta = IProduct['official_rosetta']
+    official_answers = IProduct['official_answers']
     bugtracker = ProductBugTracker(
         title=_('Bug Tracker'),
         description=_('Where are bugs primarily tracked?'),

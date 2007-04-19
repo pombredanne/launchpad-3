@@ -22,7 +22,7 @@ question in a language he speaks better.
 The language can be changed on the regular 'Edit Question' screen.
 
     >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
-    >>> browser.open('http://launchpad.dev/ubuntu/+ticket/5')
+    >>> browser.open('http://launchpad.dev/ubuntu/+question/5')
     >>> browser.getLink('Edit question').click()
 
 That screen contains a selection field to allow changing the question
@@ -40,7 +40,7 @@ answer contacts, a warning is displayed:
     >>> browser.getControl('Continue').click()
 
     >>> browser.url
-    'http://answers.launchpad.dev/ubuntu/+ticket/5/+edit'
+    'http://answers.launchpad.dev/ubuntu/+question/5/+edit'
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
@@ -71,7 +71,7 @@ language is accepted.
 
     >>> browser.getControl('Continue').click()
     >>> browser.url
-    '.../ubuntu/+ticket/5'
+    '.../ubuntu/+question/5'
     >>> browser.title.decode('utf-8')
     u'Ubuntu question #...\u52a9\u3051\u306e\u8981\u6c42...'
     >>> from BeautifulSoup import BeautifulSoup

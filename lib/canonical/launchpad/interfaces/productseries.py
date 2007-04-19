@@ -259,9 +259,8 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "successfully synced the upstream RCS. The date of the currently "
         "published branch data if it is older than "
         "import_branch.last_mirrored"))
-    datepublishedsync = Attribute(_("The date of the currently published "
-        "branch data, in case import_branch.last_mirrored is older than "
-        "datelastsynced."))
+    datepublishedsync = Attribute(_("The date of the published code was last "
+        "synced, at the time of the last sync."))
 
     def syncCertified():
         """is the series source sync enabled?"""

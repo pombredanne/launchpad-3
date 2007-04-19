@@ -79,16 +79,6 @@
         template="../templates/branch-summary-listing.pt" />
   </browser:pages>
 
-  <browser:pages
-    for="canonical.launchpad.interfaces.IBranch"
-    class="canonical.launchpad.browser.BranchView"
-    facet="branches"
-    permission="launchpad.AnyPerson">
-    <browser:page
-      name="+subscribe"
-      template="../templates/branch-subscription.pt" />
-  </browser:pages>
-
   <browser:page
       for="*"
       name="branch-filtering-macros"
@@ -123,6 +113,24 @@
     class="canonical.launchpad.browser.BranchReassignmentView"
     template="../templates/object-reassignment.pt" />
 
+  <!-- Subscribe to a branch -->
+  <browser:page
+    name="+subscribe"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchSubscriptionAddView"
+    facet="branches"
+    permission="launchpad.AnyPerson"
+    template="../templates/branch-subscription.pt" />
+
+  <!-- Edit subscription or unsubscribe from a branch -->
+  <browser:page
+    name="+edit-subscription"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchSubscriptionEditView"
+    facet="branches"
+    permission="launchpad.AnyPerson"
+    template="../templates/branch-edit-subscription.pt" />
+
   <browser:page
       for="canonical.launchpad.interfaces.IBranchBatchNavigator"
       name="+branch-listing"
@@ -134,10 +142,20 @@
     <allow interface="canonical.launchpad.interfaces.IBranchSet" />
   </content>
 
+  <!-- BranchDelta -->
+  <content class="canonical.launchpad.components.branch.BranchDelta">
+    <allow interface="canonical.launchpad.interfaces.IBranchDelta" />
+  </content>
+
   <securedutility
     class="canonical.launchpad.database.BranchSet"
     provides="canonical.launchpad.interfaces.IBranchSet" >
       <allow interface="canonical.launchpad.interfaces.IBranchSet" />
   </securedutility>
 
+  <subscriber
+      for="canonical.launchpad.interfaces.IBranch
+           canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+      handler="canonical.launchpad.mailnotification.send_branch_modified_notifications" />
+  
 </configure>

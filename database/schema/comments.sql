@@ -3,9 +3,22 @@
   table.
 */
 
+-- AnswerContact
+COMMENT ON TABLE AnswerContact IS 'Defines the answer contact for a given question target. The answer contact will be automatically notified about changes to any questions filed on the question target.';
+
 /* Branch */
 
 COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.whiteboard IS 'Notes on the current status of the branch';
+COMMENT ON COLUMN Branch.summary IS 'A single paragraph description of the branch';
+COMMENT ON COLUMN Branch.lifecycle_status IS 'Authors assesment of the branchs maturity';
+COMMENT ON COLUMN Branch.branch_home_page IS 'This column is unused';
+COMMENT ON COLUMN Branch.landing_target IS 'This column is unused, to be replaced with a BranchLandingTarget table';
+COMMENT ON COLUMN Branch.current_delta_url IS 'This column is unused';
+COMMENT ON COLUMN Branch.current_conflicts_url IS 'This column is unused';
+COMMENT ON COLUMN Branch.current_diff_adds IS 'This column is unused';
+COMMENT ON COLUMN Branch.current_diff_deletes IS 'This column is unused';
+COMMENT ON COLUMN Branch.stats_updated IS 'This column is unused';
 COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
 COMMENT ON COLUMN Branch.last_mirrored IS 'The time when the branch was last mirrored.';
 COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when it was last mirrored.';
@@ -229,6 +242,7 @@ COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of thi
 COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product.';
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
+COMMENT ON COLUMN Product.official_answers IS 'Whether or not this product upstream uses Answers officialy. This is useful to help indicate whether or not that a question will receive an answer.';
 COMMENT ON COLUMN Product.bugcontact IS 'Person who will be automatically subscribed to bugs targetted to this product';
 COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
@@ -464,44 +478,44 @@ COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or dec
 COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
 
 
-/* Ticket */
-COMMENT ON TABLE Ticket IS 'A trouble ticket, or support request, for a distribution or for an application. Such tickets are created by end users who need support on a particular feature or package or product.';
-COMMENT ON COLUMN Ticket.assignee IS 'The person who has been assigned to resolve this support ticket. Note that there is no requirement that every ticket be assigned somebody. Anybody can chip in to help resolve a ticket, and if they think they have done so we call them the "answerer".';
-COMMENT ON COLUMN Ticket.answerer IS 'The person who last claimed to have "answered" this support ticket, giving a response that they believe should be sufficient to close the ticket. This will move the status of the ticket to "answered". Note that the only person who can actually set the status to "closed" (other than an admin) is the person who made the support request.';
-COMMENT ON COLUMN Ticket.answer IS 'The TicketMessage that was accepted by the submitter as the "answer" the request.';
-COMMENT ON COLUMN Ticket.product IS 'The upstream product to which this support request is related. Note that a support request MUST be linked either to a product, or to a distribution. In future, we may allow a request to be linked to both.';
-COMMENT ON COLUMN Ticket.distribution IS 'The distribution for which a support request was filed. Note that a request MUST be linked either to a product or a distribution, and in future, we may allow it to be linked to both.';
-COMMENT ON COLUMN Ticket.sourcepackagename IS 'An optional source package name. This only makes sense if the ticket is bound to a distribution. It then allows us to guess the correct upstream product, allowing the user to "publish this request upstream too".';
-COMMENT ON COLUMN Ticket.datelastquery IS 'The date we last saw a comment from the requester (owner).';
-COMMENT ON COLUMN Ticket.datelastresponse IS 'The date we last saw a comment from somebody other than the requester.';
-COMMENT ON COLUMN Ticket.dateaccepted IS 'The date we "confirmed" or "accepted" this support request. It is usually set to the date of the first response by someone other than the requester. This allows us to track the time between first request and first response.';
-COMMENT ON COLUMN Ticket.datedue IS 'The date this ticket is "due", if such a date can be established. Usually this will be set automatically on the basis of a support contract SLA commitment.';
-COMMENT ON COLUMN Ticket.dateanswered IS 'The date this ticket was last "answered", in the sense of receiving a comment from someone other than the requester that they considered sufficient to close the ticket.';
-COMMENT ON COLUMN Ticket.dateclosed IS 'The date the requester marked this ticket CLOSED.';
-COMMENT ON COLUMN Ticket.language IS 'The language of the ticket''s title and description.';
-COMMENT ON COLUMN Ticket.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the ticket. So its a useful way for projects to add their own semantics or metadata to the support tracker.';
+/* Question */
+COMMENT ON TABLE Question IS 'A question, or support request, for a distribution or for an application. Such questions are created by end users who need support on a particular feature or package or product.';
+COMMENT ON COLUMN Question.assignee IS 'The person who has been assigned to resolve this question. Note that there is no requirement that every question be assigned somebody. Anybody can chip in to help resolve a question, and if they think they have done so we call them the "answerer".';
+COMMENT ON COLUMN Question.answerer IS 'The person who last claimed to have "solved" this support question, giving a response that the owner believe should be sufficient to close the question. This will move the status of the question to "SOLVED". Note that the only person who can actually set the status to SOLVED is the person who asked the question.';
+COMMENT ON COLUMN Question.answer IS 'The QuestionMessage that was accepted by the submitter as the "answer" to the question';
+COMMENT ON COLUMN Question.product IS 'The upstream product to which this quesiton is related. Note that a quesiton MUST be linked either to a product, or to a distribution.';
+COMMENT ON COLUMN Question.distribution IS 'The distribution for which a question was filed. Note that a request MUST be linked either to a product or a distribution.';
+COMMENT ON COLUMN Question.sourcepackagename IS 'An optional source package name. This only makes sense if the question is bound to a distribution.';
+COMMENT ON COLUMN Question.datelastquery IS 'The date we last saw a comment from the requester (owner).';
+COMMENT ON COLUMN Question.datelastresponse IS 'The date we last saw a comment from somebody other than the requester.';
+COMMENT ON COLUMN Question.dateaccepted IS 'The date we "confirmed" or "accepted" this question. It is usually set to the date of the first response by someone other than the requester. This allows us to track the time between first request and first response.';
+COMMENT ON COLUMN Question.datedue IS 'The date this question is "due", if such a date can be established. Usually this will be set automatically on the basis of a support contract SLA commitment.';
+COMMENT ON COLUMN Question.dateanswered IS 'The date this question was last "answered", in the sense of receiving a comment from someone other than the requester that the requester considered sufficient to close the question.';
+COMMENT ON COLUMN Question.dateclosed IS 'The date the requester marked this question CLOSED.';
+COMMENT ON COLUMN Question.language IS 'The language of the question''s title and description.';
+COMMENT ON COLUMN Question.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the question. So its a useful way for projects to add their own semantics or metadata to the Answer Tracker.';
 
-/* TicketBug */
+/* QuestionBug */
 
-COMMENT ON TABLE TicketBug IS 'A link between a ticket and a bug, showing that the bug is somehow related to this support request.';
+COMMENT ON TABLE QuestionBug IS 'A link between a question and a bug, showing that the bug is somehow related to this question.';
 
-/* TicketMessage */
+/* QuestionMessage */
 
-COMMENT ON TABLE TicketMessage IS 'A link between a support ticket and a message. This means that the message will be displayed on the ticket page.';
-COMMENT ON COLUMN TicketMessage.action IS 'The action on the ticket that was done with this message. This is a value from the TicketAction enum.';
-COMMENT ON COLUMN TicketMessage.new_status IS 'The status of the ticket after this message.';
+COMMENT ON TABLE QuestionMessage IS 'A link between a question and a message. This means that the message will be displayed on the question page.';
+COMMENT ON COLUMN QuestionMessage.action IS 'The action on the question that was done with this message. This is a value from the QuestionAction enum.';
+COMMENT ON COLUMN QuestionMessage.new_status IS 'The status of the question after this message.';
 
-/* TicketReopening */
+/* QuestionReopening */
 
-COMMENT ON TABLE TicketReopening IS 'A record of the times when a ticket was re-opened. In each case we store the time that it happened, the person who did it, and the person who had previously answered / rejected the ticket.';
-COMMENT ON COLUMN TicketReopening.reopener IS 'The person who reopened the ticket.';
-COMMENT ON COLUMN TicketReopening.answerer IS 'The person who was previously listed as the answerer of the ticket.';
-COMMENT ON COLUMN TicketReopening.priorstate IS 'The state of the ticket before it was reopened. You can reopen a ticket that is ANSWERED, or CLOSED, or REJECTED.';
+COMMENT ON TABLE QuestionReopening IS 'A record of the times when a question was re-opened. In each case we store the time that it happened, the person who did it, and the person who had previously answered / rejected the question.';
+COMMENT ON COLUMN QuestionReopening.reopener IS 'The person who reopened the question.';
+COMMENT ON COLUMN QuestionReopening.answerer IS 'The person who was previously listed as the answerer of the question.';
+COMMENT ON COLUMN QuestionReopening.priorstate IS 'The state of the question before it was reopened. You can reopen a question that is ANSWERED, or CLOSED, or REJECTED.';
 
 
-/* TicketSubscription */
+/* QuestionSubscription */
 
-COMMENT ON TABLE TicketSubscription IS 'A subscription of a person to a particular support request.';
+COMMENT ON TABLE QuestionSubscription IS 'A subscription of a person to a particular question.';
 
 
 /* DistroReleaseLanguage */
@@ -567,6 +581,8 @@ COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically s
 COMMENT ON COLUMN Distribution.security_contact IS 'The person or team who handles security-related issues in the distribution.';
 COMMENT ON COLUMN Distribution.official_rosetta IS 'Whether or not this distribution uses Rosetta for its official translation team and coordination.';
 COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribution uses Malone for an official bug tracker.';
+COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product upstream uses Answers officialy.';
+
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
 
 /* DistroRelease */
@@ -1352,9 +1368,6 @@ COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile wher
 COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
 COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the import: 1 Approved, 2 Imported, 3 Deleted, 4 Failed, 5 Needs Review, 6 Blocked.';
-
--- SupportContact
-COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given ticket target. The support contact will be automatically subscribed to every support request filed on the ticket target.';
 
 -- PersonalPackageArchive
 COMMENT ON TABLE PersonalPackageArchive IS 'Contains the information about the archives generated based on personal packages.';

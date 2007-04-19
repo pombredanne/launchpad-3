@@ -214,6 +214,62 @@ class POBasicTestCase(unittest.TestCase):
             u'"Content-Type: text/plain; charset=ASCII\\n"\n'
             u'"plural-forms: nplurals=2; plural=random()\\n"')
 
+    def testMultipartString(self):
+        """
+        Test concatenated message strings on the same line.
+
+        There seems to be nothing in the PO file format that forbids closing
+        a string and re-opening it on the same line.  One wouldn't normally
+        want to make use of this, but in bug #49599 two lines in a message had
+        been accidentally concatenated at column 80, possibly because the
+        author's editor happened to break the line there and the missing line
+        feed became unnoticeable.
+
+        Make sure this works.  The strings should be concatenated.  If there
+        is any whitespace between the lines, it should be ignored.  This is
+        how the ability to close and re-open strings is normally used: to
+        break up long strings into multiple lines in the PO file.
+        """
+        foos = 9
+        self.parser.write('''
+            %s
+            msgid "foo1"
+            msgstr ""
+            "bar"
+
+            msgid "foo2"
+            msgstr "b"
+            "ar"
+
+            msgid "foo3"
+            msgstr "b""ar"
+
+            msgid "foo4"
+            msgstr "ba" "r"
+
+            msgid "foo5"
+            msgstr "b""a""r"
+
+            msgid "foo6"
+            msgstr "bar"""
+
+            msgid "foo7"
+            msgstr """bar"
+
+            msgid "foo8"
+            msgstr "" "bar" ""
+
+            msgid "foo9"
+            msgstr "" "" "bar" """"
+            ''' % DEFAULT_HEADER)
+        self.parser.finish()
+        messages = self.parser.messages
+        self.assertEqual(len(messages), foos, "incorrect number of messages")
+        for n in range(1,foos):
+            msgidn = "foo"+str(n)
+            self.assertEqual(messages[n-1].msgid, msgidn, "incorrect msgid")
+            self.assertEqual(messages[n-1].msgstr, "bar", "incorrect msgstr")
+
 
 def test_suite():
     dt_suite = doctest.DocTestSuite(pofile)

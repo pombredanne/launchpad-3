@@ -17,26 +17,27 @@ def LayeredDocFileSuite(*args, **kw):
 
 
 def test_suite():
+    optionflags = REPORT_NDIFF|NORMALIZE_WHITESPACE|ELLIPSIS
     return unittest.TestSuite([
             LayeredDocFileSuite(
                 'test_disconnects.txt', layer=DatabaseLayer,
-                optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
+                optionflags=optionflags
                 ),
             LayeredDocFileSuite(
                 'test_reconnector.txt', layer=DatabaseLayer,
-                optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
+                optionflags=optionflags
                 ),
             LayeredDocFileSuite(
                 'test_reconnect_already_closed.txt', layer=DatabaseLayer,
-                optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
+                optionflags=optionflags
                 ),
             LayeredDocFileSuite(
                 'test_zopelesstransactionmanager.txt', layer=LaunchpadLayer,
-                optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE
+                optionflags=optionflags
                 ),
             LayeredDocFileSuite(
                 'test_zopeless_reconnect.txt', layer=LaunchpadLayer,
-                optionflags=ELLIPSIS|REPORT_NDIFF|NORMALIZE_WHITESPACE
+                optionflags=optionflags
                 ),
             ])
 
