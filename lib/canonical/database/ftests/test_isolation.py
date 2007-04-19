@@ -65,6 +65,7 @@ class TestIsolation(unittest.TestCase):
         cur = con.cursor()
         cur.execute("UPDATE Person SET password=NULL")
         con.commit()
+        cur.execute("UPDATE Person SET password='foo'")
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
     def test_rollback(self):
@@ -80,12 +81,14 @@ class TestIsolation(unittest.TestCase):
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
     def test_script(self):
+        # Ensure that things work in stand alone scripts too, in case out
+        # test infrustructure is faking something.
         script = os.path.join(os.path.dirname(__file__), 'script_isolation.py')
         cmd = [sys.executable, script]
         process = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
         (script_output, _empty) = process.communicate()
         self.failUnlessEqual(process.returncode, 0, 'Error: ' + script_output)
-        self.failUnlessEqual(script_output, 'read committed\n')
+        self.failUnlessEqual(script_output, 'read committed\n' * 4)
 
 
 def test_suite():
