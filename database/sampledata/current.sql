@@ -8171,6 +8171,7 @@ INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, archite
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (158, 19, 50, 2, 3, 1, 50);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (159, 19, 0, 2, 3, 2, 0);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (160, 19, 50, 3, 3, 1, 50);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (161, 20, 8, 1, 4, 1, 0);
 
 
 ALTER TABLE requestedcds ENABLE TRIGGER ALL;
@@ -8477,6 +8478,7 @@ INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, datereque
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (17, 8, 55, NULL, '2006-03-19 18:38:24.526648', NULL, NULL, true, 'James Blackwell', 'Tawny View Vista', '5423', NULL, 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, 3, 4, 'tawnyviewvista5423whatever');
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (18, 23, 55, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Velvet Zephyr Woods', '5423', NULL, 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, 4, 4, 'velvetzephyrwoods5423whatever');
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (19, 243601, NULL, NULL, '2006-10-17 20:53:11.714301', NULL, NULL, false, 'Marilize Coetzee', 'Somewhere around here', NULL, NULL, 'fdas fd as fa', NULL, 9, '43243242', '432432', NULL, NULL, 1, 'somewherearoundherefdasfdasfa');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (20, 1, NULL, NULL, '2006-02-01 18:38:24.526648', NULL, NULL, false, 'Somebody Else', 'Rue de Rivoli', '1345', NULL, 'Paris', NULL, 25, '999432423', '+55 16 3374-2027', NULL, NULL, 6, 'ruederivoli1345paris');
 
 
 ALTER TABLE shippingrequest ENABLE TRIGGER ALL;
