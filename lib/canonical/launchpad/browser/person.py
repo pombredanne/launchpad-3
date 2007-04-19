@@ -1796,12 +1796,25 @@ class PersonTranslationView(LaunchpadView):
                   for record in batchnav.currentBatch())
         if ids:
             cache = list(getUtility(IPOTemplateSet).getByIDs(ids))
+
         return batchnav
 
     @cachedproperty
     def translation_groups(self):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
+
+    def should_display_message(self, pomsgset):
+        """Should a certain POMsgSet be displayed.
+
+        Return False if user is not logged in and message may contain
+        sensitive data such as email addresses.
+
+        Otherwise, return True.
+        """
+        if self.user:
+            return True
+        return not(pomsgset.potmsgset.hide_translations_from_anonymous)
 
 
 class PersonGPGView(LaunchpadView):
