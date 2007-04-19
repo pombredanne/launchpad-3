@@ -10,12 +10,13 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
     IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
-    IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
-    IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
-    IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
-    IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
-    IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, IQuestion, ITranslationImportQueueEntry,
+    ITranslationGroup, IProduct, IProductSeries, IPOTemplate, IPOFile,
+    IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
+    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IBugAttachment,
+    IPoll, IPollSubset, IPollOption, IProductRelease, IShippingRequest,
+    IShippingRequestSet, IRequestedCDs, IStandardShipItRequestSet,
+    IStandardShipItRequest, IShipItApplication, IShippingRun,
+    ISpecification, IQuestion, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
@@ -710,6 +711,17 @@ class ChangeTranslatorInGroup(OnlyRosettaExpertsAndAdmins):
         """Allow the owner of a translation group to edit the translator
         of any language in the group."""
         return (user.inTeam(self.obj.translationgroup.owner) or
+                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
+
+
+class EditTranslationGroup(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = ITranslationGroup
+
+    def checkAuthenticated(self, user):
+        """Allow the owner of a translation group to edit the translator
+        of any language in the group."""
+        return (user.inTeam(self.obj.owner) or
                 OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
 
 
