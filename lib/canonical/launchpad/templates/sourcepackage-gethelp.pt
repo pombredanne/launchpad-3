@@ -15,14 +15,14 @@
 
   <p>
     You can to post questions directly to the <a
-    tal:attributes="href 
+    tal:attributes="href
         modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/answers/rooturl">Launchpad
-    answer</a> tracker. 
+    answer</a> tracker.
     <ul>
         <li><a tal:attributes="href
-        string:${context/fmt:url}/+tickets">Search through existing questions</a></li>
+        string:${context/fmt:url}/+questions">Search through existing questions</a></li>
         <li><a tal:attributes="href
-        string:${context/fmt:url}/+addticket">Submit your question</a></li>
+        string:${context/fmt:url}/+addquestion">Submit your question</a></li>
     </ul>
 
   <h2>Other support options</h2>

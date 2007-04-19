@@ -466,7 +466,7 @@ class DistributionLaunchpadUsageEditView(LaunchpadEditFormView):
     """View class for defining Launchpad usage."""
 
     schema = IDistribution
-    field_names = ["official_rosetta", "official_malone"]
+    field_names = ["official_answers", "official_malone", "official_rosetta"]
     label = "Describe Launchpad usage"
 
     @action("Change", name='change')
