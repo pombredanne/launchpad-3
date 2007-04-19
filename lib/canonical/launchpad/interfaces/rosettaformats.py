@@ -1,29 +1,27 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Field
-
-from canonical.lp.dbschema import RosettaFileFormat
 
 __metaclass__ = type
 
-__all__ = ('ITranslationImport', )
+__all__ = [
+    'ITranslationImport'
+    ]
 
 class ITranslationImport(Interface):
     """Rosetta translation file import."""
 
-    allentries = Attribute('Templates and translations provided by this file.')
-
-    def importSupported():
-        """Checks if this import can be carried out using this class.
-
-        Returns the weight of the importer compatibility in the range
-        [0,10]. Zero indicates not-supported, and ten indicates most
-        applicable importer.
-        """
+    allentries = Attribute('List of Templates and translations provided by this file.')
 
     def getTemplate(path):
-        """Returns PO template for given path inside the file."""
+        """Return a dictionary representing a translation template.
+
+        :arg path: Location of the template.
+        """
 
     def getTranslation(path, language):
-        """Returns translation in 'language' for template given by 'path'."""
+        """Return a dictionary representing a translation.
+
+        :arg path: Location of the translation.
+        :arg language: Language we are interested on.
+        """

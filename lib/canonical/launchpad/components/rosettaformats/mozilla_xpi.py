@@ -1,10 +1,10 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
 __all__ = [
     'MozillaSupport',
-    'ProperySyntaxError'
+    'PropertySyntaxError'
     ]
 
 import codecs

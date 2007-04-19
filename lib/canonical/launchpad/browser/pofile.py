@@ -191,7 +191,6 @@ class BaseExportView(LaunchpadView):
         formats = [
             RosettaFileFormat.PO,
             RosettaFileFormat.MO,
-            RosettaFileFormat.XPI,
         ]
 
         for format in formats:
