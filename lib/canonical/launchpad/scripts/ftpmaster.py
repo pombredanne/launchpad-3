@@ -1195,6 +1195,11 @@ class PackageCopier(LaunchpadScript):
             help='Optional Source Version, defaults to the current version.')
 
     def main(self):
+        """LaunchpadScript entry point.
+
+        Can only raise LaunchpadScriptFailure - other exceptions are
+        absorbed into that.
+        """
 
         self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
 
@@ -1208,10 +1213,11 @@ class PackageCopier(LaunchpadScript):
         except (PackageCopyError, PackageLocationError), err:
             raise LaunchpadScriptFailure(err)
 
-        if self.options.dryrun:
+        if not self.options.dryrun:
             self.txn.commit()
             self.logger.info(
-                'Archive changes will by applied in the next publishing cycle')
+                "Changes committed.  The archive will be updated"
+                " in the next publishing cycle")
             self.logger.info('Be patient.')
         else:
             self.logger.info('Dry run, so nothing to commit.')
@@ -1223,7 +1229,8 @@ class PackageCopier(LaunchpadScript):
         """Execute package copy procedure.
 
         Build location and target objects.
-        Request user feedback is not suppressed by given parameters.
+        Check whether user feedback is needed or is suppressed by 
+        given parameters.
         Copy source publication and optionally related binary publications
         according to the given parameters.
 
@@ -1232,6 +1239,8 @@ class PackageCopier(LaunchpadScript):
         
         In this case the caller can override test_args on __init__
         to set the command line arguments.
+
+        Can raise PackageLocationError or PackageCopyError.
         """
         sourcename = self.args[0]
         from_source = None
@@ -1246,8 +1255,8 @@ class PackageCopier(LaunchpadScript):
             sourcename,
             self.options.sourceversion)
 
-        self.logger.info("Syncing '%s' TO '%s'" % (from_source.title,
-                                                   to_location))
+        self.logger.info("Syncing %r to %r" % (from_source.title,
+                                               str(to_location)))
         self.logger.info("Include Binaries: %s" % self.options.include_binaries)
 
         if not self.options.confirm_all and not self._getUserConfirmation():
