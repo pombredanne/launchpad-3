@@ -113,59 +113,13 @@ ucci\u00F3n
         self.assertEqual(count, 1)
 
 
-class UnescapedDoubleQuotePropertyFileTest(unittest.TestCase):
-    """Test class for property file format with unescaped double quote.
-
-    Quotes must be escaped this test makes sure that we raise the right
-    exception when that's not true.
-    """
-
-    content = '''
-        default-first-title-mac = Something "new"
-        '''
-
-    def runTest(self):
-        detected = False
-        try:
-            property_file = PropertyFile(
-                'test.properties', dedent(self.content))
-        except PropertySyntaxError:
-            detected = True
-
-        # Whether the unescaped char was detected.
-        self.assertEqual(detected, True)
-
-
-class UnescapedSingleQuotePropertyFileTest(unittest.TestCase):
-    """Test class for property file format with unescaped single quote.
-
-    Quotes must be escaped this test makes sure that we raise the right
-    exception when that's not true.
-    """
-
-    content = '''
-        default-first-title-mac = Something 'new'
-        '''
-
-    def runTest(self):
-        detected = False
-        try:
-            property_file = PropertyFile(
-                'test.properties', dedent(self.content))
-        except PropertySyntaxError:
-            detected = True
-
-        # Whether the unescaped char was detected.
-        self.assertEqual(detected, True)
-
-
 class EscapedQuotesPropertyFileTest(unittest.TestCase):
     """Test class for property file format with escaped quotes.
 
     Escaped quotes must be stored unescaped.
     """
 
-    content = u'default-first-title-mac = \\\'Something\\\' \\\"more\\\"'
+    content = 'default-first-title-mac = \\\'Something\\\' \\\"more\\\"'
 
     def runTest(self):
         property_file = PropertyFile('test.properties', dedent(self.content))
@@ -182,15 +136,130 @@ class EscapedQuotesPropertyFileTest(unittest.TestCase):
         self.assertEqual(count, 1)
 
 
+class WholeLineCommentPropertyFileTest(unittest.TestCase):
+    """Test class for property file format with whole line comment."""
+
+    content = '''
+        # Foo bar comment.
+        default-first-title-mac = blah
+
+        # This comment should be ignored.
+
+        foo = bar
+        '''
+
+    def runTest(self):
+        property_file = PropertyFile('test.properties', dedent(self.content))
+
+        count = 0
+        for message in property_file._data:
+            if message['msgid'] == u'default-first-title-mac':
+                self.assertEqual(
+                    message['comment'], u'Foo bar comment.')
+                count += 1
+            if message['msgid'] == u'foo':
+                self.assertEqual(
+                    message['comment'], None)
+                count += 1
+
+        # Validate that we actually found the strings so the test is really
+        # passing.
+        self.assertEqual(count, 2)
+
+
+class EndOfLineCommentPropertyFileTest(unittest.TestCase):
+    """Test class for property file format with end of line comment."""
+
+    content = '''
+        default-first-title-mac = blah // Foo bar comment.
+
+        # This comment should be ignored.
+        foo = bar // Something
+        '''
+
+    def runTest(self):
+        property_file = PropertyFile('test.properties', dedent(self.content))
+
+        count = 0
+        for message in property_file._data:
+            if message['msgid'] == u'default-first-title-mac':
+                self.assertEqual(
+                    message['comment'], u'Foo bar comment.')
+                # Also, the content should be only the text before the comment
+                # tag.
+                self.assertEqual(
+                    message['content'], u'blah')
+                count += 1
+            if message['msgid'] == u'foo':
+                self.assertEqual(
+                    message['comment'], u'Something')
+                # Also, the content should be only the text before the comment
+                # tag.
+                self.assertEqual(
+                    message['content'], u'bar')
+                count += 1
+
+        # Validate that we actually found the strings so the test is really
+        # passing.
+        self.assertEqual(count, 2)
+
+
+class MultiLineCommentPropertyFileTest(unittest.TestCase):
+    """Test class for property file format with end of line comment."""
+
+    content = '''
+        /* single line comment */
+        default-first-title-mac = blah
+
+        /* Multi line comment
+           yeah, it's multiple! */
+        foo = bar
+
+        /* Even with nested comment tags, we handle this as multiline comment:
+        # fooo
+        foos = bar
+        something = else // Comment me!
+        */
+        long_comment = foo
+        '''
+
+    def runTest(self):
+        property_file = PropertyFile('test.properties', dedent(self.content))
+
+        count = 0
+        for message in property_file._data:
+            if message['msgid'] == u'default-first-title-mac':
+                self.assertEqual(
+                    message['comment'], u' single line comment ')
+                count += 1
+            if message['msgid'] == u'foo':
+                self.assertEqual(
+                    message['comment'],
+                    u" Multi line comment\n   yeah, it's multiple! ")
+                count += 1
+            if message['msgid'] == u'long_comment':
+                self.assertEqual(
+                    message['comment'],
+                    u' Even with nested comment tags, we handle this as' +
+                        u' multiline comment:\n# fooo\nfoos = bar\n' +
+                        u'something = else // Comment me!')
+                count += 1
+
+        # Validate that we actually found the strings so the test is really
+        # passing.
+        self.assertEqual(count, 3)
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(UTF8PropertyFileTest())
     suite.addTest(UnicodeEscapedPropertyFileTest())
     suite.addTest(Latin1PropertyFileTest())
     suite.addTest(TrailingBackslashPropertyFileTest())
-    suite.addTest(UnescapedDoubleQuotePropertyFileTest())
-    suite.addTest(UnescapedSingleQuotePropertyFileTest())
     suite.addTest(EscapedQuotesPropertyFileTest())
+    suite.addTest(WholeLineCommentPropertyFileTest())
+    suite.addTest(EndOfLineCommentPropertyFileTest())
+    suite.addTest(MultiLineCommentPropertyFileTest())
     return suite
 
 if __name__ == '__main__':

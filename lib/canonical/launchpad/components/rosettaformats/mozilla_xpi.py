@@ -225,19 +225,6 @@ class PropertyFile (LocalizableFile):
     """
 
     license_block_text = u'END LICENSE BLOCK'
-    escape_map = {
-        'a': '\a',
-        'b': '\b',
-        'f': '\f',
-        'n': '\n',
-        'r': '\r',
-        't': '\t',
-        'v': '\v',
-        '"': '"',
-        '\'': '\'',
-        '\\': '\\',
-        }
-
 
     def __init__(self, filename, content, logger=None):
         """Constructs a dictionary from a .properties file.
@@ -277,7 +264,9 @@ class PropertyFile (LocalizableFile):
         # unicode-escape first, and then decode it to unicode
         # XXX: Danilo 2006-08-01: we _might_ get performance
         # improvements if we reimplement this to work directly,
-        # though, it will be hard to beat C-based de/encoder
+        # though, it will be hard to beat C-based de/encoder.
+        # This call unescapes everything so we don't need to care about quotes
+        # escaping.
         content = content.encode('unicode_escape').decode('unicode_escape')
 
         line_num = 0
@@ -326,14 +315,17 @@ class PropertyFile (LocalizableFile):
                         # Store the character.
                         if last_comment is None:
                             last_comment = line[0]
+                        elif last_comment_line_num == line_num:
+                            last_comment += line[0]
                         else:
-                            last_comment = u'%s %s' % (last_comment, line[0])
+                            last_comment = u'%s\n%s' % (last_comment, line[0])
+                            last_comment_line_num = line_num
                         # Jump the processed char.
                         line = line[1:]
                     continue
                 elif line.startswith(u'//'):
                     # It's an 'end of the line comment'
-                    last_comment = line[2:]
+                    last_comment = line[2:].strip()
                     last_comment_line_num = line_num
                     # Jump to next line
                     break
@@ -341,29 +333,15 @@ class PropertyFile (LocalizableFile):
                     # It's a multi line comment
                     is_multi_line_comment = True
                     ignore_comment = False
+                    last_comment_line_num = line_num
                     # Jump the comment starting tag
                     line = line[2:]
                     continue
                 elif is_message:
-                    if line[0] == '\\' and line[1] in escape_map:
-                        # We got one of the special escaped chars we know about, we
-                        # unescape them using the mapping table we have.
-                        translation += escape_map[line[1]]
-                        line = line[2:]
-                        continue
-                    elif line[0] == '\\':
-                        # It's an unknown escaped char.
-                        raise PropertySyntaxError(
-                            line_num, u"unknown escaped char: '%s'" % line[:2])
-                    elif line[0] in ('"', '\''):
-                        raise PropertySyntaxError(
-                            line_num,
-                            u'Double or single quotes must be escaped')
-                    else:
-                        # Store the char and continue.
-                        translation += line[0]
-                        line = line[1:]
-                        continue
+                    # Store the char and continue.
+                    translation += line[0]
+                    line = line[1:]
+                    continue
                 elif u'=' in line:
                     # Looks like a message string.
                     (key, value) = line.split('=', 1)
