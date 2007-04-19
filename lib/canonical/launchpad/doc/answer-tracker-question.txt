@@ -115,29 +115,47 @@ It is also possible to adapt a question to its IQuestionTarget.
     >>> verifyObject(IQuestionTarget, target)
     True
     
-The question can be transferred to a new IQuestionTarget.
+The question can be assigned to a new IQuestionTarget.
 
     >>> thunderbird = getUtility(IProductSet)['thunderbird']
-    >>> thunderbird_question_target = IQuestionTarget(thunderbird)
-    >>> firefox_question.target = thunderbird_question_target
-    >>> print firefox_question.target.displayname
+    >>> firefox_question.target = thunderbird
+    >>> print removeSecurityProxy(firefox_question.target.displayname)
     Mozilla Thunderbird
-        
-There are no restrictions to the number of IQuestionTargets that
-a question can be transferred to.
     
-    >>> ubuntu_question_target = IQuestionTarget(ubuntu)
-    >>> firefox_question.target = ubuntu_question_target
+When a question is reassigned, it's product, distribution and 
+sourcepackagename attributes are reconciled with the IQuestionTarget.
+    
+    >>> firefox_question.target = ubuntu
     >>> print firefox_question.target.displayname
     Ubuntu
+    >>> print removeSecurityProxy(firefox_question.distribution.name)
+    ubuntu
+    >>> print firefox_question.sourcepackagename
+    None
+    >>> print firefox_question.product
+    None
     
-    >>> evolution_package_question_target = IQuestionTarget(evolution_package)
-    >>> firefox_question.target = evolution_package_question_target
+    >>> firefox_question.target = evolution_package
     >>> print firefox_question.target.displayname
     evolution in ubuntu
-    
+    >>> print removeSecurityProxy(firefox_question.distribution.name)
+    ubuntu
+    >>> print removeSecurityProxy(firefox_question.sourcepackagename.name)
+    evolution
+    >>> print firefox_question.product
+    None
+        
     >>> firefox_question.target = firefox
-
+    >>> print firefox_question.target.displayname
+    Mozilla Firefox
+    >>> print firefox_question.distribution
+    None
+    >>> print firefox_question.sourcepackagename
+    None
+    >>> print removeSecurityProxy(firefox_question.product.name)
+    firefox
+    
+    
 == Subscriptions and Notifications ==
 
 Whenever a question is created or changed, email notifications will be

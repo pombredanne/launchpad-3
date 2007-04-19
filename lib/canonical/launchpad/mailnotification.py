@@ -1096,7 +1096,11 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         if question.status != old_question.status:
             info_fields.append(indent + 'Status: %s => %s' % (
                 old_question.status.title, question.status.title))
-
+        if question.target != old_question.target:
+            info_fields.append(
+                indent + 'Project: %s => %s' % (
+                old_question.target.displayname, question.target.displayname))
+                
         old_bugs = set(old_question.bugs)
         bugs = set(question.bugs)
         for linked_bug in bugs.difference(old_bugs):

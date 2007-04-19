@@ -27,8 +27,7 @@
         permission="launchpad.AnyPerson"
         attributes="requestInfo giveAnswer expireQuestion addComment
                     subscribe unsubscribe"
-        set_attributes="title description datedue product distribution
-                        sourcepackagename target language" />
+        set_attributes="title description datedue target language" />
     <require
         permission="launchpad.Moderate"
         attributes="reject" />

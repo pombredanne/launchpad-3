@@ -820,7 +820,7 @@ class QuestionContextMenu(ContextMenu):
         ]
 
     def initialize(self):
-        """Initize the menu from the Question's state."""
+        """Initialize the menu from the Question's state."""
         self.has_bugs = bool(self.context.bugs)
 
     def edit(self):

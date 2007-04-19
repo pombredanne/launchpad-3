@@ -65,7 +65,7 @@ Any logged in user can change the question source package on the
     >>> print soup.first('b', text='For:').next.strip()
     ubuntu linux-source-2.6.15
 
-Of course, that item doesn't appear for product questions:
+Product questions ignore sourcepackage information if it is submitted:
 
     >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
     >>> user_browser.getLink('Edit question').click()

@@ -75,7 +75,7 @@ class notify_question_modified:
 
             edited_fields = ['messages']
             for field in ['status', 'dateanswered', 'answerer', 'answer',
-                          'datelastquery', 'datelastresponse']:
+                          'datelastquery', 'datelastresponse', 'target']:
                 if getattr(self, field) != getattr(old_question, field):
                     edited_fields.append(field)
 

@@ -117,7 +117,7 @@ class IQuestion(IHasOwner):
     # other attributes
     target = Object(title=_('Project'), required=True, schema=IBugTarget,
         description=_('The distribution, source package, or product the '
-                      'question is pertains to.'))
+                      'question pertains to.'))
 
     # joins
     subscriptions = Attribute(

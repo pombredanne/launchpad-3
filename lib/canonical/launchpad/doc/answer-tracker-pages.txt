@@ -393,7 +393,6 @@ description and also its metadata like language, priority, assignee,
 distribution, source package, product and whiteboard.
 
     >>> login('test@canonical.com')
-    >>> question_three.sourcepackagename = None
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
     ...     'field.title': 'Better Title',
@@ -413,8 +412,12 @@ distribution, source package, product and whiteboard.
     u'Better Title'
     >>> question_three.description
     u'A better description.'
+    >>> print question_three.distribution.name
+    ubuntu
     >>> print question_three.sourcepackagename.name
     mozilla-firefox
+    >>> print question_three.product
+    None
 
 Since only a user with launchpad.Admin privilege can change the
 priority, assignee and status whiteboard, the values won't have been
@@ -490,6 +493,10 @@ a distribution question:
     []
     >>> question_three.sourcepackagename is None
     True
+    >>> print question_three.distribution
+    None
+    >>> print question_three.sourcepackagename
+    None
     >>> print question_three.product.name
     firefox
 
