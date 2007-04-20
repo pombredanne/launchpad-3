@@ -157,6 +157,9 @@ def main():
             if proc.poll() is not None:
                 print '\nNot dead yet! - slaughtering mercilessly'
                 killem(proc.pid, SIGKILL)
+            # Drain the subprocess's stdout and stderr.
+            sys.stdout.write(proc.stdout.read())
+            break
 
         if proc.stdout in rlist:
             chunk = os.read(proc.stdout.fileno(), 1024)
