@@ -170,7 +170,7 @@ class Bug(SQLBase):
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
     questions = SQLRelatedJoin('Question', joinColumn='bug',
-        otherColumn='ticket', intermediateTable='TicketBug',
+        otherColumn='question', intermediateTable='QuestionBug',
         orderBy='-datecreated')
     bug_branches = SQLMultipleJoin('BugBranch', joinColumn='bug', orderBy='id')
 
@@ -558,9 +558,12 @@ class Bug(SQLBase):
             raise NominationError(
                 "This bug cannot be nominated for %s" % target_displayname)
 
-        return BugNomination(
+        nomination = BugNomination(
             owner=owner, bug=self, distrorelease=distrorelease,
             productseries=productseries)
+        if nomination.canApprove(owner):
+            nomination.approve(owner)
+        return nomination
 
     def canBeNominatedFor(self, nomination_target):
         """See IBug."""
@@ -762,8 +765,13 @@ class BugSet:
             "Expected either a comment or a msg, but got both")
 
         celebs = getUtility(ILaunchpadCelebrities)
-        if params.product == celebs.landscape:
-            # Landscape bugs are always private, because details of the
+        # XXX This list should be determined from a flag in the DB
+        # with a way for LP admins to set the flag when a project
+        # pays us for privacy features. -- elliot, 2007-04-19
+        private_bug_products = (celebs.landscape, celebs.redfish)
+
+        if params.product in private_bug_products:
+            # These bugs are always private, because details of the
             # project, like bug reports, are not yet meant to be
             # publically disclosed.
             params.private = True
@@ -802,11 +810,14 @@ class BugSet:
         if params.tags:
             bug.tags = params.tags
 
-        if params.product == celebs.landscape:
-            # Subscribe the Landscape bugcontact to all Landscape bugs,
-            # because all their bugs are private by default, and so will
+        if params.product in private_bug_products:
+            # Subscribe the bugcontact to all bugs,
+            # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.
-            bug.subscribe(celebs.landscape.bugcontact)
+            if params.product.bugcontact:
+                bug.subscribe(params.product.bugcontact)
+            else:
+                bug.subscribe(params.product.owner)
 
         if params.security_related:
             assert params.private, (

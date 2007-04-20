@@ -14,8 +14,12 @@
 ##############################################################################
 """Start script for Launchpad: loads configuration and starts the server.
 
+Usage: runlaunchpad.py [-r librarian,sftp,authserver,buildsequencer] [<zope args>]
+
 $Id: z3.py 25266 2004-06-04 21:25:45Z jim $
 """
+
+import os
 import sys
 
 if sys.version_info < (2, 4, 0):
@@ -24,250 +28,30 @@ if sys.version_info < (2, 4, 0):
             + sys.version)
     sys.exit(1)
 
-import os
-import time
-import atexit
-import random
-import signal
-import socket
-import subprocess
-
 from configs import generate_overrides
-from string import ascii_letters, digits
-from zope.app.server.main import main
-
-basepath = filter(None, sys.path)
-
-def make_abspath(path):
-    return os.path.abspath(os.path.join(
-        os.path.dirname(__file__),
-        *path.split('/')
-        ))
-
-# Disgusting hack to use our extended config file schema rather than the
-# Z3 one. TODO: Add command line options or other to Z3 to enable overriding
-# this -- StuartBishop 20050406
-from zdaemon.zdoptions import ZDOptions
-ZDOptions.schemafile = make_abspath('lib/canonical/config/schema.xml')
-
-twistd_script = make_abspath('sourcecode/twisted/bin/twistd')
-
-def start_librarian():
-    # Imported here as path is not set fully on module load
-    from canonical.config import config
-    from canonical.pidfile import make_pidfile, pidfile_path
-
-    # Don't run the Librarian if it wasn't asked for. We only want it
-    # started up developer boxes really, as the production Librarian
-    # doesn't use this startup script.
-    if not config.librarian.server.launch:
-        return
-
-    if not os.path.isdir(config.librarian.server.root):
-        os.makedirs(config.librarian.server.root, 0700)
-
-    pidfile = pidfile_path('librarian')
-    logfile = config.librarian.server.logfile
-    tacfile = make_abspath('daemons/librarian.tac')
-
-    args = [
-        sys.executable,
-        twistd_script,
-        "--no_save",
-        "--nodaemon",
-        "--python", tacfile,
-        "--pidfile", pidfile,
-        "--prefix", "Librarian",
-        "--logfile", logfile,
-        ]
-
-    if config.librarian.server.spew:
-        args.append("--spew")
-
-    # Note that startup tracebacks and evil programmers using 'print'
-    # will cause output to our stdout. However, we don't want to have
-    # twisted log to stdout and redirect it ourselves because we then
-    # lose the ability to cycle the log files by sending a signal to the
-    # twisted process.
-    librarian_process = subprocess.Popen(args, stdin=subprocess.PIPE)
-    librarian_process.stdin.close()
-    # I've left this off - we still check at termination and we can
-    # avoid the startup delay. -- StuartBishop 20050525
-    #time.sleep(1)
-    #if librarian_process.poll() != None:
-    #    raise RuntimeError(
-    #            "Librarian did not start: %d" % librarian_process.returncode
-    #            )
-    def stop_librarian():
-        if librarian_process.poll() is None:
-            os.kill(librarian_process.pid, signal.SIGTERM)
-            librarian_process.wait()
-    atexit.register(stop_librarian)
 
 
-def start_mailman():
-    from canonical.config import config
-    if not config.mailman.launch:
-        return
-
-    # Add the directory containing the Mailman package to our sys.path.
-    if not config.mailman.build.prefix:
-        mailman_path = os.path.abspath(os.path.join('lib', 'mailman'))
-    else:
-        mailman_path = os.path.abspath(config.mailman.build.prefix)
-
-    # We need the Mailman bin directory so we can run some of Mailman's
-    # command line scripts.
-    mailman_bin = os.path.join(mailman_path, 'bin')
-
-    if config.mailman.build.host_name:
-        hostname = config.mailman.build.host_name
-    else:
-        hostname = socket.getfqdn()
-
-    # Monkey-patch the installed Mailman 2.1 tree.
-    from canonical.mailman.monkeypatches import monkey_patch
-    monkey_patch(mailman_path, config)
-
-    # Ensure that the site list has been created.  We won't use this
-    # operationally, but it's required by Mailman 2.1.  This is the cheapest
-    # way to do this.  Throw away the actual output, since we only care about
-    # the return code.
-    sys.path.append(mailman_path)
-    import Mailman.mm_cfg
-
-    retcode = subprocess.call(('./config_list', '-o', '/dev/null',
-                               Mailman.mm_cfg.MAILMAN_SITE_LIST),
-                              cwd=mailman_bin,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if retcode:
-        if config.mailman.build.site_list_owner:
-            addr, password = config.mailman.build.site_list_owner.split(':', 1)
-        else:
-            chars = digits + ascii_letters
-            localpart = ''.join([random.choice(chars) for count in range(10)])
-            addr = localpart + '@example.com'
-            password = ''.join([random.choice(chars) for count in range(10)])
-
-        # The site list does not yet exist, so create it now.
-        retcode = subprocess.call(('./newlist', '--quiet',
-                                   '--emailhost=' + hostname,
-                                   Mailman.mm_cfg.MAILMAN_SITE_LIST,
-                                   addr, password),
-                                  cwd=mailman_bin)
-        if retcode:
-            print >> sys.stderr, 'Could not create site list'
-            sys.exit(retcode)
-
-    # Start the Mailman master qrunner.  If that succeeds, then set things up
-    # so that it will be stopped when runlaunchpad.py exits.
-    def stop_mailman():
-        # Ignore any errors
-        retcode = subprocess.call(('./mailmanctl', 'stop'), cwd=mailman_bin)
-        if retcode:
-            print >> sys.stderr, 'mailmanctl did not stop cleanly:', retcode
-            # There's no point in calling sys.exit() since we're already
-            # exiting!
-
-    retcode = subprocess.call(('./mailmanctl', 'start'), cwd=mailman_bin)
-    if retcode:
-        print >> sys.stderr, 'mailmanctl did not start cleanly'
-        sys.exit(retcode)
-    atexit.register(stop_mailman)
-
-
-def start_buildsequencer():
-    # Imported here as path is not set fully on module load
-    from canonical.config import config
-    from canonical.pidfile import make_pidfile, pidfile_path
-
-    # Don't run the sequencer if it wasn't asked for. We only want it
-    # started up developer boxes and dogfood really, as the production
-    # sequencer doesn't use this startup script.
-    
-    if not config.buildsequencer.launch:
-        return
-
-    pidfile = pidfile_path('buildsequencer')
-    logfile = config.buildsequencer.logfile
-    tacfile = make_abspath('daemons/buildd-sequencer.tac')
-
-    args = [
-        sys.executable,
-        twistd_script,
-        "--no_save",
-        "--nodaemon",
-        "--python", tacfile,
-        "--pidfile", pidfile,
-        "--prefix", "Librarian",
-        "--logfile", logfile,
-        ]
-
-    if config.buildsequencer.spew:
-        args.append("--spew")
-
-    # Note that startup tracebacks and evil programmers using 'print'
-    # will cause output to our stdout. However, we don't want to have
-    # twisted log to stdout and redirect it ourselves because we then
-    # lose the ability to cycle the log files by sending a signal to the
-    # twisted process.
-    sequencer_process = subprocess.Popen(args, stdin=subprocess.PIPE)
-    sequencer_process.stdin.close()
-    # I've left this off - we still check at termination and we can
-    # avoid the startup delay. -- StuartBishop 20050525
-    #time.sleep(1)
-    #if sequencer_process.poll() != None:
-    #    raise RuntimeError(
-    #            "Sequencer did not start: %d" % sequencer_process.returncode
-    #            )
-    def stop_sequencer():
-        if sequencer_process.poll() is None:
-            os.kill(sequencer_process.pid, signal.SIGTERM)
-            sequencer_process.wait()
-    atexit.register(stop_sequencer)
-
-
-def make_css_slimmer():
-    import contrib.slimmer
-    inputfile = make_abspath(
-        'lib/canonical/launchpad/icing/style.css')
-    outputfile = make_abspath(
-        'lib/canonical/launchpad/icing/+style-slimmer.css')
-
-    cssdata = open(inputfile, 'rb').read()
-    slimmed = contrib.slimmer.slimmer(cssdata, 'css')
-    open(outputfile, 'w').write(slimmed)
-
-
-def run(argv=list(sys.argv)):
-
-    # Sort ZCML overrides for our current config
-    generate_overrides()
-
-    # setting python paths
-    program = argv[0]
-
+def set_up_sys_path(program):
+    basepath = filter(None, sys.path)
     src = 'lib'
     here = os.path.dirname(os.path.abspath(program))
     srcdir = os.path.join(here, src)
     sys.path = [srcdir, here] + basepath
 
+
+def run(argv=list(sys.argv)):
+    # Sort ZCML overrides for our current config
+    generate_overrides()
+
+    # setting python paths
+    program = argv[0]
+    set_up_sys_path(program)
+
     # Import canonical modules here, after path munging
-    from canonical.pidfile import make_pidfile, pidfile_path
+    from canonical.launchpad.scripts.runlaunchpad import start_launchpad
 
-    # We really want to replace this with a generic startup harness.
-    # However, this should last us until this is developed
-    start_librarian()
-    start_buildsequencer()
-    start_mailman()
+    start_launchpad(argv)
 
-    # Store our process id somewhere
-    make_pidfile('launchpad')
-
-    # Create a new compressed +style-slimmer.css from style.css in +icing.
-    make_css_slimmer()
-    main(argv[1:])
-        
 
 if __name__ == '__main__':
     run()

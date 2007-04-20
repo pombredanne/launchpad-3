@@ -34,6 +34,25 @@ another mirror.
     >>> message in browser.contents
     True
  
+Like the name, we can also change the URLs of a mirror:
+
+    >>> browser.getLink('Change details').click()
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+edit'
+    
+    >>> browser.getControl('HTTP URL').value = 'http://foo.bar/baz'
+    >>> browser.getControl('FTP URL').value = 'ftp://foo.bar/baz'
+    >>> browser.getControl('Rsync URL').value = 'rsync://foo.bar/baz'
+    >>> browser.getControl('Save').click()
+
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive'
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'mirror-urls'))
+    Web: http://foo.bar/baz/
+    FTP: ftp://foo.bar/baz/
+    Rsync: rsync://foo.bar/baz/
+
 The mirror can't be probed before it's marked as official by one of the
 distribution owners.
  

@@ -23,7 +23,7 @@
           <tal:is-open condition="view/is_open">
           <p>ShipIt lets you request 
             <strong><span tal:replace="view/flavour/title" />
-            6.06 LTS (Dapper Drake)</strong> CDs that will be posted to
+            7.04 (Feisty Fawn)</strong> CDs that will be posted to
             you free of charge.
           </p>
           <p
@@ -41,9 +41,14 @@
               href string:https://launchpad.net/+login?origin=${view/origin}"
           >create a new account</a> if you don't have one already.</p>
 
-          <p>If you have questions about shipments and dates please
-          refer to the <a href="http://www.ubuntu.com/support/faq#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607">Ubuntu FAQ</a>.</p>
-          <br />
+          <tal:removed condition="nothing">
+            XXX: Removed until we recover the faq that has disappeared.
+
+            <p>If you have questions about shipments and dates please
+            refer to the <a href="http://www.ubuntu.com/support/faq#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607">Ubuntu FAQ</a>.</p>
+            <br />
+          </tal:removed>
+
           </tal:is-open>
 
           <tal:is-closed condition="not: view/is_open">

@@ -33,8 +33,9 @@ class SourcePackageName(SQLBase):
         alternateID=True)
 
     potemplates = SQLMultipleJoin('POTemplate', joinColumn='sourcepackagename')
-    packagings = SQLMultipleJoin('Packaging', joinColumn='sourcepackagename')
-    
+    packagings = SQLMultipleJoin(
+         'Packaging', joinColumn='sourcepackagename', orderBy='Packaging.id')
+
     def __unicode__(self):
         return self.name
 
