@@ -7,6 +7,7 @@ __all__ = []
 
 import re
 from tempfile import mkdtemp
+import threading
 from time import time
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession, IClientIdManager
@@ -22,12 +23,11 @@ from openid.server.server import (
     CheckIDRequest,
     )
 from openid.server.trustroot import TrustRoot
-# XXX: Temporary - switch to SQL -- StuartBishop 20070214
-from openid.store.filestore import FileOpenIDStore
 from openid import oidutil
 
 from canonical.launchpad.interfaces import (
         ILaunchBag, IOpenIdAuthorizationSet, UnexpectedFormData,
+        ILaunchpadOpenIdStoreFactory,
         )
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -51,8 +51,6 @@ class IOpenIdView(Interface):
 class OpenIdView(LaunchpadView):
     implements(IOpenIdView)
 
-    openid_server = Server(FileOpenIDStore(mkdtemp('openid')))
-
     openid_request = None
 
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")
@@ -60,6 +58,24 @@ class OpenIdView(LaunchpadView):
     invalid_identity_template = ViewPageTemplateFile(
             "../templates/openid-invalid-identity.pt"
             )
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        self._state = threading.local()
+
+    @property
+    def openid_server(self):
+        """Return an seperate openid.server.server.Server instance per thread.
+        
+        I have no idea if openid.server.server.Server is thread safe,
+        but LaunchpadOpenIdStore definitely isn't thread safe.
+        """
+        try:
+            return self._state.openid_server
+        except AttributeError:
+            store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
+            self._state.openid_server = Server(store_factory())
+            return self._state.openid_server
 
     @property
     def current_user(self):

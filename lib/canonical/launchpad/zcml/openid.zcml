@@ -24,5 +24,10 @@
             />
     </securedutility>
 
+    <utility
+        provides="canonical.launchpad.interfaces.ILaunchpadOpenIdStoreFactory"
+        component="canonical.launchpad.database.openidserver.LaunchpadOpenIdStore">
+    </utility>
+
 </configure>
 

@@ -3,7 +3,10 @@
 """OpenId related interfaces."""
 
 __metaclass__ = type
-__all__ = ['IOpenIdAuthorization', 'IOpenIdAuthorizationSet']
+__all__ = [
+        'IOpenIdAuthorization', 'IOpenIdAuthorizationSet',
+        'ILaunchpadOpenIdStoreFactory',
+        ]
 
 from zope.schema import Int, TextLine, Datetime
 from zope.interface import Interface, Attribute
@@ -30,4 +33,10 @@ class IOpenIdAuthorizationSet(Interface):
 
         Returns True or False.
         """
+
+class ILaunchpadOpenIdStoreFactory(Interface):
+    """Factory to create LaunchpadOpenIdStore instances."""
+
+    def __call__():
+        """Create a LaunchpadOpenIdStore instance."""
 

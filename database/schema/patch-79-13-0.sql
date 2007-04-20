@@ -20,14 +20,38 @@ CREATE TABLE OpenIdAuthorization (
 */
 CREATE INDEX
     openidauthorization__person__trust_root__date_expires__client_id__idx
-    ON OpenIdAuthorization(person, trust_root, date_expires, client_id);
+    ON OpenIDAuthorization(person, trust_root, date_expires, client_id);
 
 /* Constraints to ensure our table does not needlessly bloat */
 CREATE UNIQUE INDEX openidauthorization__person__client_id__trust_root__unq
-    ON OpenIdAuthorization(person, client_id, trust_root)
+    ON OpenIDAuthorization(person, client_id, trust_root)
     WHERE client_id IS NOT NULL;
 CREATE UNIQUE INDEX openidauthorization__person__trust_root__unq
-    ON OpenIdAuthorization(person, trust_root)
+    ON OpenIDAuthorization(person, trust_root)
     WHERE client_id IS NULL;
+
+/* Tables used by the openid.store.sqlstore.PostgreSQLStore class */
+
+CREATE TABLE OpenIDNonces (
+    nonce CHAR(8) UNIQUE PRIMARY KEY,
+    expires INTEGER
+);
+
+CREATE TABLE OpenIDAssociations (
+    server_url VARCHAR(2047),
+    handle VARCHAR(255),
+    secret BYTEA,
+    issued INTEGER,
+    lifetime INTEGER,
+    assoc_type VARCHAR(64),
+    PRIMARY KEY (server_url, handle),
+    CONSTRAINT secret_length_constraint CHECK (LENGTH(secret) <= 128)
+);
+
+CREATE TABLE OpenIDSettings (
+    setting VARCHAR(128) UNIQUE PRIMARY KEY,
+    value BYTEA,
+    CONSTRAINT value_length_constraint CHECK (LENGTH(value) <= 20)
+);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (79, 13, 0);
