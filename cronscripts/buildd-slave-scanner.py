@@ -29,8 +29,6 @@ class SlaveScanner(LaunchpadScript):
             raise LaunchpadScriptFailure(
                 "Unhandled arguments %s" % repr(self.args))
 
-        buildMaster = BuilddMaster(self.logger, self.txn)
-
         self.logger.info("Setting Builders.")
 
         # Put every distroarchrelease we can find into the build master.
@@ -65,7 +63,7 @@ if __name__ == '__main__':
     script = SlaveScanner('slave-scanner', dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
     try:
-        script.run()
+        script.run(isolation=READ_COMMITTED_ISOLATION)
     finally:
         script.unlock()
 
