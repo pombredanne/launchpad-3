@@ -527,8 +527,18 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (2, 13, NULL, NULL, 16, '2007-03-14 20:11:44.591006');
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (3, 13, NULL, NULL, 18, '2007-03-14 20:11:44.591006');
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (4, 9, NULL, NULL, 18, '2007-03-14 20:12:07.145528');
 
 
 ALTER TABLE answercontact ENABLE TRIGGER ALL;
@@ -3275,6 +3285,7 @@ INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (34, 'aptoncd', 19, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (35, 'jokosher', 20, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (36, 'bzr', 21, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (37, 'redfish', 22, NULL, NULL, true);
 
 
 ALTER TABLE pillarname ENABLE TRIGGER ALL;
@@ -7752,6 +7763,7 @@ INSERT INTO product (id, project, "owner", name, displayname, title, summary, de
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (21, NULL, 12, 'bzr', 'Bazaar', 'Bazaar Version Control System', 'Bazaar is a distributed revision control system. It allows team members to branch and merge upstream code very easily. Most importantly, it is very robust in handling renames so that merges across radical restructurings of the tree are efficient and correct.', 'Bazaar aims to be a distributed RCS system that the open source community loves to use.
 
 Distributed revision control systems allow multiple people to have their own branch of a project, and merge code efficiently between them. This enables new contributors to immediately have access to the full tools that previously have been limited to just the committers to a project.', '2007-03-27 16:28:27.763632', 'http://bazaar-vcs.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 23, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (22, NULL, 12, 'redfish', 'Redfish', 'Redfish', 'The redfish project.', 'The redfish project.', '2007-04-18 20:58:56.846607', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, true, NULL, NULL, NULL, NULL, 24, NULL, NULL, NULL, NULL, false);
 
 
 ALTER TABLE product ENABLE TRIGGER ALL;
@@ -7996,6 +8008,7 @@ INSERT INTO productseries (id, product, name, summary, import_branch, importstat
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (21, 19, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-14 18:53:13.112116', NULL, 28, NULL, NULL);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (22, 20, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-15 20:11:49.501871', NULL, 14, NULL, NULL);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (23, 21, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-27 16:28:27.763632', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (24, 22, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-04-18 20:58:56.846607', NULL, 12, NULL, NULL);
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
@@ -8171,6 +8184,7 @@ INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, archite
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (158, 19, 50, 2, 3, 1, 50);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (159, 19, 0, 2, 3, 2, 0);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (160, 19, 50, 3, 3, 1, 50);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (161, 20, 8, 1, 4, 1, 0);
 
 
 ALTER TABLE requestedcds ENABLE TRIGGER ALL;
@@ -8477,6 +8491,7 @@ INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, datereque
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (17, 8, 55, NULL, '2006-03-19 18:38:24.526648', NULL, NULL, true, 'James Blackwell', 'Tawny View Vista', '5423', NULL, 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, 3, 4, 'tawnyviewvista5423whatever');
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (18, 23, 55, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Velvet Zephyr Woods', '5423', NULL, 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, 4, 4, 'velvetzephyrwoods5423whatever');
 INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (19, 243601, NULL, NULL, '2006-10-17 20:53:11.714301', NULL, NULL, false, 'Marilize Coetzee', 'Somewhere around here', NULL, NULL, 'fdas fd as fa', NULL, 9, '43243242', '432432', NULL, NULL, 1, 'somewherearoundherefdasfdasfa');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (20, 1, NULL, NULL, '2006-02-01 18:38:24.526648', NULL, NULL, false, 'Somebody Else', 'Rue de Rivoli', '1345', NULL, 'Paris', NULL, 25, '999432423', '+55 16 3374-2027', NULL, NULL, 6, 'ruederivoli1345paris');
 
 
 ALTER TABLE shippingrequest ENABLE TRIGGER ALL;
@@ -9000,17 +9015,6 @@ INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, 
 ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
 
 
-ALTER TABLE answercontact DISABLE TRIGGER ALL;
-
-INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
-INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (2, 13, NULL, NULL, 16, '2007-03-14 20:11:44.591006');
-INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (3, 13, NULL, NULL, 18, '2007-03-14 20:11:44.591006');
-INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (4, 9, NULL, NULL, 18, '2007-03-14 20:12:07.145528');
-
-
-ALTER TABLE answercontact ENABLE TRIGGER ALL;
-
-
 ALTER TABLE teammembership DISABLE TRIGGER ALL;
 
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (1, 1, 17, 3, '2005-03-03 10:02:53.830191', '2050-03-03 10:02:53.830191', NULL, NULL);
@@ -9176,6 +9180,27 @@ INSERT INTO teamparticipation (id, team, person) VALUES (105, 18, 12);
 INSERT INTO teamparticipation (id, team, person) VALUES (106, 20, 12);
 INSERT INTO teamparticipation (id, team, person) VALUES (107, 68, 68);
 INSERT INTO teamparticipation (id, team, person) VALUES (108, 69, 68);
+INSERT INTO teamparticipation (id, team, person) VALUES (109, 59, 59);
+INSERT INTO teamparticipation (id, team, person) VALUES (110, 60, 60);
+INSERT INTO teamparticipation (id, team, person) VALUES (111, 61, 61);
+INSERT INTO teamparticipation (id, team, person) VALUES (112, 64, 64);
+INSERT INTO teamparticipation (id, team, person) VALUES (113, 67, 67);
+INSERT INTO teamparticipation (id, team, person) VALUES (114, 69, 69);
+INSERT INTO teamparticipation (id, team, person) VALUES (115, 243601, 243601);
+INSERT INTO teamparticipation (id, team, person) VALUES (116, 53, 53);
+INSERT INTO teamparticipation (id, team, person) VALUES (117, 55, 55);
+INSERT INTO teamparticipation (id, team, person) VALUES (118, 17, 17);
+INSERT INTO teamparticipation (id, team, person) VALUES (119, 18, 18);
+INSERT INTO teamparticipation (id, team, person) VALUES (120, 19, 19);
+INSERT INTO teamparticipation (id, team, person) VALUES (121, 20, 20);
+INSERT INTO teamparticipation (id, team, person) VALUES (122, 21, 21);
+INSERT INTO teamparticipation (id, team, person) VALUES (123, 24, 24);
+INSERT INTO teamparticipation (id, team, person) VALUES (124, 25, 25);
+INSERT INTO teamparticipation (id, team, person) VALUES (125, 30, 30);
+INSERT INTO teamparticipation (id, team, person) VALUES (126, 31, 31);
+INSERT INTO teamparticipation (id, team, person) VALUES (127, 32, 32);
+INSERT INTO teamparticipation (id, team, person) VALUES (128, 57, 57);
+INSERT INTO teamparticipation (id, team, person) VALUES (129, 58, 58);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;

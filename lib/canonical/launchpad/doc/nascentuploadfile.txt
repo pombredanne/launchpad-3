@@ -61,7 +61,7 @@ Build contained objects, any error during this process will be stored
 in the returned generator. This way all the checks are performed and
 we can deal with the errors later:
 
-  >>> errors = ed_mixed_changes.process_files()
+  >>> errors = ed_mixed_changes.processFiles()
   >>> errors
   <generator ...>
   >>> len(list(errors))
@@ -82,7 +82,7 @@ At this point we can inspect the list of files contained in the upload.
   ['ed_0.2-20.dsc', 'ed_0.2-20.diff.gz']
 
 
-Similar to what we have in 'process_files' ChangesFile.verify is also
+Similar to what we have in 'processFiles' ChangesFile.verify is also
 a error generator
 
   >>> errors = ed_mixed_changes.verify()
@@ -117,7 +117,7 @@ present in ChangesFile and DSCFile:
 After initiliasing sig_file we can parse addresses and look them up in
 Launchpad:
 
-  >>> addr = sig_file.parse_address("Foo Bar <foo.bar@canonical.com>")
+  >>> addr = sig_file.parseAddress("Foo Bar <foo.bar@canonical.com>")
   >>> addr['person'].displayname
   u'Foo Bar'
   >>> addr['person'].creation_comment is None
@@ -126,7 +126,7 @@ Launchpad:
 
 If the address is unparsable, we get an error.
 
-  >>> sig_file.parse_address("Cannot Parse Me <FOOO>")
+  >>> sig_file.parseAddress("Cannot Parse Me <FOOO>")
   Traceback (most recent call last):
   ...
   UploadError: Cannot Parse Me <FOOO>: no @ found in email address part.
@@ -138,7 +138,7 @@ a new Person will be created.
   >>> sig_file.policy.create_people
   True
 
-  >>> addr = sig_file.parse_address("Baz <baz@canonical.com>")
+  >>> addr = sig_file.parseAddress("Baz <baz@canonical.com>")
   >>> addr['person'].creation_rationale.name
   'SOURCEPACKAGEUPLOAD'
 
@@ -152,7 +152,7 @@ information, the upload target:
 
   >>> sig_file.policy.distrorelease = None
 
-  >>> addr = sig_file.parse_address("Bar <bar@canonical.com>")
+  >>> addr = sig_file.parseAddress("Bar <bar@canonical.com>")
   >>> addr['person'].creation_rationale.name
   'SOURCEPACKAGEUPLOAD'
 
@@ -161,12 +161,12 @@ information, the upload target:
 
 
 On ChangesFile objects we can have access to the enhanced address_structure
-corresponding to the RFC-822 mentioned after performing 'process_address':
+corresponding to the RFC-822 mentioned after performing 'processAddress':
 
   >>> ed_mixed_changes.maintainer is None
   True
 
-  >>> errors = ed_mixed_changes.process_addresses()
+  >>> errors = ed_mixed_changes.processAddresses()
   >>> len(list(errors))
   0
 
