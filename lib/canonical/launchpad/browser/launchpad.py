@@ -65,6 +65,7 @@ from canonical.launchpad.interfaces import (
     ICveSet,
     IDistributionSet,
     IKarmaActionSet,
+    ILanguageSet,
     ILaunchBag,
     ILaunchpadCelebrities,
     ILaunchpadRoot,
@@ -179,9 +180,8 @@ class Breadcrumbs(LaunchpadView):
         crumbs = list(self.request.breadcrumbs)
 
         L = []
-        firsturl = '/'
         firsttext = 'Home'
-        rooturl = allvhosts.configs['mainsite'].rooturl
+        firsturl = allvhosts.configs['mainsite'].rooturl
 
         L.append(
             '<li lpm:mid="root" class="item">'
@@ -424,6 +424,13 @@ class LaunchpadRootNavigation(Navigation):
 
     usedfor = ILaunchpadRoot
 
+    @stepto('support')
+    def redirect_support(self):
+        """Redirect /support to Answers root site."""
+        target_url= canonical_url(
+            getUtility(ILaunchpadRoot), rootsite='answers')
+        return self.redirectSubTree(target_url + 'questions', status=301)
+
     stepto_utilities = {
         'people': IPersonSet,
         'distros': IDistributionSet,
@@ -439,11 +446,12 @@ class LaunchpadRootNavigation(Navigation):
         'registry': IRegistryApplication,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
-        'support': IQuestionSet,
+        'questions': IQuestionSet,
         'translations': IRosettaApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,
         '+code': IBazaarApplication,
+        '+languages': ILanguageSet,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,

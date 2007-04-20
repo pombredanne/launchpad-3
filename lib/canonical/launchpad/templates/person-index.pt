@@ -36,8 +36,8 @@
     replace="structure context/teamdescription/fmt:text-to-html" />
   <tal:offer_join condition="context/isTeam">
     <a tal:condition="not: view/userIsParticipant"
-       href="+join" title="Request to become a member of this team"
-       >&raquo; Join this team!</a>
+       href="+join" title="Sign up as a member of this team"
+       ><img alt="Join!" src="/+icing/but-sml-jointhisteam.gif" /></a>
   </tal:offer_join>
 
   <tal:valid-person-or-team condition="context/is_valid_person_or_team">
@@ -52,8 +52,10 @@
           <tr tal:define="project contribution/project;
                           project_categories contribution/categories">
             <th>
+              <img tal:replace="structure project/image:icon"
+                   src="/@@/product" />
               <a tal:attributes="href project/fmt:url"
-                 tal:content="project/title">Project</a>
+                 tal:content="project/title/fmt:shorten/28">Project</a>
             </th>
             <td tal:repeat="category view/contributed_categories">
               <tal:icon condition="python: category in project_categories"
@@ -71,7 +73,8 @@
       <h2>Team memberships</h2>
       <table tal:condition="context/myactivememberships">
         <tr tal:repeat="membership context/myactivememberships">
-          <td><img src="/@@/team" /></td>
+          <td><img src="/@@/team"
+                   tal:replace="structure membership/team/image:icon" /></td>
           <td>
             <div>
               <a
@@ -178,9 +181,9 @@
           <tr tal:condition="context/jabberids">
             <th>Jabber:</th>
             <td>
-              <tal:block repeat="jabber context/jabberids">
-                <span tal:replace="jabber/jabberid"
-                  /><span tal:condition="not: repeat/jabber/end">,</span>
+              <tal:block repeat="jabberid view/htmlJabberIDs">
+                <span tal:replace="structure jabberid"
+                  /><span tal:condition="not: repeat/jabberid/end">,</span>
               </tal:block>
             </td>
           </tr>
@@ -236,7 +239,7 @@
       </ul>
       <div tal:condition="bugtasks">
         <a tal:attributes="href view/getURLToAssignedBugsInProgress">
-          &raquo; Show all bugs in progress 
+          &raquo; Show all bugs in progress
         </a>
       </div>
     </div>
@@ -255,11 +258,11 @@
         <tal:comment condition="nothing">
           XXX: This link should point to a list of the in-progress specs
           assigned to this person, but we don't have a way to list that
-          right now, wo we'll have to list all incomplete specs assigned
+          right now, so we'll have to list all incomplete specs assigned
           to the person. -- Guilherme Salgado, 2007-02-12
         </tal:comment>
         <a tal:attributes="href string:${context/fmt:url}/+specs?role=assignee">
-          Show all assigned blueprints
+          &raquo; Show all assigned blueprints
         </a>
       </div>
     </div>

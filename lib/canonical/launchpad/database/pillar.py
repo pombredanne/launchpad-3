@@ -110,11 +110,8 @@ class PillarNameSet:
         else:
             return getUtility(IDistributionSet).get(distribution)
 
-    def search(self, text, limit):
-        """See IPillarSet."""
-        if limit is None:
-            limit = config.launchpad.default_batch_size
-        base_query = """
+    def build_search_query(self, text):
+        return """
             SELECT 'distribution' AS otype, id, name, title, description,
                    icon,
                    rank(fti, ftq(%(text)s)) AS rank
@@ -170,12 +167,26 @@ class PillarNameSet:
             WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
                 AND active IS TRUE
 
-            /* we order by rank AND name to break ties between pillars with
-               the same rank in a consistent fashion */
-            ORDER BY rank DESC, name
             """ % sqlvalues(text=text)
+
+    def count_search_matches(self, text):
+        base_query = self.build_search_query(text)
         count_query = "SELECT COUNT(*) FROM (%s) AS TMP_COUNT" % base_query
-        query = "%s LIMIT %d" % (base_query, limit)
+        cur = cursor()
+        cur.execute(count_query)
+        return cur.fetchone()[0]
+
+    def search(self, text, limit):
+        """See IPillarSet."""
+        if limit is None:
+            limit = config.launchpad.default_batch_size
+        query = self.build_search_query(text) + """
+            /* we order by rank AND name to break ties between pillars with
+               the same rank in a consistent fashion, and we add the hard
+               LIMIT */
+            ORDER BY rank DESC, name
+            LIMIT %d
+            """ % limit
         cur = cursor()
         cur.execute(query)
         keys = ['type', 'id', 'name', 'title', 'description', 'icon', 'rank']

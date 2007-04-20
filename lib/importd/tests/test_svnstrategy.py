@@ -222,7 +222,12 @@ class TestSvnStrategyImport(SvnStrategyTestCase):
         self.assertEqual(self.targetRevno(), 2)
         # Check the import result
         target_tree = self.targetTree()
-        inventory = target_tree.iter_inventory(source=True, both=True)
+        target_tree.lock_read()
+        try:
+            inventory = sorted(
+                target_tree.iter_inventory(source=True, both=True))
+        finally:
+            target_tree.unlock()
         self.assertEqual(sorted(inventory), [u'bar', u'foo'])
 
 

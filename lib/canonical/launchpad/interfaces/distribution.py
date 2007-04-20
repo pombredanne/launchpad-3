@@ -66,7 +66,9 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         default_image_resource='/@@/distribution',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this distribution in listings."))
+            "that can be used to identify this distribution. The icon will "
+            "be displayed everywhere we list the distribution and link "
+            "to it."))
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
         default_image_resource='/@@/distribution-logo',
@@ -167,20 +169,25 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     upload_sender = TextLine(
         title=_("Uploader sender"),
         description=_("The default upload processor sender name."),
-        required=False
-        )
+        required=False)
     upload_admin = Choice(
         title=_("Upload Manager"),
         description=_("The distribution upload admin."),
         required=False, vocabulary='ValidPersonOrTeam')
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
-    official_malone = Bool(title=_('Uses Malone Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this distribution officially uses Malone for bug tracking.'))
-    official_rosetta = Bool(title=_('Uses Rosetta Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this distribution officially uses Rosetta for translation.'))
+    official_answers = Bool(
+        title=_('Uses Answers Officially'), required=True, 
+        description=_("Check this box to indicate that this distribution "
+            "officially uses Answers for community support."))
+    official_malone = Bool(
+        title=_('Uses Malone Officially'), required=True, 
+        description=_("Check this box to indicate that this distribution "
+            "officially uses Malone for bug tracking."))
+    official_rosetta = Bool(
+        title=_('Uses Rosetta Officially'), required=True, 
+        description=_("Check this box to indicate that this distribution "
+            "officially uses Rosetta for translation."))
 
     # properties
     currentrelease = Attribute(
@@ -197,8 +204,7 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     translation_focus = Choice(
         title=_("Translation Focus"),
         description=_(
-            "The DistroRelease that should get the translation effort focus."
-            ),
+            "The DistroRelease that should get the translation effort focus."),
         required=False,
         vocabulary='FilteredDistroReleaseVocabulary')
 

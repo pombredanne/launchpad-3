@@ -297,6 +297,40 @@ no_privs can actually approve the nomination.)
     thunderbird (Ubuntu Grumpy)
     thunderbird (Ubuntu)
 
+If the one nominating a release is a driver of the series, the
+nomination will be automatically approved.
+
+    >>> ubuntu_warty = ubuntu.getRelease("warty")
+    >>> login("foo.bar@canonical.com")
+    >>> ubuntu_warty.driver = no_privs
+    >>> login("no-priv@canonical.com")
+
+    >>> warty_nomination = bug_one.addNomination(
+    ...     target=ubuntu_warty, owner=no_privs)
+
+    >>> print warty_nomination.status.title
+    Approved
+    >>> print warty_nomination.decider.name
+    no-priv
+    >>> warty_nomination.date_decided
+    datetime...
+
+    >>> tasks = sorted(
+    ...     bug_one.bugtasks, key=by_bugtargetname)
+
+    >>> for task in tasks:
+    ...     print task.target.bugtargetname
+    firefox (upstream)
+    firefox trunk (upstream)
+    mozilla-firefox (Debian)
+    mozilla-firefox (Ubuntu Grumpy)
+    mozilla-firefox (Ubuntu Warty)
+    mozilla-firefox (Ubuntu)
+    thunderbird (Ubuntu Grumpy)
+    thunderbird (Ubuntu Warty)
+    thunderbird (Ubuntu)
+
+
 Declining a nomination
 ----------------------
 
@@ -339,7 +373,7 @@ ones.
 The nominations are per distrorelease, they are not source package
 specific, so they are automatically valid for new bugtasks. What's
 important are the accepted nominations. Bug one has an accepted
-nomination for Grumpy:
+nomination for Grumpy and Warty:
 
     >>> accepted_nominations = [
     ...     nomination for nomination in bug_one.getNominations(ubuntu)
@@ -347,9 +381,11 @@ nomination for Grumpy:
     >>> for nomination in accepted_nominations:
     ...     print nomination.distrorelease.displayname
     Grumpy
+    Warty
 
 So if we create a new bugtask on evolution (Ubuntu), a task for
-evolution (Ubuntu Grumpy) will be created automatically.
+evolution (Ubuntu Grumpy) and evolution (Ubuntu Warty) will be created
+automatically.
 
     >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
     >>> getUtility(IBugTaskSet).createTask(
@@ -364,14 +400,9 @@ evolution (Ubuntu Grumpy) will be created automatically.
     >>> for task in tasks:
     ...     print task.target.bugtargetname
     evolution (Ubuntu Grumpy)
+    evolution (Ubuntu Warty)
     evolution (Ubuntu)
-    firefox (upstream)
-    firefox trunk (upstream)
-    mozilla-firefox (Debian)
-    mozilla-firefox (Ubuntu Grumpy)
-    mozilla-firefox (Ubuntu)
-    thunderbird (Ubuntu Grumpy)
-    thunderbird (Ubuntu)
+    ...
 
 Changing the Source Package of a Targeted Bugtask
 -------------------------------------------------
@@ -390,7 +421,7 @@ source package name.  This is not ideal, but hopefully package renames
 after the bug has been targeted to a release is rare enough for this to
 be acceptable.
 
-    >>> thunderbird_grumpy = tasks[-2]
+    >>> thunderbird_grumpy = tasks[-3]
     >>> thunderbird_grumpy.targetname
     u'thunderbird (Ubuntu Grumpy)'
 
@@ -403,13 +434,16 @@ be acceptable.
     >>> for task in tasks:
     ...     print task.target.bugtargetname
     evolution (Ubuntu Grumpy)
+    evolution (Ubuntu Warty)
     evolution (Ubuntu)
     firefox (upstream)
     firefox trunk (upstream)
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu Grumpy)
+    mozilla-firefox (Ubuntu Warty)
     mozilla-firefox (Ubuntu)
     pmount (Ubuntu Grumpy)
+    pmount (Ubuntu Warty)
     pmount (Ubuntu)
 
 The same is done if the distribution task's source package is changed.
@@ -427,13 +461,16 @@ The same is done if the distribution task's source package is changed.
     >>> for task in tasks:
     ...     print task.target.bugtargetname
     evolution (Ubuntu Grumpy)
+    evolution (Ubuntu Warty)
     evolution (Ubuntu)
     firefox (upstream)
     firefox trunk (upstream)
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu Grumpy)
+    mozilla-firefox (Ubuntu Warty)
     mozilla-firefox (Ubuntu)
     thunderbird (Ubuntu Grumpy)
+    thunderbird (Ubuntu Warty)
     thunderbird (Ubuntu)
 
 Bug Nomination Set
