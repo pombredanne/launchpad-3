@@ -159,7 +159,13 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.product = question_target
             self.distribution = None
             self.sourcepackagename = None
-        elif (IDistributionSourcePackage.providedBy(question_target)):
+        # XXX sinzui 2007-04-20 #108240
+        # We must test for both interfaces because they do not have a common
+        # ancestor that provideds distribution and sourcepackagename
+        # We support both /ubuntu/hoary/+questions and 
+        # /ubuntu/+questions
+        elif (ISourcePackage.providedBy(question_target) or
+                IDistributionSourcePackage.providedBy(question_target)):
             self.product = None
             self.distribution = question_target.distribution
             self.sourcepackagename = question_target.sourcepackagename

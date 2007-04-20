@@ -17,7 +17,7 @@ from zope.schema import Choice
 from zope.schema.interfaces import ConstraintNotSatisfied
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSourcePackage, IProduct,
+    IDistribution, IDistributionSourcePackage, ILaunchpadCelebrities, IProduct,
     NotFoundError, UnexpectedFormData)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
@@ -41,7 +41,8 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 required=True, vocabulary='Product'),
             Choice(
                 __name__='distribution', title=u"Distribution",
-                required=True, vocabulary='Distribution'),
+                required=True, vocabulary='Distribution',
+                default=getUtility(ILaunchpadCelebrities).ubuntu),
             Choice(
                 __name__='package', title=u"Package",
                 required=False, vocabulary='SourcePackageName'),
