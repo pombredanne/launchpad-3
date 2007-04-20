@@ -7,7 +7,7 @@ from optparse import OptionParser
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
-from canonical.lp import initZopeless
+from canonical.lp import initZopeless, DEFAULT_ISOLATION
 from canonical.launchpad import scripts
 
 
@@ -188,11 +188,13 @@ class LaunchpadScript:
         """
         self.lock.release(skip_delete=skip_delete)
 
-    def run(self, use_web_security=False, implicit_begin=True):
+    def run(self, use_web_security=False, implicit_begin=True,
+            isolation=DEFAULT_ISOLATION):
         """Actually run the script, executing zcml and initZopeless."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
         self.txn = initZopeless(
-            dbuser=self.dbuser, implicitBegin=implicit_begin)
+            dbuser=self.dbuser, implicitBegin=implicit_begin,
+            isolation=isolation)
 
         try:
             self.main()
