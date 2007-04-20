@@ -99,6 +99,7 @@ class ILaunchpadCelebrities(Interface):
     bug_importer = Attribute("The bug importer.")
     landscape = Attribute("The Landscape project.")
     launchpad = Attribute("The Launchpad product.")
+    redfish = Attribute("The Redfish project.")
     answer_tracker_janitor = Attribute("The Answer Tracker Janitor.")
     team_membership_janitor = Attribute("The Team Membership Janitor.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")

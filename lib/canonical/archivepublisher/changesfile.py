@@ -106,25 +106,25 @@ class ChangesFile(SignableTagFile):
         if policy.unsigned_changes_ok:
             self.logger.debug("Changes file can be unsigned.")
         else:
-            self.process_signature()
+            self.processSignature()
 
-    def process_addresses(self):
+    def processAddresses(self):
         """Parse addresses and build person objects.
 
         Process 'maintainer' and 'changed_by' addresses separately and return
         an iterator over all exceptions generated while processing them.
         """
         try:
-            self.maintainer = self.parse_address(self._dict['maintainer'])
+            self.maintainer = self.parseAddress(self._dict['maintainer'])
         except UploadError, error:
             yield error
 
         try:
-            self.changed_by = self.parse_address(self._dict['changed-by'])
+            self.changed_by = self.parseAddress(self._dict['changed-by'])
         except UploadError, error:
             yield error
 
-    def process_files(self):
+    def processFiles(self):
         """Build objects for each file mentioned in this changesfile.
 
         This method is an error generator, i.e, it returns an iterator over all

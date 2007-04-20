@@ -106,7 +106,7 @@ class CustomUpload:
         """Ensure the parent directory exists."""
         parentdir = os.path.dirname(path)
         if not os.path.isdir(parentdir):
-            os.makedirs(parentdir)
+            os.makedirs(parentdir, 0755)
 
     def installFiles(self):
         """Install the files from the custom upload to the archive."""

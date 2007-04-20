@@ -506,72 +506,59 @@ ul#menuroot li.selected a.breadcrumb {
     color: #000000;
 }
 
-/*- Underneath the global header and location bar is a help panel. -*/
-/* In Internet Explorer it doesn't work yet, so hide it for now. */
-* html #help_panel {display: none;}
-
-#help_panel {
-  visibility: hidden; /* global.js reveals it if JavaScript is available */
-}
-#help_panel.open,
-#help_panel.closed {
+/* Under the location bar is a Help widget that expands when clicked. */
+#help {
+  clear: both;
   position: absolute;
-  float: left;
-  top: 47px;
-  left: 0px;
-  width: 350px;
+  top: 27px;
+  left: 0;
+  width: 300px;
   z-index: 100;
 }
-#help_panel.closed {
-  left: -318px !important;
+/* The widget has two parts. First, the tab itself. */
+#help-tab {
+  background: url(help-tab.gif);
+  color: #f7f7f7;
+  float: right;
+  font-size: 1px;
+  width: 32px;
+  height: 62px;
 }
-.help1 {
-  width: 350px;
-  background-color: #FFFFFF;
-  background-image: url(help_bg.gif);
-  background-repeat: repeat-y;
-  background-position: top right;
+/* Second, the help panel, which takes up the rest of the 300px. */
+#help-panel {float: left; width: 268px;}
+/* The help panel needs to be longer than the tab -- 70px will do. */
+#help-content {
+  background: #fff url(help_bg.gif) top right repeat-y;
+  margin: 0;
+  padding: 0;
+  min-height: 70px;
 }
-.help2 {
-  float: left;
-  width: 286px;
-  padding: 16px;
-}
-#help_panel.open .bottom,
-#help_panel.closed .bottom {
+/* IE6 and lower ignore "min-height", but treat "height" as min-height. */
+* html #help-content {height: 70px;}
+/* The "help-text" element exists only to provide padding. */
+/* The "1px" is because Gecko malfunctions if the top padding is 0. */
+#help-text {padding: 1px 14px 6px 10px;}
+/* The "help-bottom" element exists to provide the rounded bottom border. */
+#help-bottom {
   clear: both;
-  width: 350px;
-  height: 14px;
-  position: relative;
-  top: -2px;
-  background-color: transparent;
-  background-image: url(help_bottom_bg.gif);
-  background-repeat: no-repeat;
-  background-position: bottom right;
+  font-size: 1px;
+  height: 6px;
+  background: url(help-bottom.gif) bottom right no-repeat;
 }
-#help_panel.open a.open-close, #help_panel.closed a.open-close,
-a.open, a.closed {
-  float: left;
-  display: block;
-  width: 28px;
-  height: 120px;
-  text-indent: -9999px;
-  overflow: hidden;
-}
+/* When the tab is opened, the triangle in it swivels to show it's a toggle. */
+#help.open #help-tab {background: url(help-tab-open.gif);}
+/* When the tab is closed, the help panel is not displayed. */
+#help.closed {width: 32px;}
+#help.closed #help-panel {display: none;}
 
-#help_panel.open a.open-close, a.open {
-  background-image: url(help_ttl_open.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-}
+/*
+Showing the help panel all the time would be in the way,
+and there shouldn't be a "Help" tab that does nothing.
+So it's hidden initially, and then revealed if JavaScript is available. 
+*/
+#help {visibility: hidden;}
 
-#help_panel.closed a.open-close, a.closed {
-	background-image: url(help_ttl_closed.gif);
-	background-repeat: no-repeat;
-	background-position: 0px 0px;
-}
-
-/*- The rest of the page is indented to keep clear of the help panel. -*/
+/* The rest of the page keeps clear of the collapsed help panel. */
 #nonhelp {margin: 0 20px 0 38px;}
 
 /*- App home pages and pillar indexes both have a heading and app buttons, -*/
