@@ -66,7 +66,7 @@ class LaunchpadScript:
     lockfilepath = None
     loglevel = logging.INFO
 
-    def __init__(self, name, dbuser=None):
+    def __init__(self, name, dbuser=None, test_args=None):
         """Construct new LaunchpadScript.
 
         Name is a short name for this script; it will be used to
@@ -74,6 +74,9 @@ class LaunchpadScript:
 
         Use dbuser to specify the user to connect to the database; if
         not supplied a default will be used.
+
+        Specify test_args when you want to override sys.argv.  This is
+        useful in test scripts.
         """
         self.name = name
         self.dbuser = dbuser
@@ -87,7 +90,7 @@ class LaunchpadScript:
                                    description=self.description)
         scripts.logger_options(self.parser, default=self.loglevel)
         self.add_my_options()
-        self.options, self.args = self.parser.parse_args()
+        self.options, self.args = self.parser.parse_args(args=test_args)
         self.logger = scripts.logger(self.options, name)
 
         self.lockfilepath = os.path.join(LOCK_PATH, self.lockfilename)
