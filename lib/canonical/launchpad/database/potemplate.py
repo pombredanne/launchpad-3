@@ -580,7 +580,8 @@ class POTemplate(SQLBase, RosettaStats):
                 'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
                 'elapsedtime': entry_to_import.getElapsedTimeText(),
                 'file_link': entry_to_import.content.http_url,
-                'import_title': self.displayname
+                'import_title':
+                    'translation templates for %s' % self.displayname
                 }
 
             # We got an error that prevented us to import the template, we

@@ -178,8 +178,8 @@ There is one email and it's for the error we produced.
   On ..., you uploaded a file with
   Welsh (cy) translations for firefox in Mozilla Firefox trunk in Launchpad.
   <BLANKLINE>
-  We were unable to import it because you did not update the time
-  stamp in its header to state when you added your translations.
+  We were unable to import your translations because you did not update the
+  time stamp in its header to state when you added your translations.
   <BLANKLINE>
   To fix this problem, please upload the file again, but with the
   'PO-Revision-Date' field updated.
