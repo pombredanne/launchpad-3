@@ -30,11 +30,13 @@ from zope.security.management import newInteraction
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
     IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent,
-    BeforeTraverseEvent)
+    BeforeTraverseEvent, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 __all__ = [
@@ -178,6 +180,7 @@ class LaunchpadBrowserPublication(
 
         request.setPrincipal(p)
         self.maybeRestrictToTeam(request)
+        self.maybeBlockOffsiteFormPost(request)
 
     def maybeRestrictToTeam(self, request):
 
@@ -220,6 +223,28 @@ class LaunchpadBrowserPublication(
         request.response.redirect(location, temporary_if_possible=True)
         # Quash further traversal.
         request.setTraversalStack([])
+
+    def maybeBlockOffsiteFormPost(self, request):
+        """Check if an attempt was made to post a form from a remote site.
+
+        The OffsiteFormPostError exception is raised if the following
+        holds true:
+          1. the request method is POST
+          2. the HTTP referer header is not empty
+          3. the host portion of the referrer is not a registered vhost
+        """
+        if request.method != 'POST':
+            return
+        referrer = request.getHeader('referer') # match HTTP spec misspelling
+        if not referrer:
+            return
+        # Extract the hostname from the referrer URI
+        try:
+            hostname = URI(referrer).host
+        except InvalidURIError:
+            hostname = None
+        if hostname not in allvhosts.hostnames:
+            raise OffsiteFormPostError(referrer)
 
     def callObject(self, request, ob):
 
