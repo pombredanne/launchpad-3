@@ -110,7 +110,7 @@
             <th>status</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="results-body">
           <tal:block repeat="shipitrequest shipitrequests">
             <tr tal:define="
               bg python: shipitrequest.highpriority and '#ff6666' or None;
