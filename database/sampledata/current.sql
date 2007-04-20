@@ -527,8 +527,18 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (2, 13, NULL, NULL, 16, '2007-03-14 20:11:44.591006');
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (3, 13, NULL, NULL, 18, '2007-03-14 20:11:44.591006');
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (4, 9, NULL, NULL, 18, '2007-03-14 20:12:07.145528');
 
 
 ALTER TABLE answercontact ENABLE TRIGGER ALL;
@@ -3275,6 +3285,7 @@ INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (34, 'aptoncd', 19, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (35, 'jokosher', 20, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (36, 'bzr', 21, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (37, 'redfish', 22, NULL, NULL, true);
 
 
 ALTER TABLE pillarname ENABLE TRIGGER ALL;
@@ -7752,6 +7763,7 @@ INSERT INTO product (id, project, "owner", name, displayname, title, summary, de
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (21, NULL, 12, 'bzr', 'Bazaar', 'Bazaar Version Control System', 'Bazaar is a distributed revision control system. It allows team members to branch and merge upstream code very easily. Most importantly, it is very robust in handling renames so that merges across radical restructurings of the tree are efficient and correct.', 'Bazaar aims to be a distributed RCS system that the open source community loves to use.
 
 Distributed revision control systems allow multiple people to have their own branch of a project, and merge code efficiently between them. This enables new contributors to immediately have access to the full tools that previously have been limited to just the committers to a project.', '2007-03-27 16:28:27.763632', 'http://bazaar-vcs.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 23, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (22, NULL, 12, 'redfish', 'Redfish', 'Redfish', 'The redfish project.', 'The redfish project.', '2007-04-18 20:58:56.846607', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, true, NULL, NULL, NULL, NULL, 24, NULL, NULL, NULL, NULL, false);
 
 
 ALTER TABLE product ENABLE TRIGGER ALL;
@@ -7996,6 +8008,7 @@ INSERT INTO productseries (id, product, name, summary, import_branch, importstat
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (21, 19, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-14 18:53:13.112116', NULL, 28, NULL, NULL);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (22, 20, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-15 20:11:49.501871', NULL, 14, NULL, NULL);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (23, 21, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-27 16:28:27.763632', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (24, 22, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-04-18 20:58:56.846607', NULL, 12, NULL, NULL);
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
@@ -9000,17 +9013,6 @@ INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, 
 
 
 ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
-
-
-ALTER TABLE answercontact DISABLE TRIGGER ALL;
-
-INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
-INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (2, 13, NULL, NULL, 16, '2007-03-14 20:11:44.591006');
-INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (3, 13, NULL, NULL, 18, '2007-03-14 20:11:44.591006');
-INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (4, 9, NULL, NULL, 18, '2007-03-14 20:12:07.145528');
-
-
-ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 
 ALTER TABLE teammembership DISABLE TRIGGER ALL;
