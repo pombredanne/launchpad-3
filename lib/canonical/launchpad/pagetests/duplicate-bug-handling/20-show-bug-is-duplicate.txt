@@ -1,11 +1,29 @@
-When a bug is marked as a duplicate of another bug, the main bug page
-will show such information in a prominent way.
+When a bug is marked as a duplicate of another bug, the duplicate bug's
+page shows this prominently.
 
-  >>> print http(r"""
-  ... GET /debian/+source/mozilla-firefox/+bug/2 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-        This report is a duplicate of
-        <a href="...">bug #1</a>
-  ...
+    >>> user_browser.open(
+    ... 'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/2')
+    >>> print user_browser.contents
+    <...
+    This report is a duplicate of...bug #1...
+
+The "Affects" lines are also not expandable, preventing people from changing
+the bug's status to no effect.
+
+    >>> "toggleFormVisibility('task" in user_browser.contents
+    False
+
+If the bug is no longer marked as a duplicate, the Affects rows become
+expandable once more.
+
+    >>> user_browser.getLink('Mark as duplicate').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2/+duplicate'
+    >>> user_browser.getControl(name='field.duplicateof').value = ''
+    >>> user_browser.getControl('Change').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2'
+    >>> 'This report is a duplicate' in user_browser.contents
+    False
+    >>> "toggleFormVisibility('task" in user_browser.contents
+    True

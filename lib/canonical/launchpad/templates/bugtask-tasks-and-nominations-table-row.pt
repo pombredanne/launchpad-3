@@ -1,9 +1,9 @@
-<tal:bugtask define="can_edit_bugtask not: context/conjoined_master;
+<tal:bugtask define="expandable view/canSeeTaskDetails;
                      indent_task view/shouldIndentTask;
                      tasklink view/taskLink;
                      form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
-    <td width="14" tal:condition="nothing"><a tal:condition="can_edit_bugtask"
+    <td width="14" tal:condition="nothing"><a tal:condition="expandable"
            tal:attributes="
               href tasklink;
               onclick string:return toggleFormVisibility('${form_row_id}')"
@@ -48,7 +48,7 @@
     <tal:not-conjoined-task condition="not:context/conjoined_master">
     <td tal:attributes="class string:status${context/status/name}">
       <a
-        tal:condition="can_edit_bugtask"
+        tal:condition="expandable"
         tal:attributes="
           href tasklink;
           onclick string:return toggleFormVisibility('${form_row_id}')
@@ -62,7 +62,7 @@
 
     <td tal:attributes="class string:importance${context/importance/name}">
       <a
-        tal:condition="can_edit_bugtask"
+        tal:condition="expandable"
         tal:attributes="
           href tasklink;
           onclick string:return toggleFormVisibility('${form_row_id}')
@@ -108,7 +108,7 @@
     </tal:not-conjoined-task>
     <td class="icon right">
       <a
-        tal:condition="can_edit_bugtask"
+        tal:condition="expandable"
         tal:attributes="
           href tasklink;
           onclick string:return toggleFormVisibility('${form_row_id}')
@@ -121,7 +121,7 @@
   </tr>
   <tr
     tal:attributes="id form_row_id"
-    tal:condition="can_edit_bugtask"
+    tal:condition="expandable"
     style="display: none"
   >
    <td colspan="5" tal:content="structure context/@@+edit-form" />
