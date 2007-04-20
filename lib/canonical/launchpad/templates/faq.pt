@@ -159,50 +159,29 @@
         <dt>Is Launchpad Free Software/open source? If not, why not?</dt>
         <dd>
           <p>
-            Launchpad is not currently Free Software.
-            There are several reasons for this.
+            Like Sourceforge and Google Code Hosting,
+            Launchpad is not open source.
+            Unlike those other services,
+            we have committed to making Launchpad Free Software eventually.
           </p>
-          <ul>
-            <li>
-              <p>
-                Launchpad exists not just to make development easier within
-                projects, but also to encourage collaboration between projects
-                (for example, by sharing bug reports and translations).
-                Several Launchpads running on separate sites would make this
-                collaboration harder if not impossible.
-              </p>
-            </li>
-            <li>
-              <p>
-                Launchpad is non-trivial to contribute to.
-                There is a complex code review, QA, and rollout process
-                that makes it impractical for people interested in making a
-                short one-off contribution.
-              </p>
-            </li>
-            <li>
-              <p>
-                Launchpad is non-trivial to run.
-                It has dozens of moving parts,
-                including about six core servers used for day-to-day operations,
-                and about ten used for the services which we call upon to
-                collect data.
-                Running a similar site would be a non-trivial production
-                exercise, and the code and documentation have not been written
-                to make any of this easily deployable.
-              </p>
-            </li>
-          </ul>
           <p>
-            We intend to release all of Launchpad as Free Software gradually,
-            though it may be years before that is finished.
-             So far we have released
+            Launchpad exists not merely to make development easier within
+            projects, but also to encourage collaboration between projects.
+            With Launchpad, distributors and upstream developers can share
+            bug reports, translations, and code.
+            Eventually there may be standards and APIs
+            that let standalone sites send these things to each other.
+            But in the meantime, having several Launchpads running separately
+            would make this collaboration harder if not impossible.
+            It would also make funding Launchpad development impractical
+            in the short term.
+          </p>
+          <p>
+            Meanwhile, we have released the code for 
             <a href="https://launchpad.net/launchpad-cscvs">CSCVS</a>,
-            for mirroring CVS/Subversion trees to Bazaar.
-          </p>
-          <p>
-            Launchpad&rsquo;s development has, however, involved us making many
-            contributions to other Free Software projects. These include
+            which Launchpad uses to mirror CVS/Subversion trees to Bazaar.
+            We also make many contributions to other Free Software components
+            we use, including
             <a href="http://zope.org/">Zope</a>,
             <a href="http://bazaar-vcs.org/">Bazaar</a>,
             <a href="http://sqlobject.org/">SQLObject</a>,
