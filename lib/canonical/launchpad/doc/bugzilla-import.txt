@@ -353,7 +353,7 @@ and attach a watch to the upstream bug tracker:
   Created: 2005-04-04 00:00:00+00:00
   Subscribers:
       Sample Person
-  Task: evolution (upstream)
+  Task: Evolution
       Status: UNCONFIRMED
       Product: evolution
       Importance: UNDECIDED

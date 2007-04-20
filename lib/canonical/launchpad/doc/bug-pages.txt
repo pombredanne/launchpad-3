@@ -445,8 +445,8 @@ approved nomination will have created a task anyway.
     ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
-    bugtask, Unconfirmed, firefox (upstream)
-    nomination, Nominated, firefox 1.0 (upstream)
+    bugtask, Unconfirmed, Mozilla Firefox
+    nomination, Nominated, Mozilla Firefox 1.0
     bugtask, Confirmed, mozilla-firefox (Debian)
     bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
@@ -471,9 +471,9 @@ the list changes.
     ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
-    bugtask, Unconfirmed, firefox (upstream)
-    nomination, Nominated, firefox 1.0 (upstream)
-    nomination, Nominated, firefox trunk (upstream)
+    bugtask, Unconfirmed, Mozilla Firefox
+    nomination, Nominated, Mozilla Firefox 1.0
+    nomination, Nominated, Mozilla Firefox trunk
     bugtask, Confirmed, mozilla-firefox (Debian)
     bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
@@ -497,9 +497,9 @@ A nomination row will be included for evolution now too.
     ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
-    bugtask, Unconfirmed, firefox (upstream)
-    nomination, Nominated, firefox 1.0 (upstream)
-    nomination, Nominated, firefox trunk (upstream)
+    bugtask, Unconfirmed, Mozilla Firefox
+    nomination, Nominated, Mozilla Firefox 1.0
+    nomination, Nominated, Mozilla Firefox trunk
     bugtask, Unconfirmed, evolution (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
     nomination, Nominated, Ubuntu Warty
@@ -528,9 +528,9 @@ approve/decline nominations.)
     ...     bugtasks_and_nominations_view.getBugTasksAndNominations())
 
     >>> print_tasks_and_nominations(tasks_and_nominations)
-    bugtask, Unconfirmed, firefox (upstream)
-    nomination, Nominated, firefox 1.0 (upstream)
-    nomination, Nominated, firefox trunk (upstream)
+    bugtask, Unconfirmed, Mozilla Firefox
+    nomination, Nominated, Mozilla Firefox 1.0
+    nomination, Nominated, Mozilla Firefox trunk
     bugtask, Unconfirmed, evolution (Ubuntu)
     nomination, Declined, Ubuntu Warty
     bugtask, Unconfirmed, evolution (Ubuntu Hoary)
@@ -556,7 +556,7 @@ initialize the test harness.
 
     >>> firefox_task = bug_one.bugtasks[0]
     >>> firefox_task.targetname
-    u'firefox (upstream)'
+    u'Mozilla Firefox'
     >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> bug_edit = LaunchpadFormHarness(firefox_task, BugEditViewTest)
 
@@ -607,7 +607,7 @@ the user can confirm that he wants to add the tag.
     False
     >>> for message in bug_edit.view.notifications:
     ...     print message
-    The tag "new-tag" hasn't yet been used by firefox (upstream) before.
+    The tag "new-tag" hasn't yet been used by Mozilla Firefox before.
     Is this a new tag?...<input ...Yes, define new tag...>
 
     >>> bug_edit.wasRedirected()

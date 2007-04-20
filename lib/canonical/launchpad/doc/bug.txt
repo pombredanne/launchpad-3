@@ -450,7 +450,7 @@ Modifying a bugtask will update IBug.date_last_updated.
   >>> firefox_task = firefox_bug.bugtasks[0]
 
   >>> print firefox_task.targetname
-  firefox (upstream)
+  Mozilla Firefox
 
   >>> print firefox_task.importance.title
   Undecided

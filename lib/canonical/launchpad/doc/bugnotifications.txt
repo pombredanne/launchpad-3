@@ -156,7 +156,7 @@ bug. Let's take a look at each type.
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    ** Also affects: evolution (upstream)
+    ** Also affects: Evolution
     ...
 
   3.4 ProductSeries Task
@@ -176,7 +176,7 @@ bug. Let's take a look at each type.
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    ** Also affects: evolution trunk (upstream)
+    ** Also affects: Evolution trunk
     ...
 
 
@@ -245,7 +245,7 @@ task Fixed, and assigns himself to it.
     >>> latest_notification.is_comment
     False
     >>> print latest_notification.message.text_contents
-    ** Changed in: evolution trunk (upstream)
+    ** Changed in: Evolution trunk
     ...
 
 

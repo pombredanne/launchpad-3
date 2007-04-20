@@ -180,12 +180,12 @@ For a person:
     >>> params = BugTaskSearchParams(owner=foobar, user=None,
     ...                              orderby='targetname')
     >>> [bugtask.targetname for bugtask in foobar.searchTasks(params)]
-    [u'Ubuntu',
+    [u'Evolution',
+     u'Jokosher',
+     u'Jokosher',
+     u'Mozilla Firefox 1.0',
+     u'Ubuntu',
      u'evolution (Ubuntu)',
-     u'evolution (upstream)',
-     u'firefox 1.0 (upstream)',
-     u'jokosher (upstream)',
-     u'jokosher (upstream)',
      u'linux-source-2.6.15 (Ubuntu)',
      u'mozilla-firefox (Debian)',
      u'mozilla-firefox (Ubuntu)',
@@ -209,14 +209,14 @@ person.
     ...     print bugtask.bug.id, bugtask.targetname, assignee, owner
      3 mozilla-firefox (Debian) None name16
      1 mozilla-firefox (Ubuntu) None name16
-     7 evolution (upstream) name16 name16
+     7 Evolution name16 name16
      8 mozilla-firefox (Debian) name16 name12
      9 thunderbird (Ubuntu) None name16
     10 linux-source-2.6.15 (Ubuntu) None name16
      2 Ubuntu None name16
-     5 firefox 1.0 (upstream) None name16
-    11 jokosher (upstream) None name16
-    12 jokosher (upstream) None name16
+     5 Mozilla Firefox 1.0 None name16
+    11 Jokosher None name16
+    12 Jokosher None name16
      1 evolution (Ubuntu) None name16
 
 How about the bugs reported by foobar, the ones he's subscribed to and the
@@ -234,16 +234,16 @@ for a person's +bugs page.
     ...     print bugtask.bug.id, bugtask.targetname, assignee, owner, subscribed
      3 mozilla-firefox (Debian) None name16
      1 mozilla-firefox (Ubuntu) None name16
-     7 evolution (upstream) name16 name16 Subscribed
+     7 Evolution name16 name16 Subscribed
      8 mozilla-firefox (Debian) name16 name12
      9 thunderbird (Ubuntu) None name16 Subscribed
-     9 thunderbird (upstream) None name12 Subscribed
+     9 Mozilla Thunderbird None name12 Subscribed
     10 linux-source-2.6.15 (Ubuntu) None name16 Subscribed
      2 Ubuntu None name16
      7 evolution (Debian) None name12 Subscribed
-     5 firefox 1.0 (upstream) None name16
-    11 jokosher (upstream) None name16 Subscribed
-    12 jokosher (upstream) None name16 Subscribed
+     5 Mozilla Firefox 1.0 None name16
+    11 Jokosher None name16 Subscribed
+    12 Jokosher None name16 Subscribed
      1 evolution (Ubuntu) None name16
 
 
@@ -487,7 +487,7 @@ distro release, or product;
 
     >>> bugtask = bugtaskset.get(2)
     >>> bugtask.targetname
-    u'firefox (upstream)'
+    u'Mozilla Firefox'
 
 the name of the source package (if any); and the name of the binary
 package (but only if it's named differently from the source
@@ -901,7 +901,7 @@ like these, use the NullBugTask object.
 
     >>> null_bugtask.id is None
     True
-    >>> null_bugtask.title == 'Bug #1 in netapplet (upstream): "Firefox does not support SVG"'
+    >>> null_bugtask.title == 'Bug #1 in NetApplet: "Firefox does not support SVG"'
     True
     >>> null_bugtask.product is netapplet
     True
@@ -934,7 +934,7 @@ like these, use the NullBugTask object.
     >>> null_bugtask.target == netapplet
     True
     >>> null_bugtask.targetname
-    u'netapplet (upstream)'
+    u'NetApplet'
     >>> expected_related_task_ids = [
     ...     task.id for task in null_bugtask.related_tasks]
     >>> actual_related_task_ids = [task.id for task in bug_one.bugtasks]
@@ -1160,9 +1160,9 @@ Let's just make sure that the tasks on bug_one sort correctly.
     >>> tasks = bug_one.bugtasks
     >>> for task in tasks:
     ...     print task.targetname
-    evolution (upstream)
-    firefox (upstream)
-    firefox 1.0 (upstream)
+    Evolution
+    Mozilla Firefox
+    Mozilla Firefox 1.0
     Ubuntu
     evolution (Ubuntu)
     mozilla-firefox (Ubuntu)
@@ -1194,15 +1194,16 @@ Of course, it's also computed and set when a bugtask is created.
     ...     bug=bug_one, product=netapplet, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.targetname
-    u'netapplet (upstream)'
+    u'NetApplet'
 
     >>> thunderbird = productset.get(8)
     >>> upstream_task_id = upstream_task.id
     >>> upstream_task.product = thunderbird
     >>> upstream_task.targetname
-    u'thunderbird (upstream)'
+    u'Mozilla Thunderbird'
 
     >>> thunderbird.name = 'thunderbird-ng'
+    >>> thunderbird.displayname = 'Mozilla Thunderbird NG'
 
     # XXX: This flush_database_updates() shouldn't be needed because we
     # already have the transaction.commit() here, but without it
@@ -1229,7 +1230,7 @@ Of course, it's also computed and set when a bugtask is created.
     >>> transaction.commit()
 
     >>> bugtaskset.get(upstream_task_id).targetname
-    u'thunderbird-ng (upstream)'
+    u'Mozilla Thunderbird NG'
 
 Target Uses Malone
 ------------------
@@ -1239,10 +1240,10 @@ target uses Malone as its official bugtracker.
 
     >>> for bugtask in bug_one.bugtasks:
     ...     print "%-30s %s" % (bugtask.targetname, bugtask.target_uses_malone)
-    evolution (upstream)           True
-    firefox (upstream)             True
-    firefox 1.0 (upstream)         True
-    thunderbird-ng (upstream)      False
+    Evolution                      True
+    Mozilla Firefox                True
+    Mozilla Firefox 1.0            True
+    Mozilla Thunderbird NG         False
     Ubuntu                         True
     evolution (Ubuntu)             True
     mozilla-firefox (Ubuntu)       True

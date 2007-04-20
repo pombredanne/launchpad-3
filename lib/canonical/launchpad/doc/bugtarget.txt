@@ -91,9 +91,9 @@ display in bug-related pages.
     True
 
     >>> print firefox.bugtargetname
-    firefox (upstream)
+    Mozilla Firefox
     >>> print firefox_1_0.bugtargetname
-    firefox 1.0 (upstream)
+    Mozilla Firefox 1.0
     >>> print debian.bugtargetname
     Debian
     >>> print debian_firefox.bugtargetname

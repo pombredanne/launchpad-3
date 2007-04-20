@@ -75,7 +75,7 @@ Here's an example of nominating a bug for a productseries.
     >>> print bug_one_in_firefox.bug.id
     1
     >>> print bug_one_in_firefox.target.bugtargetname
-    firefox (upstream)
+    Mozilla Firefox
 
     >>> firefox = bug_one_in_firefox.target
 
@@ -107,7 +107,7 @@ Here's an example of nominating a bug for a productseries.
     1
 
     >>> print request.response.notifications[0].message
-    Added nominations for: firefox trunk (upstream)
+    Added nominations for: Mozilla Firefox trunk
 
 Approving and Declining Nominations
 -----------------------------------
@@ -167,7 +167,7 @@ Bug #1 currently has three tasks.
 
     >>> for bugtask in bug_one.bugtasks:
     ...     print bugtask.targetname
-    firefox (upstream)
+    Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Debian)
 
@@ -221,7 +221,7 @@ bugtask has been added.
 
     >>> for bugtask in bug_one.bugtasks:
     ...     print bugtask.targetname
-    firefox (upstream)
+    Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Ubuntu Grumpy)
     mozilla-firefox (Debian)

@@ -58,7 +58,7 @@ bugs return all of Firefox' bugs.
     ...     bugtask.target.bugtargetname for bugtask in found_bugtasks)
     >>> for target_name in sorted(found_targets):
     ...     print target_name
-    firefox (upstream)
+    Mozilla Firefox
 
 === Package bug contact ===
 
@@ -87,7 +87,7 @@ previous bugs (since he is also a bug contact for the Firefox product).
     ...     bugtask.target.bugtargetname for bugtask in found_bugtasks)
     >>> for target_name in sorted(found_targets):
     ...     print target_name
-    firefox (upstream)
+    Mozilla Firefox
     mozilla-firefox (Ubuntu)
 
 === Distribution bug contact ===

@@ -256,7 +256,7 @@ in the vocabulary.
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> firefox_task = bug_one.bugtasks[0]
     >>> firefox_task.targetname
-    u'firefox (upstream)'
+    u'Mozilla Firefox'
     >>> firefox_task_milestones = vocabulary_registry.get(
     ...     firefox_task, 'Milestone')
     >>> for term in firefox_task_milestones:
@@ -353,7 +353,7 @@ for any Firefox series yet:
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> for bugtask in bug_one.bugtasks:
     ...     print bugtask.targetname
-    firefox (upstream)
+    Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Debian)
 
@@ -380,7 +380,7 @@ No series is targeted or nominated on bug 4:
     >>> bug_four = getUtility(IBugSet).get(4)
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
-    firefox (upstream)
+    Mozilla Firefox
 
     >>> for nomination in bug_four.getNominations(firefox):
     ...     print nomination.target.name
@@ -407,7 +407,7 @@ Bug one is nominated for Ubuntu Hoary:
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> for bugtask in bug_one.bugtasks:
     ...     print bugtask.targetname
-    firefox (upstream)
+    Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Debian)
 
@@ -433,7 +433,7 @@ The same is true for bug two, where the bug is targeted to Hoary.
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> for bugtask in bug_two.bugtasks:
     ...     print bugtask.targetname
-    ubuntu (upstream)
+    Ubuntu
     Ubuntu
     Ubuntu Hoary
     mozilla-firefox (Debian)

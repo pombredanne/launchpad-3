@@ -202,8 +202,8 @@ be created:
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
-    evolution (upstream)
-    firefox (upstream)
+    Evolution
+    Mozilla Firefox
 
 The button includes the product name.
 
@@ -229,8 +229,8 @@ as smoothly as above.
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
-    evolution (upstream)
-    firefox (upstream)
+    Evolution
+    Mozilla Firefox
 
 As you can see no ALSA was added to the bug. In order to add such a
 task, a user has to confirm that he indeed wants to add the task. A
@@ -261,9 +261,9 @@ If the user confirms, a bugtask will be added to the bug.
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
-    alsa-utils (upstream)
-    evolution (upstream)
-    firefox (upstream)
+    alsa-utils
+    Evolution
+    Mozilla Firefox
 
 But since no bug watch was specified, the status and importance
 are set to the default values.
@@ -314,8 +314,8 @@ without any confirmation needee:
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
-    alsa-utils (upstream)
-    firefox (upstream)
+    alsa-utils
+    Mozilla Firefox
 
     >>> for bugwatch in bug_four.watches:
     ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
@@ -327,7 +327,7 @@ the bug watch's status later.
 
     >>> alsa_task = bug_four.bugtasks[0]
     >>> alsa_task.targetname
-    u'alsa-utils (upstream)'
+    u'alsa-utils'
     >>> alsa_task.product.official_malone
     False
     >>> alsa_task.bugwatch == bug_four.watches[0]
