@@ -1142,14 +1142,12 @@ class PackageCopyError(Exception):
 
 
 class PackageCopier(LaunchpadScript):
-    """This is a LaunchpadScript that copies published packages between
-    distro suites.
+    """LaunchpadScript that copies published packages between distro suites.
 
     Possible exceptions raised are:
-    PackageLocationError - when the specified package or distro does
-        not exist
-    PackageCopyError - when the copy operation itself has failed
-    LaunchpadScriptError - only raised if entering via main(), ie this
+    * PackageLocationError: specified package or distro does not exist
+    * PackageCopyError: the copy operation itself has failed
+    * LaunchpadScriptError: only raised if entering via main(), ie this
         code is running as a genuine script.  In this case, this is
         also the _only_ exception to be raised.
 
@@ -1229,14 +1227,14 @@ class PackageCopier(LaunchpadScript):
         """Execute package copy procedure.
 
         Build location and target objects.
-        Check whether user feedback is needed or is suppressed by 
+        Check whether user feedback is needed or is suppressed by
         given parameters.
         Copy source publication and optionally related binary publications
         according to the given parameters.
 
         Modules using this class outside of its normal usage in the
         copy-package.py script can call this method to start the copy.
-        
+
         In this case the caller can override test_args on __init__
         to set the command line arguments.
 
@@ -1251,7 +1249,7 @@ class PackageCopier(LaunchpadScript):
         # This can raise PackageCopyError:
         from_location, to_location = self._findLocations()
         from_source = self._findSource(
-            from_location, 
+            from_location,
             sourcename,
             self.options.sourceversion)
 
@@ -1324,8 +1322,7 @@ class PackageCopier(LaunchpadScript):
         return target_source
 
     def _findBinaries(self, from_source, from_location):
-        """Build a set of DistroArchReleaseBinaryPackage for the 
-        context source.
+        """Build a set of DistroArchReleaseBinaryPackage for the context source.
 
         Result is returned.
         """

@@ -7,8 +7,6 @@ import subprocess
 import sys
 import unittest
 
-import transaction
-
 from canonical.config import config
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache)
@@ -16,8 +14,9 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, PackageCopyError, PackageCopier)
 from canonical.launchpad.database.publishing import (
-    SecureSourcePackagePublishingHistory, 
+    SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
+
 
 class TestCopyPackageScript(LaunchpadZopelessTestCase):
     """Test the copy-package.py script."""
@@ -50,8 +49,8 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
 
         returncode, out, err = self.runCopyPackage(
             extra_args=['-s', 'warty', 'mozilla-firefox',
-                        '--to-suite', 'hoary', '-b'])
-        # Need to print these or you can't see what happened if the 
+                        '--to-suite', 'breezy-autotest', '-b'])
+        # Need to print these or you can't see what happened if the
         # return code is bad:
         if returncode != 0:
             print "\nStdout:\n%s\nStderr\n%s\n" % (out, err)
@@ -60,9 +59,8 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         # Test that the database has been modified.  We're only checking
         # that the number of rows has updated by one; content checks are
         # done in other tests.
-        flush_database_updates()
-        transaction.commit()
-        clear_current_connection_cache()
+        self.layer.txn.abort()
+
         num_source_pub_after = SecureSourcePackagePublishingHistory.select(
             "True").count()
         num_bin_pub_after = SecureBinaryPackagePublishingHistory.select(
@@ -91,7 +89,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
                   confirm_all=True, include_binaries=True):
         """Return a PackageCopier instance.
 
-        Allow tests to use a set of default options and pass an 
+        Allow tests to use a set of default options and pass an
         inactive logger to PackageCopier.
         """
         test_args=['-s', from_suite,
@@ -127,7 +125,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         self.assertEqual(from_source.title,
             u'mozilla-firefox 0.9 (source) in ubuntu warty')
 
-        # Check target binaries.  The default source we're using 
+        # Check target binaries.  The default source we're using
         # (mozilla-firefox) only has one binary and we're checking its title
         # to be as expected.
         target_binary = from_binaries[0]
@@ -136,7 +134,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             u'Binary Package "mozilla-firefox" in The Warty Warthog '
             'Release for i386 (x86)')
 
-        # Check stored results.  The copied_source should be valid and 
+        # Check stored results.  The copied_source should be valid and
         # the number of binaries copied should be one.
         self.assertEqual(bool(copied_source), True)
         self.assertEqual(len(copied_binaries), 1)
@@ -154,11 +152,11 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             copied_binary.title,
             u'mozilla-firefox 0.9 (i386 binary) in ubuntu hoary')
 
-    def assertRaisesWithContent(self, exception, exception_content, 
+    def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):
         """Check if the given exception is raised with given content.
 
-        If the expection isn't raised or the exception_content doesn't 
+        If the expection isn't raised or the exception_content doesn't
         match what was raised an AssertionError is raised.
         """
         exception_name = str(exception).split('.')[-1]
@@ -199,21 +197,17 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
             copy_helper.doCopy)
 
     def testFailIfSameLocations(self):
-        """Check that it fails if the source and destination package 
-        locations are the same.
-        """
+        """It fails if the source and destination locations are the same."""
         copy_helper = self.getCopier(from_suite='warty', to_suite='warty')
 
         self.assertRaisesWithContent(
-            PackageCopyError, 
+            PackageCopyError,
             "Can not sync between the same locations: 'ubuntu/warty/RELEASE'"
             " to 'ubuntu/warty/RELEASE'",
             copy_helper.doCopy)
 
     def testFailIfValidPackageButNotInSpecifiedSuite(self):
-        """Check that we fail if the package is valid but does not 
-        exist in the specified distro release.
-        """
+        """It fails if the package is not published in the source location."""
         copy_helper = self.getCopier(from_suite="breezy-autotest")
 
         self.assertRaisesWithContent(
