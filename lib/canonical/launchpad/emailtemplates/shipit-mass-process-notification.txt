@@ -1,7 +1,7 @@
 Hello,
 
 This is a report of requests automatically %(action)s.  All the requests
-listed here were marked as %(pending_special)s upon their creation and
+listed here were marked as %(status)s upon their creation and
 have been %(action)s now.
 
 %(requests_info)s
