@@ -56,7 +56,7 @@ from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
 from canonical.widgets.project import ProjectScopeWidget
-from canonical.widgets.bug import FileBugTargetWidget
+from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 
 class QuestionSetNavigation(Navigation):
@@ -427,12 +427,12 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     """View for editing a Question."""
     schema = IQuestion
     label = 'Edit question'
-    field_names = ["title", "description", "distribution", "sourcepackagename",
-                   "product", "target", "priority", "assignee", "whiteboard"]
+    field_names = ["title", "description", "target", "priority", "assignee", 
+                   "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)
-    custom_widget('target', FileBugTargetWidget)
+    custom_widget('target', LaunchpadTargetWidget)
 
     def setUpFields(self):
         """Select the subset of fields to display.

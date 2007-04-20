@@ -159,8 +159,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.product = question_target
             self.distribution = None
             self.sourcepackagename = None
-        elif (ISourcePackage.providedBy(question_target) or
-                IDistributionSourcePackage.providedBy(question_target)):
+        elif (IDistributionSourcePackage.providedBy(question_target)):
             self.product = None
             self.distribution = question_target.distribution
             self.sourcepackagename = question_target.sourcepackagename
