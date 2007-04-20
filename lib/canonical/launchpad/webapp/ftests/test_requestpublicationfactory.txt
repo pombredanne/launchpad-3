@@ -63,6 +63,19 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://launchpad.dev/
     althosts:
     ----
+    >>> for hostname in sorted(allvhosts.hostnames):
+    ...     print hostname
+    answers.launchpad.dev
+    blueprints.launchpad.dev
+    bugs.launchpad.dev
+    code.launchpad.dev
+    launchpad.dev
+    localhost
+    shipit.edubuntu.dev
+    shipit.kubuntu.dev
+    shipit.ubuntu.dev
+    translations.launchpad.dev
+    xmlrpc.launchpad.dev
 
 
 LaunchpadRequestPublicationFactory chooses the right request and publication to
