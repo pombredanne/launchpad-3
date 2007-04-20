@@ -476,13 +476,29 @@ class MirrorCDImageProberCallbacks(object):
         return failure
 
 
+def _build_request_for_cdimage_file_list(url):
+    headers = {'Pragma': 'no-cache', 'Cache-control': 'no-cache'}
+    return urllib2.Request(url, headers=headers)
+
+
 def _get_cdimage_file_list():
     url = config.distributionmirrorprober.releases_file_list_url
     try:
-        return urllib2.urlopen(url)
+        return urllib2.urlopen(_build_request_for_cdimage_file_list(url))
     except urllib2.URLError, e:
         raise UnableToFetchCDImageFileList(
             'Unable to fetch %s: %s' % (url, e))
+
+
+def restore_http_proxy(http_proxy):
+    """Restore the http_proxy environment variable to the given value."""
+    if http_proxy is None:
+        try:
+            del os.environ['http_proxy']
+        except KeyError:
+            pass
+    else:
+        os.environ['http_proxy'] = http_proxy
 
 
 def get_expected_cdimage_paths():
@@ -566,6 +582,11 @@ def probe_release_mirror(mirror, logfile, unchecked_keys, logger,
     files for a given release and flavour, then we consider that mirror is
     actually mirroring that release and flavour.
     """
+    # The list of files a mirror should contain will change over time and we
+    # don't want to keep records for files a mirror doesn't need to have
+    # anymore, so we delete all records before start probing. This also fixes
+    # https://launchpad.net/bugs/46662
+    mirror.deleteAllMirrorCDImageReleases()
     try:
         cdimage_paths = get_expected_cdimage_paths()
     except UnableToFetchCDImageFileList, e:

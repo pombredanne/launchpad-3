@@ -3,6 +3,8 @@
   This macro expects the following variables defined:
     :mirrors_by_country: A list of dictionaries containing country names
                          and the list of IDistributionMirrors to be listed
+    :show_status: A boolean saying whether there should be an extra column
+                  with the mirror's status or not.
   </tal:comment>
 
   <table class="listing" id="mirrors_list">
@@ -27,7 +29,8 @@
              tal:attributes="href mirror/rsync_base_url">rsync</a>
         </td>
         <td><span tal:replace="mirror/speed/title" /></td>
-        <td tal:define="status mirror/getOverallStatus">
+        <td tal:condition="show_status"
+            tal:define="status mirror/getOverallStatus">
           <span tal:replace="status/title" />
         </td>
       </tr>
