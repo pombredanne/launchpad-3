@@ -1,8 +1,13 @@
-At first there should be no translators in the polyglot group.
+= Appointing translators in a translation group =
 
-We log in as Jordi Mallach, who is a Rosetta administrator ("expert") but is
-not a Launchpad administrator, nor is he the owner of the translation group
-we test with.
+No translators have been appointed in the polyglot group so far.
+
+A user can have rights to appoint or remove members on any of three grounds:
+owning the group, being a Rosetta expert, or being a Launchpad administrator.
+
+Jordi Mallach, is a Rosetta administrator ("expert").  He does not own polyglot
+nor is he a Launchpad adminstrator.  That is enough to allow him to appoint a
+translator.
 
   >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
   >>> browser.open(
@@ -61,12 +66,8 @@ Normal users, however, are not.
 
   >>> user_browser.open(
   ...   'http://translations.launchpad.dev/translations/groups/polyglot/')
-  >>> try:
-  ...     user_browser.getLink('Appoint')
-  ...     print "Link present"
-  ... except Exception:
-  ...     print "Not found"
-  Not found
+  >>> user_browser.getLink('Appoint')
+  TracebackFOO...
 
   >>> user_browser.url
   'http://translations.launchpad.dev/translations/groups/polyglot/'
