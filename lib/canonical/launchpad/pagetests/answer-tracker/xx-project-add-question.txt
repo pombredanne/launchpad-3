@@ -1,12 +1,21 @@
 = Asking a New Question from a Project =
 
-Even if projects are not QuestionTargets, it is still possible to create a
-question from a project.
+Even though projects are not QuestionTargets, it is still possible to
+create a question from a project. There are some form and behaviour
+difference from the regular process for asking a question (documented
+in 35-question-add.txt). Firstly, we do not know the product the 
+product the question is about, so we ask the user to select one.
+Secondly, without knowing the product, we cannot show the which of the
+user's preferred languages are support.
+
 
 == Register a support contact who speaks a non-English language ==
 
-To illustrate the supported languages behavior we need to register
-a non-English speaker as a support contact for thunderbird.
+To illustrate the supported language behavior, we add an answer 
+contact to Thunderbird who has Japanese as a preferred language.
+Japanese will be a supported language for Thunderbird Questions, 
+which allows us to test the supported languages behaviour for
+non-English languages. Dafydd speaks Japanese, so we will use him.
 
     >>> from zope.testbrowser.testing import Browser
     >>> daf_browser = Browser()
@@ -15,7 +24,7 @@ a non-English speaker as a support contact for thunderbird.
     >>> daf_browser.title
     "Dafydd Harries's preferred languages"
     
-    >>> daf_browser.getControl('Japanese').selected == True
+    >>> daf_browser.getControl('Japanese').selected
     True
 
     >>> daf_browser.open(
@@ -31,7 +40,13 @@ a non-English speaker as a support contact for thunderbird.
     >>> print soup.first('div', 'informational message').renderContents()
     You have been added as an answer contact for Mozilla Thunderbird.
 
-And add Japanese to Sample Person's preferred languages.
+And we add Japanese to Sample Person's preferred languages. We then
+have a condition for certain products, thunderbird in this example,
+where the user's languages and the answer contact's languages will
+match. This condition demonstrates the supported language behaviour. 
+Note we are using Sample Person (sample_browser) because he has 
+permission to change his preferred languages in the test environment,
+unlike No Privelaged Person (user_browser).
 
     >>> sample_browser = Browser()
     >>> sample_browser.addHeader('Authorization', 
@@ -46,10 +61,29 @@ And add Japanese to Sample Person's preferred languages.
     >>> soup = BeautifulSoup(sample_browser.contents)
     >>> print soup.first('div', 'informational message').renderContents()
     Added Japanese to your preferred languages.
+
+So if Sample Person were to visit the Ask a Question page for
+Thunderbird directly, he will see that Japanese, as well English (the
+default supported language), have askerisks next to them in
+the Language list. This indicates that he can ask a question in
+Japanese or English and expect someone to reply in the same language.
+
+    >>> sample_browser.open(
+    ... 'http://answers.launchpad.dev/thunderbird/+addquestion')
+    >>> print sample_browser.getControl('Language').displayOptions
+    ['English (en) *', 'Japanese (ja) *']
     
+The supported languages will not be shown immediately when Sample
+Person asks a question Thunderbird question from the context of the
+Mozilla Project.
+
 == Ask a questions about a product in a Project ==
 
-The user must login to proceed:
+The user must be logged in to ask a question. When he attempts to ask
+a question, without being logged in, hwe encounters an unauthorized 
+exception (and the user will be prompted to login from another page).
+The login user will see the Ask a Question page, for the Mozilla 
+Project in this case.
 
     >>> anon_browser.open('http://answers.launchpad.dev/mozilla')
     >>> anon_browser.getLink('Ask a question').click()
@@ -57,36 +91,49 @@ The user must login to proceed:
       ...
     Unauthorized...
     
-    >>> sample_browser.addHeader('Authorization', 
-    ...                          'Basic test@canonical.com:test')
     >>> sample_browser.open('http://answers.launchpad.dev/mozilla')
     >>> sample_browser.getLink('Ask a question').click()
     >>> print sample_browser.title
     Ask a question about a project in the Mozilla Project
 
-The workflow is identical to the regular one, except that the user must
-select one of the Project's Products.
+The workflow is identical to the regular one, except that the user
+must select one of the Project's Products. The page displays a list of
+products associated with the project. Note that the site policy is
+to use the word 'Project' for 'Products' (and 'Distributions') so
+that users do not have to learn our business' semantics.
 
+    >>> print sample_browser.getControl('Project').displayOptions
+    ['Mozilla Firefox', 'Mozilla Thunderbird']
+
+The first item in the list is the default value and it will be 
+submitted if the user does not change it.
+ 
     >>> print sample_browser.getControl('Project').displayValue
     ['Mozilla Firefox']
 
-Like for the regular workflow, the user is shown a list of languages,
-with the supported languages flagged with an asterisk. Note that only
-English is flagged as default because we do not know which Product the
-question is about.
+Like for the regular workflow, the user is shown a list of languages, 
+with the supported languages flagged with an asterisk. Note that only 
+English is flagged because we do not know which Product the
+question is about. Without knowing the product, we cannot flag the 
+supported languages other than the default language of English. If the
+user were to submit his question in another language, he might find 
+that the language is supported on the next page.
 
     >>> print sample_browser.getControl('Language').displayOptions
     ['English (en) *', 'Japanese (ja)']
     
     >>> sample_browser.getControl('Language').value = ['en']
 
-The user enters a short summary of his problem.
+Sample Person enters a short summary of his problem and submits the 
+form with the Continue button. In this case, a question for Firefox in
+English regarding SVG.
 
     >>> sample_browser.getControl('Summary').value = (
     ...     'Problem displaying complex SVG')
     >>> sample_browser.getControl('Continue').click()
 
-He's shown a list of similar questions in the product selected:
+He's shown a list of similar questions related to the product 
+Firefox that he submitted:
 
     >>> similar_questions = find_tag_by_id(
     ...     sample_browser.contents, 'similar-questions')
@@ -94,36 +141,48 @@ He's shown a list of similar questions in the product selected:
     ...     print row.a.renderContents()
     Problem showing the SVG demo on W3C site
 
-He can see which of his preferred languages are suppported.
+He can see which of his preferred languages are suppported for
+the Firefox product by reviewing which languages has asterisks in
+the Languages list--only English in the example.
 
     >>> print sample_browser.getControl('Language').displayOptions
     ['English (en) *', 'Japanese (ja)']
     
-The user can still change the product against which he's asking the
-question.
+Sample Person can still change the product for which he's asking the
+question. The user chooses Thunderbird from the 'Project' product
+list.
 
     >>> sample_browser.getControl('Mozilla Thunderbird').selected = True
 
-If he empties the title, he'll get redirected to the first page.
+If he empties the question summary, and submits the form he'll get 
+redirected to the first page. Let's assume he does this by accident
+as he revises the summary after reading the similar questions.
 
     >>> sample_browser.getControl('Summary').value = ''
     >>> sample_browser.getControl('Add').click()
 
-An error will inform him that the summary is missing:
+An error message in the page informs the user that the summary is
+missing:
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(sample_browser.contents)
     >>> print soup.first('div', 'message').renderContents()
     You must enter a summary of your problem.
 
-The newly selected product is still selected. He can see that this
-product has support for Japanese as well as English.
+The product Thunderbird that he selected on the previous screen is 
+still selected. He can see that this product has support for Japanese
+as well as English when he sees the asterisks next to both in the 
+Languages list. Japanese is supported because Dafydd speaks Japanese 
+and is an answer contact for Thunderbird. We see this only after a 
+question summary is submitted for a product, even if summary is 
+invalid.
 
     >>> print sample_browser.getControl('Language').displayOptions
     ['English (en) *', 'Japanese (ja) *']
     
-when the user enters his problem again, similar questions against that 
-product will be shown.
+Sample Person re-enters his question summary again, and submits the
+form, leaving English as the question language and thunderbird as the
+selected product in the 'Project' list.
 
     >>> print sample_browser.getControl('Project').displayValue
     ['Mozilla Thunderbird']
@@ -131,22 +190,29 @@ product will be shown.
     ...     'Problem displaying complex SVG')
     >>> sample_browser.getControl('Continue').click()
 
-Since there are no similar questions against Thunderbird, an appropriate
-message is displayed:
+The user is again shown similar questions, this time for the product 
+Thunderbird. Since there are no similar questions against Thunderbird,
+an appropriate message is displayed to inform him of this:
 
     >>> soup = BeautifulSoup(sample_browser.contents)
     >>> print soup.first('p').renderContents()
     There are no existing questions similar to the summary you entered.
 
-Entering a description and clicking the 'Add' button will create the
-question.
+The user then elaborates upon his question by entering a description
+of the problem. He submitts the form using the 'Add' button.
 
     >>> sample_browser.getControl('Description').value = (
     ... "I received an HTML message containing an inlined SVG\n"
     ... "representation of a chessboard. It didn't displayed properly.\n"
     ... "Is there a way to configure Thunderbird to display SVG properly?\n")
     >>> sample_browser.getControl('Add').click()
+
+The user is taken to page displaying his question. From this point on,
+the user's interaction with the question follows to regular workflow.
+(see 30-question-workflow.txt for the details).
+    
     >>> sample_browser.url
     '.../thunderbird/+question/...'
     >>> print sample_browser.title
     Mozilla Thunderbird question #...Problem displaying complex...
+
