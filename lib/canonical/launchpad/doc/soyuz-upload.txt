@@ -294,7 +294,7 @@ just upload number 1.
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
   ...                             "-C", "sync", "-J", upload_dir_1_name,
   ...                             temp_dir],
-  ...                             stdout=subprocess.PIPE, 
+  ...                             stdout=subprocess.PIPE,
   ...                             stderr=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
@@ -314,7 +314,7 @@ Now continue with the real upload.
 
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
   ...                             "-C", "sync", temp_dir],
-  ...                             stdout=subprocess.PIPE, 
+  ...                             stdout=subprocess.PIPE,
   ...                             stderr=subprocess.PIPE)
 
   >>> stdout, stderr = process.communicate()

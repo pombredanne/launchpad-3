@@ -10,7 +10,9 @@ from zope.interface import Interface, Attribute
 from zope.schema import Choice, Int
 from canonical.launchpad import _
 
-from canonical.lp.dbschema import BranchSubscriptionNotificationLevel
+from canonical.lp.dbschema import (
+    BranchSubscriptionNotificationLevel,
+    BranchSubscriptionDiffSize)
 
 
 class IBranchSubscription(Interface):
@@ -29,9 +31,11 @@ class IBranchSubscription(Interface):
         vocabulary='BranchSubscriptionNotificationLevel',
         default=BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
         description=_(
-        'Select the desired amount of email notifications.'))
-    
-    max_diff_lines = Int(title=_('Generated Diff Size Limit'),
-        required=False, description=_(
-        'Diffs greater than the specified number of lines will not be '
-        'sent to the subscriber.'))
+            'Select the desired amount of email notifications.'))
+    max_diff_lines = Choice(
+        title=_('Generated Diff Size Limit'), required=True,
+        vocabulary='BranchSubscriptionDiffSize',
+        default=BranchSubscriptionDiffSize.ONEKLINES,
+        description=_(
+            'Diffs greater than the specified number of lines will not be '
+            'sent to the subscriber.'))

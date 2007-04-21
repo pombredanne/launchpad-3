@@ -4,11 +4,16 @@
 
 __metaclass__ = type
 
-__all__ = ['datadir', 'mock_options', 'mock_logger', 'mock_logger_quiet']
+__all__ = ['datadir', 'getPolicy', 'mock_options', 'mock_logger',
+           'mock_logger_quiet']
 
 import os
 
+from canonical.archivepublisher.uploadpolicy import findPolicyByName
+
+
 here = os.path.dirname(os.path.realpath(__file__))
+
 
 def datadir(path):
     """Return fully-qualified path inside the test data directory."""
@@ -20,9 +25,19 @@ def datadir(path):
 class MockUploadOptions:
     """Mock upload policy options helper"""
 
-    def __init__(self, distro='ubuntutest', distrorelease=None):
+    def __init__(self, distro='ubuntutest', distrorelease=None, buildid=None):
         self.distro = distro
         self.distrorelease = distrorelease
+        self.buildid = buildid
+
+
+def getPolicy(name='anything', distro='ubuntu', distrorelease=None,
+              buildid=None):
+    """Build and return an Upload Policy for the given context."""
+    policy = findPolicyByName(name)
+    options = MockUploadOptions(distro, distrorelease, buildid)
+    policy.setOptions(options)
+    return policy
 
 
 class MockUploadLogger:
@@ -47,7 +62,5 @@ class MockUploadLogger:
 
 
 mock_options = MockUploadOptions()
-
 mock_logger = MockUploadLogger()
-
 mock_logger_quiet = MockUploadLogger(verbose=False)

@@ -2,7 +2,7 @@ Foo Bar, an LP admin, is about to make bug #2 private.
 
     >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
     >>> browser.open(
-    ...     "http://launchpad.dev/debian/+source/mozilla-firefox/"
+    ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
     ...     "+bug/2/+secrecy")
 
 When he does so, all currently implicit subscribers will be made
@@ -22,12 +22,12 @@ Foo Bar is not Cc'd on this bug, but is able to set the bug private
 anyway, because he is an admin.
 
   >>> browser.open(
-  ...     "http://launchpad.dev/debian/+source/mozilla-firefox/"
+  ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
   ...     "+bug/2/+secrecy")
   >>> browser.getControl("Keep bug confidential").selected = True
   >>> browser.getControl("Change").click()
   >>> print browser.url
-  http://launchpad.dev/debian/+source/mozilla-firefox/+bug/2
+  http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
 
 
 All the implicit subscribers have been made explicit.

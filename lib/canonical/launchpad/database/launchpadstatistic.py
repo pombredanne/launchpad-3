@@ -27,7 +27,7 @@ from canonical.launchpad.database.question import Question
 from canonical.lp.dbschema import QuestionStatus
 
 from canonical.launchpad.interfaces import (
-    ILaunchpadStatistic, ILaunchpadStatisticSet
+    ILaunchpadStatistic, ILaunchpadStatisticSet, IPersonSet
     )
 
 
@@ -77,6 +77,7 @@ class LaunchpadStatisticSet:
         self._updateRosettaStatistics(ztm)
         self._updateMaloneStatistics(ztm)
         self._updateQuestionStatistics(ztm)
+        getUtility(IPersonSet).updateStatistics(ztm)
 
     def _updateMaloneStatistics(self, ztm):
         self.update('bug_count', Bug.select().count())
@@ -164,7 +165,7 @@ class LaunchpadStatisticSet:
         cur = cursor()
         cur.execute(
             "SELECT COUNT(DISTINCT product) + COUNT(DISTINCT distribution) "
-            "FROM Ticket")
+            "FROM Question")
         self.update("projects_with_questions_count", cur.fetchone()[0] or 0)
         ztm.commit()
 

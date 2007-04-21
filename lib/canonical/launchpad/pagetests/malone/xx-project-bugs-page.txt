@@ -1,0 +1,8 @@
+= The Project Bugs Page =
+
+The default page for a Project on the bugs domain shows the bug listing
+for the Project.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/gnome')
+    >>> print anon_browser.title
+    Bugs in The GNOME Project

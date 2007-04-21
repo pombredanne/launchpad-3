@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Module that defines the layers used in launchpad, and also utilities
 to do with manipulating layers.
 """
@@ -24,19 +24,23 @@ def setFirstLayer(request, layer):
 class LaunchpadLayer(IDefaultBrowserLayer):
     """The `LaunchpadLayer` layer."""
 
-class RosettaLayer(LaunchpadLayer):
-    """The `RosettaLayer` layer."""
-TranslationsLayer = RosettaLayer
+
+class TranslationsLayer(LaunchpadLayer):
+    """The `TranslationsLayer` layer."""
+
 
 class BugsLayer(LaunchpadLayer):
     """The `BugsLayer` layer."""
 
+
 class CodeLayer(LaunchpadLayer):
     """The `CodeLayer` layer."""
+
 
 class BlueprintLayer(LaunchpadLayer):
     """The `BlueprintLayer` layer."""
 BlueprintsLayer = BlueprintLayer
+
 
 class AnswersLayer(LaunchpadLayer):
     """The `AnswersLayer` layer."""
@@ -48,6 +52,7 @@ class DebugLayer(Interface):
     This derives from Interface beacuse it is just a marker that this
     is a debug-related request.
     """
+
 
 class PageTestLayer(Interface):
     """The `PageTestLayer` layer. (need to register a 404 view for this and
@@ -79,4 +84,3 @@ class ShipItKUbuntuLayer(ShipItLayer):
 
 class ShipItEdUbuntuLayer(ShipItLayer):
     """The `ShipIt` for EdUbuntu layer."""
-
