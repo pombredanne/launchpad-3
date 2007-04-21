@@ -35,8 +35,9 @@ not contain any upper-case letters.
   >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
   ...     print message.renderContents()
   An error occurred.
-  ...
+  <BLANKLINE>
   Invalid name 'PolYglot'...
+  ...
 
 
 The same request will be accepted if the group is given a saner name, such as
@@ -66,6 +67,7 @@ A Rosetta administrator is also allowed to create groups.
   >>> browser.getControl('Add').click()
   >>> browser.url
   '.../monolingua'
+
   >>> browser.title
   '...Single-language Translators...'
 
