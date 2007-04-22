@@ -70,7 +70,7 @@
       attribute="mdzCsv" />
     <browser:page
       name="+specs"
-      template="../templates/sprint-specs.pt" />
+      template="../templates/hasspecifications-specs.pt" />
     <browser:page
       name="+categorized"
       template="../templates/specificationtarget-categorized.pt" />
