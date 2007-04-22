@@ -187,11 +187,15 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISprintSet"
+    class="canonical.launchpad.browser.SprintSetView"
     facet="overview"
     permission="zope.Public">
     <browser:page
       name="+index"
       template="../templates/sprints-index.pt" />
+    <browser:page
+      name="+all"
+      template="../templates/sprints-all.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/sprints-portlet-details.pt" />

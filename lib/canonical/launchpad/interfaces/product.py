@@ -350,13 +350,17 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 class IProductSet(Interface):
     """The collection of products."""
 
-    title = Attribute("""The set of Products registered in the Launchpad""")
+    title = Attribute("The set of Products registered in the Launchpad")
 
-    people = Attribute("The PersonSet, placed here so we can easily render "
+    people = Attribute(
+        "The PersonSet, placed here so we can easily render "
         "the list of latest teams to register on the /products/ page.")
 
+    all_active = Attribute(
+        "All the active products, sorted newest first.")
+
     def __iter__():
-        """Return an iterator over all the products."""
+        """Return an iterator over all the active products."""
 
     def __getitem__(name):
         """Get a product by its name."""
