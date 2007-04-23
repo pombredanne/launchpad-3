@@ -20,6 +20,7 @@ from canonical.launchpad.scripts.base import (LaunchpadScript,
 from canonical.launchpad.interfaces import IDistroArchReleaseSet
 from canonical.lp import READ_COMMITTED_ISOLATION
 
+
 class SlaveScanner(LaunchpadScript):
 
     def main(self):
@@ -32,7 +33,6 @@ class SlaveScanner(LaunchpadScript):
         buildMaster = BuilddMaster(self.logger, self.txn)
 
         self.logger.info("Setting Builders.")
-
         # Put every distroarchrelease we can find into the build master.
         for archrelease in getUtility(IDistroArchReleaseSet):
             buildMaster.addDistroArchRelease(archrelease)
