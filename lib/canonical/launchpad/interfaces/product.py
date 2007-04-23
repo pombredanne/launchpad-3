@@ -244,7 +244,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             
     official_answers = Bool(title=_('Uses Answers Officially'), 
         required=True, description=_('Check this box to indicate that this '
-            'project officially "uses Answers for community support.'))
+            'project officially uses Answers for community support.'))
             
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
