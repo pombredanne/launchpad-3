@@ -337,7 +337,6 @@ class ImportDBImplementor(object):
         return ProductSeries.get(self.seriesID)
 
     def startBuild(self):
-        raise Exception('Fail, now!')
         getTxnManager().begin()
         self.setDateStarted()
         getTxnManager().commit()
