@@ -231,7 +231,7 @@ class OpenIdView(LaunchpadView):
         """Clean our Session of tokens older than 1 hour."""
         to_delete = []
         for key, value in session.items():
-            timestamp, session = value
+            timestamp = value[0]
             if timestamp < now - 3600:
                 to_delete.append(key)
         for key in to_delete:
