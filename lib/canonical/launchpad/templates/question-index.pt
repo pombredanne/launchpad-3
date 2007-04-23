@@ -17,6 +17,20 @@
   </head>
   <body>
     <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="Open" title="Open" src="/@@/question"
+          tal:attributes="alt context/status/title;
+                          title context/status/title;" />
+        Question #<span tal:replace="context/id">4</span>,
+        asked
+        <span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
+        by
+        <a
+          tal:attributes="href context/owner/fmt:url"
+          tal:content="context/owner/browsername">Foo Bar</a>
+      </div>
       <h1 tal:content="context/title">Bar doesn't work</h1>
     </metal:heading>
 
@@ -33,7 +47,6 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-
   <table tal:condition="context/whiteboard" class="listing">
     <tbody>
       <tr>
