@@ -683,7 +683,7 @@ k            </description>
             </description>
         </key>
         <key name="email_domain" datatype="string"
-            default="support.launchpad.net" >
+            default="answers.launchpad.net" >
             <description>
                 The email domain, to which incomings emails should be
                 sent.

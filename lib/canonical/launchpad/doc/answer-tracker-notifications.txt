@@ -33,7 +33,7 @@ sent:
 
     >>> add_notification = notifications[0]
     >>> add_notification['From']
-    'Sample Person <ticket...@support.launchpad.net>'
+    'Sample Person <question...@answers.launchpad.net>'
     >>> add_notification['To']
     'test@canonical.com'
     >>> add_notification['Subject']
@@ -218,7 +218,7 @@ Only a change in status triggers a notification.
 
 === Bug Unlinked Notification ===
 
-A notification is also sent when a bug is unlinked from the ticket:
+A notification is also sent when a bug is unlinked from the question:
 
     >>> unmodified_question = Snapshot(ubuntu_question,
     ...     providing=providedBy(ubuntu_question))
