@@ -45,18 +45,7 @@ class OpenIdAuthorizationSet:
             """ % sqlvalues(person.id, trust_root, client_id)).count() > 0
 
     def authorize(self, person, trust_root, expires, client_id=None):
-        """Authorize the trust_root for the given person.
-
-        If expires is None, the authorization never expires.
-        
-        If client_id is None, authorization is given to any client.
-        If client_id is not None, authorization is only given to the client
-        with the specified client_id (ie. the session cookie token).
-
-        This method overrides any existing authorization for the given
-        (person, trust_root, client_id).
-        """
-        self._sweep()
+        """See IOpenIdAuthorizationSet."""
         if expires is None:
             expires = NEVER_EXPIRES
 

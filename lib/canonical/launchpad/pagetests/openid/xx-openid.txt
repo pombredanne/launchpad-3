@@ -151,11 +151,19 @@ URL for the checkid_setup from the result of the previous test.
 >>> print '\n' + anon_browser.contents
 <BLANKLINE>
 ...
-<form method="get" action=".">
-    <input type="hidden" name="token" value="..." />
-    <input type="submit" name="action_allow_once" value="Allow Once" />
-    <input type="submit" name="action_deny" value="Deny" />
-</form>
+    <form method="get" action=".">
+        <input type="hidden" name="token"
+            value="..." />
+        <select name="allow_duration">
+            <option value="once">Once only</option>
+            ...
+            <option value="10800">3 hours</option>
+            ...
+            <option value="forever">Forever</option>
+        </select>
+        <input type="submit" name="action_allow" value="Allow" />
+        <input type="submit" name="action_deny" value="Deny" />
+    </form>
 ...
 
 
@@ -178,7 +186,7 @@ informing it that the request is valid.
 
 >>> anon_browser.handleErrors = True
 >>> anon_browser.open(setup_url)
->>> anon_browser.getControl('Allow Once').click()
+>>> anon_browser.getControl('Allow').click()
 
 >>> print anon_browser.url
 http://openid.launchpad.dev/+openid/+login?...
@@ -254,7 +262,7 @@ Mode.
 ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
 ...     })
 >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
->>> sabdfl_browser.getControl('Allow Once').click()
+>>> sabdfl_browser.getControl('Allow').click()
 >>> print sabdfl_browser.contents
 Consumer received GET
 openid.assoc_handle:...

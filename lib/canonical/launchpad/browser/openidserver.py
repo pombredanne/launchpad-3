@@ -5,10 +5,14 @@
 __metaclass__ = type
 __all__ = []
 
+from datetime import datetime, timedelta
 import re
 from tempfile import mkdtemp
 import threading
 from time import time
+
+from pytz import UTC
+
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
@@ -92,8 +96,8 @@ class OpenIdView(LaunchpadView):
             self.restoreSessionOpenIdRequest()
             if self.request.form.get('action_deny'):
                 return self.renderOpenIdResponse(self.deny())
-            elif self.request.form.get('action_allow_once'):
-                return self.renderOpenIdResponse(self.allowOnce())
+            elif self.request.form.get('action_allow'):
+                return self.renderOpenIdResponse(self.allow())
             else:
                 raise UnexpectedFormData("Invalid action")
 
@@ -294,8 +298,8 @@ class OpenIdView(LaunchpadView):
         except LookupError:
             pass
 
-    def allowOnce(self):
-        """Handle "Allow Once" selection from the decide page.
+    def allow(self):
+        """Handle "Allow" selection from the decide page.
 
         Returns an OpenIDResponse.
         """
@@ -306,6 +310,27 @@ class OpenIdView(LaunchpadView):
             raise Unauthorized(
                     "You are not yet authorized to use this OpenID identifier."
                     )
+        duration = self.request.form['allow_duration']
+
+        if duration != 'once':
+            # Sticky authorization - calculate expiry and store authorization
+            # for future use.
+            if duration == 'forever':
+                expires = None
+            else:
+                try:
+                    expires = (
+                            datetime.utcnow().replace(tzinfo=UTC)
+                            + timedelta(seconds=int(duration))
+                            )
+                except ValueError:
+                    raise UnexpectedFormData
+
+            auth_set = getUtility(IOpenIdAuthorizationSet)
+            auth_set.authorize(
+                    self.current_user, self.openid_request.trust_root, expires
+                    )
+
         return self.openid_request.answer(True)
 
     def deny(self):
