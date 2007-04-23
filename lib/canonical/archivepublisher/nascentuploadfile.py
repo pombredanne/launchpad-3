@@ -805,11 +805,11 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 self.logger.debug("Build %s created" % build.id)
         else:
             build = getUtility(IBuildSet).getByBuildID(build_id)
-            # XXX cprov 20070302: builddmaster will update the build.
-            # This is unfortunate because doing it here would fix the
-            # the problem mentioned #32261, since it would be only updated
-            # if this transaction got commited.
             self.logger.debug("Build %s found" % build.id)
+            # Ensure gathered binary is related to a FULLYBUILT build
+            # record. It will be check in slave-scanner procedure to
+            # certify that the build was processed correctly.
+            build.buildstate = BuildStatus.FULLYBUILT
 
         # Sanity check; raise an error if the build we've been
         # told to link to makes no sense (ie. is not for the right

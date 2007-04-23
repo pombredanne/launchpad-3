@@ -128,9 +128,9 @@ class NascentUpload:
         # We need to process changesfile addresses at this point because
         # we depend on an already initialised policy (distrorelease
         # and pocket set) to have proper person 'creation rationale'.
-        self.run_and_collect_errors(self.changes.process_addresses)
+        self.run_and_collect_errors(self.changes.processAddresses)
 
-        self.run_and_collect_errors(self.changes.process_files)
+        self.run_and_collect_errors(self.changes.processFiles)
 
         for uploaded_file in self.changes.files:
             self.run_and_check_error(uploaded_file.checkNameIsTaintFree)
@@ -174,7 +174,7 @@ class NascentUpload:
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
 
-        signer_components = self.process_signer_acl()
+        signer_components = self.processSignerAcl()
         if not self.is_new:
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
@@ -475,7 +475,7 @@ class NascentUpload:
         self.logger.debug("Decision: %s" % in_keyring)
         return in_keyring
 
-    def process_signer_acl(self):
+    def processSignerAcl(self):
         """Check rights of the current upload submmiter.
 
         Work out what components the signer is permitted to upload to and
@@ -636,7 +636,7 @@ class NascentUpload:
 
     def _checkVersion(self, proposed_version, archive_version, filename):
         """Check if the proposed version is higher than that in the archive."""
-        if apt_pkg.VersionCompare(proposed_version, archive_version) <= 0:
+        if apt_pkg.VersionCompare(proposed_version, archive_version) <;5A= 0:
             self.reject("%s: Version older than that in the archive. %s <= %s"
                         % (filename, proposed_version, archive_version))
 
@@ -955,6 +955,9 @@ class NascentUpload:
                 self.queue_root.addCustom(
                     libraryfile, custom_file.custom_type)
 
+            # Container for the build that will be processed.
+            processed_builds = []
+
             for binary_package_file in self.changes.binary_package_files:
                 if self.sourceful:
                     # The reason we need to do this verification
@@ -972,7 +975,20 @@ class NascentUpload:
                 assert self.queue_root.pocket == build.pocket, (
                     "Binary was not build for the claimed pocket.")
                 binary_package_file.storeInDatabase(build)
-                self.queue_root.addBuild(build)
+                processed_builds.append(build)
+
+            # Perform some checks on processed build(s) if there were any.
+            # Ensure that only binaries for a single build were processed
+            # Then add a respective DistroReleaseQueueBuild entry for it
+            if len(processed_builds) > 0:
+                unique_builds = set([b.id for b in processed_builds])
+                assert len(unique_builds) == 1, (
+                    "Upload contains binaries from different builds. "
+                    "(%s)" % unique_builds)
+                # Use any (the first) IBuild stored as reference.
+                # They are all the same according the previous assertion.
+                considered_build = processed_builds[0]
+                self.queue_root.addBuild(considered_build)
 
         # PPA uploads are Auto-Accepted by default
         if self.is_ppa:

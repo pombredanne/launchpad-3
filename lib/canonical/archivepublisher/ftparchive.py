@@ -32,7 +32,7 @@ def f_touch(*parts):
 def safe_mkdir(path):
     """Ensures the path exists, creating it if it doesn't."""
     if not os.path.exists(path):
-        os.makedirs(path)
+        os.makedirs(path, 0755)
 
 
 # XXX malcc: Move this somewhere useful. If generalised with timeout

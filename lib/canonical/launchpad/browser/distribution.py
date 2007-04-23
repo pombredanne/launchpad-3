@@ -565,6 +565,8 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
 
 class DistributionMirrorsView(LaunchpadView):
 
+    show_status = True
+
     def _groupMirrorsByCountry(self, mirrors):
         """Given a list of mirrors, create and return list of dictionaries
         containing the country names and the list of mirrors on that country.
@@ -590,6 +592,7 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 class DistributionReleaseMirrorsView(DistributionMirrorsView):
 
     heading = 'Official CD Mirrors'
+    show_status = False
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.release_mirrors)

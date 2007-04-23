@@ -589,16 +589,17 @@ class ProductSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return iter(self._getProducts())
+        return iter(self.all_active)
 
     @property
     def people(self):
         return getUtility(IPersonSet)
 
     def latest(self, quantity=5):
-        return self._getProducts()[:quantity]
+        return self.all_active[:quantity]
 
-    def _getProducts(self):
+    @property
+    def all_active(self):
         results = Product.selectBy(active=True, orderBy="-Product.datecreated")
         # The main product listings include owner, so we prejoin it in
         return results.prejoin(["owner"])

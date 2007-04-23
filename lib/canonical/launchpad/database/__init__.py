@@ -84,6 +84,7 @@ from canonical.launchpad.database.bountysubscription import *
 from canonical.launchpad.database.message import *
 from canonical.launchpad.database.queue import *
 from canonical.launchpad.database.country import *
+from canonical.launchpad.database.scriptactivity import *
 from canonical.launchpad.database.specification import *
 from canonical.launchpad.database.specificationbranch import *
 from canonical.launchpad.database.specificationbug import *

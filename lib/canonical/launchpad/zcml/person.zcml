@@ -507,11 +507,9 @@
       template="../templates/team-members.pt"
       />
 
-  <browser:addform
+  <browser:page
       name="+addmember"
       for="canonical.launchpad.interfaces.ITeam"
-      schema="canonical.launchpad.interfaces.ITeamMember"
-      fields="newmember"
       class="canonical.launchpad.browser.TeamMemberAddView"
       permission="launchpad.Edit"
       template="../templates/team-addmember.pt"

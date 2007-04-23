@@ -10,10 +10,11 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
     IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
-    IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
-    IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
-    IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
-    IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
+    ITranslationGroup, ITranslationGroupSet, IProduct, IProductSeries,
+    IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
+    ISourcePackage, ILaunchpadCelebrities, IDistroRelease, IBugTracker,
+    IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
+    IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, IQuestion, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
@@ -711,6 +712,22 @@ class ChangeTranslatorInGroup(OnlyRosettaExpertsAndAdmins):
         of any language in the group."""
         return (user.inTeam(self.obj.translationgroup.owner) or
                 OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
+
+
+class EditTranslationGroup(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = ITranslationGroup
+
+    def checkAuthenticated(self, user):
+        """Allow the owner of a translation group to edit the translator
+        of any language in the group."""
+        return (user.inTeam(self.obj.owner) or
+                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
+
+
+class EditTranslationGroupSet(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ITranslationGroupSet
 
 
 # XXX: Carlos Perello Marin 2005-05-24: This should be using
