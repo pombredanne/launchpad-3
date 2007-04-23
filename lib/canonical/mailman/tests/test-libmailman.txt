@@ -5,9 +5,14 @@ tests.
 
     >>> import libmailman
 
-Does Mailman seem properly configured.  It does if the site list exists.  This
-`bin/withlist` script does just that.
+Mailman's site list must exist.
 
-    >>> callable = 'canonical.mailman.tests.launchpad.launchpad'
+    >>> callable = 'canonical.mailman.tests.withlist_test_1.test_site_list'
+    >>> call('./withlist -q -r %s mailman', callable)
+    99
+
+Mailman must also be able to import the libmailman shared package:
+
+    >>> callable = 'canonical.mailman.tests.withlist_test_2.can_import_libmailman'
     >>> call('./withlist -q -r %s mailman', callable)
     99
