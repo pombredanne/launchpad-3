@@ -134,8 +134,7 @@ openid.mode:id_res
 openid.user_setup_url:http://openid.launchpad.dev/?...
 <BLANKLINE>
 
-As we don't yet have an 'Allow Always' option, this mode will
-always return a failure so we can't test a success.
+We test a success below in the 'Sticky Authorization' section.
 
 
 == checkid_setup Mode ==
@@ -289,4 +288,33 @@ openid.signed:return_to,mode,identity
 >>> print sabdfl_browser.contents
 is_valid:true
 <BLANKLINE>
+
+== Sticky Authorization ==
+
+Users can select how long our OpenID server will continue to authorize
+them to a particular consumer.
+
+>>> sabdfl_browser.open(setup_url)
+>>> sabdfl_browser.getControl(name='allow_duration').value=['3600']
+>>> sabdfl_browser.getControl('Allow').click()
+>>> print sabdfl_browser.contents
+Consumer received GET
+...
+openid.identity:https://launchpad.dev/~sabdfl
+openid.mode:id_res
+openid.return_to:http://launchpad.dev/+openid-consumer
+...
+
+Now that we have authorized for 1 hour, further auth requests
+automatically succeed without user intervention.
+
+
+>>> sabdfl_browser.open(setup_url)
+>>> print sabdfl_browser.contents
+Consumer received GET
+...
+openid.identity:https://launchpad.dev/~sabdfl
+openid.mode:id_res
+openid.return_to:http://launchpad.dev/+openid-consumer
+...
 
