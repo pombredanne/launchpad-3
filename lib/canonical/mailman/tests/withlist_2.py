@@ -8,7 +8,7 @@
 #
 # This script must be called like so:
 #
-# bin/withlist -r canonical.mailman.tests.withlist_test_2.can_import_libmailman
+# bin/withlist -r canonical.mailman.tests.withlist_2.can_import_libmailman
 
 import sys
 
