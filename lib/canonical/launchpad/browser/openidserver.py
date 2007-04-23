@@ -11,7 +11,7 @@ from tempfile import mkdtemp
 import threading
 from time import time
 
-from pytz import UTC
+import pytz
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession, IClientIdManager
@@ -320,7 +320,7 @@ class OpenIdView(LaunchpadView):
             else:
                 try:
                     expires = (
-                            datetime.utcnow().replace(tzinfo=UTC)
+                            datetime.utcnow().replace(tzinfo=pytz.UTC)
                             + timedelta(seconds=int(duration))
                             )
                 except ValueError:

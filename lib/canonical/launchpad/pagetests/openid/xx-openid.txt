@@ -14,17 +14,17 @@ Status: 200 Ok
 Content-Type: text/html;charset=utf-8
 ...
 
->>> print anon_browser.contents
-...
-This is an OpenID server endpoint. For more information, see http://openid.net/
+>>> print '\n' + anon_browser.contents
 <BLANKLINE>
+...
+This is an OpenID server endpoint. For more information,
+see http://openid.net/
+...
 
 
 We are going to fake a consumer for these examples. In order to ensure
 that the consumer is being fed the correct replies, we register a view
 that renders the parameters in the response in an easily testable format.
-
-XXX: Break most of this out into a helper -- StuartBishop 20070302
 
 >>> from StringIO import StringIO
 >>> from canonical.launchpad.webapp.publisher import LaunchpadView
