@@ -5,6 +5,9 @@
 __metaclass__ = type
 __all__ = []
 
+import os.path
+from subprocess import Popen, PIPE, STDOUT
+import sys
 import unittest
 
 from canonical.database.sqlbase import (
@@ -51,6 +54,41 @@ class TestIsolation(unittest.TestCase):
     def test_serializable(self):
         self.txn.set_isolation_level(SERIALIZABLE_ISOLATION)
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
+
+    def test_commit(self):
+        # Change the isolation level
+        self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
+        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
+
+        con = self.txn.conn()
+        cur = con.cursor()
+        cur.execute("UPDATE Person SET password=NULL")
+        con.commit()
+        cur.execute("UPDATE Person SET password='foo'")
+        self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
+
+    def test_rollback(self):
+        # Change the isolation level
+        self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
+        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
+
+        con = self.txn.conn()
+        cur = con.cursor()
+        cur.execute("UPDATE Person SET password=NULL")
+        con.rollback()
+        self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
+
+    def test_script(self):
+        # Ensure that things work in stand alone scripts too, in case out
+        # test infrustructure is faking something.
+        script = os.path.join(os.path.dirname(__file__), 'script_isolation.py')
+        cmd = [sys.executable, script]
+        process = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
+        (script_output, _empty) = process.communicate()
+        self.failUnlessEqual(process.returncode, 0, 'Error: ' + script_output)
+        self.failUnlessEqual(script_output, 'read committed\n' * 4)
 
 
 def test_suite():

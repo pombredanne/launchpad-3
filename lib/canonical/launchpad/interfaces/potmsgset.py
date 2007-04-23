@@ -114,3 +114,11 @@ class IPOTMsgSet(Interface):
 
     def normalizeNewLines(unicode_text):
         """Return 'unicode_text' with new lines chars in sync with the msgid."""
+
+
+    hide_translations_from_anonymous = Attribute(
+        """Whether the translations for this message should be hidden.
+
+        Messages that are likely to contain email addresses
+        are shown only to logged-in users, and not to anonymous users.
+        """)
