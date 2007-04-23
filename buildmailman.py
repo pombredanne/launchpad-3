@@ -6,9 +6,7 @@ import os
 import grp
 import pwd
 import sys
-import time
 import errno
-import socket
 import subprocess
 
 from configs import generate_overrides
@@ -27,11 +25,7 @@ def build_mailman():
     # Build and install Mailman if it is enabled and not yet built.
     from canonical.config import config
 
-    if not config.mailman.build.prefix:
-        mailman_path = os.path.abspath(os.path.join('lib', 'mailman'))
-    else:
-        mailman_path = os.path.abspath(config.mailman.build.prefix)
-
+    mailman_path = config.mailman.build.prefix
     mailman_bin = os.path.join(mailman_path, 'bin')
     var_dir     = os.path.abspath(config.mailman.build.var_dir)
 
@@ -52,13 +46,7 @@ def build_mailman():
 
     # Make sure the target directories exist and have the correct
     # permissions, otherwise configure will complain.
-    user_group = config.mailman.build.user_group
-    if not user_group:
-        user  = pwd.getpwuid(os.getuid()).pw_name
-        group = grp.getgrgid(os.getgid()).gr_name
-    else:
-        user, group = user_group.split(':', 1)
-
+    user, group = config.mailman.build.user_group
     # Now work backwards to get the uid and gid
     uid = pwd.getpwnam(user).pw_uid
     gid = grp.getgrnam(group).gr_gid
@@ -75,11 +63,6 @@ def build_mailman():
     os.chown(var_dir, uid, gid)
     os.chmod(var_dir, 02775)
 
-    if config.mailman.build.host_name:
-        hostname = config.mailman.build.host_name
-    else:
-        hostname = socket.getfqdn()
-
     mailman_source = os.path.join('sourcecode', 'mailman')
 
     # Build and install the Mailman software.  Note that we don't care
@@ -92,7 +75,7 @@ def build_mailman():
         '--with-python=' + sys.executable,
         '--with-username=' + user,
         '--with-groupname=' + group,
-        '--with-mailhost=' + hostname,
+        '--with-mailhost=' + config.mailman.build.host_name,
         )
     retcode = subprocess.call(configure_args, cwd=mailman_source)
     if retcode:

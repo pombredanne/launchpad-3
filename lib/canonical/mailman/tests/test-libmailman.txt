@@ -1,0 +1,13 @@
+Launchpad doesn't need to talk directly to Mailman, but we can still test that
+Mailman exists and seems properly configured, and that Launchpad can import
+the libmailman common package.  Anything more than that is left to other
+tests.
+
+    >>> import libmailman
+
+Does Mailman seem properly configured.  It does if the site list exists.  This
+`bin/withlist` script does just that.
+
+    >>> callable = 'canonical.mailman.tests.launchpad.launchpad'
+    >>> call('./withlist -q -r %s mailman', callable)
+    99

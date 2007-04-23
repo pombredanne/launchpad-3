@@ -886,17 +886,17 @@ k            </description>
         </key>
     </sectiontype>
 
-    <sectiontype name="mailman-build">
-        <key name="build"           datatype="boolean"  default="false" />
-        <key name="prefix"          datatype="string"   default=""      />
+    <sectiontype name="mailman-build" prefix="canonical.mailman.config">
+        <key name="build"           datatype="boolean"      default="false" />
+        <key name="prefix"          datatype=".prefix"      default=""      />
         <key name="var_dir"         datatype="string"
              default="/var/mailman"  />
-        <key name="user_group"      datatype="string"   default="" />
-        <key name="site_list_owner" datatype="string"   default="" />
-        <key name="host_name"       datatype="string"   default="" />
+        <key name="user_group"      datatype=".usergroup"   default="" />
+        <key name="site_list_owner" datatype="string"       default="" />
+        <key name="host_name"       datatype=".hostname"    default="" />
     </sectiontype>
 
-    <sectiontype name="mailman">
+    <sectiontype name="mailman" prefix="canonical.mailman.config">
         <section name="*" type="mailman-build"
                  attribute="build" required="yes" />
 
@@ -904,7 +904,7 @@ k            </description>
         <!-- XXX BarryWarsaw 04-Apr-2007 Should we re-use zopeless.smtp_host
              and zopeless.smtp_port?
           -->
-        <key name="smtp"   datatype="string"   default="localhost:25" />
+        <key name="smtp"   datatype="inet-address"   default="localhost:25" />
     </sectiontype>
 
     <sectiontype name="canonical">

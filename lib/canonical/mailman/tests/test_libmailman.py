@@ -9,8 +9,9 @@ import subprocess
 
 
 def call(command_template, *args):
-    from canonical.mailman import mailman_bin
+    from canonical.config import config
     command = command_template % args
+    mailman_bin = os.path.join(config.mailman.build.prefix, 'bin')
     return subprocess.call(command.split(), cwd=mailman_bin)
 
 
@@ -35,7 +36,7 @@ def test_suite():
     from canonical.config import config
     if config.mailman.build.build:
         test = doctest.DocFileSuite(
-            'test-monkeypatch.txt',
+            'test-libmailman.txt',
             optionflags = (doctest.ELLIPSIS     |
                            doctest.REPORT_NDIFF |
                            doctest.NORMALIZE_WHITESPACE),
