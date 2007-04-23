@@ -32,10 +32,12 @@ CREATE UNIQUE INDEX openidauthorization__person__trust_root__unq
 
 /* Tables used by the openid.store.sqlstore.PostgreSQLStore class */
 
+/* Our nonces are stored in the user's session
 CREATE TABLE OpenIDNonces (
     nonce CHAR(8) UNIQUE PRIMARY KEY,
     expires INTEGER
 );
+*/
 
 CREATE TABLE OpenIDAssociations (
     server_url VARCHAR(2047),
@@ -48,10 +50,13 @@ CREATE TABLE OpenIDAssociations (
     CONSTRAINT secret_length_constraint CHECK (LENGTH(secret) <= 128)
 );
 
+/* Not used either??
+
 CREATE TABLE OpenIDSettings (
     setting VARCHAR(128) UNIQUE PRIMARY KEY,
     value BYTEA,
     CONSTRAINT value_length_constraint CHECK (LENGTH(value) <= 20)
 );
+*/
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (79, 13, 0);

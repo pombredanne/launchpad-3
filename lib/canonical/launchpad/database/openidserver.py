@@ -85,9 +85,9 @@ class LaunchpadOpenIdStore(PostgreSQLStore):
     """
     classProvides(ILaunchpadOpenIdStoreFactory)
 
-    settings_table = 'OpenIDSettings'
+    settings_table = None
     associations_table = 'OpenIDAssociations'
-    nonces_table = 'OpenIDNones'
+    nonces_table = None
 
     def __init__(self):
         # No need to pass in the connection - we have better ways of
