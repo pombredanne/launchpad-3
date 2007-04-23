@@ -578,6 +578,11 @@ object_reassignment = ContextTitle('Reassign %s')
 
 oops = 'Oops!'
 
+def openid_decide(context, view):
+    return 'Authenticate to %s' % view.openid_request.trust_root
+
+openid_index = 'Launchpad OpenID Server'
+
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
 
