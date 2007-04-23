@@ -34,8 +34,8 @@ spider -- StuartBishop 20050822
 ...         return "%s returned status %s instead of 404\n\n%s" % (
 ...             invalid_url, invalid_rc, str(invalid_output))
 
->>> def check_not_found(url):
-...     output = http("GET %s HTTP/1.1\n" % url)
+>>> def check_not_found(url, host='launchpad.dev'):
+...     output = http("GET %s HTTP/1.1\nHost: %s" % (url, host))
 ...     status = output.getStatus()
 ...     if status != 404:
 ...         return "%s returned status %s instead of 404\n\n%s" % (
@@ -64,6 +64,13 @@ spider -- StuartBishop 20050822
 >>> check("/+graphics")
 
 >>> check("/translations/+about")
+
+>>> check("/+languages", host='translations.launchpad.dev')
+>>> check("/+languages/+add", auth=True, host='translations.launchpad.dev')
+>>> check("/+languages/es", host='translations.launchpad.dev')
+>>> check("/+languages/es/+admin", auth=True, host='translations.launchpad.dev')
+>>> check_not_found("/+languages/es/foos", host='translations.launchpad.dev')
+>>> check_not_found("/+languages/foos", host='translations.launchpad.dev')
 
 >>> check("robots.txt", host="shipit.ubuntu.dev")
 
@@ -388,7 +395,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/+builds/+build/7/")
 >>> check("/+builds/+build/7/pmount/")
 
->>> check("/support/")
+>>> check_redirect("/support/", status=301)
 
 >>> check("/sprints")
 >>> check("/sprints/ubz")

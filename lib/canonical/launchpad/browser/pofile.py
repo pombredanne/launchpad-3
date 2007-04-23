@@ -181,6 +181,12 @@ class BaseExportView(LaunchpadView):
             def __init__(self, title, value):
                 self.title = title
                 self.value = value
+                self.is_default = False
+                if value == RosettaFileFormat.PO.name:
+                    # Right now, PO format is the default format with exports.
+                    # Once we add more formats support, the default will
+                    # depend on the kind of resource.
+                    self.is_default = True
 
         formats = [
             RosettaFileFormat.PO,
@@ -193,7 +199,6 @@ class BaseExportView(LaunchpadView):
 
 class POFileView(LaunchpadView):
     """A basic view for a POFile"""
-    __used_for__ = IPOFile
 
     @cachedproperty
     def contributors(self):
@@ -202,7 +207,6 @@ class POFileView(LaunchpadView):
 
 class POFileUploadView(POFileView):
     """A basic view for a POFile"""
-    __used_for__ = IPOFile
 
     def initialize(self):
         self.form = self.request.form
@@ -289,8 +293,6 @@ class POFileTranslateView(BaseTranslationView):
     traversal is done for details about how we decide between a POFile
     or a DummyPOFile.
     """
-
-    __used_for__ = IPOFile
 
     DEFAULT_SHOW = 'all'
     DEFAULT_SIZE = 10
@@ -465,6 +467,13 @@ class POExportView(BaseExportView):
         if not format:
             return
 
+        if self.context.validExportCache():
+            # There is already a valid exported file cached in Librarian, we
+            # can serve that file directly.
+            self.request.response.redirect(self.context.exportfile.http_url)
+            return
+
+        # Register the request to be processed later with our export script.
         self.request_set.addRequest(
             self.user, pofiles=[self.context], format=format)
         self.nextURL()

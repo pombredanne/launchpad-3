@@ -17,7 +17,7 @@
                             downloadurl programminglang
                             sourceforgeproject freshmeatproject
                             translationgroup translationpermission
-                            official_malone official_rosetta
+                            official_malone official_rosetta official_answers
                             releaseroot development_focus bugtracker
                             homepage_content icon logo mugshot"
         />
@@ -56,7 +56,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.AnswersLayer"
-        name="+tickets"
+        name="+questions"
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
@@ -72,7 +72,7 @@
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
             ProductBranchesMenu ProductSpecificationsMenu
-            ProductTranslationsMenu ProductBugsMenu 
+            ProductTranslationsMenu ProductBugsMenu
             ProductSetFacets ProductSetContextMenu
             "
             />
