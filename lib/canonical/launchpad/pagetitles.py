@@ -39,7 +39,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchBag, IMaloneApplication
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IMaloneApplication, IPerson)
 from canonical.launchpad.webapp import smartquote
 from canonical.launchpad.webapp.authorization import check_permission
 
@@ -419,6 +420,12 @@ errorservice_index = 'Error log report'
 errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
+
+def hasspecifications_specs(context, view):
+    if IPerson.providedBy(context):
+        return "Blueprints involving %s" % context.title
+    else:
+        return "Blueprints for %s" % context.title
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
@@ -1044,6 +1051,8 @@ sprint_specs = ContextTitle('Blueprints for %s')
 sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
 sprint_workload = ContextTitle('Workload at %s')
+
+sprints_all = 'All sprints and meetings registered in Launchpad'
 
 sprints_index = 'Meetings and sprints registered in Launchpad'
 
