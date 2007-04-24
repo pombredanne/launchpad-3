@@ -246,9 +246,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
             u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
 
-        # XXX cprov 20070301:  as we can see the build is left untouched
-        # So we rely on builddmaster to update its information.
-        self.assertEqual('NEEDSBUILD', build_used.buildstate.name)
+        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
 
     def testWrongBuildPassedViaCommandLine(self):
         """Check if a misapplied passed buildid is correctly identified.
@@ -266,7 +264,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
 
         self.assertLogContains(
             "Exception while accepting: Attempt to upload binaries "
-            "specifying build 22, where they don't fit")
+            "specifying build 22, where they don't fit.")
 
 
 def test_suite():

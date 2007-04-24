@@ -553,9 +553,9 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    Done.
     <BLANKLINE>
 
-    If we run the prober again, it won't do anything, because it will realize
-    that the mirrors were probed recently, and, by default, don't need to be
-    probed again.
+If we run the prober again, it won't do anything, because it will realize
+that the mirrors were probed recently, and, by default, don't need to be
+probed again.
 
     >>> prober, stdout, stderr = run_prober('--content-type=release')
     >>> print stdout
@@ -567,8 +567,8 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    Done.
     <BLANKLINE>
 
-    But we can override the default behaviour and tell the prober to check all
-    official mirrors independently if they were probed recently or not.
+But we can override the default behaviour and tell the prober to check all
+official mirrors independently if they were probed recently or not.
 
     >>> prober, stdout, stderr = run_prober('--content-type=release --force')
     >>> print stdout

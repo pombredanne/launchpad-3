@@ -128,7 +128,8 @@ directly, let's add a grumpy task first.
     >>> ubuntu_grumpy = ubuntu.getRelease('grumpy')
     >>> nomination = bug_two.addNomination(
     ...     target=ubuntu_grumpy, owner=getUtility(ILaunchBag).user)
-    >>> nomination.approve(getUtility(ILaunchBag).user)
+    >>> nomination.isApproved()
+    True
 
     >>> ubuntu_grumpy_task = bug_two.bugtasks[5]
     >>> ubuntu_grumpy_task.targetname

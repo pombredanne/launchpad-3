@@ -56,14 +56,16 @@
 
               <div style="font-size: 80%;"
                    tal:define="meta_binaries 
-                               pubrec/sourcepackagerelease/meta_binaries">
+                               pubrec/meta_distroreleasesourcepackagerelease/meta_binaries">
 
                 <tal:has_bin condition="meta_binaries">
                    Binary Packages:
-                   <tal:binaries repeat="bin meta_binaries">
-                    <a tal:content="bin/name"
-                       tal:attributes="href bin/fmt:url; title bin/title" />
-                  </tal:binaries>
+                   <div id="binaries">
+                     <tal:binaries repeat="bin meta_binaries">
+                      <a id="binlink" tal:content="bin/name"
+                         tal:attributes="href bin/fmt:url; title bin/title" />
+                     </tal:binaries>
+                   </div>
                 </tal:has_bin>
 
                 <tal:has_no_bin condition="not:meta_binaries">

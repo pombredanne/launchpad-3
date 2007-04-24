@@ -70,6 +70,7 @@
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
     <include file="logintoken.zcml" />
+    <include file="marketing.zcml" />
     <include file="message.zcml" />
     <include file="milestone.zcml" />
     <include file="packagebugcontact.zcml" />
@@ -98,6 +99,7 @@
     <include file="queue.zcml" />
     <include file="registry.zcml" />
     <include file="revision.zcml" />
+    <include file="scriptactivity.zcml" />
     <include file="securitycontact.zcml" />
     <include file="shipit.zcml" />
     <include file="sourcepackage.zcml" />

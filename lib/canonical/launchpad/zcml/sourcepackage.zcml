@@ -86,7 +86,7 @@
             />
         <browser:page
             name="+gethelp"
-            facet="overview"
+            facet="answers"
             template="../templates/sourcepackage-gethelp.pt"
             />
         <browser:page
