@@ -1,0 +1,19 @@
+Format: 1.7
+Date: Tue, 24 Apr 2007 12:14:09 -0300
+Source: bar
+Binary: bar
+Architecture: source
+Version: 1:1.0-9
+Distribution: breezy
+Urgency: low
+Maintainer: Launchpad team <launchpad@lists.canonical.com>
+Changed-By: Celso Providelo <cprov@canonical.com>
+Description: 
+ bar        - Stuff for testing
+Changes: 
+ bar (1:1.0-9) breezy; urgency=low
+ .
+   * Exploring epochs ...
+Files: 
+ 3165335e8bbb320a3fba2dc826c265ee 277 devel optional bar_1.0-9.dsc
+ 482abfcd7c6610486d93e3e23cf14116 623 devel optional bar_1.0-9.diff.gz
