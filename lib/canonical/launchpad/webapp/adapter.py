@@ -52,6 +52,7 @@ def _reset_dirty_commit_flags(previous_committed, previous_dirty):
     if not previous_dirty:
         ConnectionWrapper.dirty = False
 
+
 # ---- Reconnecting database adapter
 
 def _wasDisconnected(msg):
@@ -244,6 +245,8 @@ class ReconnectingDatabaseAdapter(PsycopgAdapter):
                 raise DatabaseException, str(error)
 
 
+# ---- Session database adapter
+
 class SessionDatabaseAdapter(ReconnectingDatabaseAdapter):
     """A subclass of PsycopgAdapter that stores its connection information
     in the central launchpad configuration
@@ -268,6 +271,8 @@ class SessionDatabaseAdapter(ReconnectingDatabaseAdapter):
 
 _local = threading.local()
 
+
+# ---- Main Launchpad database adapter
 
 def set_request_started(starttime=None):
     """Set the start time for the request being served by the current
