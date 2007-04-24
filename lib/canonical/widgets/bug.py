@@ -215,9 +215,8 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
             if self.hasInput():
                 self.getInputValue()
         except InputErrors, error:
-            return error.doc()
-        else:
-            return ''
+            self._error = error
+        return super(FileBugTargetWidget, self).error()
 
     def __call__(self):
         """See zope.app.form.interfaces.IBrowserWidget."""
