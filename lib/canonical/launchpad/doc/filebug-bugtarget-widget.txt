@@ -101,7 +101,7 @@ If no distribution name is given at all, a MissingInput error is raised.
     Traceback (most recent call last):
     ...
     MissingInputError:...
-    >>> widget.error() # XXX shouldn't this have something?
+    >>> widget.error()
     ''
 
 == Selecting a package ==
