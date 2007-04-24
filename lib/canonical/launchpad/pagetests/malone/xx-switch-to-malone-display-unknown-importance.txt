@@ -1,5 +1,8 @@
 = Displaying an Unknown importance after switching to using Malone =
 
+XXX: This test should be restructured into a more general "Switching to
+     Malone" use case. -- Bjorn Tillenius, 2007-04-24
+
 When project doesn't use Malone as its official bugtracker, it's
 possible for its bugs to have an Unknown importance.
 
