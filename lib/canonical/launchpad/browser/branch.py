@@ -142,16 +142,6 @@ class BranchView(LaunchpadView):
         linkdata = BranchContextMenu(self.context).edit()
         return '%s/%s' % (canonical_url(self.context), linkdata.target)
 
-    def url(self):
-        """URL where the branch can be checked out.
-
-        This is the URL set in the database, or the Supermirror URL.
-        """
-        if self.context.url:
-            return self.context.url
-        else:
-            return self.supermirror_url()
-
     def mirror_of_ssh(self):
         """True if this a mirror branch with an sftp or bzr+ssh URL."""
         if not self.context.url:
@@ -176,18 +166,6 @@ class BranchView(LaunchpadView):
         """The URL the logged in user can use to upload to this branch."""
         return 'sftp://%s@bazaar.launchpad.net/%s' % (
             self.user.name, self.context.unique_name)
-
-    def missing_title_or_summary_text(self):
-        if self.context.title:
-            if self.context.summary:
-                return None
-            else:
-                return '(this branch has no summary)'
-        else:
-            if self.context.summary:
-                return '(this branch has no title)'
-            else:
-                return '(this branch has neither title nor summary)'
 
 
 class BranchInPersonView(BranchView):

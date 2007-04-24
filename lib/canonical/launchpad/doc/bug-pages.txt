@@ -125,20 +125,20 @@ To add new comments, users POST to the +addcomment page:
     >>> request = LaunchpadTestRequest(form={
     ...                 "field.subject": latest_ubuntu_bugtask.bug.title,
     ...                 "field.comment": "I can reproduce this bug.",
-    ...                 'FORM_SUBMIT': 'Save Changes'})
+    ...                 'field.actions.save': 'Save Changes'})
     ...             })
     >>> ubuntu_addcomment = getView(latest_ubuntu_bugtask, "+addcomment-form", request)
-    >>> ubuntu_addcomment.process_form()
+    >>> ubuntu_addcomment.initialize()
 
 They may even, by mistake, post the same comment twice:
 
     >>> request = LaunchpadTestRequest(form={
     ...                 "field.subject": latest_ubuntu_bugtask.bug.title,
     ...                 "field.comment": "I can reproduce this bug.",
-    ...                 'FORM_SUBMIT': 'Save Changes'})
+    ...                 'field.actions.save': 'Save Changes'})
     ...             })
     >>> ubuntu_addcomment = getView(latest_ubuntu_bugtask, "+addcomment-form", request)
-    >>> ubuntu_addcomment.process_form()
+    >>> ubuntu_addcomment.initialize()
 
 Comments are cached in the view, so we need to flush updates and then
 grab a new view to actually see them:

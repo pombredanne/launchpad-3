@@ -21,7 +21,7 @@ from canonical.launchpad.fields import (ContentNameField, Summary,
     Title)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces import IHasOwner, IProject
 from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -48,6 +48,10 @@ class SpecNameField(ContentNameField):
         elif ISpecificationSet.providedBy(self.context):
             # in the case of a form on the spec set, we need to validate at
             # a higher level, in the form validation routine
+            return None
+        elif IProject.providedBy(self.context):
+            # the context is a Project, so we will validate this at a higher
+            # level, in the form validation routine
             return None
         else:
             # the context is a Product or Distro which can tell us if there
@@ -116,11 +120,25 @@ class ISpecification(IHasOwner):
         title=_('Date Created'), required=True, readonly=True)
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
-    milestone = Choice(
-        title=_('Milestone'), required=False, vocabulary='Milestone',
-        description=_(
-            "The milestone in which we would like this feature to be "
-            "delivered."))
+    # target
+    product = Choice(title=_('Product'), required=False,
+        vocabulary='Product')
+    distribution = Choice(title=_('Distribution'), required=False,
+        vocabulary='Distribution')
+
+    target = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True,
+        vocabulary='DistributionOrProduct')
+    projecttarget = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True,
+        vocabulary='ProjectProducts')
+
+
+    # series
     productseries = Choice(title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
@@ -131,6 +149,13 @@ class ISpecification(IHasOwner):
         description=_(
             "Choose a release in which you would like to deliver "
             "this feature. Selecting '(no value)' will clear the goal."))
+
+    # milestone
+    milestone = Choice(
+        title=_('Milestone'), required=False, vocabulary='Milestone',
+        description=_(
+            "The milestone in which we would like this feature to be "
+            "delivered."))
 
     # nomination to a series for release management
     goal = Attribute(
@@ -190,18 +215,6 @@ class ISpecification(IHasOwner):
         'complete. Note that complete also includes "obsolete" and '
         'superseded. Essentially, it is the state where no more work '
         'will be done on the feature.')
-
-    # other attributes
-    product = Choice(title=_('Product'), required=False,
-        vocabulary='Product')
-    distribution = Choice(title=_('Distribution'), required=False,
-        vocabulary='Distribution')
-
-    target = Choice(
-        title=_("For"),
-        description=_("The project for which this proposal is being made."),
-        required=True,
-        vocabulary='DistributionOrProduct')
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')

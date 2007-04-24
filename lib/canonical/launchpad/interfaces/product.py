@@ -100,7 +100,8 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     displayname = TextLine(
         title=_('Display Name'),
-        description=_("""The name of the project as it would appear in a paragraph."""))
+        description=_("""The name of the project as it would appear in a 
+            paragraph."""))
 
     title = Title(
         title=_('Title'),
@@ -234,13 +235,17 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         If the product doesn't have a bug tracker specified, return the
         project bug tracker instead.
         """
-
+        
     bugtracker = Choice(title=_('Bug Tracker'), required=False,
         vocabulary='BugTracker',
         description=_(
             "The external bug tracker this project uses, if it is not "
             "Launchpad."))
-
+            
+    official_answers = Bool(title=_('Uses Answers Officially'), 
+        required=True, description=_('Check this box to indicate that this '
+            'project officially uses Answers for community support.'))
+            
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
         'this application officially uses Malone for bug tracking '
@@ -345,13 +350,17 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 class IProductSet(Interface):
     """The collection of products."""
 
-    title = Attribute("""The set of Products registered in the Launchpad""")
+    title = Attribute("The set of Products registered in the Launchpad")
 
-    people = Attribute("The PersonSet, placed here so we can easily render "
+    people = Attribute(
+        "The PersonSet, placed here so we can easily render "
         "the list of latest teams to register on the /products/ page.")
 
+    all_active = Attribute(
+        "All the active products, sorted newest first.")
+
     def __iter__():
-        """Return an iterator over all the products."""
+        """Return an iterator over all the active products."""
 
     def __getitem__(name):
         """Get a product by its name."""
@@ -435,9 +444,10 @@ class IProductSet(Interface):
 
 
 class IProductLaunchpadUsageForm(Interface):
-    """Form for indicating whether Rosetta or Malone is used."""
+    """Form for indicating whether Rosetta, Answers, or Malone is used."""
 
     official_rosetta = IProduct['official_rosetta']
+    official_answers = IProduct['official_answers']
     bugtracker = ProductBugTracker(
         title=_('Bug Tracker'),
         description=_('Where are bugs primarily tracked?'),

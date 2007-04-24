@@ -31,7 +31,8 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS, ConnectionSkipped,
     RedirectAwareProberProtocol, probe_archive_mirror, probe_release_mirror,
     should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
-    MIN_REQUESTS_TO_CONSIDER_RATIO)
+    MIN_REQUESTS_TO_CONSIDER_RATIO, _build_request_for_cdimage_file_list,
+    restore_http_proxy)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 
@@ -569,6 +570,14 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
     def setUp(self):
         self.logger = None
 
+    def test_MirrorCDImageRelease_records_are_deleted_before_probing(self):
+        mirror = DistributionMirror.byName('releases-mirror2')
+        self.failUnless(mirror.cdimage_releases.count() > 0)
+        # Note that calling this function won't actually probe any mirrors; we
+        # need to call reactor.run() to actually start the probing.
+        probe_release_mirror(mirror, StringIO(), [], logging)
+        self.failUnlessEqual(mirror.cdimage_releases.count(), 0)
+
     def test_archive_mirror_probe_function(self):
         mirror1 = DistributionMirror.byName('archive-mirror')
         mirror2 = DistributionMirror.byName('archive-mirror2')
@@ -637,14 +646,13 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
         restore_http_proxy(orig_proxy)
 
 
-def restore_http_proxy(http_proxy):
-    if http_proxy is None:
-        try:
-            del os.environ['http_proxy']
-        except KeyError:
-            pass
-    else:
-        os.environ['http_proxy'] = http_proxy
+class TestCDImageFileListFetching(TestCase):
+
+    def test_no_cache(self):
+        url = 'http://releases.ubuntu.com/.manifest'
+        request = _build_request_for_cdimage_file_list(url)
+        self.failUnlessEqual(request.headers['Pragma'], 'no-cache')
+        self.failUnlessEqual(request.headers['Cache-control'], 'no-cache')
 
 
 def test_suite():

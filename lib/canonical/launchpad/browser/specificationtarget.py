@@ -9,12 +9,23 @@ __all__ = [
     ]
 
 from canonical.lp.dbschema import (
-    SpecificationSort, SpecificationStatus, SprintSpecificationStatus,
-    SpecificationGoalStatus, SpecificationFilter)
+    SpecificationFilter,
+    SpecificationGoalStatus,
+    SpecificationSort,
+    SpecificationStatus,
+    SprintSpecificationStatus,
+    )
 
 from canonical.launchpad.interfaces import (
-    ISprint, IPerson, IProduct, IDistribution, IProductSeries,
-    IDistroRelease)
+    IDistribution,
+    IDistroRelease,
+    IHasDrivers,
+    IPerson,
+    IProduct,
+    IProductSeries,
+    IProject,
+    ISprint,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
@@ -36,12 +47,57 @@ class HasSpecificationsView(LaunchpadView):
     of the spec.
     """
 
+    # these flags set the default column display. subclasses will override
+    # them to add or remove columns from the default
+    show_assignee = True
+    show_target = False
+    show_series = False
+    show_milestone = False
+    show_design = True
+    show_implementation = True
+    show_priority = True
+
+    # these flags govern some of the content of the spec page, which allows
+    # us to vary the text flow slightly without creating large numbers of
+    # template fragments
+    is_person = False
+    is_pillar = False
+    is_target = False
+    is_project = False
+    is_series = False
+    is_sprint = False
+    has_drivers = False
+
     def initialize(self):
         mapping = {'name': self.context.displayname}
-        if self.is_person():
+        if self.is_person:
             self.title = _('Specifications involving $name', mapping=mapping)
         else:
             self.title = _('Specifications for $name', mapping=mapping)
+        if IPerson.providedBy(self.context):
+            self.is_person = True
+        elif (IDistribution.providedBy(self.context) or
+              IProduct.providedBy(self.context)):
+            self.is_target = True
+            self.is_pillar = True
+            self.show_series = True
+        elif IProject.providedBy(self.context):
+            self.is_project = True
+            self.is_pillar = True
+            self.show_target = True
+            self.show_series = True
+        elif (IProductSeries.providedBy(self.context) or
+              IDistroRelease.providedBy(self.context)):
+            self.is_series = True
+            self.show_milestone = True
+        elif ISprint.providedBy(self.context):
+            self.is_sprint = True
+            self.show_target = True
+        else:
+            raise AssertionError, 'Unknown blueprint listing site'
+        if IHasDrivers.providedBy(self.context):
+            self.has_drivers = True
+
 
     def mdzCsv(self):
         """Quick hack for mdz, to get csv dump of specs."""
@@ -100,9 +156,6 @@ class HasSpecificationsView(LaunchpadView):
             writer.writerow([unicode(item).encode('utf8') for item in row])
         self.request.response.setHeader('Content-Type', 'text/plain')
         return output.getvalue()
-
-    def is_person(self):
-        return IPerson.providedBy(self.context)
 
     @cachedproperty
     def has_any_specifications(self):

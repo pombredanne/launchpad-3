@@ -87,9 +87,6 @@
             template="../templates/productseries-index.pt"
             />
         <browser:page
-            name="+importstatus"
-            template="../templates/productseries-importstatus.pt" />
-        <browser:page
             name="+macros"
             template="../templates/productseries-macros.pt" />
         <browser:page
@@ -138,6 +135,10 @@
             name="+ubuntupkg"
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"
+            />
+        <browser:page
+            name="+importstatus"
+            template="../templates/productseries-importstatus.pt"
             />
     </browser:pages>
 
