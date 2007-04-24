@@ -45,7 +45,7 @@ class SignableTagFile:
     signingkey = None
     signer = None
 
-    def process_signature(self):
+    def processSignature(self):
         """Verify the signature on the filename.
 
         Stores the fingerprint, the IGPGKey used to sign, the owner of
@@ -81,10 +81,10 @@ class SignableTagFile:
         self.fingerprint = sig.fingerprint
         self.signingkey = key
         self.signer = key.owner
-        self.signer_address = self.parse_address("%s <%s>" % (
+        self.signer_address = self.parseAddress("%s <%s>" % (
             self.signer.displayname, self.signer.preferredemail.email))
 
-    def parse_address(self, addr, fieldname="Maintainer"):
+    def parseAddress(self, addr, fieldname="Maintainer"):
         """Parse an address, using the policy to decide if we should add a
         non-existent person or not.
 
@@ -170,7 +170,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                     "Unable to find mandatory field %s in %s" % (
                     mandatory_field, self.filename))
 
-        self.maintainer = self.parse_address(self._dict['maintainer'])
+        self.maintainer = self.parseAddress(self._dict['maintainer'])
 
         # If format is not present, assume 1.0. At least one tool in
         # the wild generates dsc files with format missing, and we need
@@ -181,7 +181,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         if self.policy.unsigned_dsc_ok:
             self.logger.debug("DSC file can be unsigned.")
         else:
-            self.process_signature()
+            self.processSignature()
 
     #
     # Useful properties.

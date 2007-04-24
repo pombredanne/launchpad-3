@@ -67,22 +67,14 @@
         template="../templates/launchpad-editform.pt"
         />
 
-    <browser:addform
+    <browser:page
         name="+appoint"
         for="canonical.launchpad.interfaces.ITranslationGroup"
         facet="translations"
-        schema="canonical.launchpad.interfaces.ITranslator"
-        fields="translationgroup language translator"
-        keyword_arguments="translationgroup language translator"
         permission="launchpad.Edit"
-        content_factory="canonical.launchpad.database.Translator"
         class="canonical.launchpad.browser.TranslationGroupAddTranslatorView"
         template="../templates/translationgroup-appoint.pt"
-        >
-        <browser:widget
-            field="translationgroup"
-            class="canonical.widgets.ContextWidget" />
-    </browser:addform>
+        />
 
 
     <!-- TranslationGroupSet -->

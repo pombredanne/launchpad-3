@@ -1,17 +1,23 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-import os
-import sys
+import datetime
 import logging
 from optparse import OptionParser
+import os
+import socket
+import sys
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
+import pytz
+from zope.component import getUtility
 
-from canonical.lp import initZopeless
+from canonical.lp import initZopeless, DEFAULT_ISOLATION
 from canonical.launchpad import scripts
+from canonical.launchpad.interfaces import IScriptActivitySet
 
 
 LOCK_PATH = "/var/lock/"
+UTC = pytz.timezone('UTC')
 
 
 class LaunchpadScriptFailure(Exception):
@@ -66,7 +72,7 @@ class LaunchpadScript:
     lockfilepath = None
     loglevel = logging.INFO
 
-    def __init__(self, name, dbuser=None):
+    def __init__(self, name, dbuser=None, test_args=None):
         """Construct new LaunchpadScript.
 
         Name is a short name for this script; it will be used to
@@ -74,6 +80,9 @@ class LaunchpadScript:
 
         Use dbuser to specify the user to connect to the database; if
         not supplied a default will be used.
+
+        Specify test_args when you want to override sys.argv.  This is
+        useful in test scripts.
         """
         self.name = name
         self.dbuser = dbuser
@@ -87,7 +96,7 @@ class LaunchpadScript:
                                    description=self.description)
         scripts.logger_options(self.parser, default=self.loglevel)
         self.add_my_options()
-        self.options, self.args = self.parser.parse_args()
+        self.options, self.args = self.parser.parse_args(args=test_args)
         self.logger = scripts.logger(self.options, name)
 
         self.lockfilepath = os.path.join(LOCK_PATH, self.lockfilename)
@@ -185,17 +194,35 @@ class LaunchpadScript:
         """
         self.lock.release(skip_delete=skip_delete)
 
-    def run(self, use_web_security=False, implicit_begin=True):
+    def run(self, use_web_security=False, implicit_begin=True,
+            isolation=DEFAULT_ISOLATION):
         """Actually run the script, executing zcml and initZopeless."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
         self.txn = initZopeless(
-            dbuser=self.dbuser, implicitBegin=implicit_begin)
+            dbuser=self.dbuser, implicitBegin=implicit_begin,
+            isolation=isolation)
 
+        date_started = datetime.datetime.now(UTC)
         try:
             self.main()
         except LaunchpadScriptFailure, e:
             self.logger.error(str(e))
             sys.exit(e.exit_status)
+        else:
+            date_completed = datetime.datetime.now(UTC)
+            self.record_activity(date_started, date_completed)
+
+
+    def record_activity(self, date_started, date_completed):
+        """Record the successful completion of the script."""
+        self.txn.begin()
+        from canonical.launchpad.ftests import ANONYMOUS, login
+        login(ANONYMOUS)
+        getUtility(IScriptActivitySet).recordSuccess(
+            name=self.name,
+            date_started=date_started,
+            date_completed=date_completed)
+        self.txn.commit()
 
     #
     # Make things happen
