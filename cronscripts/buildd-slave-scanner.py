@@ -18,6 +18,7 @@ from canonical.buildmaster.master import (
 from canonical.launchpad.scripts.base import (LaunchpadScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import IDistroArchReleaseSet
+from canonical.lp import READ_COMMITTED_ISOLATION
 
 
 class SlaveScanner(LaunchpadScript):
@@ -32,7 +33,6 @@ class SlaveScanner(LaunchpadScript):
         buildMaster = BuilddMaster(self.logger, self.txn)
 
         self.logger.info("Setting Builders.")
-
         # Put every distroarchrelease we can find into the build master.
         for archrelease in getUtility(IDistroArchReleaseSet):
             buildMaster.addDistroArchRelease(archrelease)
@@ -64,6 +64,8 @@ class SlaveScanner(LaunchpadScript):
 if __name__ == '__main__':
     script = SlaveScanner('slave-scanner', dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
-    script.run()
-    script.unlock()
+    try:
+        script.run(isolation=READ_COMMITTED_ISOLATION)
+    finally:
+        script.unlock()
 

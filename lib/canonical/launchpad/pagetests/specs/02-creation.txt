@@ -52,7 +52,7 @@ distribution.
   >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
-  >>> browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> browser.getControl('Register Blueprint').click()
   >>> browser.url
   'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
 
@@ -80,7 +80,7 @@ a spec with the same name.
   >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
-  >>> browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> browser.getControl('Register Blueprint').click()
   >>> browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
 
@@ -106,7 +106,7 @@ And we test again the validator using a invalid name.
   >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
-  >>> browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> browser.getControl('Register Blueprint').click()
   >>> browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
   >>> "Invalid name 'NetworkMagic'" in browser.contents
@@ -128,9 +128,104 @@ URL.
   >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
-  >>> browser.getControl(name='UPDATE_SUBMIT').click()
+  >>> browser.getControl('Register Blueprint').click()
   >>> browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
   >>> "is already registered by another specification" in browser.contents
   True
+
+
+Project blueprint registration
+==============================
+
+There is also a form which lets user create a new Blueprint in an IProject
+that first requires them to select an IProduct target, showing them only the
+products in that IProject.
+
+  >>> browser.open('http://blueprints.launchpad.dev/mozilla/+addspec')
+  >>> browser.getControl(name='field.projecttarget').value = ['thunderbird']
+  >>> browser.getControl(name='field.name').value = 'gee-whizz-wotzit'
+  >>> browser.getControl(
+  ...   name='field.title').value = ('Grand amazing tool')
+  >>> browser.getControl(
+  ...   name='field.specurl').value = ('http://wiki.mozilla.org/WhizzWotzit')
+  >>> summary = (
+  ...   "This widget is the latest and greatest in a long range of wotzits. "
+  ...   "All wotzits are known to be particularly resilient.")
+  >>> browser.getControl(name='field.summary').value = summary
+  >>> browser.getControl(name='field.status').value = ['Approved']
+  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> browser.getControl('Register Blueprint').click()
+  >>> browser.url
+  'http://blueprints.launchpad.dev/thunderbird/+spec/gee-whizz-wotzit'
+
+
+System-wide blueprint registration
+==================================
+
+There is also a form which lets user create a new Blueprint for any product
+or distribution, from the Blueprints app home page.
+
+First, we try to create a spec that has the same name as an existing one.
+
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open('http://blueprints.launchpad.dev/specs/+new')
+  >>> browser.getControl(name='field.target').value = 'ubuntu'
+  >>> browser.getControl(name='field.name').value = 'networkmagic'
+  >>> browser.getControl(
+  ...   name='field.title').value = ('Network Magic - Automatic Network'
+  ...       'Detection')
+  >>> browser.getControl(
+  ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkMagic')
+  >>> summary = (
+  ...   "Users are increasingly using multiple"
+  ...   "networks. Being able to seamlessly move between networks whilst"
+  ...   "remembering the correct settings for each network would greatly"
+  ...   "enhance Ubuntu's usability for mobile professionals. Many network"
+  ...   "dependent services should only be run when the system is positive"
+  ...   "that it has a network. This would greatly enhance the system's"
+  ...   "flexibility and responsiveness.")
+  >>> browser.getControl(name='field.summary').value = summary
+  >>> browser.getControl(name='field.status').value = ['Approved']
+  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> browser.getControl('Register Blueprint').click()
+  >>> browser.url
+  'http://blueprints.launchpad.dev/specs/+new'
+
+So, we were not redirected to the spec page, because the spec was not
+created. Let's check that this happened because the name is taken:
+
+  >>> 'There is already a blueprint with this name' in browser.contents
+  True
+
+
+Now, we'll register a spec with a unique name and it should go straight
+through.
+
+  >>> browser.open('http://blueprints.launchpad.dev/specs/+new')
+  >>> browser.getControl(name='field.target').value = 'ubuntu'
+  >>> browser.getControl(name='field.name').value = 'brandnewspec'
+  >>> browser.getControl(
+  ...   name='field.title').value = ('Network Voodoo - Automatic Network'
+  ...       'Detection')
+  >>> browser.getControl(
+  ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkVoodoo')
+  >>> summary = (
+  ...   "Users are increasingly using multiple"
+  ...   "networks. Being able to seamlessly move between networks whilst"
+  ...   "that it has a network. This would greatly enhance the system's"
+  ...   "flexibility and responsiveness.")
+  >>> browser.getControl(name='field.summary').value = summary
+  >>> browser.getControl(name='field.status').value = ['Approved']
+  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> browser.getControl('Register Blueprint').click()
+  >>> browser.url
+  'http://blueprints.launchpad.dev/ubuntu/+spec/brandnewspec'
+
 

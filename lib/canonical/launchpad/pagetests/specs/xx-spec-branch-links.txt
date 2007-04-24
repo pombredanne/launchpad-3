@@ -44,12 +44,12 @@ portlet will be visible:
   <ul class="branch">
   <li>
   <a href="http://code.launchpad.dev/~name12/+junk/junk.dev">Ubuntu Junk Code</a>
-  <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.dev"><img src="/@@/edit" title="Change this branch link" /></a><br />
+  <a href="/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.dev"><img src="/@@/edit" title="Change this branch link" /></a><br />
   <i>This branch should fix the issue</i>
   </li>
   <li>
   <a href="http://code.launchpad.dev/~name12/+junk/junk.contrib">Junk Code Contributions</a>
-  <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this branch link" /></a><br />
+  <a href="/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this branch link" /></a><br />
   <i>Summary text</i>
   </li>
   </ul>
@@ -78,7 +78,7 @@ linked specifications on the branch page:
   <...
   <li>
   <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check">CD Media Integrity Check</a>
-  <a href="http://launchpad.dev/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this blueprint link" /></a><br />
+  <a href="/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this blueprint link" /></a><br />
   <i>Summary text</i>
   </li>
   ...
@@ -103,7 +103,7 @@ The new summary now appears in the branches portlet:
   <...
   <li>
   <a href="http://code.launchpad.dev/~name12/+junk/junk.contrib">Junk Code Contributions</a>
-  <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this branch link" /></a><br />
+  <a href="/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this branch link" /></a><br />
   <i>New summary</i>
   </li>
   ...

@@ -147,7 +147,7 @@ the branch we registered with bug 1. If the link is successful, the bug
 URL is returned.
 
     >>> branchset_api.link_branch_to_bug(other_branch_url, '1', '')
-    'http://launchpad.dev/bugs/1'
+    'http://bugs.launchpad.dev/bugs/1'
 
 Let's take a look to see that the branch actually got linked to the bug:
 
@@ -163,7 +163,7 @@ We can set the whiteboard:
 
     >>> branchset_api.link_branch_to_bug(
     ...     branch_url, 1, "i'm working on it today.")
-    'http://launchpad.dev/bugs/1'
+    'http://bugs.launchpad.dev/bugs/1'
     >>> for bug_branch in bug_one.bug_branches:
     ...     print "%s, %s, %s" % (
     ...         bug_branch.branch.url, bug_branch.status.title,

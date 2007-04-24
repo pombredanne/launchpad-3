@@ -32,7 +32,7 @@ associated with the source package of the used application.
     ...     '+sources/mozilla-firefox/+gethelp')
     >>> user_browser.title
     'Help and support options for mozilla-firefox...'
-    >>> user_browser.getLink('ask a question').click()
+    >>> user_browser.getLink('Submit your question').click()
     >>> user_browser.title
     'Ask a question about Hoary mozilla-firefox'
 
@@ -62,7 +62,7 @@ displayed.
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> soup.first('table', {'id': 'similar-questions'})
     <table id="similar-questions">
-    ...<a...href=".../mozilla-firefox/+ticket/8"...>Installation of Java
+    ...<a...href=".../mozilla-firefox/+question/8"...>Installation of Java
     Runtime Environment for Mozilla</a>...
     </table>
 
@@ -120,7 +120,7 @@ redirect the user to the question page.
     ... "crashes.\n")
     >>> user_browser.getControl('Add').click()
     >>> user_browser.url
-    '.../ubuntu/+source/mozilla-firefox/+ticket/...'
+    '.../ubuntu/+source/mozilla-firefox/+question/...'
     >>> user_browser.title
     'mozilla-firefox in ubuntu question #...Visiting a web page...'
     >>> soup = BeautifulSoup(user_browser.contents)

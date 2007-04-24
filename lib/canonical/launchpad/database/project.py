@@ -20,11 +20,12 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasGotchiAndEmblem)
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasLogo, IHasMugshot,
+    IHasIcon)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
-    SpecificationFilter)
+    SpecificationFilter, SprintSpecificationStatus)
 
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
@@ -37,21 +38,18 @@ from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.question import QuestionTargetSearch
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              KarmaContextMixin):
+              HasSprintsMixin, KarmaContextMixin):
     """A Project"""
 
     implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
-               IHasGotchiAndEmblem)
+               IHasLogo, IHasMugshot, IHasIcon)
 
     _table = "Project"
-    default_gotchi_resource = '/@@/project-mugshot'
-    default_gotchi_heading_resource = '/@@/project-heading'
-    default_emblem_resource = '/@@/project'
 
     # db field names
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
@@ -66,11 +64,11 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="Person", dbName="driver", notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
+    mugshot = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
-    gotchi_heading = ForeignKey(
+    logo = ForeignKey(
         dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
@@ -95,11 +93,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                             otherColumn='bounty',
                             intermediateTable='ProjectBounty')
 
-    products = SQLMultipleJoin('Product', joinColumn='project',
-                            orderBy='name')
-
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
+
+    @property
+    def products(self):
+        return Product.selectBy(project=self, active=True, orderBy='name')
 
     def getOrCreateCalendar(self):
         if not self.calendar:
@@ -130,20 +129,15 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
 
-    @property
-    def coming_sprints(self):
-        """See IHasSprints."""
-        return Sprint.select("""
-            Product.project= %s AND
-            Specification.product = Product.id AND
-            Specification.id = SprintSpecification.specification AND
-            SprintSpecification.sprint = Sprint.id AND
-            Sprint.time_ends > 'NOW'
-            """ % sqlvalues(self.id),
-            clauseTables=['Product', 'Specification', 'SprintSpecification'],
-            orderBy='time_starts',
-            distinct=True,
-            limit=5)
+    def _getBaseQueryAndClauseTablesForQueryingSprints(self):
+        query = """
+            Product.project = %s
+            AND Specification.product = Product.id
+            AND Specification.id = SprintSpecification.specification
+            AND SprintSpecification.sprint = Sprint.id
+            AND SprintSpecification.status = %s
+            """ % sqlvalues(self, SprintSpecificationStatus.ACCEPTED)
+        return query, ['Product', 'Specification', 'SprintSpecification']
 
     @property
     def has_any_specifications(self):
@@ -260,15 +254,15 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return QuestionTargetSearch(
             search_text=search_text, status=status, language=language,
             sort=sort, owner=owner, needs_attention_from=needs_attention_from,
-            product=self.products).getResults()
+            project=self).getResults()
 
     def getQuestionLanguages(self):
         """See IQuestionCollection."""
-        product_ids = sqlvalues(*self.products)
-        return set(Language.select(
-            'Language.id = language AND product IN (%s)' % ', '.join(
-                product_ids),
-            clauseTables=['Ticket'], distinct=True))
+        return set(Language.select("""
+            Language.id = Question.language AND
+            Question.product = Product.id AND
+            Product.project = %s""" % sqlvalues(self.id),
+            clauseTables=['Question', 'Product'], distinct=True))
 
 
 class ProjectSet:
@@ -313,7 +307,7 @@ class ProjectSet:
         return project
 
     def new(self, name, displayname, title, homepageurl, summary,
-            description, owner, gotchi, gotchi_heading, emblem):
+            description, owner, mugshot=None, logo=None, icon=None):
         """See canonical.launchpad.interfaces.project.IProjectSet"""
         return Project(
             name=name,
@@ -324,9 +318,9 @@ class ProjectSet:
             homepageurl=homepageurl,
             owner=owner,
             datecreated=UTC_NOW,
-            gotchi=gotchi,
-            gotchi_heading=gotchi_heading,
-            emblem=emblem)
+            mugshot=mugshot,
+            logo=logo,
+            icon=icon)
 
     def count_all(self):
         return Project.select().count()

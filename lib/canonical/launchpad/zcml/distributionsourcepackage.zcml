@@ -12,14 +12,14 @@
                   releases publishing_history binary_package_names
                   current_publishing_records
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
-                  searchTasks isBugContact open_bugtasks
+                  searchTasks isBugContact open_bugtasks closed_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
                   unconfirmed_bugtasks all_bugtasks getUsedBugTags
                   getUsedBugTagsWithOpenCounts bugtargetname
                   getMostCommonBugs getBugCounts" />
     <require
       permission="launchpad.AnyPerson"
-      attributes="addBugContact removeBugContact subscribe createBug " />
+      attributes="addBugContact removeBugContact subscribe createBug" />
 
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
@@ -36,7 +36,12 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     layer="canonical.launchpad.layers.AnswersLayer"
-    name="+tickets"
+    name="+questions"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    layer="canonical.launchpad.layers.BugsLayer"
+    name="+bugs"
     />
 
   <browser:url

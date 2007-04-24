@@ -62,7 +62,7 @@ information:
 == Table of contributions ==
 
 A person's home page also displays a table with the contributions made by that
-person. This table includes the projects in which this person is more active
+person. This table includes 5 projects in which this person is most active
 and also the areas in which (s)he worked on each project.
 
     >>> anon_browser.open('http://launchpad.dev/~name16')
@@ -73,19 +73,17 @@ and also the areas in which (s)he worked on each project.
     ...         img = td.find('img')
     ...         if img is not None:
     ...             print "\t", img['title']
-    The Evolution Groupware Application
-        Bug Management
-        Translations in Rosetta
+    The Evolution Groupware ...
+       Bug Management
+       Translations in Rosetta
     Ubuntu Linux
-        Bug Management
+       Bug Management
     Gnome Baker
-        Bug Management
+       Bug Management
     Mozilla Thunderbird
-        Bug Management
+       Bug Management
     Mozilla Firefox
-        Bug Management
-    Bazaar
-        Bug Management
+       Bug Management
 
 If the person hasn't made any contributions, the table is not present in its
 page.

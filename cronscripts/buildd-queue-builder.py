@@ -56,8 +56,6 @@ class QueueBuilder(LaunchpadScript):
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
 
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
-
         if self.options.dryrun:
             self.logger.info("Dry run: changes will not be committed.")
             self.txn = _FakeZTM()
@@ -111,6 +109,8 @@ class QueueBuilder(LaunchpadScript):
 if __name__ == '__main__':
     script = QueueBuilder('queue-builder', dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
-    script.run()
-    script.unlock()
+    try:
+        script.run(isolation=READ_COMMITTED_ISOLATION)
+    finally:
+        script.unlock()
 
