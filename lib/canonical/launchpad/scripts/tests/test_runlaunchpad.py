@@ -85,8 +85,9 @@ class ServersToStart(unittest.TestCase):
         """When no service is explicitly requested, start services based on the
         config.launch property.
         """
-        services = get_services_to_run([])
-        self.assertEqual([SERVICES['librarian']], services)
+        services = sorted(get_services_to_run([]))
+        expected = sorted((SERVICES['mailman'], SERVICES['librarian']))
+        self.assertEqual(expected, services)
 
     def test_explicit_request_overrides(self):
         """Only start those services which are explictly requested, ignoring

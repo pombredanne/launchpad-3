@@ -228,7 +228,7 @@ def get_services_to_run(requested_services):
 
     If names are given, then only run the services matching those names.
     """
-    if len(requested_services) == 0:
+    if not requested_services:
         return [svc for svc in SERVICES.values() if svc.shouldLaunch]
     return [SERVICES[name] for name in requested_services]
 
