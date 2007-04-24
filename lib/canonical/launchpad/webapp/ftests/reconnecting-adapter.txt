@@ -157,17 +157,16 @@ create such an adapter, going through the port forwarding proxy:
 
 The resulting connection and cursor provide the expected interfaces:
 
-  >>> from zope.interface import providedBy
   >>> from zope.app.rdb.interfaces import (
   ...     IManageableZopeDatabaseAdapter, IZopeConnection, IZopeCursor)
 
-  >>> IManageableZopeDatabaseAdapter in providedBy(adapter)
+  >>> IManageableZopeDatabaseAdapter.providedBy(adapter)
   True
   >>> db = adapter()
-  >>> IZopeConnection in providedBy(db)
+  >>> IZopeConnection.providedBy(db)
   True
   >>> cursor = db.cursor()
-  >>> IZopeCursor in providedBy(cursor)
+  >>> IZopeCursor.providedBy(cursor)
   True
 
 The resulting connection behaves the same as a normal database
