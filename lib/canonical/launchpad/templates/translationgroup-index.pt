@@ -25,11 +25,19 @@
       this TranslationGroup.
   </p>
 
-      <p
-        tal:repeat="notice view/notices"
-        class="informational message"
-        tal:content="notice"
-      >Notification message.</p>
+  <p
+    tal:repeat="notice view/notices"
+    class="informational message"
+    tal:content="notice"
+  >Notification message.</p>
+
+  <p>Group owner:
+    <a tal:content="context/owner/displayname"
+    tal:attributes="href context/owner/fmt:url"
+    class="link" />
+    <a tal:condition="context/required:launchpad.Edit" href="+reassign">
+      <img src="/@@/edit" alt="Reassign" title="Change Owner"></a>
+  </p>
 
   <tal:translators condition="context/translators">
 
