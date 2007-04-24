@@ -430,7 +430,7 @@ class LaunchpadRootNavigation(Navigation):
         """Redirect /support to Answers root site."""
         target_url= canonical_url(
             getUtility(ILaunchpadRoot), rootsite='answers')
-        return RedirectionView(target_url, self.request, status=301)
+        return self.redirectSubTree(target_url + 'questions', status=301)
 
     stepto_utilities = {
         'binarypackagenames': IBinaryPackageNameSet,

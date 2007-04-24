@@ -81,8 +81,9 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
     LaunchpadFormView, Link, Navigation, sorted_version_numbers,
     StandardLaunchpadFacets, stepto, stepthrough, structured)
-from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
+from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -406,13 +407,13 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'register', 'listall']
+             'all', 'register', ]
 
     def register(self):
         text = 'Register a project'
         return Link('+new', text, icon='add')
 
-    def listall(self):
+    def all(self):
         text = 'List all projects'
         return Link('+all', text, icon='list')
 
@@ -798,6 +799,8 @@ class ProductSetView(LaunchpadView):
                 self.request.response.redirect(url)
                 return
 
+    def all_batched(self):
+        return BatchNavigator(self.context.all_active, self.request)
 
     @cachedproperty
     def matches(self):

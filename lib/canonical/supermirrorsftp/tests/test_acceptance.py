@@ -14,12 +14,12 @@ import gc
 import threading
 
 import bzrlib.branch
-from bzrlib.tests import TestCaseInTempDir
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
 # XXX -- Unused, but needed to work-around bug in bzr 0.11
 # Jonathan Lange, 2007-03-22
-from bzrlib.tests import blackbox
+##from bzrlib.tests import blackbox
 from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
 from bzrlib.transport import get_transport
 from bzrlib.transport import sftp, ssh
@@ -210,8 +210,11 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
 
         # XXX spiv 2005-01-13:
         # Force bzrlib to use paramiko (because OpenSSH doesn't respect $HOME)
-        self.realSshVendor = ssh._ssh_vendor
-        ssh._ssh_vendor = ssh.ParamikoVendor()
+        _old_vendor_manager = ssh._ssh_vendor_manager._cached_ssh_vendor
+        def restore_vendor_manager():
+            ssh._ssh_vendor_manager._cached_ssh_vendor = _old_vendor_manager
+        self.addCleanup(restore_vendor_manager)
+        ssh._ssh_vendor_manager._cached_ssh_vendor = ssh.ParamikoVendor()
 
         # Start authserver.
         self.authserver = AuthserverService()
@@ -245,14 +248,14 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         # LaunchpadZopelessTestSetup's tear down will remove bzrlib's logging
         # handlers, causing it to blow up.  See bug #41697.
         super(SFTPTestCase, self).tearDown()
-        ssh._ssh_vendor = self.realSshVendor
+
         shutil.rmtree(self.userHome)
 
         # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
         # is "a little bogus".  Because we aren't using the bzr test runner, we
         # have to manually clean up the test????.tmp dirs.
-        shutil.rmtree(TestCaseInTempDir.TEST_ROOT)
-        TestCaseInTempDir.TEST_ROOT = None
+        shutil.rmtree(TestCaseWithMemoryTransport.TEST_ROOT)
+        TestCaseWithMemoryTransport.TEST_ROOT = None
         signal.signal(signal.SIGCHLD, self._oldSigChld)
 
     def closeAllConnections(self):
@@ -530,11 +533,13 @@ def test_suite():
     # Construct a test suite that runs AcceptanceTests with several different
     # repository formats.
     from bzrlib.repository import (
-        RepositoryFormat, RepositoryTestProviderAdapter, RepositoryFormat6)
+        format_registry, RepositoryTestProviderAdapter)
+    from bzrlib.repofmt.weaverepo import RepositoryFormat6
     from bzrlib.tests import (
         adapt_modules, default_transport, TestSuite, iter_suite_tests)
     supported_formats = [RepositoryFormat6()]
-    supported_formats.extend(RepositoryFormat._formats.values())
+    supported_formats.extend([
+        format_registry.get(k) for k in format_registry.keys()])
     adapter = RepositoryTestProviderAdapter(
         default_transport,
         # None here will cause a readonly decorator to be created
