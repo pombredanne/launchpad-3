@@ -27,6 +27,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 
+from canonical.launchpad import _
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -81,57 +82,57 @@ class POTemplateFacets(StandardLaunchpadFacets):
         StandardLaunchpadFacets.__init__(self, context)
         target = context.translationtarget
         if IProductSeries.providedBy(target):
-            self.parent = ProductSeriesFacets(target)
+            self.target_facets = ProductSeriesFacets(target)
         elif ISourcePackage.providedBy(target):
-            self.parent = SourcePackageFacets(target)
+            self.target_facets = SourcePackageFacets(target)
         else:
             # We don't know yet how to handle this target.
             raise NotImplementedError
 
         # Enable only the menus that the translation target uses.
-        self.enable_only = self.parent.enable_only
+        self.enable_only = self.target_facets.enable_only
 
         # From an IPOTemplate URL, we reach its translationtarget (either
         # ISourcePackage or IProductSeries using self.target.
         self.target = '../../'
 
     def overview(self):
-        overview_link = self.parent.overview()
+        overview_link = self.target_facets.overview()
         overview_link.target = self.target
         return overview_link
 
     def translations(self):
-        translations_link = self.parent.translations()
+        translations_link = self.target_facets.translations()
         translations_link.target = self.target
         return translations_link
 
     def bugs(self):
-        bugs_link = self.parent.bugs()
+        bugs_link = self.target_facets.bugs()
         bugs_link.target = self.target
         return bugs_link
 
     def answers(self):
-        answers_link = self.parent.answers()
+        answers_link = self.target_facets.answers()
         answers_link.target = self.target
         return answers_link
 
     def specifications(self):
-        specifications_link = self.parent.specifications()
+        specifications_link = self.target_facets.specifications()
         specifications_link.target = self.target
         return specifications_link
 
     def bounties(self):
-        bounties_link = self.parent.bounties()
+        bounties_link = self.target_facets.bounties()
         bounties_link.target = self.target
         return bounties_link
 
     def calendar(self):
-        calendar_link = self.parent.calendar()
+        calendar_link = self.target_facets.calendar()
         calendar_link.target = self.target
         return calendar_link
 
     def branches(self):
-        branches_link = self.parent.branches()
+        branches_link = self.target_facets.branches()
         branches_link.target = self.target
         return branches_link
 
@@ -142,21 +143,21 @@ class POTemplateSOP(StructuralObjectPresentation):
         StructuralObjectPresentation.__init__(self, context)
         target = context.translationtarget
         if IProductSeries.providedBy(target):
-            self.parent = ProductSeriesSOP(target)
+            self.target_sop = ProductSeriesSOP(target)
         elif ISourcePackage.providedBy(target):
-            self.parent = SourcePackageSOP(target)
+            self.target_sop = SourcePackageSOP(target)
         else:
             # We don't know yet how to handle this target.
             raise NotImplementedError
 
     def getIntroHeading(self):
-        return self.parent.getIntroHeading()
+        return self.target_sop.getIntroHeading()
 
     def getMainHeading(self):
-        return self.parent.getMainHeading()
+        return self.target_sop.getMainHeading()
 
     def listChildren(self, num):
-        return self.parent.listChildren(num)
+        return self.target_sop.listChildren(num)
 
     def countChildren(self):
         return self.parent.countChildren()
@@ -244,8 +245,8 @@ class POTemplateView(LaunchpadView):
         Where the template has no POFile for that language, we use
         a DummyPOFile.
         """
-        # This inline import is needed because
-        # canonical.launchpad.browser.pofile imports
+        # This inline import is needed to workaround a circular import problem
+        # because canonical.launchpad.browser.pofile imports
         # canonical.launchpad.browser.potemplate.POTemplateSOP
         from canonical.launchpad.browser.pofile import POFileView
 

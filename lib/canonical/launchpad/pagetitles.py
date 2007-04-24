@@ -679,6 +679,10 @@ pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
 
 pofile_translate = ContextTitle(smartquote('Edit "%s"'))
 
+def pofile_translate(context, view):
+    return 'Translating %s into %s' % (
+        context.potemplate.displayname, context.language.englishname)
+
 pofile_upload = ContextTitle(smartquote('Upload file for "%s"'))
 
 # portlet_* are portlets

@@ -20,9 +20,6 @@ from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad import _
-from canonical.launchpad import helpers
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.pomsgset import (
     BaseTranslationView, POMsgSetView)
 from canonical.launchpad.browser.potemplate import (
