@@ -26,11 +26,10 @@ from canonical.database.enumcol import EnumCol
 import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
-    IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
+    IPOTemplate, IPOTemplateSet, IPOTemplateSubset, IPOTemplateExporter,
+    ITranslationImporter, ILaunchpadCelebrities, LanguageNotFound,
     TranslationConstants, NotFoundError)
 from canonical.launchpad.mail import simple_sendmail
-from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -44,7 +43,6 @@ from canonical.launchpad.database.translationimportqueue import (
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import translation_import
-from canonical.launchpad.components.rosettaformats import *
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 from canonical.launchpad.webapp import canonical_url
@@ -559,41 +557,16 @@ class POTemplate(SQLBase, RosettaStats):
 
     def importFromQueue(self, logger=None):
         """See IPOTemplate."""
-        librarian_client = getUtility(ILibrarianClient)
-
         entry_to_import = self.getNextToImport()
 
         if entry_to_import is None:
             # There is no new import waiting for being imported.
             return
 
-        import_file = librarian_client.getFileByAlias(entry_to_import.content.id)
-
         template_mail = None
+        translation_importer = getUtility(ITranslationImporter)
         try:
-            if entry_to_import.path.lower().endswith('.xpi'):
-                importer = MozillaSupport(
-                    path=entry_to_import.path,
-                    productseries=entry_to_import.productseries,
-                    distrorelease=entry_to_import.distrorelease,
-                    sourcepackagename=entry_to_import.sourcepackagename,
-                    is_published=entry_to_import.is_published,
-                    content=import_file.read(),
-                    logger=logger)
-                self.source_file = entry_to_import.content
-                self.source_file_format = entry_to_import.format
-            else:
-                importer = PoSupport(
-                    path=entry_to_import.path,
-                    productseries=entry_to_import.productseries,
-                    distrorelease=entry_to_import.distrorelease,
-                    sourcepackagename=entry_to_import.sourcepackagename,
-                    is_published=entry_to_import.is_published,
-                    content=import_file.read(),
-                    logger=logger)
-            translation_import(self,
-                               importer.getTemplate(entry_to_import.path),
-                               entry_to_import.importer)
+            translation_importer.import_file(entry_to_import, logger)
         except (POSyntaxError, POInvalidInputError):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.

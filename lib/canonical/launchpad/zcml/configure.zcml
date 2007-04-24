@@ -121,6 +121,7 @@
     <include file="teamparticipation.zcml" />
     <include file="team-subscriptions.zcml" />
     <include file="temporaryblobstorage.zcml" />
+    <include file="translationimportexport.zcml" />
     <include file="question.zcml" />
     <include file="question-events.zcml" />
     <include file="questionreopening.zcml" />
