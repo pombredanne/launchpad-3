@@ -190,8 +190,10 @@ If no product name is given at all, a widget error is raised.
 == setRenderedValue() ==
 
 In order to initialize the widget with a value, setRenderedValue() is
-used. Passing a product to it will select the 'product' radio button, as
-well as displaying the product name in the product widget.
+used. Passing a product to it will select the 'product' radio button, 
+as well as displaying the product name in the product widget. The 
+distribution widget is set to 'ubuntu' because it is the default
+value when there is no distribution.
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> widget = LaunchpadTargetWidget(
@@ -203,6 +205,8 @@ well as displaying the product name in the product widget.
       <input class="radioType"
              id="field.bugtarget.option.package" name="field.bugtarget"
              type="radio" value="package" />
+    ...
+      <option selected="selected" value="ubuntu">Ubuntu Linux</option>
     ...
       <input class="radioType" checked="checked"
              id="field.bugtarget.option.product"
