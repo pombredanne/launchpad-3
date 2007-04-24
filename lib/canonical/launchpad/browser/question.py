@@ -17,6 +17,7 @@ __all__ = [
     'QuestionSetNavigation',
     'QuestionRejectView',
     'QuestionSetView',
+    'QuestionSOP',
     'QuestionSubscriptionView',
     'QuestionWorkflowView',
     ]
@@ -36,6 +37,7 @@ import zope.security
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
@@ -786,6 +788,17 @@ class SearchAllQuestionsView(SearchQuestionsView):
                      mapping=dict(search_text=self.search_text))
         else:
             return _('There are no questions with the requested statuses.')
+
+
+class QuestionSOP(StructuralObjectPresentation):
+    """Provides the structural heading for IQuestion."""
+
+    def getMainHeading(self):
+        """See IStructuralHeaderPresentation."""
+        question = self.context
+        return _('Question #${id} in ${target}',
+                 mapping=dict(
+                    id=question.id, target=question.target.displayname))
 
 
 class QuestionContextMenu(ContextMenu):

@@ -787,3 +787,26 @@ states on that target.
     ...     firefox, '+open_questions_count', LaunchpadTestRequest())
     >>> view()
     u'4'
+
+== QuestionSOP ==
+
+There is an IStructuralObjectPresentation adapter available for
+IQuestion. This adapter is used to render the title appearing in
+in the structuralheader area.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IStructuralObjectPresentation)
+    >>> from zope.interface.verify import verifyObject
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> firefox_question_sop = IStructuralObjectPresentation(firefox_question)
+    >>> verifyObject(
+    ...     IStructuralObjectPresentation,
+    ...     removeSecurityProxy(firefox_question_sop))
+    True
+
+    # The returned string is an instance of zope.i18n.Message.
+    >>> import zope.i18n
+    >>> print zope.i18n.translate(
+    ...     firefox_question_sop.getMainHeading())
+    Question #2 in Mozilla Firefox
