@@ -191,6 +191,7 @@ Upload directions should not be displayed for import branches.
   >>> import_branch_page = (
   ...     'http://code.launchpad.dev/~vcs-imports/evolution/main')
   >>> anon_browser.open(import_branch_page)
+  >>> content = anon_browser.contents
   >>> instructions = find_tag_by_id(content, 'upload-directions')
   >>> print instructions
   None
