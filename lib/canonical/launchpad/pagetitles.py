@@ -1103,12 +1103,17 @@ template_new = 'EXAMPLE NEW TITLE'
 
 temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
-translationgroup_index = ContextTitle(smartquote('"%s" Rosetta translation group'))
+translationgroup_index = ContextTitle(smartquote('"%s" translation group'))
 
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))
 
-translationgroups_index = 'Rosetta translation groups'
+translationgroup_edit = ContextTitle(smartquote(
+    'Edit "%s" translation group details'))
+
+translationgroups_add = 'Add a new Translation Group to Launchpad'
+
+translationgroups_index = 'Launchpad translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
 

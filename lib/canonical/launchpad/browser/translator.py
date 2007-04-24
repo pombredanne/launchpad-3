@@ -16,8 +16,8 @@ class TranslatorEditView(LaunchpadEditFormView):
     schema = ITranslator
     field_names = ['language', 'translator']
 
-    @action("Edit", name="edit")
-    def edit_action(self, action, data):
+    @action("Change")
+    def change_action(self, action, data):
         """Edit the translator that does translations for a given language."""
         self.updateContextFromData(data)
 

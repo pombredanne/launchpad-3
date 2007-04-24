@@ -61,6 +61,13 @@
           </tr>
         </tbody>
       </table>
+      <ul class="menu">
+        <tal:can-edit condition="context/required:launchpad.Admin">
+          <li class="add">
+            <a href="+new">Add a new translation group</a>
+          </li>
+        </tal:can-edit>
+      </ul>
     </div><!--main-->
   </body>
 </html>

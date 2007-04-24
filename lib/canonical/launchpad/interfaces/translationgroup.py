@@ -10,13 +10,14 @@ __all__ = [
     ]
 
 from zope.interface import Attribute
-from zope.schema import Datetime, Int, TextLine
+from zope.schema import Datetime, Int, Object, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.launchpad import IHasOwner
+from canonical.launchpad.interfaces.person import IPerson
 
 
 class ITranslationGroup(IHasOwner):
@@ -47,10 +48,9 @@ class ITranslationGroup(IHasOwner):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )
-    ownerID = Int(
-            title=_('Owner'), required=True, readonly=True
+    owner = Object(
+            title=_('Owner'), required=True, readonly=False, schema=IPerson
             )
-    owner = Attribute("The owner's IPerson")
     # joins
     translators = Attribute('The set of translators for this group.')
     projects = Attribute('The projects for which this group translates.')

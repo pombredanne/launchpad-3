@@ -72,12 +72,23 @@
               There are no translators appointed in this group yet.
             </tal:no-translators>
             <ul class="menu">
-              <li tal:condition="context/required:launchpad.Edit" class="add">
-                <a href="+appoint">Appoint additional translators</a>
-              </li>
-              <li tal:condition="not:request/lp:person" class="locked">
-                <a href="+appoint">Appoint additional translators</a>
-              </li>
+              <tal:can-edit condition="context/required:launchpad.Edit">
+                <li class="add">
+                  <a href="+appoint">Appoint additional translators</a>
+                </li>
+                <li class="edit">
+                  <a href="+edit">Edit translation group details</a>
+                </li>
+              </tal:can-edit>
+              <tal:cannot-edit
+                condition="not:context/required:launchpad.Edit">
+                <li class="locked">
+                  <a href="+appoint">Appoint additional translators</a>
+                </li>
+                <li class="locked">
+                  <a href="+edit">Edit translation group details</a>
+                </li>
+              </tal:cannot-edit>
             </ul>
           </div>
         </div>
