@@ -1201,7 +1201,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
-    displayname = 'Select a distribution or product'
+    displayname = 'Select a project'
     _filter = AND(OR(
             PillarName.q.distributionID != None,
             PillarName.q.productID != None
@@ -1225,3 +1225,4 @@ class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
             return obj.active
         else:
             return IDistribution.providedBy(obj)
+

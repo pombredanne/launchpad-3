@@ -3,32 +3,37 @@
 __metaclass__ = type
 
 __all__ = [
-    'PersonNavigation',
-    'TeamNavigation',
-    'PersonSOP',
-    'PersonFacets',
-    'PersonBranchesMenu',
-    'PersonBugsMenu',
-    'PersonSpecsMenu',
-    'PersonOverviewMenu',
-    'TeamOverviewMenu',
+    'AdminRequestPeopleMergeView',
     'BaseListView',
-    'PeopleListView',
-    'TeamListView',
-    'UbunteroListView',
+    'BugContactPackageBugsSearchListingView',
+    'FinishedPeopleMergeRequestView',
     'FOAFSearchView',
-    'PersonClaimView',
-    'PersonSpecWorkLoadView',
-    'PersonSpecFeedbackView',
+    'ObjectReassignmentView',
+    'PeopleListView',
+    'PersonAddView',
+    'PersonAnswersMenu',
+    'PersonAssignedBugTaskSearchListingView',
+    'PersonAuthoredBranchesView',
+    'PersonBranchesMenu',
+    'PersonBranchesView',
+    'PersonBrandingView',
+    'PersonBugsMenu',
     'PersonChangePasswordView',
+    'PersonClaimView',
     'PersonCodeOfConductEditView',
+    'PersonDynMenu',
+    'PersonEditEmailsView',
+    'PersonEditHomePageView',
+    'PersonEditIRCNicknamesView',
+    'PersonEditJabberIDsView',
+    'PersonEditSSHKeysView',
     'PersonEditView',
     'PersonEditWikiNamesView',
     'PersonEditJabberIDsView',
     'PersonEditIRCNicknamesView',
     'PersonEditSSHKeysView',
     'PersonEditHomePageView',
-    'PersonRelatedBugsView',
+    'PersonAnswerContactForView',
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
     'BugContactPackageBugsSearchListingView',
@@ -36,37 +41,46 @@ __all__ = [
     'PersonRdfView',
     'PersonView',
     'PersonTranslationView',
+    'PersonFacets',
     'PersonGPGView',
-    'TeamJoinView',
-    'TeamLeaveView',
-    'PersonEditEmailsView',
-    'RequestPeopleMergeView',
-    'AdminRequestPeopleMergeView',
-    'FinishedPeopleMergeRequestView',
-    'RequestPeopleMergeMultipleEmailsView',
-    'ObjectReassignmentView',
-    'TeamReassignmentView',
-    'PersonAddView',
     'PersonLanguagesView',
-    'RedirectToEditLanguagesView',
     'PersonLatestQuestionsView',
+    'PersonNavigation',
+    'PersonOverviewMenu',
+    'PersonRdfView',
+    'PersonRegisteredBranchesView',
+    'PersonRelatedBugsView',
     'PersonSearchQuestionsView',
-    'PersonAnswersMenu',
+    'PersonSetContextMenu',
+    'PersonSetFacets',
+    'PersonSetNavigation',
+    'PersonSetSOP',
+    'PersonSOP',
+    'PersonSpecFeedbackView',
+    'PersonSpecsMenu',
+    'PersonSpecWorkLoadView',
+    'PersonSubscribedBranchesView',
+    'PersonTeamBranchesView',
+    'PersonTranslationView',
+    'PersonView',
+    'RedirectToEditLanguagesView',
+    'ReportedBugTaskSearchListingView',
+    'RequestPeopleMergeMultipleEmailsView',
+    'RequestPeopleMergeView',
     'SearchAnsweredQuestionsView',
     'SearchAssignedQuestionsView',
     'SearchCommentedQuestionsView',
     'SearchCreatedQuestionsView',
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
-    'PersonSetNavigation',
-    'PersonSetSOP',
-    'PersonSetFacets',
-    'PersonSetContextMenu',
-    'PersonBranchesView',
-    'PersonAuthoredBranchesView',
-    'PersonRegisteredBranchesView',
-    'PersonSubscribedBranchesView',
-    'PersonTeamBranchesView',
+    'SubscribedBugTaskSearchListingView',
+    'TeamJoinView',
+    'TeamLeaveView',
+    'TeamListView',
+    'TeamNavigation',
+    'TeamOverviewMenu',
+    'TeamReassignmentView',
+    'UbunteroListView',
     ]
 
 import cgi
@@ -91,8 +105,7 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
     PersonCreationRationale, BugTaskStatus)
 
-from canonical.widgets import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget, PasswordChangeWidget)
+from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
@@ -113,6 +126,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 
 from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
@@ -120,6 +134,7 @@ from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 
+from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
@@ -139,13 +154,13 @@ class BranchTraversalMixin:
     * '/~ddaa/bazaar/devel' points to the branch whose owner
     name is 'ddaa', whose product name is 'bazaar', and whose branch name
     is 'devel'.
-    
+
     * '/~sabdfl/+junk/junkcode' points to the branch whose
     owner name is 'sabdfl', with no associated product, and whose branch
     name is 'junkcode'.
 
     * '/~ddaa/+branch/bazaar/devel' redirects to '/~ddaa/bazaar/devel'
-    
+
     """
 
     @stepto('+branch')
@@ -175,6 +190,26 @@ class PersonNavigation(CalendarTraversalMixin,
 
     def breadcrumb(self):
         return self.context.displayname
+
+
+class PersonDynMenu(DynMenu):
+
+    menus = {
+        'contributions': 'contributionsMenu',
+        }
+
+    @neverempty
+    def contributionsMenu(self):
+        L = [self.makeBreadcrumbLink(item)
+             for item in self.context.iterTopProjectsContributedTo()]
+        L.sort(key=lambda item: item.text.lower())
+        if L:
+            for obj in L:
+                yield obj
+        else:
+            yield self.makeLink(
+                'Projects you contribute to go here.', target=None)
+        yield self.makeLink('See all projects...', target='/products')
 
 
 class TeamNavigation(CalendarTraversalMixin,
@@ -253,7 +288,7 @@ class PersonSetContextMenu(ContextMenu):
              'teamlist', 'ubunterolist', 'newteam', 'adminrequestmerge', ]
 
     def products(self):
-        return Link('/products/', 'View projects')
+        return Link('/projects/', 'View projects')
 
     def distributions(self):
         return Link('/distros/', 'View distributions')
@@ -331,7 +366,7 @@ class PersonFacets(StandardLaunchpadFacets):
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)
-        return Link('+specs', text, summary)
+        return Link('', text, summary)
 
     def bounties(self):
         text = 'Bounties'
@@ -344,20 +379,19 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Code'
         summary = ('Bazaar Branches and revisions registered and authored '
                    'by %s' % self.context.browsername)
-        return Link('+branches', text, summary)
+        return Link('', text, summary)
 
     def answers(self):
         text = 'Answers'
         summary = 'Questions that involves %s' % self.context.browsername
-        return Link('+tickets', text, summary)
+        return Link('', text, summary)
 
     def translations(self):
-        target = '+translations'
         text = 'Translations'
         summary = (
             'Software that %s is involved in translating' %
             self.context.browsername)
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def calendar(self):
         text = 'Calendar'
@@ -498,15 +532,22 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = IPerson
     facet = 'overview'
-    links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
-             'editlanguages', 'editwikinames', 'editircnicknames',
-             'editjabberids', 'editpassword', 'editsshkeys', 'editpgpkeys',
-             'codesofconduct', 'administer', 'common_packages']
+    links = ['edit', 'branding', 'common_edithomepage',
+             'editemailaddresses', 'editlanguages', 'editwikinames',
+             'editircnicknames', 'editjabberids', 'editpassword',
+             'editsshkeys', 'editpgpkeys', 'codesofconduct', 'karma',
+             'administer', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
         text = 'Change details'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        target = '+branding'
+        text = 'Change branding'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -547,7 +588,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def karma(self):
         target = '+karma'
-        text = 'Karma'
+        text = 'Show karma summary'
         summary = (
             u'%s\N{right single quotation mark}s activities '
             u'in Launchpad' % self.context.browsername)
@@ -588,14 +629,20 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['edit', 'common_edithomepage', 'members', 'add_member',
-             'editemail', 'polls', 'add_poll', 'joinleave', 'reassign',
-             'common_packages']
+    links = ['edit', 'branding', 'common_edithomepage', 'members',
+             'mugshots', 'add_member', 'editemail', 'polls', 'add_poll',
+             'joinleave', 'reassign', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         target = '+edit'
         text = 'Change details'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        target = '+branding'
+        text = 'Change branding'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
@@ -609,6 +656,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def members(self):
         target = '+members'
         text = 'Show all members'
+        return Link(target, text, icon='people')
+
+    def mugshots(self):
+        target = '+mugshots'
+        text = 'Show group photo'
         return Link(target, text, icon='people')
 
     @enabled_with_permission('launchpad.Edit')
@@ -1329,7 +1381,8 @@ class PersonView(LaunchpadView):
     @cachedproperty
     def contributions(self):
         """Cache the results of getProjectsAndCategoriesContributedTo()."""
-        return self.context.getProjectsAndCategoriesContributedTo()
+        return self.context.getProjectsAndCategoriesContributedTo(
+            limit=5)
 
     @cachedproperty
     def contributed_categories(self):
@@ -1384,8 +1437,9 @@ class PersonView(LaunchpadView):
     def userIsParticipant(self):
         """Return true if the user is a participant of this team.
 
-        A person is said to be a team participant when he's an indirect member
-        of that team.
+        A person is said to be a team participant when he's a member
+        of that team, either directly or indirectly via another team
+        membership.
         """
         if self.user is None:
             return False
@@ -1434,6 +1488,16 @@ class PersonView(LaunchpadView):
             return convertToHtmlCode(self.context.preferredemail.email)
         else:
             return None
+
+    def htmlJabberIDs(self):
+        """Return the person's Jabber IDs somewhat obfuscated.
+
+        The IDs are encoded using HTML hexadecimal entities to hinder
+        email harvesting. (Jabber IDs are sometime valid email accounts,
+        gmail for example.)
+        """
+        return [convertToHtmlCode(jabber.jabberid)
+                for jabber in self.context.jabberids]
 
     def showSSHKeys(self):
         """Return a data structure used for display of raw SSH keys"""
@@ -1732,12 +1796,25 @@ class PersonTranslationView(LaunchpadView):
                   for record in batchnav.currentBatch())
         if ids:
             cache = list(getUtility(IPOTemplateSet).getByIDs(ids))
+
         return batchnav
 
     @cachedproperty
     def translation_groups(self):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
+
+    def should_display_message(self, pomsgset):
+        """Should a certain POMsgSet be displayed.
+
+        Return False if user is not logged in and message may contain
+        sensitive data such as email addresses.
+
+        Otherwise, return True.
+        """
+        if self.user:
+            return True
+        return not(pomsgset.potmsgset.hide_translations_from_anonymous)
 
 
 class PersonGPGView(LaunchpadView):
@@ -1966,11 +2043,14 @@ class PersonEditHomePageView(BasePersonEditView):
 
 class PersonEditView(BasePersonEditView):
 
-    field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone',
-                   'gotchi']
+    field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone']
     custom_widget('timezone', SelectWidget, size=15)
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
+
+
+class PersonBrandingView(BrandingChangeView):
+
+    field_names = ['logo', 'mugshot']
+    schema = IPerson
 
 
 class TeamJoinView(PersonView):
@@ -2730,48 +2810,83 @@ class SearchSubscribedQuestionsView(SearchQuestionsView):
                  mapping=dict(name=self.context.displayname))
 
 
+class PersonAnswerContactForView(LaunchpadView):
+    """View used to show all the IQuestionTargets that an IPerson is an answer
+    contact for.
+    """
+
+    @cachedproperty
+    def direct_question_targets(self):
+        """List of IQuestionTargets that the context is a direct answer contact.
+
+        Sorted alphabetically by title.
+        """
+        return sorted(
+            self.context.getDirectAnswerQuestionTargets(),
+            key=attrgetter('title'))
+
+    @cachedproperty
+    def team_question_targets(self):
+        """List of IQuestionTargets for the context's team membership.
+
+        Sorted alphabetically by title.
+        """
+        return sorted(
+            self.context.getTeamAnswerQuestionTargets(),
+            key=attrgetter('title'))
+
+    def showRemoveYourselfLink(self):
+        """The link is only shown when the page is in the user's own profile."""
+        return self.user == self.context
+
+
 class PersonAnswersMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'answers'
     links = ['answered', 'assigned', 'created', 'commented', 'need_attention',
-             'subscribed']
+             'subscribed', 'answer_contact_for']
+
+    def answer_contact_for(self):
+        summary="Projects for which %s is an answer contact for" % (
+            self.context.displayname)
+        return Link('+answer-contact-for', 'Answer contact for', summary)
 
     def answered(self):
         summary = 'Questions answered by %s' % self.context.displayname
-        return Link('+answeredtickets', 'Answered', summary, icon='question')
+        return Link('+answeredquestions', 'Answered', summary, icon='question')
 
     def assigned(self):
         summary = 'Questions assigned to %s' % self.context.displayname
-        return Link('+assignedtickets', 'Assigned', summary, icon='question')
+        return Link('+assignedquestions', 'Assigned', summary, icon='question')
 
     def created(self):
         summary = 'Questions asked by %s' % self.context.displayname
-        return Link('+createdtickets', 'Asked', summary, icon='question')
+        return Link('+createdquestions', 'Asked', summary, icon='question')
 
     def commented(self):
         summary = 'Questions commented on by %s' % (
             self.context.displayname)
-        return Link('+commentedtickets', 'Commented', summary, icon='question')
+        return Link('+commentedquestions', 'Commented', summary, icon='question')
 
     def need_attention(self):
         summary = 'Questions needing %s attention' % (
             self.context.displayname)
-        return Link('+needattentiontickets', 'Need attention', summary,
+        return Link('+needattentionquestions', 'Need attention', summary,
                     icon='question')
 
     def subscribed(self):
         text = 'Subscribed'
         summary = 'Questions subscribed to by %s' % (
                 self.context.displayname)
-        return Link('+subscribedtickets', text, summary, icon='question')
+        return Link('+subscribedquestions', text, summary, icon='question')
 
 
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
     extra_columns = ('author', 'product', 'role')
-    
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForPerson(
             self.context, self.selected_lifecycle_status)
@@ -2798,7 +2913,7 @@ class PersonAuthoredBranchesView(BranchListingView):
 
     extra_columns = ('product',)
     title_prefix = 'Authored'
-    
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
             self.context, self.selected_lifecycle_status)
@@ -2809,7 +2924,7 @@ class PersonRegisteredBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
     title_prefix = 'Registered'
-    
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
             self.context, self.selected_lifecycle_status)
@@ -2820,7 +2935,7 @@ class PersonSubscribedBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
     title_prefix = 'Subscribed'
-    
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
             self.context, self.selected_lifecycle_status)
@@ -2833,4 +2948,4 @@ class PersonTeamBranchesView(LaunchpadView):
     def teams_with_branches(self):
         return [team for team in self.context.teams_participated_in
                 if team.branches.count() > 0]
-    
+

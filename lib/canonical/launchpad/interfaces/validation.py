@@ -12,7 +12,6 @@ __all__ = [
     'valid_cve_sequence',
     'validate_new_team_email',
     'validate_new_person_email',
-    'validate_distribution_mirror_schema',
     'validate_shipit_recipientdisplayname',
     'validate_shipit_phone',
     'validate_shipit_city',
@@ -338,26 +337,6 @@ def validate_new_person_email(email):
             "The profile you're trying to create already exists: "
             '<a href="%s">%s</a>.'), canonical_url(owner), owner.browsername)
     return True
-
-
-def validate_distribution_mirror_schema(form_values):
-    """Perform schema validation according to IDistributionMirror constraints.
-
-    This validation will take place after the values of individual widgets
-    are validated. It's necessary because we have some constraints where we
-    need to take into account the value of multiple widgets.
-
-    :form_values: A dictionary mapping IDistributionMirror attributes to the
-                  values suplied by the user.
-    """
-    errors = []
-    if not (form_values['http_base_url'] or form_values['ftp_base_url']):
-        errors.append(LaunchpadValidationError(_(
-            "All mirrors require at least an HTTP or FTP URL to be "
-            "specified.")))
-
-    if errors:
-        raise WidgetsError(errors)
 
 
 def valid_distrotask(bug, distribution, sourcepackagename=None,

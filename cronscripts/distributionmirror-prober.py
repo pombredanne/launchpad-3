@@ -5,6 +5,7 @@
 
 import _pythonpath
 
+import os
 from StringIO import StringIO
 
 from twisted.internet import reactor
@@ -12,6 +13,7 @@ from twisted.internet import reactor
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.lp import AUTOCOMMIT_ISOLATION
 from canonical.lp.dbschema import MirrorContent
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
@@ -71,6 +73,13 @@ class DistroMirrorProber(LaunchpadScript):
                 'Wrong value for argument --content-type: %s'
                 % self.options.content_type)
 
+        orig_proxy = os.environ.get('http_proxy')
+        if config.distributionmirrorprober.use_proxy:
+            os.environ['http_proxy'] = config.launchpad.http_proxy
+            self.logger.debug("Using %s as proxy." % os.environ['http_proxy'])
+        else:
+            self.logger.debug("Not using any proxy.")
+
         # Using a script argument to control a config variable is not a great
         # idea, but to me this seems better than passing the no_remote_hosts
         # value through a lot of method/function calls, until it reaches the
@@ -82,6 +91,7 @@ class DistroMirrorProber(LaunchpadScript):
 
         mirror_set = getUtility(IDistributionMirrorSet)
 
+        self.txn.set_isolation_level(AUTOCOMMIT_ISOLATION)
         self.txn.begin()
 
         results = mirror_set.getMirrorsToProbe(
@@ -116,12 +126,10 @@ class DistroMirrorProber(LaunchpadScript):
             self.logger.info('Probed %d mirrors.' % len(probed_mirrors))
         else:
             self.logger.info('No mirrors to probe.')
-        self.txn.commit()
 
         # Now that we finished probing all mirrors, we check if any of these
         # mirrors appear to have no content mirrored, and, if so, mark them as
         # disabled and notify their owners.
-        self.txn.begin()
         expected_iso_images_count = len(get_expected_cdimage_paths())
         notify_owner = not self.options.no_owner_notification
         for mirror in probed_mirrors:
@@ -137,7 +145,13 @@ class DistroMirrorProber(LaunchpadScript):
                     mirror.enabled = True
                     self.logger.info('Enabled %s' % canonical_url(mirror))
 
+        # XXX: This should be done in LaunchpadScript.lock_and_run() when the
+        # isolation used is AUTOCOMMIT_ISOLATION. Also note that replacing
+        # this with a flush_database_updates() doesn't have the same effect,
+        # it seems.
+        # -- Guilherme Salgado, 2007-04-03
         self.txn.commit()
+
         self.logger.info('Done.')
 
 

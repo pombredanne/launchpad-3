@@ -60,9 +60,11 @@
                           <div>
                         </form>
                         <p id="application-summary">
-                          Launchpad&rsquo;s Answers system helps you build a
-                          community support network for your project.
-                          <a href="/+tour">Learn more&#8230;</a>
+                          Launchpad Answers helps you build a
+                          community support network and knowledge base for
+                          your project. Encourage new users to ask questions
+                          rather than file bugs!
+                          <a href="/+about">Learn more&#8230;</a>
                         </p>
                         <div id="latest-questions-asked" class="left">
 
