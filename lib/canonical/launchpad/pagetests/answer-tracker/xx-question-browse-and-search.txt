@@ -182,7 +182,7 @@ The quesiton listing page for distribution displays the source package
 related to each question . The source package name is a link to the
 source package's question listing.
 
-    # We should use goBack() here but can't because of ZC #645:
+    # We should use goBack() here but can't because of bug #98372:
     # zope.testbrowser truncates document content after goBack().
     #>>> browser.goBack()
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
