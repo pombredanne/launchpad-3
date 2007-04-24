@@ -40,6 +40,10 @@ class ShipitReporter(LaunchpadScript):
         reportset = getUtility(IShipItReportSet)
 
         self.txn.begin()
+        csv_file = requestset.generateRequestDistributionReport()
+        reportset.new(self._createLibraryFileAlias(
+            csv_file, 'RequestDistribution'))
+
         csv_file = requestset.generateCountryBasedReport()
         reportset.new(self._createLibraryFileAlias(csv_file, 'OrdersByCountry'))
 

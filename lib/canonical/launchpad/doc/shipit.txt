@@ -986,6 +986,59 @@ requests for CDs of the current distrorelease or all requests.
   Edubuntu Requested 64-bit PC CDs: 0
         Edubuntu Requested Mac CDs: 0
 
+
+To help identifying if we're reaching new users with every release, we have a
+report which shows the distribution of requests. Both for the current release
+and to the previous one.
+
+  >>> csv_file = requestset.generateRequestDistributionReport()
+
+  # Skip the first two lines since they have headers which are supposed to
+  # span across multiple columns, screwing our pprint_csv() function.
+  >>> content = csv_file.read().split('\n', 2)[2]
+  >>> pprint_csv(content)
+  ------------------------------------------------------------ Line 1
+          # of requests: 1
+            # of people: 10
+    avg CDs per request: 7.4
+            # of people: 7
+  avg CDs pers shipment: 7.28571428571
+            # of people: 0
+    avg CDs per request: 0
+            # of people: 0
+  avg CDs pers shipment: 0
+  ------------------------------------------------------------ Line 2
+          # of requests: 2
+            # of people: 1
+    avg CDs per request: 1.5
+            # of people: 1
+  avg CDs pers shipment: 1.5
+            # of people: 0
+    avg CDs per request: 0
+            # of people: 0
+  avg CDs pers shipment: 0
+  ------------------------------------------------------------ Line 3
+          # of requests: 3
+            # of people: 0
+    avg CDs per request: 0
+            # of people: 0
+  avg CDs pers shipment: 0
+            # of people: 1
+    avg CDs per request: 66.0
+            # of people: 1
+  avg CDs pers shipment: 66.0
+  ------------------------------------------------------------ Line 4
+          # of requests: 8
+            # of people: 0
+    avg CDs per request: 0
+            # of people: 0
+  avg CDs pers shipment: 0
+            # of people: 0
+    avg CDs per request: 0.0
+            # of people: 0
+  avg CDs pers shipment: 0.0
+
+
 All these reports are generated periodically and stored in the Librarian by
 the shipit-reports cronscript.
 
