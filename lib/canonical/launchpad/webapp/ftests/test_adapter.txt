@@ -15,10 +15,6 @@ Imports and test setup:
     >>> from canonical.config import config
     >>> from canonical.launchpad.webapp.adapter import *
 
-    >>> from canonical.launchpad.ftests.harness import (
-    ...     LaunchpadFunctionalTestSetup)
-    >>> LaunchpadFunctionalTestSetup().setUp()
-
 
 The Launchpad database connection is created by getting the
 IZopeDatabaseAdapter for the connection name in question.  The
@@ -460,7 +456,3 @@ thread will have succeeded.
     Traceback (most recent call last):
     ...
     Retry: ...
-
-Cleanup:
-
-    >>> LaunchpadFunctionalTestSetup().tearDown()

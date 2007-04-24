@@ -52,6 +52,176 @@ def _reset_dirty_commit_flags(previous_committed, previous_dirty):
     if not previous_dirty:
         ConnectionWrapper.dirty = False
 
+# ---- Reconnecting database adapter
+
+def _wasDisconnected(msg):
+    """Check if the given exception message indicates a database disconnect.
+
+    The message will either be a string, or a dictionary mapping
+    cursors to string messages.
+    """
+    if isinstance(msg, basestring):
+        if (msg.startswith('server closed the connection unexpectedly') or
+            msg.startswith('could not connect to server') or
+            msg.startswith('no connection to the server')):
+            return True
+    elif isinstance(msg, dict):
+        for value in msg.itervalues():
+            if _wasDisconnected(value):
+                return True
+    return False
+
+
+class DisconnectedConnectionError(Exception):
+    """Attempt was made to access the database after a disconnection."""
+
+
+class ReconnectingConnection:
+    """A Python DB-API connection class that handles disconnects."""
+
+    _connection = None
+    _isDead = False
+    _generation = 0
+
+    def __init__(self, connection_factory):
+        self._connection_factory = connection_factory
+        self._ensureConnected()
+
+    def _ensureConnected(self):
+        """Ensure that we are connected to the database.
+
+        If the connection is marked as dead, or if we can't reconnect,
+        then raise DisconnectedConnectionError.
+
+        If we need to reconnect, the connection generation number is
+        incremented.
+        """
+        if self._isDead:
+            raise Retry((DisconnectedConnectionError,
+                         DisconnectedConnectionError('Already disconnected'),
+                         None))
+        if self._connection is not None:
+            return
+        try:
+            self._connection = self._connection_factory()
+        except psycopg.OperationalError:
+            self._disconnected()
+        self._generation += 1
+
+    def _disconnected(self):
+        """Note that we were disconnected from the database.
+
+        This resets the internal _connection attribute, and marks the
+        connection as dead.  Further attempts to use this connection
+        before a rollback() will not result in reconnection.
+
+        This function should be called from an exception handler.
+        """
+        self._isDead = True
+        self._connection = None
+        raise Retry(sys.exc_info())
+
+    def _checkDisconnect(self, _function, *args, **kwargs):
+        try:
+            return _function(*args, **kwargs)
+        except psycopg.IntegrityError, exc:
+            raise Retry(sys.exc_info())
+        except psycopg.Error, exc:
+            if exc.args and _wasDisconnected(exc.args[0]):
+                self._disconnected()
+            else:
+                raise
+
+    def __getattr__(self, name):
+        self._ensureConnected()
+        return getattr(self._connection, name)
+
+    def commit(self):
+        self._ensureConnected()
+        self._checkDisconnect(self._connection.commit)
+
+    def rollback(self):
+        """Rollback the database connection.
+
+        If this results in a disconnection error, we ignore it and set
+        the connection to None so it gets reconnected next time."""
+        if self._connection is not None:
+            try:
+                self._connection.rollback()
+            except psycopg.Error, exc:
+                if exc.args and _wasDisconnected(exc.args[0]):
+                    self._connection = None
+                else:
+                    raise
+        self._isDead = False
+
+    def cursor(self):
+        return ReconnectingCursor(self)
+
+
+class ReconnectingCursor:
+    """A Python DB-API cursor class that handles disconnects."""
+
+    _generation = None
+    _cursor = None
+
+    def __init__(self, connection):
+        self.connection = connection
+        self._ensureCursor()
+
+    def _ensureCursor(self):
+        self.connection._ensureConnected()
+        # if the generation numbers don't match, we have an old cursor
+        if self._generation != self.connection._generation:
+            self._cursor = None
+        if self._cursor is None:
+            self._cursor = self.connection._checkDisconnect(
+                self.connection._connection.cursor)
+            self._generation = self.connection._generation
+
+    def __getattr__(self, name):
+        self._ensureCursor()
+        return getattr(self._cursor, name)
+
+    def execute(self, *args, **kwargs):
+        self._ensureCursor()
+        return self.connection._checkDisconnect(
+            self._cursor.execute, *args, **kwargs)
+
+    def executemany(self, *args, **kwargs):
+        self._ensureCursor()
+        return self.connection._checkDisconnect(
+            self._cursor.executemany, *args, **kwargs)
+
+    def fetchone(self, *args, **kwargs):
+        self._ensureCursor()
+        return self.connection._checkDisconnect(
+            self._cursor.fetchone, *args, **kwargs)
+
+    def fetchmany(self, *args, **kwargs):
+        self._ensureCursor()
+        return self.connection._checkDisconnect(
+            self._cursor.fetchmany, *args, **kwargs)
+
+    def fetchall(self, *args, **kwargs):
+        self._ensureCursor()
+        return self.connection._checkDisconnect(
+            self._cursor.fetchall, *args, **kwargs)
+
+
+class ReconnectingDatabaseAdapter(PsycopgAdapter):
+    """A Postgres database adapter that can reconnect to the database."""
+
+    Connection = ReconnectingConnection
+
+    def connect(self):
+        if not self.isConnected():
+            try:
+                self._v_connection = PsycopgConnection(
+                    self.Connection(self._connection_factory), self)
+            except psycopg.Error, error:
+                raise DatabaseException, str(error)
+
 
 class SessionDatabaseAdapter(PsycopgAdapter):
     """A subclass of PsycopgAdapter that stores its connection information
