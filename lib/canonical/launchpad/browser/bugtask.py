@@ -673,13 +673,14 @@ class BugTaskEditView(GeneralFormView):
             if self.context.bugwatch is not None:
                 self.assignee_widget = CustomWidgetFactory(
                     AssigneeDisplayWidget)
-                self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
-                self.importance_widget = CustomWidgetFactory(
-                    DBItemDisplayWidget)
 
         if 'sourcepackagename' in editable_field_names:
             self.sourcepackagename_widget = CustomWidgetFactory(
                 BugTaskSourcePackageNameWidget)
+        for db_item_field in ['status', 'importance']:
+            if db_item_field in read_only_field_names:
+                display_widget = CustomWidgetFactory(DBItemDisplayWidget)
+                setattr(self, '%s_widget' % db_item_field, display_widget)
         setUpWidgets(
             self, self.schema, IInputWidget, names=editable_field_names,
             initial=self.initial_values, prefix=self.prefix)
