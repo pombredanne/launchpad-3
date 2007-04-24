@@ -95,3 +95,6 @@ class ITranslationGroupSet(IAddFormCustomization):
     def getByPerson(person):
         """Return the translation groups which that person is a member of."""
 
+    def getGroupsCount():
+        """Return the amount of translation groups available."""
+

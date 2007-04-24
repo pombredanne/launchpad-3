@@ -1,96 +1,92 @@
-<html xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
->
+<html metal:use-macro="view/macro:page/applicationhome"
+      i18n:domain="launchpad">
   <body>
-    <metal:heading fill-slot="pageheading">
-      <div><a href="/translations/groups">Translation groups</a></div>
-      <h1 tal:content="context/title">Savants Translation Group</h1>
-    </metal:heading>
+    <h1 metal:fill-slot="heading">Translation groups</h1>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
+    <div metal:fill-slot="main">
+      <h1>
+        <tal:translation-group replace="context/title">
+          Foo bar
+        </tal:translation-group> translation group
+      </h1>
 
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-relateds" />
-</metal:rightportlets>
+      <p class="documentDescription" tal:content="context/summary">
+        $TranslationGroup.summary goes here. This should be quite short,
+        just a single paragraph of text really, giving a summary of
+        this TranslationGroup.
+      </p>
+      <div>
+        <strong>
+          <a tal:attributes="href view/translation_groups/fmt:url">
+            &laquo; Back to translation groups list
+          </a>
+        </strong>
+      </div>
 
-<div metal:fill-slot="main">
-
-  <p class="documentDescription" tal:content="context/summary">
-      $TranslationGroup.summary goes here. This should be quite short,
-      just a single paragraph of text really, giving a summary of
-      this TranslationGroup.
-  </p>
-
-      <p
-        tal:repeat="notice view/notices"
-        class="informational message"
-        tal:content="notice"
-      >Notification message.</p>
-
-  <tal:translators condition="context/translators">
-
-  <table class="sortable listing" id="group-members">
-    <thead>
-      <tr>
-        <th>Language</th>
-        <th>Translator</th>
-        <th></th>
-        <th>Appointed</th>
-        <th tal:condition="context/required:launchpad.Edit"></th>
-      </tr>
-    </thead>
-    <tr tal:repeat="translator view/translator_list">
-      <td tal:content="translator/lang" />
-      <td><a tal:content="translator/person/browsername"
-              tal:attributes="href translator/person/fmt:url" />
-        <tal:comment condition="nothing">
-          XXX mpt 20050627: Change this to
-          string:/people/${translator/person/name}/+translations
-          once +translations is implemented (bug 1154)
-        </tal:comment>
-      </td>
-      <td><a tal:attributes="href translator/code"><img
-             src="/@@/edit" alt="Change"
-             title="Change Translator"></a>
-      </td>
-      <td>
-        <span class="sortkey"
-          tal:content="translator/datecreated/fmt:datetime" />
-        <span
-          tal:attributes="title translator/datecreated/fmt:datetime"
-          tal:content="translator/datecreated/fmt:approximatedate">
-          2007-09-17
-        </span>
-      </td>
-      <td tal:condition="context/required:launchpad.Edit">
-        <form method="POST" action="+rm">
-            <input type="hidden" name="remove"
-                   tal:attributes="value translator/code">
-             <input type="image" style="border: 0;"
-                    src="/@@/remove" alt="Remove"
-                    title="Remove Translator" name="rmform" />
-        </form>
-      </td>
-    </tr>
-  </table>
-
-        </tal:translators>
-
-        <p tal:condition="not: context/translators" class="message">
-          There are no translators appointed in this group yet.
-        </p>
-        <ul class="menu">
-          <li tal:condition="context/required:launchpad.Edit" class="add">
-            <a href="+appoint">Appoint additional translators</a>
-          </li>
-          <li tal:condition="not:request/lp:person" class="locked">
-            <a href="+appoint">Appoint additional translators</a>
-          </li>
-        </ul>
+      <div class="left">
+        <div class="section">
+          <div class="portlet">
+            <h2>Translation Teams</h2>
+            <tal:translators condition="context/translators">
+              <table class="sortable listing" id="group-members">
+                <thead>
+                  <tr>
+                    <th>Language</th>
+                    <th>Translator</th>
+                    <th></th>
+                    <th>Appointed</th>
+                    <th tal:condition="context/required:launchpad.Edit"></th>
+                  </tr>
+                </thead>
+                <tr tal:repeat="translator view/translator_list">
+                  <td tal:content="translator/lang" />
+                  <td><a tal:content="translator/person/browsername"
+                          tal:attributes="href translator/person/fmt:url" />
+                  </td>
+                  <td><a tal:attributes="href translator/code"><img
+                         src="/@@/edit" alt="Change"
+                         title="Change Translator"></a>
+                  </td>
+                  <td>
+                    <span class="sortkey"
+                      tal:content="translator/datecreated/fmt:datetime" />
+                    <span
+                      tal:attributes="title translator/datecreated/fmt:datetime"
+                      tal:content="translator/datecreated/fmt:approximatedate">
+                      2007-09-17
+                    </span>
+                  </td>
+                  <td tal:condition="context/required:launchpad.Edit">
+                    <form method="POST" action="+rm">
+                        <input type="hidden" name="remove"
+                               tal:attributes="value translator/code">
+                         <input type="image" style="border: 0;"
+                                src="/@@/remove" alt="Remove"
+                                title="Remove Translator" name="rmform" />
+                    </form>
+                  </td>
+                </tr>
+              </table>
+            </tal:translators>
+            <tal:no-translators condition="not: context/translators">
+              There are no translators appointed in this group yet.
+            </tal:no-translators>
+            <ul class="menu">
+              <li tal:condition="context/required:launchpad.Edit" class="add">
+                <a href="+appoint">Appoint additional translators</a>
+              </li>
+              <li tal:condition="not:request/lp:person" class="locked">
+                <a href="+appoint">Appoint additional translators</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="right">
+        <div class="section">
+          <div tal:replace="structure context/@@+portlet-relateds" />
+        </div>
+      </div>
     </div>
   </body>
 </html>

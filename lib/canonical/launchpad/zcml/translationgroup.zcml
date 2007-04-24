@@ -4,6 +4,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="translations">
+
     <!-- TranslationGroup -->
     <content class="canonical.launchpad.database.TranslationGroup">
         <allow interface="canonical.launchpad.interfaces.ITranslationGroup" />
@@ -34,7 +36,6 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationGroup"
-        facet="translations"
         class="canonical.launchpad.browser.TranslationGroupView"
         permission="zope.Public">
         <browser:page
@@ -51,7 +52,6 @@
     <browser:page
         name="+rm"
         for="canonical.launchpad.interfaces.ITranslationGroup"
-        facet="translations"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TranslationGroupView"
         attribute="removals"
@@ -60,17 +60,15 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.ITranslationGroup"
-        facet="translations"
         label="Edit translation group details"
         fields="name title summary"
         permission="launchpad.Edit"
-        template="../templates/launchpad-editform.pt"
+        template="../templates/translationgroup-edit.pt"
         />
 
     <browser:page
         name="+appoint"
         for="canonical.launchpad.interfaces.ITranslationGroup"
-        facet="translations"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TranslationGroupAddTranslatorView"
         template="../templates/translationgroup-appoint.pt"
@@ -86,8 +84,8 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
-        path_expression="string:groups"
-        parent_utility="canonical.launchpad.interfaces.IRosettaApplication"
+        path_expression="string:+translation-groups"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
     <browser:defaultView
@@ -109,7 +107,6 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
-        facet="translations"
         permission="zope.Public">
         <browser:page
             template="../templates/translationgroups-index.pt"
@@ -117,4 +114,5 @@
             />
     </browser:pages>
 
+</facet>
 </configure>

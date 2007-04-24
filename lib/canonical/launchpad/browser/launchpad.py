@@ -452,6 +452,7 @@ class LaunchpadRootNavigation(Navigation):
         'bounties': IBountySet,
         '+code': IBazaarApplication,
         '+languages': ILanguageSet,
+        '+translation-groups': ITranslationGroupSet,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,
