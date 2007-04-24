@@ -29,7 +29,7 @@ class MentoringOffer(SQLBase):
 
     implements(IMentoringOffer)
 
-    _defaultOrder = ['bug', 'specification', 'id']
+    _defaultOrder = ['-date_created', '-id']
 
     # db field names
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -75,7 +75,7 @@ class MentoringOfferSet:
             """ + BugTask.completeness_clause + ")",
             clauseTables=['BugTask', 'Bug'],
             distinct=True)
-        return via_specs.union(via_bugs)
+        return via_specs.union(via_bugs, orderBy=['-date_created'])
 
     @property
     def recent_completed_mentorships(self):

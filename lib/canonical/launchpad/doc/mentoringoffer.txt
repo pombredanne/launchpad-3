@@ -31,8 +31,8 @@ First, we look at foo_bar's offers:
 
     >>> for offer in foo_bar.mentoring_offers:
     ...     print offer.target.title
-    Blackhole Trash folder
     Facilitate mass installs  of Ubuntu using Netboot configuration
+    Blackhole Trash folder
 
 Now, let's look at the list of offers associated with lpteam. For this we
 use the team_mentorships attribute, because mentoring_offers would imply
@@ -42,8 +42,8 @@ wanting to join that specific team:
 
     >>> for offer in lpteam.team_mentorships:
     ...     print offer.target.title
-    Blackhole Trash folder
     Facilitate mass installs  of Ubuntu using Netboot configuration
+    Blackhole Trash folder
 
 And at the offers related to Bug #2:
 

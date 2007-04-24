@@ -40,8 +40,8 @@
     <tbody>
       <tr tal:repeat="offer offers">
         <td>
-          <span tal:content="offer/date_created/fmt:date"
-                tal:attributes="title offer/date_created/fmt:time">
+          <span tal:content="offer/date_created/fmt:approximatedate"
+                tal:attributes="title offer/date_created/fmt:datetime">
             2007-15-13
           </span>
         </td>

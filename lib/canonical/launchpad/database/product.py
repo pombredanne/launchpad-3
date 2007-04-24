@@ -431,7 +431,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             """ + BugTask.completeness_clause + ")",
             clauseTables=['BugTask', 'Bug'],
             distinct=True)
-        return via_specs.union(via_bugs)
+        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     @property
     def translationgroups(self):

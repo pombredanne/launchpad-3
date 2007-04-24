@@ -140,7 +140,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ + BugTask.completeness_clause + ")",
             clauseTables=['Product', 'BugTask', 'Bug'],
             distinct=True)
-        return via_specs.union(via_bugs)
+        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     def translatables(self):
         """See IProject."""
