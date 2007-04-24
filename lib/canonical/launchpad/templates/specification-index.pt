@@ -148,7 +148,7 @@
       </tal:block>
     </p>
     <tal:block condition="not: context/is_complete">
-      <p condition="view/userIsMentor">
+      <p tal:condition="view/userIsMentor">
         &raquo;
         <a href="+retractmentoring">Retract my offer of mentorship</a>
       </p>

@@ -141,6 +141,21 @@ which allow us to retract this offer of mentorship.
   >>> page_mentoring_retract in browser.contents
   True
 
+However, somebody ELSE should still be able to offer mentoring, and not yet
+offer mentoring:
+
+  >>> browser = Browser()
+  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
+  >>> browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2')
+  >>> menu_mentoring_offer in browser.contents
+  True
+  >>> page_mentoring_offer in browser.contents
+  True
+  >>> menu_mentoring_retract in browser.contents
+  False
+  >>> page_mentoring_retract in browser.contents
+  False
+
 Now, let's repeat the whole exercise with a Blueprint.
 
   >>> browser = Browser()
@@ -173,6 +188,21 @@ which allow us to retract this offer of mentorship.
   True
   >>> page_mentoring_retract in browser.contents
   True
+
+However, somebody ELSE should still be able to offer mentoring, and not yet
+offer mentoring:
+
+  >>> browser = Browser()
+  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
+  >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
+  >>> menu_mentoring_offer in browser.contents
+  True
+  >>> page_mentoring_offer in browser.contents
+  True
+  >>> menu_mentoring_retract in browser.contents
+  False
+  >>> page_mentoring_retract in browser.contents
+  False
 
 
 == Mentorship Listings ==
