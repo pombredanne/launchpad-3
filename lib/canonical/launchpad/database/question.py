@@ -160,10 +160,9 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.distribution = None
             self.sourcepackagename = None
         # XXX sinzui 2007-04-20 #108240
-        # We must test for both interfaces because they do not have a common
-        # ancestor that provideds distribution and sourcepackagename
-        # We support both /ubuntu/hoary/+questions and 
-        # /ubuntu/+questions
+        # We test for ISourcePackage because it is a valid QuestionTarget even
+        # though it should not be. SourcePackages are never passed to this
+        # mutator.
         elif (ISourcePackage.providedBy(question_target) or
                 IDistributionSourcePackage.providedBy(question_target)):
             self.product = None
