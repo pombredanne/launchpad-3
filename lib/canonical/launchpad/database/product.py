@@ -100,7 +100,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='translationgroup', foreignKey='TranslationGroup', notNull=False,
         default=None)
     translationpermission = EnumCol(
-        dbName='translationpermission', notNull=True, 
+        dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     bugtracker = ForeignKey(
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
@@ -120,11 +120,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     # allow it to be NULL so we can create new product records before
     # the corresponding series records.
     development_focus = ForeignKey(
-        foreignKey="ProductSeries", dbName="development_focus", notNull=False, 
+        foreignKey="ProductSeries", dbName="development_focus", notNull=False,
         default=None)
 
     calendar = ForeignKey(
-        dbName='calendar', foreignKey='Calendar', default=None, 
+        dbName='calendar', foreignKey='Calendar', default=None,
         forceDBName=True)
 
     def _getBugTaskContextWhereClause(self):
@@ -363,9 +363,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            'Language.id = Ticket.language AND '
-            'Ticket.product = %s' % sqlvalues(self.id),
-            clauseTables=['Ticket'], distinct=True))
+            'Language.id = Question.language AND '
+            'Question.product = %s' % sqlvalues(self.id),
+            clauseTables=['Question'], distinct=True))
 
     @property
     def translatable_packages(self):
@@ -589,16 +589,17 @@ class ProductSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return iter(self._getProducts())
+        return iter(self.all_active)
 
     @property
     def people(self):
         return getUtility(IPersonSet)
 
     def latest(self, quantity=5):
-        return self._getProducts()[:quantity]
+        return self.all_active[:quantity]
 
-    def _getProducts(self):
+    @property
+    def all_active(self):
         results = Product.selectBy(active=True, orderBy="-Product.datecreated")
         # The main product listings include owner, so we prejoin it in
         return results.prejoin(["owner"])

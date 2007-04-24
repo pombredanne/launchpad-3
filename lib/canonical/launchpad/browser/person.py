@@ -630,8 +630,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = ITeam
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'editemail', 'polls', 'add_poll', 'joinleave',
-             'reassign', 'common_packages']
+             'mugshots', 'add_member', 'editemail', 'polls', 'add_poll',
+             'joinleave', 'reassign', 'common_packages']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -656,6 +656,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def members(self):
         target = '+members'
         text = 'Show all members'
+        return Link(target, text, icon='people')
+
+    def mugshots(self):
+        target = '+mugshots'
+        text = 'Show group photo'
         return Link(target, text, icon='people')
 
     @enabled_with_permission('launchpad.Edit')
@@ -1791,12 +1796,25 @@ class PersonTranslationView(LaunchpadView):
                   for record in batchnav.currentBatch())
         if ids:
             cache = list(getUtility(IPOTemplateSet).getByIDs(ids))
+
         return batchnav
 
     @cachedproperty
     def translation_groups(self):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
+
+    def should_display_message(self, pomsgset):
+        """Should a certain POMsgSet be displayed.
+
+        Return False if user is not logged in and message may contain
+        sensitive data such as email addresses.
+
+        Otherwise, return True.
+        """
+        if self.user:
+            return True
+        return not(pomsgset.potmsgset.hide_translations_from_anonymous)
 
 
 class PersonGPGView(LaunchpadView):

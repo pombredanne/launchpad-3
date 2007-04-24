@@ -5,6 +5,7 @@
 
 import _pythonpath
 
+import os
 from StringIO import StringIO
 
 from twisted.internet import reactor
@@ -71,6 +72,13 @@ class DistroMirrorProber(LaunchpadScript):
             raise LaunchpadScriptFailure(
                 'Wrong value for argument --content-type: %s'
                 % self.options.content_type)
+
+        orig_proxy = os.environ.get('http_proxy')
+        if config.distributionmirrorprober.use_proxy:
+            os.environ['http_proxy'] = config.launchpad.http_proxy
+            self.logger.debug("Using %s as proxy." % os.environ['http_proxy'])
+        else:
+            self.logger.debug("Not using any proxy.")
 
         # Using a script argument to control a config variable is not a great
         # idea, but to me this seems better than passing the no_remote_hosts
@@ -143,6 +151,7 @@ class DistroMirrorProber(LaunchpadScript):
         # it seems.
         # -- Guilherme Salgado, 2007-04-03
         self.txn.commit()
+
         self.logger.info('Done.')
 
 
