@@ -27,6 +27,15 @@ SQLOS uses:
     True
 
 
+The database adapter is a reconnecting database adapter, so handles
+connection drops (as tested elsewhere):
+
+    >>> from canonical.launchpad.webapp.adapter import (
+    ...     ReconnectingDatabaseAdapter)
+    >>> isinstance(da, ReconnectingDatabaseAdapter)
+    True
+
+
 Statement Timeout
 =================
 

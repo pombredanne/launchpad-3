@@ -72,6 +72,17 @@ def _wasDisconnected(msg):
     return False
 
 
+class RetryPsycopgIntegrityError(psycopg.IntegrityError, Retry):
+    """Act like a psycopg IntegrityError, but also inherit from Retry
+       so the Zope3 publishing machinery will retry requests if it is
+       raised, as per Bug 31755.
+    """
+    def __init__(self, exc_info):
+        Retry.__init__(self, exc_info)
+        integrity_error = exc_info[1]
+        psycopg.IntegrityError.__init__(self, *integrity_error.args)
+
+
 class DisconnectedConnectionError(Exception):
     """Attempt was made to access the database after a disconnection."""
 
@@ -124,8 +135,18 @@ class ReconnectingConnection:
     def _checkDisconnect(self, _function, *args, **kwargs):
         try:
             return _function(*args, **kwargs)
-        except psycopg.IntegrityError, exc:
-            raise Retry(sys.exc_info())
+        except psycopg.IntegrityError:
+            # Fix Bug 31755. There are unavoidable race conditions
+            # when handling form submissions (unless we require tables
+            # to be locked, which would kill performance). To fix
+            # this, if we get an IntegrityError from a constraints
+            # violation we ask Zope to retry the request. This will be
+            # fairly harmless when database constraints are triggered
+            # due to insufficient form validation. When the request is
+            # retried, the form validation code will again get a
+            # chance to detect if database constraints will be
+            # violated and display a suitable error message.
+            raise RetryPsycopgIntegrityError(sys.exc_info())
         except psycopg.Error, exc:
             if exc.args and _wasDisconnected(exc.args[0]):
                 self._disconnected()
@@ -223,91 +244,26 @@ class ReconnectingDatabaseAdapter(PsycopgAdapter):
                 raise DatabaseException, str(error)
 
 
-class SessionDatabaseAdapter(PsycopgAdapter):
+class SessionDatabaseAdapter(ReconnectingDatabaseAdapter):
     """A subclass of PsycopgAdapter that stores its connection information
     in the central launchpad configuration
     """
     
     def __init__(self, dsn=None):
         """Ignore dsn"""
-        dbuser = config.launchpad.session.dbuser
-        dbhost = config.launchpad.session.dbhost or ''
-        dbname = config.launchpad.session.dbname
-        PsycopgAdapter.__init__(
-                self, 'dbi://%(dbuser)s:@%(dbhost)s/%(dbname)s' % vars()
-                )
-
-    def connect(self):
-        if not self.isConnected():
-            flags = _get_dirty_commit_flags()
-            super(SessionDatabaseAdapter, self).connect()
-            _reset_dirty_commit_flags(*flags)
+        super(SessionDatabaseAdapter, self).__init__(
+            'dbi://%(dbuser)s:@%(dbhost)s/%(dbname)s' % dict(
+                dbuser=config.launchpad.session.dbuser,
+                dbhost=config.launchpad.session.dbhost or '',
+                dbname=config.launchpad.session.dbname))
 
     def _connection_factory(self):
-        con = super(SessionDatabaseAdapter, self)._connection_factory()
-        con.set_isolation_level(AUTOCOMMIT_ISOLATION)
-        con.cursor().execute("SET client_encoding TO UTF8")
-        return con
-
-
-class LaunchpadDatabaseAdapter(PsycopgAdapter):
-    """A subclass of PsycopgAdapter that performs some additional
-    connection setup.
-    """
-    implements(ILaunchpadDatabaseAdapter)
-
-    def __init__(self, dsn=None):
-        """Ignore dsn"""
-        super(LaunchpadDatabaseAdapter, self).__init__('dbi://')
-
-    def connect(self, _dbuser=None):
-        """See zope.app.rdb.interfaces.IZopeDatabaseAdapter
-
-        We pass the database user through to avoid having to keep state
-        using a thread local.
-        """
-        if not self.isConnected():
-            try:
-                self._v_connection = PsycopgConnection(
-                    self._connection_factory(_dbuser=_dbuser), self
-                    )
-            except psycopg.Error, error:
-                raise DatabaseException, str(error)
-
-    def _connection_factory(self, _dbuser=None):
-        """Override method provided by PsycopgAdapter to pull
-        connection settings from the config file
-        """
-        self.setDSN('dbi://%s@%s/%s' % (
-            _dbuser or config.launchpad.dbuser,
-            config.dbhost or '',
-            config.dbname
-            ))
-
         flags = _get_dirty_commit_flags()
-        connection = PsycopgAdapter._connection_factory(self)
-
-        if config.launchpad.db_statement_timeout is not None:
-            cursor = connection.cursor()
-            cursor.execute('SET statement_timeout TO %d' %
-                           config.launchpad.db_statement_timeout)
-            connection.commit()
-
+        connection = super(SessionDatabaseAdapter, self)._connection_factory()
+        connection.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        connection.cursor().execute("SET client_encoding TO UTF8")
         _reset_dirty_commit_flags(*flags)
-        return ConnectionWrapper(connection)
-
-    def readonly(self):
-        """See ILaunchpadDatabaseAdapter"""
-        cursor = self._v_connection.cursor()
-        cursor.execute('SET TRANSACTION READ ONLY')
-
-    def switchUser(self, dbuser=None):
-        """See ILaunchpadDatabaseAdapter"""
-        # We have to disconnect and reconnect as we may not be running
-        # as a user with privileges to issue 'SET SESSION AUTHORIZATION'
-        # commands.
-        self.disconnect()
-        self.connect(_dbuser=dbuser)
+        return connection
 
 
 _local = threading.local()
@@ -415,60 +371,36 @@ class RequestStatementTimedOut(RequestExpired):
     """A statement that was part of a request timed out."""
 
 
-class ConnectionWrapper:
+class LaunchpadConnection(ReconnectingConnection):
     """A simple wrapper around a DB-API connection object.
 
     Overrides the cursor() method to return CursorWrapper objects.
     """
     
-    def __init__(self, connection):
-        self.__dict__['_conn'] = connection
-
     def cursor(self):
-        return CursorWrapper(self, self._conn.cursor())
-
-    def __getattr__(self, attr):
-        return getattr(self._conn, attr)
-
-    def __setattr__(self, attr, value):
-        setattr(self._conn, attr, value)
+        return LaunchpadCursor(self)
 
     def commit(self):
         starttime = time.time()
         try:
-            self._conn.commit()
+            super(LaunchpadConnection, self).commit()
         finally:
             _log_statement(starttime, time.time(), self, 'COMMIT')
 
     def rollback(self):
         starttime = time.time()
         try:
-            self._conn.rollback()
+            super(LaunchpadConnection, self).rollback()
         finally:
             _log_statement(starttime, time.time(), self, 'ROLLBACK')
 
 
-class RetryPsycopgIntegrityError(psycopg.IntegrityError, Retry):
-    """Act like a psycopg IntegrityError, but also inherit from Retry
-       so the Zope3 publishing machinery will retry requests if it is
-       raised, as per Bug 31755.
-    """
-    def __init__(self, exc_info):
-        Retry.__init__(self, exc_info)
-        integrity_error = exc_info[1]
-        psycopg.IntegrityError.__init__(self, *integrity_error.args)
-
-
-class CursorWrapper:
+class LaunchpadCursor(ReconnectingCursor):
     """A simple wrapper for a DB-API cursor object.
 
     Overrides the execute() method to check whether the current
     request has expired.
     """
-
-    def __init__(self, connection_wrapper, cursor):
-        self.__dict__['_cur'] = cursor
-        self.__dict__['_connection_wrapper'] = connection_wrapper
 
     def execute(self, statement, *args, **kwargs):
         """Execute an SQL query, provided that the current request hasn't
@@ -483,7 +415,7 @@ class CursorWrapper:
             # make sure the current transaction can not be committed by
             # sending a broken SQL statement to the database
             try:
-                self._cur.execute('break this transaction')
+                super(LaunchpadCursor, self).execute('break this transaction')
             except psycopg.DatabaseError:
                 pass
             OpStats.stats['timeouts'] += 1
@@ -498,13 +430,13 @@ class CursorWrapper:
                 os.environ.get("LP_DEBUG_SQL")):
                 sys.stderr.write(statement + "\n")
             try:
-                return self._cur.execute(
-                    '/*%s*/ %s' % (id(self._connection_wrapper), statement),
+                return super(LaunchpadCursor, self).execute(
+                    '/*%s*/ %s' % (id(self.connection), statement),
                     *args, **kwargs)
             finally:
                 _log_statement(
                         starttime, time.time(),
-                        self._connection_wrapper, statement
+                        self.connection, statement
                         )
         except psycopg.ProgrammingError, error:
             if len(error.args):
@@ -517,22 +449,58 @@ class CursorWrapper:
                     'ERROR:  cancelling statement due to statement timeout')):
                     raise RequestStatementTimedOut(statement)
             raise
-        # Fix Bug 31755. There are unavoidable race conditions when handling
-        # form submissions (unless we require tables to be locked, which would
-        # kill performance). To fix this, if we get an IntegrityError from a
-        # constraints violation we ask Zope to retry the request. This will
-        # be fairly harmless when database constraints are triggered due to
-        # insufficient form validation. When the request is retried, the
-        # form validation code will again get a chance to detect if database
-        # constraints will be violated and display a suitable error message.
-        except psycopg.IntegrityError:
-            raise RetryPsycopgIntegrityError(sys.exc_info())
 
-    def __getattr__(self, attr):
-        return getattr(self._cur, attr)
 
-    def __setattr__(self, attr, value):
-        setattr(self._cur, attr, value)
+class LaunchpadDatabaseAdapter(ReconnectingDatabaseAdapter):
+    """A subclass of PsycopgAdapter that performs some additional
+    connection setup.
+    """
+    implements(ILaunchpadDatabaseAdapter)
+
+    Connection = LaunchpadConnection
+
+    def __init__(self, dsn=None):
+        """Ignore dsn"""
+        super(LaunchpadDatabaseAdapter, self).__init__('dbi://')
+        self._local = threading.local()
+
+    def _connection_factory(self):
+        """Override method provided by PsycopgAdapter to pull
+        connection settings from the config file
+        """
+        dbuser = getattr(self._local, 'dbuser', None)
+        self.setDSN('dbi://%s@%s/%s' % (
+            dbuser or config.launchpad.dbuser,
+            config.dbhost or '',
+            config.dbname
+            ))
+
+        flags = _get_dirty_commit_flags()
+        connection = super(LaunchpadDatabaseAdapter,
+                           self)._connection_factory()
+
+        if config.launchpad.db_statement_timeout is not None:
+            cursor = connection.cursor()
+            cursor.execute('SET statement_timeout TO %d' %
+                           config.launchpad.db_statement_timeout)
+            connection.commit()
+
+        _reset_dirty_commit_flags(*flags)
+        return connection
+
+    def readonly(self):
+        """See ILaunchpadDatabaseAdapter"""
+        cursor = self._v_connection.cursor()
+        cursor.execute('SET TRANSACTION READ ONLY')
+
+    def switchUser(self, dbuser=None):
+        """See ILaunchpadDatabaseAdapter"""
+        # We have to disconnect and reconnect as we may not be running
+        # as a user with privileges to issue 'SET SESSION AUTHORIZATION'
+        # commands.
+        self.disconnect()
+        self._local.dbuser = dbuser
+        self.connect()
 
 
 class SQLOSAccessFromMainThread(Exception):
