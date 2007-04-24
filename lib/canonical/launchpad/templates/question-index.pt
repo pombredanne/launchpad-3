@@ -47,6 +47,7 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+
   <table tal:condition="context/whiteboard" class="listing">
     <tbody>
       <tr>
