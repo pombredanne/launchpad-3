@@ -63,7 +63,7 @@
         label="Edit translation group details"
         fields="name title summary"
         permission="launchpad.Edit"
-        template="../templates/translationgroup-edit.pt"
+        template="../templates/launchpad-editform.pt"
         />
 
     <browser:page

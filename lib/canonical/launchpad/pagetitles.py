@@ -42,7 +42,6 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMaloneApplication, IPerson)
 from canonical.launchpad.webapp import smartquote
-from canonical.launchpad.webapp.authorization import check_permission
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
@@ -1116,5 +1115,9 @@ translationimportqueueentry_index = 'Translation import queue entry'
 translationimportqueue_index = 'Translation import queue'
 
 translationimportqueue_blocked = 'Translation import queue - Blocked'
+
+def translator_edit(context, view):
+    return "Edit %s translator for %s" % (
+        context.language, context.translationgroup.title)
 
 unauthorized = 'Error: Not authorized'
