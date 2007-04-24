@@ -56,48 +56,31 @@ location as it is (which is Ubuntu, no package):
     ['No similar bugs were found.']
 
 Changing the bug location to a project (called "Product" on the page),
-entering a description and submitting will file the bug against the
-project not against the distribution. (Previously this has caused an
-OOPS.)
+without choosing a specific project will fail form validation, where
+previously this caused an OOPS.
 
     >>> user_browser.getControl('Product').selected = True
+    >>> user_browser.getControl(name='field.comment').value = 'sausage'
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/bugs/+filebug'
+    >>> tags = find_tags_by_class(user_browser.contents, 'message')
+    >>> for tag in tags:
+    ...     print tag.renderContents()
+    No similar bugs were found.
+    There is 1 error.
+    Required input is missing.
+
+Specifying a project and submitting will file the bug on the project
+and not on the distribution:
+
     >>> user_browser.getControl(
     ...     name='field.bugtarget.product').value = 'iso-codes'
-    >>> user_browser.getControl(name='field.comment').value = 'sausage'
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/iso-codes/+bug/...'
     >>> user_browser.title
     'Bug #... in iso-codes (upstream)...'
-
-Another user might attempt to file a duplicate bug in a similar way:
-
-    >>> user_browser.open('http://bugs.launchpad.dev/')
-    >>> user_browser.getLink('Report a bug').click()
-    >>> user_browser.getControl('Summary').value = 'Foo'
-    >>> user_browser.getControl('Continue').click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/bugs/+filebug'
-    >>> [ tag.renderContents().strip() for tag in
-    ...      find_tags_by_class(user_browser.contents, 'message') ]
-    ['No similar bugs were found.']
-
-Again, correcting the bug location like before:
-
-    >>> user_browser.getControl('Product').selected = True
-    >>> user_browser.getControl(
-    ...     name='field.bugtarget.product').value = 'iso-codes'
-    >>> user_browser.getControl('Submit Bug Report').click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/bugs/+filebug'
-
-If for any reason the form fails to validate (for example, no
-description), we look again for similar bugs, this time searching the
-project. Then we should find the bug we just filed:
-
-    >>> find_tag_by_id(user_browser.contents, 'similar-bugs'
-    ...     ).findPrevious('strong').renderContents()
-    'Your bug may have already been reported.'
 
 == Advanced filebug page ==
 
