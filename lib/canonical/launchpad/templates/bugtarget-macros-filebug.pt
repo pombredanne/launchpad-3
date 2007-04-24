@@ -74,9 +74,7 @@
         <i tal:condition="security_contact">
           The security contact for
           <span tal:content="security_context/displayname" />,
-          <a href="#"
-              tal:content="security_contact/displayname"
-              tal:attributes="href security_contact/fmt:url" />,
+          <a tal:replace="structure security_contact/fmt:link" />,
           will be notified.
         </i>
         <i tal:condition="not:security_contact"
