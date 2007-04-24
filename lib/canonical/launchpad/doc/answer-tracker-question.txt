@@ -3,8 +3,8 @@
 Launchpad includes an Answer Tracker where users can post questions
 (usually about problems they encounter with projects) and other can
 answer them.) Questions are created and accessed using the
-IQuestionTarget interface. This interface is available on products,
-distributions and sourcepackages.
+IQuestionTarget interface. This interface is available on Products,
+Distributions and DistributionSourcePackages.
 
     >>> login('test@canonical.com')
 
@@ -20,12 +20,11 @@ distributions and sourcepackages.
     >>> verifyObject(IQuestionTarget, ubuntu)
     True
 
-    >>> evolution_package = ubuntu.currentrelease.getSourcePackage(
-    ...     'evolution')
-    >>> verifyObject(IQuestionTarget, evolution_package)
+    >>> evolution_in_ubuntu = ubuntu.getSourcePackage('evolution')
+    >>> verifyObject(IQuestionTarget, evolution_in_ubuntu)
     True
 
-Altough distribution release do not implement the IQuestionTarget
+Altough Distribution releases do not implement the IQuestionTarget
 interface, it is possible to adapt one to it. (The adapter is actually
 the distrorelease's distribution.)
 
@@ -46,6 +45,14 @@ IQuestionTarget.
     >>> verifyObject(IQuestionTarget, questiontarget)
     True
 
+SourcePackages are also QuestionTargets.
+XXX sinzui 2007-04-24. #108240 SourcePackages should not be QuestionTargets
+
+    >>> evolution_in_hoary = ubuntu.currentrelease.getSourcePackage('evolution')
+    >>> questiontarget = IQuestionTarget(evolution_in_hoary)
+    >>> verifyObject(IQuestionTarget, questiontarget)
+    True
+    
 You create a new question by calling the newQuestion() method of an
 IQuestionTarget attribute.
 
@@ -119,28 +126,28 @@ The question can be assigned to a new IQuestionTarget.
 
     >>> thunderbird = getUtility(IProductSet)['thunderbird']
     >>> firefox_question.target = thunderbird
-    >>> print removeSecurityProxy(firefox_question.target.displayname)
+    >>> print firefox_question.target.displayname
     Mozilla Thunderbird
     
-When a question is reassigned, it's product, distribution and 
+When a question is reassigned, its product, distribution and 
 sourcepackagename attributes are reconciled with the IQuestionTarget.
     
     >>> firefox_question.target = ubuntu
     >>> print firefox_question.target.displayname
     Ubuntu
-    >>> print removeSecurityProxy(firefox_question.distribution.name)
+    >>> print firefox_question.distribution.name
     ubuntu
     >>> print firefox_question.sourcepackagename
     None
     >>> print firefox_question.product
     None
     
-    >>> firefox_question.target = evolution_package
+    >>> firefox_question.target = evolution_in_ubuntu
     >>> print firefox_question.target.displayname
     evolution in ubuntu
-    >>> print removeSecurityProxy(firefox_question.distribution.name)
+    >>> print firefox_question.distribution.name
     ubuntu
-    >>> print removeSecurityProxy(firefox_question.sourcepackagename.name)
+    >>> print firefox_question.sourcepackagename.name
     evolution
     >>> print firefox_question.product
     None
@@ -152,7 +159,7 @@ sourcepackagename attributes are reconciled with the IQuestionTarget.
     None
     >>> print firefox_question.sourcepackagename
     None
-    >>> print removeSecurityProxy(firefox_question.product.name)
+    >>> print firefox_question.product.name
     firefox
     
     
@@ -211,14 +218,14 @@ source package are part of the indirect subscribers list.
     # the package.
     >>> list(ubuntu.answer_contacts)
     []
-    >>> list(evolution_package.answer_contacts)
+    >>> list(evolution_in_ubuntu.answer_contacts)
     []
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu.addAnswerContact(ubuntu_team)
     True
-    >>> evolution_package.addAnswerContact(no_priv)
+    >>> evolution_in_ubuntu.addAnswerContact(no_priv)
     True
-    >>> package_question = evolution_package.newQuestion(
+    >>> package_question = evolution_in_ubuntu.newQuestion(
     ...     sample_person, 'Upgrading to Evolution 1.4 breaks plug-ins',
     ...     "The FnordsHighlighter plug-in doesn't work after upgrade.")
     >>> [s.person.displayname for s in package_question.subscriptions]
