@@ -34,3 +34,24 @@ in that distribution on the same bug.
     Traceback (most recent call last):
       ...
     WidgetsError: LaunchpadValidationError: ...
+
+Rendering a LaunchpadValidationError is done by getting an
+IWidgetInputErrorView:
+
+    >>> from canonical.launchpad.validators import (
+    ...     LaunchpadValidationError)
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     LaunchpadTestRequest)
+    >>> from zope.app.form.browser.interfaces import (
+    ...     IWidgetInputErrorView)
+    >>> from zope.app import zapi
+
+    >>> error = LaunchpadValidationError('lp validation error')
+    >>> request = LaunchpadTestRequest()
+    >>> view = zapi.getMultiAdapter((error, request),
+    ...     IWidgetInputErrorView)
+
+    >>> IWidgetInputErrorView.providedBy(view)
+    True
+    >>> view.snippet()
+    'lp validation error'
