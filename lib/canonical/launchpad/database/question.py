@@ -190,8 +190,8 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def isSubscribed(self, person):
         """See IQuestion."""
-        return bool(QuestionSubscription.selectOneBy(
-            question=self, person=person))
+        return bool(
+            QuestionSubscription.selectOneBy(question=self, person=person))
 
     # Workflow methods
 
@@ -301,6 +301,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         if self.status not in [
             QuestionStatus.OPEN, QuestionStatus.ANSWERED,
             QuestionStatus.NEEDSINFO]:
+
             return False
 
         for message in self.messages:
@@ -377,8 +378,9 @@ class Question(SQLBase, BugLinkTargetMixin):
     @property
     def can_reopen(self):
         """See IQuestion."""
-        return self.status in [QuestionStatus.ANSWERED, 
-            QuestionStatus.EXPIRED, QuestionStatus.SOLVED]
+        return self.status in [
+            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED,
+            QuestionStatus.SOLVED]
 
     @notify_question_modified()
     def reopen(self, comment, datecreated=None):
@@ -609,13 +611,8 @@ class QuestionSearch:
         constraints = []
 
         if self.product:
-            # We accept either a product or an iterable of products.
-            if IProduct.providedBy(self.product):
-                constraints.append(
-                    'Question.product = %s' % sqlvalues(self.product))
-            else:
-                constraints.append('Question.product IN (%s)' % ", ".join(
-                    sqlvalues(*self.product)))
+            constraints.append(
+                'Question.product = %s' % sqlvalues(self.product))
         elif self.distribution:
             constraints.append(
                 'Question.distribution = %s' % sqlvalues(self.distribution))
@@ -764,27 +761,35 @@ class QuestionTargetSearch(QuestionSearch):
 
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
-                 needs_attention_from=None, product=None, distribution=None,
-                 sourcepackagename=None, project=None):
+                 needs_attention_from=None, unsupported_target=None,  
+                 project=None, product=None, distribution=None, 
+                 sourcepackagename=None):
         assert (product is not None or distribution is not None or
             project is not None), ("Missing a product, distribution or "
                                    "project context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
-            needs_attention_from=needs_attention_from, sort=sort,
-            product=product, distribution=distribution,
-            sourcepackagename=sourcepackagename, project=project)
+            needs_attention_from=needs_attention_from, sort=sort, 
+            project=project, product=product, 
+            distribution=distribution, sourcepackagename=sourcepackagename)
 
         if owner:
             assert IPerson.providedBy(owner), (
                 "expected IPerson, got %r" % owner)
         self.owner = owner
+        self.unsupported_target = unsupported_target
 
     def getConstraints(self):
         """See QuestionSearch."""
         constraints = QuestionSearch.getConstraints(self)
         if self.owner:
             constraints.append('Question.owner = %s' % self.owner.id)
+        if self.unsupported_target is not None:
+            langs = [str(lang.id) 
+                     for lang in (
+                        self.unsupported_target.getSupportedLanguages())]
+            constraints.append('Question.language NOT IN (%s)' % 
+                               ', '.join(langs))
 
         return constraints
 

@@ -8,11 +8,12 @@ import os.path
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
+from zope.schema import ValidationError
 
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IDistroRelease, IPersonSet,
-        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
+        IBug, IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError,
@@ -103,7 +104,7 @@ class EmailCommand:
                         num_arguments_expected=self._numberOfArguments,
                         num_arguments_got=num_arguments_got))
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """Converts the string argument to Python objects.
 
         Returns a dict with names as keys, and the Python objects as
@@ -167,7 +168,7 @@ class EditEmailCommand(EmailCommand):
     def execute(self, context, current_event):
         """See IEmailCommand."""
         self._ensureNumberOfArguments()
-        args = self.convertArguments()
+        args = self.convertArguments(context)
 
         edited_fields = set()
         if ISQLObjectModifiedEvent.providedBy(current_event):
@@ -202,7 +203,7 @@ class PrivateEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         private_arg = self.string_args[0]
         if private_arg == 'yes':
@@ -221,7 +222,7 @@ class SecurityEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         [security_flag] = self.string_args
         if security_flag == 'yes':
@@ -329,9 +330,35 @@ class SummaryEmailCommand(EditEmailCommand):
 
         return EditEmailCommand.execute(self, bug, current_event)
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         return {'title': self.string_args[0]}
+
+
+class DuplicateEmailCommand(EditEmailCommand):
+    """Marks a bug as a duplicate of another bug."""
+
+    implements(IBugEditEmailCommand)
+    _numberOfArguments = 1
+
+    def convertArguments(self, context):
+        """See EmailCommand."""
+        [bug_id] = self.string_args
+        if bug_id == 'no':
+            # 'no' is a special value for unmarking a bug as a duplicate.
+            return {'duplicateof': None}
+        try:
+            bug = getUtility(IBugSet).getByNameOrID(bug_id)
+        except NotFoundError:
+            raise EmailProcessingError(
+                get_error_message('no-such-bug.txt', bug_id=bug_id))
+        duplicate_field = IBug['duplicateof'].bind(context)
+        try:
+            duplicate_field.validate(bug)
+        except ValidationError, error:
+            raise EmailProcessingError(error.doc())
+
+        return {'duplicateof': bug}
 
 
 class CVEEmailCommand(EmailCommand):
@@ -600,7 +627,7 @@ class AssigneeEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         person_name_or_email = self.string_args[0]
 
@@ -640,7 +667,7 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         item_name = self.string_args[0]
         dbschema = self.dbschema
@@ -701,6 +728,7 @@ class EmailCommands:
         'summary': SummaryEmailCommand,
         'subscribe': SubscribeEmailCommand,
         'unsubscribe': UnsubscribeEmailCommand,
+        'duplicate': DuplicateEmailCommand,
         'cve': CVEEmailCommand,
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,
