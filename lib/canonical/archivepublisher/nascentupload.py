@@ -618,7 +618,9 @@ class NascentUpload:
 
         Automatically mark the package as 'rejected' using _checkVersion().
         """
-        proposed_version = self.changes.version
+        # At this point DSC.version should be equal Changes.version.
+        # Anyway, we trust more in DSC.
+        proposed_version = self.changes.dsc.dsc_version
         archive_version = ancestry.sourcepackagerelease.version
         filename = uploaded_file.filename
         self._checkVersion(proposed_version, archive_version, filename)
@@ -628,7 +630,12 @@ class NascentUpload:
 
         Automatically mark the package as 'rejected' using _checkVersion().
         """
-        proposed_version = uploaded_file.version
+        # We only trust in the control version, specially because the
+        # 'version' from changesfile may not include epoch for binaries.
+        # This is actually something that needs attention in our buildfarm,
+        # because debuild does build the binary changesfile with a version
+        # that includes epoch.
+        proposed_version = uploaded_file.control_version
         archive_version = ancestry.binarypackagerelease.version
         filename = uploaded_file.filename
         self._checkVersion(proposed_version, archive_version, filename)

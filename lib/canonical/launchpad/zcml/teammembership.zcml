@@ -37,6 +37,13 @@
         for="canonical.launchpad.interfaces.ITeamMembership"
         name="+index" />
 
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+      for="canonical.launchpad.interfaces.ITeamMembership"
+      factory="canonical.launchpad.browser.TeamMembershipSHP"
+      permission="zope.Public"
+      />
+
     <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.ITeamMembership"
