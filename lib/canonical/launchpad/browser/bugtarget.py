@@ -44,8 +44,8 @@ from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     urlappend)
 from canonical.lp.dbschema import BugTaskStatus
-from canonical.widgets.bug import BugTagsWidget, FileBugTargetWidget
-
+from canonical.widgets.bug import BugTagsWidget
+from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 class FileBugData:
     """Extra data to be added to the bug."""
@@ -605,7 +605,7 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
 class FrontPageFileBugGuidedView(FileBugGuidedView):
     """Browser view class for the top-level +filebug page."""
     schema = IFrontPageBugAddForm
-    custom_widget('bugtarget', FileBugTargetWidget)
+    custom_widget('bugtarget', LaunchpadTargetWidget)
 
     # Make inheriting the base class' actions work.
     actions = FileBugGuidedView.actions
@@ -646,7 +646,7 @@ class FrontPageFileBugGuidedView(FileBugGuidedView):
 class FrontPageFileBugAdvancedView(FileBugAdvancedView):
     """Browser view class for the top-level +filebug-advanced page."""
     schema = IFrontPageBugAddForm
-    custom_widget('bugtarget', FileBugTargetWidget)
+    custom_widget('bugtarget', LaunchpadTargetWidget)
 
     # Make inheriting the base class' actions work.
     actions = FileBugAdvancedView.actions
