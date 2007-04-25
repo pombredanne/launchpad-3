@@ -56,6 +56,17 @@ IQuestionTarget attribute.
 (The complete IQuestionTarget interface is documented in
 ../interfaces/ftests/questiontarget.txt.)
 
+== Official usage ==
+
+A product or distribution may be offically supported by the community 
+using the Answer Tracker. This status is set by the official_answers
+attribute on the IProduct and IDistribution.
+
+    >>> ubuntu.official_answers
+    True
+    >>> firefox.official_answers
+    True
+    
 == IQuestion ==
 
 Questions are manipulated through the IQuestion interface:
@@ -232,3 +243,26 @@ When the link is removed, the owner is unsubscribed:
     <QuestionBug...>
     >>> bug7.isSubscribed(firefox_question.owner)
     False
+
+== Unsupported Questions ==
+
+While a Person may ask questions in his language of choice, that does
+not mean that indirect subscribers (Answer Contacts) to an 
+IQuestionTarget speak that language. IQuestionTarget can return a list
+Questions in languages that are not supported
+
+    >>> unsupported_questions = firefox.searchQuestions(unsupported=True)
+    >>> sorted([question.title for question in unsupported_questions])
+    [u'Problemas de Impress\xe3o no Firefox']
+   
+    >>> unsupported_questions = evolution_package.searchQuestions(
+    ...     unsupported=True)
+    >>> sorted([question.title for question in unsupported_questions])
+    []
+
+    >>> warty_question_target = IQuestionTarget(ubuntu_warty)
+    >>> unsupported_questions = warty_question_target.searchQuestions(
+    ...     unsupported=True)
+    >>> sorted([question.title for question in unsupported_questions])
+    [u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)']
+

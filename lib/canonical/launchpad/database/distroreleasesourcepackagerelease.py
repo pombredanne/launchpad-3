@@ -144,6 +144,13 @@ class DistroReleaseSourcePackageRelease:
                 clauseTables=clauseTables)
 
     @property
+    def meta_binaries(self):
+        """See IDistroReleaseSourcePackageRelease."""
+        return [self.distrorelease.getBinaryPackage(
+                    binary.binarypackagename)
+                for binary in self.binaries]
+
+    @property
     def changesfile(self):
         """See IDistroReleaseSourcePackageRelease."""
         clauseTables = [
@@ -223,3 +230,18 @@ class DistroReleaseSourcePackageRelease:
 
         return current
 
+    def copyTo(self, distrorelease, pocket):
+        """See IDistroReleaseSourcePackageRelease."""
+        current = self.current_published
+
+        copy = SecureSourcePackagePublishingHistory(
+            distrorelease=distrorelease,
+            pocket=pocket,
+            sourcepackagerelease=current.sourcepackagerelease,
+            component=current.component,
+            section=current.section,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            embargo=False,
+        )
+        return copy

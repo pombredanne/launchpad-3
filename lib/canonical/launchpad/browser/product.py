@@ -81,8 +81,9 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
     LaunchpadFormView, Link, Navigation, sorted_version_numbers,
     StandardLaunchpadFacets, stepto, stepthrough, structured)
-from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
+from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -402,13 +403,13 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'register', 'listall']
+             'all', 'register', ]
 
     def register(self):
         text = 'Register a project'
         return Link('+new', text, icon='add')
 
-    def listall(self):
+    def all(self):
         text = 'List all projects'
         return Link('+all', text, icon='list')
 
@@ -768,7 +769,6 @@ class ProductSetView(LaunchpadView):
         self.malone = form.get('malone')
         self.bazaar = form.get('bazaar')
         self.search_string = form.get('text')
-        self.matches = 0
         self.results = None
 
         self.searchrequested = False
@@ -795,17 +795,20 @@ class ProductSetView(LaunchpadView):
                 self.request.response.redirect(url)
                 return
 
-        if self.searchrequested:
-            self.matches = len(self.searchresults)
+    def all_batched(self):
+        return BatchNavigator(self.context.all_active, self.request)
 
+    @cachedproperty
+    def matches(self):
+        if not self.searchrequested:
+            return None
+        pillarset = getUtility(IPillarNameSet)
+        return pillarset.count_search_matches(self.search_string)
 
     @cachedproperty
     def searchresults(self):
         search_string = self.search_string.lower()
-        # We use a limit bigger than self.max_results_to_display so that we
-        # know when we had too many results and we can tell the user that some
-        # of them are not being displayed.
-        limit = self.max_results_to_display + 1
+        limit = self.max_results_to_display
         return [
             PillarSearchItem(
                 pillar_type=item['type'], name=item['name'],

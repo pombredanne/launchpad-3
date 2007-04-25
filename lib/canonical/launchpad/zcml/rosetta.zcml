@@ -40,6 +40,10 @@
             name="+about"
             template="../templates/rosetta-about.pt"
             />
+        <browser:page
+            name="+products-with-translations"
+            template="../templates/rosetta-products.pt"
+            />
         <!-- portlets -->
         <browser:page
             name="+portlet-stats"

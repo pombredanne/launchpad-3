@@ -555,8 +555,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
             spn in result]
 
-    def getPublishedReleases(self, sourcepackage_or_name, pocket=None,
-                             include_pending=False, exclude_pocket=None):
+    def getPublishedReleases(self, sourcepackage_or_name, version=None,
+            pocket=None, include_pending=False, exclude_pocket=None):
         """See IDistroRelease."""
         # XXX cprov 20060213: we need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
@@ -580,6 +580,9 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
+
+        if version is not None:
+            queries.append("version=%s" % sqlvalues(version))
 
         if exclude_pocket is not None:
             queries.append("pocket!=%s" % sqlvalues(exclude_pocket.value))
@@ -719,11 +722,11 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             arch_ids, status, name, pocket)
 
     def createUploadedSourcePackageRelease(
-        self, sourcepackagename, version, maintainer, dateuploaded,
-        builddepends, builddependsindep, architecturehintlist, component,
-        creator, urgency, changelog, dsc, dscsigningkey, section, manifest,
+        self, sourcepackagename, version, maintainer, builddepends,
+        builddependsindep, architecturehintlist, component, creator,
+        urgency, changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries):
+        dsc_binaries, dateuploaded=DEFAULT):
         """See IDistroRelease."""
         return SourcePackageRelease(
             uploaddistrorelease=self, sourcepackagename=sourcepackagename,

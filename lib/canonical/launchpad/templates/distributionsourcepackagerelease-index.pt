@@ -14,10 +14,6 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <tal:has_packages condition="context/sample_binary_packages">
@@ -42,6 +38,8 @@
       </li>
     </ul>
   </tal:has_packages>
+
+  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
 
   <h2>Publishing history</h2>
   <table class="listing">

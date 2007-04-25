@@ -1,20 +1,5 @@
 = Answer Tracker Email Notifications =
 
-    # Let's define a helper function which commits the transaction, so
-    # that the notifications are queued in stub.test_emails and pops these
-    # notifications from the queue.
-    >>> from canonical.launchpad.mail import stub
-    >>> import email
-    >>> import transaction
-    >>> def pop_notifications():
-    ...     transaction.commit()
-    ...     notifications = [
-    ...         email.message_from_string(raw_message)
-    ...         for fromaddr, toaddrs, raw_message in sorted(stub.test_emails)
-    ...     ]
-    ...     stub.test_emails = []
-    ...     return notifications
-
 When a question is created or changed, an email notification is sent out,
 informing the subscribers and the answer contacts about the change.
 Let's start with creating a question, and see what the resulting
@@ -23,6 +8,7 @@ notification looks like:
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import SQLObjectCreatedEvent
     >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -55,7 +41,7 @@ sent:
     >>> notification_body = add_notification.get_payload()
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     New question #... on Ubuntu:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
     I insert the install CD in the CD-ROM drive, but it won't boot.
     <BLANKLINE>
@@ -116,7 +102,7 @@ Foo Bar, and one to Ubuntu Team:
     [Question #...]: Installer doesn't work on a Mac
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
     Summary changed to:
     Installer doesn't work on a Mac
@@ -176,7 +162,7 @@ bug that has been linked to it:
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Linked to bug: #...
         http://.../bugs/...
@@ -218,7 +204,7 @@ of changes to the bug status:
     You received this email because you are a subscriber of
     question #... which is linked to this bug.
     Installer doesn't work on a Mac
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
 
 Only a change in status triggers a notification.
 
@@ -249,7 +235,7 @@ A notification is also sent when a bug is unlinked from the ticket:
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Removed link to bug: #13
         http://.../bugs/13
@@ -280,7 +266,7 @@ subscribers except the question owner will look like this:
     >>> notification_body = support_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Open => Needs information
     <BLANKLINE>
@@ -294,7 +280,7 @@ an extra footer.
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Your question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Open => Needs information
     <BLANKLINE>
@@ -304,7 +290,7 @@ an extra footer.
     _______________________________________________________________________
     To answer this request for more information, you can either reply to
     this email or enter your reply at the following page:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
 
 Of course, if the owner unsubscribe from the question, he won't receives
@@ -321,7 +307,7 @@ a notification.
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Needs information => Open
     <BLANKLINE>
@@ -360,7 +346,7 @@ Default notification when the question is expired:
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Open => Expired
     <BLANKLINE>
@@ -373,7 +359,7 @@ Notification received by the owner:
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Your question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Open => Expired
     <BLANKLINE>
@@ -384,7 +370,7 @@ Notification received by the owner:
     If you're still having this problem, you can reopen your question either
     by replying to this email or by going to the following page and
     entering more information about your problem:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
 
 === Notifications for reopen() ===
@@ -419,7 +405,7 @@ Default notification when the owner reopens the question:
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Expired => Open
     <BLANKLINE>
@@ -435,7 +421,7 @@ Notification received by the owner:
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Your question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Expired => Open
     <BLANKLINE>
@@ -466,7 +452,7 @@ Default notification when an answer is proposed:
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Open => Answered
     <BLANKLINE>
@@ -484,7 +470,7 @@ Notification received by the owner:
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Your question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Open => Answered
     <BLANKLINE>
@@ -499,11 +485,11 @@ Notification received by the owner:
     _______________________________________________________________________
     If this answers your question, please go to the following page to let us
     know that it is solved:
-    http://.../ubuntu/+ticket/.../+confirm?answer_id=...
+    http://.../ubuntu/+question/.../+confirm?answer_id=...
     <BLANKLINE>
     If you still need help, you can reply to this email or go to the
     following page to enter your feedback:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
 
 === Notifications for confirm() ===
@@ -522,7 +508,7 @@ Default notification when the owner confirms an answer:
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Answered => Solved
     <BLANKLINE>
@@ -535,7 +521,7 @@ Notification received by the owner:
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Your question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Answered => Solved
     <BLANKLINE>
@@ -559,7 +545,7 @@ Default notification when a comment is posted:
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
     No Privileges Person posted a new comment:
     Unless you have lots of RAM... and even then, the system will probably
@@ -571,7 +557,7 @@ Notification received by the owner:
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Your question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
     No Privileges Person posted a new comment:
     Unless you have lots of RAM... and even then, the system will probably
@@ -594,7 +580,7 @@ Default notification when the question is rejected:
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Solved => Invalid
     <BLANKLINE>
@@ -607,7 +593,7 @@ Notification received by the owner:
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Your question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Solved => Invalid
     <BLANKLINE>
@@ -618,7 +604,7 @@ Notification received by the owner:
     If you think that this rejection was a mistake, you can post a comment
     explaining your point of view either by replying to this email or at
     the following page:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
 
 === Notifications for setStatus() ===
 
@@ -636,7 +622,7 @@ Default notification when somebody changes the status:
     >>> notification_body = notifications[0].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Invalid => Solved
     <BLANKLINE>
@@ -649,7 +635,7 @@ Notification received by the owner:
     >>> notification_body = notifications[1].get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Your question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
         Status: Invalid => Solved
     <BLANKLINE>
@@ -764,7 +750,7 @@ sent to the support list about that question:
     A question was asked in a language (French) spoken by
     none of the registered Ubuntu answer contacts.
     <BLANKLINE>
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
 
 The notification received by the question owner contain a warning that
 the question is in a language spoken by none of the answer contacts:
@@ -784,7 +770,7 @@ the question is in a language spoken by none of the answer contacts:
     >>> notification_body = escape_utf8_payload(notifications[-1])
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     New question #... on Ubuntu:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
     Le CD ne semble pas fonctionn\xe9.
     <BLANKLINE>
@@ -810,7 +796,7 @@ with a warning appended to it.
     >>> notification_body = escape_utf8_payload(notifications[0])
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Your question #... on Ubuntu changed:
-    http://.../ubuntu/+ticket/...
+    http://.../ubuntu/+question/...
     <BLANKLINE>
     Summary changed to:
     CD d'Ubuntu ne d\xe9marre pas
@@ -922,6 +908,7 @@ address if Spanish is among its preferred languages:
     # stub.test_emails after it
     >>> admins.addMember(guadamen, reviewer=foobar)
     >>> transaction.commit()
+    >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
     >>> guadamen.addLanguage(spanish)

@@ -14,37 +14,39 @@
 
   <table tal:attributes="cols view/ordered_architectures/count:len"
          style="width: auto; margin-left: 0">
-    <tr>
-      <thead>
+    <thead>
+      <tr>
         <th>&nbsp;</th>
         <tal:headers repeat="arch view/ordered_architectures">
           <th tal:content="arch/title" />
         </tal:headers>
-      </thead>
-    </tr>
-    <tr tal:repeat="row widgets_matrix">
-      <tal:block repeat="cell row">
-      <tal:comment replace="nothing">
-        We need to save the widget with this nocall: here because if we
-        don't do that, our dear zope will turn it into a string for us.
-      </tal:comment>
-      <tal:save-widget define="widget nocall:cell">
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="row widgets_matrix">
+        <tal:block repeat="cell row">
+        <tal:comment replace="nothing">
+          We need to save the widget with this nocall: here because if we
+          don't do that, our dear zope will turn it into a string for us.
+        </tal:comment>
+        <tal:save-widget define="widget nocall:cell">
 
-        <tal:is-header condition="repeat/cell/start">
-          <th tal:content="cell" />
-        </tal:is-header>
-        <tal:is-not-header condition="not: repeat/cell/start">
-          <td style="text-align: center">
-            <tal:block condition="cell">
-              <span metal:use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
-            </tal:block>
-            <span tal:condition="not: cell">n/a</span>
-          </td>
-        </tal:is-not-header>
+          <tal:is-header condition="repeat/cell/start">
+            <th tal:content="cell" />
+          </tal:is-header>
+          <tal:is-not-header condition="not: repeat/cell/start">
+            <td style="text-align: center">
+              <tal:block condition="cell">
+                <span metal:use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
+              </tal:block>
+              <span tal:condition="not: cell">n/a</span>
+            </td>
+          </tal:is-not-header>
 
-      </tal:save-widget>
-      </tal:block>
-    </tr>
+        </tal:save-widget>
+        </tal:block>
+      </tr>
+    </tbody>
   </table>
 
 </metal:quantity_widgets>
