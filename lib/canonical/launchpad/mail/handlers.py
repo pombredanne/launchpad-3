@@ -273,6 +273,9 @@ class AnswerTrackerHandler:
 
     allow_unknown_users = False
 
+    # XXX flacoste 2007/04/23 The 'ticket' part is there for backward
+    # compatibility with the old notification address. We probably want to
+    # remove it in the future.
     _question_address = re.compile(r'^(ticket|question)(?P<id>\d+)@.*')
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
