@@ -208,7 +208,7 @@ class Build(SQLBase):
         """See IBuild"""
         return BuildQueue(build=self)
 
-    def notify(self):
+    def notify(self, extra_info=None):
         """See IBuild"""
         if not config.builddmaster.send_build_notification:
             return
@@ -264,6 +264,14 @@ class Build(SQLBase):
             buildlog_url = self.buildlog.http_url
             builder_url = canonical_url(self.builder)
 
+        if self.buildstate == BuildStatus.FAILEDTOUPLOAD:
+            assert extra_info is not None, (
+                'Extra information is required for FAILEDTOUPLOAD '
+                'notifications.')
+            extra_info = 'Upload log:\n%s' % extra_info
+        else:
+            extra_info = ''
+
         template = get_email_template('build-notification.txt')
         replacements = {
             'source_name': self.sourcepackagerelease.name,
@@ -276,7 +284,8 @@ class Build(SQLBase):
             'build_title': self.title,
             'build_url': canonical_url(self),
             'source_url': canonical_url(
-                              self.distributionsourcepackagerelease),
+                self.distributionsourcepackagerelease),
+            'extra_info': extra_info,
             }
         message = template % replacements
 

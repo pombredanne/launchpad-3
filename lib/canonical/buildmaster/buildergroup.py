@@ -531,7 +531,7 @@ class BuilderGroup:
             uploader_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # Nothing should be written to the stdout/stderr, but it's safe
-        stdout, stderr = uploader_process.communicate()
+        upload_stdout, upload_stderr = uploader_process.communicate()
 
         # XXX cprov 20070417: we do not check uploader_result_code
         # anywhere. We need to find out what will be best strategy
@@ -547,6 +547,11 @@ class BuilderGroup:
             if not os.path.exists(failed_dir):
                 os.mkdir(failed_dir)
             os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
+
+        # Store build information, build record was already updated during
+        # the binary upload
+        self.storeBuildInfo(
+            queueItem, slave, librarian, buildid, dependencies)
 
         # The famous 'flush_updates + clear_cache' will make visible the
         # DB changes done in process-upload, considering that the
@@ -568,20 +573,16 @@ class BuilderGroup:
         build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
         if (build.buildstate != dbschema.BuildStatus.FULLYBUILT or
             len(build.binarypackages) == 0):
-            build.buildstate = dbschema.BuildStatus.FAILEDTOUPLOAD
             self.logger.debug("Build %s upload failed." % build.id)
+            queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOUPLOAD
+            queueItem.build.notify(extra_info=upload_stderr)
         else:
             self.logger.debug("Gathered build %s completely" % queueItem.name)
 
-        # Store build info, build record was already updated during
-        # the binary upload
-        self.storeBuildInfo(
-            queueItem, slave, librarian, buildid, dependencies)
+        # Remove BuildQueue record.
         queueItem.destroySelf()
-
-        # release the builder
+        # Release the builder for another job.
         slave.clean()
-
         # Commit the transaction so that the uploader can see the updated
         # build record
         self.commit()

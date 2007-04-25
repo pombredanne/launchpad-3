@@ -274,7 +274,7 @@ following states: FAILEDTOBUILD and CHROOTWAIT
   ...     @property
   ...     def distribution(self):
   ...         return self.distroarchrelease.distrorelease.distribution
-  ...     def notify(self):
+  ...     def notify(self, extra_info=None):
   ...         self.notification_sent = True
 
   >>> import datetime, pytz
@@ -420,16 +420,74 @@ Let's check the procedures to verify/collect running build process:
   'Waiting for slave process to be terminated'
 
 
-  WAITING - OK -> builder has finished the job and is waiting for
-  master to collect its results
+== Builder WAITING in OK state ==
+
+This situation happens when the builder has finished the job and is
+waiting for master to collect its results.
+
+The build record in question can end up in the following states:
+
+ * FULLYBUILT: when binaries were collected and uploade correctly,
+ * FAILEDTOUPLOAD: binaries were collected but the upload was rejected/failed.
+
+
+=== Failed to Upload  (FAILEDTOUPLOAD) ===
+
+
+
+We need to pick a correspondent 'real' build record to satisfy the
+internal lookup in 'updateBuild'. For this we choose a BUILDING build
+record:
+
+  >>> from canonical.launchpad.interfaces import IBuildSet
+  >>> real_build = getUtility(IBuildSet).getByBuildID(8)
+  >>> real_build.buildstate.name
+  'BUILDING'
 
   >>> mock_build = MockBuild(8)
+  >>> mock_build.buildstate = real_build.buildstate
+
+Build a mock BuildQueueItem using the 'real' Build ID and the
+mock_builder and mock_build as information containers:
+
   >>> bqItem10 = MockBuildQueue(8, builder10, mock_build)
 
-As if the buildstate was updated by the time the binary was uploaded:
+If the build record isn't updated before/during the updateBuild
+(precisely on binary upload time), the build will be considered
+FAILEDTOUPLOAD:
+
+  >>> buildergroup.updateBuild(bqItem10, librarian)
+  >>> bqItem10.build.builder is not None
+  True
+  >>> bqItem10.build.datebuilt is not None
+  True
+  >>> bqItem10.build.buildduration is not None
+  True
+  >>> bqItem10.build.buildlog is not None
+  True
+  >>> bqItem10.build.notification_sent
+  True
+  >>> bqItem10.build.buildstate.title
+  'Failed to upload'
+
+
+=== Successfully collected and uploaded  (FULLYBUILT) ===
+
+Similar to what we have done in FAILEDTOUPLOAD we will map this
+procedure to same 'real' build record ID in FULLYBUILT state:
+
+  >>> mock_build = MockBuild(2)
+  >>> bqItem10 = MockBuildQueue(2, builder10, mock_build)
+
+Now in order to emulate a successfully binary upload we will update
+the mock build record to FULLYBUILT, as the process-upload would do:
 
   >>> from canonical.lp.dbschema import BuildStatus
   >>> mock_build.buildstate = BuildStatus.FULLYBUILT
+
+Now the updateBuild should recognise this build record as a
+Successfully built and uploaded procedure, not sending any
+notification and updating the build information:
 
   >>> buildergroup.updateBuild(bqItem10, librarian)
   >>> bqItem10.build.builder is not None
@@ -533,8 +591,8 @@ Check the log from the uploader run has made it into the upload directory:
 
   >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
   >>> failed_uploads = os.listdir(failed_dir)
-  >>> len(failed_uploads) == 1
-  True
+  >>> len(failed_uploads)
+  2
 
   >>> failed_upload = failed_uploads[0]
   >>> uploader_log = open(os.path.join(failed_dir, failed_upload,
