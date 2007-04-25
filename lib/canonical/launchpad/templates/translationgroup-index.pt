@@ -1,6 +1,7 @@
 <html metal:use-macro="view/macro:page/applicationhome"
       i18n:domain="launchpad">
   <body>
+<<<<<<< TREE
     <h1 metal:fill-slot="heading">Translation groups</h1>
 
     <div metal:fill-slot="main">
@@ -14,6 +15,15 @@
         $TranslationGroup.summary goes here. This should be quite short,
         just a single paragraph of text really, giving a summary of
         this TranslationGroup.
+      </p>
+      <p>
+        Group owner:
+        <a tal:content="context/owner/displayname"
+           tal:attributes="href context/owner/fmt:url"
+           class="link" />
+        <a tal:condition="context/required:launchpad.Edit" href="+reassign">
+          <img src="/@@/edit" alt="Reassign" title="Change Owner">
+        </a>
       </p>
       <div>
         <strong>

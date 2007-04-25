@@ -3,14 +3,17 @@
 """Browser code for translation groups."""
 
 __metaclass__ = type
-__all__ = ['TranslationGroupNavigation',
-           'TranslationGroupSetNavigation',
-           'TranslationGroupView',
-           'TranslationGroupSetContextMenu',
-           'TranslationGroupContextMenu',
-           'TranslationGroupAddTranslatorView',
-           'TranslationGroupEditView',
-           'TranslationGroupAddView']
+__all__ = [
+    'TranslationGroupAddTranslatorView',
+    'TranslationGroupAddView',
+    'TranslationGroupContextMenu',
+    'TranslationGroupEditView',
+    'TranslationGroupNavigation',
+    'TranslationGroupReassignmentView',
+    'TranslationGroupSetContextMenu',
+    'TranslationGroupSetNavigation',
+    'TranslationGroupView',
+    ]
 
 import operator
 
@@ -21,10 +24,13 @@ from zope.component import getUtility
 from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ITranslator, ITranslatorSet,
-    NotFoundError)
+    ILanguageSet, IPersonSet, ILaunchBag, NotFoundError
+    )
+from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadFormView,
-    LaunchpadEditFormView)
+    action, canonical_url, enabled_with_permission, GetitemNavigation,
+    LaunchpadEditFormView, LaunchpadFormView, Link
+    )
 
 
 class TranslationGroupNavigation(GetitemNavigation):
@@ -43,6 +49,16 @@ class TranslationGroupSetContextMenu(RosettaContextMenu):
 
 class TranslationGroupContextMenu(RosettaContextMenu):
     usedfor = ITranslationGroup
+    links = RosettaContextMenu.links + ['appoint', 'reassign']
+
+    @enabled_with_permission('launchpad.Edit')
+    def appoint(self):
+        return Link('+appoint', "Appoint translator")
+
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        return Link('+reassign', "Change owner")
+
 
 
 class TranslationGroupView:
@@ -152,3 +168,15 @@ class TranslationGroupAddView(LaunchpadFormView):
     @property
     def next_url(self):
         return canonical_url(self.new_group)
+
+
+class TranslationGroupReassignmentView(ObjectReassignmentView):
+    """View class for changing translation group owner."""
+
+    @property
+    def contextName(self):
+        return self.context.title or self.context.name
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
