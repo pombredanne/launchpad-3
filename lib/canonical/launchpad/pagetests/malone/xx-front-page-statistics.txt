@@ -41,9 +41,8 @@ Launchpad
 
 and to Launchpad's CVE tracker.
 
-  # We should use goBack() here but can't because of ZC #645:
+  # We should use goBack() here but can't because of bug #98372:
   # zope.testbrowser truncates document content after goBack().
-  # Comment shamelessly stolen from Francis' 20-question-buglink.txt pagetest
   #>>> anon_browser.goBack()
   >>> anon_browser.open('http://bugs.launchpad.dev/')
   >>> anon_browser.getLink('CVE entries').click()

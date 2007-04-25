@@ -246,6 +246,20 @@ k            </description>
             </description>
             <example>beta.launchpad.net</example>
         </key>
+        <key name="non_restricted_hostname" datatype="string"
+             default="launchpad.net">
+	    <description>
+                If restrict_to_team is set (such as on the beta
+                website), then this indicates the hostname suffix for
+                the non-restricted version of Launchpad.  Replacing
+                config.launchpad.vhosts.mainsite.hostname with this
+                value in a URI should give a valid host.
+
+                This is intended to provide a way for non beta-testers
+                to get back to the production instance if they are
+                given a beta URL.
+            </description>
+        </key>
     </sectiontype>
     <sectiontype name="gina_target">
         <description>
@@ -520,7 +534,7 @@ k            </description>
                 From-address used in PO import, export and language pack
                 notifications.
             </description>
-	</key>
+        </key>
     </sectiontype>
 
     <sectiontype name="poimport">
@@ -913,7 +927,7 @@ k            </description>
         <section name="*" type="zeca" attribute="zeca" />
         <section name="*" type="statistician" attribute="statistician" />
         <section name="*" type="productreleasefinder"
-		 attribute="productreleasefinder" />
+                 attribute="productreleasefinder" />
         <section name="*" type="gina" attribute="gina" />
         <section name="*" type="karmacacheupdater"
             attribute="karmacacheupdater" />

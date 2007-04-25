@@ -17,6 +17,7 @@ __all__ = [
     'QuestionSetNavigation',
     'QuestionRejectView',
     'QuestionSetView',
+    'QuestionSOP',
     'QuestionSubscriptionView',
     'QuestionWorkflowView',
     ]
@@ -36,6 +37,7 @@ import zope.security
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
@@ -249,7 +251,7 @@ class QuestionSupportLanguageMixin:
             key=attrgetter('englishname'))
 
     def createLanguageField(self):
-        """Create a field to edit a question language using a special vocabulary.
+        """Create a field with a special vocabulary to edit a question language.
 
         :param the_form: The form that will use this field.
         :return: A form.Fields instance containing the language field.
@@ -295,7 +297,8 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 
     custom_widget('title', TextWidget, displayWidth=40)
 
-    search_template = ViewPageTemplateFile('../templates/question-add-search.pt')
+    search_template = ViewPageTemplateFile(
+        '../templates/question-add-search.pt')
 
     add_template = ViewPageTemplateFile('../templates/question-add.pt')
 
@@ -644,7 +647,7 @@ class QuestionWorkflowView(LaunchpadFormView):
         if msgid is None:
             raise UnexpectedFormData('missing answer_id')
         try:
-            data['answer']= self.context.messages[int(msgid)]
+            data['answer'] = self.context.messages[int(msgid)]
         except ValueError:
             raise UnexpectedFormData('invalid answer_id: %s' % msgid)
         except IndexError:
@@ -786,6 +789,17 @@ class SearchAllQuestionsView(SearchQuestionsView):
                      mapping=dict(search_text=self.search_text))
         else:
             return _('There are no questions with the requested statuses.')
+
+
+class QuestionSOP(StructuralObjectPresentation):
+    """Provides the structural heading for IQuestion."""
+
+    def getMainHeading(self):
+        """See IStructuralHeaderPresentation."""
+        question = self.context
+        return _('Question #${id} in ${target}',
+                 mapping=dict(
+                    id=question.id, target=question.target.displayname))
 
 
 class QuestionContextMenu(ContextMenu):
