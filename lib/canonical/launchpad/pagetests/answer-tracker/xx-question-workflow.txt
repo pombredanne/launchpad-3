@@ -287,8 +287,6 @@ It lists all the actions performed through workflow on the question:
     ...     action = cells[2].renderContents()
     ...     new_status = cells[3].renderContents()
     ...     print who.lstrip('&nbsp;'), action, new_status
-    Foo Bar              Reject                       Invalid
-    Foo Bar              Change status                Open
     No Privileges Person Request for more information Needs information
     Sample Person        Give more information        Open
     No Privileges Person Answer                       Answered
