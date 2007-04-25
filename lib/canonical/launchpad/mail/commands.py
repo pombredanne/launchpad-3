@@ -512,12 +512,12 @@ class AffectsEmailCommand(EmailCommand):
         except BugTargetNotFound, error:
             raise EmailProcessingError(unicode(error))
         event = None
-        bugtask = self.getBugTask(bug, bug_target)
+        bugtask = bug.getBugTask(bug_target)
         if (bugtask is None and
             IDistributionSourcePackage.providedBy(bug_target)):
             # If there's a distribution task with no source package, use
             # that one.
-            bugtask = self.getBugTask(bug, bug_target.distribution)
+            bugtask = bug.getBugTask(bug_target.distribution)
             if bugtask is not None:
                 bugtask_before_edit = Snapshot(
                     bugtask, providing=IDistroBugTask)
@@ -553,7 +553,7 @@ class AffectsEmailCommand(EmailCommand):
                 "A product series can't have a source package.")
             product = release.product
             general_target = product
-        general_task = self.getBugTask(bug, general_target)
+        general_task = bug.getBugTask(general_target)
         if general_task is None:
             # A release task has to have a corresponding
             # distribution/product task.
@@ -572,10 +572,10 @@ class AffectsEmailCommand(EmailCommand):
 
         if nomination.isApproved():
             if sourcepackagename:
-                return self.getBugTask(
-                    bug, release.getSourcePackage(sourcepackagename))
+                return bug.getBugTask(
+                    release.getSourcePackage(sourcepackagename))
             else:
-                return self.getBugTask(bug, release)
+                return bug.getBugTask(release)
         else:
             # We can't return a nomination, so return the
             # distribution/product bugtask instead.
@@ -606,19 +606,6 @@ class AffectsEmailCommand(EmailCommand):
         else:
             assert False, "Not a valid bug target: %r" % bug_target
 
-
-    #XXX: This method should be moved to helpers.py or BugTaskSet.
-    #     -- Bjorn Tillenius, 2005-06-10
-    def getBugTask(self, bug, target):
-        """Returns a bug task that has the path as a target.
-
-        Returns None if no such bugtask is found.
-        """
-        for bugtask in bug.bugtasks:
-            if bugtask.target == target:
-                return bugtask
-
-        return None
 
 class AssigneeEmailCommand(EditEmailCommand):
     """Assigns someone to the bug."""
