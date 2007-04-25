@@ -7,12 +7,13 @@ first finding out if you're bug has already been reported.
     ...     "Thunderbird crashes when opening large e-mails")
     >>> user_browser.getControl("Continue").click()
 
-In this case, there is one similar bug.
+In this case, there are two similar bugs.
 
     >>> from canonical.launchpad.ftests.bug import print_bugs_table
 
     >>> print_bugs_table(user_browser.contents, "similar-bugs")
     9 Thunderbird crashes
+    2 Blackhole Trash folder
 
 But there are no duplicate bugs reported in Ubuntu.
 
