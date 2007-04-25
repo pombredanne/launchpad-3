@@ -39,7 +39,8 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchBag, IMaloneApplication
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IMaloneApplication, IPerson)
 from canonical.launchpad.webapp import smartquote
 from canonical.launchpad.webapp.authorization import check_permission
 
@@ -75,6 +76,9 @@ class ContextTitle(SubstitutionHelper):
     def __call__(self, context, view):
         return self.text % context.title
 
+class ContextDisplayname(SubstitutionHelper):
+    def __call__(self, context, view):
+        return self.text % context.displayname
 
 class ContextBrowsername(SubstitutionHelper):
     def __call__(self, context, view):
@@ -120,6 +124,9 @@ bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
+branch_edit_subscription = ContextDisplayName(smartquote(
+    'Edit subscription to branch "%s"'))
+
 def branch_index(context, view):
     if context.author:
         return smartquote('"%s" branch by %s in Launchpad') % (
@@ -127,7 +134,8 @@ def branch_index(context, view):
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
-branch_subscription = ContextDisplayName(smartquote('Subscription to branch "%s"'))
+branch_subscription = ContextDisplayName(smartquote(
+    'Subscription to branch "%s"'))
 
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
@@ -413,6 +421,12 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
+def hasspecifications_specs(context, view):
+    if IPerson.providedBy(context):
+        return "Blueprints involving %s" % context.title
+    else:
+        return "Blueprints for %s" % context.title
+
 hassprints_sprints = ContextTitle("Events related to %s")
 
 people_adminrequestmerge = 'Merge Launchpad accounts'
@@ -432,6 +446,14 @@ karmaaction_index = 'Karma actions'
 karmaaction_edit = 'Edit karma action'
 
 karmacontext_topcontributors = ContextTitle('Top %s Contributors')
+
+language_index = ContextDisplayname("%s in Launchpad")
+
+language_add = 'Add a new Language to Launchpad'
+
+language_admin = ContextDisplayname("Edit %s")
+
+languageset_index = 'Languages in Launchpad'
 
 # launchpad_debug doesn't need a title.
 
@@ -1030,6 +1052,8 @@ sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
 sprint_workload = ContextTitle('Workload at %s')
 
+sprints_all = 'All sprints and meetings registered in Launchpad'
+
 sprints_index = 'Meetings and sprints registered in Launchpad'
 
 sprintspecification_decide = 'Consider spec for sprint agenda'
@@ -1057,6 +1081,8 @@ team_join = ContextBrowsername('Join %s')
 team_leave = ContextBrowsername('Leave %s')
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
+
+team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
 
 def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (

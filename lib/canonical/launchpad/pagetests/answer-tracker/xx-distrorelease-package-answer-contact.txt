@@ -1,16 +1,16 @@
 Anonymous doesn't have access to the page:
 
   >>> anon_browser.handleErrors = True
-  >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary/+source/evolution/+support-contact")
+  >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary/+source/evolution/+answer-contact")
   >>> anon_browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+support-contact/+login'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+answer-contact/+login'
 
 Any logged in person has access to the page.
 
   >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open("http://launchpad.dev/ubuntu/hoary/+source/evolution/+support-contact")
+  >>> browser.open("http://launchpad.dev/ubuntu/hoary/+source/evolution/+answer-contact")
   >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+support-contact'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+answer-contact'
 
 Add Foo Bar, Launchpad Developers and the Ubuntu Team as answer
 contacts.
@@ -19,7 +19,7 @@ contacts.
   >>> browser.getControl(name="field.answer_contact_teams").value = ["ubuntu-team", "launchpad"]
   >>> browser.getControl("Continue").click()
   >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+tickets'
+  'http://answers.launchpad.dev/ubuntu/hoary/+source/evolution/+questions'
 
 Check that the change worked:
 
@@ -31,14 +31,14 @@ Check that the change worked:
 
 Remove Foo Bar and the Ubuntu team as answer contacts.
 
-  >>> browser.open("http://launchpad.dev/ubuntu/hoary/+source/evolution/+support-contact")
+  >>> browser.open("http://launchpad.dev/ubuntu/hoary/+source/evolution/+answer-contact")
   >>> browser.getControl("I want to be an answer contact for Hoary evolution").click()
   >>> browser.getControl(name="field.answer_contact_teams").value
   ['launchpad', 'ubuntu-team']
   >>> browser.getControl(name="field.answer_contact_teams").value = ["launchpad"]
   >>> browser.getControl("Continue").click()
   >>> browser.url
-  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+tickets'
+  'http://answers.launchpad.dev/ubuntu/hoary/+source/evolution/+questions'
 
 And check the outcome:
 

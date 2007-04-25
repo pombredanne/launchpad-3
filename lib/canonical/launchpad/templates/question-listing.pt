@@ -44,13 +44,11 @@
 
       <input tal:replace="structure view/search_action/render" />
 
-      <label tal:condition="view/show_all_languages_checkbox"
-              style="font-weight: normal">
-        <input name="all_languages" value="1" type="checkbox"
-                tal:attributes="checked python:request.form.get('all_languages') and 'checked' or ''" />
-        <tal:label i18n:translate="">All Languages</tal:label>
-      </label>
-
+      <span tal:condition="view/show_languages_radio">
+        <br /><tal:languages replace="structure view/widgets/languages" />
+        (<a href="/+editmylanguages">change your preferred languages</a>)
+      </span>
+      
       <tal:status define="widget nocall:view/widgets/status|nothing"
                   condition="nocall: widget">
         <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />
@@ -65,20 +63,6 @@
       No questions.
     </p>
   </tal:no-results>
-
-  <p class="informational message"
-     tal:condition="not: view/all_languages_shown" i18n:translate="">
-    Only questions in
-      <tal:languages i18n:name="languages">
-        <tal:language_loop repeat="lang view/displayed_languages">
-          <span tal:replace="lang/englishname"
-            /><tal:comma condition="not: repeat/lang/end">,</tal:comma>
-        </tal:language_loop>
-      </tal:languages>
-    are displayed. To see questions in other languages, either
-    <a href="/+editmylanguages">change your preferred</a> languages
-    or select the &ldquo;All Languages&rdquo; option.
-  </p>
 
   <tal:block condition="questions/batch">
     <table class="listing" id="question-listing">
@@ -126,7 +110,7 @@
               tal:condition="view/display_target_column"
               ><a href="#"
                   tal:define="target question/target"
-                  tal:attributes="href string:${target/fmt:url}/+tickets"
+                  tal:attributes="href string:${target/fmt:url}/+questions"
                   tal:content="target/displayname">Firefox</a></td>
           <td tal:condition="view/display_sourcepackage_column"
               tal:content="structure python:view.formatSourcePackageName(question)"

@@ -80,7 +80,7 @@
 
         </tal:translators>
 
-        <p tal:condition="not: context/translators">
+        <p tal:condition="not: context/translators" class="message">
           There are no translators appointed in this group yet.
         </p>
         <ul class="menu">

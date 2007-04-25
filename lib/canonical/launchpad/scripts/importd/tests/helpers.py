@@ -12,24 +12,26 @@ import os
 import unittest
 
 from bzrlib.bzrdir import BzrDir
+from bzrlib.tests import TestCaseWithTransport
 
 from canonical.config import config
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import BzrlibZopelessLayer, LaunchpadZopelessLayer
 from importd.tests.helpers import SandboxHelper
 from importd.tests.test_bzrmanager import ProductSeriesHelper
 
 
-class ImportdTestCase(unittest.TestCase):
+class ImportdTestCase(TestCaseWithTransport):
     """Common base for test cases of importd script backends."""
 
-    layer = LaunchpadZopelessLayer
+    layer = BzrlibZopelessLayer
 
     def setUp(self):
+        TestCaseWithTransport.setUp(self)
         LaunchpadZopelessLayer.switchDbUser(config.importd.dbuser)
+        self.bzrworking = 'bzrworking'
         self.sandbox = SandboxHelper()
         self.sandbox.setUp()
-        self.bzrworking = self.sandbox.join('bzrworking')
         self.bzrmirrors = self.sandbox.join('bzr-mirrors')
         os.mkdir(self.bzrmirrors)
         self.series_helper = ProductSeriesHelper()
@@ -40,9 +42,10 @@ class ImportdTestCase(unittest.TestCase):
     def tearDown(self):
         self.series_helper.tearDown()
         self.sandbox.tearDown()
+        TestCaseWithTransport.tearDown(self)
 
     def setUpOneCommit(self):
-        workingtree = BzrDir.create_standalone_workingtree(self.bzrworking)
+        workingtree = self.make_branch_and_tree(self.bzrworking)
         workingtree.commit('first commit')
 
     def mirrorPath(self):

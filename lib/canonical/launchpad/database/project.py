@@ -93,11 +93,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                             otherColumn='bounty',
                             intermediateTable='ProjectBounty')
 
-    products = SQLMultipleJoin('Product', joinColumn='project',
-                            orderBy='name')
-
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
+
+    @property
+    def products(self):
+        return Product.selectBy(project=self, active=True, orderBy='name')
 
     def getOrCreateCalendar(self):
         if not self.calendar:
@@ -244,24 +245,31 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See BugTargetBase."""
         return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
 
-
     # IQuestionCollection
     def searchQuestions(self, search_text=None,
-                        status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
-                        sort=None, owner=None, needs_attention_from=None):
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, owner=None,
+                        needs_attention_from=None, unsupported=False):
         """See IQuestionCollection."""
+        if unsupported:
+            unsupported_target = self
+        else:
+            unsupported_target = None
+            
         return QuestionTargetSearch(
-            search_text=search_text, status=status, language=language,
-            sort=sort, owner=owner, needs_attention_from=needs_attention_from,
-            product=self.products).getResults()
+            project=self,
+            search_text=search_text, status=status,
+            language=language, sort=sort, owner=owner,
+            needs_attention_from=needs_attention_from,
+            unsupported_target=unsupported_target).getResults()
 
     def getQuestionLanguages(self):
         """See IQuestionCollection."""
-        product_ids = sqlvalues(*self.products)
-        return set(Language.select(
-            'Language.id = language AND product IN (%s)' % ', '.join(
-                product_ids),
-            clauseTables=['Ticket'], distinct=True))
+        return set(Language.select("""
+            Language.id = Question.language AND
+            Question.product = Product.id AND
+            Product.project = %s""" % sqlvalues(self.id),
+            clauseTables=['Question', 'Product'], distinct=True))
 
 
 class ProjectSet:

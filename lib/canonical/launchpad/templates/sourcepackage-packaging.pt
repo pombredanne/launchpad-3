@@ -27,10 +27,10 @@
     If you can, please <a href="+edit-packaging">let us know</a>.
   </p>
 
-  <table class="listing"
+  <table id="packaging-table" class="listing"
          tal:condition="context/sourcepackagename/packagings">
     <caption>Upstream links for all source packages called
-      "<span tal:replace="context/sourcepackagename/name">apache</span>"
+      "<span tal:replace="context/name">apache</span>"
     </caption>
 
     <thead>
@@ -44,20 +44,21 @@
     <tbody>
       <tal:block repeat="packaging context/sourcepackagename/packagings">
 	<tr tal:attributes="
-          class python:packaging == context.packaging and 'highlight' or None">
-          <td tal:content="context/packaging/distrorelease/distribution/displayname">
+          class python: packaging == context.packaging and 'highlight' or None">
+
+          <td tal:content="packaging/distrorelease/distribution/displayname">
             ubuntu
           </td>
-          <td tal:content="context/packaging/distrorelease/displayname">
+          <td tal:content="packaging/distrorelease/displayname">
             hoary
           </td>
-          <td tal:content="context/packaging/productseries/title">
+          <td tal:content="packaging/productseries/title">
             evolution main
           </td>
+
         </tr>
       </tal:block>
     </tbody>
-
   </table>
 
 </div>

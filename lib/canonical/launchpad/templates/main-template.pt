@@ -4,7 +4,7 @@
     tal:attributes="lang default_language|default;
                     xml:lang default_language|default;"
     tal:define="
-        icingrev string:4;
+        icingrev string:5;
         rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
         icingroot string:${rooturl}+icing/rev${icingrev};
         site_message modules/canonical.config/config/launchpad/site_message;
@@ -281,17 +281,18 @@
         </ul>
       </div><!--id="globalfooter"-->
     </div><!--id="nonhelp"-->
-    <div id="help_panel" class="closed">
-      <div class="help1">
-        <div class="help2">
-          <p metal:define-slot="help">
-            Sorry, help isn&rsquo;t available for this page.
-          </p>
+    <div id="help" class="closed">
+      <h2 id="help-tab">Help</h2>
+      <div id="help-panel">
+        <div id="help-content">
+          <div id="help-text">
+            <p metal:define-slot="help">
+              Sorry, help isn&rsquo;t available for this page.
+            </p>
+          </div>
         </div>
-        <a href="#" class="open-close">Help</a>
-        <br class="clear" />
+        <div id="help-bottom">&nbsp;</div>
       </div>
-      <div class="bottom">&nbsp;</div>
     </div>
     <div id="menupreload" style="visibility:hidden">
       <ul class="menu" lpm:mid="root">

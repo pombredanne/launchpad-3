@@ -35,8 +35,16 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
-    IDistribution, ILaunchBag, IPersonSet, IProduct, ISpecification,
-    ISpecificationBranch, ISpecificationSet, NotFoundError)
+    IDistribution,
+    ILaunchBag,
+    IPersonSet,
+    IProduct,
+    IProject,
+    ISpecification,
+    ISpecificationBranch,
+    ISpecificationSet,
+    NotFoundError,
+    )
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -547,7 +555,7 @@ class SpecGraph:
         graph_attrs = dict(
             mode='hier',
             # bgcolor='transparent',  # Fails with graphviz-cairo.
-            bgcolor='#fcfcfc',  # Same as Launchpad page background.
+            bgcolor='#ffffff',  # Same as Launchpad page background.
             size='5.2,9',  # Width fits in centre of 3 col layout, 1024x768.
             ratio='auto',
             ranksep=0.25,
@@ -783,18 +791,22 @@ class SpecificationNewView(LaunchpadFormView):
     asking for the spec details."""
 
     schema = ISpecification
+    label = "Register a new Blueprint"
 
     @property
     def field_names(self):
-        """This form is used sometimes on an IProduct or IDistribution to
-        get a new spec for them, and also on ISpecificationSet as a
-        system-wide "new spec" form. We need slightly different field names
-        in each case, so we make field_names a property.
+        """This form is used sometimes on an IProject, IProduct or
+        IDistribution to get a new spec for them, and also on
+        ISpecificationSet as a system-wide "new spec" form. We need slightly
+        different field names in each case, so we make field_names a
+        property.
         """
         field_names = ['name', 'title', 'specurl', 'summary', 'status',
                        'assignee', 'drafter', 'approver']
         if ISpecificationSet.providedBy(self.context):
             field_names.insert(0, 'target')
+        elif IProject.providedBy(self.context):
+            field_names.insert(0, 'projecttarget')
         return field_names
 
     def validate(self, data):
@@ -809,6 +821,9 @@ class SpecificationNewView(LaunchpadFormView):
             self.setFieldError('name',
                 'Please provide a name for this blueprint')
         target = data.get('target')
+        projecttarget = data.get('projecttarget')
+        if projecttarget is not None:
+            target = projecttarget
         if target is None:
             self.setFieldError('target',
                 'Please select a valid project.')
@@ -816,8 +831,8 @@ class SpecificationNewView(LaunchpadFormView):
             name = name.strip().lower()
             if target.getSpecification(name) is not None:
                 self.setFieldError('name',
-                    'There is already a blueprint with this name. Please '
-                    'try another.')
+                    'There is already a blueprint with this name for %s. '
+                    'Please try another name.' % target.displayname)
 
     @action(_('Register Blueprint'), name='register')
     def register_action(self, action, data):
@@ -827,6 +842,9 @@ class SpecificationNewView(LaunchpadFormView):
         # determine product or distribution as target
         product = distribution = None
         target = data.get('target', None)
+        projecttarget = data.get('projecttarget', None)
+        if projecttarget is not None:
+            target = projecttarget
         if target is None:
             target = self.context
         if IProduct.providedBy(target):

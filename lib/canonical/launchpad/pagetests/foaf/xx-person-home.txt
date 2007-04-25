@@ -73,7 +73,7 @@ and also the areas in which (s)he worked on each project.
     ...         img = td.find('img')
     ...         if img is not None:
     ...             print "\t", img['title']
-    The Evolution Groupware Application
+    The Evolution Groupware ...
        Bug Management
        Translations in Rosetta
     Ubuntu Linux

@@ -1,0 +1,8 @@
+%(contents)s
+
+--
+%(branch_title)s
+%(branch_url)s
+
+You received this email because you are subscribed to this branch.
+To unsubscribe from this branch use go to %(unsubscribe_url)s.
