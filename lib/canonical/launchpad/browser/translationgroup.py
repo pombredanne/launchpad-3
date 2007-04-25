@@ -84,13 +84,7 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
         getUtility(ITranslatorSet).new(self.context, language, translator)
 
     def validate(self, data):
-        """Do not allow an appointment to overwrite an existing translator.
-
-        We don't allow a translator to be appointed for a language that
-        already has a translator within that group.  If we did, it would be
-        too easy accidentally to replace a translator, e.g. by picking the
-        wrong language in this form.
-        """
+        """Do not allow new translators for already existing languages."""
         language = data.get('language')
         if self.context.query_translator(language):
             self.setFieldError('language',
@@ -113,13 +107,7 @@ class TranslationGroupEditView(LaunchpadEditFormView):
         self.updateContextFromData(data)
 
     def validate(self, data):
-        """Do not allow an appointment to overwrite an existing translator.
-
-        We don't allow a translator to be appointed for a language that
-        already has a translator within that group.  If we did, it would be
-        too easy accidentally to replace a translator, e.g. by picking the
-        wrong language in this form.
-        """
+        """Check that we follow fields restrictions."""
         new_name = data.get('name')
         translation_group = getUtility(ITranslationGroupSet)
         if (self.context.name != new_name):
@@ -129,7 +117,7 @@ class TranslationGroupEditView(LaunchpadEditFormView):
                 # The new name doesn't exist so it's valid.
                 return
             self.setFieldError('name',
-                "There is already a translation group with such name")
+                "There is already a translation group with this name")
 
     @property
     def next_url(self):

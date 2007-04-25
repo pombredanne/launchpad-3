@@ -23,13 +23,7 @@ class TranslatorEditView(LaunchpadEditFormView):
         self.updateContextFromData(data)
 
     def validate(self, data):
-        """Do not allow an edition action to overwrite an existing translator.
-
-        We don't allow a translator to be appointed for a language that
-        already has a translator within that group.  If we did, it would be
-        too easy accidentally to replace a translator, e.g. by picking the
-        wrong language in this form.
-        """
+        """Don't allow to change the language if it's already in the group."""
         language = data.get('language')
         translation_group = self.context.translationgroup
         if (self.context.language != language and
