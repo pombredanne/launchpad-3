@@ -14,8 +14,6 @@ from zope.schema import Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    BaseImageUpload, LargeImageUpload, SmallImageUpload)
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 # XXX These import shims are actually necessary if we don't go over the
@@ -28,45 +26,48 @@ from canonical.launchpad.webapp.interfaces import (
     )
 
 __all__ = [
-	'AfterTraverseEvent',
-	'BeforeTraverseEvent',
+    'AfterTraverseEvent',
+    'BeforeTraverseEvent',
     'IAfterTraverseEvent',
-	'IAging',
-	'IAppFrontPageSearchForm',
-	'IAuthApplication',
+    'IAging',
+    'IAppFrontPageSearchForm',
+    'IAuthApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
     'IBeforeTraverseEvent',
-	'IBreadcrumb',
+    'IBreadcrumb',
     'ICrowd',
-	'IHasAppointedDriver',
-	'IHasAssignee',
-	'IHasBug',
-	'IHasDateCreated',
-	'IHasDrivers',
-	'IHasGotchiAndEmblem',
+    'IHasAppointedDriver',
+    'IHasAssignee',
+    'IHasBug',
+    'IHasDateCreated',
+    'IHasDrivers',
+    'IHasIcon',
+    'IHasLogo',
+    'IHasMugshot',
     'IHasOwner',
-	'IHasProduct',
+    'IHasProduct',
     'IHasProductAndAssignee',
-	'IHasSecurityContact',
+    'IHasSecurityContact',
     'ILaunchBag',
-	'ILaunchpadCelebrities',
+    'ILaunchpadCelebrities',
     'ILaunchpadRoot',
     'IMaloneApplication',
-	'IOpenLaunchBag',
+    'IOpenLaunchBag',
     'IPasswordChangeApp',
-	'IPasswordEncryptor',
-	'IPasswordResets',
-	'IReadZODBAnnotation',
-	'IRegistryApplication',
+    'IPasswordEncryptor',
+    'IPasswordResets',
+    'IReadZODBAnnotation',
+    'IRegistryApplication',
     'IRosettaApplication',
-	'IShipItApplication',
+    'IShipItApplication',
+    'IStructuralHeaderPresentation',
     'IStructuralObjectPresentation',
     'IWriteZODBAnnotation',
-	'IZODBAnnotation',
+    'IZODBAnnotation',
     'NameNotAvailable',
     'NotFoundError',
-	'UnexpectedFormData',
+    'UnexpectedFormData',
     ]
 
 
@@ -98,6 +99,7 @@ class ILaunchpadCelebrities(Interface):
     bug_importer = Attribute("The bug importer.")
     landscape = Attribute("The Landscape project.")
     launchpad = Attribute("The Launchpad product.")
+    redfish = Attribute("The Redfish project.")
     answer_tracker_janitor = Attribute("The Answer Tracker Janitor.")
     team_membership_janitor = Attribute("The Team Membership Janitor.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
@@ -134,6 +136,10 @@ class IMaloneApplication(ILaunchpadApplication):
     bugwatch_count = Attribute("The number of links to external bug trackers")
     bugextref_count = Attribute("The number of links to outside URL's")
     bugtask_count = Attribute("The number of bug tasks in Malone")
+    projects_with_bugs_count = Attribute("The number of products and "
+        "distributions which have bugs in Launchpad.")
+    shared_bug_count = Attribute("The number of bugs that span multiple "
+        "products and distributions")
     bugtracker_count = Attribute("The number of bug trackers in Malone")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
     latest_bugs = Attribute("The latest 5 bugs filed.")
@@ -146,6 +152,9 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translatable_products():
         """Return a list of the translatable products."""
+
+    def featured_products():
+        """Return a sample of all the translatable products."""
 
     def translatable_distroreleases():
         """Return a list of the distroreleases in launchpad for which
@@ -326,40 +335,28 @@ class IHasSecurityContact(Interface):
         required=False, vocabulary='ValidPersonOrTeam')
 
 
-class IHasGotchiAndEmblem(Interface):
-    """An object that has a gotchi and an emblem."""
+class IHasIcon(Interface):
+    """An object that can have a custom icon."""
 
-    default_gotchi_resource = TextLine(
-        title=_("Default gotchi resource"), required=True, readonly=True,
-        description=_("The zope3 resource to be used in case this object "
-                      "doesn't have a gotchi."))
-    default_gotchi_heading_resource = TextLine(
-        title=_("Default heading resource"), required=True, readonly=True,
-        description=_("The zope3 resource to be used in case this object "
-                      "doesn't have a gotchi_heading."))
-    default_emblem_resource = TextLine(
-        title=_("Default emblem resource"), required=True, readonly=True,
-        description=_("The zope3 resource to be used in case this object "
-                      "doesn't have a emblem."))
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    icon = Attribute("The 14x14 icon.")
 
-    emblem = SmallImageUpload(
-        title=_("Emblem"), required=False,
-        description=_(
-            "A small image, max 16x16 pixels and 25k in file size, that can "
-            "be used to refer to this object."))
-    # This field should not be used on forms, so we use a BaseImageUpload here
-    # only for documentation purposes.
-    gotchi_heading = BaseImageUpload(
-        title=_("Heading icon"), required=False,
-        description=_(
-            "An image, maximum 64x64 pixels, that will be displayed on "
-            "the header of all pages related to this object. It should be "
-            "no bigger than 50k in size.")) 
-    gotchi = LargeImageUpload(
-        title=_("Icon"), required=False,
-        description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on this "
-            "object's home page. It should be no bigger than 100k in size. "))
+
+class IHasLogo(Interface):
+    """An object that can have a custom logo."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    logo = Attribute("The 64x64 logo.")
+
+
+class IHasMugshot(Interface):
+    """An object that can have a custom mugshot."""
+
+    # Each of the objects that implements this needs a custom schema, so
+    # here we can just use Attributes
+    mugshot = Attribute("The 192x192 mugshot.")
 
 
 class IAging(Interface):
@@ -378,14 +375,19 @@ class IHasDateCreated(Interface):
     datecreated = Attribute("The date on which I was created.")
 
 
-class IStructuralObjectPresentation(Interface):
-    """Adapter that defines how a structural object is presented in the UI."""
+class IStructuralHeaderPresentation(Interface):
+    """Adapter that defines how a structural object is presented in the UI
+    as a heading."""
 
     def getIntroHeading():
         """Any heading introduction needed (e.g. "Ubuntu source package:")."""
 
     def getMainHeading():
         """can be None"""
+
+
+class IStructuralObjectPresentation(IStructuralHeaderPresentation):
+    """Adapter that defines how a structural object is presented in the UI."""
 
     def listChildren(num):
         """List up to num children.  Return empty string for none of these"""

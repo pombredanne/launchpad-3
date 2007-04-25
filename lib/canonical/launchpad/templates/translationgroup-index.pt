@@ -57,7 +57,15 @@
              src="/@@/edit" alt="Change"
              title="Change Translator"></a>
       </td>
-      <td tal:content="translator/datecreated/fmt:date" />
+      <td>
+        <span class="sortkey"
+          tal:content="translator/datecreated/fmt:datetime" />
+        <span
+          tal:attributes="title translator/datecreated/fmt:datetime"
+          tal:content="translator/datecreated/fmt:approximatedate">
+          2007-09-17
+        </span>
+      </td>
       <td tal:condition="context/required:launchpad.Edit">
         <form method="POST" action="+rm">
             <input type="hidden" name="remove"
@@ -72,7 +80,7 @@
 
         </tal:translators>
 
-        <p tal:condition="not: context/translators">
+        <p tal:condition="not: context/translators" class="message">
           There are no translators appointed in this group yet.
         </p>
         <ul class="menu">

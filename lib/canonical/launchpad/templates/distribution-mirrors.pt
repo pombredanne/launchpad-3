@@ -13,7 +13,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Ubuntu Linux</h3>
   <h1 tal:content="view/heading">Archive Mirrors</h1>
 </metal:heading>
 
@@ -30,7 +29,8 @@
     </p>
   </div>
 
-  <div tal:condition="mirrors_by_country">
+  <div tal:condition="mirrors_by_country"
+       tal:define="show_status view/show_status">
     <metal:mirror-list
       use-macro="context/@@+distributionmirror-macros/mirrors-table" />
   </div>

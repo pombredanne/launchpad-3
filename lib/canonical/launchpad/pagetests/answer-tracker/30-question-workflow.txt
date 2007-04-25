@@ -32,7 +32,7 @@ the Firefox product which was filed by 'Sample Person'.
 
 To participate in a question, the user must be logged in.
 
-    >>> anon_browser.open('http://launchpad.dev/firefox/+ticket/2')
+    >>> anon_browser.open('http://launchpad.dev/firefox/+question/2')
     >>> print anon_browser.contents
     <!DOCTYPE...
     ...
@@ -50,7 +50,7 @@ the question in the 'Message' field and clicks on the
 'Add Information Request' button.
 
     >>> support_browser.open(
-    ...     'http://launchpad.dev/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+question/2')
     >>> support_browser.getControl('Message').value = (
     ...     "Can you provide an example of an URL displaying the problem?")
     >>> support_browser.getControl('Add Information Request').click()
@@ -80,7 +80,7 @@ so by entering the reply in the 'Message' box and clicking on the
 "I'm Providing More Information" button.
 
     >>> owner_browser.open(
-    ...     'http://launchpad.dev/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+question/2')
     >>> owner_browser.getControl('Message').value = (
     ...     "The following SVG doesn't display properly:\n"
     ...     "http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg")
@@ -103,7 +103,7 @@ answer. This is done by entering the answer in the 'Message' box
 and clicking the 'Add Answer' button.
 
     >>> support_browser.open(
-    ...     'http://launchpad.dev/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+question/2')
     >>> support_browser.getControl('Message').value = (
     ...     "New version of the firefox package are available with SVG "
     ...     "support enabled. You can use apt-get or adept to upgrade.")
@@ -125,7 +125,7 @@ When the owner comes back on the question page, he will now see a new
 'This Solved my Problem' button near the answer.
 
     >>> owner_browser.open(
-    ...     'http://launchpad.dev/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+question/2')
     >>> soup = BeautifulSoup(owner_browser.contents)
     >>> soup.fetch('div', 'boardComment')[-1].first('input', type='submit')
     <input type="submit" name="field.actions.confirm"
@@ -144,20 +144,21 @@ This changes the status of the question to 'Solved' and mark
     >>> print find_request_status(owner_browser.contents)
     Solved
     >>> soup = BeautifulSoup(owner_browser.contents)
-    >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
-    No Privileges Person
+    >>> np = 'No Privileges Person'
+    >>> np in extract_text(soup.first('b', text='Solved by:').findNext('a'))
+    True
 
 Since no message can be provided when that button is clicked. A default
 confirmation message was appended to the question discussion:
 
     >>> print find_last_comment(owner_browser.contents).renderContents()
-    <p>User confirmed that the question is solved.</p>
+    <p>Thanks No Privileges Person, that solved my question.</p>
 
 The confirmed answer is also highlighted.
 
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-2]
-    >>> print bestAnswer.first('strong').renderContents()
-    Marked as best answer.
+    >>> print bestAnswer.first('img')
+    <img src="/@@/favourite-yes" alt="Best" title="Marked as best answer" />
     >>> print soup.first(
     ...     'div', 'boardCommentBody highlighted').renderContents()
     <p>New version of the firefox package are available with SVG support
@@ -225,8 +226,8 @@ reopening portlet.
 
     >>> portlet = find_portlet(
     ...     owner_browser.contents, 'This question was reopened')
-    >>> print extract_text(portlet.fetch('a')[-1])
-    Sample Person
+    >>> 'Sample Person' in extract_text(portlet.fetch('a')[-1])
+    True
 
 == Self-Answer ==
 
@@ -245,15 +246,16 @@ This appends the message to the quesiton and sets its status to
     >>> print find_request_status(owner_browser.contents)
     Solved
     >>> soup = BeautifulSoup(owner_browser.contents)
-    >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
-    Sample Person
+    >>> 'Sample Person' in extract_text(soup.first('b', text='Solved by:').findNext('a'))
+    True
+
 
 It also records the owner as the answerer and marks his answer with the
 "Best answer" flag.
 
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-1]
-    >>> print bestAnswer.first('strong').renderContents()
-    Marked as best answer.
+    >>> print bestAnswer.first('img')
+    <img src="/@@/favourite-yes" alt="Best" title="Marked as best answer" />
     >>> print soup.first(
     ...     'div', 'boardCommentBody highlighted').renderContents()
     <p>OK, this example requires some SVG features that will only be available
@@ -264,7 +266,7 @@ It also records the owner as the answerer and marks his answer with the
 The history of the question is available on the 'History' page.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/firefox/+ticket/2')
+    ...     'http://launchpad.dev/firefox/+question/2')
     >>> anon_browser.getLink('History').click()
     >>> print anon_browser.title
     History of question #2
@@ -275,7 +277,7 @@ It lists all the actions performed through workflow on the question:
     >>> action_listing = soup.first('table', 'listing')
     >>> for header in action_listing.fetch('th'):
     ...     print header.renderContents()
-    Date
+    When
     Who
     Action
     New State
@@ -284,7 +286,7 @@ It lists all the actions performed through workflow on the question:
     ...     who = extract_text(cells[1].first('a'))
     ...     action = cells[2].renderContents()
     ...     new_status = cells[3].renderContents()
-    ...     print who, action, new_status
+    ...     print who.lstrip('&nbsp;'), action, new_status
     Foo Bar              Reject                       Invalid
     Foo Bar              Change status                Open
     No Privileges Person Request for more information Needs information
@@ -294,3 +296,4 @@ It lists all the actions performed through workflow on the question:
     Sample Person        Comment                      Solved
     Sample Person        Reopen                       Open
     Sample Person        Confirm                      Solved
+

@@ -139,11 +139,11 @@ class SourcePackageQuestionTargetMixin:
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            'Language.id = language AND distribution = %s AND '
-            'sourcepackagename = %s'
+            'Language.id = Question.language AND '
+            'Question.distribution = %s AND '
+            'Question.sourcepackagename = %s'
                 % sqlvalues(self.distribution, self.sourcepackagename),
-            clauseTables=['Ticket'], distinct=True))
-
+            clauseTables=['Question'], distinct=True))
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
@@ -422,9 +422,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.status != %s
+            SourcePackagePublishingHistory.status = %s
             """ % sqlvalues(self.distrorelease, self.sourcepackagename,
-                            PackagePublishingStatus.REMOVED),
+                            PackagePublishingStatus.PUBLISHED),
             clauseTables=['SourcePackageRelease'])
         # create the dictionary with the set of pockets as keys
         thedict = {}

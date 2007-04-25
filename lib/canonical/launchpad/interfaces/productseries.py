@@ -126,8 +126,12 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
 
-    milestones = Attribute(
-        'The milestones associated with this series.')
+    milestones = Attribute(_(
+        "The visible milestones associated with this productseries, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All milestones associated with this productseries, ordered by "
+        "date expected."))
 
     drivers = Attribute(
         'A list of the people or teams who are drivers for this series. '
@@ -255,9 +259,8 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "successfully synced the upstream RCS. The date of the currently "
         "published branch data if it is older than "
         "import_branch.last_mirrored"))
-    datepublishedsync = Attribute(_("The date of the currently published "
-        "branch data, in case import_branch.last_mirrored is older than "
-        "datelastsynced."))
+    datepublishedsync = Attribute(_("The date of the published code was last "
+        "synced, at the time of the last sync."))
 
     def syncCertified():
         """is the series source sync enabled?"""

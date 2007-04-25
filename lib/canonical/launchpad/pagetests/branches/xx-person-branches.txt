@@ -46,18 +46,6 @@ normal branch listing view for that person.
   filtering on "Any Status".
 
 
-== Team Branches ==
-
-Branches that are owned by a team that the user is a member of, they are
-shown as 'Team Branch'.
-
-   >>> browser.open('http://launchpad.dev/~ddaa/+branches')
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   main   60 New   evolution   Team Branch
-  
-  
 == Authored Branches ==
 
 There is a link in the branch context menu for person which points to
@@ -87,11 +75,12 @@ There is also a link which points to the registered branches page.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   2.6                   Mature       gnome-terminal
-   main                  Development  gnome-terminal
-   mirrored              New          gnome-terminal
-   pushed                New          gnome-terminal
-   scanned               New          gnome-terminal
+   2.6                   10 Mature       gnome-terminal
+   main                  20 Development  gnome-terminal
+   mirrored              60 New          gnome-terminal
+   pushed                60 New          gnome-terminal
+   scanned               60 New          gnome-terminal
+   junk.dev Ubuntu Team  30 Experimental  2005-10-31 12:03:57 ... weeks ago
 
 == Subscribed branches ==
 

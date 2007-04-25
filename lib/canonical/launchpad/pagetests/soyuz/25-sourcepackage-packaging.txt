@@ -1,7 +1,0 @@
-Packaging data for a source package can be viewed on the source
-package's +packaging page.
-
-  >>> browser.open("http://localhost/ubuntu/hoary/+source/mozilla-firefox/+packaging")
-  >>> browser.contents
-  '...<h2>Upstream links for Hoary mozilla-firefox</h2>...'
-

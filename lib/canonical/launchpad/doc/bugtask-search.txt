@@ -144,3 +144,20 @@ will be returned by the search.
     >>> found_bugtasks = evolution.searchTasks(comment_search)
     >>> found_bugtasks.count()
     0
+
+== Searching by bug reporter ==
+
+The 'bug_reporter' parameter allows you to search for bugs reported by a
+certain person.
+
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> reported_by_foo_bar = BugTaskSearchParams(
+    ...     user=None, bug_reporter=foo_bar)
+    >>> reported_by_foo_bar.setDistribution(ubuntu)
+    >>> found_bugtasks = bugtask_set.search(reported_by_foo_bar)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s in %s reported by %s" % (
+    ...         bugtask.bug.id, bugtask.targetname,
+    ...         bugtask.bug.owner.displayname)
+    #9 in thunderbird (Ubuntu) reported by Foo Bar
+    #10 in linux-source-2.6.15 (Ubuntu) reported by Foo Bar

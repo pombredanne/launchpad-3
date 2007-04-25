@@ -3,16 +3,16 @@
 To edit the title and description of question, one uses the 'Edit Question'
 menu item. You need to be logged in to perform that action:
 
-  >>> anon_browser.open('http://launchpad.dev/firefox/+ticket/2')
+  >>> anon_browser.open('http://launchpad.dev/firefox/+question/2')
   >>> anon_browser.getLink('Edit question').click()
   Traceback (most recent call last):
     ...
   Unauthorized...
 
-  >>> user_browser.open('http://launchpad.dev/firefox/+ticket/2')
+  >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
   >>> user_browser.getLink('Edit question').click()
   >>> user_browser.url
-  '.../firefox/+ticket/2/+edit'
+  '.../firefox/+question/2/+edit'
 
 When we post the form, we should be redirected back to the question page.
 
@@ -25,7 +25,7 @@ When we post the form, we should be redirected back to the question page.
   >>> user_browser.getControl('Continue').click()
 
   >>> user_browser.url
-  '.../firefox/+ticket/2'
+  '.../firefox/+question/2'
 
 And viewing that page should show the updated information.
 
@@ -40,7 +40,7 @@ And viewing that page should show the updated information.
 You can even modify the title and description of 'Answered' and
 'Invalid' questions:
 
-  >>> user_browser.open('http://launchpad.dev/ubuntu/+ticket/3')
+  >>> user_browser.open('http://launchpad.dev/ubuntu/+question/3')
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
   >>> soup.first('b', text='Status:').next.strip()
@@ -55,7 +55,7 @@ Distribution questions can have a source package associated with them.
 Any logged in user can change the question source package on the
 'Edit Question' page.
 
-  >>> user_browser.open('http://launchpad.dev/ubuntu/+ticket/5')
+  >>> user_browser.open('http://launchpad.dev/ubuntu/+question/5')
   >>> user_browser.getLink('Edit question').click()
   >>> user_browser.getControl('Source Package').value = 'linux-source-2.6.15'
   >>> user_browser.getControl('Continue').click()
@@ -66,7 +66,7 @@ Any logged in user can change the question source package on the
 
 Of course, that item doesn't appear for product questions:
 
-  >>> user_browser.open('http://launchpad.dev/firefox/+ticket/2')
+  >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
   >>> user_browser.getLink('Edit question').click()
   >>> user_browser.getControl('Source Package')
   Traceback (most recent call last):
@@ -81,7 +81,7 @@ edit the Status Whiteboard using the 'Edit Question' page.
 
   >>> browser.addHeader(
   ...   'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
-  >>> browser.open('http://localhost/ubuntu/+ticket/5')
+  >>> browser.open('http://localhost/ubuntu/+question/5')
   >>> browser.getLink('Edit question').click()
 
   >>> browser.getControl('Priority').value = ['Wishlist']
@@ -92,8 +92,8 @@ edit the Status Whiteboard using the 'Edit Question' page.
   >>> soup = BeautifulSoup(browser.contents)
   >>> print soup.first('b', text='Whiteboard:').findNext('td').renderContents()
   Some note
-  >>> print extract_text(soup.first('b', text='Assignee:').findNext('a'))
-  Foo Bar
+  >>> 'Foo Bar' in extract_text(soup.first('b', text='Assignee:').findNext('a'))
+  True
   >>> print soup.first('b', text='Priority:').next.strip()
   Wishlist
 
@@ -105,7 +105,7 @@ appears under the 'Also notified' list in the 'Subscribers' portlet:
     >>> also_notified
     <b>Also notified:</b>
     >>> also_notified.findNextSibling('ul')
-    <ul class="people">
+    <ul class="person">
       <li>
         <a href=".../~name16">Foo Bar</a>
       </li>
@@ -113,7 +113,7 @@ appears under the 'Also notified' list in the 'Subscribers' portlet:
 
 These fields cannot be modified by a non-privileged user:
 
-  >>> user_browser.open('http://localhost/ubuntu/+ticket/5')
+  >>> user_browser.open('http://localhost/ubuntu/+question/5')
   >>> user_browser.getLink('Edit question').click()
   >>> user_browser.getControl('Priority')
   Traceback (most recent call last):

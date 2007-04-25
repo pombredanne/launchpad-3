@@ -82,7 +82,7 @@ Serbia (194.247.192.33), to test country detection.  Proxies add
   ...     soup = BeautifulSoup(rosetta_pref_page)
   ...     lang_portlet = soup.fetchText(
   ...         'Your %s languages' % portlet)[0].parent.parent
-  ...     for lang in lang_portlet('li', {'class': 'languages'}):
+  ...     for lang in lang_portlet('li', {'class': 'language'}):
   ...         print lang.string
 
   >>> print_languages(browser.contents, portlet='browser')

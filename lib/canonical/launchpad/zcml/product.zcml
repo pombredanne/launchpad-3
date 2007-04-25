@@ -17,16 +17,18 @@
                             downloadurl programminglang
                             sourceforgeproject freshmeatproject
                             translationgroup translationpermission
-                            official_malone official_rosetta
+                            official_malone official_rosetta official_answers
                             releaseroot development_focus bugtracker
-                            homepage_content emblem gotchi gotchi_heading"
+                            homepage_content icon logo mugshot"
         />
-        <!-- sabdfl 2006-04-10 I put "name" in the admin group because
-             with Bazaar now in place, lots of people can have personal
-             data published at product name-based locations (personal
-             branches) and these URL's will all be b0rked if the product
-             name has to change. It should require RegistryAdmin
-             intervention to rename a product now. -->
+<!-- sabdfl 2006-04-10 I put "name" in the admin group because
+        with Bazaar now in place, lots of people can have personal
+        data published at product name-based locations (personal
+        branches) and these URL's will all be b0rked if the product
+        name has to change. It should require RegistryAdmin
+        intervention to rename a product now. -->
+<!-- https://lists.ubuntu.com/mailman/private/launchpad/2007-April/015189.html
+        for further discussion - stub 20070411 -->
         <require
             permission="launchpad.Admin"
             set_attributes="name active reviewed autoupdate"
@@ -34,9 +36,8 @@
         <!-- IQuestionTarget -->
         <allow attributes="getQuestion searchQuestions findSimilarQuestions
             answer_contacts direct_answer_contacts getSupportedLanguages
-            getQuestionLanguages default_gotchi_heading_resource
-            default_emblem_resource default_gotchi_resource"
-	    />
+            getQuestionLanguages"
+        />
         <require permission="launchpad.AnyPerson"
             attributes="newQuestion addAnswerContact removeAnswerContact" />
     </content>
@@ -57,7 +58,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.AnswersLayer"
-        name="+tickets"
+        name="+questions"
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
@@ -73,7 +74,7 @@
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
             ProductBranchesMenu ProductSpecificationsMenu
-            ProductTranslationsMenu ProductBugsMenu 
+            ProductTranslationsMenu ProductBugsMenu
             ProductSetFacets ProductSetContextMenu
             "
             />
@@ -127,6 +128,11 @@
             template="../templates/product-packages.pt"
             />
         <browser:page
+            name="+series"
+            facet="overview"
+            template="../templates/product-series.pt"
+            />
+        <browser:page
             name="+distributions"
             facet="overview"
             template="../templates/product-distros.pt"
@@ -137,7 +143,7 @@
             />
         <browser:page
             name="+listing-simple"
-            template="../templates/product-listing-simple.pt"
+            template="../templates/pillar-listing-simple.pt"
             />
         <!-- Products Portlets -->
         <browser:page
@@ -164,6 +170,11 @@
             name="+portlet-milestones"
             facet="overview"
             template="../templates/object-portlet-milestones.pt"
+            />
+        <browser:page
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
             />
         <browser:page
             name="+portlet-bounties"
@@ -266,6 +277,14 @@
         class="canonical.launchpad.browser.ProductEditView"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt" />
+
+    <browser:page
+        name="+branding"
+        for="canonical.launchpad.interfaces.IProduct"
+        facet="overview"
+        class="canonical.launchpad.browser.ProductBrandingView"
+        permission="launchpad.Edit"
+        template="../templates/object-branding.pt" />
 
     <browser:editform
         name="+bugcontact"
@@ -373,11 +392,6 @@
         for="canonical.launchpad.interfaces.IProductSet"
         name="+index" />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProductSet"
-        name="+code-index"
-        layer="canonical.launchpad.layers.CodeLayer" />
-
     <browser:navigation
         module="canonical.launchpad.browser"
         classes="ProductSetNavigation"
@@ -385,30 +399,13 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IProductSet"
-        path_expression="string:products"
+        path_expression="string:projects"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IProductSet"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.product.ProductSetDynMenu"
-        attribute="__call__"
-        name="+menudata"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IProductSet"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.BazaarProductView"
-        name="+code-index"
-        facet="branches"
-        template="../templates/product-code-index.pt"
-        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
-        class="canonical.launchpad.browser.product.ProductDynMenu"
+        class="canonical.launchpad.browser.ProductDynMenu"
         attribute="__call__"
         name="+menudata"
         />
