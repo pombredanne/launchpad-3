@@ -323,6 +323,11 @@ special = {
             setUp=statisticianSetUp, tearDown=statisticianTearDown,
             optionflags=default_optionflags, layer=ZopelessLayer
             ),
+    'script-monitoring.txt': LayeredDocFileSuite(
+            '../doc/script-monitoring.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=LaunchpadZopelessLayer
+            ),
     'distroreleasequeue-debian-installer.txt': FunctionalDocFileSuite(
             '../doc/distroreleasequeue-debian-installer.txt',
             setUp=distroreleasequeueSetUp, tearDown=distroreleasequeueTearDown,

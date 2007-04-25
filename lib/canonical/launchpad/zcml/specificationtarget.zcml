@@ -20,7 +20,7 @@
     permission="zope.Public">
     <browser:page
       name="+specs"
-      template="../templates/specificationtarget-specs.pt" />
+      template="../templates/hasspecifications-specs.pt" />
     <browser:page
       name="+categorized"
       template="../templates/specificationtarget-categorized.pt" />

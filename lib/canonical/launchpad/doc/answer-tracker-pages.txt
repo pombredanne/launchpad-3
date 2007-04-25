@@ -663,6 +663,8 @@ By default, that class provides widgets to search by text and by status.
     >>> search_view = search_view_harness.view
     >>> search_view.widgets.get('search_text') is not None
     True
+    >>> search_view.widgets.get('languages') is not None
+    True
     >>> search_view.widgets.get('status') is not None
     True
 
@@ -690,19 +692,21 @@ can tweak the search and filter the results:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Solved', 'Open'],
     ...     'field.search_text': 'firefox',
+    ...     'field.languages': 'Preferred',
     ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
     >>> for question in questions.batch:
     ...     print question.title, question.status.title
-    mailto: problem in webpage  Solved
+    mailto: problem in webpage Solved
 
 Specific views can provide a default filter by returning the default
 search parameters to use in the getDefaultFilter() method:
 
     >>> from canonical.lp.dbschema import QuestionStatus
     >>> MyCustomSearchQuestionsView.default_filter = {
-    ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID]}
+    ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID],
+    ...     'languages':'Preferred'}
     >>> search_view_harness.submit('', {})
 
 In this example, only the solved and invalid questions are listed by
@@ -728,6 +732,7 @@ criteria.
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Solved'],
     ...     'field.search_text': 'firefox',
+    ...     'field.languages': 'Preferred',
     ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
@@ -761,6 +766,7 @@ It works also with user submitted values:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Expired'],
     ...     'field.search_text': '',
+    ...     'field.languages': 'Preferred',
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
     Expired questions for Ubuntu
@@ -770,6 +776,7 @@ It works also with user submitted values:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Open', 'Answered'],
     ...     'field.search_text': 'evolution',
+    ...     'field.languages': 'Preferred',
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
     Questions matching "evolution" for Ubuntu
@@ -787,3 +794,26 @@ states on that target.
     ...     firefox, '+open_questions_count', LaunchpadTestRequest())
     >>> view()
     u'4'
+
+== QuestionSOP ==
+
+There is an IStructuralObjectPresentation adapter available for
+IQuestion. This adapter is used to render the title appearing in
+in the structuralheader area.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IStructuralObjectPresentation)
+    >>> from zope.interface.verify import verifyObject
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> firefox_question_sop = IStructuralObjectPresentation(firefox_question)
+    >>> verifyObject(
+    ...     IStructuralObjectPresentation,
+    ...     removeSecurityProxy(firefox_question_sop))
+    True
+
+    # The returned string is an instance of zope.i18n.Message.
+    >>> import zope.i18n
+    >>> print zope.i18n.translate(
+    ...     firefox_question_sop.getMainHeading())
+    Question #2 in Mozilla Firefox

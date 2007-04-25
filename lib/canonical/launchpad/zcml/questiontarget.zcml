@@ -62,6 +62,12 @@
     />
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionTarget"
+    class="canonical.launchpad.browser.QuestionCollectionUnsupportedView"
+    name="+unsupported"
+    permission="launchpad.AnyPerson"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IQuestionTarget"
     name="+answer-contact"
     permission="launchpad.AnyPerson"
     class="canonical.launchpad.browser.ManageAnswerContactView"

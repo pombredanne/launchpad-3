@@ -144,22 +144,28 @@ class ProberFactory(protocol.ClientFactory):
         self.connector = None
 
     def probe(self):
+        logger = logging.getLogger('distributionmirror-prober')
         # NOTE: We don't want to issue connections to any outside host when
         # running the mirror prober in a development machine, so we do this
         # hack here.
         if (self.connect_host != 'localhost' 
             and config.distributionmirrorprober.localhost_only):
             reactor.callLater(0, self.succeeded, '200')
+            logger.debug("Forging a successful response on %s as we've been "
+                         "told to probe only local URLs." % self.url)
             return self._deferred
 
         if should_skip_host(self.request_host):
             reactor.callLater(0, self.failed, ConnectionSkipped(self.url))
+            logger.debug("Skipping %s as we've had too many timeouts on this "
+                         "host already." % self.url)
             return self._deferred
 
         self.connect()
         self.timeoutCall = reactor.callLater(
             self.timeout, self.failWithTimeoutError)
         self._deferred.addBoth(self._cancelTimeout)
+        logger.debug('Probing %s' % self.url)
         return self._deferred
 
     def connect(self):
@@ -196,7 +202,7 @@ class ProberFactory(protocol.ClientFactory):
         # the sysadmins to fix squid for you.
         # -- Guilherme Salgado, 2006-09-19
         if scheme not in ('http', 'ftp'):
-            raise UnknownURLScheme(scheme)
+            raise UnknownURLScheme(url)
 
         if scheme and host:
             self.request_scheme = scheme
@@ -235,6 +241,11 @@ class RedirectAwareProberFactory(ProberFactory):
                 raise InfiniteLoopDetected()
             self.redirection_count += 1
 
+            logger = logging.getLogger('distributionmirror-prober')
+            logger.debug('Got redirected from %s to %s' % (self.url, url))
+            # XXX: We can't assume url to be absolute here. See
+            # https://bugs.launchpad.net/launchpad/+bug/109223 for more
+            # details.  -- Guilherme Salgado, 2007-04-23
             self.setURL(url)
         except (InfiniteLoopDetected, UnknownURLScheme), e:
             self.failed(e)
@@ -287,13 +298,13 @@ class ConnectionSkipped(ProberError):
 
 class UnknownURLScheme(ProberError):
 
-    def __init__(self, scheme, *args):
+    def __init__(self, url, *args):
         ProberError.__init__(self, *args)
-        self.scheme = scheme
+        self.url = url
 
     def __str__(self):
-        return ("The mirror prober doesn't know how to check URLs with an "
-                "'%s' scheme." % self.scheme)
+        return ("The mirror prober doesn't know how to check this kind of "
+                "URLs: %s" % self.url)
 
 
 class ArchiveMirrorProberCallbacks(object):
@@ -460,7 +471,15 @@ class MirrorCDImageProberCallbacks(object):
             if success_or_failure == defer.FAILURE:
                 self.mirror.deleteMirrorCDImageRelease(
                     self.distrorelease, self.flavour)
-                response.trap(*self.expected_failures)
+                if response.check(*self.expected_failures) is None:
+                    msg = ("%s on mirror %s. Check its logfile for more "
+                           "details.\n" 
+                           % (response.getErrorMessage(), self.mirror.name))
+                    # This is not an error we expect from an HTTP server, so 
+                    # we log it using the cronscript's logger and wait for 
+                    # kiko to complain about it.
+                    logger = logging.getLogger('distributionmirror-prober')
+                    logger.error(msg)
                 return None
 
         mirror = self.mirror.ensureMirrorCDImageRelease(
