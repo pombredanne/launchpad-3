@@ -4,10 +4,11 @@ __metaclass__ = type
 
 from canonical.launchpad.interfaces import ITranslator
 from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, action, canonical_url)
+    LaunchpadEditFormView, LaunchpadView, action, canonical_url)
 
 __all__ = [
-    'TranslatorEditView'
+    'TranslatorEditView',
+    'TranslatorRemoveView'
     ]
 
 class TranslatorEditView(LaunchpadEditFormView):
@@ -41,3 +42,23 @@ class TranslatorEditView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.context.translationgroup)
+
+
+class TranslatorRemoveView(LaunchpadView):
+
+    def initialize(self):
+        if self.request.method == 'POST':
+            self.translationgroup = self.context.translationgroup
+            if 'remove' in self.request.form:
+                self.remove()
+            self.request.response.redirect(
+                canonical_url(self.translationgroup))
+
+    def remove(self):
+        """Remove the ITranslator from the associated ITranslationGroup."""
+        self.translationgroup.remove_translator(self.context)
+        self.request.response.addInfoNotification(
+            'Removed %s as the %s translator for %s.' % (
+                self.context.translator.displayname,
+                self.context.language.englishname,
+                self.translationgroup.title))

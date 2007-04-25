@@ -21,7 +21,7 @@ from zope.component import getUtility
 from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ITranslator, ITranslatorSet,
-    ILanguageSet, IPersonSet, NotFoundError)
+    NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadFormView,
     LaunchpadEditFormView)
@@ -51,55 +51,8 @@ class TranslationGroupView:
         self.context = context
         self.request = request
         self.translation_groups = getUtility(ITranslationGroupSet)
-        self.notices = []
 
-        self.parseUrlNotices()
-
-    def parseUrlNotices(self):
-        """Parse any notice message as an argument to the page."""
-
-        # Check if we have the 'removed' key as an argument. This argument is
-        # used by the +rm form to tell us 'who' was removed from 'where'.
-        form_removed = self.request.form.get('removed', '')
-        if '-' in form_removed:
-            # The key exists and follows the format we expect:
-            # languagecode-personame
-            code, name = form_removed.split('-', 1)
-
-            try:
-                language = getUtility(ILanguageSet)[code]
-            except NotFoundError:
-                # We got a non valid language code.
-                language = None
-
-            translator = getUtility(IPersonSet).getByName(name)
-
-            if language is not None and translator is not None:
-                # The language and the person got as arguments are valid in
-                # our system, so we should show the message:
-                self.notices.append(
-                    '%s removed as translator for %s.' % (
-                        translator.browsername, language.displayname))
-
-    def removals(self):
-        """Remove a translator/team for a concrete language."""
-        if 'remove' in self.request.form:
-            code = self.request.form['remove']
-            try:
-                translator = self.context[code]
-            except NotFoundError:
-                translator = None
-
-            new_url = '.'
-            if translator is not None:
-                new_url = '%s?removed=%s-%s' % (
-                            new_url, translator.language.code,
-                            translator.translator.name)
-
-                self.context.remove_translator(translator)
-
-            self.request.response.redirect(new_url)
-
+    @property
     def translator_list(self):
         result = []
         for item in self.context.translators:
@@ -193,12 +146,9 @@ class TranslationGroupAddView(LaunchpadFormView):
         name = data.get('name')
         title = data.get('title')
         summary = data.get('summary')
-        group = getUtility(ITranslationGroupSet).new(
-            name=name,
-            title=title,
-            summary=summary,
-            owner=self.user)
-        notify(ObjectCreatedEvent(group))
+        self.new_group = getUtility(ITranslationGroupSet).new(
+            name=name, title=title, summary=summary, owner=self.user)
+        notify(ObjectCreatedEvent(self.new_group))
 
     def validate(self, data):
         """Do not allow new groups with duplicated names."""
@@ -213,4 +163,4 @@ class TranslationGroupAddView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        return canonical_url(self.context)
+        return canonical_url(self.new_group)

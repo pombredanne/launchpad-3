@@ -4,7 +4,7 @@ Only Rosetta experts and Launchpad administrators can create translation
 groups.  Unprivileged users do not have access to the group creation page.
 
   >>> anon_browser.open(
-  ...     'http://translations.launchpad.dev/translations/groups/+new')
+  ...     'http://translations.launchpad.dev/+translation-groups/+new')
   Traceback (most recent call last):
   ...
   Unauthorized...
@@ -12,7 +12,7 @@ groups.  Unprivileged users do not have access to the group creation page.
 Same for a regular, unprivileged user.
 
   >>> user_browser.open(
-  ...     'http://translations.launchpad.dev/translations/groups/+new')
+  ...     'http://translations.launchpad.dev/+translation-groups/+new')
   Traceback (most recent call last):
   ...
   Unauthorized...
@@ -20,10 +20,10 @@ Same for a regular, unprivileged user.
 OK, best we try again, with administrator rights!
 
   >>> admin_browser.open(
-  ...     'http://translations.launchpad.dev/translations/groups/+new')
+  ...     'http://translations.launchpad.dev/+translation-groups/+new')
   >>> print find_main_content(
   ...     admin_browser.contents).first('h1').renderContents()
-  Create a new translation group
+  Add a new Translation Group
 
 Translation group names must meet certain conditions.  For example, they may
 not contain any upper-case letters.
@@ -34,10 +34,11 @@ not contain any upper-case letters.
   >>> admin_browser.getControl('Add').click()
   >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
   ...     print message.renderContents()
-  An error occurred.
-  <BLANKLINE>
-  Invalid name 'PolYglot'...
-  ...
+  There is 1 error.
+  Invalid name 'PolYglot'. Names must start with a letter or
+  number and be lowercase. The characters <samp>+</samp>,
+  <samp>-</samp> and <samp>.</samp> are also allowed after the
+  first character.
 
 
 The same request will be accepted if the group is given a saner name, such as
@@ -45,14 +46,14 @@ just "polyglot" (no upper-case letters).
 
   >>> admin_browser.getControl('Name').value='polyglot'
   >>> admin_browser.getControl('Add').click()
-  >>> admin_browser.url
-  '.../polyglot'
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+translation-groups/polyglot
 
 After creating a translation group, the user automatically ends up a that
 group's page.
 
   >>> admin_browser.url
-  'http://translations.launchpad.dev/translations/groups/polyglot'
+  'http://translations.launchpad.dev/+translation-groups/polyglot'
   >>> admin_browser.title
   '...The PolyGlot Translation Group...'
 
@@ -60,13 +61,13 @@ A Rosetta administrator is also allowed to create groups.
 
   >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
   >>> browser.open(
-  ...     'http://translations.launchpad.dev/translations/groups/+new')
+  ...     'http://translations.launchpad.dev/+translation-groups/+new')
   >>> browser.getControl('Name').value='monolingua'
   >>> browser.getControl('Title').value='Single-language Translators'
   >>> browser.getControl('Summary').value = "Since each of us only speaks one language, we work out software translations through drawings and hand signals."
   >>> browser.getControl('Add').click()
-  >>> browser.url
-  '.../monolingua'
+  >>> print browser.url
+  http://translations.launchpad.dev/+translation-groups/monolingua
 
   >>> browser.title
   '...Single-language Translators...'

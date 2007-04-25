@@ -1105,13 +1105,13 @@ temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 translationgroup_index = ContextTitle(smartquote('"%s" translation group'))
 
+translationgroup_add = 'Add a new Translation Group to Launchpad'
+
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))
 
 translationgroup_edit = ContextTitle(smartquote(
     'Edit "%s" translation group details'))
-
-translationgroups_add = 'Add a new Translation Group to Launchpad'
 
 translationgroups_index = 'Launchpad translation groups'
 
@@ -1123,6 +1123,11 @@ translationimportqueue_blocked = 'Translation import queue - Blocked'
 
 def translator_edit(context, view):
     return "Edit %s translator for %s" % (
-        context.language, context.translationgroup.title)
+        context.language.englishname, context.translationgroup.title)
+
+def translator_remove(context, view):
+    return "Remove %s as the %s translator for %s" % (
+        context.translator.displayname, context.language.englishname,
+        context.translationgroup.title)
 
 unauthorized = 'Error: Not authorized'

@@ -50,14 +50,6 @@
     </browser:pages>
 
     <browser:page
-        name="+rm"
-        for="canonical.launchpad.interfaces.ITranslationGroup"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.TranslationGroupView"
-        attribute="removals"
-        />
-
-    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.ITranslationGroup"
         permission="launchpad.Edit"
@@ -72,7 +64,6 @@
         class="canonical.launchpad.browser.TranslationGroupAddTranslatorView"
         template="../templates/translationgroup-appoint.pt"
         />
-
 
     <!-- TranslationGroupSet -->
     <securedutility

@@ -1,9 +1,6 @@
 
 Make sure we can actually display the Translation Groups page.
 
-  >>> print http(r"""
-  ... GET /translations/groups/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Rosetta translation groups...
-
+  >>> browser.open('http://translations.launchpad.dev/+translation-groups/')
+  >>> print browser.url
+  http://translations.launchpad.dev/+translation-groups/

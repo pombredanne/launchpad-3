@@ -33,5 +33,13 @@
         template="../templates/translator-edit.pt"
         />
 
+    <browser:page
+        name="+remove"
+        for="canonical.launchpad.interfaces.ITranslator"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.TranslatorRemoveView"
+        template="../templates/translator-remove.pt"
+        />
+
 </facet>
 </configure>
