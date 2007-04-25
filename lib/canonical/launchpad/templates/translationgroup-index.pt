@@ -92,5 +92,29 @@
           </li>
         </ul>
     </div>
+
+    <div metal:fill-slot="help">
+      <p>
+        This is an overview of the
+        "<span tal:replace="context/name">transgroup</span>" translation
+        group.  A translation group
+        is a collection of people who work together on translating software.
+        A translation group can translate any number of projects into any
+        number of languages.  Translation groups make it easier to coordinate
+        and oversee large translation efforts.
+      </p>
+      <p>
+        Within the group, a translator is appointed for every language that the
+        group supports.  The translator may be a person or a team.  A person
+        or team may work on multiple languages if desired, and even participate
+        in multiple translation groups.
+      </p>
+      <ul class="info">
+        <li>
+          <a href="https://help.launchpad.net/RosettaFAQ"
+          >Frequently asked questions</a>
+        </li>
+      </ul>
+    </div>
   </body>
 </html>
