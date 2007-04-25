@@ -44,7 +44,7 @@ Now, we make sure we can load the page. It should show two potential
 dependencies we could remove. The extension manager one, and "e4x".
 
   >>> admin_browser.getControl('Dependency').displayOptions
-  ['Extension Manager Upgrades', 'Support E4X in EcmaScript']
+  ['Extension Manager System Upgrades', 'Support E4X in EcmaScript']
 
 We'll POST the form selecting "extension-manager-upgrades" for removal. We
 expect to be redirected to the blueprint page.
