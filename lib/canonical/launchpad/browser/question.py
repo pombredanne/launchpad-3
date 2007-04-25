@@ -527,6 +527,20 @@ class QuestionRejectView(LaunchpadFormView):
         return ''
 
 
+    def initialize(self):
+        """See LaunchpadFormView.
+
+        Abort early if the question is already rejected.
+        """
+        if self.context.status == QuestionStatus.INVALID:
+            self.request.response.addNotification(
+                _('The question is already rejected.'))
+            self.request.response.redirect(canonical_url(self.context))
+            return
+
+        LaunchpadFormView.initialize(self)
+
+
 class QuestionWorkflowView(LaunchpadFormView):
     """View managing the question workflow action, i.e. action changing
     its status.

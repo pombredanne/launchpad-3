@@ -61,6 +61,16 @@ and the rejection message is added to the question board.
     >>> print content.findAll('div', 'boardCommentBody')[-1].renderContents()
     <p>Rejecting because it's a duplicate of <a...>bug #1</a>.</p>
 
+Selecting the 'Reject' action again, will simply display a message
+stating that the quesiton is already rejected:
+
+    >>> admin_browser.getLink('Reject question').click()
+    >>> print admin_browser.url
+    http://answers.launchpad.dev/firefox/+question/2
+    >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print message.renderContents()
+    The question is already rejected.
+
 = Changing the Question Status =
 
 In the previous example, that rejection was clearly a mistake: you
