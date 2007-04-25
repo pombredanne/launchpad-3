@@ -510,24 +510,21 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 % (self.filename, file_package, control_package))
 
     def verifyVersion(self):
-        """Check if control version matches the changesfile and is valid."""
-        if not re_valid_version.match(self.control_version):
-            yield UploadError("%s: invalid version number %r." % (
-                self.filename, control_version))
+        """Check if control version is valid matches the filename version.
 
-        control_version_chopped = re_no_epoch.sub('', self.control_version)
-        changes_version_chopped = re_no_epoch.sub('', self.version)
-        if control_version_chopped != changes_version_chopped:
-            yield UploadError("%s: version number %r in control file "
-                "doesn't match version %r in changes file." % (
-                self.filename, control_version_chopped,
-                changes_version_chopped))
+        Binary version  doesn't need to match the changesfile version,
+        because the changesfile version refers to the SOURCE version.
+        """
+        if not re_valid_version.match(self.control_version):
+            yield UploadError("%s: invalid version number %r."
+                              % (self.filename, control_version))
 
         binary_match = re_isadeb.match(self.filename)
         filename_version = binary_match.group(2)
-        if filename_version != changes_version_chopped:
-            yield UploadError("%s: should be %s according to changes file."
-                % (filename_version, changes_version_chopped))
+        control_version_chopped = re_no_epoch.sub('', self.control_version)
+        if filename_version != control_version_chopped:
+            yield UploadError("%s: should be %s according to control file."
+                              % (filename_version, control_version_chopped))
 
     def verifyArchitecture(self):
         """Check if the control architecture matches the changesfile.

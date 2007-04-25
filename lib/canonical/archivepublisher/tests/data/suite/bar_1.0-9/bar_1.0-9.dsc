@@ -7,4 +7,4 @@ Architecture: any
 Standards-Version: 3.6.2
 Files: 
  fc1464e5985b962a042d5354452f361d 164 bar_1.0.orig.tar.gz
- 482abfcd7c6610486d93e3e23cf14116 623 bar_1.0-9.diff.gz
+ ef5ef31b9d2779421d8187528672a03a 632 bar_1.0-9.diff.gz

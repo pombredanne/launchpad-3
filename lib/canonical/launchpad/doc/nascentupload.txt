@@ -764,7 +764,7 @@ that constraint.
   foo_1.0-1_i386.deb uses bzip2 compression but pre-depends on an old version of dpkg: 1.10.20
 
 
-== Dealing with Epochs ==
+== Dealing with Epochs and diverging binary versions ==
 
 Versions stored in Launchpad should include 'epoch'.
 
@@ -826,25 +826,30 @@ For a binary upload we expect the same, a BinaryPackageRelease
   >>> bar_bin_queue.status.name
   'NEW'
 
-Our builders generate a changesfile with a version that doesn't
-include the 'epoch', even so we have access to the version mentioned
-in the binary control file and it does include epoch:
+
+The Changesfile version always refers to the source version and the
+binary versions included in the upload can diverge between themselves
+and from the source version.
 
   >>> bar_bin_upload.changes.version
-  '1.0-9'
+  '1:1.0-9'
 
   >>> deb_file = bar_bin_upload.changes.files[0]
   >>> deb_file.filename
-  'bar_1.0-9_i386.deb'
+  'bar_6.6.6_i386.deb'
+
   >>> deb_file.version
-  '1.0-9'
-  >>> deb_file.control_version
   '1:1.0-9'
 
-Resulting in a proper BinaryPackageRelease 'version':
+  >>> deb_file.source_version
+  '1:1.0-9'
+
+  >>> deb_file.control_version
+  '1:6.6.6'
+
+Anyway, the proper value for BinaryPackageRelease.version is the
+version stored in the binary control file:
 
   >>> bar_bpr = bar_bin_queue.builds[0].build.binarypackages[0]
   >>> bar_bpr.version
-  u'1:1.0-9'
-
-
+  u'1:6.6.6'
