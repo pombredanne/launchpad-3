@@ -26,7 +26,8 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadFormView
+    action, canonical_url, enabled_with_permission, GetitemNavigation,
+    LaunchpadFormView, Link
     )
 
 
@@ -46,6 +47,16 @@ class TranslationGroupSetContextMenu(RosettaContextMenu):
 
 class TranslationGroupContextMenu(RosettaContextMenu):
     usedfor = ITranslationGroup
+    links = RosettaContextMenu.links + ['appoint', 'reassign']
+
+    @enabled_with_permission('launchpad.Edit')
+    def appoint(self):
+        return Link('+appoint', "Appoint translator")
+
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        return Link('+reassign', "Change owner")
+
 
 
 class TranslationGroupView:
