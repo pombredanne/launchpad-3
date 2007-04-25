@@ -385,7 +385,7 @@ class BzrSync:
             # can't get both trees at once, so one at a time
             tree_new = repo.revision_tree(bzr_revision.revision_id)
             tree_old = repo.revision_tree(None)
-            
+
         diff_content = StringIO()
         show_diff_trees(tree_old, tree_new, diff_content)
         return diff_content.getvalue()
