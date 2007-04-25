@@ -155,30 +155,7 @@ def distroreleasequeueSetUp(test):
 
 def distroreleasequeueTearDown(test):
     os.umask(test.old_umask)
-
-# XXX BarryWarsaw: ugly hack until python-apport package is Python 2.4
-# compatible (i.e. doesn't use Python 2.5's built-in any()).
-def initialisefromparentSetUp(test):
-    setUp(test)
-    try:
-        any
-    except NameError:
-        # Taken from Python 2.5 built-in documentation
-        def any(iterable):
-            for element in iterable:
-                if element:
-                    return True
-            return False
-        import __builtin__
-        __builtin__.__dict__['any'] = any
-        test.zap_builtin_any = True
-
-def initialisefromparentTearDown(test):
-    if test.zap_builtin_any:
-        import __builtin__
-        del __builtin__.__dict__['any']
     tearDown(test)
-    
 
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
@@ -331,15 +308,6 @@ special = {
     'distroreleasequeue-debian-installer.txt': FunctionalDocFileSuite(
             '../doc/distroreleasequeue-debian-installer.txt',
             setUp=distroreleasequeueSetUp, tearDown=distroreleasequeueTearDown,
-            optionflags=default_optionflags,
-            layer=LaunchpadFunctionalLayer
-            ),
-    # XXX BarryWarsaw: ugly hack until python-apport package is Python 2.4
-    # compatible (i.e. doesn't use Python 2.5's built-in any()).
-    'initialise-from-parent.txt': FunctionalDocFileSuite(
-            '../doc/initialise-from-parent.txt',
-            setUp=initialisefromparentSetUp,
-            tearDown=initialisefromparentTearDown,
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer
             ),

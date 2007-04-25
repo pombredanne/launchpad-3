@@ -141,7 +141,6 @@ class ProberFactory(protocol.ClientFactory):
         self._deferred = defer.Deferred()
         self.timeout = timeout
         self.setURL(url.encode('ascii'))
-        self.connector = None
 
     def probe(self):
         logger = logging.getLogger('distributionmirror-prober')
@@ -175,8 +174,6 @@ class ProberFactory(protocol.ClientFactory):
     def failWithTimeoutError(self):
         host_timeouts[self.request_host] += 1
         self.failed(ProberTimeout(self.url, self.timeout))
-        if self.connector:
-            self.connector.disconnect()
 
     def startedConnecting(self, connector):
         self.connector = connector

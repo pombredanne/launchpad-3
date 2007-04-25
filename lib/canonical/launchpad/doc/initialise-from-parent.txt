@@ -55,7 +55,6 @@ Check if it fails for an already released distrorelease:
   Traceback (most recent call last):
   ...
   AssertionError: Can not copy distroarchreleases from parent, there are already distroarchrelease(s) initialised for this release.
-  ...
   <BLANKLINE>
 
 
