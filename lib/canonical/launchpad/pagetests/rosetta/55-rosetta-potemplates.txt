@@ -1,3 +1,30 @@
+Legend and headers display
+--------------------------
+
+When there are no preferred languages for a user (or the user is not
+logged in), she will not see a legend when displaying the list of
+translatable templates.
+
+  >>> test_urls = [
+  ... 'http://launchpad.dev/evolution/trunk/+translations',
+  ... 'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2-test',
+  ... 'http://launchpad.dev/ubuntu/hoary/+source/evolution/+translations',
+  ... 'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/man'
+  ... ]
+  >>> for url in test_urls:
+  ... 	  anon_browser.open(url)
+  ...     anon_browser.url == url
+  ...     'Newly translated in Rosetta' in anon_browser.contents
+  True
+  False
+  True
+  False
+  True
+  False
+  True
+  False
+
+
 
 The PO Template Views
 ---------------------
