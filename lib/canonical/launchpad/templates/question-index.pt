@@ -77,12 +77,19 @@
         view.
       </tal:comment>
       <div class="actions" metal:fill-slot="buttons">
-        <input tal:replace="structure view/comment_action/render" />
-        <input tal:replace="structure view/answer_action/render" />
-        <input tal:replace="structure view/selfanswer_action/render" />
-        <input tal:replace="structure view/requestinfo_action/render" />
-        <input tal:replace="structure view/giveinfo_action/render" />
-        <input tal:replace="structure view/reopen_action/render" />
+        <div>
+          <input tal:replace="structure view/comment_action/render" />
+          <input tal:replace="structure view/answer_action/render" />
+          <input tal:replace="structure view/selfanswer_action/render" />
+          <input tal:replace="structure view/requestinfo_action/render" />
+          <input tal:replace="structure view/giveinfo_action/render" />
+          <input tal:replace="structure view/reopen_action/render" />
+        </div>
+        <div tal:condition="view/selfanswer_action/render">
+          To confirm an answer, use the 
+          <strong>'This Solved My Problem'</strong> button located at the 
+          bottom of the answer.
+        </div>
       </div>
     </div>
   </tal:workflowActions>
