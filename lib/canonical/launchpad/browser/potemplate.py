@@ -173,6 +173,12 @@ class POTemplateView(LaunchpadView):
             pofileview.initialize()
             yield pofileview
 
+
+    @property
+    def has_pofiles(self, preferred_only=False):
+        languages = set(self.context.languages()) | set(self.request_languages)
+        return len(languages)
+
     def _sortLanguages(self, languages):
         return sorted(languages, key=operator.attrgetter('englishname'))
 

@@ -33,7 +33,8 @@
 
     <div tal:replace="structure context/@@+chart" />
 
-    <div tal:replace="structure context/@@+rosetta-status-legend" />
+    <div tal:condition="view/has_pofiles"
+         tal:replace="structure context/@@+rosetta-status-legend" />
 
 </div>
 

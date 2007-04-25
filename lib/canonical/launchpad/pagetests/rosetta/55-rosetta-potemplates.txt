@@ -1,29 +1,65 @@
 Legend and headers display
 --------------------------
 
-When there are no preferred languages for a user (or the user is not
-logged in), she will not see a legend when displaying the list of
-translatable templates.
+On template overview page, when user is not logged in (and there is no
+sufficient GeoIP data), or user has not set his preferred languages,
+legend should be hidden from him since he's looking only at the list
+of templates.
 
-  >>> test_urls = [
-  ... 'http://launchpad.dev/evolution/trunk/+translations',
-  ... 'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2-test',
-  ... 'http://launchpad.dev/ubuntu/hoary/+source/evolution/+translations',
-  ... 'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/man'
-  ... ]
-  >>> for url in test_urls:
-  ... 	  anon_browser.open(url)
-  ...     anon_browser.url == url
-  ...     'Newly translated in Rosetta' in anon_browser.contents
-  True
-  False
-  True
-  False
-  True
-  False
-  True
+  >>> anon_browser.addHeader('X-Forwarded-For', '192.168.0.1')
+  >>> anon_browser.open('http://launchpad.dev/evolution/trunk/+translations')
+  >>> anon_browser.url
+  'http://launchpad.dev/evolution/trunk/+translations'
+  >>> 'Newly translated in Rosetta' in anon_browser.contents
   False
 
+When looking at a specific template with at least one translation, he
+will again see the legend.
+
+  >>> anon_browser.open(
+  ...    'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2')
+  >>> anon_browser.url
+  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2'
+  >>> 'Newly translated in Rosetta' in anon_browser.contents
+  True
+
+The same happens for template overview page for packages.
+
+  >>> anon_browser.open(
+  ...    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+translations')
+  >>> anon_browser.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+translations'
+  >>> 'Newly translated in Rosetta' in anon_browser.contents
+  False
+
+And with at least one translation, legend is shown.
+
+  >>> anon_browser.open(
+  ...    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/man')
+  >>> anon_browser.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/man'
+  >>> 'Newly translated in Rosetta' in anon_browser.contents
+  True
+
+
+When there are no translations in a single template, legend and
+headers should not be shown.
+
+  >>> anon_browser.open(
+  ...    'http://launchpad.dev/netapplet/trunk/+pots/netapplet')
+  >>> anon_browser.url
+  'http://launchpad.dev/netapplet/trunk/+pots/netapplet'
+  >>> 'Newly translated in Rosetta' in anon_browser.contents
+  False
+
+And likewise for package templates (which use a different template).
+
+  >>> anon_browser.open(
+  ...    'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/man')
+  >>> anon_browser.url
+  'http://launchpad.dev/ubuntu/hoary/+source/pmount/+pots/man'
+  >>> 'Newly translated in Rosetta' in anon_browser.contents
+  False
 
 
 The PO Template Views
