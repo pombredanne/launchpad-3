@@ -333,6 +333,12 @@ class IBug(IMessageTarget):
         Return None if this bug doesn't have such a bug watch.
         """
 
+    def getBugTask(target):
+        """Return the bugtask with the specified target.
+
+        Return None if no such bugtask is found.
+        """
+
 
 class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""

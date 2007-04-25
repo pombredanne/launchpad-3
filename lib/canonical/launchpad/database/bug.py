@@ -642,6 +642,14 @@ class Bug(SQLBase):
             bug=self, bugtracker=bugtracker, remotebug=remote_bug,
             orderBy='id')
 
+    def getBugTask(self, target):
+        """See IBug."""
+        for bugtask in self.bugtasks:
+            if bugtask.target == target:
+                return bugtask
+
+        return None
+
     def _getTags(self):
         """Get the tags as a sorted list of strings."""
         tags = [
