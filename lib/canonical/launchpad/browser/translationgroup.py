@@ -9,6 +9,7 @@ __all__ = ['TranslationGroupNavigation',
            'TranslationGroupSetContextMenu',
            'TranslationGroupContextMenu',
            'TranslationGroupAddTranslatorView',
+           'TranslationGroupReassignmentView',
            'TranslationGroupSetAddView']
 
 import operator
@@ -23,8 +24,10 @@ from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ITranslator, ITranslatorSet,
     ILanguageSet, IPersonSet, ILaunchBag, NotFoundError
     )
+from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadFormView
+    action, canonical_url, enabled_with_permission, GetitemNavigation,
+    LaunchpadFormView, Link
     )
 
 
@@ -44,6 +47,16 @@ class TranslationGroupSetContextMenu(RosettaContextMenu):
 
 class TranslationGroupContextMenu(RosettaContextMenu):
     usedfor = ITranslationGroup
+    links = RosettaContextMenu.links + ['appoint', 'reassign']
+
+    @enabled_with_permission('launchpad.Edit')
+    def appoint(self):
+        return Link('+appoint', "Appoint translator")
+
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        return Link('+reassign', "Change owner")
+
 
 
 class TranslationGroupView:
@@ -144,6 +157,18 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
         if self.context.query_translator(language):
             self.setFieldError('language',
                 "There is already a translator for this language")
+
+
+class TranslationGroupReassignmentView(ObjectReassignmentView):
+    """View class for changing translation group owner."""
+
+    @property
+    def contextName(self):
+        return self.context.title or self.context.name
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class TranslationGroupSetAddView(AddView):
