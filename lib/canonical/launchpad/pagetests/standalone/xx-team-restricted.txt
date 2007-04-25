@@ -95,7 +95,7 @@ page to explain why he can't use the server.
 
     >>> browser.getControl(name="logout").click()
     >>> print browser.url
-    http://launchpad.dev/+restricted-login
+    http://launchpad.dev/+restricted-login?production=http%3A//launchpad.net/%3Floggingout%3D1
     >>> submit_login(browser, 'celso.providelo@canonical.com', 'cprov')
     >>> print browser.url
     http://launchpad.dev/+restricted-info?production=http%3A//launchpad.net/
