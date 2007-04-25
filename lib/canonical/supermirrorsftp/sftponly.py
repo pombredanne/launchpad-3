@@ -1,23 +1,31 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+import binascii
+import os
+
 from twisted.conch import avatar
+from twisted.conch.error import ConchError
 from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
 from twisted.conch.ssh.common import getNS, NS
+from twisted.conch.ssh.filetransfer import SFTPError, FX_FILE_ALREADY_EXISTS
 from twisted.conch.checkers import SSHPublicKeyDatabase
+
 from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
+
 from twisted.internet import defer
+
 from twisted.python import components
+
+from twisted.vfs import ivfs
 from twisted.vfs.pathutils import FileSystem
 from twisted.vfs.adapters import sftp
+
 from canonical.supermirrorsftp.bazaarfs import SFTPServerRoot
 
 from zope.interface import implements
-import binascii
-import os
-import os.path
 
 
 class SubsystemOnlySession(session.SSHSession, object):
@@ -134,6 +142,36 @@ class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
     def __init__(self, avatar):
         sftp.AdaptFileSystemUserToISFTP.__init__(self, avatar)
         self.filesystem = avatar.makeFileSystem()
+
+    # XXX - This is now even more nasty. Fix lp:87934 by replacing the buggy
+    # renameFile implementation. See http://twistedmatrix.com/trac/ticket/2604
+    # for the progress of the upstream bug.
+    # -- Jonathan Lange, 2007-04-25
+    def renameFile(self, oldpath, newpath):
+        """
+        Rename C{oldpath} to C{newpath}.
+
+        :raise SFTPError: If oldpath is a directory and newpath is an existing
+            directory.
+        """
+        sourceNode = self.filesystem.fetch(oldpath)
+
+        try:
+            targetNode = self.filesystem.fetch(newpath)
+        except (ivfs.NotFoundError, KeyError):
+            # The new name does not exist.
+            targetNode = None
+
+        if ivfs.IFileSystemContainer(targetNode, None) is not None:
+            # The target node is an existing container. If the source node is a
+            # container, then this is an error. If not, we move the source node
+            # into the target node.
+            if ivfs.IFileSystemContainer(sourceNode, None) is not None:
+                raise SFTPError(FX_FILE_ALREADY_EXISTS, newpath)
+            newpath = self.filesystem.joinPath(
+                newpath, self.filesystem.basename(oldpath))
+        sourceNode.rename(newpath)
+    renameFile = sftp.translateErrors(renameFile)
 
 components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
                            filetransfer.ISFTPServer)

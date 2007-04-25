@@ -8,9 +8,6 @@ __metaclass__ = type
 import os
 import unittest
 import stat
-import struct
-import sys
-import traceback
 
 from zope.interface import implements
 
@@ -25,7 +22,6 @@ from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.ssh.transport import SSHServerTransport
 from twisted.conch.ssh import keys, userauth
 from twisted.conch.ssh.common import getNS, NS
-from twisted.conch.ssh.filetransfer import FileTransferClient
 
 from twisted.python import failure
 from twisted.python.util import sibpath
@@ -133,6 +129,17 @@ class SFTPTests(SFTPTestCase):
 
     def test_mkdir_team_member(self):
         return self._test_mkdir_team_member()
+
+    @deferToThread
+    def _test_rename_directory_to_existing_directory_fails(self):
+        # 'rename dir1 dir2' should fail if 'dir2' exists.
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('dir1')
+        transport.mkdir('dir2')
+        self.assertRaises(IOError, transport.rename, 'dir1', 'dir2')
+
+    def test_rename_directory_to_existing_directory_fails(self):
+        return self._test_rename_directory_to_existing_directory_fails()
 
 
 class MockRealm:
