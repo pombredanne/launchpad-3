@@ -228,6 +228,14 @@ class LaunchpadBrowserPublication(
         request.setTraversalStack([])
 
     def getNonRestrictedURL(self, request):
+        """Returns the non-restricted version of the request URL.
+
+        The intended use is for determining the equivalent URL on the
+        production Launchpad instance if a user accidentally ends up
+        on a restrict_to_team Launchpad instance.
+
+        If a non-restricted URL can not be determined, None is returned.
+        """
         base_host = config.launchpad.vhosts.mainsite.hostname
         production_host = config.launchpad.non_restricted_hostname
         # If we don't have a production hostname, or it is the same as
