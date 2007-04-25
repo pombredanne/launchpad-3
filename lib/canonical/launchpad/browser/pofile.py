@@ -142,10 +142,10 @@ class POFileUploadView(POFileView):
             # The form was not submitted or the user is not logged in.
             return
 
-        file = self.form['file']
+        upload_file = self.form.get('file', None)
 
-        if not isinstance(file, FileUpload):
-            if file == '':
+        if not isinstance(upload_file, FileUpload):
+            if upload_file is None or upload_file == '':
                 self.request.response.addErrorNotification(
                     "Ignored your upload because you didn't select a file to"
                     " upload.")
@@ -155,15 +155,15 @@ class POFileUploadView(POFileView):
                 # forms (or perhaps it's launchpad because I never had
                 # problems with bugzilla). The fact is that some uploads don't
                 # work and we get a unicode object instead of a file-like
-                # object in "file". We show an error if we see that behaviour.
-                # For more info, look at bug #116.
+                # object in "upload_file". We show an error if we see that
+                # behaviour. For more info, look at bug #116.
                 self.request.response.addErrorNotification(
                     "The upload failed because there was a problem receiving"
                     " the data.")
             return
 
-        filename = file.filename
-        content = file.read()
+        filename = upload_file.filename
+        content = upload_file.read()
 
         if len(content) == 0:
             self.request.response.addWarningNotification(
