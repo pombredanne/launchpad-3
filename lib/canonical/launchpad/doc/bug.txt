@@ -733,8 +733,8 @@ Enumerating Bug Tasks
 
 You can get a set of bugtasks for this bug:
 
-  >>> b2 = bugset.get(2)
-  >>> for task in b2.bugtasks: print task.target.displayname
+  >>> bug_two = bugset.get(2)
+  >>> for task in bug_two.bugtasks: print task.target.displayname
   Ubuntu
   Ubuntu
   Hoary
@@ -743,10 +743,44 @@ You can get a set of bugtasks for this bug:
 
 You can also get a list of the "LP pillars" affected by a particular bug.
 
-  >>> for pillar in b2.affected_pillars: print pillar.displayname
+  >>> for pillar in bug_two.affected_pillars: print pillar.displayname
   Ubuntu
   Ubuntu
   Debian
 
 Yes, this is TERRIBLE sample data, but it serves to illustrate the point.
 
+If you are interested in bugtask targeted to a specific target, you can
+use getBugTask().
+
+    >>> ubuntu_product = getUtility(IProductSet).getByName('ubuntu-product')
+    >>> ubuntu_product_task = bug_two.getBugTask(ubuntu_product)
+    >>> ubuntu_product_task.target.name
+    u'ubuntu-product'
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_task = bug_two.getBugTask(ubuntu)
+    >>> ubuntu_task.target.name
+    u'ubuntu'
+
+    >>> ubuntu_hoary = ubuntu.getRelease('hoary')
+    >>> ubuntu_hoary_task = bug_two.getBugTask(ubuntu_hoary)
+    >>> ubuntu_hoary_task.target.name
+    u'hoary'
+
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> mozilla_in_debian = debian.getSourcePackage('mozilla-firefox')
+    >>> mozilla_in_debian_task = bug_two.getBugTask(mozilla_in_debian)
+    >>> mozilla_in_debian_task.target.displayname
+    u'mozilla-firefox in debian'
+
+    >>> debian_woody = debian.getRelease('woody')
+    >>> mozilla_in_woody = debian_woody.getSourcePackage('mozilla-firefox')
+    >>> mozilla_in_woody_task = bug_two.getBugTask(mozilla_in_woody)
+    >>> mozilla_in_woody_task.target.displayname
+    u'Woody mozilla-firefox'
+
+If the bug isn't targeted to the target, None is returned.
+
+    >>> bug_two.getBugTask(debian) is None
+    True
