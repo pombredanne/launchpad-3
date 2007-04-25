@@ -998,16 +998,26 @@ and to the previous one.
   >>> content = csv_file.read().split('\n', 2)[2]
   >>> pprint_csv(content)
   ------------------------------------------------------------ Line 1
+          # of requests: 0
+            # of people: 0
+    avg CDs per request: 0
+            # of people: 0
+  avg CDs pers shipment: 0
+            # of people: 8
+    avg CDs per request: 0.0
+            # of people: 8
+  avg CDs pers shipment: 0.0
+  ------------------------------------------------------------ Line 2
           # of requests: 1
             # of people: 10
     avg CDs per request: 7.4
             # of people: 7
   avg CDs pers shipment: 7.28571428571
-            # of people: 0
-    avg CDs per request: 0
-            # of people: 0
-  avg CDs pers shipment: 0
-  ------------------------------------------------------------ Line 2
+            # of people: 3
+    avg CDs per request: 66.0
+            # of people: 3
+  avg CDs pers shipment: 66.0
+  ------------------------------------------------------------ Line 3
           # of requests: 2
             # of people: 1
     avg CDs per request: 1.5
@@ -1017,26 +1027,6 @@ and to the previous one.
     avg CDs per request: 0
             # of people: 0
   avg CDs pers shipment: 0
-  ------------------------------------------------------------ Line 3
-          # of requests: 3
-            # of people: 0
-    avg CDs per request: 0
-            # of people: 0
-  avg CDs pers shipment: 0
-            # of people: 1
-    avg CDs per request: 66.0
-            # of people: 1
-  avg CDs pers shipment: 66.0
-  ------------------------------------------------------------ Line 4
-          # of requests: 8
-            # of people: 0
-    avg CDs per request: 0
-            # of people: 0
-  avg CDs pers shipment: 0
-            # of people: 0
-    avg CDs per request: 0.0
-            # of people: 0
-  avg CDs pers shipment: 0.0
 
 
 All these reports are generated periodically and stored in the Librarian by

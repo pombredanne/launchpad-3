@@ -968,8 +968,8 @@ class ShippingRequestSet:
         # requests/shipments for the people which made requests of the current
         # release.
         query = """
-            SELECT requesters, requests,
-                CASE WHEN requests != 0 AND requesters != 0
+            SELECT requests, requesters,
+                CASE WHEN requests > 0
                         THEN cds_requested / (requests * requesters) 
                      ELSE 0
                 END AS avg_requested_cds
@@ -999,7 +999,8 @@ class ShippingRequestSet:
                          ) AS FIRST_TIME_REQUESTERS
                     ) AS RECIPIENTS_AND_COUNTS
                 GROUP BY requests
-                ) AS REQUEST_DISTRIBUTION_AND_TOTALS;
+                ) AS REQUEST_DISTRIBUTION_AND_TOTALS
+            WHERE requesters > 0
             """ % sqlvalues(
                     current_release=ShipItConstants.current_distrorelease,
                     cancelled=ShippingRequestStatus.CANCELLED)
@@ -1007,8 +1008,8 @@ class ShippingRequestSet:
         other_releases_request_distribution = cur.fetchall()
 
         query = """
-            SELECT requesters, requests,
-                CASE WHEN requests != 0 AND requesters != 0
+            SELECT requests, requesters,
+                CASE WHEN requests > 0
                         THEN cds_approved / (requests * requesters) 
                      ELSE 0
                 END AS avg_approved_cds
@@ -1039,7 +1040,8 @@ class ShippingRequestSet:
                          ) AS FIRST_TIME_RECIPIENTS
                     ) AS RECIPIENTS_AND_COUNTS
                 GROUP BY requests
-                ) AS SHIPMENT_DISTRIBUTION_AND_TOTALS;
+                ) AS SHIPMENT_DISTRIBUTION_AND_TOTALS
+            WHERE requesters > 0
             """ % sqlvalues(
                     current_release=ShipItConstants.current_distrorelease,
                     approved=ShippingRequestStatus.APPROVED,
@@ -1055,8 +1057,8 @@ class ShippingRequestSet:
             other_releases_request_distribution)
         row_numbers = set()
         for row in all_results:
-            col1, col2, col3 = row
-            row_numbers.add(col1)
+            requests, requesters, avg_size = row
+            row_numbers.add(requests)
 
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
@@ -1072,6 +1074,9 @@ class ShippingRequestSet:
         csv_writer.writerow(header2)
         csv_writer.writerow(header3)
 
+        # XXX: I admit these names couldn't be worse, but they're only used
+        # a few lines below and I can't think of anything better.
+        # -- Guilherme Salgado, 2007-04-25
         cr = self._convert_results_to_dict_and_fill_gaps(
             current_release_request_distribution, row_numbers)
         cs = self._convert_results_to_dict_and_fill_gaps(
@@ -1099,8 +1104,9 @@ class ShippingRequestSet:
         """
         d = {}
         for row in results:
+            requests, requesters, avg_size = row
             col1, col2, col3 = row
-            d[col1] = (col2, col3)
+            d[requests] = (requesters, avg_size)
         for number in set(row_numbers) - set(d.keys()):
             d[number] = (0, 0)
         return d
