@@ -234,11 +234,32 @@
         </td>
       </tal:without-content>
     </tr>
+
     <tal:active-submission
       define="active_submission translation_dictionary/active_submission"
       condition="active_submission">
+      <tal:block
+        condition="translation_dictionary/same_translator_and_reviewer">
       <tr class="discreet secondary translation">
-        <th colspan="3">
+        <th colspan="3" id="translated_and_reviewed_by">
+          Translated and reviewed by:
+        </th>
+        <td class="icon left right" />
+        <td style="overflow: auto;">
+          <a tal:content="active_submission/person/browsername"
+             tal:attributes="href active_submission/person/fmt:url">Foo Bar</a>
+          <span
+            tal:attributes="title active_submission/datecreated/fmt:datetime"
+            tal:content="active_submission/datecreated/fmt:displaydate">
+            on 2006-08-05
+          </span>
+        </td>
+      </tr>
+      </tal:block>
+      <tal:block
+        condition="not:translation_dictionary/same_translator_and_reviewer">
+      <tr class="discreet secondary translation">
+        <th colspan="3" id="translated_by">
           Translated by:
         </th>
         <td class="icon left right" />
@@ -254,7 +275,7 @@
       </tr>
       <tr class="discreet secondary translation"
           tal:condition="context/reviewer">
-        <th colspan="3">
+        <th colspan="3" id="reviewed_by">
           Reviewed by:
         </th>
         <td class="icon left right" />
@@ -268,6 +289,7 @@
           </span>
         </td>
       </tr>
+      </tal:block>
     </tal:active-submission>
     <tal:suggestion_block
          define="suggestion_block translation_dictionary/suggestion_block">
