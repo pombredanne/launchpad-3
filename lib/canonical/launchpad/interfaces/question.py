@@ -97,9 +97,9 @@ class IQuestion(IHasOwner):
             "The date on which the question owner confirmed that the "
             "question is Solved."))
     product = Choice(
-        title=_('Upstream Product'), required=False,
+        title=_('Upstream Project'), required=False,
         vocabulary='Product',
-        description=_('Select the upstream product with which you need '
+        description=_('Select the upstream project with which you need '
             'support.'))
     distribution = Choice(
         title=_('Distribution'), required=False,

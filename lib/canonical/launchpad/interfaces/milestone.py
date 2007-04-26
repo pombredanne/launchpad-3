@@ -53,15 +53,15 @@ class IMilestone(Interface):
         required=True,
         constraint=name_validator)
     product = Choice(
-        title=_("Product"),
-        description=_("The product to which this milestone is associated"),
+        title=_("Project"),
+        description=_("The project to which this milestone is associated"),
         vocabulary="Product")
     distribution = Choice(title=_("Distribution"),
         description=_("The distribution to which this milestone belongs."),
         vocabulary="Distribution")
     productseries = Choice(
-        title=_("Product Series"),
-        description=_("The product series for which this is a milestone."),
+        title=_("Release Series"),
+        description=_("The release series for which this is a milestone."),
         vocabulary="FilteredProductSeries",
         required=False) # for now
     distrorelease = Choice(

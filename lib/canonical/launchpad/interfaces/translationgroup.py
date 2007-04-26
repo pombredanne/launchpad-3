@@ -54,9 +54,9 @@ class ITranslationGroup(IHasOwner):
     # joins
     translators = Attribute('The set of translators for this group.')
     projects = Attribute('The projects for which this group translates.')
-    products = Attribute('The products to which this group is directly '
-        'appointed as a translator. There may be other products that are '
-        'part of projects for which the group also translates.')
+    products = Attribute('The projects to which this group is directly '
+        'appointed as a translator. There may be other projects that are '
+        'part of project groups for which the group also translates.')
     distributions = Attribute('The distros for which this group translates.')
 
     # accessing the translator list
