@@ -16,6 +16,7 @@ __all__ = [
     'IPersonChangePassword',
     'IPersonClaim',
     'INewPerson',
+    'JoinNotAllowed',
     ]
 
 
@@ -27,12 +28,19 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, LargeImageUpload, PasswordField,
-    BaseImageUpload, SmallImageUpload, StrippedTextLine)
+    BlacklistableContentNameField,
+    IconImageUpload,
+    LogoImageUpload,
+    MugshotImageUpload,
+    PasswordField,
+    StrippedTextLine,
+    )
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
-from canonical.launchpad.interfaces.question import (
+from canonical.launchpad.interfaces.launchpad import (
+    IHasLogo, IHasMugshot, IHasIcon)
+from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
@@ -85,7 +93,8 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications, IQuestionCollection):
+class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
+              IHasIcon):
     """A Person."""
 
     id = Int(
@@ -118,33 +127,34 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         description=_(
             "The content of your home page. Edit this and it will be "
             "displayed for all the world to see."))
-    # The emblem is only used for teams; that's why we use /@@/team as the
+    # NB at this stage we do not allow individual people to have their own
+    # icon, only teams get that. People can however have a logo and mugshot
+    # The icon is only used for teams; that's why we use /@@/team as the
     # default image resource.
-    emblem = SmallImageUpload(
-        title=_("Emblem"), required=False,
+    icon = IconImageUpload(
+        title=_("Icon"), required=False,
         default_image_resource='/@@/team',
         description=_(
-            "A small image, max 16x16 pixels and 25k in file size, that can "
-            "be used to refer to this team."))
-    # This field should not be used on forms, so we use a BaseImageUpload here
-    # only for documentation purposes.
-    gotchi_heading = BaseImageUpload(
-        title=_("Heading icon"), required=False,
-        default_image_resource='/@@/person-heading',
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
+            "that can be used to identify this team. The icon will be "
+            "displayed whenever the team name is listed - for example "
+            "in listings of bugs or on a person's membership table."))
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/person-logo',
         description=_(
-            "An image, maximum 64x64 pixels, that will be displayed on "
-            "the header of all pages related to you. It should be no bigger "
-            "than 50k in size. Traditionally this is a logo, small picture, "
-            "or personal mascot."))
-    gotchi = LargeImageUpload(
-        title=_("Hackergotchi"), required=False,
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to you. Traditionally this "
+            "is a logo, a small picture or a personal mascot. It should be "
+            "no bigger than 50kb in size."))
+    mugshot = MugshotImageUpload(
+        title=_("Mugshot"), required=False,
         default_image_resource='/@@/person-mugshot',
         description=_(
-            "An image, maximum 150x150 pixels, that will be displayed on "
-            "your home page. It should be no bigger than 100k in size. "
-            "Traditionally this is a great big grinning image of your mug. "
-            "Make the most of it."))
-
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on your home page in Launchpad. Traditionally this is a great "
+            "big picture of your grinning face. Make the most of it! It "
+            "should be no bigger than 100kb in size. "))
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
             description=_('Your address (Line 1)')
@@ -257,6 +267,9 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         "in this team.")
     teams_participated_in = Attribute(
         "Iterable of all Teams that this person is active in, recursive")
+    teams_with_icons = Attribute(
+        "Iterable of all Teams that this person is active in that have "
+        "icons")
     guessedemails = Attribute(
         "List of emails with status NEW. These email addresses probably "
         "came from a gina or POFileImporter run.")
@@ -375,15 +388,17 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
+    is_trusted_on_shipit = Bool(
+        title=_('Is this a trusted person on shipit?'))
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
     @invariant
-    def personCannotHaveEmblem(person):
-        if person.emblem is not None and not person.isTeam():
-            raise Invalid('Only teams can have an emblem.')
+    def personCannotHaveIcon(person):
+        if person.icon is not None and not person.isTeam():
+            raise Invalid('Only teams can have an icon.')
 
     def getBugContactPackages():
         """Return a list of packages for which this person is a bug contact.
@@ -425,7 +440,8 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         only the one with the oldest teams is returned.
 
         This method must not be called from a team object, because of
-        https://launchpad.net/bugs/30789.
+        https://launchpad.net/bugs/30789. It also can't be called if this
+        person is not an indirect member of the given team.
         """
 
     def isTeam():
@@ -458,6 +474,10 @@ class IPerson(IHasSpecifications, IQuestionCollection):
     def latestKarma(quantity=25):
         """Return the latest karma actions for this person, up to the number
         given as quantity."""
+
+    def iterTopProjectsContributedTo(self, limit=10):
+        """Iterate over the top projects contributed to, up to the given limit.
+        """
 
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
@@ -492,10 +512,14 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         Return None otherwise.
         """
 
-    def searchTasks(search_params):
+    def searchTasks(search_params, *args):
         """Search IBugTasks with the given search parameters.
 
         :search_params: a BugTaskSearchParams object
+        :args: any number of BugTaskSearchParams objects
+
+        If more than one BugTaskSearchParams is given, return the union of
+        IBugTasks which match any of them.
 
         Return an iterable of matching results.
         """
@@ -528,9 +552,6 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         people explicitly want to change their preferred email address. On
         that case, though, all we have to do is use person.setPreferredEmail().
         """
-
-    def hasMembershipEntryFor(team):
-        """Tell if this person is a direct member of the given team."""
 
     def hasParticipationEntryFor(team):
         """Tell if this person is a direct/indirect member of the given team."""
@@ -569,12 +590,13 @@ class IPerson(IHasSpecifications, IQuestionCollection):
 
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None):
-        """Add person as a member of this team.
+        """Add the given person as a member of this team.
 
-        Add a TeamMembership entry for this person with the given status,
-        reviewer, and reviewer comment. This method is also responsible for
-        filling the TeamParticipation table in case the status is APPROVED or
-        ADMIN.
+        If the given person is already a member of this team we'll simply
+        change its membership status. Otherwise a new TeamMembership is
+        created with the given status.
+
+        The given status must be either Approved, Proposed or Admin.
 
         The reviewer is the user who made the given person a member of this
         team.
@@ -668,6 +690,20 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         will be equal to union of all the languages known by its members.
         """
 
+    def getDirectAnswerQuestionTargets():
+        """Return a list of IQuestionTargets that a person is subscribed to.
+
+        This will return IQuestionTargets that the person is registered as an
+        answer contact because he subscribed himself.
+        """
+
+    def getTeamAnswerQuestionTargets():
+        """Return a list of IQuestionTargets that are indirectly subscribed to.
+
+        This will return IQuestionTargets that the person or is registered
+        as an answer contact because of his membership in a team.
+        """
+
     def searchQuestions(search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, participation=None,
@@ -690,20 +726,29 @@ class IPerson(IHasSpecifications, IQuestionCollection):
         """
 
 
-class ITeam(IPerson):
+class ITeam(IPerson, IHasIcon):
     """ITeam extends IPerson.
 
     The teamowner should never be None.
     """
 
-    gotchi = LargeImageUpload(
-        title=_("Icon"), required=False,
+    # Logo and Mugshot are here so that they can have a description on a
+    # Team which is different to the description they have on a Person.
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/team-logo',
+        description=_(
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to the team. Traditionally this "
+            "is a logo, a small picture or a personal mascot. It should be "
+            "no bigger than 50kb in size."))
+    mugshot = MugshotImageUpload(
+        title=_("Mugshot"), required=False,
         default_image_resource='/@@/team-mugshot',
         description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
-            "this team's home page. It should be no bigger than 100k in "
-            "size."))
-
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on the team page in Launchpad. It "
+            "should be no bigger than 100kb in size. "))
     displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_(
@@ -879,9 +924,20 @@ class IPersonSet(Interface):
         default ordering specified in Person._defaultOrder.
         """
 
+    def latest_teams(limit=5):
+        """Return the latest teams registered, up to the limit specified."""
+
     def merge(from_person, to_person):
         """Merge a person into another."""
 
+    def getTranslatorsByLanguage(language):
+        """Return the list of translators for the given language.
+
+        :arg language: ILanguage object for which we want to get the
+            translators.
+
+        Return None if there is no translator.
+        """
 
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
@@ -934,4 +990,8 @@ class ITeamCreation(ITeam):
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
         constraint=validate_new_team_email)
+
+
+class JoinNotAllowed(Exception):
+    """User is not allowed to join a given team."""
 

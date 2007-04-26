@@ -25,7 +25,7 @@
           <tbody>
             <tr>
               <td class="left icon">
-                  <tal:icon replace="structure job/build/fmt:icon" />
+                  <tal:icon replace="structure job/build/image:icon" />
               </td>
               <td>
                 <a tal:attributes="href job/build/fmt:url">

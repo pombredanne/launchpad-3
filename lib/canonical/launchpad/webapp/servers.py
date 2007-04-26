@@ -347,7 +347,9 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
                 status = 307
             else:
                 status = 303
-        super(LaunchpadBrowserResponse, self).redirect(location, status=status)
+        super(LaunchpadBrowserResponse, self).redirect(
+                unicode(location).encode('UTF-8'), status=status
+                )
 
 
 def adaptResponseToSession(response):

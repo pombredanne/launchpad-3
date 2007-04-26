@@ -24,6 +24,16 @@
 
 <div metal:fill-slot="main">
 
+    <tal:is-admin condition="context/required:launchpad.Admin">
+      <p tal:define="owner context/owner">
+        Registered by
+        <a tal:attributes="href owner/fmt:url"
+           tal:content="string: ${owner/displayname} (${owner/preferredemail/email})">
+          Foo Bar</a>
+        <span tal:content="context/date_created/fmt:displaydate" />
+      </p>
+    </tal:is-admin>
+
     <div class="highlighted" style="font-size: 80%;"
          tal:condition="context/description">
       <p tal:replace="structure context/description/fmt:text-to-html">
@@ -33,7 +43,7 @@
 
     <h2>Mirror URLs</h2>
 
-    <ul class="webref">
+    <ul class="webref" id="mirror-urls">
       <li tal:condition="context/http_base_url" >
         Web: <a tal:content="context/http_base_url"
                  tal:attributes="href context/http_base_url">http://url/</a>
@@ -68,7 +78,7 @@
         <p>This mirror was last verified
           <span
             tal:attributes="title probe/date_created/fmt:datetime"
-            tal:content="probe/date_created/fmt:displaydate" />.
+            tal:content="probe/date_created/fmt:approximatedate" />.
 
           <tal:is-owner condition="context/required:launchpad.Edit">
             You can see the 

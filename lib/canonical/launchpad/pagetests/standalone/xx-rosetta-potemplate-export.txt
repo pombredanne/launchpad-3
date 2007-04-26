@@ -22,9 +22,9 @@ Logged in as a regular user, the +export page is accessible.
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export'
 
-  >>> browser.title
-  'Export translations of \xe2\x80\x9cTemplate "evolution-2.2" in 
-  Ubuntu Hoary package "evolution"\xe2\x80\x9d'
+  >>> print browser.title
+  Download translations for “Template "evolution-2.2" in Ubuntu Hoary
+  package "evolution"”
 
 If we POST without the appropriate format included, we tell the user off:
 

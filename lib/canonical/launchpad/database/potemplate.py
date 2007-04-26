@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces import (
     IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
     TranslationConstants, NotFoundError)
 from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.mailnotification import MailWrapper
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -46,6 +47,7 @@ from canonical.launchpad.components.poimport import import_po
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 from canonical.launchpad.webapp import canonical_url
+
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
  Copyright %(copyright)s %(year)s
@@ -580,7 +582,8 @@ class POTemplate(SQLBase, RosettaStats):
                 'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
                 'elapsedtime': entry_to_import.getElapsedTimeText(),
                 'file_link': entry_to_import.content.http_url,
-                'import_title': self.displayname
+                'import_title':
+                    'translation templates for %s' % self.displayname
                 }
 
             # We got an error that prevented us to import the template, we
@@ -591,11 +594,13 @@ class POTemplate(SQLBase, RosettaStats):
             template = helpers.get_email_template(template_mail)
             message = template % replacements
 
-            fromaddress = 'Rosetta SWAT Team <%s>' % (
-                config.rosetta.rosettaadmin.email)
+            fromaddress = config.rosetta.rosettaadmin.email
             toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
-            simple_sendmail(fromaddress, toaddress, subject, message)
+            simple_sendmail(fromaddress,
+                toaddress,
+                subject,
+                MailWrapper().format(message))
 
             entry_to_import.status = RosettaImportStatus.FAILED
 

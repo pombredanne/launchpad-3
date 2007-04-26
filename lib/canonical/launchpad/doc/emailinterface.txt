@@ -30,6 +30,11 @@ specific source package in a distribution:
 
     affects $distribution_name/$sourcepackage_name
 
+You can also file bugs on specific distribution releases:
+
+    affects $distribution_name/$release_name
+    affects $distribution_name/$release_name/$sourcepackage_name
+
 But if you want you can use any of the available commands as well.
 
 Let's take an example where we file a bug on Firefox:
@@ -125,11 +130,18 @@ A notification was added:
     >>> bug_notification.message == bug.initial_message
     True
 
+We define a helper to pretty-print the notification recipients:
+
+    >>> from canonical.launchpad.interfaces.bugnotification import BugNotificationRecipients
+    >>> def getSubscribers(bug):
+    ...     recipients = bug.getBugNotificationRecipients()
+    ...     return recipients.getEmails()
+
 Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
 subscribed "implicitly", because he's the product owner.
 
     >>> added_bug = bug_notification.bug
-    >>> sorted(added_bug.notificationRecipientAddresses())
+    >>> getSubscribers(added_bug)
     ['foo.bar@canonical.com', 'test@canonical.com']
 
 If we would file a bug on Ubuntu instead, we would submit a mail like
@@ -169,7 +181,7 @@ Foo Bar and Sample Person got subscribed to the bug. Foo Bar got
 subscribed "implicitly" since he's a bug contact for the mozilla
 package:
 
-    >>> print sorted(added_bug.notificationRecipientAddresses())
+    >>> getSubscribers(added_bug)
     ['foo.bar@canonical.com', 'test@canonical.com']
 
 It's possible to file a bug on more than product/package at once:
@@ -570,6 +582,53 @@ Specifying something else than 'yes' or 'no' produces an error:
         private yes
     ...
 
+security yes|no
+^^^^^^^^^^^^^^^
+Changes the security flag of the bug. Example:
+
+    >>> bug_four.private
+    False
+    >>> bug_four.security_related
+    False
+
+    >>> submit_commands(bug_four, 'security yes')
+    >>> bug_four.security_related
+    True
+
+Switching on the security flag will also make the bug private, since
+most often security bugs should be private as well.
+
+    >>> bug_four.private
+    True
+
+Switching off the security flag won't make the bug public, though.
+
+    >>> submit_commands(bug_four, 'security no')
+    >>> bug_four.security_related
+    False
+
+    >>> bug_four.private
+    True
+    >>> bug_four.private = False
+
+Specifying something else than 'yes' or 'no' produces an error:
+
+    >>> submit_commands(bug_four, 'security whatever')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        security whatever
+    ...
+    The 'security' command expects either 'yes' or 'no'.
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        security yes
+    ...
+
 subscribe [$name|$email]
 ^^^^^^^^^^^^^^^^^^^^^^^^
 Subscribes yourself or someone else to the bug. All arguments are
@@ -694,6 +753,128 @@ one subscriber:
 
     >>> submit_commands(bug_four, 'subscribe test@canonical.com')
 
+duplicate $bug_id
+^^^^^^^^^^^^^^^^^
+
+The 'duplicate' command marks a bug as a duplicate of another bug.
+
+    >>> bug_four.duplicateof is None
+    True
+    >>> submit_commands(bug_four, 'duplicate 1')
+    >>> bug_four.duplicateof.id
+    1
+
+It's possible to unmark a bug as a duplicate by specifying 'no' as the
+bug id.
+
+    >>> submit_commands(bug_four, 'duplicate no')
+    >>> bug_four.duplicateof is None
+    True
+
+The bug id can also be the bug's name.
+
+    >>> submit_commands(bug_four, 'duplicate blackhole')
+    >>> bug_four.duplicateof.name
+    u'blackhole'
+
+An error message is sent if a nonexistent bug id is given.
+
+    >>> submit_commands(bug_four, 'duplicate nonexistent')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        duplicate nonexistent
+    ...
+    There is no such bug in Launchpad: nonexistent
+    ...
+
+
+If the specified bug already is a duplicate, an error message is sent,
+telling you that you what bug it's a duplicate of.
+
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> bug_two.duplicateof is None
+    True
+    >>> submit_commands(bug_two, 'duplicate 4')
+    >>> bug_two.duplicateof is None
+    True
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        duplicate 4
+    ...
+    Bug 4 is already a duplicate of bug 2. You can only duplicate to
+    bugs that are not duplicates themselves.
+    ...
+
+If the specified bug has other bugs marked as a duplicate of it, an
+error message is sent telling you this.
+
+    >>> bug_four = getUtility(IBugSet).get(4)
+    >>> bug_four.duplicateof.id
+    2
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(bug_four)
+    >>> submit_commands(bug_four.duplicateof, 'duplicate 1')
+    >>> bug_four.duplicateof.id
+    2
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        duplicate 1
+    ...
+    There are other bugs already marked as duplicates of Bug 2.
+    These bugs should be changed to be duplicates of another bug
+    if you are certain you would like to perform this change.
+    ...
+
+cve $cve
+^^^^^^^^
+
+The 'cve' command associates a bug with a CVE reference.
+
+    >>> from canonical.launchpad.interfaces import CreateBugParams, IProductSet
+    >>> def new_firefox_bug():
+    ...     firefox = getUtility(IProductSet).getByName('firefox')
+    ...     return firefox.createBug(CreateBugParams(
+    ...         getUtility(ILaunchBag).user, 'New Bug', comment='New bug.'))
+    >>> bug = new_firefox_bug()
+    >>> submit_commands(bug, 'cve CVE-1999-8979')
+    >>> for cve in bug.cves:
+    ...     print cve.displayname
+    CVE-1999-8979
+
+If the CVE sequence can't be found, an error message is sent to the
+user.
+
+    >>> bug = new_firefox_bug()
+    >>> submit_commands(bug, 'cve no-such-cve')
+    >>> bug.cves.count()
+    0
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        cve no-such-cve
+    ...
+    Launchpad can't find the CVE "no-such-cve".
+    ...
+
 
 affects $path [assignee $name|$email|nobody]
               [status $status]
@@ -711,8 +892,11 @@ Change the state of a bug in a specific context. $path can be of
 the following form:
 
     $productname
+    $productname/$series
     $distroname
     $distroname/$sourcepackagename
+    $distroname/$release
+    $distroname/$release/$sourcepackagename
 
 If there is no task with the specified $path target, a new task is
 created:
@@ -788,10 +972,178 @@ task will be created:
     >>> print evolution_task.sourcepackagename.name
     evolution
 
-Let's take on the upstream task as well. This time we'll sneak in a
-'subscribe' command between the 'affects' and the other commands, to
-show that the commands acting on the bug task don't have to be grouped
-together:
+It's also possible to add tasks for specific distribution releases as
+well.
+
+    >>> bug = new_firefox_bug()
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+
+    >>> submit_commands(bug, 'affects ubuntu/hoary')
+
+This caused one bugtask to be added to the bug. The added bug task is a
+generic Ubuntu task, though.
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    Ubuntu
+
+Because Sample Person isn't a driver of Ubuntu, he's not allowed to
+target a bug directly, instead a nomination was created.
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    Ubuntu Hoary
+
+The same happens if we try to target another release.
+
+    >>> submit_commands(bug, 'affects ubuntu/warty')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    Ubuntu
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    Ubuntu Hoary
+    Ubuntu Warty
+
+Targeting an existing nomination won't create another nomination.
+
+    >>> submit_commands(bug, 'affects ubuntu/warty')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    Ubuntu
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    Ubuntu Hoary
+    Ubuntu Warty
+
+If Sample Person would be the Ubuntu driver, he'll be able to target
+bugs directly to releases.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu.driver = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> login('test@canonical.com')
+
+Now a new bugtask for the release will be create directly.
+
+    >>> submit_commands(bug, 'affects ubuntu/grumpy')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    Ubuntu
+    Ubuntu Grumpy
+
+He can also approve existing nominations.
+
+    >>> submit_commands(bug, 'affects ubuntu/warty')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    Ubuntu
+    Ubuntu Warty
+    Ubuntu Grumpy
+
+It works the same when specifying a source package while targeting a
+specific distrorelease.
+
+    >>> bug = new_firefox_bug()
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+
+    >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
+
+Now we can see that two tasks were created; both the general Ubuntu
+task, and the release specific task.
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    mozilla-firefox (Ubuntu)
+    mozilla-firefox (Ubuntu Hoary)
+
+As with the example with no source package above; if the user isn't a
+driver of the release, only a nomination will be created.
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu.driver = None
+    >>> login('test@canonical.com')
+
+    >>> bug = new_firefox_bug()
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+
+    >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    mozilla-firefox (Ubuntu)
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    Ubuntu Hoary
+
+Nominating product series work the same way as for distro releases.
+Sample person is a driver for the Firefox trunk series, so the
+nomination is automatically approved.
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> for driver in firefox.getSeries('trunk').drivers:
+    ...     print driver.displayname
+    Sample Person
+
+    >>> login('test@canonical.com')
+    >>> submit_commands(bug, 'affects /firefox/trunk')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    firefox (upstream)
+    firefox trunk (upstream)
+    mozilla-firefox (Ubuntu)
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    firefox trunk (upstream)
+    Ubuntu Hoary
+
+If the user doesn't have permission to approve the nomination, no series
+bug task will be created, only a nomination. A general product bugtask
+will be created if one doesn't exist.
+
+    >>> login('no-priv@canonical.com')
+    >>> bug = new_firefox_bug()
+    >>> submit_commands(bug, 'affects /evolution/trunk')
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    evolution (upstream)
+    firefox (upstream)
+
+    >>> for nomination in bug.getNominations():
+    ...     print nomination.target.bugtargetname
+    evolution trunk (upstream)
+
+    >>> login('test@canonical.com')
+
+Let's take on the upstream task on bug four as well. This time we'll
+sneak in a 'subscribe' command between the 'affects' and the other
+commands, to show that the commands acting on the bug task don't have to
+be grouped together:
 
     >>> submit_commands(
     ...     bug_four,

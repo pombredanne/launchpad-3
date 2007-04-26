@@ -107,3 +107,57 @@ twice.
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
     >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
     True
+
+== Searching in comments ==
+
+By default, comments are also searched when specifying a search text.
+For example, no Firefox bugs are found when searching for
+'wordincomment'.
+
+    >>> comment_search = BugTaskSearchParams(
+    ...     user=None, searchtext='wordincomment')
+    >>> found_bugtasks = firefox.searchTasks(comment_search)
+    >>> found_bugtasks.count()
+    0
+
+If we add a comment containg the the search string to bug one, that bug
+will be returned by the search.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_one.newMessage(no_priv, 'No subject', 'some wordincomment')
+    <Message at ...>
+
+    # Add another comment to make sure that it won't cause the same
+    # bugtask to be returned twice.
+    >>> bug_one.newMessage(no_priv, 'No subject', 'another wordincomment')
+    <Message at ...>
+
+    >>> found_bugtasks = firefox.searchTasks(comment_search)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s" % bugtask.bug.id
+    #1
+
+    # Of course, searching in a project not containing bug #1 doesn't
+    # return any matches.
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> found_bugtasks = evolution.searchTasks(comment_search)
+    >>> found_bugtasks.count()
+    0
+
+== Searching by bug reporter ==
+
+The 'bug_reporter' parameter allows you to search for bugs reported by a
+certain person.
+
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> reported_by_foo_bar = BugTaskSearchParams(
+    ...     user=None, bug_reporter=foo_bar)
+    >>> reported_by_foo_bar.setDistribution(ubuntu)
+    >>> found_bugtasks = bugtask_set.search(reported_by_foo_bar)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s in %s reported by %s" % (
+    ...         bugtask.bug.id, bugtask.targetname,
+    ...         bugtask.bug.owner.displayname)
+    #9 in thunderbird (Ubuntu) reported by Foo Bar
+    #10 in linux-source-2.6.15 (Ubuntu) reported by Foo Bar

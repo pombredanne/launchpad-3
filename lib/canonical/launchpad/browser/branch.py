@@ -29,11 +29,12 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, IBugSet)
+    IBranch, IBranchSet, IBugSet, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action, custom_widget)
+from canonical.launchpad.webapp.uri import URI
 from canonical.widgets import ContextWidget
 
 
@@ -83,13 +84,17 @@ class BranchContextMenu(ContextMenu):
         text = 'Change registrant'
         return Link('+reassign', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def subscription(self):
-        user = self.user
-        if user is not None and self.context.has_subscription(user):
-            text = 'Unsubscribe'
+        if self.context.hasSubscription(self.user):
+            url = '+edit-subscription'
+            text = 'Edit Subscription'
+            icon = 'edit'
         else:
+            url = '+subscribe'
             text = 'Subscribe'
-        return Link('+subscribe', text, icon='edit')
+            icon = 'add'
+        return Link(url, text, icon=icon)
 
 
 class BranchView(LaunchpadView):
@@ -115,7 +120,7 @@ class BranchView(LaunchpadView):
         """Is the current user subscribed to this branch?"""
         if self.user is None:
             return False
-        return self.context.has_subscription(self.user)
+        return self.context.hasSubscription(self.user)
 
     def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""
@@ -137,15 +142,21 @@ class BranchView(LaunchpadView):
         linkdata = BranchContextMenu(self.context).edit()
         return '%s/%s' % (canonical_url(self.context), linkdata.target)
 
-    def url(self):
-        """URL where the branch can be checked out.
+    def mirror_of_ssh(self):
+        """True if this a mirror branch with an sftp or bzr+ssh URL."""
+        if not self.context.url:
+            return False # not a mirror branch
+        uri = URI(self.context.url)
+        return uri.scheme in ('sftp', 'bzr+ssh')
 
-        This is the URL set in the database, or the Supermirror URL.
-        """
-        if self.context.url:
-            return self.context.url
+    def show_mirror_failure(self):
+        """True if mirror_of_ssh is false and branch mirroring failed."""
+        if self.mirror_of_ssh():
+            # SSH branches can't be mirrored, so a general failure message
+            # is shown instead of the reported errors.
+            return False
         else:
-            return self.supermirror_url()
+            return self.context.mirror_failures
 
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
@@ -156,17 +167,10 @@ class BranchView(LaunchpadView):
         return 'sftp://%s@bazaar.launchpad.net/%s' % (
             self.user.name, self.context.unique_name)
 
-    def missing_title_or_summary_text(self):
-        if self.context.title:
-            if self.context.summary:
-                return None
-            else:
-                return '(this branch has no summary)'
-        else:
-            if self.context.summary:
-                return '(this branch has no title)'
-            else:
-                return '(this branch has neither title nor summary)'
+    def is_hosted_branch(self):
+        """Whether this is a user-provided hosted branch."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        return self.context.url is None and self.context.owner != vcs_imports
 
 
 class BranchInPersonView(BranchView):

@@ -11,7 +11,7 @@
         <!-- IQuestionTarget -->
         <allow attributes="getQuestion searchQuestions findSimilarQuestions
             answer_contacts direct_answer_contacts getSupportedLanguages
-	    getQuestionLanguages"
+            getQuestionLanguages"
 	    />
         <require permission="launchpad.AnyPerson"
             attributes="newQuestion addAnswerContact removeAnswerContact" />
@@ -30,7 +30,11 @@
         layer="canonical.launchpad.layers.AnswersLayer"
         name="+tickets"
         />
-
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -82,7 +86,7 @@
             />
         <browser:page
             name="+gethelp"
-            facet="overview"
+            facet="answers"
             template="../templates/sourcepackage-gethelp.pt"
             />
         <browser:page
@@ -103,7 +107,7 @@
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/sourcepackage-translations.pt"
+            template="../templates/object-translations.pt"
             />
         <browser:page
             name="+builds"
@@ -126,10 +130,6 @@
             facet="overview"
             template="../templates/sourcepackage-portlet-details.pt"
             />
-        <browser:page
-            name="+portlet-translations"
-            facet="translations"
-            template="../templates/sourcepackage-portlet-translations.pt"
         />
 
     </browser:pages>

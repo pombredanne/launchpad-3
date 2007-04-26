@@ -1,0 +1,80 @@
+= Adding members to a team =
+
+Any administrator of a team can add new members to that team.
+
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.getLink('Add member').click()
+    >>> browser.url
+    'http://launchpad.dev/~landscape-developers/+addmember'
+    >>> browser.getControl('New member').value = 'cprov'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    Celso Providelo (cprov) was added as a member of Landscape Developers.
+
+
+Let's make sure that 'cprov' is now an Approved member of 'landscape-developers'
+
+    >>> from canonical.launchpad.database import Person, TeamMembership
+    >>> cprov = Person.byName('cprov')
+    >>> landscape_team = Person.byName('landscape-developers')
+    >>> cprov_landscape_membership = TeamMembership.selectOneBy(
+    ...     personID=cprov.id, teamID=landscape_team.id)
+    >>> cprov_landscape_membership.statusname
+    'Approved'
+    >>> cprov.inTeam(landscape_team)
+    True
+
+If the new member is already an approved member of that team, we'll say that.
+
+    >>> browser.url
+    'http://launchpad.dev/%7Elandscape-developers/+addmember'
+    >>> browser.getControl('New member').value = 'cprov'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    Celso Providelo (cprov) is already a member of Landscape Developers.
+
+The new member can't be a team without active members.
+
+    # Ideally we should do this using the web UI, but doing it this way is a
+    # lot simpler.
+    >>> from canonical.lp.dbschema import TeamMembershipStatus
+    >>> carlos = Person.byName('carlos')
+    >>> ubuntu_translators = Person.byName('ubuntu-translators')
+    >>> carlos_translators_membership = TeamMembership.selectOneBy(
+    ...     personID=carlos.id, teamID=ubuntu_translators.id)
+    >>> carlos_translators_membership.setStatus(
+    ...     TeamMembershipStatus.DEACTIVATED, ubuntu_translators.teamowner)
+    >>> carlos_translators_membership.syncUpdate()
+
+    >>> browser.getControl('New member').value = 'ubuntu-translators'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    There is 1 error.
+    You can't add a team that doesn't have any active members.
+
+On the other hand, if the member is among the inactive/proposed members of
+the team, we'll simply change the membership's status and say that it was
+successfully added.
+
+    >>> cprov_landscape_membership.setStatus(
+    ...     TeamMembershipStatus.DEACTIVATED, landscape_team.teamowner)
+    >>> cprov_landscape_membership.syncUpdate()
+
+    >>> browser.url
+    'http://launchpad.dev/%7Elandscape-developers/+addmember'
+    >>> browser.getControl('New member').value = 'cprov'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    Celso Providelo (cprov) was added as a member of Landscape Developers.

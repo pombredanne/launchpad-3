@@ -59,17 +59,6 @@ class DatePublishedSyncError(Exception):
     """
 
 
-class ProductSeriesSet:
-    implements(IProductSeriesSet)
-
-    def get(self, productseriesid):
-        """See IProductSeriesSet."""
-        try:
-            return ProductSeries.get(productseriesid)
-        except SQLObjectNotFound:
-            raise NotFoundError(productseriesid)
-
-
 class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSourceAdmin)
@@ -113,14 +102,24 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                             orderBy=['-datereleased'])
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'productseries',
-                            orderBy=['dateexpected', 'name'])
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
 
     @property
     def displayname(self):
         return self.name
+
+    @property
+    def all_milestones(self):
+        """See IProductSeries."""
+        return Milestone.selectBy(
+            productseries=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IProductSeries."""
+        return Milestone.selectBy(
+            productseries=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
     def bugtargetname(self):
@@ -200,14 +199,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications.
-        
+
         The rules for filtering are that there are three areas where you can
         apply a filter:
-        
+
           - acceptance, which defaults to ACCEPTED if nothing is said,
           - completeness, which defaults to showing BOTH if nothing is said
           - informational, which defaults to showing BOTH if nothing is said
-        
+
         """
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -219,7 +218,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # defaults for completeness: in this case we don't actually need to
         # do anything, because the default is ANY
-        
+
         # defaults for acceptance: in this case, if nothing is said about
         # acceptance, we want to show only accepted specs
         acceptance = False

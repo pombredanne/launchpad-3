@@ -1,15 +1,12 @@
-<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template/master"
+      metal:use-macro="view/macro:page/applicationhome"
       i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h1>Launchpad graphics and icons</h1>
-</metal:heading>
+<h1 metal:fill-slot="heading">Launchpad graphics and icons</h1>
 
 <div metal:fill-slot="main">
 
@@ -51,7 +48,7 @@
       bug-listing-detailed.pt which is used for latest bug portlets, these
       images should be allowed to flow across both top and bottom lines of
       the listing.  These icons should not have a suffix. You should get
-      this for a pillar object using <code>/fmt:icon</code>. Pillar objects
+      this for a pillar object using <code>/image:icon</code>. Pillar objects
       should optionally have custom icons, and they should be used in
       detailed listings (not simple listings - for those please use badges).
       Team "emblems" should be of the icon size, not badge size.
@@ -71,20 +68,18 @@
       equivalent</strong>, for use in listings.
     </dd>
     <dt>
-      <img alt="" src="/@@/nyet-gotchi" style="float: right;" />
-      <dfn>gotchi</dfn>
+      <img alt="" src="/@@/nyet-logo" style="float: right;" />
+      <dfn>logo</dfn>
     </dt>
     <dd>
       This image is used in the heading of any Pillar object - people,
       projects, products and distributions.  There should be default
       versions of these images which correspond to the type of Pillar - so a
       default for Product, a default for Project, Distribution, etc.
-      These will be required to be 64px &times; 64px in size, if smaller
-      images are uploaded then they will be fitted into a 64px square.
-      It should be possible to upload separate mugshot and gotchi images,
-      but it should also be possible just to have the gotchi auto-generated
-      from the mugshot (this is why the proportion of the border area is the
-      same between the mugshot and the gotchi formats).
+      These will be required to be 64px &times; 64px in size.
+      The Logo is also used for ANY object which is a child of the pillar.
+      So, for example, the Ubuntu Logo will be used for a Ubuntu
+      Specification.
     </dd>
     <dt>
       <img alt="" src="/@@/nyet-mugshot" style="float: right;" />
@@ -160,8 +155,8 @@
         <td><img alt="" src="/@@/distribution" /></td>
       </tr>
       <tr>
-        <td>distribution-heading</td>
-        <td><img alt="" src="/@@/distribution-heading" /></td>
+        <td>distribution-logo</td>
+        <td><img alt="" src="/@@/distribution-logo" /></td>
       </tr>
       <tr>
         <td>distribution-mugshot</td>
@@ -225,8 +220,8 @@
         </td>
       </tr>
       <tr>
-        <td>launchpad-heading</td>
-        <td><img alt="" src="/@@/launchpad-heading" /></td>
+        <td>launchpad-logo</td>
+        <td><img alt="" src="/@@/launchpad-logo" /></td>
       </tr>
       <tr>
         <td>list</td>
@@ -269,7 +264,7 @@
         <td><img alt="" src="/@@/person-badge" /></td>
         <td rowspan="4">
           A person who uses Launchpad.
-          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          The <code>-logo</code> and <code>-mugshot</code> sizes should be
           used where the person has not uploaded their own custom picture.
         </td>
       </tr>
@@ -278,8 +273,8 @@
         <td><img alt="" src="/@@/person" /></td>
       </tr>
       <tr>
-        <td>person-heading</td>
-        <td><img alt="" src="/@@/person-heading" /></td>
+        <td>person-logo</td>
+        <td><img alt="" src="/@@/person-logo" /></td>
       </tr>
       <tr>
         <td>person-mugshot</td>
@@ -297,8 +292,8 @@
         <td><img alt="" src="/@@/person-inactive" /></td>
       </tr>
       <tr>
-        <td>person-inactive-heading</td>
-        <td><img alt="" src="/@@/person-inactive-heading" /></td>
+        <td>person-inactive-logo</td>
+        <td><img alt="" src="/@@/person-inactive-logo" /></td>
       </tr>
       <tr>
         <td>person-inactive-mugshot</td>
@@ -309,7 +304,7 @@
         <td><img alt="" src="/@@/product-badge" /></td>
         <td>
           A software project.
-          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          The <code>-logo</code> and <code>-mugshot</code> sizes should be
           used where the project owner has not uploaded a custom icon.
         </td>
       </tr>
@@ -318,8 +313,8 @@
         <td><img alt="" src="/@@/product" /></td>
       </tr>
       <tr>
-        <td>product-heading</td>
-        <td><img alt="" src="/@@/product-heading" /></td>
+        <td>product-logo</td>
+        <td><img alt="" src="/@@/product-logo" /></td>
       </tr>
       <tr>
         <td>product-mugshot</td>
@@ -335,8 +330,8 @@
         <td><img alt="" src="/@@/project" /></td>
       </tr>
       <tr>
-        <td>project-heading</td>
-        <td><img alt="" src="/@@/project-heading" /></td>
+        <td>project-logo</td>
+        <td><img alt="" src="/@@/project-logo" /></td>
       </tr>
       <tr>
         <td>project-mugshot</td>
@@ -373,6 +368,19 @@
         <td>A subscriber who is not essential to a specification.</td>
       </tr>
       <tr>
+        <td>meeting</td>
+        <td><img alt="" src="/@@/meeting" /></td>
+        <td rowspan="3">A meeting or sprint.</td>
+      </tr>
+      <tr>
+        <td>meeting-logo</td>
+        <td><img alt="" src="/@@/meeting-logo" /></td>
+      </tr>
+      <tr>
+        <td>meeting-mugshot</td>
+        <td><img alt="" src="/@@/meeting-mugshot" /></td>
+      </tr>
+      <tr>
         <td>milestone</td>
         <td><img alt="" src="/@@/milestone" /></td>
         <td>A "target". This indicates a development milestone to which a
@@ -380,16 +388,11 @@
         "milestone"?</i></td>
       </tr>
       <tr>
-        <td>sprint</td>
-        <td><img alt="" src="/@@/sprint" /></td>
-        <td>A meeting or sprint.</td>
-      </tr>
-      <tr>
         <td>team-badge</td>
         <td><img alt="" src="/@@/team-badge" /></td>
         <td rowspan="4">
           An anonymous icon for a team.
-          The <code>-heading</code> and <code>-mugshot</code> sizes should be
+          The <code>-logo</code> and <code>-mugshot</code> sizes should be
           used where the team has not uploaded their own custom picture.
         </td>
       </tr>
@@ -398,17 +401,12 @@
         <td><img alt="" src="/@@/team" /></td>
       </tr>
       <tr>
-        <td>team-heading</td>
-        <td><img alt="" src="/@@/team-heading" /></td>
+        <td>team-logo</td>
+        <td><img alt="" src="/@@/team-logo" /></td>
       </tr>
       <tr>
         <td>team-mugshot</td>
         <td><img alt="" src="/@@/team-mugshot" /></td>
-      </tr>
-      <tr>
-        <td>topic</td>
-        <td><img src="/@@/topic" /></td>
-        <td>A "topic". <i>Should be replaced by a build icon.</i></td>
       </tr>
       <tr>
         <td>treeCollapsed</td>
@@ -458,11 +456,10 @@
     </tbody>
   </table>
 
-  <h2>Malone, the bug tracker</h2>
+  <h2>Bugs</h2>
 
   <p>
-    Malone is the bug tracking engine
-    in Launchpad. It enables projects to track their bugs and also to
+    Launchpad lets projects track their bugs, and
     collaborate with other people using their code on the fixes for those
     bugs.
   </p>
@@ -528,11 +525,10 @@
     </tbody>
   </table>
 
-  <h2>Rosetta, the translation engine</h2>
+  <h2>Translations</h2>
 
   <p>
-    Rosetta is the Launchpad
-    translation engine. It allows projects to invite translators to help make
+    Launchpad lets projects invite translators to help make
     their software work in any written language. Translators contribute new
     translations over the web which are then included in new releases of the
     software.
@@ -585,7 +581,7 @@
     </tbody>
   </table>
 
-  <h2>Blueprint, the feature tracking application</h2>
+  <h2>Blueprint</h2>
 
   <p>
     Blueprint is the Launchpad
@@ -596,10 +592,34 @@
   <table class="listing">
     <tbody>
       <tr>
-        <td>spec</td>
+        <td>blueprint</td>
         <td><img src="/@@/blueprint" /></td>
-        <td>A feature specification, used as a bullet in lists of specs, or
-        to indicate a link to a specification.</td>
+        <td rowspan="7">A blueprint, used as a bullet in lists of them, or
+        to indicate a link to one.</td>
+      </tr>
+      <tr>
+        <td>blueprint-essential</td>
+        <td><img src="/@@/blueprint-essential" /></td>
+      </tr>
+      <tr>
+        <td>blueprint-high</td>
+        <td><img src="/@@/blueprint-high" /></td>
+      </tr>
+      <tr>
+        <td>blueprint-medium</td>
+        <td><img src="/@@/blueprint-medium" /></td>
+      </tr>
+      <tr>
+        <td>blueprint-low</td>
+        <td><img src="/@@/blueprint-low" /></td>
+      </tr>
+      <tr>
+        <td>blueprint-not</td>
+        <td><img src="/@@/blueprint-not" /></td>
+      </tr>
+      <tr>
+        <td>blueprint-undefined</td>
+        <td><img src="/@@/blueprint-undefined" /></td>
       </tr>
       <tr>
         <td>bounty</td>
@@ -611,12 +631,7 @@
     </tbody>
   </table>
 
-  <h2>Greenhouse, the code management system</h2>
-
-  <p>
-    "Greenhouse" is the Launchpad application that keeps track of software
-    source code.
-  </p>
+  <h2>Code</h2>
 
   <table class="listing">
     <tbody>
@@ -652,6 +667,11 @@
         <td>A system architecture, like x86 or ppc or SPARC or IA64</td>
       </tr>
       <tr>
+        <td>build-building</td>
+        <td><img src="/@@/build-building" /></td>
+        <td>A build that is currently in progress.</td>
+      </tr>
+      <tr>
         <td>build-chrootwait</td>
         <td><img src="/@@/build-chrootwait" /></td>
         <td>This is a "build", by which we mean a scheduled compilation of a
@@ -680,6 +700,11 @@
         <td>build-success</td>
         <td><img src="/@@/build-success" /></td>
         <td>A build that succeeded.</td>
+      </tr>
+      <tr>
+        <td>build-superseded</td>
+        <td><img src="/@@/build-superseded" /></td>
+        <td>A build that was superseded before it actually happened.</td>
       </tr>
       <tr>
         <td>package-binary</td>
@@ -741,4 +766,3 @@
 
 </body>
 </html>
-</tal:layout>
