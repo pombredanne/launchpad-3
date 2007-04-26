@@ -612,7 +612,8 @@ body.freeform #globalfooter {
   overflow: hidden;
 }
 ul#applicationchooser {
-  float: right;
+  position: absolute;
+  right: 0;
   width: 510px;
   height: 32px;
   overflow: hidden;
@@ -646,7 +647,7 @@ ul#applicationchooser li {
  * to ensure the whole tab area is clickable. */
 ul#applicationchooser li a {
   display: block;
-  padding: 8px 0px 0px 0px;
+  padding: 7px 0px 0px 0px;
   height: 40px;
 }
 
@@ -1330,10 +1331,7 @@ ul#applicationchooser a, ul#applicationchooser a:hover {
 body {
   min-width: 480px;
 }
-#container {
-  padding-left: 240px;
-  padding-right: 20px;
-}
+#container {padding: 0 20px 0 240px; margin-top: 40px;}
 body.applicationhome #container {padding-left: 20px;}
 #singlecolumn #container {
   padding-left: 20px;

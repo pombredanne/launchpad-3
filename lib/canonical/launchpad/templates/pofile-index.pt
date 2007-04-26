@@ -15,8 +15,19 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Translation of <span tal:replace="context/potemplate/potemplatename/name">PO Template</span>
-        into <span tal:replace="context/language/displayname">Language</span></h1>
+    <div>
+      <a tal:attributes="href context/potemplate/fmt:url"
+         tal:content="context/potemplate/title">
+        evolution 2.10 template
+      </a>
+    </div>
+    <h1>
+      Overview for
+      <tal:language replace="context/language/englishname">
+        Spanish
+      </tal:language>
+      translation
+    </h1>
 
     <h2>Contributors to this translation</h2>
 
