@@ -7,7 +7,7 @@ ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
 MISCROOT=$ARCHIVEROOT/../ubuntu-misc
 LOCKROOT=$ARCHIVEROOT/..
 GERMINATEROOT=$ARCHIVEROOT/../ubuntu-germinate
-SEEDS=http://people.ubuntu.com/~cjwatson/seeds
+SEEDS=http://people.ubuntu.com/~ubuntu-archive/seeds
 
 ## Check to see if another germinate run is in progress
 
@@ -25,7 +25,7 @@ trap cleanup EXIT
 
 ## XXX cprov 20060609: We need to retrieve 'development' distrorelease
 ## from helper script. See bug # 49174
-suite=feisty
+suite=gutsy
 
 echo -n "Running germinate... "
 cd $GERMINATEROOT
@@ -42,18 +42,7 @@ done
 > "$MISCROOT/more-extra.override.$suite.main.new"
 for distro in ubuntu kubuntu edubuntu xubuntu; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
-  case "$distro" in 
-      ubuntu)
-	  germinate_suite="$suite"
-	  ;;
-      kubuntu|edubuntu|xubuntu)
-	  germinate_suite="$distro"-"$suite"
-	  ;;
-      *)
-	  echo "Unknown distro $distro";
-	  exit 1
-	  ;;
-  esac
+  germinate_suite="$distro.$suite"
   # We use the STRUCTURE file to figure out which tasks to generate.
   wget -q -O "$DISTRO-STRUCTURE" "$SEEDS/$germinate_suite/STRUCTURE"
   for arch in i386 amd64 powerpc sparc ia64; do

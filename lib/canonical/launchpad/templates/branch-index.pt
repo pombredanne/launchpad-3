@@ -57,7 +57,7 @@
     paragraph of text really, giving the branch highlights.
   </p>
 
-  <tal:hosted-branch condition="not:context/url">
+  <tal:hosted-branch condition="view/is_hosted_branch">
     <tal:comment condition="nothing">
       <!-- This is a hosted branch, display upload directions -->
     </tal:comment>

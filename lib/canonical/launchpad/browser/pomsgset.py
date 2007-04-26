@@ -1146,11 +1146,7 @@ class POMsgSetView(LaunchpadView):
             # Always show messages to logged-in users.
             return False
         # For anonymous users, check the msgid.
-        return self.msgid in [
-            u'translation-credits',
-            u'_: EMAIL OF TRANSLATORS<img alt=""' +
-                u' src="/@@/translation-newline" /><br/>\nYour emails'
-            ]
+        return self.context.potmsgset.hide_translations_from_anonymous
 
     @cachedproperty
     def sequence(self):
