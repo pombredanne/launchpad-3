@@ -123,6 +123,12 @@
               >
               translated
             </option>
+            <option value="new_suggestions"
+              tal:attributes="selected
+              request/htmlform:show/selected/new_suggestions"
+              >
+              with new suggestions
+            </option>
           </select>
           <input
             type="submit" value="Filter" />

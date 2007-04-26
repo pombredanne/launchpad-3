@@ -389,6 +389,26 @@ class POFile(SQLBase, RosettaStats):
 
         return results
 
+    def getPOTMsgSetWithNewSuggestions(self, slice=None):
+        """See IPOFile."""
+        # A POT set has "new" suggestions if there is a POMsgSet with
+        # submissions after active translation was reviewed
+        results = POTMsgSet.select('''
+            POTMsgSet.potemplate = %s AND
+            POTMsgSet.sequence > 0 AND
+            POMsgSet.potmsgset = POTMsgSet.id AND
+            POMsgSet.pofile = %s AND
+            POSubmission.pomsgset = POMsgSet.id AND
+            POSubmission.datecreated > POMsgSet.date_reviewed
+            ''' % sqlvalues(self.potemplate.id, self.id),
+            clauseTables=['POMsgSet', 'POSubmission'],
+            orderBy='POTmsgSet.sequence')
+
+        if slice is not None:
+            results = results[slice]
+
+        return results
+
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""
         results = POTMsgSet.select('''
@@ -442,6 +462,11 @@ class POFile(SQLBase, RosettaStats):
             isfuzzy IS TRUE AND
             sequence > 0
             """ % sqlvalues(self.id)).count()
+
+    @property
+    def new_suggestions_count(self):
+        """See IPOFile."""
+        return self.getPOTMsgSetWithNewSuggestions().count()
 
     def expireAllMessages(self):
         """See IPOFile."""
@@ -960,6 +985,10 @@ class DummyPOFile(RosettaStats):
     def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
         return self.potemplate.getPOTMsgSets(slice)
+
+    def getPOTMsgSetWithNewSuggestions(self, slice=None):
+        """See IPOFile."""
+        return None
 
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""

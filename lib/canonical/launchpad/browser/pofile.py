@@ -406,13 +406,15 @@ class POFileTranslateView(BaseTranslationView):
         self.show = self.request.form.get('show')
 
         if self.show not in (
-            'translated', 'untranslated', 'all', 'need_review'):
+            'translated', 'untranslated', 'all', 'need_review',
+            'new_suggestions'):
             # XXX: should this be an UnexpectedFormData?
             self.show = self.DEFAULT_SHOW
         self.show_all = False
         self.show_need_review = False
         self.show_translated = False
         self.show_untranslated = False
+        self.show_new_suggestions = False
         if self.show == 'all':
             self.show_all = True
             self.shown_count = self.context.messageCount()
@@ -425,6 +427,9 @@ class POFileTranslateView(BaseTranslationView):
         elif self.show == 'need_review':
             self.show_need_review = True
             self.shown_count = self.context.fuzzy_count
+        elif self.show == 'new_suggestions':
+            self.show_new_suggestions = True
+            self.shown_count = self.context.new_suggestions_count
         else:
             raise AssertionError("Bug in _initializeShowOption")
 
@@ -442,6 +447,8 @@ class POFileTranslateView(BaseTranslationView):
             ret = pofile.getPOTMsgSetFuzzy()
         elif self.show == 'untranslated':
             ret = pofile.getPOTMsgSetUntranslated()
+        elif self.show == 'new_suggestions':
+            ret = pofile.getPOTMsgSetWithNewSuggestions()
         else:
             raise UnexpectedFormData('show = "%s"' % self.show)
         # We cannot listify the results to avoid additional count queries,

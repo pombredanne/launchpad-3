@@ -82,6 +82,9 @@ class IPOFile(IRosettaStats):
 
     fuzzy_count = Attribute("The number of 'fuzzy' messages in this po file.")
 
+    new_suggestions_count = Attribute(
+        "The number of messages with new suggestions in this po file.")
+
     from_sourcepackagename = Field(
         title=u'The source package this pofile comes from.',
         description=(u'The source package this pofile comes from (set it only'
@@ -155,6 +158,13 @@ class IPOFile(IRosettaStats):
 
     def getPOTMsgSetUntranslated(slice=None):
         """Get pot message sets that are untranslated in this PO file.
+
+        'slice' is a slice object that selects a subset of POTMsgSets.
+        Return the message sets using 'slice' or all of them if slice is None.
+        """
+
+    def getPOTMsgSetWithNewSuggestions(slice=None):
+        """Get pot message sets with suggestions submitted after last review.
 
         'slice' is a slice object that selects a subset of POTMsgSets.
         Return the message sets using 'slice' or all of them if slice is None.
