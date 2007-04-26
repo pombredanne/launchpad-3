@@ -838,7 +838,7 @@ rosetta_about = 'About Rosetta'
 
 rosetta_index = 'Launchpad Translations'
 
-rosetta_products = 'Products with Translations in Launchpad'
+rosetta_products = 'Projects with Translations in Launchpad'
 
 product_branch_add = ContextDisplayName('Register a new %s branch')
 

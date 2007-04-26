@@ -211,7 +211,7 @@ class ProjectOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
         text = 'Appoint driver'
-        summary = 'Someone with permission to set goals for all products'
+        summary = 'Someone with permission to set goals for all projects'
         return Link('+driver', text, summary, icon='edit')
 
     def top_contributors(self):
@@ -345,7 +345,7 @@ class ProjectAddProductView(LaunchpadFormView):
         if not self.user:
             raise Unauthorized(
                 "Need to have an authenticated user in order to create a bug"
-                " on a product")
+                " on a project")
         # create the product
         self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
