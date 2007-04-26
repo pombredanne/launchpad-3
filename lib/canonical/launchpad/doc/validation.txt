@@ -35,8 +35,11 @@ in that distribution on the same bug.
       ...
     WidgetsError: LaunchpadValidationError: ...
 
-Rendering a LaunchpadValidationError is done by getting an
-IWidgetInputErrorView:
+== LaunchpadValidationError ==
+
+LaunchpadValidationError is the standard exception used for custom
+validators upon a validation error. Rendering one is done by getting
+an IWidgetInputErrorView:
 
     >>> from canonical.launchpad.validators import (
     ...     LaunchpadValidationError)
