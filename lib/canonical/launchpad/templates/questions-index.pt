@@ -15,6 +15,12 @@
                         </ul>
                         <form class="central" action="" method="get"
                               tal:attributes="action request/URL">
+                          <input
+                            id="field.languages.1"
+                            type="hidden"
+                            name="field.languages"
+                            value="Preferred"
+                          />
                           <table>
                             <tbody>
                               <tr>
@@ -64,7 +70,7 @@
                           community support network and knowledge base for
                           your project. Encourage new users to ask questions
                           rather than file bugs!
-                          <a href="/+tour">Learn more&#8230;</a>
+                          <a href="/+about">Learn more&#8230;</a>
                         </p>
                         <div id="latest-questions-asked" class="left">
 

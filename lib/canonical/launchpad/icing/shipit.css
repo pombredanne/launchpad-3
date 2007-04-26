@@ -11,7 +11,7 @@ body {margin: 0; padding: 0;}
 
 div.body {padding: 0em 1em;}
 
-.discreet, .lesser {font-size: smaller;}
+.discreet, .lesser {font-size: small;}
 
 /* --- Error, warning, and info messages --- */
 

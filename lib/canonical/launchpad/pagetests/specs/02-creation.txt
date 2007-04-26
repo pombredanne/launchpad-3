@@ -135,6 +135,33 @@ URL.
   True
 
 
+Project blueprint registration
+==============================
+
+There is also a form which lets user create a new Blueprint in an IProject
+that first requires them to select an IProduct target, showing them only the
+products in that IProject.
+
+  >>> browser.open('http://blueprints.launchpad.dev/mozilla/+addspec')
+  >>> browser.getControl(name='field.projecttarget').value = ['thunderbird']
+  >>> browser.getControl(name='field.name').value = 'gee-whizz-wotzit'
+  >>> browser.getControl(
+  ...   name='field.title').value = ('Grand amazing tool')
+  >>> browser.getControl(
+  ...   name='field.specurl').value = ('http://wiki.mozilla.org/WhizzWotzit')
+  >>> summary = (
+  ...   "This widget is the latest and greatest in a long range of wotzits. "
+  ...   "All wotzits are known to be particularly resilient.")
+  >>> browser.getControl(name='field.summary').value = summary
+  >>> browser.getControl(name='field.status').value = ['Approved']
+  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> browser.getControl('Register Blueprint').click()
+  >>> browser.url
+  'http://blueprints.launchpad.dev/thunderbird/+spec/gee-whizz-wotzit'
+
+
 System-wide blueprint registration
 ==================================
 
@@ -172,7 +199,7 @@ First, we try to create a spec that has the same name as an existing one.
 So, we were not redirected to the spec page, because the spec was not
 created. Let's check that this happened because the name is taken:
 
-  >>> 'There is already a blueprint with this name.' in browser.contents
+  >>> 'There is already a blueprint with this name' in browser.contents
   True
 
 
