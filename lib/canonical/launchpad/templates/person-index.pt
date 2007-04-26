@@ -34,11 +34,14 @@
     content="structure context/homepage_content/fmt:text-to-html" />
   <tal:team-description
     replace="structure context/teamdescription/fmt:text-to-html" />
-  <tal:offer_join condition="context/isTeam">
+  <tal:team_buttons define="mentorships context/team_mentorships"
+                    condition="context/isTeam">
     <a tal:condition="not: view/userIsParticipant"
        href="+join" title="Sign up as a member of this team"
        ><img alt="Join!" src="/+icing/but-sml-jointhisteam.gif" /></a>
-  </tal:offer_join>
+    <a tal:condition="mentorships" href="+mentoring"
+       ><img alt="Mentorships" src="/+icing/but-sml-mentoring.gif"></a>
+  </tal:team_buttons>
 
   <tal:valid-person-or-team condition="context/is_valid_person_or_team">
   <div class="left" tal:define="contributions view/contributions">

@@ -5,6 +5,16 @@
 
 <body>
 
+<p metal:fill-slot="help">
+  Launchpad lets you keep track of offers of mentorship from members of your
+  community. Anybody who is a member of a team can offer to mentor work on a
+  bug, or a blueprint. Launchpad then keeps track of those offers, and you
+  can use its listings as a convenient starting place for new contributors.
+  Read the
+  <a href="https://help.launchpad.net/MentoringManagement/">documentation</a>
+  for more detailed information.
+</p>
+
 <metal:leftportlets fill-slot="portlets_one">
 </metal:leftportlets>
 
@@ -67,8 +77,9 @@
   </p>
 
   <p>
-    You can learn more about this
-    capability in Launchpad, which allows you to create an "onramp" of
+    You can <a href="https://help.launchpad.net/MentoringManagement">learn
+    more about this capability in Launchpad</a>, which allows you to
+    create an "onramp" of
     bite-sized chunks of work for new people who want to contribute or to
     prove their worth.
   </p>
@@ -84,5 +95,6 @@
 </tal:def_offers>
 
 </div>
+
 </body>
 </html>
