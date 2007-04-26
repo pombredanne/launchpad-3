@@ -48,6 +48,11 @@ class IAuthorization(Interface):
         The argument `user` is the person who is authenticated.
         """
 
+
+class OffsiteFormPostError(Exception):
+    """An attempt was made to post a form from a remote site."""
+
+
 #
 # Menus and Facets
 #
