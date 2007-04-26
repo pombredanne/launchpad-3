@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""Question models."""
+
 __metaclass__ = type
 __all__ = [
     'SimilarQuestionsSearch',
@@ -21,10 +23,10 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, InvalidQuestionStateError, ILanguage, ILanguageSet,
-    ILaunchpadCelebrities, IMessage, IPerson, IProduct, IQuestion,
-    IQuestionSet,
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, IDistribution, IDistributionSourcePackage, 
+    InvalidQuestionStateError, ILanguage, ILanguageSet, ILaunchpadCelebrities,
+    IMessage, IPerson, IProduct, IQuestion, IQuestionSet, IQuestionTarget, 
+    ISourcePackage, QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -65,14 +67,15 @@ class notify_question_modified:
     """
 
     def __call__(self, func):
-        """Return the decorator."""
+        """Return the SQLObjectModifiedEvent decorator."""
         def notify_question_modified(self, *args, **kwargs):
+            """Create the SQLObjectModifiedEvent decorator."""
             old_question = Snapshot(self, providing=providedBy(self))
             msg = func(self, *args, **kwargs)
 
             edited_fields = ['messages']
             for field in ['status', 'dateanswered', 'answerer', 'answer',
-                          'datelastquery', 'datelastresponse']:
+                          'datelastquery', 'datelastresponse', 'target']:
                 if getattr(self, field) != getattr(old_question, field):
                     edited_fields.append(field)
 
@@ -138,7 +141,6 @@ class Question(SQLBase, BugLinkTargetMixin):
         joinColumn='question')
 
     # attributes
-    @property
     def target(self):
         """See IQuestion."""
         if self.product:
@@ -148,6 +150,33 @@ class Question(SQLBase, BugLinkTargetMixin):
                 self.sourcepackagename.name)
         else:
             return self.distribution
+            
+    def _settarget(self, question_target):
+        """See IQuestion.target."""
+        assert IQuestionTarget.providedBy(question_target), (
+            "The target must be an IQuestionTarget")
+        if IProduct.providedBy(question_target):
+            self.product = question_target
+            self.distribution = None
+            self.sourcepackagename = None
+        # XXX sinzui 2007-04-20 #108240
+        # We test for ISourcePackage because it is a valid QuestionTarget even
+        # though it should not be. SourcePackages are never passed to this
+        # mutator.
+        elif (ISourcePackage.providedBy(question_target) or
+                IDistributionSourcePackage.providedBy(question_target)):
+            self.product = None
+            self.distribution = question_target.distribution
+            self.sourcepackagename = question_target.sourcepackagename
+        elif IDistribution.providedBy(question_target):
+            self.product = None
+            self.distribution = question_target
+            self.sourcepackagename = None
+        else:
+            raise AssertionError("Unknown IQuestionTarget type of %s" %
+                question_target)
+
+    target = property(target, _settarget, doc=target.__doc__)
 
     @property
     def followup_subject(self):
@@ -160,7 +189,9 @@ class Question(SQLBase, BugLinkTargetMixin):
         return 'Re: ' + subject
 
     def isSubscribed(self, person):
-        return bool(QuestionSubscription.selectOneBy(question=self, person=person))
+        """See IQuestion."""
+        return bool(
+            QuestionSubscription.selectOneBy(question=self, person=person))
 
     # Workflow methods
 
@@ -270,6 +301,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         if self.status not in [
             QuestionStatus.OPEN, QuestionStatus.ANSWERED,
             QuestionStatus.NEEDSINFO]:
+
             return False
 
         for message in self.messages:
@@ -347,7 +379,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     def can_reopen(self):
         """See IQuestion."""
         return self.status in [
-            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED, QuestionStatus.SOLVED]
+            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED,
+            QuestionStatus.SOLVED]
 
     @notify_question_modified()
     def reopen(self, comment, datecreated=None):
@@ -390,7 +423,8 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getDirectSubscribers(self):
         """See IQuestion."""
-        return sorted(self.subscribers, key=operator.attrgetter('displayname'))
+        return sorted(
+            self.subscribers, key=operator.attrgetter('displayname'))
 
     def getIndirectSubscribers(self):
         """See IQuestion."""
@@ -541,8 +575,8 @@ class QuestionSearch:
     is used to retrieve the questions matching the search criteria.
     """
 
-    def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
-                 language=None, needs_attention_from=None, sort=None,
+    def __init__(self, search_text=None, needs_attention_from=None, sort=None,
+                 status=QUESTION_STATUS_DEFAULT_SEARCH, language=None, 
                  product=None, distribution=None, sourcepackagename=None,
                  project=None):
         self.search_text = search_text
@@ -577,13 +611,8 @@ class QuestionSearch:
         constraints = []
 
         if self.product:
-            # We accept either a product or an iterable of products.
-            if IProduct.providedBy(self.product):
-                constraints.append(
-                    'Question.product = %s' % sqlvalues(self.product))
-            else:
-                constraints.append('Question.product IN (%s)' % ", ".join(
-                    sqlvalues(*self.product)))
+            constraints.append(
+                'Question.product = %s' % sqlvalues(self.product))
         elif self.distribution:
             constraints.append(
                 'Question.distribution = %s' % sqlvalues(self.distribution))
@@ -732,26 +761,35 @@ class QuestionTargetSearch(QuestionSearch):
 
     def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
-                 needs_attention_from=None, product=None, distribution=None,
-                 sourcepackagename=None, project=None):
+                 needs_attention_from=None, unsupported_target=None,  
+                 project=None, product=None, distribution=None, 
+                 sourcepackagename=None):
         assert (product is not None or distribution is not None or
-            project is not None), ("Missing a product or distribution context.")
+            project is not None), ("Missing a product, distribution or "
+                                   "project context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
-            needs_attention_from=needs_attention_from, sort=sort,
-            product=product, distribution=distribution,
-            sourcepackagename=sourcepackagename, project=project)
+            needs_attention_from=needs_attention_from, sort=sort, 
+            project=project, product=product, 
+            distribution=distribution, sourcepackagename=sourcepackagename)
 
         if owner:
             assert IPerson.providedBy(owner), (
                 "expected IPerson, got %r" % owner)
         self.owner = owner
+        self.unsupported_target = unsupported_target
 
     def getConstraints(self):
         """See QuestionSearch."""
         constraints = QuestionSearch.getConstraints(self)
         if self.owner:
             constraints.append('Question.owner = %s' % self.owner.id)
+        if self.unsupported_target is not None:
+            langs = [str(lang.id) 
+                     for lang in (
+                        self.unsupported_target.getSupportedLanguages())]
+            constraints.append('Question.language NOT IN (%s)' % 
+                               ', '.join(langs))
 
         return constraints
 

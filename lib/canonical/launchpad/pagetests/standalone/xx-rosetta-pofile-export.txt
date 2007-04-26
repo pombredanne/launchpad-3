@@ -21,13 +21,13 @@ Logged in as a regular user, the +export page is accessible.
   >>> user_browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export'
 
-  >>> user_browser.title
-  'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary
-  package "evolution" file exports'
+  >>> print user_browser.title
+  Download translation for “Spanish (es) translation of evolution-2.2 in
+  Ubuntu Hoary package "evolution"”
 
   >>> print user_browser.contents
   <...
-  ...Translations download...
+  ...Download Spanish translation...
   Export process would be quite slow and thus, most of the time, you
   will need to wait until the system process your request and sends you
   a notification email to
