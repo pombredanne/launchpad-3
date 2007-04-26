@@ -107,7 +107,7 @@ class FileBugTargetWidget(BrowserWidget, InputWidget):
         BrowserWidget.__init__(self, field, request)
         fields = [
             Choice(
-                __name__='product', title=u'Product',
+                __name__='product', title=u'Project',
                 required=True, vocabulary='Product'),
             Choice(
                 __name__='distribution', title=u"Distribution",
