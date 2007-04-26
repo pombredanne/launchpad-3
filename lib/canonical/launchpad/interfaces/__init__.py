@@ -114,6 +114,7 @@ from canonical.launchpad.interfaces.rosetta import *
 from canonical.launchpad.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *
 from canonical.launchpad.interfaces.schema import *
+from canonical.launchpad.interfaces.scriptactivity import *
 from canonical.launchpad.interfaces.section import *
 from canonical.launchpad.interfaces.shipit import *
 from canonical.launchpad.interfaces.sourcepackage import *
@@ -134,6 +135,7 @@ from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
+from canonical.launchpad.interfaces.questioncollection import *
 from canonical.launchpad.interfaces.questionmessage import *
 from canonical.launchpad.interfaces.questionreopening import *
 from canonical.launchpad.interfaces.questionsubscription import *

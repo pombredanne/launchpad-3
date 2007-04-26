@@ -948,10 +948,19 @@ class BugTaskSet:
         if params.searchtext:
             searchtext_quoted = sqlvalues(params.searchtext)[0]
             searchtext_like_quoted = quote_like(params.searchtext)
-            extra_clauses.append(
-                "((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s)) OR"
-                " (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))" % (
-                searchtext_quoted, searchtext_quoted, searchtext_like_quoted))
+            comment_clause = """BugTask.id IN (
+                SELECT BugTask.id
+                FROM BugTask, BugMessage,Message, MessageChunk
+                WHERE BugMessage.bug = BugTask.bug
+                    AND BugMessage.message = Message.id
+                    AND Message.id = MessageChunk.message
+                    AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
+            extra_clauses.append("""
+                ((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s) OR (%s))
+                 OR (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))
+                """ % (
+                    searchtext_quoted,searchtext_quoted, comment_clause,
+                    searchtext_like_quoted))
             if params.orderby is None:
                 # Unordered search results aren't useful, so sort by relevance
                 # instead.

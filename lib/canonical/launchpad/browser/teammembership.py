@@ -2,7 +2,10 @@
 
 __metaclass__ = type
 
-__all__ = ['TeamMembershipEditView']
+__all__ = [
+    'TeamMembershipEditView',
+    'TeamMembershipSHP',
+    ]
 
 import pytz
 import datetime
@@ -15,6 +18,17 @@ from canonical.lp.dbschema import TeamMembershipStatus
 
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadCelebrities, UnexpectedFormData)
+from canonical.launchpad.browser.launchpad import (
+    StructuralHeaderPresentation)
+
+
+class TeamMembershipSHP(StructuralHeaderPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.team.title
 
 
 class TeamMembershipEditView:
