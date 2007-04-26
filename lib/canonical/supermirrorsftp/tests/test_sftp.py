@@ -40,14 +40,6 @@ from canonical.testing import TwistedLayer
 class SFTPTests(SFTPTestCase):
     layer = TwistedLayer
 
-    def getTransport(self, path=None):
-        if path is None:
-            path = ''
-        transport = get_transport(self.server_base + path)
-        self.addCleanup(transport._sftp.close)
-        self.addCleanup(transport._sftp.sock.transport.close)
-        return transport
-
     @deferToThread
     def _test_rmdir_branch(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
