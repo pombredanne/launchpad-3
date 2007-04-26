@@ -163,10 +163,12 @@ First what we represent in the form when there is no translation:
 And also, we don't get anyone as the Last translator because there is no
 translation at all ;-)
 
-  >>> 'Translated by:' in browser.contents
-  False
-  >>> 'Translated and reviewed by:' in browser.contents
-  False
+  >>> find_tag_by_id(browser.contents, 'translated_and_reviewed_by') is None
+  True
+  >>> find_tag_by_id(browser.contents, 'translated_by') is None
+  True
+  >>> find_tag_by_id(browser.contents, 'reviewed_by') is None
+  True
 
 Let's submit an invalid value for this message #13.
 
