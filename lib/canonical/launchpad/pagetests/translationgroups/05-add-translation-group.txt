@@ -85,7 +85,7 @@ The Rosetta administrator assigns ownership of the group to Sample Person.
   'http://translations.launchpad.dev/+translation-groups/monolingua/+reassign'
 
   >>> browser.getControl(name='field.owner').value = 'name12'
-  >>> browser.getControl('Change Registrant').click()
+  >>> browser.getControl('Change Owner').click()
   >>> browser.url
   'http://translations.launchpad.dev/+translation-groups/monolingua/'
 
