@@ -52,10 +52,9 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.poimport import (
-    translation_import, OldPOImported, NotExportedFromRosetta)
-from canonical.launchpad.components.rosettaformats import *
-from canonical.launchpad.components.poparser import (
+from canonical.launchpad.components.translationformats.translation_import import (
+    OldTranslationImported, NotExportedFromLaunchpad)
+from canonical.launchpad.components.translationformats.gettext_po_parser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import (

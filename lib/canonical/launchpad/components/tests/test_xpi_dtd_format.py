@@ -5,7 +5,7 @@ __metaclass__ = type
 import unittest
 from textwrap import dedent
 
-from canonical.launchpad.components.rosettaformats.mozilla_xpi import (
+from canonical.launchpad.components.translationformats.mozilla_xpi_importer import (
     DtdFile, UnsupportedEncoding)
 
 

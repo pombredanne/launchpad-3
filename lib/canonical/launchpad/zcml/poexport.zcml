@@ -7,11 +7,11 @@
     <adapter
         for="canonical.launchpad.interfaces.IPOTemplate"
         provides="canonical.launchpad.interfaces.IPOTemplateExporter"
-        factory="canonical.launchpad.components.poexport.POTemplateExporter" />
+        factory="canonical.launchpad.components.translationformats.gettext_po_exporter.POTemplateExporter" />
 
     <adapter
         for="canonical.launchpad.interfaces.IDistroRelease"
         provides="canonical.launchpad.interfaces.IDistroReleasePOExporter"
-        factory="canonical.launchpad.components.poexport.DistroReleasePOExporter" />
+        factory="canonical.launchpad.components.translationformats.gettext_po_exporter.DistroReleasePOExporter" />
 
 </configure>

@@ -53,7 +53,7 @@ from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
-from canonical.launchpad.components.rosettaformats import *
+from canonical.launchpad.components.translationformats.translation_import import *
 
 from canonical.launchpad import _
 

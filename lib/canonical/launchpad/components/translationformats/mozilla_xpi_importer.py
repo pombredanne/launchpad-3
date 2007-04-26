@@ -19,7 +19,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.interfaces import ITranslationImport
+from canonical.launchpad.interfaces.translationformats import ITranslationImporter
 from canonical.lp.dbschema import RosettaImportStatus, RosettaFileFormat
 from canonical.launchpad.scripts import logger
 
@@ -384,7 +384,7 @@ class PropertyFile (LocalizableFile):
 
 
 class MozillaSupport:
-    implements(ITranslationImport)
+    implements(ITranslationImporter)
 
     def __init__(self, path, productseries=None, distrorelease=None,
                  sourcepackagename=None, is_published=False, content=None,
@@ -399,7 +399,7 @@ class MozillaSupport:
 
     @property
     def allentries(self):
-        """See ITranslationImport."""
+        """See ITranslationImporter."""
         if not self.basepath.lower().endswith('.xpi'):
             return None
 

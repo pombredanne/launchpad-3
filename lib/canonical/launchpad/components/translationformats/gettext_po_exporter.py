@@ -42,7 +42,7 @@ from canonical.launchpad.interfaces import (
     IPOTemplateExporter, IDistroReleasePOExporter, IPOFileOutput,
     IVPOExportSet, IVPOTExportSet, EXPORT_DATE_HEADER)
 
-from canonical.launchpad.components.poparser import POMessage, POHeader
+from canonical.launchpad.components.translationformats.gettext_po_parser import POMessage, POHeader
 
 class RosettaWriteTarFile:
     """Convenience wrapper around the tarfile module.

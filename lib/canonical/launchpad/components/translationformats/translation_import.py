@@ -11,6 +11,7 @@ import datetime
 import pytz
 from email.Utils import parseaddr
 from zope.component import getUtility
+from zope.interface import implements
 from sqlobject import SQLObjectNotFound
 
 from canonical.config import config
@@ -259,7 +260,7 @@ class TranslationImporter:
                         # There is no such pomsgset, we need to create it.
                         pomsgset = (
                             english_pofile.createMessageSetFromMessageSet(
-                                potmsgset)
+                                potmsgset))
 
                     pomsgset.sequence = count
 

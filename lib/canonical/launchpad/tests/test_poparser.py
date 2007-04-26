@@ -3,7 +3,7 @@
 import unittest
 import doctest
 import textwrap
-from canonical.launchpad.components import poparser as pofile
+from canonical.launchpad.components.translationformats import gettext_po_parser as pofile
 
 DEFAULT_HEADER = '''
 msgid ""
