@@ -82,7 +82,8 @@
 
       </div>
 
-      <div tal:replace="structure context/@@+rosetta-status-legend" />
+      <div tal:condition="view/languages"
+      	   tal:replace="structure context/@@+rosetta-status-legend" />
 
     </tal:listing>
 
