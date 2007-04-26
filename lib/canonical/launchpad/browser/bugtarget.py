@@ -44,14 +44,16 @@ from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     urlappend)
 from canonical.lp.dbschema import BugTaskStatus
-from canonical.widgets.bug import BugTagsWidget, FileBugTargetWidget
-
+from canonical.widgets.bug import BugTagsWidget
+from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 class FileBugData:
     """Extra data to be added to the bug."""
 
     def __init__(self):
         self.initial_summary = None
+        self.initial_summary = None
+        self.initial_tags = []
         self.extra_description = None
         self.comments = []
         self.attachments = []
@@ -60,6 +62,7 @@ class FileBugData:
         """Set the extra file bug data from a MIME multipart message.
 
             * The Subject header is the initial bug summary.
+            * The Tags header specifies the initial bug tags.
             * The first inline part will be added to the description.
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
@@ -67,6 +70,8 @@ class FileBugData:
         mime_msg = email.message_from_string(raw_mime_msg)
         if mime_msg.is_multipart():
             self.initial_summary = mime_msg.get('Subject')
+            tags = mime_msg.get('Tags', '')
+            self.initial_tags = tags.lower().split()
             for part in mime_msg.get_payload():
                 disposition_header = part.get('Content-Disposition', 'inline')
                 # Get the type, excluding any parameters.
@@ -122,12 +127,32 @@ class FileBugViewBase(LaunchpadFormView):
             if self.extra_data.initial_summary:
                 self.widgets['title'].setRenderedValue(
                     self.extra_data.initial_summary)
+            if self.extra_data.initial_tags:
+                self.widgets['tags'].setRenderedValue(
+                    self.extra_data.initial_tags)
             # XXX: We should include more details of what will be added
             #      to the bug report.
             #      -- Bjorn Tillenius, 2006-01-15
             self.request.response.addNotification(
                 'Extra debug information will be added to the bug report'
                 ' automatically.')
+
+    @property
+    def field_names(self):
+        """Return the list of field names to display."""
+        context = self.context
+        field_names = ['title', 'comment', 'tags', 'security_related']
+        if (IDistribution.providedBy(context) or
+            IDistributionSourcePackage.providedBy(context)):
+            field_names.append('packagename')
+        elif IMaloneApplication.providedBy(context):
+            field_names.append('bugtarget')
+        elif IProject.providedBy(context):
+            field_names.append('product')
+        elif not IProduct.providedBy(context):
+            raise AssertionError('Unknown context: %r' % context)
+
+        return field_names
 
     @property
     def initial_values(self):
@@ -204,6 +229,10 @@ class FileBugViewBase(LaunchpadFormView):
             return self.context.distribution
         else:
             return self.context
+
+    def getSecurityContext(self):
+        """Return the context used for security bugs."""
+        return self.getMainContext()
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
@@ -401,18 +430,6 @@ class FileBugAdvancedView(FileBugViewBase):
         "../templates/bugtarget-filebug-advanced.pt")
     advanced_form = True
 
-    @property
-    def field_names(self):
-        """Return the list of field names to display."""
-        context = self.context
-        field_names = ['title', 'comment', 'security_related', 'tags']
-        if (IDistribution.providedBy(context) or
-            IDistributionSourcePackage.providedBy(context)):
-            field_names.append('packagename')
-        elif not IProduct.providedBy(context):
-            raise AssertionError('Unknown context: %r' % context)
-        return field_names
-
     def showFileBugForm(self):
         return self.template()
 
@@ -434,19 +451,6 @@ class FileBugGuidedView(FileBugViewBase):
     template = _SEARCH_FOR_DUPES
 
     focused_element_id = 'field.title'
-
-    @property
-    def field_names(self):
-        """Return the list of field names to display."""
-        context = self.context
-        field_names = ['title', 'comment', 'tags']
-        if (IDistribution.providedBy(context) or
-            IDistributionSourcePackage.providedBy(context)):
-            field_names.append('packagename')
-        elif not IProduct.providedBy(context):
-            raise AssertionError('Unknown context: %r' % context)
-
-        return field_names
 
     @action("Continue", name="search", validator="validate_search")
     def search_action(self, action, data):
@@ -576,17 +580,23 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     schema = IProjectBugAddForm
     can_decide_security_contact = False
 
-    field_names = ['product', 'title', 'comment', 'tags']
+    def _getSelectedProduct(self):
+        """Return the product that's selected."""
+        assert self.widgets['product'].hasValidInput(), (
+            "This method should be called only when we know which"
+            " product the user selected.")
+        return self.widgets['product'].getInputValue()
 
     @cachedproperty
     def most_common_bugs(self):
         """Return a list of the most duplicated bugs."""
-        assert self.widgets['product'].hasValidInput(), (
-            "This method should be called only when we know which"
-            " product the user selected.")
-        selected_product = self.widgets['product'].getInputValue()
+        selected_product = self._getSelectedProduct()
         return selected_product.getMostCommonBugs(
             self.user, limit=self._MATCHING_BUGS_LIMIT)
+
+    def getSecurityContext(self):
+        """See FileBugViewBase."""
+        return self._getSelectedProduct()
 
 
 class ProjectFileBugAdvancedView(FileBugAdvancedView):
@@ -597,13 +607,11 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
     schema = IProjectBugAddForm
     can_decide_security_contact = False
 
-    field_names = ['product', 'title', 'comment', 'security_related', 'tags']
-
 
 class FrontPageFileBugGuidedView(FileBugGuidedView):
     """Browser view class for the top-level +filebug page."""
     schema = IFrontPageBugAddForm
-    custom_widget('bugtarget', FileBugTargetWidget)
+    custom_widget('bugtarget', LaunchpadTargetWidget)
 
     # Make inheriting the base class' actions work.
     actions = FileBugGuidedView.actions
@@ -611,10 +619,6 @@ class FrontPageFileBugGuidedView(FileBugGuidedView):
     @property
     def initial_values(self):
         return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
-
-    @property
-    def field_names(self):
-        return ['title', 'comment', 'bugtarget', 'tags']
 
     def contextUsesMalone(self):
         """Say context uses Malone so that the filebug form is shown!"""
@@ -629,11 +633,26 @@ class FrontPageFileBugGuidedView(FileBugGuidedView):
             errors.append(error)
         return errors
 
+    def getSecurityContext(self):
+        """See FileBugViewBase."""
+        try:
+            bugtarget = self.widgets['bugtarget'].getInputValue()
+        except InputErrors, error:
+            return None
+        if IDistributionSourcePackage.providedBy(bugtarget):
+            return bugtarget.distribution
+        else:
+            assert (
+                IProduct.providedBy(bugtarget) or
+                IDistribution.providedBy(bugtarget)), (
+                "Unknown bug target: %r" % bugtarget)
+            return bugtarget
+
 
 class FrontPageFileBugAdvancedView(FileBugAdvancedView):
     """Browser view class for the top-level +filebug-advanced page."""
     schema = IFrontPageBugAddForm
-    custom_widget('bugtarget', FileBugTargetWidget)
+    custom_widget('bugtarget', LaunchpadTargetWidget)
 
     # Make inheriting the base class' actions work.
     actions = FileBugAdvancedView.actions
@@ -642,10 +661,6 @@ class FrontPageFileBugAdvancedView(FileBugAdvancedView):
     @property
     def initial_values(self):
         return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
-
-    @property
-    def field_names(self):
-        return ['title', 'comment', 'security_related', 'bugtarget', 'tags']
 
     def contextUsesMalone(self):
         """Say context uses Malone so that the filebug form is shown!"""
