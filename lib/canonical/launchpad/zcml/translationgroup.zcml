@@ -74,7 +74,7 @@
         for="canonical.launchpad.interfaces.ITranslationGroup"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TranslationGroupReassignmentView"
-        template="../templates/object-reassignment.pt"
+        template="../templates/translationgroup-reassignment.pt"
         />
 
     <!-- TranslationGroupSet -->

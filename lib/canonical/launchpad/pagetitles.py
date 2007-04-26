@@ -1113,6 +1113,9 @@ translationgroup_appoint = ContextTitle(
 translationgroup_edit = ContextTitle(smartquote(
     'Edit "%s" translation group details'))
 
+translationgroup_reassignment = ContextTitle(smartquote(
+    'Change the owner of "%s" translation group'))
+
 translationgroups_index = 'Launchpad translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
