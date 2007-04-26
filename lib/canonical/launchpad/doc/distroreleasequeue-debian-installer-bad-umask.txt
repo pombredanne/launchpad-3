@@ -1,0 +1,82 @@
+= Debian Installer Custom Uploads With Bad umask =
+
+This test is just like distroreleasequeue-debian-installer.txt except that it
+checks to make sure that the the proper exception gets thrown if the umask is
+incorrect.  This test's setUp() forces the umask to be incorrect.
+
+Let's try one test upload and verify the results of its publication.
+In order to keep the tests simple we will upload only the
+debian-installer tarball, despite the fact that it's very unlikely to
+happen in production:
+
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
+  >>> login('foo.bar@canonical.com')
+
+  >>> from canonical.archivepublisher.nascentupload import NascentUpload
+  >>> from canonical.archivepublisher.tests import (
+  ...     datadir, getPolicy, mock_logger, mock_logger_quiet)
+
+  >>> anything_policy = getPolicy(
+  ...     name='anything', distro='ubuntutest', distrorelease=None)
+  >>> anything_policy.setDistroReleaseAndPocket('hoary-test')
+
+  >>> upload = NascentUpload(
+  ...     datadir(
+  ...       'debian-installer/debian-installer_20070214ubuntu1_i386.changes'),
+  ...     anything_policy, mock_logger_quiet)
+  >>> upload.process()
+  >>> success, msgs = upload.do_accept()
+  >>> success
+  True
+
+Upload was successfully 'processed' and 'accepted'. Two email messages
+were generated (acceptance and announcement). Inspect the queue (IDRQ)
+information we find out that it contains one custom upload.
+
+  >>> upload.queue_root.status.name
+  'ACCEPTED'
+  >>> len(msgs)
+  2
+  >>> upload.queue_root.customfiles.count()
+  1
+
+Make librarian files available for publication:
+
+  >>> import transaction
+  >>> transaction.commit()
+
+Let's force an error simulating a conflict in archive:
+
+  >>> import os
+  >>> archive_path = "/var/tmp/archive/"
+  >>> installer_path = os.path.join(
+  ...     archive_path, "ubuntutest/dists/hoary-test/main/installer-i386")
+
+  >>> os.makedirs(os.path.join(installer_path, '20070214ubuntu1'))
+
+Try to publish the custom upload, but it will be skipped due the disk
+conflict and the queue item will remain in ACCEPTED
+
+  >>> upload.queue_root.realiseUpload(mock_logger)
+  DEBUG: Publishing custom debian-installer-images_20070214ubuntu1_i386.tar.gz to ubuntutest/hoary-test
+  ERROR: Queue item ignored: installer build i386 for architecture 20070214ubuntu1 already exists
+  >>> upload.queue_root.status.name
+  'ACCEPTED'
+
+Let's remove the conflicted directory from disk and expect it to work
+next time:
+
+  >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
+
+Process (publish) the custom upload:
+
+  >>> upload.queue_root.realiseUpload(mock_logger_quiet)
+  ERROR: Queue item ignored: Bad umask; expected 002, got 022
+
+That's really as far as we need to go.
+
+Remove local archive contents:
+
+  >>> import shutil
+  >>> shutil.rmtree(archive_path)

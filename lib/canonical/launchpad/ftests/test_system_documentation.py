@@ -157,6 +157,18 @@ def distroreleasequeueTearDown(test):
     os.umask(test.old_umask)
     tearDown(test)
 
+def distroreleasequeue_badumaskSetUp(test):
+    # Force a bad umask for this test, so that we verify that the correct
+    # exception is raised.
+    setUp(test)
+    test.old_umask = os.umask(002)
+
+def distroreleasequeue_badumaskTearDown(test):
+    # Force a bad umask for this test, so that we verify that the correct
+    # exception is raised.
+    os.umask(test.old_umask)
+    tearDown(test)
+
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
     layer = kw.pop('layer')
@@ -308,6 +320,14 @@ special = {
     'distroreleasequeue-debian-installer.txt': FunctionalDocFileSuite(
             '../doc/distroreleasequeue-debian-installer.txt',
             setUp=distroreleasequeueSetUp, tearDown=distroreleasequeueTearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'distroreleasequeue-debian-installer-bad-umask.txt':
+            FunctionalDocFileSuite(
+            '../doc/distroreleasequeue-debian-installer-bad-umask.txt',
+            setUp=distroreleasequeue_badumaskSetUp,
+            tearDown=distroreleasequeue_badumaskTearDown,
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer
             ),
