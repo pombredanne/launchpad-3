@@ -38,19 +38,8 @@ def monkey_patch(mailman_path, config):
     # will get appended to Mailman's sys.path.
     import canonical
     launchpad_top = os.path.dirname(os.path.dirname(canonical.__file__))
-    # Calculate the smtpd host and port.
-    host = 'localhost'
-    port = 25
-    mo = re.match(r'(?P<host>\w+)?(?::(?P<port>\d+))', config.mailman.smtp)
-    if mo:
-        host, port = mo.group('host', 'port')
-        if host is None:
-            host = 'localhost'
-        if port is None:
-            port = 25
-        else:
-            port = int(port)
     # Write the mm_cfg.py file, filling in the dynamic values now.
+    host, port = config.mailman.smtp
     config_path = os.path.join(mailman_path, 'Mailman', 'mm_cfg.py')
     config_file = open(config_path, 'w')
     try:

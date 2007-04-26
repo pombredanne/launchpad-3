@@ -7,14 +7,11 @@ __all__ = ['start_launchpad']
 import os
 import sys
 import atexit
-import random
 import signal
-import socket
 import subprocess
 
 from canonical.config import config
 from canonical.pidfile import make_pidfile, pidfile_path
-from string import ascii_letters, digits
 from zope.app.server.main import main
 
 
@@ -24,12 +21,6 @@ TWISTD_SCRIPT = None
 
 def make_abspath(path):
     return os.path.abspath(os.path.join(ROCKETFUEL_ROOT, *path.split('/')))
-
-
-def random_characters(length=10):
-    empty_string = ''
-    chars = digits + ascii_letters
-    return empty_string.join(random.choice(chars) for c in range(length))
 
 
 class Service(object):
@@ -124,19 +115,10 @@ class MailmanService(Service):
             return
 
         # Add the directory containing the Mailman package to our sys.path.
-        if not config.mailman.build.prefix:
-            mailman_path = make_abspath('lib/mailman')
-        else:
-            mailman_path = os.path.abspath(config.mailman.build.prefix)
-
-        # We need the Mailman bin directory so we can run some of Mailman's
-        # command line scripts.
-        mailman_bin = os.path.join(mailman_path, 'bin')
-
-        if config.mailman.build.host_name:
-            hostname = config.mailman.build.host_name
-        else:
-            hostname = socket.getfqdn()
+        # We also need the Mailman bin directory so we can run some of
+        # Mailman's command line scripts.
+        mailman_path = config.mailman.build.prefix
+        mailman_bin  = os.path.join(mailman_path, 'bin')
 
         # Monkey-patch the installed Mailman 2.1 tree.
         from canonical.mailman.monkeypatches import monkey_patch
@@ -156,20 +138,15 @@ class MailmanService(Service):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         if retcode:
-            if config.mailman.build.site_list_owner:
-                addr, password = config.mailman.build.site_list_owner.split(
-                                                                    ':', 1)
-            else:
-                localpart = random_characters()
-                password  = random_characters()
-                addr = localpart + '@example.com'
+            addr, password = config.mailman.build.site_list_owner
 
             # The site list does not yet exist, so create it now.
-            retcode = subprocess.call(('./newlist', '--quiet',
-                                       '--emailhost=' + hostname,
-                                       Mailman.mm_cfg.MAILMAN_SITE_LIST,
-                                       addr, password),
-                                      cwd=mailman_bin)
+            retcode = subprocess.call(
+                ('./newlist', '--quiet',
+                 '--emailhost=' + config.mailman.build.host_name,
+                 Mailman.mm_cfg.MAILMAN_SITE_LIST,
+                 addr, password),
+                cwd=mailman_bin)
             if retcode:
                 print >> sys.stderr, 'Could not create site list'
                 sys.exit(retcode)

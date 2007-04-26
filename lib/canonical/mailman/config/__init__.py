@@ -6,7 +6,26 @@
 import os
 import grp
 import pwd
+import random
 import socket
+
+from string import ascii_letters, digits
+
+__all__ = [
+    'hostname',
+    'prefix',
+    'siteowner',
+    'usergroup',
+    ]
+
+
+EMPTY_STRING = ''
+
+
+def hostname(value):
+    if value:
+        return value
+    return socket.getfqdn()
 
 
 def prefix(value):
@@ -25,7 +44,16 @@ def usergroup(value):
     return value.split(':', 1)
 
 
-def hostname(value):
+def random_characters(length=10):
+    empty_string = ''
+    chars = digits + ascii_letters
+    return EMPTY_STRING.join(random.choice(chars) for c in range(length))
+
+
+def siteowner(value):
     if value:
-        return value
-    return socket.getfqdn()
+        return value.split(':', 1)
+    localpart = random_characters()
+    password  = random_characters()
+    addr = localpart + '@example.com'
+    return addr, password

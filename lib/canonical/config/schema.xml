@@ -906,7 +906,7 @@ k            </description>
         <key name="var_dir"         datatype="string"
              default="/var/mailman"  />
         <key name="user_group"      datatype=".usergroup"   default="" />
-        <key name="site_list_owner" datatype="string"       default="" />
+        <key name="site_list_owner" datatype=".siteowner"   default="" />
         <key name="host_name"       datatype=".hostname"    default="" />
     </sectiontype>
 
