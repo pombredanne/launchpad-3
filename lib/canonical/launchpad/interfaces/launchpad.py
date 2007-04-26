@@ -153,8 +153,6 @@ class IRosettaApplication(ILaunchpadApplication):
         'Number of languages Launchpad can translate into.')
     statsdate = Attribute('The date stats were last updated.')
     translation_groups = Attribute('ITranslationGroupSet object.')
-    translation_groups_count = Attribute(
-        'Number of translation groups in the system.')
 
     def translatable_products():
         """Return a list of the translatable products."""
