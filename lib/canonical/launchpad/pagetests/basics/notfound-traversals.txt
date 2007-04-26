@@ -422,3 +422,8 @@ Check legacy URL redirects
 >>> check_redirect("/products/ubuntu-product", status=301)
 >>> check_redirect("/people/stub", status=301)
 
+
+Check redirects of Unicode URLs works
+
+>>> check_not_found("/ubuntu/foo%C3%A9")
+
