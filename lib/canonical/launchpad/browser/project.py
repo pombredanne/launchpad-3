@@ -128,7 +128,7 @@ class ProjectSetNavigation(Navigation):
     usedfor = IProjectSet
 
     def breadcrumb(self):
-        return 'Projects'
+        return 'Project Groups'
 
     def traverse(self, name):
         # Raise a 404 on an invalid project name
@@ -161,11 +161,11 @@ class ProjectSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def register(self):
-        text = 'Register a project'
+        text = 'Register a project group'
         return Link('+new', text, icon='add')
 
     def listall(self):
-        text = 'List all projects'
+        text = 'List all project groups'
         return Link('+all', text, icon='list')
 
 
@@ -320,7 +320,7 @@ class ProjectEditView(LaunchpadEditFormView):
 
 class ProjectReviewView(ProjectEditView):
 
-    label = "Review upstream project details"
+    label = "Review upstream project group details"
     field_names = ['name', 'owner', 'active', 'reviewed']
 
 
@@ -372,7 +372,7 @@ class ProjectAddProductView(LaunchpadFormView):
 
 class ProjectSetView(object):
 
-    header = "Projects registered in Launchpad"
+    header = "Project groups registered in Launchpad"
 
     def __init__(self, context, request):
         self.context = context
@@ -415,7 +415,7 @@ class ProjectAddView(LaunchpadFormView):
     field_names = ['name', 'displayname', 'title', 'summary',
                    'description', 'homepageurl',]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
-    label = _('Register a project with Launchpad')
+    label = _('Register a project group with Launchpad')
     project = None
 
     @action(_('Add'), name='add')

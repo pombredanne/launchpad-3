@@ -781,7 +781,7 @@ productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
 
-project_add = 'Register a project with Launchpad'
+project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
 
@@ -789,11 +789,11 @@ project_branches = ContextTitle('Bazaar branches for %s')
 
 project_bugs = ContextTitle('Bugs in %s')
 
-project_edit = ContextTitle('%s project details')
+project_edit = ContextTitle('%s project group details')
 
 project_filebug_search = bugtarget_filebug_advanced
 
-project_interest = 'Rosetta: Project not translatable'
+project_interest = 'Rosetta: Project group not translatable'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
 
@@ -803,11 +803,11 @@ project_translations = ContextTitle('Translatable projects for %s')
 
 project_translators = ContextTitle('Set translation group for %s')
 
-projects_index = 'Projects registered in Launchpad'
+projects_index = 'Project groups registered in Launchpad'
 
-projects_request = 'Rosetta: Request a project'
+projects_request = 'Rosetta: Request a project group'
 
-projects_search = 'Search for projects in Launchpad'
+projects_search = 'Search for project groups in Launchpad'
 
 rdf_index = "Launchpad RDF"
 
@@ -824,7 +824,7 @@ registry_index = 'Project and group registration in Launchpad'
 
 products_all = 'Upstream projects registered in Launchpad'
 
-projects_all = 'Projects registered in Launchpad'
+projects_all = 'Project groups registered in Launchpad'
 
 registry_review = 'Review Launchpad items'
 
@@ -972,7 +972,7 @@ specification_new = 'Register a proposal as a blueprint in Launchpad'
 
 specification_unlinkbugs = 'Remove links to bug reports'
 
-specification_retargeting = 'Attach blueprint to a different project or distribution'
+specification_retargeting = 'Attach blueprint to a different project'
 
 specification_superseding = 'Mark blueprint as superseded by another'
 
