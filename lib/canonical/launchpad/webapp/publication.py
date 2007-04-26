@@ -272,6 +272,15 @@ class LaunchpadBrowserPublication(
         referrer = request.getHeader('referer') # match HTTP spec misspelling
         if not referrer:
             return
+        # XXX: 20070426 jamesh
+        # The Zope testing infrastructure sets a default (incorrect)
+        # referrer value of "localhost" or "localhost:9000" if no
+        # referrer is included in the request.  We let it pass through
+        # here for the benefits of the tests.  Web browsers send full
+        # URLs so this does not open us up to extra XSRF attacks.
+        #     https://bugs.launchpad.net/zope3/+bug/98437
+        if referrer in ['localhost', 'localhost:9000']:
+            return
         # Extract the hostname from the referrer URI
         try:
             hostname = URI(referrer).host

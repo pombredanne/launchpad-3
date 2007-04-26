@@ -49,20 +49,12 @@ Similarly, posting with a garbage referer fails:
 
 We do allow the post if there is no referrer:
 
-XXX 20070420 jamesh
-The test below is disabled, because zope.app.testing.functional.HTTPCaller
-sets $HTTP_REFERER to 'localhost' as a default if no 'Referer' header
-is present.  This causes an OffsiteFormPostError (since 'localhost' is
-not a URL), rather than letting the post complete as it would in real
-life.
-    https://bugs.launchpad.net/zope3/+bug/98437
-
-  xxx browser = setupBrowserWithReferrer(None)
-  xxx browser.open('http://launchpad.dev/people/+newteam')
-  xxx browser.getControl('Name', index=0).value = 'team3'
-  xxx browser.getControl('Display Name').value = 'Team 3'
-  xxx browser.getControl('Add').click()
-  xxx print browser.url
+  >>> browser = setupBrowserWithReferrer(None)
+  >>> browser.open('http://launchpad.dev/people/+newteam')
+  >>> browser.getControl('Name', index=0).value = 'team3'
+  >>> browser.getControl('Display Name').value = 'Team 3'
+  >>> browser.getControl('Add').click()
+  >>> print browser.url
   http://launchpad.dev/~team3
 
 
