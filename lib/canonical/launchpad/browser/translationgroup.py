@@ -6,11 +6,9 @@ __metaclass__ = type
 __all__ = [
     'TranslationGroupAddTranslatorView',
     'TranslationGroupAddView',
-    'TranslationGroupContextMenu',
     'TranslationGroupEditView',
     'TranslationGroupNavigation',
     'TranslationGroupReassignmentView',
-    'TranslationGroupSetContextMenu',
     'TranslationGroupSetNavigation',
     'TranslationGroupView',
     ]
@@ -21,15 +19,14 @@ from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.component import getUtility
 
-from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ITranslator, ITranslatorSet,
-    ILanguageSet, IPersonSet, ILaunchBag, NotFoundError
+    NotFoundError
     )
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, GetitemNavigation,
-    LaunchpadEditFormView, LaunchpadFormView, Link
+    action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView
     )
 
 
@@ -41,24 +38,6 @@ class TranslationGroupNavigation(GetitemNavigation):
 class TranslationGroupSetNavigation(GetitemNavigation):
 
     usedfor = ITranslationGroupSet
-
-
-class TranslationGroupSetContextMenu(RosettaContextMenu):
-    usedfor = ITranslationGroupSet
-
-
-class TranslationGroupContextMenu(RosettaContextMenu):
-    usedfor = ITranslationGroup
-    links = RosettaContextMenu.links + ['appoint', 'reassign']
-
-    @enabled_with_permission('launchpad.Edit')
-    def appoint(self):
-        return Link('+appoint', "Appoint translator")
-
-    @enabled_with_permission('launchpad.Edit')
-    def reassign(self):
-        return Link('+reassign', "Change owner")
-
 
 
 class TranslationGroupView:
