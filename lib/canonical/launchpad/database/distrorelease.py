@@ -92,6 +92,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
     releasestatus = EnumCol(notNull=True, schema=DistributionReleaseStatus)
+    date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
@@ -110,8 +111,6 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
 
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'distrorelease',
-                            orderBy=['dateexpected', 'name'])
     architectures = SQLMultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')
@@ -123,6 +122,18 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     sections = SQLRelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
+
+    @property
+    def all_milestones(self):
+        """See IDistroRelease."""
+        return Milestone.selectBy(
+            distrorelease=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IDistroRelease."""
+        return Milestone.selectBy(
+            distrorelease=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
     def drivers(self):
@@ -544,8 +555,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
             spn in result]
 
-    def getPublishedReleases(self, sourcepackage_or_name, pocket=None,
-                             include_pending=False, exclude_pocket=None):
+    def getPublishedReleases(self, sourcepackage_or_name, version=None,
+            pocket=None, include_pending=False, exclude_pocket=None):
         """See IDistroRelease."""
         # XXX cprov 20060213: we need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
@@ -569,6 +580,9 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
+
+        if version is not None:
+            queries.append("version=%s" % sqlvalues(version))
 
         if exclude_pocket is not None:
             queries.append("pocket!=%s" % sqlvalues(exclude_pocket.value))
@@ -708,11 +722,11 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             arch_ids, status, name, pocket)
 
     def createUploadedSourcePackageRelease(
-        self, sourcepackagename, version, maintainer, dateuploaded,
-        builddepends, builddependsindep, architecturehintlist, component,
-        creator, urgency, changelog, dsc, dscsigningkey, section, manifest,
+        self, sourcepackagename, version, maintainer, builddepends,
+        builddependsindep, architecturehintlist, component, creator,
+        urgency, changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries):
+        dsc_binaries, dateuploaded=DEFAULT):
         """See IDistroRelease."""
         return SourcePackageRelease(
             uploaddistrorelease=self, sourcepackagename=sourcepackagename,
@@ -905,7 +919,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         return distro_sprs
 
-    def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
+    def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
+                         signing_key=None):
         """See IDistroRelease."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
@@ -919,10 +934,11 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         changes_file = file_alias_set.create(changesfilename,
             len(changesfilecontent), StringIO(changesfilecontent),
             'text/plain')
-        return DistroReleaseQueue(distrorelease=self,
-                                  status=DistroReleaseQueueStatus.NEW,
-                                  pocket=pocket,
-                                  changesfile=changes_file)
+
+        return DistroReleaseQueue(
+            distrorelease=self, status=DistroReleaseQueueStatus.NEW,
+            pocket=pocket, changesfile=changes_file,
+            signing_key=signing_key)
 
     def getPackageUploadQueue(self, state):
         """See IDistroRelease."""

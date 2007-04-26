@@ -34,8 +34,8 @@ spider -- StuartBishop 20050822
 ...         return "%s returned status %s instead of 404\n\n%s" % (
 ...             invalid_url, invalid_rc, str(invalid_output))
 
->>> def check_not_found(url):
-...     output = http("GET %s HTTP/1.1\n" % url)
+>>> def check_not_found(url, host='launchpad.dev'):
+...     output = http("GET %s HTTP/1.1\nHost: %s" % (url, host))
 ...     status = output.getStatus()
 ...     if status != 404:
 ...         return "%s returned status %s instead of 404\n\n%s" % (
@@ -65,6 +65,13 @@ spider -- StuartBishop 20050822
 
 >>> check("/translations/+about")
 
+>>> check("/+languages", host='translations.launchpad.dev')
+>>> check("/+languages/+add", auth=True, host='translations.launchpad.dev')
+>>> check("/+languages/es", host='translations.launchpad.dev')
+>>> check("/+languages/es/+admin", auth=True, host='translations.launchpad.dev')
+>>> check_not_found("/+languages/es/foos", host='translations.launchpad.dev')
+>>> check_not_found("/+languages/foos", host='translations.launchpad.dev')
+
 >>> check("robots.txt", host="shipit.ubuntu.dev")
 
 >>> check("/bounties")
@@ -75,17 +82,19 @@ spider -- StuartBishop 20050822
 >>> check("/codeofconduct/1.0/+sign", auth=True)
 >>> check("/codeofconduct/1.0/+download")
 
->>> check("/projects")
->>> check("/projects/+all")
->>> check("/projects/+review", auth=True)
+>>> check("/projectgroups", auth=True)
+>>> check("/projectgroups/+all", auth=True)
+>>> check("/projectgroups/+review", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")
+>>> check("/mozilla/+translations")
 
->>> check("/products")
->>> check("/products/+all")
+>>> check_redirect("/products", status=301)
+>>> check("/projects")
+>>> check("/projects/+all")
 >>> check("/firefox")
->>> check_not_found("/firefox/+series")
+>>> check("/firefox/+series")
 >>> check("/firefox/1.0")
 >>> check("/firefox/1.0/+addpackage", auth=True)
 >>> check("/firefox/1.0/+ubuntupkg", auth=True)
@@ -93,10 +102,13 @@ spider -- StuartBishop 20050822
 >>> check("/firefox/1.0/+edit", auth=True)
 >>> check("/firefox/1.0/+specs")
 >>> check("/firefox/1.0/+addrelease", auth=True)
+>>> check("/firefox/1.0/+translations")
 >>> check("/firefox/+rdf")
 >>> check("/firefox/1.0/+rdf")
 >>> check("/firefox/+bugs")
 >>> check("/firefox/+cve")
+>>> check("/firefox/+translations")
+>>> check_redirect("/projects/firefox", status=301)
 
 >>> check_not_found("/firefox/+milestone")
 >>> check("/firefox/+milestone/1.0")
@@ -110,6 +122,7 @@ spider -- StuartBishop 20050822
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")
 >>> check("/ubuntu/+roadmap")
+>>> check("/ubuntu/+translations")
 >>> check("/ubuntu/+edit", auth=True)
 >>> check("/ubuntu/+reassign", auth=True)
 >>> check("/ubuntu/+selectmemberteam", auth=True)
@@ -123,6 +136,7 @@ spider -- StuartBishop 20050822
 >>> check_redirect("/ubuntu/+source/evolution/+editbugcontact")
 
 >>> check("/ubuntu/hoary/+cve")
+>>> check("/ubuntu/hoary/+translations")
 >>> check("/ubuntu/hoary/+source/pmount")
 >>> check("/ubuntu/hoary/+source/libstdc++")
 >>> check("/ubuntu/hoary/+package/pmount")
@@ -146,9 +160,11 @@ Test the DARBPR page for a REMOVED package:
 >>> check_not_found("/ubuntu/+source/evolution/+translations")
 
 >>> check("/ubuntu/hoary/+source/evolution/+changelog")
->>> check("/ubuntu/hoary/+source/evolution/+packaging", auth=True)
+>>> check("/ubuntu/hoary/+source/evolution/+packaging")
+>>> check("/ubuntu/hoary/+source/evolution/+edit-packaging", auth=True)
 >>> check("/ubuntu/hoary/+source/evolution/+gethelp")
 >>> check("/ubuntu/hoary/+source/evolution/+translate")
+>>> check("/ubuntu/hoary/+source/evolution/+translations")
 >>> check_redirect("/ubuntu/hoary/+source/mozilla-firefox/+pots")
 >>> check("/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
 ...       auth=True)
@@ -176,9 +192,6 @@ Test the DARBPR page for a REMOVED package:
 
 >>> check("/ubuntu/hoary/i386")
 >>> check("/ubuntu/hoary/i386/+search")
-
-# FIXME: disable while HCT transitions to bzr. See bug #4117. -- RobertCollins.
-#>>> check("/ubuntu/hoary/+source/evolution/+hctstatus")
 
 >>> check("/bugs")
 >>> check_redirect("/bugs/assigned")
@@ -306,6 +319,11 @@ or distrosourcepackage filebug page.
 >>> check_redirect(
 ...     "/ubuntu/warty/+source/mozilla-firefox/+filebug", auth=True)
 
+Approving/declining a bug nomination.
+
+>>> check("/firefox/+bug/1/nominations/2/+editstatus", auth=True)
+
+
 Test /people traversals.
 
 >>> check("/people/")
@@ -344,7 +362,6 @@ And this is for a person:
 >>> check_redirect("/~name12/+branch/gnome-terminal/pushed/+edit", auth=True, status=301)
 >>> check("/~name12/gnome-terminal/pushed/")
 >>> check("/~name12/gnome-terminal/pushed/+edit", auth=True)
->>> check_redirect("/~name16/+bugs")
 >>> check_not_found("/~name16/+bugs/1")
 >>> check("/~name16/+reportedbugs")
 >>> check("/~name16/+assignedbugs")
@@ -378,7 +395,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/+builds/+build/7/")
 >>> check("/+builds/+build/7/pmount/")
 
->>> check("/support/")
+>>> check_redirect("/support/", status=301)
 
 >>> check("/sprints")
 >>> check("/sprints/ubz")
@@ -393,6 +410,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 
 >>> check_not_found("/@@/launchpad_brokenlink.png")
 >>> check_not_found("//@@/launchpad_brokenlink.png")
+>>> check_not_found("/@@popup-window")
 
 >>> check_not_found("/sourcepackagenames")
 >>> check_not_found("/binarypackagenames")
@@ -402,6 +420,5 @@ Check legacy URL redirects
 
 >>> check_redirect("/distros/ubuntu", status=301)
 >>> check_redirect("/products/ubuntu-product", status=301)
->>> check_redirect("/projects/ubuntu-project", status=301)
 >>> check_redirect("/people/stub", status=301)
 

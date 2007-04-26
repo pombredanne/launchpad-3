@@ -21,11 +21,11 @@ from zope.schema import (
     Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
+from canonical.launchpad.fields import (
+    ContentNameField, Title, DuplicateBug, Tag)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
-from canonical.launchpad.interfaces.validation import non_duplicate_bug
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -133,8 +133,7 @@ class IBug(IMessageTarget):
         including the steps required to reproduce it."""))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
-    duplicateof = BugField(
-        title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
+    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
         description=_("Make this bug visible only to its subscribers"),
@@ -151,11 +150,8 @@ class IBug(IMessageTarget):
         "The message that was specified when creating the bug")
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
         'ubuntu, then other distroreleases.')
-    pillar_bugtasks = Attribute(
-        'The bugtasks which relate only to "pillars", products or '
-        'distributions, the major structural objects in Launchpad. '
-        'This leaves out the tasks relating to more detailed release '
-        'related things like distroreleases and product series.')
+    affected_pillars = Attribute(
+        'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
@@ -212,7 +208,7 @@ class IBug(IMessageTarget):
         """
 
     def getIndirectSubscribers():
-        """A list of IPersons that are indirectly subscribed to this bug.
+        """Return IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the
         BugSubscription table. This includes bug contacts, subscribers from
@@ -220,21 +216,25 @@ class IBug(IMessageTarget):
         """
 
     def getAlsoNotifiedSubscribers():
-        """A list of IPersons in the "Also notified" subscriber list.
+        """Return IPersons in the "Also notified" subscriber list.
 
         This includes bug contacts and assignees, but not subscribers
         from duplicates.
         """
 
     def getSubscribersFromDuplicates():
-        """A list of IPersons subscribed from dupes of this bug."""
+        """Return IPersons subscribed from dupes of this bug.
+        """
 
-    def notificationRecipientAddresses():
-        """Return the list of email addresses that recieve notifications.
+    def getBugNotificationRecipients(duplicateof=None):
+        """Return a complete INotificationRecipientSet instance.
 
-        If this bug is a duplicate of another bug, the CC'd list of
-        the dup target will be appended to the list of recipient
-        addresses.
+        The INotificationRecipientSet instance will contain details of
+        all recipients for bug notifications sent by this bug; this
+        includes email addresses and textual and header-ready
+        rationales. See
+        canonical.launchpad.interfaces.BugNotificationRecipients for
+        details of this implementation.
         """
 
     def addChangeNotification(text, person):
@@ -285,11 +285,19 @@ class IBug(IMessageTarget):
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
 
+    def getNullBugTask(product=None, productseries=None,
+                    sourcepackagename=None, distribution=None,
+                    distrorelease=None):
+        """Create an INullBugTask and return it for the given parameters."""
+
     def addNomination(owner, target):
         """Nominate a bug for an IDistroRelease or IProductSeries.
 
         :owner: An IPerson.
         :target: An IDistroRelease or IProductSeries.
+
+        The nomination will be automatically approved, if the user has
+        permission to approve it.
 
         This method creates and returns a BugNomination. (See
         canonical.launchpad.database.bugnomination.BugNomination.)
@@ -325,6 +333,12 @@ class IBug(IMessageTarget):
         """Return the BugWatch that has the given bugtracker and remote bug.
 
         Return None if this bug doesn't have such a bug watch.
+        """
+
+    def getBugTask(target):
+        """Return the bugtask with the specified target.
+
+        Return None if no such bugtask is found.
         """
 
 

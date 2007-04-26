@@ -182,13 +182,13 @@ class Build(SQLBase):
                                    architecturespecific):
         """See IBuild."""
         return BinaryPackageRelease(build=self,
-                                    binarypackagenameID=binarypackagename,
+                                    binarypackagename=binarypackagename,
                                     version=version,
                                     summary=summary,
                                     description=description,
                                     binpackageformat=binpackageformat,
-                                    componentID=component,
-                                    sectionID=section,
+                                    component=component,
+                                    section=section,
                                     priority=priority,
                                     shlibdeps=shlibdeps,
                                     depends=depends,
@@ -274,6 +274,8 @@ class Build(SQLBase):
             'builder_url': builder_url,
             'build_title': self.title,
             'build_url': canonical_url(self),
+            'source_url': canonical_url(
+                              self.distributionsourcepackagerelease),
             }
         message = template % replacements
 

@@ -2,8 +2,15 @@
 
 __metaclass__ = type
 
-__all__ = ['TeamEditView', 'TeamEmailView', 'TeamAddView', 'TeamMembersView',
-           'TeamMemberAddView', 'ProposedTeamMembersEditView']
+__all__ = [
+    'ProposedTeamMembersEditView',
+    'TeamAddView',
+    'TeamBrandingView',
+    'TeamEditView',
+    'TeamEmailView',
+    'TeamMemberAddView',
+    'TeamMembersView',
+    ]
 
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -13,26 +20,23 @@ from zope.component import getUtility
 from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
 
+from canonical.launchpad import _
 from canonical.launchpad.validators.email import valid_email
-from canonical.widgets.image import (
-    GotchiTiedWithHeadingWidget, ImageChangeWidget)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadEditFormView)
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet,
-    ITeam, ITeamMembershipSet)
+    ITeam, ITeamMember, ITeamMembershipSet)
 
 
 class TeamEditView(LaunchpadEditFormView):
 
     schema = ITeam
     field_names = [
-        'name', 'displayname', 'teamdescription', 'gotchi', 'emblem',
+        'name', 'displayname', 'teamdescription',
         'defaultmembershipperiod', 'defaultrenewalperiod',
         'subscriptionpolicy']
-    custom_widget(
-        'gotchi', GotchiTiedWithHeadingWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('emblem', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     @action('Save', name='save')
     def action_save(self, action, data):
@@ -232,49 +236,48 @@ class ProposedTeamMembersEditView:
         self.request.response.redirect('%s/+members' % canonical_url(team))
 
 
-class TeamMemberAddView(AddView):
+class TeamBrandingView(BrandingChangeView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-        self.alreadyMember = None
-        self.addedMember = None
-        added = self.request.get('added')
-        notadded = self.request.get('notadded')
-        if added:
-            self.addedMember = getUtility(IPersonSet).get(added)
-        elif notadded:
-            self.alreadyMember = getUtility(IPersonSet).get(notadded)
-        AddView.__init__(self, context, request)
+    schema = ITeam
+    field_names = ['icon', 'logo', 'mugshot']
 
-    def nextURL(self):
-        if self.addedMember:
-            return '+addmember?added=%d' % self.addedMember.id
-        elif self.alreadyMember:
-            return '+addmember?notadded=%d' % self.alreadyMember.id
-        else:
-            return '+addmember'
 
-    def createAndAdd(self, data):
-        team = self.context
-        approved = TeamMembershipStatus.APPROVED
+class TeamMemberAddView(LaunchpadFormView):
 
+    schema = ITeamMember
+    label = "Select the new member"
+
+    def validate(self, data):
+        """Verify new member.
+
+        This checks that the new member has some active members and is not
+        already an active team member.
+        """
+        newmember = data.get('newmember')
+        error = None
+        if newmember is not None:
+            if newmember.isTeam() and not newmember.activemembers:
+                error = _("You can't add a team that doesn't have any active"
+                          " members.")
+            elif newmember in self.context.activemembers:
+                error = _("%s (%s) is already a member of %s." % (
+                    newmember.browsername, newmember.name,
+                    self.context.browsername))
+
+        if error:
+            self.setFieldError("newmember", error)
+
+    @action(u"Add Member", name="add")
+    def add_action(self, action, data):
+        """Add the new member to the team."""
         newmember = data['newmember']
         # If we get to this point with the member being the team itself,
         # it means the ValidTeamMemberVocabulary is broken.
-        assert newmember != team, newmember
+        assert newmember != self.context, (
+            "Can't add team to itself: %s" % newmember)
 
-        if newmember in team.activemembers:
-            self.alreadyMember = newmember
-            return
-
-        expires = team.defaultexpirationdate
-        if newmember.hasMembershipEntryFor(team):
-            team.setMembershipData(
-                newmember, approved, reviewer=self.user, expires=expires)
-        else:
-            team.addMember(newmember, reviewer=self.user, status=approved)
-
-        self.addedMember = newmember
-
+        self.context.addMember(newmember, reviewer=self.user,
+                               status=TeamMembershipStatus.APPROVED)
+        self.request.response.addInfoNotification(
+            "%s (%s) was added as a member of %s." % (
+            newmember.browsername, newmember.name, self.context.browsername))

@@ -12,7 +12,7 @@ details about the team.
     ...Celso Providelo...
     <h2>Recently applied</h2>
     ...Warty Security Team...
-    <h2>Contact details</h2>
+    <h2>Team and membership summary</h2>
     ...
     <h2>Subteam of</h2>
     ...is a member of these teams:
@@ -52,3 +52,14 @@ will even show the path from the user to the team.
     ...Warty Security Team...&rarr;
     ...Ubuntu Gnome Team...
     ...
+
+
+It is also possible to view the set of mugshots of the people in the team.
+
+    >>> browser = Browser()
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+mugshots')
+    >>> print find_main_content(browser.contents)
+    <...
+    <h1>Who's in this team?</h1>
+    ...
+

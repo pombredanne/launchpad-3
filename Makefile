@@ -3,6 +3,7 @@
 
 PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
+IPYTHON=$(PYTHON) $(shell which ipython)
 PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
 
 TESTFLAGS=-p -v
@@ -11,6 +12,7 @@ TESTOPTS=
 SHHH=${PYTHON} utilities/shhh.py
 STARTSCRIPT=runlaunchpad.py
 Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
+TWISTEDPATH=$(shell pwd)/sourcecode/twisted
 HERE:=$(shell pwd)
 
 LPCONFIG=default
@@ -32,8 +34,8 @@ check_launchpad_on_merge: build dbfreeze_check check importdcheck hctcheck
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 dbfreeze_check:
-	[ ! -f database-frozen.txt \
-	    -o `PYTHONPATH= bzr status | grep database/schema/ | wc -l` -eq 0 ]
+	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
+	    grep database/schema/ | grep -v pending | wc -l` -eq 0 ]
 
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]
@@ -78,7 +80,7 @@ check: build
 	${PYTHON} -t ./test_on_merge.py -vv
 
 lint:
-	@sh ./utilities/lint.sh
+	@bash ./utilities/lint.sh
 
 #lintmerge:
 #	@# Thank Stuart, not me!
@@ -123,8 +125,14 @@ ftest_inplace: inplace
 
 run: inplace stop bzr_version_info
 	rm -f thread*.request
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -t $(STARTSCRIPT) -r librarian -C $(CONFFILE)
+
+run_all: inplace stop bzr_version_info
+	rm -f thread*.request
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp \
+		 -C $(CONFFILE)
 
 bzr_version_info:
 	rm -f bzr-version-info.py bzr-version-info.pyc
@@ -148,10 +156,10 @@ stop: build
 	    utilities/killservice.py librarian buildsequencer launchpad
 
 harness:
-	PYTHONPATH=lib python -i lib/canonical/database/harness.py
+	PYTHONPATH=lib $(PYTHON) -i lib/canonical/database/harness.py
 
 iharness:
-	PYTHONPATH=lib ipython -i lib/canonical/database/harness.py
+	PYTHONPATH=lib $(IPYTHON) -i lib/canonical/database/harness.py
 
 rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database

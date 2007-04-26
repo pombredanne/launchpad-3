@@ -80,17 +80,6 @@ class BazaarApplicationView:
     def stopped_count(self):
         return self.seriesset.importcount(ImportStatus.STOPPED.value)
 
-    def hct_count(self):
-        branches = self.seriesset.search(forimport=True,
-            importstatus=ImportStatus.SYNCING.value)
-        count = 0
-        for branch in branches:
-            for package in branch.sourcepackages:
-                if package.shouldimport:
-                    count += 1
-                    continue
-        return count
-
     @cachedproperty
     def recently_changed_branches(self):
         """Return the five most recently changed branches."""
@@ -122,8 +111,9 @@ class ProductInfo:
     
     decorates(IProduct, 'product')
 
-    def __init__(self, product, branch_size, elapsed):
+    def __init__(self, product, num_branches, branch_size, elapsed):
         self.product = product
+        self.num_branches = num_branches
         self.branch_size = branch_size
         self.elapsed_since_commit = elapsed
 
@@ -145,6 +135,22 @@ class ProductInfo:
     def html_class(self):
         return "%s %s" % (self.branch_class, self.time_class)
 
+    @property
+    def html_title(self):
+        if self.num_branches == 1:
+            size = "1 branch"
+        else:
+            size = "%d branches" % self.num_branches
+        if self.elapsed_since_commit is None:
+            commit = "no commits yet"
+        elif self.elapsed_since_commit.days == 0:
+            commit = "last commit less than a day old"
+        elif self.elapsed_since_commit.days == 1:
+            commit = "last commit one day old"
+        else:
+            commit = "last commit %d days old" % self.elapsed_since_commit.days
+        return "%s, %s" % (size, commit)
+
 
 class BazaarProductView:
     """Browser class for products gettable with Bazaar."""
@@ -163,7 +169,8 @@ class BazaarProductView:
                              1500, hardlimit=2000)
         
         branchset = getUtility(IBranchSet)
-        branch_summaries = branchset.getBranchSummaryForProducts(products)
+        branch_summaries = branchset.getActiveUserBranchSummaryForProducts(
+            products)
         # Choose appropriate branch counts so we have an evenish distribution.
         counts = sorted([
             summary['branch_count'] for summary in branch_summaries.values()])
@@ -175,7 +182,13 @@ class BazaarProductView:
         items = []
         now = datetime.today()
         for product in products:
-            summary = branch_summaries[product]
+            summary = branch_summaries.get(product)
+            if not summary:
+                # If the only branches for the product were import branches
+                # or merged or abandoned branches, then there will not be
+                # a summary returned for that product, and we are not interested
+                # in showing them in our cloud.
+                continue
             last_commit = summary['last_commit']
             if last_commit is None:
                 elapsed = None
@@ -190,7 +203,8 @@ class BazaarProductView:
             else:
                 branch_size = 'medium'
             
-            items.append(ProductInfo(product, branch_size, elapsed))
+            items.append(ProductInfo(
+                product, num_branches, branch_size, elapsed))
 
         return items
     

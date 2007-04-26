@@ -37,7 +37,7 @@ class BugNominationView(LaunchpadFormView):
 
     def __init__(self, context, request):
         self.current_bugtask = context
-        LaunchpadFormView.__init__(self, IBug(context), request)
+        LaunchpadFormView.__init__(self, context, request)
 
     def initialize(self):
         if INullBugTask.providedBy(self.current_bugtask):
@@ -53,9 +53,9 @@ class BugNominationView(LaunchpadFormView):
         The label returned depends on the user's privileges.
         """
         if self.userIsReleaseManager():
-            return "Target bug #%d to releases" % self.context.id
+            return "Target bug #%d to releases" % self.context.bug.id
         else:
-            return "Nominate bug #%d for releases" % self.context.id
+            return "Nominate bug #%d for releases" % self.context.bug.id
 
     def userIsReleaseManager(self):
         """Does the current user have release management privileges?"""
@@ -89,13 +89,12 @@ class BugNominationView(LaunchpadFormView):
         approved_nominations = []
 
         for release in releases:
-            nomination = self.context.addNomination(
+            nomination = self.context.bug.addNomination(
                 target=release, owner=self.user)
 
-            # If the user has the permission to approve or decline the
-            # nomination, then approve the nomination right now.
-            if check_permission("launchpad.Driver", nomination):
-                nomination.approve(self.user)
+            # If the user has the permission to approve the nomination,
+            # then nomination was approved automatically.
+            if nomination.isApproved():
                 approved_nominations.append(nomination.target.bugtargetname)
             else:
                 nominated_releases.append(release.bugtargetname)
@@ -169,12 +168,15 @@ class BugNominationTableRowView(LaunchpadView):
 class BugNominationEditView(LaunchpadView):
     """Browser view class for approving and declining nominations."""
 
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        self.current_bugtask = getUtility(ILaunchBag).bugtask
+
     def getFormAction(self):
         """Get the string used as the form action."""
-        current_bugtask = getUtility(ILaunchBag).bugtask
         return (
             "%s/nominations/%d/+edit-form" % (
-                canonical_url(current_bugtask), self.context.id))
+                canonical_url(self.current_bugtask), self.context.id))
 
     def processNominationDecision(self):
         """Process the decision, Approve or Decline, made on this nomination."""

@@ -2,14 +2,15 @@
 
 __metaclass__ = type
 __all__ = [
-    'POMsgSetIndexView',
-    'POMsgSetView',
-    'POMsgSetPageView',
-    'POMsgSetFacets',
-    'POMsgSetAppMenus',
-    'POMsgSetSuggestions',
-    'POMsgSetZoomedView',
     'BaseTranslationView',
+    'POMsgSetAppMenus',
+    'POMsgSetFacets',
+    'POMsgSetIndexView',
+    'POMsgSetPageView',
+    'POMsgSetSOP',
+    'POMsgSetSuggestions',
+    'POMsgSetView',
+    'POMsgSetZoomedView',
     ]
 
 import cgi
@@ -33,16 +34,16 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.potemplate import (
+    POTemplateFacets, POTemplateSOP)
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
     ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
     IPOSubmissionSet, TranslationConflict)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
-    canonical_url)
+    ApplicationMenu, Link, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
-
 
 #
 # Translation-related formatting functions
@@ -275,43 +276,23 @@ class CustomDropdownWidget(DropdownWidget):
 #
 # Standard UI classes
 #
-
-class POMsgSetFacets(StandardLaunchpadFacets):
-    # XXX 20061004 mpt: A POMsgSet is not a structural object. It should
-    # inherit all navigation from its product or distro release.
-
+class POMsgSetFacets(POTemplateFacets):
     usedfor = IPOMsgSet
-    defaultlink = 'translations'
-    enable_only = ['overview', 'translations']
 
-    def _parent_url(self):
-        """Return the URL of the thing the PO template of this PO file is
-        attached to.
-        """
-        potemplate = self.context.pofile.potemplate
-        if potemplate.distrorelease:
-            source_package = potemplate.distrorelease.getSourcePackage(
-                potemplate.sourcepackagename)
-            return canonical_url(source_package)
-        else:
-            return canonical_url(potemplate.productseries)
+    def __init__(self, context):
+        POTemplateFacets.__init__(self, context.pofile.potemplate)
 
-    def overview(self):
-        target = self._parent_url()
-        text = 'Overview'
-        return Link(target, text)
 
-    def translations(self):
-        target = '+translate'
-        text = 'Translations'
-        return Link(target, text)
+class POMsgSetSOP(POTemplateSOP):
+
+    def __init__(self, context):
+        POTemplateSOP.__init__(self, context.pofile.potemplate)
 
 
 class POMsgSetAppMenus(ApplicationMenu):
     usedfor = IPOMsgSet
     facet = 'translations'
-    links = ['overview', 'translate', 'switchlanguages',
-             'upload', 'download', 'viewtemplate']
+    links = ['overview', 'translate', 'upload', 'download']
 
     def overview(self):
         text = 'Overview'
@@ -321,10 +302,6 @@ class POMsgSetAppMenus(ApplicationMenu):
         text = 'Translate many'
         return Link('../+translate', text, icon='languages')
 
-    def switchlanguages(self):
-        text = 'Switch languages'
-        return Link('../../', text, icon='languages')
-
     def upload(self):
         text = 'Upload a file'
         return Link('../+upload', text, icon='edit')
@@ -332,10 +309,6 @@ class POMsgSetAppMenus(ApplicationMenu):
     def download(self):
         text = 'Download'
         return Link('../+export', text, icon='download')
-
-    def viewtemplate(self):
-        text = 'View template'
-        return Link('../../', text, icon='languages')
 
 #
 # Views
@@ -825,7 +798,6 @@ class POMsgSetPageView(BaseTranslationView):
     """A view for the page that renders a single translation.
 
     See BaseTranslationView for details on how this works."""
-    __used_for__ = IPOMsgSet
 
     def initialize(self):
         self.pofile = self.context.pofile
@@ -873,7 +845,6 @@ class POMsgSetView(LaunchpadView):
     in which case, we would have up to 100 instances of this class using the
     same information at self.form.
     """
-    __used_for__ = IPOMsgSet
 
     # Instead of registering in ZCML, we indicate the template here and
     # avoid the adapter lookup when constructing these subviews.
@@ -975,7 +946,7 @@ class POMsgSetView(LaunchpadView):
                              count_lines(translation) > 1 or
                              count_lines(self.msgid) > 1 or
                              count_lines(self.msgid_plural) > 1)
-            self.translation_dictionaries.append({
+            translation_entry = {
                 'plural_index': index,
                 'active_translation': text_to_html(
                     active, self.context.potmsgset.flags()),
@@ -984,7 +955,18 @@ class POMsgSetView(LaunchpadView):
                 'suggestion_block': self.suggestion_blocks[index],
                 'store_flag': index in self.plural_indices_to_store,
                 'is_multi_line': is_multi_line
-                })
+                }
+
+            if self.message_must_be_hidden:
+                # We must hide the translation because it may have private
+                # info that we don't want to show to anoymous users.
+                translation_entry['active_translation'] = u'''
+                    To prevent privacy issues, this translation is not
+                    available to anonymous users,<br />
+                    if you want to see it, please, <a href="+login">log in</a>
+                    first.'''
+
+            self.translation_dictionaries.append(translation_entry)
 
     def _buildAllSuggestions(self, index):
         """Builds all suggestions for a certain plural form index.
@@ -1024,6 +1006,15 @@ class POMsgSetView(LaunchpadView):
                 pruners_merged = pruners_merged.union(pruner)
             return dict((k, v) for (k, v) in main.iteritems()
                         if k not in pruners_merged)
+
+        if self.message_must_be_hidden:
+            # We must hide all suggestions because it may have private
+            # info that we don't want to show to anoymous users.
+            non_editor = self._buildSuggestions(None, [])
+            elsewhere = self._buildSuggestions(None, [])
+            wiki = self._buildSuggestions(None, [])
+            alt_lang_suggestions = self._buildSuggestions(None, [])
+            return non_editor, elsewhere, wiki, alt_lang_suggestions
 
         wiki = self.context.getWikiSubmissions(index)
         wiki_translations = build_dict(wiki)
@@ -1114,6 +1105,21 @@ class POMsgSetView(LaunchpadView):
     def is_plural(self):
         """Return whether there are plural forms."""
         return len(self.msgids) > 1
+
+    @cachedproperty
+    def message_must_be_hidden(self):
+        """Whether the message must be hidden.
+
+        Messages are always shown to logged-in users.
+
+        Messages that are likely to contain email addresses
+        are shown only to logged-in users, and not to anonymous users.
+        """
+        if self.user is not None:
+            # Always show messages to logged-in users.
+            return False
+        # For anonymous users, check the msgid.
+        return self.context.potmsgset.hide_translations_from_anonymous
 
     @cachedproperty
     def sequence(self):

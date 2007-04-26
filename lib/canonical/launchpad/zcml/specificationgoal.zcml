@@ -12,7 +12,7 @@
     permission="zope.Public">
     <browser:page
       name="+specs"
-      template="../templates/specificationgoal-specs.pt" />
+      template="../templates/hasspecifications-specs.pt" />
   </browser:pages>
 
   <browser:page

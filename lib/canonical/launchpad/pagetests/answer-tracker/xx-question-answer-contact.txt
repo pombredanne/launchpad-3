@@ -9,7 +9,7 @@ portlet which is available on the 'Answers' facet of the product or
 distro.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
     >>> portlet = soup.first('div', id='portlet-answer-contacts')
@@ -21,9 +21,9 @@ distro.
     </p>
 
 Anybody can become an answer contact. To register as an answer contact,
-the user clicks on the 'Answer Contact' link:
+the user clicks on the 'Set answer Contact' link:
 
-    >>> browser.getLink('Answer contact').click()
+    >>> browser.getLink('Set answer contact').click()
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.first('h1')
     <h1>Manage answer contacts</h1>
@@ -71,10 +71,10 @@ new answer contacts appear in the 'Answer Contacts' portlet:
     </ul>
 
 To remove oneself from the answer contacts, the user uses the same
-'Answer Contact' link and uncheck himself or the team he want to remove
+'Set answer contact' link and uncheck himself or the team he want to remove
 from the answer contact list.
 
-    >>> browser.getLink('Answer contact').click()
+    >>> browser.getLink('Set answer contact').click()
     >>> browser.getControl(
     ...     "I want to be an answer contact for Ubuntu").selected
     True
@@ -99,7 +99,7 @@ listed in the 'Also notified' list in the 'Subscribers' portlet on a
 question.
 
     >>> browser.open(
-    ...     'http://launchpad.dev/ubuntu/+ticket/7')
+    ...     'http://launchpad.dev/ubuntu/+question/7')
     >>> soup = BeautifulSoup(browser.contents)
     >>> portlet = soup.first('div', id='question-subscribers')
     >>> also_notified = portlet.first('b')

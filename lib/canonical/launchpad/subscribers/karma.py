@@ -4,7 +4,7 @@
 application."""
 
 from canonical.launchpad.interfaces import IDistroBugTask, IDistroReleaseBugTask
-from canonical.launchpad.mailnotification import get_bug_delta, get_task_delta
+from canonical.launchpad.mailnotification import get_bug_delta
 from canonical.lp.dbschema import BugTaskStatus, QuestionAction
 
 
@@ -84,7 +84,7 @@ def extref_added(extref, event):
 def bugtask_modified(bugtask, event):
     """Check changes made to <bugtask> and assign karma to user if needed."""
     user = event.user
-    task_delta = get_task_delta(event.object_before_modification, event.object)
+    task_delta = event.object.getDelta(event.object_before_modification)
 
     assert task_delta is not None
 
@@ -141,14 +141,14 @@ def _assignKarmaUsingQuestionContext(person, question, actionname):
     Use the given question's context as the karma context.
     """
     person.assignKarma(
-        actionname, product=question.product, 
+        actionname, product=question.product,
 	distribution=question.distribution,
         sourcepackagename=question.sourcepackagename)
 
 
 def question_created(question, event):
     """Assign karma to the user which created <question>."""
-    _assignKarmaUsingQuestionContext(question.owner, question, 'ticketcreated')
+    _assignKarmaUsingQuestionContext(question.owner, question, 'questionasked')
 
 
 def question_modified(question, event):
@@ -158,22 +158,22 @@ def question_modified(question, event):
 
     if old_question.description != question.description:
         _assignKarmaUsingQuestionContext(
-            user, question, 'ticketdescriptionchanged')
+            user, question, 'questiondescriptionchanged')
 
     if old_question.title != question.title:
-        _assignKarmaUsingQuestionContext(user, question, 'tickettitlechanged')
+        _assignKarmaUsingQuestionContext(user, question, 'questiontitlechanged')
 
 
 QuestionAction2KarmaAction = {
-    QuestionAction.REQUESTINFO: 'ticketrequestedinfo',
-    QuestionAction.GIVEINFO: 'ticketgaveinfo',
+    QuestionAction.REQUESTINFO: 'questionrequestedinfo',
+    QuestionAction.GIVEINFO: 'questiongaveinfo',
     QuestionAction.SETSTATUS: None,
-    QuestionAction.COMMENT: 'ticketcommentadded',
-    QuestionAction.ANSWER: 'ticketgaveanswer',
+    QuestionAction.COMMENT: 'questioncommentadded',
+    QuestionAction.ANSWER: 'questiongaveanswer',
     QuestionAction.CONFIRM: None, # Handled in giveAnswer() and confirmAnswer()
     QuestionAction.EXPIRE: None,
-    QuestionAction.REJECT: 'ticketrejected',
-    QuestionAction.REOPEN: 'ticketreopened',
+    QuestionAction.REJECT: 'questionrejected',
+    QuestionAction.REOPEN: 'questionreopened',
 }
 
 
@@ -189,5 +189,5 @@ def question_comment_added(questionmessage, event):
 def question_bug_added(questionbug, event):
     """Assign karma to the user which added <questionbug>."""
     question = questionbug.question
-    _assignKarmaUsingQuestionContext(event.user, question, 'ticketlinkedtobug')
+    _assignKarmaUsingQuestionContext(event.user, question, 'questionlinkedtobug')
 

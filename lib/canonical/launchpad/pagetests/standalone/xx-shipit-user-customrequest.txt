@@ -75,7 +75,9 @@ The quantities specified by the user must be positive integers.
   ...field.ubuntu_quantityx86...
   ...Quantities must be greater than or equal 0...
 
-  >>> browser.getControl(name='field.ubuntu_quantityx86').value = '15'
+  >>> from canonical.launchpad.interfaces import ShipItConstants
+  >>> browser.getControl(name='field.ubuntu_quantityx86').value = str(
+  ...     ShipItConstants.max_size_for_auto_approval)
   >>> browser.getControl('Request CDs').click()
   >>> browser.url
   'http://shipit.ubuntu.dev/specialrequest'
@@ -89,18 +91,18 @@ The quantities specified by the user must be positive integers.
 All custom requests with less than $max_size_for_auto_approval CDs are
 automatically approved.
 
-  >>> from canonical.launchpad.interfaces import ShipItConstants
   >>> max_cds = ShipItConstants.max_size_for_auto_approval
   >>> max_cds
-  15
+  39
 
   >>> from canonical.launchpad.database import Person
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
   >>> login(ANONYMOUS)
-  >>> Person.byName('name16').currentShipItRequest().isApproved()
+  >>> current_request = Person.byName('name16').currentShipItRequest()
+  >>> current_request.isApproved()
   True
-  >>> Person.byName('name16').currentShipItRequest().getTotalApprovedCDs()
-  15
+  >>> current_request.getTotalApprovedCDs() == max_cds
+  True
   >>> logout()
 
 But custom requests with more than $max_size_for_auto_approval CDs have to
@@ -227,7 +229,7 @@ marked as pending approval.
   'http://shipit.ubuntu.dev/specialrequest'
 
   >>> browser.getControl(name='field.ubuntu_quantityx86').value = '10'
-  >>> browser.getControl(name='field.ubuntu_quantityppc').value = '1'
+  >>> browser.getControl(name='field.ubuntu_quantityamd64').value = '1'
   >>> browser.getControl(name='field.reason').value = 'foo'
   >>> browser.getControl('Request More CDs').click()
 
@@ -250,7 +252,7 @@ because he already has a shipped request containing Ubuntu CDs.
 The architectures of the CDs we ship depend on the flavour (Ubuntu, Kubuntu
 and Edubuntu).
 
-For Ubuntu, we ship all three architectures (X86, AMD64, PPC)
+For Ubuntu, we ship both X86 and AMD64 CDs.
 
   >>> browser.open('http://shipit.ubuntu.dev/specialrequest')
   >>> browser.url
@@ -261,9 +263,12 @@ For Ubuntu, we ship all three architectures (X86, AMD64, PPC)
   >>> browser.getControl(name='field.ubuntu_quantityamd64')
   <Control name='field.ubuntu_quantityamd64' type='text'>
   >>> browser.getControl(name='field.ubuntu_quantityppc')
-  <Control name='field.ubuntu_quantityppc' type='text'>
+  Traceback (most recent call last):
+  ...
+  LookupError: name 'field.ubuntu_quantityppc'
 
-For Kubuntu, we ship only X86 and AMD64.
+
+For Kubuntu we also ship X86 and AMD64.
 
   >>> browser.open('http://shipit.kubuntu.dev/specialrequest')
   >>> browser.url
@@ -277,6 +282,7 @@ For Kubuntu, we ship only X86 and AMD64.
   Traceback (most recent call last):
   ...
   LookupError: name 'field.ubuntu_quantityppc'
+
 
 And for Edubuntu, we ship only X86.
 
@@ -294,3 +300,4 @@ And for Edubuntu, we ship only X86.
   Traceback (most recent call last):
   ...
   LookupError: name 'field.ubuntu_quantityppc'
+
