@@ -63,6 +63,12 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://launchpad.dev/
     althosts:
     ----
+
+
+The hostnames and alternative hostnames for all virtual hosts are
+collected into a set.  This provides a quick way to determine if a
+hostname is handled by this Launchpad instance:
+
     >>> for hostname in sorted(allvhosts.hostnames):
     ...     print hostname
     answers.launchpad.dev
