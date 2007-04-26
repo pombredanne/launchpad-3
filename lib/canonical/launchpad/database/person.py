@@ -1214,7 +1214,8 @@ class Person(SQLBase, HasSpecificationsMixin):
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
             AND Person.emblem IS NOT NULL
-            """ % sqlvalues(self.id),
+            AND TeamParticipation.team != %s
+            """ % sqlvalues(self.id, self.id),
             clauseTables=['TeamParticipation'],
             orderBy=Person.sortingColumns)
 
