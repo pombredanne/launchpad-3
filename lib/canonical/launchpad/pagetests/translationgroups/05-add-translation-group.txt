@@ -82,12 +82,12 @@ The Rosetta administrator assigns ownership of the group to Sample Person.
 
   >>> browser.getLink('Reassign').click()
   >>> browser.url
-  'http://translations.launchpad.dev/translations/groups/monolingua/+reassign'
+  'http://translations.launchpad.dev/+translation-groups/monolingua/+reassign'
 
   >>> browser.getControl(name='field.owner').value = 'name12'
   >>> browser.getControl('Change Registrant').click()
   >>> browser.url
-  'http://translations.launchpad.dev/translations/groups/monolingua/'
+  'http://translations.launchpad.dev/+translation-groups/monolingua/'
 
 The Rosetta administrator is still able to administer this group:
 
