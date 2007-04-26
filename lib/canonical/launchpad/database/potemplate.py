@@ -1,7 +1,11 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['POTemplateSubset', 'POTemplateSet', 'POTemplate']
+__all__ = [
+    'POTemplateSubset',
+    'POTemplateSet',
+    'POTemplate',
+    ]
 
 import datetime
 import os.path
@@ -23,15 +27,13 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.enumcol import EnumCol
 
-import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateSubset, IPOTemplateExporter,
     ITranslationImporter, ILaunchpadCelebrities, LanguageNotFound,
     TranslationConstants, NotFoundError)
 from canonical.launchpad.mail import simple_sendmail
-
-from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.mailnotification import MailWrapper
 
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -45,7 +47,7 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import translation_import
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
-from canonical.launchpad.webapp import canonical_url
+
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
  Copyright %(copyright)s %(year)s
@@ -580,7 +582,8 @@ class POTemplate(SQLBase, RosettaStats):
                 'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
                 'elapsedtime': entry_to_import.getElapsedTimeText(),
                 'file_link': entry_to_import.content.http_url,
-                'import_title': self.displayname
+                'import_title':
+                    'translation templates for %s' % self.displayname
                 }
 
             # We got an error that prevented us to import the template, we
@@ -591,11 +594,13 @@ class POTemplate(SQLBase, RosettaStats):
             template = helpers.get_email_template(template_mail)
             message = template % replacements
 
-            fromaddress = 'Rosetta SWAT Team <%s>' % (
-                config.rosetta.rosettaadmin.email)
+            fromaddress = config.rosetta.rosettaadmin.email
             toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
-            simple_sendmail(fromaddress, toaddress, subject, message)
+            simple_sendmail(fromaddress,
+                toaddress,
+                subject,
+                MailWrapper().format(message))
 
             entry_to_import.status = RosettaImportStatus.FAILED
 

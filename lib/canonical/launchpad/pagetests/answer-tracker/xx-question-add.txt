@@ -124,6 +124,9 @@ redirect the user to the question page.
     >>> user_browser.title
     'mozilla-firefox in ubuntu question #...Visiting a web page...'
     >>> soup = BeautifulSoup(user_browser.contents)
+    >>> heading = soup.first('div', {'class': 'pageheading'})
+    >>> heading.findChild(name='div')
+    <div...Question #..., asked...by...No Privileges Person...
     >>> soup.first('div', 'report')
     <div class="report"><p>I use Ubuntu on AMD64 ...</div>
 

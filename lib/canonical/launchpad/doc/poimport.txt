@@ -364,7 +364,7 @@ Now, is time to check the notification email.
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ..., you uploaded 5
-    Welsh (cy) translations for firefox in Mozilla Firefox trunk in Rosetta.
+    Welsh (cy) translations for firefox in Mozilla Firefox trunk in Launchpad.
     <BLANKLINE>
     There were problems with 1 of these translations.
     <BLANKLINE>

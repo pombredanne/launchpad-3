@@ -66,8 +66,36 @@ A Rosetta administrator is also allowed to create groups.
   >>> browser.getControl('Summary').value = "Since each of us only speaks one language, we work out software translations through drawings and hand signals."
   >>> browser.getControl('Add').click()
   >>> browser.url
-  '.../monolingua'
+  'http://translations.launchpad.dev/translations/groups/monolingua'
 
   >>> browser.title
   '...Single-language Translators...'
+
+By default, when a group is created, the creator is its owner.
+
+  >>> for t in find_tags_by_class(browser.contents, 'link'):
+  ...     print t.renderContents()
+  Jordi Mallach
+
+The Rosetta administrator assigns ownership of the group to Sample Person.
+
+  >>> browser.getLink('Reassign').click()
+  >>> browser.url
+  'http://translations.launchpad.dev/translations/groups/monolingua/+reassign'
+
+  >>> browser.getControl(name='field.owner').value = 'name12'
+  >>> browser.getControl('Change Registrant').click()
+  >>> browser.url
+  'http://translations.launchpad.dev/translations/groups/monolingua/'
+
+The Rosetta administrator is still able to administer this group:
+
+  >>> browser.getLink('Appoint')
+  <...+appoint'>
+
+But Sample Person is now listed as its owner:
+
+  >>> for t in find_tags_by_class(browser.contents, 'link'):
+  ...     print t.renderContents()
+  Sample Person
 

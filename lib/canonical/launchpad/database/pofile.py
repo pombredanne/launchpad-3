@@ -38,6 +38,7 @@ from canonical.lp.dbschema import (
 import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.interfaces import (
     IPersonSet, IPOFileSet, IPOFile, IPOTemplateExporter,
     ILibraryFileAliasSet, ILaunchpadCelebrities, IPOFileTranslator,
@@ -734,11 +735,14 @@ class POFile(SQLBase, RosettaStats):
         template = helpers.get_email_template(template_mail)
         message = template % replacements
 
-        fromaddress = ('Rosetta SWAT Team <%s>' %
-                       config.rosetta.rosettaadmin.email)
+        fromaddress = config.rosetta.rosettaadmin.email
+
         toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
-        simple_sendmail(fromaddress, toaddress, subject, message)
+        simple_sendmail(fromaddress,
+            toaddress,
+            subject,
+            MailWrapper().format(message))
 
         if import_rejected:
             # There were no imports at all and the user needs to review that

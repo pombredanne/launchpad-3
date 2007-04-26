@@ -62,6 +62,34 @@
     <metal:row use-macro="context/@@launchpad_form/widget_row" />
   </metal:description>
 
+  <tr tal:define="security_context view/getSecurityContext">
+    <td colspan="2" width="100%"
+        tal:define="widget nocall: view/widgets/security_related">
+      <input type="checkbox" tal:replace="structure widget" />
+      <label tal:attributes="for widget/name">
+        This bug is a security vulnerability
+      </label>
+      <div tal:condition="view/can_decide_security_contact"
+           tal:define="security_contact security_context/security_contact|nothing">
+        <i tal:condition="security_contact">
+          The security contact for
+          <span tal:content="security_context/displayname" />,
+          <a tal:replace="structure security_contact/fmt:link" />,
+          will be notified.
+        </i>
+        <i tal:condition="not:security_contact"
+           tal:define="maintainer security_context/owner">
+          The maintainer of
+          <span tal:content="security_context/displayname">Mozilla Firefox</span>,
+          <a href="" tal:attributes="href maintainer/fmt:url"
+                     tal:content="maintainer/displayname">Sample Person</a>,
+          will be notified.
+        </i>
+      </div>
+
+    </td>
+  </tr>
+
 </metal:basic_filebug_widgets>
 
 
