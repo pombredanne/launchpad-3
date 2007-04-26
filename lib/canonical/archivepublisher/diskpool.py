@@ -23,7 +23,7 @@ def poolify(source, component):
 
 def unpoolify(self, path):
     """Take a path and unpoolify it.
-    
+
     Return a tuple of component, source, filename
     """
     p = path.split("/")
@@ -90,7 +90,7 @@ class _diskpool_atomicfile:
         assert not os.path.exists(targetfilename)
 
         self.targetfilename = targetfilename
-        fd, name = tempfile.mkstemp(prefix=".temp-download.", dir=rootpath)
+        fd, name = tempfile.mkstemp(prefix="temp-download.", dir=rootpath)
         self.fd = os.fdopen(fd, mode)
         self.tempname = name
         self.write = self.fd.write
@@ -110,9 +110,17 @@ class DiskPoolEntry:
     Creating a DiskPoolEntry performs disk reads, so don't create an
     instance of this class unless you need to know what's already on
     the disk for this file.
+
+    'tempath' must be in the same filesystem than 'rootpath', it will be
+    used to store the instalation candidade while it is being downloaded
+    from Librarian.
+
+    Remaining files in the 'temppath' indicated instalation failures and
+    require manual removal after further investigation.
     """
-    def __init__(self, rootpath, source, filename, logger):
+    def __init__(self, rootpath, temppath, source, filename, logger):
         self.rootpath = rootpath
+        self.temppath = temppath
         self.source = source
         self.filename = filename
         self.logger = logger
@@ -132,7 +140,7 @@ class DiskPoolEntry:
 
     def debug(self, *args, **kwargs):
         self.logger.debug(*args, **kwargs)
-        
+
     def pathFor(self, component):
         """Return the path for this file in the given component."""
         return os.path.join(self.rootpath,
@@ -159,7 +167,7 @@ class DiskPoolEntry:
         for component in HARDCODED_COMPONENT_ORDER:
             if component in components:
                 return component
-        
+
     @cachedproperty
     def file_hash(self):
         """Return the SHA1 sum of this file."""
@@ -200,7 +208,7 @@ class DiskPoolEntry:
                    (component, self.source, self.filename))
 
         file_to_write = _diskpool_atomicfile(
-            targetpath, "wb", rootpath=self.rootpath)
+            targetpath, "wb", rootpath=self.temppath)
         contents.open()
         copy_and_close(contents, file_to_write)
         self.file_component = component
@@ -287,7 +295,7 @@ class DiskPoolEntry:
         # Okay, so first up, we unlink the targetcomponent symlink.
         targetpath = self.pathFor(targetcomponent)
         os.remove(targetpath)
-        
+
         # Now we rename the source file into the target component.
         sourcepath = self.pathFor(self.file_component)
 
@@ -312,7 +320,7 @@ class DiskPoolEntry:
         self.symlink_components.add(self.file_component)
         self.symlink_components.remove(targetcomponent)
         self.file_component = targetcomponent
-        
+
         # Now we make the symlinks on the filesystem.
         for comp in self.symlink_components:
             newpath = self.pathFor(comp)
@@ -334,7 +342,6 @@ class DiskPoolEntry:
         component because partial mirrors may only take a subset of
         components, and these partial mirrors must not have broken
         symlinks where they should have working files.
-        
         """
         component = self.preferredComponent()
         if not self.file_component == component:
@@ -342,19 +349,31 @@ class DiskPoolEntry:
 
 
 class DiskPool:
-    """Scan a pool on the filesystem and record information about it."""
+    """Scan a pool on the filesystem and record information about it.
+
+    Its contructor receives 'rootpath', which is the pool path where the
+    files will be installed, and the 'temppath', which is a temporary
+    directory used to store the instalation candidate from librarian.
+
+    'rootpath' and 'temppath' must be in the same filesystem, see
+    DiskPoolEntry for further information.
+    """
     results = FileAddActionEnum
-    
-    def __init__(self, rootpath, logger):
+
+    def __init__(self, rootpath, temppath, logger):
         self.rootpath = rootpath
         if not rootpath.endswith("/"):
             self.rootpath += "/"
+
+        self.temppath = temppath
+
         self.entries = {}
         self.logger = logger
 
     def _getEntry(self, sourcename, file):
         """Return a new DiskPoolEntry for the given sourcename and file."""
-        return DiskPoolEntry(self.rootpath, sourcename, file, self.logger)
+        return DiskPoolEntry(
+            self.rootpath, self.temppath, sourcename, file, self.logger)
 
     def pathFor(self, comp, source, file=None):
         """Return the path for the given pool folder or file.
@@ -392,7 +411,7 @@ class DiskPool:
         component, the checksum of the file on disk will be calculated and
         compared with the checksum provided. If they fail to match,
         PoolFileOverwriteError will be raised.
-        
+
         - If the file already exists but not in this component, and the
         checksum test above passes, a symlink will be added, and
         results.SYMLINK_ADDED will be returned. Also, the symlinks will be
@@ -405,7 +424,7 @@ class DiskPool:
         """
         entry = self._getEntry(sourcename, filename)
         return entry.addFile(component, sha1, contents)
-        
+
     def removeFile(self, component, sourcename, filename):
         """Remove the specified file from the pool.
 

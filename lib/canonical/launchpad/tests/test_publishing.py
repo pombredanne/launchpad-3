@@ -53,8 +53,9 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         self.config = Config(self.ubuntutest)
         self.config.setupArchiveDirs()
         self.pool_dir = self.config.poolroot
+        self.temp_dir = self.config.temproot
         self.logger = FakeLogger()
-        self.disk_pool = DiskPool(self.pool_dir, self.logger)
+        self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def addMockFile(self, filename, filecontent='nothing'):
         """Add a mock file in Librarian.
