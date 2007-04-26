@@ -2,14 +2,15 @@
 
 __metaclass__ = type
 __all__ = [
-    'POMsgSetIndexView',
-    'POMsgSetView',
-    'POMsgSetPageView',
-    'POMsgSetFacets',
-    'POMsgSetAppMenus',
-    'POMsgSetSuggestions',
-    'POMsgSetZoomedView',
     'BaseTranslationView',
+    'POMsgSetAppMenus',
+    'POMsgSetFacets',
+    'POMsgSetIndexView',
+    'POMsgSetPageView',
+    'POMsgSetSOP',
+    'POMsgSetSuggestions',
+    'POMsgSetView',
+    'POMsgSetZoomedView',
     ]
 
 import cgi
@@ -33,16 +34,16 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.potemplate import (
+    POTemplateFacets, POTemplateSOP)
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
     ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
     IPOSubmissionSet, TranslationConflict)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
-    canonical_url)
+    ApplicationMenu, Link, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
-
 
 #
 # Translation-related formatting functions
@@ -275,43 +276,23 @@ class CustomDropdownWidget(DropdownWidget):
 #
 # Standard UI classes
 #
-
-class POMsgSetFacets(StandardLaunchpadFacets):
-    # XXX 20061004 mpt: A POMsgSet is not a structural object. It should
-    # inherit all navigation from its product or distro release.
-
+class POMsgSetFacets(POTemplateFacets):
     usedfor = IPOMsgSet
-    defaultlink = 'translations'
-    enable_only = ['overview', 'translations']
 
-    def _parent_url(self):
-        """Return the URL of the thing the PO template of this PO file is
-        attached to.
-        """
-        potemplate = self.context.pofile.potemplate
-        if potemplate.distrorelease:
-            source_package = potemplate.distrorelease.getSourcePackage(
-                potemplate.sourcepackagename)
-            return canonical_url(source_package)
-        else:
-            return canonical_url(potemplate.productseries)
+    def __init__(self, context):
+        POTemplateFacets.__init__(self, context.pofile.potemplate)
 
-    def overview(self):
-        target = self._parent_url()
-        text = 'Overview'
-        return Link(target, text)
 
-    def translations(self):
-        target = '+translate'
-        text = 'Translations'
-        return Link(target, text)
+class POMsgSetSOP(POTemplateSOP):
+
+    def __init__(self, context):
+        POTemplateSOP.__init__(self, context.pofile.potemplate)
 
 
 class POMsgSetAppMenus(ApplicationMenu):
     usedfor = IPOMsgSet
     facet = 'translations'
-    links = ['overview', 'translate', 'switchlanguages',
-             'upload', 'download', 'viewtemplate']
+    links = ['overview', 'translate', 'upload', 'download']
 
     def overview(self):
         text = 'Overview'
@@ -321,10 +302,6 @@ class POMsgSetAppMenus(ApplicationMenu):
         text = 'Translate many'
         return Link('../+translate', text, icon='languages')
 
-    def switchlanguages(self):
-        text = 'Switch languages'
-        return Link('../../', text, icon='languages')
-
     def upload(self):
         text = 'Upload a file'
         return Link('../+upload', text, icon='edit')
@@ -332,10 +309,6 @@ class POMsgSetAppMenus(ApplicationMenu):
     def download(self):
         text = 'Download'
         return Link('../+export', text, icon='download')
-
-    def viewtemplate(self):
-        text = 'View template'
-        return Link('../../', text, icon='languages')
 
 #
 # Views

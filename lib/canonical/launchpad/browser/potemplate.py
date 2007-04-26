@@ -5,10 +5,20 @@
 __metaclass__ = type
 
 __all__ = [
-    'POTemplateSubsetView', 'POTemplateView', 'POTemplateViewPreferred',
-    'POTemplateEditView', 'POTemplateAdminView', 'POTemplateExportView', 
-    'POTemplateSubsetURL', 'POTemplateURL', 'POTemplateSetNavigation',
-    'POTemplateSubsetNavigation', 'POTemplateNavigation'
+    'BaseExportView',
+    'POTemplateAdminView',
+    'POTemplateEditView',
+    'POTemplateFacets',
+    'POTemplateExportView',
+    'POTemplateNavigation',
+    'POTemplateSetNavigation',
+    'POTemplateSOP',
+    'POTemplateSubsetNavigation',
+    'POTemplateSubsetURL',
+    'POTemplateSubsetView',
+    'POTemplateURL',
+    'POTemplateView',
+    'POTemplateViewPreferred',
     ]
 
 import operator
@@ -17,17 +27,22 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 
+from canonical.launchpad import _
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, 
-    IPOTemplateSubset, ITranslationImportQueue)
-from canonical.launchpad.browser.pofile import (
-    POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
+from canonical.launchpad.browser.productseries import (
+    ProductSeriesSOP, ProductSeriesFacets)
+from canonical.launchpad.browser.sourcepackage import (
+    SourcePackageSOP, SourcePackageFacets)
+from canonical.launchpad.interfaces import (
+    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOExportRequestSet,
+    IPOTemplateSubset, ITranslationImportQueue, IProductSeries, ISourcePackage)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
-    GetitemNavigation, Navigation, LaunchpadView)
+    GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.lp.dbschema import RosettaFileFormat
 
 
 class POTemplateNavigation(Navigation):
@@ -61,40 +76,111 @@ class POTemplateNavigation(Navigation):
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
-    # XXX 20061004 mpt: A POTemplate is not a structural object. It should
-    # inherit all navigation from its product or distro release.
-
     usedfor = IPOTemplate
 
-    defaultlink = 'translations'
-
-    enable_only = ['overview', 'translations']
-
-    def _parent_url(self):
-        """Return the URL of the thing this PO template is attached to."""
-
-        if self.context.distrorelease:
-            source_package = self.context.distrorelease.getSourcePackage(
-                self.context.sourcepackagename)
-            return canonical_url(source_package)
+    def __init__(self, context):
+        StandardLaunchpadFacets.__init__(self, context)
+        target = context.translationtarget
+        if IProductSeries.providedBy(target):
+            self.target_facets = ProductSeriesFacets(target)
+        elif ISourcePackage.providedBy(target):
+            self.target_facets = SourcePackageFacets(target)
         else:
-            return canonical_url(self.context.productseries)
+            # We don't know yet how to handle this target.
+            raise NotImplementedError
+
+        # Enable only the menus that the translation target uses.
+        self.enable_only = self.target_facets.enable_only
+
+        # From an IPOTemplate URL, we reach its translationtarget (either
+        # ISourcePackage or IProductSeries using self.target.
+        self.target = '../../'
 
     def overview(self):
-        target = self._parent_url()
-        text = 'Overview'
-        return Link(target, text)
+        overview_link = self.target_facets.overview()
+        overview_link.target = self.target
+        return overview_link
 
     def translations(self):
-        target = ''
-        text = 'Translations'
-        return Link(target, text)
+        translations_link = self.target_facets.translations()
+        translations_link.target = self.target
+        return translations_link
+
+    def bugs(self):
+        bugs_link = self.target_facets.bugs()
+        bugs_link.target = self.target
+        return bugs_link
+
+    def answers(self):
+        answers_link = self.target_facets.answers()
+        answers_link.target = self.target
+        return answers_link
+
+    def specifications(self):
+        specifications_link = self.target_facets.specifications()
+        specifications_link.target = self.target
+        return specifications_link
+
+    def bounties(self):
+        bounties_link = self.target_facets.bounties()
+        bounties_link.target = self.target
+        return bounties_link
+
+    def calendar(self):
+        calendar_link = self.target_facets.calendar()
+        calendar_link.target = self.target
+        return calendar_link
+
+    def branches(self):
+        branches_link = self.target_facets.branches()
+        branches_link.target = self.target
+        return branches_link
 
 
-class POTemplateAppMenus(POFileAppMenus):
+class POTemplateSOP(StructuralObjectPresentation):
+
+    def __init__(self, context):
+        StructuralObjectPresentation.__init__(self, context)
+        target = context.translationtarget
+        if IProductSeries.providedBy(target):
+            self.target_sop = ProductSeriesSOP(target)
+        elif ISourcePackage.providedBy(target):
+            self.target_sop = SourcePackageSOP(target)
+        else:
+            # We don't know yet how to handle this target.
+            raise NotImplementedError
+
+    def getIntroHeading(self):
+        return self.target_sop.getIntroHeading()
+
+    def getMainHeading(self):
+        return self.target_sop.getMainHeading()
+
+    def listChildren(self, num):
+        return self.target_sop.listChildren(num)
+
+    def countChildren(self):
+        return self.parent.countChildren()
+
+    def listAltChildren(self, num):
+        return self.parent.listAltChildren(num)
+
+    def countAltChildren(self):
+        return self.parent.countAltChildren()
+
+
+class POTemplateAppMenus(ApplicationMenu):
     usedfor = IPOTemplate
+    facet = 'translations'
+    links = ['status', 'upload', 'download', 'edit', 'administer']
 
-    links = ['overview', 'upload', 'download', 'edit', 'administer']
+    def status(self):
+        text = 'Show translation status'
+        return Link('', text)
+
+    def upload(self):
+        text = 'Upload a file'
+        return Link('+upload', text, icon='edit')
 
     def download(self):
         text = 'Download translations'
@@ -159,6 +245,10 @@ class POTemplateView(LaunchpadView):
         Where the template has no POFile for that language, we use
         a DummyPOFile.
         """
+        # This inline import is needed to workaround a circular import problem
+        # because canonical.launchpad.browser.pofile imports
+        # canonical.launchpad.browser.potemplate.POTemplateSOP
+        from canonical.launchpad.browser.pofile import POFileView
 
         languages = self.request_languages
         if not preferred_only:
@@ -313,6 +403,54 @@ class POTemplateAdminView(POTemplateEditView):
         # We need this because when potemplate name changes, canonical_url
         # for it changes as well.
         self.request.response.redirect(canonical_url(self.context))
+
+
+class BaseExportView(LaunchpadView):
+    """Base class for PO export views."""
+
+    def initialize(self):
+        self.request_set = getUtility(IPOExportRequestSet)
+        self.processForm()
+
+    def processForm(self):
+        """Override in subclass."""
+        raise NotImplementedError
+
+    def nextURL(self):
+        self.request.response.addInfoNotification(_(
+            "Your request has been received. Expect to receive an email "
+            "shortly."))
+        self.request.response.redirect(canonical_url(self.context))
+
+    def validateFileFormat(self, format_name):
+        try:
+            return RosettaFileFormat.items[format_name]
+        except KeyError:
+            self.request.response.addErrorNotification(_(
+                'Please select a valid format for download.'))
+            return
+
+    def formats(self):
+        """Return a list of formats available for translation exports."""
+
+        class BrowserFormat:
+            def __init__(self, title, value):
+                self.title = title
+                self.value = value
+                self.is_default = False
+                if value == RosettaFileFormat.PO.name:
+                    # Right now, PO format is the default format with exports.
+                    # Once we add more formats support, the default will
+                    # depend on the kind of resource.
+                    self.is_default = True
+
+        formats = [
+            RosettaFileFormat.PO,
+            RosettaFileFormat.MO,
+        ]
+
+        for format in formats:
+            yield BrowserFormat(format.title, format.name)
 
 
 class POTemplateExportView(BaseExportView):
