@@ -348,9 +348,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IQuestionTarget."""
         if person not in self.answer_contacts:
             return False
-        answer_contact_entry = AnswerContact.selectOneBy(
+        answer_contact = AnswerContact.selectOneBy(
             product=self, person=person)
-        answer_contact_entry.destroySelf()
+        answer_contact.destroySelf()
         return True
 
     @property
