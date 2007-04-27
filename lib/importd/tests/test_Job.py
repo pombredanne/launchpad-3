@@ -13,6 +13,7 @@ from canonical.lp.dbschema import ImportStatus
 from importd import JobStrategy
 from importd.Job import Job, CopyJob
 from importd.tests import testutil, helpers
+import importd.util
 
 
 class JobCreationTestCase(unittest.TestCase):
@@ -132,14 +133,13 @@ class TestGetJob(helpers.ZopelessTestCase):
 
     def testGetBuilders(self):
         '''get a builders list from the db'''
-        import importd.util
-        jobs = importd.util.jobsFromDB("slave_home",
-                                       "archive_mirror_dir",
-                                       autotest = False)
-        self.assertEqual(len(jobs), 1)
         importd_path = '/dummy/path/to/importd/package'
         push_prefix = '/dummy/prefix/to/push/branches/'
         source_repo = '/dummy/prefix/to/source/repo'
+        jobs = importd.util.jobsFromDB(
+            "slave_home", "archive_mirror_dir",
+            autotest=False, push_prefix=push_prefix)
+        self.assertEqual(len(jobs), 1)
         builders = importd.util.jobsBuilders(
             jobs, ["slavename"],
             importd_path=importd_path,
