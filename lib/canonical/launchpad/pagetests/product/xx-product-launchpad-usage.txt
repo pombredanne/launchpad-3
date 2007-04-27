@@ -1,7 +1,7 @@
 = Distribution Launchpad usage =
 
 The launchpad usage flags (whether the product uses Bugs, Answers or
-Rosetta officially) are controlled by the +launchpad page. 
+Translations officially) are controlled by the +launchpad page. 
 
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print anon_browser.title
@@ -43,7 +43,7 @@ so let's use Sample Person, the registrant of Firefox..
 Firefox is currently marked as using Bugs. Let's specify that it
 doesn't use any bug tracker at all.
 
-    >>> registrant_browser.getControl('Uses Rosetta Officially').selected
+    >>> registrant_browser.getControl('Uses Translations Officially').selected
     False
     >>> registrant_browser.getControl('Uses Answers Officially').selected
     True
