@@ -162,8 +162,8 @@ def jobsFromSeries(jobseries, slave_home, archive_mirror_dir, push_prefix):
         job.push_prefix = push_prefix
         # Record the canonical url of the series now, althought it is only
         # needed for oops reporting, so we can record BuildFailure OOPSes even
-        # without database access. To use canonical_url we need a to have run
-        # execute_zcml_for_scripts. Which is done in getTxnManager.
+        # without database access. To use canonical_url we need to have run
+        # execute_zcml_for_scripts, which is done in getTxnManager.
         job.series_url = canonical_url(series)
         yield job
 
