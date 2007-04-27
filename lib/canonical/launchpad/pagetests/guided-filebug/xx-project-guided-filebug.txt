@@ -9,7 +9,7 @@ it's still possible to file a bug from a project's main page.
     'http://launchpad.dev/gnome/+filebug'
 
 The Project filebug page is like a Product's filebug page, except that
-it also asks for a Product. Only Products that are using Malone are
+it also asks for a Product. Only Products that are using Bugs are
 shown in the list of options.
 
     >>> user_browser.getControl('Product').options

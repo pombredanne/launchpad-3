@@ -28,7 +28,8 @@ product.
     >>> user_browser.getControl('Product').value = 'thunderbird'
     >>> user_browser.getControl('Continue').click()
 
-Since Thunderbird doesn't use  Malone, there's a widget for entering a bug URL.
+Since Thunderbird doesn't use  Launchpad, there's a widget for entering 
+a bug URL.
 
     >>> user_browser.getControl('URL').value
     ''
@@ -43,7 +44,7 @@ bug watch.
 
     >>> for notification in find_tags_by_class(user_browser.contents, 'message'):
     ...     print notification.renderContents()
-    Mozilla Thunderbird doesn't use Malone as its bug tracker...
+    Mozilla Thunderbird doesn't use Launchpad as its bug tracker...
 
 Let's confirm adding the task.
 
