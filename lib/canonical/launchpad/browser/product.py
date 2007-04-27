@@ -769,6 +769,8 @@ class ProductSetView(LaunchpadView):
         self.malone = form.get('malone')
         self.bazaar = form.get('bazaar')
         self.search_string = form.get('text')
+        # XXX flacoste 2007/04/27 Replace by use of getOne() once
+        # the API defined in bug #110633 is implemented.
         if (self.search_string is not None and
             not isinstance(self.search_string, basestring)):
             raise UnexpectedFormData(
