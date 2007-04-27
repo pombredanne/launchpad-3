@@ -244,7 +244,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             
     official_answers = Bool(title=_('Uses Answers Officially'), 
         required=True, description=_('Check this box to indicate that this '
-            'project officially uses Answers for community support.'))
+            'project officially uses Launchpad for community support.'))
             
     official_malone = Bool(title=_('Uses Bugs Officially'),
         required=True, description=_('Check this box to indicate that '
@@ -253,9 +253,9 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'file bugs on the project here in Launchpad.'
         ))
 
-    official_rosetta = Bool(title=_('Uses Rosetta Officially'),
+    official_rosetta = Bool(title=_('Uses Translations Officially'),
         required=True, description=_('Check this box to indicate that '
-        'this application officially uses Rosetta for upstream '
+        'this application officially uses Launchpad for upstream '
         'translation. This will remove the caution presented when '
         'people contribute translations for the project in Launchpad.'))
 

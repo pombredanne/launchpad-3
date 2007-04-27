@@ -185,7 +185,7 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_("Check this box to indicate that this distribution "
             "officially uses Launchpad for bug tracking."))
     official_rosetta = Bool(
-        title=_('Uses Rosetta Officially'), required=True, 
+        title=_('Uses Translations Officially'), required=True, 
         description=_("Check this box to indicate that this distribution "
             "officially uses Launchpad for translation."))
 

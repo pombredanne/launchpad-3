@@ -397,7 +397,7 @@ distrorelease_packaging = ContextDisplayName('Mapping packages to upstream '
 
 distrorelease_search = ContextDisplayName('Search packages in %s')
 
-distrorelease_translations = ContextTitle('Translations of %s in Rosetta')
+distrorelease_translations = ContextTitle('Translations of %s in Launchpad')
 
 distrorelease_builds = ContextTitle('Builds for %s')
 
@@ -718,11 +718,11 @@ potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-potemplatename_add = 'Add a new template name to Rosetta'
+potemplatename_add = 'Add a new template name to Launchpad'
 
-potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Rosetta'))
+potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Launchpad'))
 
-potemplatename_index = ContextTitle(smartquote('"%s" in Rosetta'))
+potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
@@ -753,7 +753,7 @@ product_packages = ContextDisplayName('%s packages in Launchpad')
 
 product_series = ContextDisplayName('%s timeline')
 
-product_translations = ContextTitle('Translations of %s in Rosetta')
+product_translations = ContextTitle('Translations of %s in Launchpad')
 
 product_translators = ContextTitle('Set translation group for %s')
 
@@ -789,9 +789,9 @@ project_edit = ContextTitle('%s project details')
 
 project_filebug_search = bugtarget_filebug_advanced
 
-project_interest = 'Rosetta: Project not translatable'
+project_interest = 'Launchpad Translations: Project not translatable'
 
-project_rosetta_index = ContextTitle('Rosetta: %s')
+project_rosetta_index = ContextTitle('Launchpad Translations: %s')
 
 project_specs = ContextTitle('Blueprints for %s')
 
@@ -801,7 +801,7 @@ project_translators = ContextTitle('Set translation group for %s')
 
 projects_index = 'Projects registered in Launchpad'
 
-projects_request = 'Rosetta: Request a project'
+projects_request = 'Launchpad Translations: Request a project'
 
 projects_search = 'Search for projects in Launchpad'
 
@@ -830,7 +830,7 @@ remotebug_index = ContextTitle('%s')
 
 root_index = 'Launchpad'
 
-rosetta_about = 'About Rosetta'
+rosetta_about = 'About Launchpad Translations'
 
 rosetta_index = 'Launchpad Translations'
 
@@ -1097,12 +1097,12 @@ template_new = 'EXAMPLE NEW TITLE'
 
 temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
-translationgroup_index = ContextTitle(smartquote('"%s" Rosetta translation group'))
+translationgroup_index = ContextTitle(smartquote('"%s" Launchpad translation group'))
 
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))
 
-translationgroups_index = 'Rosetta translation groups'
+translationgroups_index = 'Launchpad translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
 

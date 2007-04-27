@@ -21,7 +21,7 @@
       tal:replace="country/name">country</span>. Please
       <a href="mailto:rosetta@launchpad.net"
       	 tal:attributes="href string:mailto:${view/rosettaAdminEmail}">
-	 contact the Rosetta admins</a> to correct this.
+	 contact the Launchpad Translations admins</a> to correct this.
     </tal:block>
 
   </div>

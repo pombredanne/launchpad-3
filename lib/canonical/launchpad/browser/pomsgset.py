@@ -387,17 +387,17 @@ class BaseTranslationView(LaunchpadView):
             #   -- kiko, 2006-10-18
             self.request.response.addErrorNotification("""
             <p>
-            Rosetta can&#8217;t handle the plural items in this file, because it
-            doesn&#8217;t yet know how plural forms work for %s.
+            Launchpad can&#8217;t handle the plural items in this file, 
+	    because it doesn&#8217;t yet know how plural forms work for %s.
             </p>
             <p>
             To fix this, please e-mail the <a
-            href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users mailing list</a>
+            href="mailto:rosetta-users@lists.ubuntu.com">Launchpad Translations users mailing list</a>
             with this information, preferably in the format described in the
-            <a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta FAQ</a>.
+            <a href="https://wiki.ubuntu.com/RosettaFAQ">FAQ</a>.
             </p>
             <p>
-            This only needs to be done once per language. Thanks for helping Rosetta.
+            This only needs to be done once per language. Thanks for helping Launchpad Translations.
             </p>
             """ % self.pofile.language.englishname)
             return
