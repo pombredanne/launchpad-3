@@ -71,7 +71,7 @@ class IPOTemplate(IRosettaStats):
         vocabulary="ValidOwner")
 
     productseries = Choice(
-        title=_("Product Branch or Series"),
+        title=_("Release Series"),
         required=False,
         vocabulary="ProductSeries")
 
@@ -159,7 +159,7 @@ class IPOTemplate(IRosettaStats):
 
     title = Attribute("A title for this template, generated.")
 
-    product = Attribute("The product to which this template belongs.")
+    product = Attribute("The project to which this template belongs.")
 
     distribution = Attribute("The distribution to which this template belongs.")
 
@@ -167,7 +167,7 @@ class IPOTemplate(IRosettaStats):
         "some number of translations.")
 
     translationtarget = Attribute("The object for which this template is "
-        "a translation. This will either be a SourcePackage or a Product "
+        "a translation. This will either be a SourcePackage or a Release "
         "Series.")
 
     date_last_updated = Datetime(

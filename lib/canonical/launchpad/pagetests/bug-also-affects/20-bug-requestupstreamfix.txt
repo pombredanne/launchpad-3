@@ -22,10 +22,10 @@ product.
     >>> user_browser.url
     'http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/6/+choose-affected-product?field.product=evolution'
 
-    >>> user_browser.getControl('Product').value
+    >>> user_browser.getControl('Project').value
     'evolution'
 
-    >>> user_browser.getControl('Product').value = 'thunderbird'
+    >>> user_browser.getControl('Project').value = 'thunderbird'
     >>> user_browser.getControl('Continue').click()
 
 Since Thunderbird doesn't use  Malone, there's a widget for entering a bug URL.
@@ -74,7 +74,7 @@ If we try to add an upstream task without specifying a product:
     >>> user_browser.url
     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
 
-    >>> user_browser.getControl('Product').value
+    >>> user_browser.getControl('Project').value
     ''
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
@@ -88,14 +88,14 @@ We get a nice error message.
 If we enter a product name that doesn't exist, we inform the user
 about this and ask him to search for the product.
 
-    >>> user_browser.getControl('Product').value = 'no-such-product'
+    >>> user_browser.getControl('Project').value = 'no-such-product'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
     >>> for message_tag in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message_tag.renderContents()
     There is 1 error.
-    There is no product in Launchpad named "no-such-product". You may
+    There is no project in Launchpad named "no-such-product". You may
     want to <a ...>search for it</a>, or <a ...>register it</a> if you
     can't find it.
 
@@ -113,7 +113,7 @@ so let's extract the real URL and open it manually.
     ...  'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/'
     ...   + search_url)
     >>> user_browser.title
-    'Select a Product'
+    'Select a project'
 
 If we go back again, we see that we also give the user the possibility
 to register the product if he doesn't find it.
@@ -121,7 +121,7 @@ to register the product if he doesn't find it.
     >>> user_browser.open(
     ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/'
     ...     '+choose-affected-product')
-    >>> user_browser.getControl('Product').value = 'no-such-product'
+    >>> user_browser.getControl('Project').value = 'no-such-product'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
@@ -137,14 +137,14 @@ need to make sure that everything is quoted before displaying the input.
     ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3'
     ...     '/+choose-affected-product')
 
-    >>> user_browser.getControl('Product').value = 'N\xc3\xb6 Such Product&<>'
+    >>> user_browser.getControl('Project').value = 'N\xc3\xb6 Such Product&<>'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+choose-affected-product'
     >>> [message_tag.renderContents()
     ...  for message_tag in find_tags_by_class(user_browser.contents, 'message')]
     ['There is 1 error.',
-     'There is no product in Launchpad named
+     'There is no project in Launchpad named
       "N\xc3\xb6 Such Product&amp;&lt;&gt;". You may want to
       <a ...>search for it</a>, or <a ...>register it</a> if you can\'t
       find it.']
@@ -159,7 +159,7 @@ space in the bug URL it will be stripped.
   >>> user_browser.open(
   ...     'http://launchpad.dev/debian/+source/mozilla-firefox/'
   ...     '+bug/3/+choose-affected-product')
-  >>> user_browser.getControl('Product').value = 'alsa-utils'
+  >>> user_browser.getControl('Project').value = 'alsa-utils'
   >>> user_browser.getControl('Continue').click()
 
   >>> user_browser.getControl('URL').value = (
@@ -187,7 +187,7 @@ And now we try to add the same upstream again.
     >>> user_browser.url
     'http://bugs.launchpad.dev/alsa-utils/+bug/3/+choose-affected-product'
 
-    >>> user_browser.getControl('Product').value = 'alsa-utils'
+    >>> user_browser.getControl('Project').value = 'alsa-utils'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/alsa-utils/+bug/3/+choose-affected-product'
@@ -199,7 +199,7 @@ We get a nice error message.
 
 We can add another upstream to the bug.
 
-    >>> user_browser.getControl('Product').value = 'evolution'
+    >>> user_browser.getControl('Project').value = 'evolution'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.getControl('Indicate bug in Evolution').click()
     >>> user_browser.url
@@ -211,7 +211,7 @@ our validator springs into action.
     >>> user_browser.getLink(url='evolution/+bug/3/+editstatus').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/3/+editstatus'
-    >>> user_browser.getControl('Product').value = 'alsa-utils'
+    >>> user_browser.getControl('Project').value = 'alsa-utils'
     >>> user_browser.getControl('Save Changes').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/3/+editstatus'

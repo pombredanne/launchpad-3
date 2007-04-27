@@ -300,7 +300,7 @@ class ProductBranchesMenu(ApplicationMenu):
 
     def branch_add(self):
         text = 'Register branch'
-        summary = 'Register a new Bazaar branch for this product'
+        summary = 'Register a new Bazaar branch for this project'
         return Link('+addbranch', text, icon='add')
 
 
@@ -468,7 +468,7 @@ class ProductView:
                 object_translatable = {
                     'title': productseries.title,
                     'potemplates': productseries.currentpotemplates,
-                    'base_url': '/products/%s/%s' %(
+                    'base_url': '/projects/%s/%s' %(
                         self.context.name,
                         productseries.name)
                     }
@@ -593,7 +593,7 @@ class ProductChangeTranslatorsView(ProductEditView):
 
 
 class ProductReviewView(ProductEditView):
-    label = "Administer product details"
+    label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "reviewed"]
 
 
@@ -834,7 +834,7 @@ class ProductAddView(LaunchpadFormView):
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
 
-    label = "Register an upstream open source product"
+    label = "Register an upstream open source project"
     product = None
 
     def isVCSImport(self):
@@ -917,7 +917,7 @@ class ProductBugContactEditView(SQLObjectEditView):
             self.request.response.addNotification(
                 "Successfully cleared the bug contact. There is no longer a "
                 "contact address that will receive all bugmail for this "
-                "product. You can set the bug contact again at any time.")
+                "project. You can set the bug contact again at any time.")
 
         self.request.response.redirect(canonical_url(product))
 
@@ -977,7 +977,7 @@ class ProductBranchesView(BranchListingView):
                 '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
                 'for more information about how you can use the Bazaar '
                 'revision control system to improve community participation '
-                'in this product.')
+                'in this project.')
         return message % self.context.displayname
 
 

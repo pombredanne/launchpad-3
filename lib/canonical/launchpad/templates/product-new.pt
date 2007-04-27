@@ -14,7 +14,7 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this page to register a product, so that you can
+      Use this page to register a project, so that you can
       track translations, bugs, specifications or bounties for it.
     </div>
 

@@ -50,7 +50,7 @@ class ISourcePackage(IBugTarget):
     bugtasks = Attribute("Bug Tasks that reference this Source Package name "
                     "in the context of this distribution.")
 
-    product = Attribute("The best guess we have as to the Launchpad Product "
+    product = Attribute("The best guess we have as to the Launchpad Project "
                     "associated with this SourcePackage.")
 
     productseries = Attribute("The best guess we have as to the Launchpad "

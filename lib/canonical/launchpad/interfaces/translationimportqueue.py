@@ -39,7 +39,7 @@ class ITranslationImportQueueEntry(Interface):
         required=True)
 
     productseries = Choice(
-        title=_("Product Branch or Series"),
+        title=_("Release Series"),
         required=False,
         vocabulary="ProductSeries")
 

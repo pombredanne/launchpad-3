@@ -8,11 +8,11 @@
 <div metal:fill-slot="main">
 
   <span tal:replace="structure context/image:mugshot" />
-  <h1 tal:content="context/title">Name of product</h1>
+  <h1 tal:content="context/title">Name of project</h1>
 
   <div class="documentDescription" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
-    just a single paragraph of text really, giving the product
+    just a single paragraph of text really, giving the project
     highlights.
   </div>
 
@@ -20,7 +20,7 @@
        tal:condition="context/description">
     $Product.description goes here. This should be a longer piece of
     text, up to three paragraphs in length, which gives much more
-    detailed information about the open source product in question.
+    detailed information about the open source project in question.
   </div>
 
       <ul class="buttons">

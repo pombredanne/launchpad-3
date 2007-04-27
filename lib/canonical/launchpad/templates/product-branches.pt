@@ -28,13 +28,13 @@
     href="http://bazaar-vcs.org/">Bazaar</a> version control system. (<a
     href="http://bazaar-vcs.org/WhyUseBzr">Why use Bazaar?</a>).</p>
 
-  <p>This page lists all the branches that are associated to a product. There,
+  <p>This page lists all the branches that are associated to a project. There,
      you can see what code contributions are being worked on or proposed for
-     inclusion in this product.</p>
+     inclusion in this project.</p>
 
-  <p>Although it is possible for a branch not to be associated to any product,
+  <p>Although it is possible for a branch not to be associated to any project,
     we recommend against using this feature: such branches are harder to
-    locate. Associating your branches to the right product makes it easier for
+    locate. Associating your branches to the right project makes it easier for
     other developers to locate your contributions.</p>
 
   <p>From this page you can:</p>
@@ -44,7 +44,7 @@
 
     <li>See this listing in a more detailed format.</li>
 
-    <li>Register a new mirror branch associated to this product.</li>
+    <li>Register a new mirror branch associated to this project.</li>
   </ul>
 
   <tal:comment condition="nothing"><!-- XXX: Move this generic documentation to
@@ -64,7 +64,7 @@
   </ul>
 
   <p>The push location must be of the form:
-    <code>sftp://<i>login</i><wbr></wbr>@bazaar.launchpad.net/<wbr></wbr>~<i>registrant</i>/<wbr></wbr><i>product</i>/<wbr></wbr><i>branch</i></code></p>
+    <code>sftp://<i>login</i><wbr></wbr>@bazaar.launchpad.net/<wbr></wbr>~<i>registrant</i>/<wbr></wbr><i>project</i>/<wbr></wbr><i>branch</i></code></p>
 
   <ul>
     <li><i>login</i> is your Launchpad person name: the last part of the URL of
@@ -75,11 +75,11 @@
        you belong to. Use a team name to create a branch to which other people
        can upload.</li>
 
-    <li><i>product</i> is the name of the Launchpad product to register this
+    <li><i>project</i> is the name of the Launchpad project to register this
        branch on. The uploaded branch will appear in the listings for this
-       product.</li>
+       project.</li>
 
-    <li><i>name</i> must be unique for a given registrant and product.</li>
+    <li><i>name</i> must be unique for a given registrant and project.</li>
   </ul>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
