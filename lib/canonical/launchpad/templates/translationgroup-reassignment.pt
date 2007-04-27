@@ -17,54 +17,7 @@
         <tal:thing replace="view/contextName" />
       </h1>
 
-      <form action="" method="POST">
-
-        <table width="100%">
-          <tr>
-            <td align="right">
-              Current:
-            </td>
-            <td>
-              <span tal:replace="view/ownerOrMaintainer/browsername" />
-            </td>
-          <tr>
-
-          <tr>
-            <td align="right">New:</td>
-            <td><tal:block content="structure view/owner_widget" /></td>
-          </tr>
-
-          <tr>
-            <td align="right">This is:</td>
-            <td>
-              <label for="existing">
-                <input type="radio" value="existing" id="existing" 
-                       name="existing" checked />An existing person or team
-              </label>
-              <br />
-
-              <label for="new">
-                <input type="radio" value="new" id="new" 
-                       name="existing" />A new team I'm creating here
-              </label>
-              <br />
-              <p class="lesser discreet">
-                The new team's name must begin with a lower-case letter or
-                number, and contain only letters, numbers, dots, hyphens, or
-                plus signs.
-              </p>
-            </td>
-          </tr>
-
-          <tr>
-            <td></td>
-            <td>
-              <input type="submit" value="Change Owner"
-                     name="CHANGE_OWNER" />
-            </td>
-          </tr>
-        </table>
-      </form>
+      <div metal:use-macro="context/@@+object-reassignment/object-reassignment" />
     </div>
   </body>
 </html>

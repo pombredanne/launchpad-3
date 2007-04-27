@@ -72,6 +72,13 @@
         template="../templates/translationgroup-reassignment.pt"
         />
 
+    <browser:page
+      for="*"
+      permission="launchpad.Edit"
+      name="+object-reassignment"
+      template="../templates/object-reassignment.pt"
+      />
+
     <!-- TranslationGroupSet -->
     <securedutility
       class="canonical.launchpad.database.TranslationGroupSet"
