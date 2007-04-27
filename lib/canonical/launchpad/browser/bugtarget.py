@@ -114,7 +114,6 @@ class FileBugViewBase(LaunchpadFormView):
 
     extra_data_token = None
     advanced_form = False
-    can_decide_security_contact = True
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -233,6 +232,11 @@ class FileBugViewBase(LaunchpadFormView):
     def getSecurityContext(self):
         """Return the context used for security bugs."""
         return self.getMainContext()
+
+    @property
+    def can_decide_security_contact(self):
+        """Will we be able to discern a security contact for this?"""
+        return (self.getSecurityContext() is not None)
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
@@ -578,7 +582,6 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     # Make inheriting the base class' actions work.
     actions = FileBugGuidedView.actions
     schema = IProjectBugAddForm
-    can_decide_security_contact = False
 
     def _getSelectedProduct(self):
         """Return the product that's selected."""
@@ -605,7 +608,6 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
     # Make inheriting the base class' actions work.
     actions = FileBugAdvancedView.actions
     schema = IProjectBugAddForm
-    can_decide_security_contact = False
 
 
 class FrontPageFileBugGuidedView(FileBugGuidedView):
@@ -656,7 +658,6 @@ class FrontPageFileBugAdvancedView(FileBugAdvancedView):
 
     # Make inheriting the base class' actions work.
     actions = FileBugAdvancedView.actions
-    can_decide_security_contact = False
 
     @property
     def initial_values(self):
