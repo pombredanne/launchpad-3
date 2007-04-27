@@ -231,7 +231,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getExternalBugTracker():
         """Return the external bug tracker used by this bug tracker.
 
-        If the product uses Malone, return None.
+        If the product uses Launchpad, return None.
         If the product doesn't have a bug tracker specified, return the
         project bug tracker instead.
         """
@@ -246,9 +246,9 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         required=True, description=_('Check this box to indicate that this '
             'project officially uses Answers for community support.'))
             
-    official_malone = Bool(title=_('Uses Malone Officially'),
+    official_malone = Bool(title=_('Uses Bugs Officially'),
         required=True, description=_('Check this box to indicate that '
-        'this application officially uses Malone for bug tracking '
+        'this application officially uses Launchpad for bug tracking '
         'upstream. This will remove the caution presented when people '
         'file bugs on the project here in Launchpad.'
         ))
@@ -431,7 +431,7 @@ class IProductSet(Interface):
 
     def count_buggy():
         """Return the number of products that have bugs associated with them
-        in Malone."""
+        in Launchpad."""
 
     def count_featureful():
         """Return the number of products that have specs associated with
@@ -444,7 +444,7 @@ class IProductSet(Interface):
 
 
 class IProductLaunchpadUsageForm(Interface):
-    """Form for indicating whether Rosetta, Answers, or Malone is used."""
+    """Form for indicating whether Rosetta, Answers, or Bugs is used."""
 
     official_rosetta = IProduct['official_rosetta']
     official_answers = IProduct['official_answers']

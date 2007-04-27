@@ -249,7 +249,7 @@ bugtracker_index = ContextTitle(smartquote('Bug tracker "%s"'))
 
 bugtrackers_add = 'Register an external bug tracker'
 
-bugtrackers_index = 'Bug trackers registered in Malone'
+bugtrackers_index = 'Bug trackers registered in Launchpad'
 
 build_buildlog = ContextTitle('Build log for %s')
 
@@ -522,7 +522,7 @@ logintoken_validateteamemail = 'Confirm e-mail address'
 
 # main_template has the code to insert one of these titles.
 
-malone_about = 'About Malone'
+malone_about = 'About Launchpad Bugs'
 
 malone_distros_index = 'Report a bug about a distribution'
 
