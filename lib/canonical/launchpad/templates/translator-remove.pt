@@ -23,10 +23,7 @@
 
       <h2>Are you sure you want to remove this translator?</h2>
 
-      <form class="actions" name="remove" action="" method="post">
-        <input type="submit" name="goback" value="Cancel" />
-        <input type="submit" name="remove" value="Remove" />
-      </form>
+      <div metal:use-macro="context/@@launchpad_form/form" />
 
     </div> 
   </body>

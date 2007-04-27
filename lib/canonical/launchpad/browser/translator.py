@@ -4,7 +4,7 @@ __metaclass__ = type
 
 from canonical.launchpad.interfaces import ITranslator
 from canonical.launchpad.webapp import (
-    LaunchpadEditFormView, LaunchpadView, action, canonical_url)
+    LaunchpadEditFormView, LaunchpadFormView, action, canonical_url)
 
 __all__ = [
     'TranslatorEditView',
@@ -38,21 +38,28 @@ class TranslatorEditView(LaunchpadEditFormView):
         return canonical_url(self.context.translationgroup)
 
 
-class TranslatorRemoveView(LaunchpadView):
+class TranslatorRemoveView(LaunchpadFormView):
+    schema = ITranslator
+    field_names = []
 
-    def initialize(self):
-        if self.request.method == 'POST':
-            self.translationgroup = self.context.translationgroup
-            if 'remove' in self.request.form:
-                self.remove()
-            self.request.response.redirect(
-                canonical_url(self.translationgroup))
+    @action("Cancel")
+    def cancel(self, action, data):
+        self.request.response.addInfoNotification(
+            'Canceled the request to remove %s as the %s translator for %s.' %
+                (self.context.translator.displayname,
+                 self.context.language.englishname,
+                 self.context.translationgroup.title))
 
-    def remove(self):
+    @action("Remove")
+    def remove(self, action, data):
         """Remove the ITranslator from the associated ITranslationGroup."""
-        self.translationgroup.remove_translator(self.context)
+        self.context.translationgroup.remove_translator(self.context)
         self.request.response.addInfoNotification(
             'Removed %s as the %s translator for %s.' % (
                 self.context.translator.displayname,
                 self.context.language.englishname,
-                self.translationgroup.title))
+                self.context.translationgroup.title))
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.translationgroup)
