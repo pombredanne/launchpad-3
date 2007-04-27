@@ -11,7 +11,7 @@ translations.
   ... -----------------------------13732029051312745333834570722
   ... Content-Disposition: form-data; name="field.translationgroup"
   ... 
-  ... testing-translation-team
+  ... renamed-group
   ... -----------------------------13732029051312745333834570722
   ... Content-Disposition: form-data; name="field.translationgroup-empty-marker"
   ... 

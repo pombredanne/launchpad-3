@@ -10,5 +10,5 @@ The new groups should show up on the "Translation groups" page.
   ...     print '%s: %s' % (group.a.string, group.a['href'])
   Single-language Translators: monolingua
   The PolyGlot Translation Group: polyglot
-  Just a testing team: testing-translation-team
+  Just a testing team: renamed-group
 

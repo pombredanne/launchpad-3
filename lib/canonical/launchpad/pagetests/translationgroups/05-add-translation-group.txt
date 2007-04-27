@@ -1,5 +1,3 @@
-  >>> from canonical.launchpad.helpers import backslashreplace
-
 Only Rosetta experts and Launchpad administrators can create translation
 groups.  Unprivileged users do not have access to the group creation page.
 
