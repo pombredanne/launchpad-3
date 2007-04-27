@@ -7,6 +7,7 @@ import unittest
 
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 
+
 class SetInWSGIEnvironmentTestCase(unittest.TestCase):
 
     def test_set(self):
