@@ -56,7 +56,7 @@ from canonical.launchpad.interfaces import (
     IProductSet, IProductSeries, IProject, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
-    IPillarNameSet, IDistribution, IHasIcon)
+    IPillarNameSet, IDistribution, IHasIcon, UnexpectedFormData)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
@@ -769,6 +769,10 @@ class ProductSetView(LaunchpadView):
         self.malone = form.get('malone')
         self.bazaar = form.get('bazaar')
         self.search_string = form.get('text')
+        if (self.search_string is not None and
+            not isinstance(self.search_string, basestring)):
+            raise UnexpectedFormData(
+                'text parameter should be a string: %s' % self.search_string)
         self.results = None
 
         self.searchrequested = False
