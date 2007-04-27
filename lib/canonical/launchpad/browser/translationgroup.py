@@ -15,8 +15,6 @@ __all__ = [
 
 import operator
 
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
@@ -120,6 +118,8 @@ class TranslationGroupEditView(LaunchpadEditFormView):
 
 
 class TranslationGroupAddView(LaunchpadFormView):
+    """View class to add ITranslationGroup objects."""
+
     schema = ITranslationGroup
     field_names = ['name', 'title', 'summary']
 
@@ -129,9 +129,10 @@ class TranslationGroupAddView(LaunchpadFormView):
         name = data.get('name')
         title = data.get('title')
         summary = data.get('summary')
-        self.new_group = getUtility(ITranslationGroupSet).new(
+        new_group = getUtility(ITranslationGroupSet).new(
             name=name, title=title, summary=summary, owner=self.user)
-        notify(ObjectCreatedEvent(self.new_group))
+
+        self.next_url = canonical_url(new_group)
 
     def validate(self, data):
         """Do not allow new groups with duplicated names."""
@@ -143,10 +144,6 @@ class TranslationGroupAddView(LaunchpadFormView):
             return
         self.setFieldError('name',
             "There is already a translation group with such name")
-
-    @property
-    def next_url(self):
-        return canonical_url(self.new_group)
 
 
 class TranslationGroupReassignmentView(ObjectReassignmentView):

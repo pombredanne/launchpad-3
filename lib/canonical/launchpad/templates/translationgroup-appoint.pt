@@ -5,10 +5,9 @@
 
     <div metal:fill-slot="main">
       <div>
-        <a tal:attributes="href context/fmt:url">
-          <tal:translation-group replace="context/title">
-            Foo bar
-          </tal:translation-group> translation group
+        <a tal:attributes="href context/fmt:url"
+           tal:content="string:${context/title} translation group">
+            Foo bar translation group
         </a>
       </div>
       <h1>Appoint a translator</h1>

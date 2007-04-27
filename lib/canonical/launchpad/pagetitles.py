@@ -1105,7 +1105,7 @@ temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 translationgroup_index = ContextTitle(smartquote('"%s" translation group'))
 
-translationgroup_add = 'Add a new Translation Group to Launchpad'
+translationgroup_add = 'Add a new translation group to Launchpad'
 
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))

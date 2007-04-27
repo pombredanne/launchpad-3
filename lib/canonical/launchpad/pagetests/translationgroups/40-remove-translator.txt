@@ -1,7 +1,6 @@
 
 Let's remove the Hoary Gnome Team, they are not really translators. We
-should be redirected to the polyglot page, with a removal message hint being
-passed.
+should be redirected to the polyglot page.
 
   >>> admin_browser.open(
   ...     'http://translations.launchpad.dev/+translation-groups/' +

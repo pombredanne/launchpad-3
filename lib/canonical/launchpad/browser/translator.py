@@ -26,12 +26,18 @@ class TranslatorEditView(LaunchpadEditFormView):
         """Don't allow to change the language if it's already in the group."""
         language = data.get('language')
         translation_group = self.context.translationgroup
+        existing_translator = translation_group.query_translator(language)
         if (self.context.language != language and
-            translation_group.query_translator(language) is not None):
+            existing_translator is not None):
             # The language changed but it already exists so we cannot accept
             # this edit.
+            existing_translator_link = '<a href="%s">%s</a>' % (
+                canonical_url(existing_translator.translator),
+                existing_translator.translator.displayname)
+
             self.setFieldError('language',
-                "There is already a translator for this language")
+                '%s is already a translator for this language' % (
+                    existing_translator_link))
 
     @property
     def next_url(self):

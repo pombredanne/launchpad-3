@@ -1,7 +1,6 @@
 <html metal:use-macro="view/macro:page/applicationhome"
       i18n:domain="launchpad">
   <body>
-<<<<<<< TREE
     <h1 metal:fill-slot="heading">Translation groups</h1>
 
     <div metal:fill-slot="main">

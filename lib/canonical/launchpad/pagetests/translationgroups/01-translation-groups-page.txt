@@ -1,6 +1,10 @@
 
 Make sure we can actually display the Translation Groups page.
 
-  >>> browser.open('http://translations.launchpad.dev/+translation-groups/')
+  >>> browser.open('http://translations.launchpad.dev/')
   >>> print browser.url
-  http://translations.launchpad.dev/+translation-groups/
+  http://translations.launchpad.dev/
+
+  >>> browser.getLink('translation groups').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/+translation-groups

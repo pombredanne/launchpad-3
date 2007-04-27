@@ -38,6 +38,23 @@ not contain any upper-case letters.
   <samp>-</samp> and <samp>.</samp> are also allowed after the
   first character.
 
+Neither we can use the name of an already existing group like
+testing-translation-team.
+
+  >>> browser.open('http://translations.launchpad.dev/+translation-groups')
+  >>> print browser.url
+  http://translations.launchpad.dev/+translation-groups
+  >>> print browser.getLink('Just a testing team').url
+  http://translations.launchpad.dev/+translation-groups/testing-translation-team
+
+  >>> admin_browser.getControl('Name').value = 'testing-translation-team'
+  >>> admin_browser.getControl('Add').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+translation-groups/+new
+  >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+  ...     print message.renderContents()
+  There is 1 error.
+  There is already a translation group with such name
 
 The same request will be accepted if the group is given a saner name, such as
 just "polyglot" (no upper-case letters).
