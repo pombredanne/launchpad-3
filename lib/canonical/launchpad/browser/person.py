@@ -565,7 +565,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['edit', 'branding', 'common_edithomepage',
              'editemailaddresses', 'editlanguages', 'editwikinames',
              'editircnicknames', 'editjabberids', 'editpassword',
-             'editsshkeys', 'editpgpkeys', 'mentoringoffers',
+             'editsshkeys', 'editpgpkeys',
+             'memberships', 'mentoringoffers',
              'codesofconduct', 'karma', 'common_packages', 'administer',]
 
     @enabled_with_permission('launchpad.Edit')
@@ -624,6 +625,11 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
             u'in Launchpad' % self.context.browsername)
         return Link(target, text, summary, icon='info')
 
+    def memberships(self):
+        target = '+participation'
+        text = 'Show team participation'
+        return Link(target, text, icon='info')
+
     def mentoringoffers(self):
         target = '+mentoring'
         text = 'Mentoring offered'
@@ -666,7 +672,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = ITeam
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'mugshots', 'add_member', 'editemail', 'polls', 'add_poll',
+             'add_member', 'memberships', 'mugshots', 
+             'editemail', 'polls', 'add_poll',
              'joinleave', 'mentorships', 'reassign', 'common_packages',
              ]
 
@@ -695,6 +702,17 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Show all members'
         return Link(target, text, icon='people')
 
+    @enabled_with_permission('launchpad.Edit')
+    def add_member(self):
+        target = '+addmember'
+        text = 'Add member'
+        return Link(target, text, icon='add')
+
+    def memberships(self):
+        target = '+participation'
+        text = 'Show team participation'
+        return Link(target, text, icon='info')
+
     def mentorships(self):
         target = '+mentoring'
         text = 'Mentoring available'
@@ -707,12 +725,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+mugshots'
         text = 'Show group photo'
         return Link(target, text, icon='people')
-
-    @enabled_with_permission('launchpad.Edit')
-    def add_member(self):
-        target = '+addmember'
-        text = 'Add member'
-        return Link(target, text, icon='add')
 
     def polls(self):
         target = '+polls'
@@ -1437,6 +1449,10 @@ class PersonView(LaunchpadView):
             categories.update(category for category in contrib['categories'])
         return sorted(categories, key=attrgetter('title'))
 
+    @cachedproperty
+    def recently_approved_memberships(self):
+        """Return the 5 memberships for teams most recently joined."""
+
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.
@@ -1478,6 +1494,17 @@ class PersonView(LaunchpadView):
     def findUserPathToTeam(self):
         assert self.user is not None
         return self.user.findPathToTeam(self.context)
+
+    def indirect_teams_via(self):
+        """Return a list of dictionaries, where each dictionary has a team
+        in which the person is an indirect member, and a path to membership
+        in that team.
+        """
+        return [{'team': team,
+                 'via': ', '.join(
+                    [viateam.displayname for viateam in
+                        self.context.findPathToTeam(team)[:-1]])}
+                for team in self.context.teams_indirectly_participated_in]
 
     def userIsParticipant(self):
         """Return true if the user is a participant of this team.

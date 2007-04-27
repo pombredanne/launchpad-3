@@ -269,6 +269,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         "in this team.")
     teams_participated_in = Attribute(
         "Iterable of all Teams that this person is active in, recursive")
+    teams_indirectly_participated_in = Attribute(
+        "Iterable of all the teams in which this person is and indirect "
+        "member.")
     teams_with_icons = Attribute(
         "Iterable of all Teams that this person is active in that have "
         "icons")
@@ -667,6 +670,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         In this case, we will return both 'Rosetta pt Translators' and
         'Rosetta Translators', because we are member of both of them.
         """
+
+    def getLatestApprovedMembershipsForPerson(limit=5):
+        """Return the <limit> latest approved membrships for this person."""
 
     def addLanguage(language):
         """Add a language to this person's preferences.

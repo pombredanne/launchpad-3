@@ -656,7 +656,10 @@ class Person(SQLBase, HasSpecificationsMixin):
         assert self.hasParticipationEntryFor(team), (
             "Only call this method when you're sure the person is an indirect"
             " member of the team.")
-        assert not self.isTeam()
+        # commenting out this assertion because I believe the bug that
+        # required it has now been fixed, salgado please confirm
+        # -- sabdfl 2007-04-27
+        #assert not self.isTeam()
         assert team.isTeam()
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
@@ -1195,6 +1198,12 @@ class Person(SQLBase, HasSpecificationsMixin):
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
+    def getLatestApprovedMembershipsForPerson(self, limit=5):
+        """See IPerson."""
+        result = self.myactivememberships
+        result.orderBy(['-datejoined'])
+        return result[:limit]
+
     @property
     def teams_participated_in(self):
         """See IPerson."""
@@ -1203,6 +1212,31 @@ class Person(SQLBase, HasSpecificationsMixin):
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
             """ % sqlvalues(self.id),
+            clauseTables=['TeamParticipation'],
+            orderBy=Person.sortingColumns)
+
+    @property
+    def teams_indirectly_participated_in(self):
+        """See IPerson."""
+        return Person.select("""
+              -- we are looking for teams, so we want "people" that are on the
+              -- teamparticipation.team side of teamparticipation
+            Person.id = TeamParticipation.team AND
+              -- where this person participates in the team
+            TeamParticipation.person = %s AND
+              -- but not the teamparticipation for "this person in himself"
+              -- which exists for every person
+            TeamParticipation.team != %s AND
+              -- nor do we want teams in which the person is a direct
+              -- participant, so we exclude the teams in which there is
+              -- a teammembership for this person
+            TeamParticipation.team NOT IN
+              (SELECT TeamMembership.team FROM TeamMembership WHERE
+                      TeamMembership.person = %s AND
+                      TeamMembership.status IN (%s, %s))
+            """ % sqlvalues(self.id, self.id, self.id,
+                            TeamMembershipStatus.APPROVED,
+                            TeamMembershipStatus.ADMIN),
             clauseTables=['TeamParticipation'],
             orderBy=Person.sortingColumns)
 
