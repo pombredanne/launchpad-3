@@ -387,19 +387,20 @@ outside of the comment workflow.
 
 == QuestionEditView ==
 
-QuestionEditView available through '+edit' is used to edit most question
-fields. It can be used to edit the question title and description and also
-its metadata like language, priority, assignee, source package and
-whiteboard.
+QuestionEditView available through '+edit' is used to edit most 
+question fields. It can be used to edit the question title and 
+description and also its metadata like language, priority, assignee, 
+distribution, source package, product and whiteboard.
 
     >>> login('test@canonical.com')
-    >>> question_three.sourcepackagename = None
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
     ...     'field.title': 'Better Title',
     ...     'field.language': 'en',
     ...     'field.description': 'A better description.',
-    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.target': 'package',
+    ...     'field.target.distribution': 'ubuntu',
+    ...     'field.target.package': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
     ...     'field.whiteboard': 'Some note',
     ...     'field.priority': 'Wishlist'})
@@ -411,8 +412,12 @@ whiteboard.
     u'Better Title'
     >>> question_three.description
     u'A better description.'
+    >>> print question_three.distribution.name
+    ubuntu
     >>> print question_three.sourcepackagename.name
     mozilla-firefox
+    >>> print question_three.product
+    None
 
 Since only a user with launchpad.Admin privilege can change the
 priority, assignee and status whiteboard, the values won't have been
@@ -450,7 +455,9 @@ priority fields will be updated:
     ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
-    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.target': 'package',
+    ...     'field.target.distribution': 'ubuntu',
+    ...     'field.target.package': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
     ...     'field.whiteboard': 'Some note',
     ...     'field.priority': 'Wishlist'})
@@ -472,17 +479,26 @@ a distribution question:
     ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
-    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.target': 'product',
+    ...     'field.target.distribution': '',
+    ...     'field.target.package': 'mozilla-firefox',
+    ...     'field.target.product': 'firefox',
     ...     'field.assignee': '',
     ...     'field.whiteboard': '',
     ...     'field.priority': 'Normal'})
     >>> request.method = 'POST'
-    >>> view = getView(firefox_question, '+edit', request)
+    >>> view = getView(question_three, '+edit', request)
     >>> view.initialize()
     >>> view.errors
     []
-    >>> firefox_question.sourcepackagename is None
+    >>> question_three.sourcepackagename is None
     True
+    >>> print question_three.distribution
+    None
+    >>> print question_three.sourcepackagename
+    None
+    >>> print question_three.product.name
+    firefox
 
     # Clear out the pending notifications.
     >>> notifications = pop_notifications()

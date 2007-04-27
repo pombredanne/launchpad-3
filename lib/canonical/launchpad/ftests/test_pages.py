@@ -175,6 +175,25 @@ def parse_relationship_section(content):
             print 'TEXT: "%s"' % content
 
 
+def print_tab_links(content):
+    """Print tabs url or 'Unavailable' if there isn't one."""
+    chooser = find_tag_by_id(content, 'applicationchooser')
+    tabs = chooser.findAll('li')
+    for tab in tabs:
+        if 'current' in tab['class']:
+            print '%s: %s' % (tab.a.string, tab.a['href'])
+        else:
+            print '%s: Unavailable' % (tab.string,)
+
+
+def print_action_links(content):
+    """Print action menu urls."""
+    actions = find_portlet(content, 'Actions')
+    entries = actions.findAll('li')
+    for entry in entries:
+        print '%s: %s' % (entry.a.string, entry.a['href'])
+
+
 def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
@@ -201,6 +220,8 @@ def setUpGlobs(test):
     test.globs['find_main_content'] = find_main_content
     test.globs['extract_text'] = extract_text
     test.globs['parse_relationship_section'] = parse_relationship_section
+    test.globs['print_tab_links'] = print_tab_links
+    test.globs['print_action_links'] = print_action_links
 
 
 class PageStoryTestCase(unittest.TestCase):
