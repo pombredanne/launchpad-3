@@ -146,7 +146,7 @@ it into the accepted queue
   ...         syncUpdate(item)
   ...     items = dr.getQueueItems(status=DistroReleaseQueueStatus.UNAPPROVED)
   ...     for item in items:
-    ...         item.setAccepted()
+  ...         item.setAccepted()
   ...         syncUpdate(item)
 
 Finally, as a very simplistic publishing process, we may need to punt any
