@@ -101,7 +101,8 @@
                      condition="product_or_distro">
 
       <p class="warning message">
-        <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use Malone as its bug tracker.
+        <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use
+        Launchpad as its bug tracker.
       </p>
 
       <tal:upstream condition="view/contextIsProduct">
