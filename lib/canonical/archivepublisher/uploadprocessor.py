@@ -81,6 +81,7 @@ class UploadProcessor:
         self.options = options
         self.ztm = ztm
         self.log = log
+        self.processed_uploads = None
 
     def processUploadQueue(self):
         """Search for uploads, and process them.
@@ -229,6 +230,9 @@ class UploadProcessor:
 
         changesfile_path = os.path.join(upload_path, changes_file)
         upload = NascentUpload(changesfile_path, policy, self.log)
+
+        # Store processed NascentUpload instance, mostly used for tests.
+        self.last_processed_upload = upload
 
         try:
             self.log.info("Processing upload %s" % upload.changes.filename)
