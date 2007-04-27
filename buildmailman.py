@@ -9,25 +9,17 @@ import sys
 import errno
 import subprocess
 
+from canonical.config import config
 from configs import generate_overrides
 
 basepath = filter(None, sys.path)
 
 
-if sys.version_info < (2, 4, 0):
-    print ("ERROR: Your python version is not supported by Launchpad."
-            "Launchpad needs Python 2.4 or greater. You are running: " 
-            + sys.version)
-    sys.exit(1)
-
-
 def build_mailman():
     # Build and install Mailman if it is enabled and not yet built.
-    from canonical.config import config
-
     mailman_path = config.mailman.build.prefix
     mailman_bin = os.path.join(mailman_path, 'bin')
-    var_dir     = os.path.abspath(config.mailman.build.var_dir)
+    var_dir = os.path.abspath(config.mailman.build.var_dir)
 
     # If we can import the package, we assume Mailman is properly built and
     # installed.  This does not catch re-installs that might be necessary
@@ -58,7 +50,7 @@ def build_mailman():
     try:
         os.makedirs(var_dir)
     except OSError, e:
-        if e.errno <> errno.EEXIST:
+        if e.errno != errno.EEXIST:
             raise
     os.chown(var_dir, uid, gid)
     os.chmod(var_dir, 02775)

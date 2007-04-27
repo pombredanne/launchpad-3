@@ -25,7 +25,7 @@ def make_abspath(path):
 
 class Service(object):
     @property
-    def shouldLaunch(self):
+    def should_launch(self):
         """Return true if this service should be launched."""
         return False
 
@@ -55,12 +55,12 @@ class TacFile(Service):
             self.pre_launch = pre_launch
 
     @property
-    def shouldLaunch(self):
+    def should_launch(self):
         return self.config is not None and self.config.launch
 
     def launch(self):
         # Don't run the server if it wasn't asked for. 
-        if not self.shouldLaunch:
+        if not self.should_launch:
             return
 
         self.pre_launch()
@@ -106,12 +106,12 @@ class TacFile(Service):
 
 class MailmanService(Service):
     @property
-    def shouldLaunch(self):
+    def should_launch(self):
         return config.mailman.launch
 
     def launch(self):
         # Don't run the server if it wasn't asked for.
-        if not self.shouldLaunch:
+        if not self.should_launch:
             return
 
         # Add the directory containing the Mailman package to our sys.path.
@@ -206,7 +206,7 @@ def get_services_to_run(requested_services):
     If names are given, then only run the services matching those names.
     """
     if len(requested_services) == 0:
-        return [svc for svc in SERVICES.values() if svc.shouldLaunch]
+        return [svc for svc in SERVICES.values() if svc.should_launch]
     return [SERVICES[name] for name in requested_services]
 
 

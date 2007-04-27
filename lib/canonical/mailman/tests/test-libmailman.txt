@@ -3,6 +3,13 @@ Mailman exists and seems properly configured, and that Launchpad can import
 the libmailman common package.  Anything more than that is left to other
 tests.
 
+    >>> import subprocess, os
+    >>> from canonical.config import config
+    >>> def call(command_template, *args):
+    ...     command = command_template % args
+    ...     mailman_bin = os.path.join(config.mailman.build.prefix, 'bin')
+    ...     return subprocess.call(command.split(), cwd=mailman_bin)
+
     >>> import libmailman
 
 Mailman's site list must exist.
