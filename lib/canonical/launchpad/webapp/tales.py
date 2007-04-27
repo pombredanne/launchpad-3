@@ -347,7 +347,7 @@ class ObjectFormatterAPI:
 
 class ObjectImageDisplayAPI:
     """Base class for producing the HTML that presents objects
-    as an icon, a logo or a mugshot.
+    as an icon, a logo, a mugshot or a set of badges.
     """
 
     def __init__(self, context):
@@ -452,6 +452,10 @@ class ObjectImageDisplayAPI:
             </div>"""
         return mugshot % url
 
+    def badges(self):
+        raise NotImplementedError(
+            "Badge display not implemented for this item")
+
 
 class PillarSearchItemAPI(ObjectImageDisplayAPI):
     """Provides image:icon for a PillarSearchItem."""
@@ -471,11 +475,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     Used for image:icon.
     """
 
+    icon_template = (
+        '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
+
     def icon(self):
         # The icon displayed is dependent on the IBugTask.importance.
-        image_template = (
-            '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
-
         if self._context.importance:
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
@@ -490,12 +494,24 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
             title = ""
             src = "/@@/bug"
 
-        icon = image_template % (alt, title, src)
+        return self.icon_template % (alt, title, src)
 
+
+    def badges(self):
+
+        badges = ''
         if self._context.bug.private:
-            icon += image_template % ("", "Private", "/@@/locked")
+            badges += self.icon_template % ("private", "Private", "/@@/locked")
 
-        return icon
+        if self._context.bug.mentoring_offers.count() > 0:
+            badges += self.icon_template % (
+                "mentoring", "Mentoring offered", "/@@/mentoring")
+
+        if self._context.bug.bug_branches.count() > 0:
+            badges += self.icon_template % (
+                "branch", "Branch exists", "/@@/branch")
+
+        return badges
 
 
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
@@ -506,12 +522,11 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     Used for image:icon.
     """
 
+    icon_template = """
+        <img height="14" width="14" alt="%s" title="%s" src="%s" />"""
+
     def icon(self):
         # The icon displayed is dependent on the IBugTask.importance.
-        image_template = """
-            <img height="14" width="14" alt="%s" title="%s" src="%s" />
-            """
-
         if self._context.priority:
             priority = self._context.priority.title.lower()
             alt = "(%s)" % priority
@@ -528,9 +543,26 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
             title = ""
             src = "/@@/blueprint"
 
-        icon = image_template % (alt, title, src)
+        return self.icon_template % (alt, title, src)
 
-        return icon
+
+    def badges(self):
+
+        badges = ''
+        if self._context.mentoring_offers.count() > 0:
+            badges += self.icon_template % (
+                "mentoring", "Mentoring offered", "/@@/mentoring")
+
+        if self._context.branch_links.count() > 0:
+            badges += self.icon_template % (
+                "branch", "Branch is available", "/@@/branch")
+
+        if self._context.informational:
+            badges += self.icon_template % (
+                "informational", "Blueprint is purely informational",
+                "/@@/info")
+
+        return badges
 
 
 class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
@@ -567,12 +599,12 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
+    icon_template = """
+        <img width="14" height="14" alt="%s" title="%s" src="%s" />
+        """
+
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
-        image_template = """
-            <img width="14" height="14" alt="%s" title="%s" src="%s" />
-            """
-
         icon_map = {
             dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
             dbschema.BuildStatus.FULLYBUILT: "/@@/build-success",
@@ -587,7 +619,7 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
         title = self._context.buildstate.title
         source = icon_map[self._context.buildstate]
 
-        return image_template % (alt, title, source)
+        return self.icon_template % (alt, title, source)
 
 
 class PersonFormatterAPI(ObjectFormatterAPI):

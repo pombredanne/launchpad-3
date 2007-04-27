@@ -19,8 +19,11 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Blueprint overview</h1>
-
+  <h1>
+    <img src="/@@/mentoring-large" title="Mentoring available"
+         tal:condition="context/mentoring_offers/count" />
+    Blueprint overview
+  </h1>
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
     notice goes here
@@ -142,6 +145,8 @@
   <tal:mentors define="mentoring_offers context/mentoring_offers"
                condition="mentoring_offers">
     <p>
+      <img src="/@@/mentoring" alt="Mentoring"
+           title="People have offered to mentor this work" />
       <b>Mentors:</b>
       <tal:block repeat="mentoring_offer mentoring_offers">
         <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>

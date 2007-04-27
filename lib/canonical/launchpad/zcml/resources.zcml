@@ -90,6 +90,8 @@
     <resource name="locked-large" file="../images/locked-large.png" />
     <resource name="mail" file="../images/mail.png" />
     <resource name="maybe" file="../images/maybe.png" />
+    <resource name="mentoring" file="../images/mentoring.png" />
+    <resource name="mentoring-large" file="../images/mentoring-large.png" />
     <resource name="milestone" file="../images/milestone.png" />
     <resource name="news" file="../images/news.png" />
     <resource name="no" file="../images/no.png" />
