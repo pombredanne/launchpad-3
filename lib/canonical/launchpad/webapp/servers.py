@@ -271,6 +271,7 @@ class BasicLaunchpadRequest:
     def __init__(self, body_instream, environ, response=None):
         self.breadcrumbs = []
         self.traversed_objects = []
+        self._wsgi_keys = set()
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
@@ -289,13 +290,15 @@ class BasicLaunchpadRequest:
     def setInWSGIEnvironment(self, key, value):
         """Set a key-value pair in the WSGI environment of this request.
 
-        Raises KeyError if the key is already present in the environment.
+        Raises KeyError if the key is already present in the environment
+        but not set with setInWSGIEnvironment().
         """
         # This method expects the BasicLaunchpadRequest mixin to be used
         # with a base that provides self._orig_env.
-        if key in self._orig_env:
+        if key not in self._wsgi_keys and key in self._orig_env:
             raise KeyError("'%s' already present in wsgi environment." % key)
         self._orig_env[key] = value
+        self._wsgi_keys.add(key)
 
 
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
