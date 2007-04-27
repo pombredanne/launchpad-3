@@ -21,12 +21,12 @@ from zope.schema import (
     Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
+from canonical.launchpad.fields import (
+    ContentNameField, Title, DuplicateBug, Tag)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.validation import non_duplicate_bug
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -134,8 +134,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         including the steps required to reproduce it."""))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
-    duplicateof = BugField(
-        title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
+    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
         description=_("Make this bug visible only to its subscribers"),
@@ -339,6 +338,12 @@ class IBug(IMessageTarget, ICanBeMentored):
         """Return the BugWatch that has the given bugtracker and remote bug.
 
         Return None if this bug doesn't have such a bug watch.
+        """
+
+    def getBugTask(target):
+        """Return the bugtask with the specified target.
+
+        Return None if no such bugtask is found.
         """
 
 

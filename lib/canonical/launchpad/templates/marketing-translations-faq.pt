@@ -70,8 +70,9 @@
 
     <h5 id="q6">How do I start using Launchpad for my project?</h5>
     <p>Register your software in Launchpad, then upload your .pot translation
-       template files. You can find out more in our guide <a href="">Translating
-         your software using Launchpad</a>. Contact the Launchpad team to
+       template files. You can find out more in our guide 
+      <a href="https://help.launchpad.net/FeatureHighlights/SoftwareTranslation">
+        Translating your software using Launchpad</a>. Contact the Launchpad team to
        request official translation status.
     </p>
     <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>

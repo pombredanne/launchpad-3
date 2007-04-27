@@ -4,14 +4,11 @@ Answer contacts and administrators can reject a question.
 This should be done when the question isn't an actual pertinent question
 for the product. For example, if the question is a duplicate or spam.
 
-No Privileges Pesron isn't an answer contact or administrator, so he
+No Privileges Person isn't an answer contact or administrator, so he
 doesn't have access to that feature.
 
-    # XXX flacoste 2006/10/19 Bug 52077 user_browser should be no-priv
-    # We can't use user_browser here because he is Firefox's registrant.
-    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/firefox/+question/2')
-    >>> browser.getLink('Reject question')
+    >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
+    >>> user_browser.getLink('Reject question')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
@@ -19,7 +16,7 @@ doesn't have access to that feature.
 Even when trying to access the page directly, he will get an unauthorized
 error.
 
-    >>> browser.open(
+    >>> user_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2/+reject')
     Traceback (most recent call last):
       ...
@@ -27,15 +24,15 @@ error.
 
 To reject the question, the user clicks on the 'Reject Question' link.
 
-    >>> admin_browser.open('http://launchpad.dev/firefox/+question/2')
+    >>> admin_browser.open('http://answers.launchpad.dev/firefox/+question/2')
     >>> admin_browser.getLink('Reject question').click()
     >>> admin_browser.getControl('Reject').click()
 
 He needs to enter a message explaining the rejection:
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(admin_browser.contents)
-    >>> print soup.first('div', 'message').renderContents()
+    >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print message.renderContents()
+    There is 1 error.
     You must provide an explanation message.
 
 Entering an explanation message and clicking the 'Reject' button,
@@ -47,19 +44,32 @@ will reject the question.
 
 Once the question is rejected, a confirmation message is shown;
 
-    >>> soup = BeautifulSoup(admin_browser.contents)
-    >>> print soup.first('div', 'informational message').renderContents()
+    >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print message.renderContents()
     You have rejected this question.
 
 its status is changed to 'Invalid';
 
-    >>> print soup.first('b', text='Status:').next.strip()
+    >>> question_portlet = find_portlet(
+    ...     admin_browser.contents, 'Mozilla Firefox question #2')
+    >>> print question_portlet.find('b', text='Status:').next.strip()
     Invalid
 
 and the rejection message is added to the question board.
 
-    >>> print soup.fetch('div', 'boardCommentBody')[-1].renderContents()
+    >>> content = find_main_content(admin_browser.contents)
+    >>> print content.findAll('div', 'boardCommentBody')[-1].renderContents()
     <p>Rejecting because it's a duplicate of <a...>bug #1</a>.</p>
+
+Selecting the 'Reject' action again, will simply display a message
+stating that the quesiton is already rejected:
+
+    >>> admin_browser.getLink('Reject question').click()
+    >>> print admin_browser.url
+    http://answers.launchpad.dev/firefox/+question/2
+    >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print message.renderContents()
+    The question is already rejected.
 
 = Changing the Question Status =
 
@@ -95,9 +105,9 @@ The user needs to select a status and enter a message explaining the
 status change:
 
     >>> admin_browser.getControl('Change Status').click()
-    >>> soup = BeautifulSoup(admin_browser.contents)
-    >>> for error in soup.fetch('div', 'message'):
+    >>> for error in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print error.renderContents()
+    There are 2 errors.
     You didn't change the status.
     You must provide an explanation message.
 
@@ -112,17 +122,20 @@ select back the 'Open' status and provide an appropriate message:
 
 Once the operation is completed, a confirmation message is displayed;
 
-    >>> soup = BeautifulSoup(admin_browser.contents)
-    >>> print soup.first('div', 'informational message').renderContents()
+    >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print message.renderContents()
     Question status updated.
 
 its status is updated;
 
-    >>> print soup.first('b', text='Status:').next.strip()
+    >>> question_portlet = find_portlet(
+    ...     admin_browser.contents, 'Mozilla Firefox question #2')
+    >>> print question_portlet.find('b', text='Status:').next.strip()
     Open
 
 and the explanation message is added to the question discussion:
 
-    >>> print soup.fetch('div', 'boardCommentBody')[-1].renderContents()
+    >>> content = find_main_content(admin_browser.contents)
+    >>> print content.findAll('div', 'boardCommentBody')[-1].renderContents()
     <p>Setting status back to 'Open'. Questions similar to a bug report
     should be linked to it, not rejected.</p>

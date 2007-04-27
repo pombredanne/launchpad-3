@@ -269,16 +269,23 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See BugTargetBase."""
         return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
 
-
     # IQuestionCollection
     def searchQuestions(self, search_text=None,
-                        status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
-                        sort=None, owner=None, needs_attention_from=None):
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, owner=None,
+                        needs_attention_from=None, unsupported=False):
         """See IQuestionCollection."""
+        if unsupported:
+            unsupported_target = self
+        else:
+            unsupported_target = None
+            
         return QuestionTargetSearch(
-            search_text=search_text, status=status, language=language,
-            sort=sort, owner=owner, needs_attention_from=needs_attention_from,
-            project=self).getResults()
+            project=self,
+            search_text=search_text, status=status,
+            language=language, sort=sort, owner=owner,
+            needs_attention_from=needs_attention_from,
+            unsupported_target=unsupported_target).getResults()
 
     def getQuestionLanguages(self):
         """See IQuestionCollection."""

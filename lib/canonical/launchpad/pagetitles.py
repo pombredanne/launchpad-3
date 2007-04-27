@@ -590,6 +590,8 @@ object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
 
+object_translations = ContextTitle('Translation templates for %s')
+
 oops = 'Oops!'
 
 def package_bugs(context, view):
@@ -681,21 +683,19 @@ person_translations = ContextDisplayName('Translations made by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
-pofile_edit = 'Rosetta: Edit PO file details'
-# XXX mpt 20051209: This should be more context-sensitive
+pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
-pofile_export = ContextTitle('%s file exports')
+pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
 
-def pofile_index(context, view):
-    return 'Rosetta: %s in %s' % (
-        context.potemplate.title, context.language.englishname)
+pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
+
+pofile_translate = ContextTitle(smartquote('Edit "%s"'))
 
 def pofile_translate(context, view):
-    return 'Translating %s into %s with Rosetta' % (
-        context.potemplate.displayname,
-        context.language.englishname)
+    return 'Translating %s into %s' % (
+        context.potemplate.displayname, context.language.englishname)
 
-pofile_upload = ContextTitle('%s upload in Rosetta')
+pofile_upload = ContextTitle(smartquote('Upload file for "%s"'))
 
 # portlet_* are portlets
 
@@ -718,19 +718,17 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
 def pomsgset_translate(context, view):
-    return 'Translating %s into %s with Rosetta' % (
-        context.pofile.potemplate.displayname,
-        context.pofile.language.englishname)
+    return smartquote('Edit "%s"' % context.pofile.title)
 
 # potemplate_chart is a fragment
 
-potemplate_edit = ContextTitle(smartquote('Edit "%s" in Rosetta'))
+potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))
 
-potemplate_index = ContextTitle(smartquote('"%s" in Rosetta'))
+potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 
-potemplate_upload = ContextTitle(smartquote('"%s" upload in Rosetta'))
+potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
-potemplate_export = ContextTitle(smartquote('Export translations of "%s"'))
+potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
 potemplatename_add = 'Add a new template name to Rosetta'
 
@@ -786,8 +784,6 @@ productseries_index = ContextTitle('Overview of %s')
 productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
 productseries_source = 'Import a stable or development branch to Bazaar'
-
-productseries_translations = ContextTitle('Translation templates for %s')
 
 productseries_translations_upload = 'Request new translations upload'
 
@@ -955,9 +951,6 @@ def sourcepackage_index(context, view):
 sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
-
-sourcepackage_translations = ContextTitle(
-    'Rosetta translation templates for %s')
 
 sourcepackagenames_index = 'Source package name set'
 
