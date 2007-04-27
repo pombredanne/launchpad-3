@@ -293,3 +293,20 @@ directly.
     ...     print tag
     bar
     foo
+
+== Filing security bugs ==
+
+The base class allows security bugs to be filed.
+
+    >>> bug_data = dict(
+    ...     title=u'Security bug', comment=u'Test description.',
+    ...     security_related=True)
+
+    >>> filebug_view = FileBugViewBase(ubuntu_firefox, LaunchpadTestRequest())
+    >>> filebug_view.validate(bug_data) is None
+    True
+    >>> filebug_view.submit_bug_action.success(bug_data)
+    >>> filebug_view.added_bug.title
+    u'Security bug'
+    >>> filebug_view.added_bug.security_related
+    True

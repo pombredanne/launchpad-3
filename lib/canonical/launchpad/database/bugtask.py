@@ -58,7 +58,6 @@ from canonical.lp.dbschema import (
     BugTaskStatus,
     PackagePublishingStatus,
     )
-from canonical.launchpad.database.pillar import pillar_sort_key
 
 
 debbugsseveritymap = {None:        BugTaskImportance.UNDECIDED,
@@ -870,8 +869,11 @@ class BugTaskSet:
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
         return self.search(search_params)
 
-    def search(self, params):
-        """See canonical.launchpad.interfaces.IBugTaskSet."""
+    def buildQuery(self, params):
+        """Build and return an SQL query with the given parameters.
+
+        Also return the clauseTables and orderBy for the generated query.
+        """
         assert isinstance(params, BugTaskSearchParams)
 
         extra_clauses = ['Bug.id = BugTask.bug']
@@ -946,10 +948,19 @@ class BugTaskSet:
         if params.searchtext:
             searchtext_quoted = sqlvalues(params.searchtext)[0]
             searchtext_like_quoted = quote_like(params.searchtext)
-            extra_clauses.append(
-                "((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s)) OR"
-                " (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))" % (
-                searchtext_quoted, searchtext_quoted, searchtext_like_quoted))
+            comment_clause = """BugTask.id IN (
+                SELECT BugTask.id
+                FROM BugTask, BugMessage,Message, MessageChunk
+                WHERE BugMessage.bug = BugTask.bug
+                    AND BugMessage.message = Message.id
+                    AND Message.id = MessageChunk.message
+                    AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
+            extra_clauses.append("""
+                ((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s) OR (%s))
+                 OR (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))
+                """ % (
+                    searchtext_quoted,searchtext_quoted, comment_clause,
+                    searchtext_like_quoted))
             if params.orderby is None:
                 # Unordered search results aren't useful, so sort by relevance
                 # instead.
@@ -1101,12 +1112,52 @@ class BugTaskSet:
         orderby_arg = self._processOrderBy(params)
 
         query = " AND ".join(extra_clauses)
-        bugtasks = BugTask.select(
-            query, prejoinClauseTables=["Bug"], clauseTables=clauseTables,
-            prejoins=['sourcepackagename', 'product'],
-            orderBy=orderby_arg)
+        return query, clauseTables, orderby_arg
 
+    def search(self, params, *args):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        query, clauseTables, orderby = self.buildQuery(params)
+        bugtasks = BugTask.select(
+            query, clauseTables=clauseTables, orderBy=orderby)
+        joins = self._getJoinsForSortingSearchResults()
+        for arg in args:
+            query, clauseTables, dummy = self.buildQuery(arg)
+            bugtasks = bugtasks.union(BugTask.select(
+                query, clauseTables=clauseTables), orderBy=orderby,
+                joins=joins)
+        bugtasks.prejoin(['sourcepackagename', 'product'])
+        bugtasks.prejoinClauseTables(['Bug'])
         return bugtasks
+
+    # XXX: This method exists only because sqlobject doesn't provide a better
+    # way for sorting the results of a set operation by external table values.
+    # It'll be removed, together with sqlobject, when we switch to storm.
+    # -- Guilherme Salgado, 2007-03-19
+    def _getJoinsForSortingSearchResults(self):
+        """Return a list of join tuples suitable as the joins argument of
+        sqlobject's set operation methods.
+
+        These joins are necessary when we want to order the result of a set
+        operaion like union() using values that are not part of our result
+        set.
+        """
+        # Find out which tables we may need to join in order to cover all
+        # possible sorting options we may want.
+        tables = set()
+        for value in self._ORDERBY_COLUMN.values():
+            if '.' in value:
+                table, col = value.split('.')
+                tables.add(table)
+
+        # Build the tuples expected by sqlobject for each table we may need.
+        joins = []
+        for table in tables:
+            if table.lower() != 'bugtask':
+                foreignkey_col = table
+            else:
+                foreignkey_col = 'id'
+            joins.append((table, 'id', foreignkey_col))
+        return joins
 
     def createTask(self, bug, owner, product=None, productseries=None,
                    distribution=None, distrorelease=None,

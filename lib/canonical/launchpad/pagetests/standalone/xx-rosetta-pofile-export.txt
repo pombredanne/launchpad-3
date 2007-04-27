@@ -13,33 +13,36 @@ Not logged in users can't access the +export page.
 
 Logged in as a regular user, the +export page is accessible.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open(
+  >>> user_browser.open(
   ...     'http://launchpad.dev/ubuntu/hoary'
   ...     '/+source/evolution/+pots/evolution-2.2/es')
-  >>> browser.getLink('Download').click()
+  >>> user_browser.getLink('Download').click()
 
-  >>> browser.url
+  >>> user_browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export'
 
-  >>> browser.title
-  'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary
-  package "evolution" file exports'
+  >>> print user_browser.title
+  Download translation for “Spanish (es) translation of evolution-2.2 in
+  Ubuntu Hoary package "evolution"”
 
-  >>> 'PO file export' in browser.contents
-  True
-  >>> 'carlos@canonical.com' in browser.contents
-  True
+  >>> print user_browser.contents
+  <...
+  ...Download Spanish translation...
+  Export process would be quite slow and thus, most of the time, you
+  will need to wait until the system process your request and sends you
+  a notification email to
+  <code>no-priv@canonical.com</code>
+  with a link where you will be able to get the exported file...
 
 If we POST the page, it should add the request to the queue.
 
-  >>> browser.getControl('Format').value = ['PO']
-  >>> browser.getControl('Confirm Export').click()
+  >>> user_browser.getControl(name='format').value = ['PO']
+  >>> user_browser.getControl('Confirm Download').click()
 
-  >>> browser.url
+  >>> user_browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
 
-  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+  >>> for tag in find_tags_by_class(user_browser.contents, 'informational'):
   ...     tag.renderContents()
   'Your request has been received. Expect to receive an email shortly.'
 
@@ -53,30 +56,32 @@ No Privileges Person.
   ...     'Authorization', 'Basic no-priv@canonical.com:test')
 
   >>> no_priv_browser.open(
-  ...    'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy/')
-
+  ...    'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy')
+  >>> no_priv_browser.url
+  'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy'
   >>> no_priv_browser.getLink('Download').click()
   >>> no_priv_browser.url
   'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy/+export'
 
-  >>> no_priv_browser.getControl('Format').value = ['PO']
-  >>> no_priv_browser.getControl('Confirm Export').click()
+  >>> no_priv_browser.getControl(name='format').value = ['PO']
+  >>> no_priv_browser.getControl('Confirm Download').click()
 
   >>> no_priv_browser.url
   'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy'
 
-  >>> for tag in find_tags_by_class(browser.contents, 'informational'):
-  ...     tag.renderContents()
-  'Your request has been received. Expect to receive an email shortly.'
+  >>> for tag in find_tags_by_class(no_priv_browser.contents, 'informational'):
+  ...     print tag.renderContents()
+  Your request has been received. Expect to receive an email shortly.
+  ...
 
 Since no-privileges person isn't a valid translator for Welsh (cy) language, the
 ownership of the newly created pofile is set to Rosetta Admins.
 
-  >>> browser.open(
+  >>> anon_browser.open(
   ...     'http://launchpad.dev/evolution'
   ...     '/trunk/+pots/evolution-2.2/cy')
   >>> translation_portlet = find_portlet(
-  ...     browser.contents, 'Translation file details')
+  ...     anon_browser.contents, 'Translation file details')
   >>> t = extract_text(translation_portlet.firstText('Creator:').findNext('a'))
   >>> u'Rosetta Administrators' in t
   True
@@ -85,12 +90,13 @@ But if we request an export from a valid translator, he gets the ownership.
 We test using the Swedish (sv) language which doesn't have a pofile for
 evolution yet; it will be created at the moment the export is requested.
 
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
   ...     'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv')
   >>> browser.getLink('Download').click()
 
-  >>> browser.getControl('Format').value = ['PO']
-  >>> browser.getControl('Confirm Export').click()
+  >>> browser.getControl(name='format').value = ['PO']
+  >>> browser.getControl('Confirm Download').click()
 
   >>> browser.url
   'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv'
@@ -113,8 +119,8 @@ https://launchpad.net/rosetta/+bug/1558).
 
   >>> browser.getLink('Download').click()
 
-  >>> browser.getControl('Format').value = ['PO']
-  >>> browser.getControl('Confirm Export').click()
+  >>> browser.getControl(name='format').value = ['PO']
+  >>> browser.getControl('Confirm Download').click()
 
   >>> browser.url
   'http://launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv'

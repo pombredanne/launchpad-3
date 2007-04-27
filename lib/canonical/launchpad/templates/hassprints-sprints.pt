@@ -10,6 +10,7 @@
 
   <div metal:fill-slot="main">
 
+  <tal:has-sprints condition="context/sprints">
     <h1>Events related to <span tal:replace="context/displayname" /></h1>
 
     <div tal:define="sprints context/sprints" tal:condition="sprints">
@@ -18,6 +19,13 @@
                         replace="structure sprint/@@+listing-detailed" />
       </table>
     </div>
+  </tal:has-sprints>
+
+  <tal:no-sprints condition="not: context/sprints">
+    <h1>There are no events related to
+      <span tal:replace="context/displayname" />
+    </h1>
+  </tal:no-sprints>
 
   </div>
 </body>

@@ -8,7 +8,7 @@
   <div metal:define-macro="form">
 
     <form action="." 
-          tal:attributes="action request/URL" 
+          tal:attributes="action view/action_url"
           method="post"
           enctype="multipart/form-data"
           accept-charset="UTF-8">

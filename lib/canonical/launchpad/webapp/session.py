@@ -69,6 +69,9 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
             # Session has never been set
             new_session = True
 
+        # XXX: SteveAlexander, 2007-04-01.
+        #      This is on the codepath where anon users get a session cookie
+        #      set unnecessarily.
         CookieClientIdManager.setRequestId(self, request, id)
 
         cookie = request.response.getCookie(self.namespace)

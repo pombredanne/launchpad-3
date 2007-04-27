@@ -8,11 +8,11 @@ __all__ = [
     'SpecificationContextMenu',
     'SpecificationNavigation',
     'SpecificationView',
-    'SpecificationAddView',
     'SpecificationEditView',
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
     'SpecificationLinkBranchView',
+    'SpecificationNewView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
     'SpecificationSupersedingView',
@@ -35,8 +35,16 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
-    IDistribution, ILaunchBag, IPersonSet, IProduct, ISpecification,
-    ISpecificationBranch, ISpecificationSet, NotFoundError)
+    IDistribution,
+    ILaunchBag,
+    IPersonSet,
+    IProduct,
+    IProject,
+    ISpecification,
+    ISpecificationBranch,
+    ISpecificationSet,
+    NotFoundError,
+    )
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -70,7 +78,7 @@ class SpecificationNavigation(Navigation):
         branch_name = self.request.stepstogo.consume()
         if person_name is None or product_name is None or branch_name is None:
             raise NotFoundError
-        
+
         person = getUtility(IPersonSet).getByName(person_name)
         if person is None:
             raise NotFoundError
@@ -257,42 +265,6 @@ class SpecificationView(LaunchpadView):
         return self.context.dependencies or self.context.blocked_specs
 
 
-class SpecificationAddView(SQLObjectAddView):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        SQLObjectAddView.__init__(self, context, request)
-
-    def create(self, name, title, specurl, summary, status,
-               owner, assignee=None, drafter=None, approver=None):
-        """Create a new Specification."""
-        # Inject the relevant product or distribution into the kw args.
-        product = None
-        distribution = None
-        if IProduct.providedBy(self.context):
-            product = self.context.id
-        elif IDistribution.providedBy(self.context):
-            distribution = self.context.id
-        # clean up name
-        name = name.strip().lower()
-        spec = getUtility(ISpecificationSet).new(name, title, specurl,
-            summary, status, owner, product=product,
-            distribution=distribution, assignee=assignee, drafter=drafter,
-            approver=approver)
-        self._nextURL = canonical_url(spec)
-        return spec
-
-    def add(self, content):
-        """Skipping 'adding' this content to a container, because
-        this is a placeless system."""
-        return content
-
-    def nextURL(self):
-        return self._nextURL
-
-
 class SpecificationEditView(SQLObjectEditView):
 
     def changed(self):
@@ -361,33 +333,44 @@ class SpecificationGoalDecideView(LaunchpadView):
                 canonical_url(self.context))
 
 
-class SpecificationRetargetingView(GeneralFormView):
+class SpecificationRetargetingView(LaunchpadFormView):
 
-    @property
-    def initial_values(self):
-        return {
-            'product': self.context.product,
-            'distribution': self.context.distribution,
-            }
+    schema = ISpecification
+    field_names = ['target']
+    label =_('Move this blueprint to a different project')
 
-    def process(self, product=None, distribution=None):
-        if product and distribution:
-            return 'Please choose a product OR a distribution, not both.'
-        if not (product or distribution):
-            return 'Please choose a product or distribution for this spec.'
+    def validate(self, data):
+        """Ensure there is not already a blueprint with the same name as
+        this one for the given target.
+        """
+        target = data.get('target')
+        if target.getSpecification(self.context.name) is not None:
+            self.setFieldError('target',
+                'There is already a blueprint with this name for %s. '
+                'Please change the name of this blueprint and try again.' %
+                target.displayname)
+
+    @action(_('Retarget Blueprint'), name='retarget')
+    def register_action(self, action, data):
         # we need to ensure that there is not already a spec with this name
         # for this new target
-        if product:
-            if product.getSpecification(self.context.name) is not None:
-                return '%s already has a spec called %s' % (
-                    product.name, self.context.name)
-        elif distribution:
-            if distribution.getSpecification(self.context.name) is not None:
-                return '%s already has a spec called %s' % (
-                    distribution.name, self.context.name)
+        target = data['target']
+        if target.getSpecification(self.context.name) is not None:
+            return '%s already has a blueprint called %s' % (
+                target.displayname, self.context.name)
+        product = distribution = None
+        if IProduct.providedBy(target):
+            product = target
+        elif IDistribution.providedBy(target):
+            distribution = target
+        else:
+            raise AssertionError, 'Unknown target'
         self.context.retarget(product=product, distribution=distribution)
         self._nextURL = canonical_url(self.context)
-        return 'Done.'
+
+    @property
+    def next_url(self):
+        return self._nextURL
 
 
 class SpecificationSupersedingView(GeneralFormView):
@@ -572,7 +555,7 @@ class SpecGraph:
         graph_attrs = dict(
             mode='hier',
             # bgcolor='transparent',  # Fails with graphviz-cairo.
-            bgcolor='#fcfcfc',  # Same as Launchpad page background.
+            bgcolor='#ffffff',  # Same as Launchpad page background.
             size='5.2,9',  # Width fits in centre of 3 col layout, 1024x768.
             ratio='auto',
             ranksep=0.25,
@@ -800,6 +783,94 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
         """
         self.request.response.setHeader('Content-type', 'text/plain')
         return self.getDotFileText()
+
+
+class SpecificationNewView(LaunchpadFormView):
+    """A form used to add a specification from the Blueprints home page,
+    where we need to choose a context for the specification as well as
+    asking for the spec details."""
+
+    schema = ISpecification
+    label = "Register a new Blueprint"
+
+    @property
+    def field_names(self):
+        """This form is used sometimes on an IProject, IProduct or
+        IDistribution to get a new spec for them, and also on
+        ISpecificationSet as a system-wide "new spec" form. We need slightly
+        different field names in each case, so we make field_names a
+        property.
+        """
+        field_names = ['name', 'title', 'specurl', 'summary', 'status',
+                       'assignee', 'drafter', 'approver']
+        if ISpecificationSet.providedBy(self.context):
+            field_names.insert(0, 'target')
+        elif IProject.providedBy(self.context):
+            field_names.insert(0, 'projecttarget')
+        return field_names
+
+    def validate(self, data):
+        """Validate the contents of the form. In general we can trust the
+        field validation but for the name of the spec we need to check that
+        there is not already a spec with that name for the given target.
+        """
+        if not ISpecificationSet.providedBy(self.context):
+            return
+        name = data.get('name')
+        if name is None:
+            self.setFieldError('name',
+                'Please provide a name for this blueprint')
+        target = data.get('target')
+        projecttarget = data.get('projecttarget')
+        if projecttarget is not None:
+            target = projecttarget
+        if target is None:
+            self.setFieldError('target',
+                'Please select a valid project.')
+        else:
+            name = name.strip().lower()
+            if target.getSpecification(name) is not None:
+                self.setFieldError('name',
+                    'There is already a blueprint with this name for %s. '
+                    'Please try another name.' % target.displayname)
+
+    @action(_('Register Blueprint'), name='register')
+    def register_action(self, action, data):
+        owner = self.user
+        # clean up name
+        name = data['name'].strip().lower()
+        # determine product or distribution as target
+        product = distribution = None
+        target = data.get('target', None)
+        projecttarget = data.get('projecttarget', None)
+        if projecttarget is not None:
+            target = projecttarget
+        if target is None:
+            target = self.context
+        if IProduct.providedBy(target):
+            product = target
+        elif IDistribution.providedBy(target):
+            distribution = target
+        else:
+            raise AssertionError, 'Unknown kind of blueprint target'
+        spec = getUtility(ISpecificationSet).new(
+            name,
+            data['title'],
+            data['specurl'],
+            data['summary'],
+            data['status'],
+            owner,
+            product=product,
+            distribution=distribution,
+            assignee=data.get('assignee', None),
+            drafter=data.get('drafter', None),
+            approver=data.get('approver', None))
+        self._nextURL = canonical_url(spec)
+
+    @property
+    def next_url(self):
+        return self._nextURL
+
 
 class SpecificationLinkBranchView(LaunchpadFormView):
     """A form used to link a branch to this specification."""

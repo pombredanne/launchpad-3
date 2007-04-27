@@ -84,7 +84,7 @@ getByName() also accepts an argument to ignore inactive products.
 You can also use the IProductSet to see some statistics on products.
 
     >>> print productset.count_translatable()
-    3
+    2
     >>> print productset.count_bounties()
     2
     >>> print productset.count_buggy()
@@ -94,11 +94,10 @@ You can also use the IProductSet to see some statistics on products.
 
 It provides information on all the translatables available, too:
 
-    >>> for product in productset.translatables():
+    >>> for product in productset.getTranslatables():
     ...    print product.name
-    evolution
-    netapplet
     alsa-utils
+    evolution
 
 
 == Package links ==
@@ -167,6 +166,20 @@ None will of course be returned.
     True
 
 
+== Answer Tracking ==
+
+Firefox uses the Answer Tracker as the official application to provide
+answers to questions.
+
+    >>> firefox.official_answers
+    True
+    
+Alsa does not use Launchpad to track answers.
+
+    >>> alsa.official_answers
+    False
+
+
 == Product Creation ==
 
 We can create new products with the createProduct() method:
@@ -233,6 +246,38 @@ We can filter for specifications that contain specific text:
  canvas
  e4x
 
+
+== Milestones ==
+
+We can use IProduct.milestones to get all milestones associated with any
+ProductSeries of a product.
+
+    >>> from datetime import datetime
+    >>> [milestone.name for milestone in firefox.milestones]
+    [u'1.0']
+
+    >>> firefox_one_zero = firefox.getSeries('1.0')
+    >>> firefox_milestone = firefox_one_zero.newMilestone(
+    ...     name='1.0-rc1', dateexpected=datetime(2018, 10, 1))
+
+They're ordered by dateexpected.
+
+    >>> [(milestone.name, milestone.dateexpected.strftime('%Y-%m-%d'))
+    ...  for milestone in firefox.milestones]
+    [(u'1.0-rc1', '2018-10-01'), (u'1.0', '2056-10-16')]
+
+Only milestones which have visible=True are returned by the .milestones
+property.
+
+    >>> firefox_milestone.visible = False
+    >>> flush_database_updates()
+    >>> [milestone.name for milestone in firefox.milestones]
+    [u'1.0']
+
+To get all milestones of a given product we have the .all_milestones property.
+
+    >>> [milestone.name for milestone in firefox.all_milestones]
+    [u'1.0-rc1', u'1.0']
 
 == Products With Branches ==
 

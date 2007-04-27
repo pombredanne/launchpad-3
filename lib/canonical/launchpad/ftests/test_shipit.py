@@ -12,11 +12,12 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.systemhomes import ShipItApplication
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.database import (
-    ShippingRequest, ShippingRequestSet, StandardShipItRequestSet)
+    ShippingRequest, ShippingRequestSet, StandardShipItRequest)
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer, setFirstLayer)
 from canonical.launchpad.interfaces import ShippingRequestPriority
-from canonical.lp.dbschema import ShipItFlavour, ShippingRequestStatus
+from canonical.lp.dbschema import (
+    ShipItDistroRelease, ShipItFlavour, ShippingRequestStatus)
 
 
 class TestShippingRequestSet(LaunchpadFunctionalTestCase):
@@ -31,8 +32,11 @@ class TestShippingRequestSet(LaunchpadFunctionalTestCase):
                 and total_approved == request.getTotalApprovedCDs())
 
 
-class TestSecondsAndThirdRequestsAreCorrectlyHandled(
-        LaunchpadFunctionalTestCase):
+class TestFraudDetection(LaunchpadFunctionalTestCase):
+    """Ensure repeated requests of a given user are marked as PENDING[SPECIAL]
+    and requests using an address already used by two other users are marked
+    as DUPLICATEDADDRESS.
+    """
 
     flavours_to_layers_mapping = {
         ShipItFlavour.UBUNTU: ShipItUbuntuLayer,
@@ -40,39 +44,47 @@ class TestSecondsAndThirdRequestsAreCorrectlyHandled(
         ShipItFlavour.EDUBUNTU: ShipItEdUbuntuLayer}
 
     def _get_standard_option(self, flavour):
-        return StandardShipItRequestSet().getByFlavour(flavour)[0]
+        return StandardShipItRequest.selectBy(flavour=flavour)[0]
 
     def _ship_request(self, request):
-        requestset = ShippingRequestSet()
         if not request.isApproved():
             request.approve()
-        shippingrun = requestset._create_shipping_run([request.id])
+        shippingrun = ShippingRequestSet()._create_shipping_run([request.id])
         flush_database_updates()
 
-    def _create_request_and_ship_it(self, flavour):
-        request = self._make_new_request_through_web(flavour)
+    def _create_request_and_ship_it(self, flavour, user_email=None, form=None):
+        request = self._make_new_request_through_web(
+            flavour, user_email=user_email, form=form)
         self._ship_request(request)
         return request
 
-    def _make_new_request_through_web(self, flavour):
-        standardoption = self._get_standard_option(flavour)
-        form = {
-            'field.recipientdisplayname': 'Foo',
-            'field.addressline1': 'Some street',
-            'field.city': 'City',
-            'field.province': 'Province',
-            'field.postcode': '432432',
-            'field.phone': '43242352',
-            'field.country': '226',
-            'ordertype': str(standardoption.id),
-            'FORM_SUBMIT': 'Request',
-            }
+    def _make_new_request_through_web(
+            self, flavour, user_email=None, form=None, distrorelease=None):
+        if user_email is None:
+            user_email = 'guilherme.salgado@canonical.com'
+        if form is None:
+            standardoption = self._get_standard_option(flavour)
+            form = {
+                'field.recipientdisplayname': 'Foo',
+                'field.addressline1': 'Some street',
+                'field.city': 'City',
+                'field.province': 'Province',
+                'field.postcode': '432432',
+                'field.phone': '43242352',
+                'field.country': '226',
+                'ordertype': str(standardoption.id),
+                'FORM_SUBMIT': 'Request',
+                }
         request = TestRequest(form=form)
         request.notifications = []
         setFirstLayer(request, self.flavours_to_layers_mapping[flavour])
-        login('guilherme.salgado@canonical.com')
+        login(user_email)
         view = getView(ShipItApplication(), 'myrequest', request)
+        if distrorelease is not None:
+            view.release = distrorelease
         view.renderStandardrequestForm()
+        errors = getattr(view, 'errors', None)
+        self.failUnlessEqual(errors, None)
         return view.current_order
 
     def test_first_request_is_approved(self):
@@ -101,6 +113,82 @@ class TestSecondsAndThirdRequestsAreCorrectlyHandled(
             third_request = self._make_new_request_through_web(flavour)
             self.failUnless(third_request.isPendingSpecial(), flavour)
             self._ship_request(third_request)
+
+    def test_requests_with_similar_address_but_different_users(self):
+        """Requests from different users with similar addresses may be marked
+        as DUPLICATEDADDRESS.
+        """
+        form = {
+            'field.recipientdisplayname': 'My Name',
+            'field.addressline1': 'Rua Antonio Rodrigues Cajado,',
+            'field.addressline2': '1506 - Ap. 703 - Vila Monteiro',
+            'field.city': 'Sao Jose dos Campos',
+            'field.province': 'Sao Paulo',
+            'field.postcode': '12242790',
+            'field.phone': '43242352',
+            'field.country': '226',
+            'FORM_SUBMIT': 'Request',
+            }
+        flavour = ShipItFlavour.UBUNTU
+        option = self._get_standard_option(flavour)
+        form['ordertype'] = str(option.id)
+        # The first request with a given address is approved.
+        request = self._make_new_request_through_web(
+            flavour, user_email='test@canonical.com', form=form)
+        self.failUnless(request.isApproved(), flavour)
+
+        # We can do some changes to the address here, because even if
+        # they are slightly different, we'll consider them the same as
+        # long as their normalized form match.
+        form['field.addressline2'] = '1506 Ap: 703; Vila Monteiro'
+        form['field.postcode'] = '12242-790'
+
+        # If a different user makes a request for CDs of a different release,
+        # using the same address, it'll still be approved.
+        # We do that because people often make requests for one release and
+        # then when they come back to ask CDs of a newer one they create a new
+        # account because they no longer have access to the email they used
+        # when creating the previous account.
+        request2 = self._make_new_request_through_web(
+            flavour, user_email='foo.bar@canonical.com', form=form,
+            distrorelease=ShipItDistroRelease.GUTSY)
+        self.failUnless(request2.isApproved(), flavour)
+        self.failIfEqual(request.distrorelease, request2.distrorelease)
+        self.failUnlessEqual(
+            request2.normalized_address, request.normalized_address)
+
+        # Now when a second request for CDs of the same release are made using
+        # the same address, it gets marked with the DUPLICATEDADDRESS status.
+        request3 = self._make_new_request_through_web(
+            flavour, user_email='karl@canonical.com', form=form)
+        self.failUnlessEqual(request.distrorelease, request3.distrorelease)
+        self.failUnless(request3.isDuplicatedAddress(), flavour)
+        self.failUnlessEqual(
+            request3.normalized_address, request.normalized_address)
+
+        # The same happens for any subsequent requests for that release with
+        # the same address.
+        request4 = self._make_new_request_through_web(
+            flavour, user_email='carlos@canonical.com', form=form)
+        self.failUnlessEqual(request.distrorelease, request3.distrorelease)
+        self.failUnless(request4.isDuplicatedAddress(), flavour)
+
+        # As we said, this happens because all requests are considered to have
+        # the same shipping address.
+        requests = request.getRequestsWithSameAddressFromOtherUsers()
+        self.failUnless(request3 in requests)
+        self.failUnless(request4 in requests)
+
+        # Note that the request itself is not included in the return value of
+        # getRequestsWithSameAddressFromOtherUsers() because we're only
+        # interested in the requests made by other users.
+        self.failIf(request in requests)
+
+        # Our second request (which was for a different release) is not
+        # included in the return of getRequestsWithSameAddressFromOtherUsers()
+        # either because that method only consider requests for CDs of the
+        # same release.
+        self.failIf(request2 in requests)
 
 
 class TestShippingRun(LaunchpadFunctionalTestCase):
