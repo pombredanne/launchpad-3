@@ -608,6 +608,7 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
     # Make inheriting the base class' actions work.
     actions = FileBugAdvancedView.actions
     schema = IProjectBugAddForm
+    can_decide_security_contact = False
 
 
 class FrontPageFileBugGuidedView(FileBugGuidedView):
@@ -658,6 +659,7 @@ class FrontPageFileBugAdvancedView(FileBugAdvancedView):
 
     # Make inheriting the base class' actions work.
     actions = FileBugAdvancedView.actions
+    can_decide_security_contact = False
 
     @property
     def initial_values(self):
