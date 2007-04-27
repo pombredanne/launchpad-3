@@ -21,12 +21,12 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
+    <p metal:fill-slot="extra_info" class="documentDescription">
       Select the team which would most benefit from this work being
       completed.  People wishing to join this team will be able to see your
       offer in a list of similar ones, and thus be able to prove their
       suitability for team membership more efficiently.
-    </div>
+    </p>
 
   </div>
 

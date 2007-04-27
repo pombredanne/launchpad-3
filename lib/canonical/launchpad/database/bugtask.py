@@ -381,6 +381,14 @@ class BugTask(SQLBase, BugTaskMixin):
         completeness_clause above."""
         return self.status in RESOLVED_BUGTASK_STATUSES
 
+    def subscribe(self, person):
+        """See IBugTask."""
+        return self.bug.subscribe(person)
+
+    def isSubscribed(self, person):
+        """See IBugTask."""
+        return self.bug.isSubscribed(person)
+
     @property
     def conjoined_master(self):
         """See IBugTask."""

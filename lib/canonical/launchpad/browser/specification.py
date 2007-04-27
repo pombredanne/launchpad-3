@@ -934,7 +934,7 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
 class SpecificationSHP(StructuralHeaderPresentation):
 
     def getIntroHeading(self):
-        return "Blueprint in %s" % cgi.escape(self.context.target.title)
+        return "Blueprint for %s" % cgi.escape(self.context.target.title)
 
     def getMainHeading(self):
         return self.context.title

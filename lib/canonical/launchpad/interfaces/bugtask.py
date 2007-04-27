@@ -159,6 +159,25 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         "True or False depending on whether or not there is more work "
         "required on this bug task.")
 
+    def subscribe(person):
+        """Subscribe this person to the underlying bug.
+
+        This method is required here so that MentorshipOffers can happen on
+        IBugTask. When we move to context-less bug presentation (where the
+        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
+        no longer useful.
+        """
+
+    def isSubscribed(person):
+        """Return True if the person is an explicit subscriber to the
+        underlying bug for this bugtask.
+
+        This method is required here so that MentorshipOffers can happen on
+        IBugTask. When we move to context-less bug presentation (where the
+        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
+        no longer useful.
+        """
+
     def setImportanceFromDebbugs(severity):
         """Set the Malone BugTask importance on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',

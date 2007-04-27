@@ -48,6 +48,15 @@ class MentoringOffer(SQLBase):
             return self.bug
         return self.specification
 
+    @property
+    def subscription_request(self):
+        """See IMentoringOffer.
+
+        In this case, we return the subscription status of the person on the
+        underlying target.
+        """
+        return self.target.isSubscribed(self.owner)
+
 
 class MentoringOfferSet:
     """See IMentoringOfferSet."""

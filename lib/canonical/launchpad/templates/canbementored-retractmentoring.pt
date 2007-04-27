@@ -21,10 +21,10 @@
   <tal:are_mentor condition="view/userIsMentor">
     <div metal:use-macro="context/@@launchpad_form/form">
 
-      <div metal:fill-slot="extra_info" class="documentDescription">
+      <p metal:fill-slot="extra_info" class="documentDescription">
         When you retract your offer of mentoring, it will disappear
         immediately from both project and team mentorship listings.
-      </div>
+      </p>
 
     </div>
   </tal:are_mentor>

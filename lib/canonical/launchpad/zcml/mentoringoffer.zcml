@@ -70,7 +70,7 @@
   <browser:page
     name="+retractmentoring"
     for="canonical.launchpad.interfaces.ICanBeMentored"
-    class="canonical.launchpad.browser.RetractMentoringOfferView"
+    class="canonical.launchpad.browser.MentoringOfferRetractView"
     permission="launchpad.AnyPerson"
     template="../templates/canbementored-retractmentoring.pt" />
 
@@ -78,7 +78,7 @@
     name="+mentor"
     for="canonical.launchpad.interfaces.ICanBeMentored"
     schema="canonical.launchpad.interfaces.IMentoringOffer"
-    class="canonical.launchpad.browser.MentoringOfferView"
+    class="canonical.launchpad.browser.MentoringOfferAddView"
     fields="team"
     arguments="team"
     permission="launchpad.AnyPerson"

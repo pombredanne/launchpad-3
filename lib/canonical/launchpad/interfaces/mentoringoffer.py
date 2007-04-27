@@ -29,6 +29,13 @@ class IMentoringOffer(IHasOwner):
         vocabulary='UserTeamsParticipation')
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    subscription_request = Bool(title=_('Email me about this'),
+        required=True, description=_(
+            "Subscribe me to this item so that I get emailed whenever "
+            "the status changes or somebody comments. If you are already "
+            "subscribed, then leaving this box clear will not "
+            "unsubscribe you."))
+
 
     # other attributes we don't need to set through a form
     bug = Attribute('A bug, if that is the target, or None')

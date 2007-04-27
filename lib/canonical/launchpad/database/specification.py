@@ -446,10 +446,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     # subscriptions
     def subscription(self, person):
         """See ISpecification."""
-        for sub in self.subscriptions:
-            if sub.person.id == person.id:
-                return sub
-        return None
+        return SpecificationSubscription.selectOneBy(
+                specification=self, person=person)
 
     def getSubscriptionByName(self, name):
         """See ISpecification."""
@@ -458,14 +456,16 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 return sub
         return None
 
-    def subscribe(self, person, essential):
+    def subscribe(self, person, essential=None):
         """See ISpecification."""
         # first see if a relevant subscription exists, and if so, return it
         sub = self.subscription(person)
-        if sub is not None:
+        if sub is not None and essential is not None:
             sub.essential = essential
             return sub
         # since no previous subscription existed, create and return a new one
+        if essential is None:
+            essential = False
         return SpecificationSubscription(specification=self,
             person=person, essential=essential)
 
@@ -476,6 +476,13 @@ class Specification(SQLBase, BugLinkTargetMixin):
             if sub.person.id == person.id:
                 SpecificationSubscription.delete(sub.id)
                 return
+
+    def isSubscribed(self, person):
+        """See canonical.launchpad.interfaces.ISpecification."""
+        if person is None:
+            return False
+
+        return bool(self.subscription(person))
 
     # queueing
     def queue(self, reviewer, requester, queuemsg=None):

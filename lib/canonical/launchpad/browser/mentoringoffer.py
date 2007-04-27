@@ -11,8 +11,8 @@ __all__ = [
     'MentoringOfferSetOverviewMenu',
     'MentoringOfferSetSOP',
     'MentoringOfferSetView',
-    'MentoringOfferView',
-    'RetractMentoringOfferView',
+    'MentoringOfferAddView',
+    'MentoringOfferRetractView',
     ]
 
 from zope.component import getUtility
@@ -86,14 +86,14 @@ class CanBeMentoredView:
         return self.context.isMentor(self.user)
 
 
-class MentoringOfferView(LaunchpadFormView):
+class MentoringOfferAddView(LaunchpadFormView):
     """This view will be used for objects that can be mentored, that
     includes IBug, IBugTask and ISpecification
     """
 
     schema = IMentoringOffer
     label = "Offer to mentor this work"
-    field_names = ['team',]
+    field_names = ['team', 'subscription_request']
     mentoring_offer = None
 
     def validate(self, data):
@@ -109,6 +109,12 @@ class MentoringOfferView(LaunchpadFormView):
         user = self.user
         team = data.get('team')
         self.mentoring_offer = self.context.offerMentoring(user, team)
+        subscribe = data.get('subscription_request')
+        if subscribe:
+            if not self.context.isSubscribed(user):
+                self.context.subscribe(user)
+                self.request.response.addInfoNotification(
+                    'You have subscribed to this item.')
         self.request.response.addInfoNotification(
             'Thank you for this mentorship offer.')
 
@@ -118,7 +124,7 @@ class MentoringOfferView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class RetractMentoringOfferView(LaunchpadFormView, CanBeMentoredView):
+class MentoringOfferRetractView(LaunchpadFormView, CanBeMentoredView):
     """This view is used to retract the offer of mentoring."""
 
     schema = IMentoringOffer

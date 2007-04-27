@@ -306,7 +306,7 @@ class ISpecification(IHasOwner, ICanBeMentored):
     def subscription(person):
         """Return the subscription for this person to this spec, or None."""
 
-    def subscribe(person):
+    def subscribe(person, essential=False):
         """Subscribe this person to the feature specification."""
 
     def unsubscribe(person):
@@ -314,6 +314,15 @@ class ISpecification(IHasOwner, ICanBeMentored):
 
     def getSubscriptionByName(name):
         """Return a subscription based on the person's name, or None."""
+
+    def isSubscribed(person):
+        """Is person subscribed to this spec?
+
+        Returns True if the user is explicitly subscribed to this spec
+        (no matter what the type of subscription), otherwise False.
+
+        If person is None, the return value is always False.
+        """
 
     # queue-related methods
     def queue(provider, requester, queuemsg=None):

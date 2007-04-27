@@ -31,7 +31,9 @@ kbd {
   min-width: 1em;
   outline: 1px #666;
 }
-label {white-space: nowrap;}
+label {
+  white-space: nowrap;
+  font-weight: bold;}
 legend {font-weight: bold;}
 legend legend {font-weight: normal;}
 .listbox { /* a scrolling list of checkboxes or radio buttons */
