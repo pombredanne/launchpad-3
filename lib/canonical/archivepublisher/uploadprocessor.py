@@ -81,7 +81,7 @@ class UploadProcessor:
         self.options = options
         self.ztm = ztm
         self.log = log
-        self.processed_uploads = None
+        self.last_processed_upload = None
 
     def processUploadQueue(self):
         """Search for uploads, and process them.
