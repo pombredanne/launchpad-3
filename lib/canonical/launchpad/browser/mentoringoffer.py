@@ -6,9 +6,11 @@ __metaclass__ = type
 
 __all__ = [
     'CanBeMentoredView',
+    'HasMentoringOffersView',
     'MentoringOfferSetFacets',
     'MentoringOfferSetOverviewMenu',
     'MentoringOfferSetSOP',
+    'MentoringOfferSetView',
     'MentoringOfferView',
     'RetractMentoringOfferView',
     ]
@@ -29,8 +31,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation,
     StandardLaunchpadFacets, ApplicationMenu, enabled_with_permission,
-    LaunchpadFormView, action)
+    LaunchpadView, LaunchpadFormView, action)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 
@@ -133,5 +136,18 @@ class RetractMentoringOfferView(LaunchpadFormView, CanBeMentoredView):
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+
+class HasMentoringOffersView(LaunchpadView):
+
+    def batched_offers(self):
+        return BatchNavigator(self.context.mentoring_offers, self.request)
+
+
+class MentoringOfferSetView(HasMentoringOffersView):
+
+    def batched_successes(self):
+        return BatchNavigator(self.context.recent_completed_mentorships,
+                              self.request)
 
 

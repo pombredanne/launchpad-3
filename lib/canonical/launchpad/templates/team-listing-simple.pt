@@ -1,3 +1,4 @@
+
 <tr>
   <td><img src="/@@/team"
            tal:replace="structure context/image:icon" /></td>

@@ -11,8 +11,10 @@
 
 <div metal:fill-slot="main">
 
-<tal:def_offers define="offers context/recent_completed_mentorships">
-<tal:mentoring_available condition="offers">
+<tal:def_offers define="
+                    batch view/batched_successes;
+                    offer_count context/recent_completed_mentorships/count">
+<tal:mentoring_available condition="offer_count">
 
   <p>
     This list describes bugs and features in
@@ -22,7 +24,8 @@
 
   <h2>Mentorships</h2>
 
-  <table class="listing sortable" id="mentorships">
+  <tal:navigation replace="structure batch/@@+navigation-links-upper" />
+  <table class="listing" id="mentorships">
     <thead>
       <tr>
         <th>Date</th>
@@ -32,7 +35,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="offer offers">
+      <tr tal:repeat="offer batch/currentBatch">
         <td>
           <span tal:content="offer/date_created/fmt:date"
                 tal:attributes="title offer/date_created/fmt:time">
@@ -51,10 +54,11 @@
       </tr>
     </tbody>
   </table>
+  <tal:navigation replace="structure batch/@@+navigation-links-lower" />
 
 </tal:mentoring_available>
 
-<tal:no_mentoring condition="not: offers">
+<tal:no_mentoring condition="not: offer_count">
   <p>
     Nobody has yet completed any bug fixes or feature implementations
     in <span tal:replace="context/displayname">Mozilla</span> with the help

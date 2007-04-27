@@ -46,6 +46,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IMentoringOfferSet"
+    class="canonical.launchpad.browser.MentoringOfferSetView"
     permission="launchpad.Admin">
     <browser:page
       name="+mentoring"
@@ -58,6 +59,7 @@
   <!-- IHasMentoringOffers -->
   <browser:pages
     for="canonical.launchpad.interfaces.IHasMentoringOffers"
+    class="canonical.launchpad.browser.HasMentoringOffersView"
     permission="zope.Public">
     <browser:page
       name="+mentoring"

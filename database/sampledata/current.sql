@@ -9169,7 +9169,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (88, 52, 52);
 INSERT INTO teamparticipation (id, team, person) VALUES (89, 56, 56);
 INSERT INTO teamparticipation (id, team, person) VALUES (90, 30, 56);
 INSERT INTO teamparticipation (id, team, person) VALUES (91, 57, 16);
-INSERT INTO teamparticipation (id, team, person) VALUES (92, 17, 26);
+--INSERT INTO teamparticipation (id, team, person) VALUES (92, 17, 26);
 INSERT INTO teamparticipation (id, team, person) VALUES (93, 59, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (94, 60, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (95, 17, 28);
