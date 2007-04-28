@@ -99,7 +99,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         "bug watches represents this particular bug task, leave it as "
         "(None). Linking the remote bug watch with the task in "
         "this way means that a change in the remote bug status will change "
-        "the status of this bug task in Malone."))
+        "the status of this bug task in Launchpad."))
     date_assigned = Datetime(
         title=_("Date Assigned"),
         description=_("The date on which this task was assigned to someone."))
@@ -124,7 +124,7 @@ class IBugTask(IHasDateCreated, IHasBug):
             "datecreated and now."))
     owner = Int()
     target = Attribute("The software in which this bug should be fixed")
-    target_uses_malone = Bool(title=_("Whether the bugtask's target uses Malone "
+    target_uses_malone = Bool(title=_("Whether the bugtask's target uses Launchpad"
                               "officially"))
     targetname = Text(title=_("The short, descriptive name of the target"),
                       readonly=True)
@@ -155,10 +155,10 @@ class IBugTask(IHasDateCreated, IHasBug):
         "The generic bugtask in a conjoined relationship")
 
     def setImportanceFromDebbugs(severity):
-        """Set the Malone BugTask importance on the basis of a debbugs
+        """Set the Launchpad BugTask importance on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',
         'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
-        the Malone importance values, and returns the relevant Malone
+        the Launchpad importance values, and returns the relevant Launchpad 
         importance.
         """
 

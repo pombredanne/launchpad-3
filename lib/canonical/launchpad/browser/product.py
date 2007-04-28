@@ -190,7 +190,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     def translations(self):
         text = 'Translations'
-        summary = 'Translations of %s in Rosetta' % self.context.displayname
+        summary = 'Translations of %s in Launchpad' % self.context.displayname
         return Link('', text, summary)
 
     def calendar(self):

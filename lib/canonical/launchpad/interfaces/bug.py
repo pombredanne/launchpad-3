@@ -397,7 +397,7 @@ class IBugAddForm(IBug):
             title=_("Linux Distribution"), required=True,
             description=_(
                 "Ubuntu, Debian, Gentoo, etc. You can file bugs only on "
-                "distrubutions using Malone as their primary bug "
+                "distrubutions using Launchpad as their primary bug "
                 "tracker."),
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
@@ -445,7 +445,7 @@ class IBugSet(Interface):
         """
 
     def queryByRemoteBug(bugtracker, remotebug):
-        """Find one or None bugs in Malone that have a BugWatch matching the
+        """Find one or None bugs in Launchpad that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
     def createBug(bug_params):
