@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Project-related interfaces for Launchpad."""
 
@@ -16,7 +16,8 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
     IBugTarget, IHasAppointedDriver, IHasOwner, IHasSpecifications,
-    IHasLogo, IHasMugshot, IHasIcon, IKarmaContext, PillarNameField)
+    IHasLogo, IHasMugshot, IHasIcon, IKarmaContext, IHasMentoringOffers,
+    PillarNameField)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
@@ -31,7 +32,8 @@ class ProjectNameField(PillarNameField):
 
 
 class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
-               IKarmaContext, IHasSprints, IHasIcon, IHasLogo, IHasMugshot):
+               IKarmaContext, IHasSprints, IHasMentoringOffers, IHasIcon,
+               IHasLogo, IHasMugshot):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)

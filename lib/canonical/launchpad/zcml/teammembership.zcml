@@ -53,4 +53,12 @@
         template="../templates/teammembership-index.pt"
         />
 
+    <browser:page
+        name="+listing-simple"
+        for="canonical.launchpad.interfaces.ITeamMembership"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/teammembership-listing-simple.pt"
+        />
+
 </configure>

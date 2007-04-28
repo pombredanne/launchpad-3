@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces import (
     PillarNameField, IHasLogo, IHasMugshot, IHasIcon)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload)
 
@@ -35,7 +36,8 @@ class ProductNameField(PillarNameField):
 
 class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-               IHasSprints, IHasLogo, IHasMugshot, IHasIcon):
+               IHasSprints, IHasMentoringOffers, IHasLogo, IHasMugshot,
+               IHasIcon):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and

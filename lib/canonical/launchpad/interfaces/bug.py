@@ -26,6 +26,7 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
+from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -109,7 +110,7 @@ class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
 
 
-class IBug(IMessageTarget):
+class IBug(IMessageTarget, ICanBeMentored):
     """The core bug entry."""
 
     id = Int(
@@ -170,6 +171,10 @@ class IBug(IMessageTarget):
     tags = List(
         title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
+    is_complete = Attribute(
+        "True or False depending on whether this bug is considered "
+        "completely addressed. A bug is Launchpad is completely addressed "
+        "when there are no tasks that are still open for the bug.")
 
 
     def followup_subject():
