@@ -237,7 +237,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
 
     _table = Product
     _orderBy = 'displayname'
-    displayname = 'Select a Product'
+    displayname = 'Select a project'
 
     def __contains__(self, obj):
         # Sometimes this method is called with an SQLBase instance, but
@@ -283,7 +283,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
 
     _table = Project
     _orderBy = 'displayname'
-    displayname = 'Select a Project'
+    displayname = 'Select a project group'
 
     def __contains__(self, obj):
         where = "active='t' and id=%d"
@@ -676,7 +676,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
 class ProductSeriesVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
-    displayname = 'Select a Product Series'
+    displayname = 'Select a Release Series'
     _table = ProductSeries
     _orderBy = [Product.q.name, ProductSeries.q.name]
     _clauseTables = ['Product']

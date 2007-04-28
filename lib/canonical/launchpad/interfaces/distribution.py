@@ -180,15 +180,15 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     official_answers = Bool(
         title=_('Uses Answers Officially'), required=True, 
         description=_("Check this box to indicate that this distribution "
-            "officially uses Answers for community support."))
+            "officially uses Launchpad for community support."))
     official_malone = Bool(
-        title=_('Uses Malone Officially'), required=True, 
+        title=_('Uses Bugs Officially'), required=True, 
         description=_("Check this box to indicate that this distribution "
-            "officially uses Malone for bug tracking."))
+            "officially uses Launchpad for bug tracking."))
     official_rosetta = Bool(
-        title=_('Uses Rosetta Officially'), required=True, 
+        title=_('Uses Translations Officially'), required=True, 
         description=_("Check this box to indicate that this distribution "
-            "officially uses Rosetta for translation."))
+            "officially uses Launchpad for translation."))
 
     # properties
     currentrelease = Attribute(

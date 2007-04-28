@@ -122,7 +122,7 @@ class ISpecification(IHasOwner, ICanBeMentored):
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     # target
-    product = Choice(title=_('Product'), required=False,
+    product = Choice(title=_('Project'), required=False,
         vocabulary='Product')
     distribution = Choice(title=_('Distribution'), required=False,
         vocabulary='Distribution')
@@ -160,7 +160,7 @@ class ISpecification(IHasOwner, ICanBeMentored):
 
     # nomination to a series for release management
     goal = Attribute(
-        "The product series or distro release for which this feature "
+        "The release series or distro release for which this feature "
         "is a goal.")
     goalstatus = Choice(
         title=_('Goal Acceptance'), vocabulary='SpecificationGoalStatus',
