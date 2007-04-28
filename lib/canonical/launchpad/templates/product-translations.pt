@@ -44,7 +44,7 @@
             To set up
             <tal:product replace="context/displayname" />
             for translation in Launchpad, you need to upload the
-            <abbr>PO</abbr> template for one of its product series.
+            <abbr>PO</abbr> template for one of its release series.
           </p>
           <ul>
             <li tal:repeat="series context/serieslist">
@@ -58,7 +58,7 @@
           <p>
             Or you may want to
             <a tal:attributes="href string:${context/fmt:url}/+packages"
-            >link the product to a distribution package</a>
+            >link the project to a distribution package</a>
             set up for translation, if there is one,
             so their translations can be shared.
           </p>
@@ -80,7 +80,7 @@
               <a
                 tal:attributes="href context/owner/fmt:url"
                 tal:content="context/owner/displayname"
-		>Foo Bar</a>, the product registrant, about using Launchpad
+		>Foo Bar</a>, the project registrant, about using Launchpad
               for translations.
             </p>
           </tal:loggedout>
@@ -89,7 +89,7 @@
             <a
               tal:attributes="href context/owner/fmt:url"
               tal:content="context/owner/displayname"
-            >Foo Bar</a>, the product registrant, about using Rosetta.
+            >Foo Bar</a>, the project registrant, about using Rosetta.
           </p>
         </tal:other>
       </tal:untranslatable>

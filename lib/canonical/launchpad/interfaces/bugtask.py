@@ -64,9 +64,9 @@ class IBugTask(IHasDateCreated, IHasBug):
 
     id = Int(title=_("Bug Task #"))
     bug = Int(title=_("Bug #"))
-    product = Choice(title=_('Product'), required=False, vocabulary='Product')
+    product = Choice(title=_('Project'), required=False, vocabulary='Product')
     productseries = Choice(
-        title=_('Product Series'), required=False, vocabulary='ProductSeries')
+        title=_('Release Series'), required=False, vocabulary='ProductSeries')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
@@ -357,7 +357,7 @@ class IBugTaskDelta(Interface):
 # renamed. See https://launchpad.net/bugs/55089 .
 class IUpstreamBugTask(IBugTask):
     """A bug needing fixing in a product."""
-    product = Choice(title=_('Product'), required=True, vocabulary='Product')
+    product = Choice(title=_('Project'), required=True, vocabulary='Product')
 
 
 class IDistroBugTask(IBugTask):
@@ -384,7 +384,7 @@ class IDistroReleaseBugTask(IBugTask):
 class IProductSeriesBugTask(IBugTask):
     """A bug needing fixing a productseries."""
     productseries = Choice(
-        title=_("Product Series"), required=True,
+        title=_("Release Series"), required=True,
         vocabulary='ProductSeries')
 
 

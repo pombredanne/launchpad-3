@@ -47,7 +47,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
     # in SQLObject soon. 12/10/04
-    id = Int(title=_('The Product ID'))
+    id = Int(title=_('The Project ID'))
 
     project = Choice(
         title=_('Part of'),
@@ -66,7 +66,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         title=_('Owner'),
         required=True,
         vocabulary='ValidOwner',
-        description=_("""Product owner, it can either a valid Person or Team
+        description=_("""Project owner, it can either a valid Person or Team
             inside Launchpad context."""))
 
     bugcontact = Choice(
@@ -354,7 +354,7 @@ class IProductSet(Interface):
 
     people = Attribute(
         "The PersonSet, placed here so we can easily render "
-        "the list of latest teams to register on the /products/ page.")
+        "the list of latest teams to register on the /projects/ page.")
 
     all_active = Attribute(
         "All the active products, sorted newest first.")

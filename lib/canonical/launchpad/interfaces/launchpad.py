@@ -98,7 +98,7 @@ class ILaunchpadCelebrities(Interface):
     bug_watch_updater = Attribute("The Bug Watch Updater.")
     bug_importer = Attribute("The bug importer.")
     landscape = Attribute("The Landscape project.")
-    launchpad = Attribute("The Launchpad product.")
+    launchpad = Attribute("The Launchpad project.")
     redfish = Attribute("The Redfish project.")
     answer_tracker_janitor = Attribute("The Answer Tracker Janitor.")
     team_membership_janitor = Attribute("The Team Membership Janitor.")

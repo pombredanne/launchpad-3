@@ -922,12 +922,12 @@ class BugTaskEditView(GeneralFormView):
         if milestone_cleared:
             self.request.response.addWarningNotification(
                 "The bug report for %s was removed from the %s milestone "
-                "because it was reassigned to a new product" % (
+                "because it was reassigned to a new project" % (
                     bugtask.targetname, milestone_cleared.displayname))
         elif milestone_ignored:
             self.request.response.addWarningNotification(
                 "The milestone setting was ignored because you reassigned the "
-                "bug to a new product")
+                "bug to a new project")
 
         comment_on_change = self.request.form.get(
             "%s.comment_on_change" % self.prefix)
@@ -999,7 +999,7 @@ class BugTaskStatusView(LaunchpadView):
             self.bugwatch_widget = None
 
         if IUpstreamBugTask.providedBy(self.context):
-            self.label = 'Product fix request'
+            self.label = 'Project fix request'
         else:
             field_names += ['sourcepackagename']
             self.label = 'Source package fix request'
