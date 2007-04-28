@@ -323,7 +323,7 @@ class RosettaContextMenu(ContextMenu):
     links = ['about', 'preferences', 'import_queue', 'translation_groups']
 
     def about(self):
-        text = 'About Rosetta'
+        text = 'About Launchpad Translations'
         rosetta_application = getUtility(IRosettaApplication)
         url = '/'.join([canonical_url(rosetta_application), '+about'])
         return Link(url, text)

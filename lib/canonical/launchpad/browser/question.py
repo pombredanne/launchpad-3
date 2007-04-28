@@ -542,6 +542,20 @@ class QuestionRejectView(LaunchpadFormView):
         return ''
 
 
+    def initialize(self):
+        """See LaunchpadFormView.
+
+        Abort early if the question is already rejected.
+        """
+        if self.context.status == QuestionStatus.INVALID:
+            self.request.response.addNotification(
+                _('The question is already rejected.'))
+            self.request.response.redirect(canonical_url(self.context))
+            return
+
+        LaunchpadFormView.initialize(self)
+
+
 class QuestionWorkflowView(LaunchpadFormView):
     """View managing the question workflow action, i.e. action changing
     its status.
@@ -617,7 +631,7 @@ class QuestionWorkflowView(LaunchpadFormView):
         return (self.user == self.context.owner and
                 self.context.can_give_answer)
 
-    @action(_('I Solved my Problem'), name="selfanswer",
+    @action(_('I Solved the Problem on My Own'), name="selfanswer",
             condition=canSelfAnswer)
     def selfanswer_action(self, action, data):
         """Action called when the owner provides the solution to his problem."""
@@ -673,12 +687,12 @@ class QuestionWorkflowView(LaunchpadFormView):
         return (self.user == self.context.owner and
                 self.context.can_confirm_answer)
 
-    @action(_("This Solved my Problem"), name='confirm',
+    @action(_("This Solved My Problem"), name='confirm',
             condition=canConfirm)
     def confirm_action(self, action, data):
         """Confirm that an answer solved the request."""
         # The confirmation message is not given by the user when the
-        # 'This Solved my Problem' button on the main question view.
+        # 'This Solved My Problem' button on the main question view.
         if not data['message']:
             data['message'] = 'Thanks %s, that solved my question.' % (
                 data['answer'].owner.displayname)

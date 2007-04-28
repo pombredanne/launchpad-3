@@ -248,7 +248,7 @@ bugtracker_index = ContextTitle(smartquote('Bug tracker "%s"'))
 
 bugtrackers_add = 'Register an external bug tracker'
 
-bugtrackers_index = 'Bug trackers registered in Malone'
+bugtrackers_index = 'Bug trackers registered in Launchpad'
 
 build_buildlog = ContextTitle('Build log for %s')
 
@@ -396,7 +396,7 @@ distrorelease_packaging = ContextDisplayName('Mapping packages to upstream '
 
 distrorelease_search = ContextDisplayName('Search packages in %s')
 
-distrorelease_translations = ContextTitle('Translations of %s in Rosetta')
+distrorelease_translations = ContextTitle('Translations of %s in Launchpad')
 
 distrorelease_builds = ContextTitle('Builds for %s')
 
@@ -521,7 +521,7 @@ logintoken_validateteamemail = 'Confirm e-mail address'
 
 # main_template has the code to insert one of these titles.
 
-malone_about = 'About Malone'
+malone_about = 'About Launchpad Bugs'
 
 malone_distros_index = 'Report a bug about a distribution'
 
@@ -592,6 +592,8 @@ object_milestones = ContextTitle(smartquote("%s's milestones"))
 object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
+
+object_translations = ContextTitle('Translation templates for %s')
 
 oops = 'Oops!'
 
@@ -668,21 +670,19 @@ person_translations = ContextDisplayName('Translations made by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
-pofile_edit = 'Rosetta: Edit PO file details'
-# XXX mpt 20051209: This should be more context-sensitive
+pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
-pofile_export = ContextTitle('%s file exports')
+pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
 
-def pofile_index(context, view):
-    return 'Rosetta: %s in %s' % (
-        context.potemplate.title, context.language.englishname)
+pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
+
+pofile_translate = ContextTitle(smartquote('Edit "%s"'))
 
 def pofile_translate(context, view):
-    return 'Translating %s into %s with Rosetta' % (
-        context.potemplate.displayname,
-        context.language.englishname)
+    return 'Translating %s into %s' % (
+        context.potemplate.displayname, context.language.englishname)
 
-pofile_upload = ContextTitle('%s upload in Rosetta')
+pofile_upload = ContextTitle(smartquote('Upload file for "%s"'))
 
 # portlet_* are portlets
 
@@ -705,25 +705,23 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
 def pomsgset_translate(context, view):
-    return 'Translating %s into %s with Rosetta' % (
-        context.pofile.potemplate.displayname,
-        context.pofile.language.englishname)
+    return smartquote('Edit "%s"' % context.pofile.title)
 
 # potemplate_chart is a fragment
 
-potemplate_edit = ContextTitle(smartquote('Edit "%s" in Rosetta'))
+potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))
 
-potemplate_index = ContextTitle(smartquote('"%s" in Rosetta'))
+potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 
-potemplate_upload = ContextTitle(smartquote('"%s" upload in Rosetta'))
+potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
-potemplate_export = ContextTitle(smartquote('Export translations of "%s"'))
+potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-potemplatename_add = 'Add a new template name to Rosetta'
+potemplatename_add = 'Add a new template name to Launchpad'
 
-potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Rosetta'))
+potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Launchpad'))
 
-potemplatename_index = ContextTitle(smartquote('"%s" in Rosetta'))
+potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
@@ -754,7 +752,7 @@ product_packages = ContextDisplayName('%s packages in Launchpad')
 
 product_series = ContextDisplayName('%s timeline')
 
-product_translations = ContextTitle('Translations of %s in Rosetta')
+product_translations = ContextTitle('Translations of %s in Launchpad')
 
 product_translators = ContextTitle('Set translation group for %s')
 
@@ -774,13 +772,11 @@ productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
 productseries_source = 'Import a stable or development branch to Bazaar'
 
-productseries_translations = ContextTitle('Translation templates for %s')
-
 productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
 
-project_add = 'Register a project with Launchpad'
+project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
 
@@ -788,13 +784,13 @@ project_branches = ContextTitle('Bazaar branches for %s')
 
 project_bugs = ContextTitle('Bugs in %s')
 
-project_edit = ContextTitle('%s project details')
+project_edit = ContextTitle('%s project group details')
 
 project_filebug_search = bugtarget_filebug_advanced
 
-project_interest = 'Rosetta: Project not translatable'
+project_interest = 'Launchpad Translations: Project group not translatable'
 
-project_rosetta_index = ContextTitle('Rosetta: %s')
+project_rosetta_index = ContextTitle('Launchpad Translations: %s')
 
 project_specs = ContextTitle('Blueprints for %s')
 
@@ -802,11 +798,11 @@ project_translations = ContextTitle('Translatable projects for %s')
 
 project_translators = ContextTitle('Set translation group for %s')
 
-projects_index = 'Projects registered in Launchpad'
+projects_index = 'Project groups registered in Launchpad'
 
-projects_request = 'Rosetta: Request a project'
+projects_request = 'Launchpad Translations: Request a project group'
 
-projects_search = 'Search for projects in Launchpad'
+projects_search = 'Search for project groups in Launchpad'
 
 rdf_index = "Launchpad RDF"
 
@@ -823,7 +819,7 @@ registry_index = 'Project and group registration in Launchpad'
 
 products_all = 'Upstream projects registered in Launchpad'
 
-projects_all = 'Projects registered in Launchpad'
+projects_all = 'Project groups registered in Launchpad'
 
 registry_review = 'Review Launchpad items'
 
@@ -833,11 +829,11 @@ remotebug_index = ContextTitle('%s')
 
 root_index = 'Launchpad'
 
-rosetta_about = 'About Rosetta'
+rosetta_about = 'About Launchpad Translations'
 
 rosetta_index = 'Launchpad Translations'
 
-rosetta_products = 'Products with Translations in Launchpad'
+rosetta_products = 'Projects with Translations in Launchpad'
 
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
@@ -943,9 +939,6 @@ sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 
-sourcepackage_translations = ContextTitle(
-    'Rosetta translation templates for %s')
-
 sourcepackagenames_index = 'Source package name set'
 
 sourcepackagerelease_index = ContextTitle('Source package %s')
@@ -971,7 +964,7 @@ specification_new = 'Register a proposal as a blueprint in Launchpad'
 
 specification_unlinkbugs = 'Remove links to bug reports'
 
-specification_retargeting = 'Attach blueprint to a different project or distribution'
+specification_retargeting = 'Attach blueprint to a different project'
 
 specification_superseding = 'Mark blueprint as superseded by another'
 
@@ -1103,7 +1096,7 @@ template_new = 'EXAMPLE NEW TITLE'
 
 temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
-translationgroup_index = ContextTitle(smartquote('"%s" translation group'))
+translationgroup_index = ContextTitle(smartquote('"%s" Launchpad translation group'))
 
 translationgroup_add = 'Add a new translation group to Launchpad'
 

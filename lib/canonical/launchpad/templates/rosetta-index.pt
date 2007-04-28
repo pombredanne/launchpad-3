@@ -85,7 +85,7 @@
     <div metal:fill-slot="help">
       <p>
         Launchpad's translation application, codenamed
-        <a href="+about">Rosetta</a>, helps you translate open source software
+        <a href="+about">Launchpad Translations</a>, helps you translate open source software
         into any human language through the Web.  All you need to start
         translating is a Web browser, a good knowledge of the application you
         are translating, and a working knowledge of both English and your

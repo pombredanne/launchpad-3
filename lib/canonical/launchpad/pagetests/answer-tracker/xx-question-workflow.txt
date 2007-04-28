@@ -122,21 +122,21 @@ answer to the end of the discussion:
 == Confirming an Answer ==
 
 When the owner comes back on the question page, he will now see a new
-'This Solved my Problem' button near the answer.
+'This Solved My Problem' button near the answer.
 
     >>> owner_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
     >>> soup = BeautifulSoup(owner_browser.contents)
     >>> soup.fetch('div', 'boardComment')[-1].first('input', type='submit')
     <input type="submit" name="field.actions.confirm"
-     value="This Solved my Problem" />
+     value="This Solved My Problem" />
 
 (Not altough we have three comments on the question, that's the only one
 that has this button. Only answers have this button.)
 
 Clicking that button will confirm that the answer solved the problem.
 
-    >>> owner_browser.getControl('This Solved my Problem').click()
+    >>> owner_browser.getControl('This Solved My Problem').click()
 
 This changes the status of the question to 'Solved' and mark
 'No Privileges Person' as the solver.
@@ -233,12 +233,12 @@ reopening portlet.
 
 The owner can also gives an answer to his own question. He simply have
 to enter his answer in the 'Message' box and click the
-'I Solved my Problem' button.
+'I Solved the Problem on My Own' button.
 
     >>> owner_browser.getControl('Message').value = (
     ...     "OK, this example requires some SVG features that will only be "
     ...     "available in Firefox 2.0.")
-    >>> owner_browser.getControl("I Solved my Problem").click()
+    >>> owner_browser.getControl("I Solved the Problem on My Own").click()
 
 This appends the message to the quesiton and sets its status to
 'Solved'.
@@ -287,8 +287,6 @@ It lists all the actions performed through workflow on the question:
     ...     action = cells[2].renderContents()
     ...     new_status = cells[3].renderContents()
     ...     print who.lstrip('&nbsp;'), action, new_status
-    Foo Bar              Reject                       Invalid
-    Foo Bar              Change status                Open
     No Privileges Person Request for more information Needs information
     Sample Person        Give more information        Open
     No Privileges Person Answer                       Answered

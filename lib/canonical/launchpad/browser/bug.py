@@ -397,7 +397,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     schema = IUpstreamBugTask
     field_names = ['product']
-    label = u"Add affected product to bug"
+    label = u"Add affected project to bug"
 
     def _getUpstream(self, distro_package):
         """Return the upstream if there is a packaging link."""
@@ -455,7 +455,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                 search_url = self.widgets['product'].popupHref()
                 self.setFieldError(
                     'product',
-                    'There is no product in Launchpad named "%s". You may'
+                    'There is no project in Launchpad named "%s". You may'
                     ' want to <a href="%s">search for it</a>, or'
                     ' <a href="%s">register it</a> if you can\'t find it.' % (
                         cgi.escape(entered_product),
@@ -501,7 +501,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             if field_name not in target_field_names]
 
     def render_upstreamtask(self):
-        self.setUpLabelAndWidgets("Add affected product to bug", ['product'])
+        self.setUpLabelAndWidgets("Add affected project to bug", ['product'])
         self.index = self.upstream_page
 
         # It's not possible to enter the product on this page, so
@@ -610,9 +610,9 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         bug_url = data.get('bug_url')
         if bug_url and target.official_malone:
             self.addError(
-                "Bug watches can not be added for %s, as it uses Malone"
+                "Bug watches can not be added for %s, as it uses Launchpad"
                 " as its official bug tracker. Alternatives are to add a"
-                " watch for another product, or a comment containing a"
+                " watch for another project, or a comment containing a"
                 " URL to the related bug report." % cgi.escape(
                     target.displayname))
 
@@ -665,7 +665,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             #     doing it now, though, since it might go away completely
             #     soon. -- Bjorn Tillenius, 2006-09-13
             self.notifications.append(
-                "%s doesn't use Malone as its bug tracker. If you don't add"
+                "%s doesn't use Launchpad as its bug tracker. If you don't add"
                 " a bug watch now you have to keep track of the status"
                 " manually. You can however link to an external bug tracker"
                 " at a later stage in order to get automatic status updates."

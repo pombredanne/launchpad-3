@@ -383,7 +383,7 @@ class IBugAddForm(IBug):
     """Information we need to create a bug"""
     id = Int(title=_("Bug #"), required=False)
     product = Choice(
-            title=_("Product"), required=False,
+            title=_("Project"), required=False,
             description=_("""The thing you found this bug in,
             which was installed by something other than apt-get, rpm,
             emerge or similar"""),
@@ -397,7 +397,7 @@ class IBugAddForm(IBug):
             title=_("Linux Distribution"), required=True,
             description=_(
                 "Ubuntu, Debian, Gentoo, etc. You can file bugs only on "
-                "distrubutions using Malone as their primary bug "
+                "distrubutions using Launchpad as their primary bug "
                 "tracker."),
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
@@ -410,7 +410,7 @@ class IBugAddForm(IBug):
 class IProjectBugAddForm(IBugAddForm):
     """Create a bug for an IProject."""
     product = Choice(
-        title=_("Product"), required=True,
+        title=_("Project"), required=True,
         vocabulary="ProjectProductsUsingMalone")
 
 
@@ -445,7 +445,7 @@ class IBugSet(Interface):
         """
 
     def queryByRemoteBug(bugtracker, remotebug):
-        """Find one or None bugs in Malone that have a BugWatch matching the
+        """Find one or None bugs in Launchpad that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
     def createBug(bug_params):

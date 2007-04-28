@@ -39,9 +39,9 @@ usage of each application:
     >>> print admin_browser.title
     Launchpad usage by Ubuntu Linux
       
-    >>> print admin_browser.getControl('Uses Rosetta Officially').selected
+    >>> print admin_browser.getControl('Uses Translations Officially').selected
     True
-    >>> print admin_browser.getControl('Uses Malone Officially').selected
+    >>> print admin_browser.getControl('Uses Bugs Officially').selected
     True
     >>> print admin_browser.getControl('Uses Answers Officially').selected
     True
@@ -49,8 +49,9 @@ usage of each application:
 Foo Bar can edit the values as well. Afterwards he gets redirected to
 the distribution index page:
 
-    >>> admin_browser.getControl('Uses Rosetta Officially').selected = False
-    >>> admin_browser.getControl('Uses Malone Officially').selected = False
+    >>> admin_browser.getControl(
+    ...     'Uses Translations Officially').selected = False
+    >>> admin_browser.getControl('Uses Bugs Officially').selected = False
     >>> admin_browser.getControl('Uses Answers Officially').selected = False
     >>> admin_browser.getControl('Change').click()
 

@@ -5,7 +5,7 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Bug trackers registered in Malone</h1>
+      <h1>Bug trackers registered in Launchpad</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -15,9 +15,9 @@
 <div metal:fill-slot="main">
 
       <p>
-        Registering a bug tracker lets you link Malone bug reports with reports
-        in that bug tracker, so that assignees in Malone will be notified
-        when the upstream bug report changes state.
+        Registering a bug tracker lets you link Launchpad bug reports with
+        reports in that bug tracker, so that assignees in Launchpad will be
+        notified when the upstream bug report changes state.
       </p>
 
   <table class="sortable listing" id="trackers">

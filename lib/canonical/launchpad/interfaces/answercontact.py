@@ -26,9 +26,9 @@ class IAnswerContact(Interface):
         description=_(
             "The person receiving notifications about all questions."),
         vocabulary='ValidPersonOrTeam')
-    product = Choice(title=_('Product'), required=False,
+    product = Choice(title=_('Project'), required=False,
         description=_(
-            "The person want to receive notifications about this product's "
+            "The person want to receive notifications about this project's "
             "questions."),
         vocabulary='Product')
 

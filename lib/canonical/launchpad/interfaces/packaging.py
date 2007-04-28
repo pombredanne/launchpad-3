@@ -26,10 +26,10 @@ class IPackaging(IHasOwner):
     id = Int(title=_('Packaging ID'))
 
     productseries = Choice(
-        title=_('Product Series'), required=True,
+        title=_('Release Series'), required=True,
         vocabulary="ProductSeries", description=_(
-        "The product series for this source package. The same distribution "
-        "release may package two different series of the same product as "
+        "The release series for this source package. The same distribution "
+        "release may package two different series of the same project as "
         "different source packages."))
 
     sourcepackagename = Choice(
