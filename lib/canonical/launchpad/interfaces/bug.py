@@ -21,11 +21,11 @@ from zope.schema import (
     Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
+from canonical.launchpad.fields import (
+    ContentNameField, Title, DuplicateBug, Tag)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
-from canonical.launchpad.interfaces.validation import non_duplicate_bug
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -133,8 +133,7 @@ class IBug(IMessageTarget):
         including the steps required to reproduce it."""))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
-    duplicateof = BugField(
-        title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
+    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
         description=_("Make this bug visible only to its subscribers"),
@@ -336,6 +335,12 @@ class IBug(IMessageTarget):
         Return None if this bug doesn't have such a bug watch.
         """
 
+    def getBugTask(target):
+        """Return the bugtask with the specified target.
+
+        Return None if no such bugtask is found.
+        """
+
 
 class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""
@@ -378,7 +383,7 @@ class IBugAddForm(IBug):
     """Information we need to create a bug"""
     id = Int(title=_("Bug #"), required=False)
     product = Choice(
-            title=_("Product"), required=False,
+            title=_("Project"), required=False,
             description=_("""The thing you found this bug in,
             which was installed by something other than apt-get, rpm,
             emerge or similar"""),
@@ -392,7 +397,7 @@ class IBugAddForm(IBug):
             title=_("Linux Distribution"), required=True,
             description=_(
                 "Ubuntu, Debian, Gentoo, etc. You can file bugs only on "
-                "distrubutions using Malone as their primary bug "
+                "distrubutions using Launchpad as their primary bug "
                 "tracker."),
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
@@ -405,7 +410,7 @@ class IBugAddForm(IBug):
 class IProjectBugAddForm(IBugAddForm):
     """Create a bug for an IProject."""
     product = Choice(
-        title=_("Product"), required=True,
+        title=_("Project"), required=True,
         vocabulary="ProjectProductsUsingMalone")
 
 
@@ -440,7 +445,7 @@ class IBugSet(Interface):
         """
 
     def queryByRemoteBug(bugtracker, remotebug):
-        """Find one or None bugs in Malone that have a BugWatch matching the
+        """Find one or None bugs in Launchpad that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
     def createBug(bug_params):

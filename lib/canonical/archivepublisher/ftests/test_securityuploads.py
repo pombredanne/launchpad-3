@@ -15,6 +15,7 @@ from canonical.archivepublisher.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.lp.dbschema import (
     DistroReleaseQueueStatus, PackagePublishingStatus, PackagePublishingPocket)
@@ -75,6 +76,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
         self.builds_before_upload = Build.select().count()
+        self.source_queue = None
         self._uploadSource()
         self.log.lines = []
         self.layer.txn.commit()
@@ -91,57 +93,36 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
             (os.path.join(self.test_files_dir, upload_dir),
              os.path.join(self.queue_folder, "incoming")))
 
-    def _findQueue(self):
-        """Return the corresponding queue item.
-
-        Look for exatch (name,version) matches in NEW, UNAPPROVED or ACCEPTED
-        queues.
-        """
-        available_statuses = [
-            DistroReleaseQueueStatus.NEW,
-            DistroReleaseQueueStatus.UNAPPROVED,
-            DistroReleaseQueueStatus.ACCEPTED,
-            ]
-        for status in available_statuses:
-            queue_items = self.distrorelease.getQueueItems(
-                status=status, name=self.name,
-                version=self.version, exact_match=True)
-            if queue_items.count() > 0:
-                return queue_items[0]
-        return None
-
-    def _publishSourceQueueItem(self, queue_item, accept=True):
-        """Publish the source part of the given queue item."""
-        if accept:
-            queue_item.setAccepted()
-        pubrec = queue_item.sources[0].publish(self.log)
-        pubrec.status = PackagePublishingStatus.PUBLISHED
-        pubrec.datepublished = UTC_NOW
-        queue_item.setDone()
-
     def _uploadSource(self):
-        """Upload, Accept and Publish the base source."""
+        """Upload and Accept (if necessary) the base source."""
         self._prepareUpload(self.source_dir)
         self.uploadprocessor.processChangesFile(
             os.path.join(self.queue_folder, "incoming", self.source_dir),
             self.source_changesfile)
-        queue_item = self._findQueue()
+        queue_item = self.uploadprocessor.last_processed_upload.queue_root
         self.assertTrue(
             queue_item is not None,
             "Source Upload Failed\nGot: %s" % "\n".join(self.log.lines))
-        self._publishSourceQueueItem(queue_item)
+        acceptable_statuses = [
+            DistroReleaseQueueStatus.NEW,
+            DistroReleaseQueueStatus.UNAPPROVED,
+            ]
+        if queue_item.status in acceptable_statuses:
+            queue_item.setAccepted()
+        # Store source queue item for future use.
+        self.source_queue = queue_item
 
     def _uploadBinary(self, archtag):
         """Upload the base binary.
 
-        Ensure it got processed and waits in NEW queue.
+        Ensure it got processed and has a respective queue record.
         Return the IBuild attached to upload.
         """
         self._prepareUpload(self.binary_dir)
         self.uploadprocessor.processChangesFile(
             os.path.join(self.queue_folder, "incoming", self.binary_dir),
             self.getBinaryChangesfileFor(archtag))
-        queue_item = self._findQueue()
+        queue_item = self.uploadprocessor.last_processed_upload.queue_root
         self.assertTrue(
             queue_item is not None,
             "Binary Upload Failed\nGot: %s" % "\n".join(self.log.lines))
@@ -150,8 +131,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
 
     def _createBuild(self, archtag):
         """Create a build record attached to the base source."""
-        sp = self.distrorelease.getSourcePackage(self.name)
-        spr = sp[self.version]
+        spr = self.source_queue.sources[0].sourcepackagerelease
         build = spr.createBuild(
             distroarchrelease=self.distrorelease[archtag],
             pocket=self.pocket)
@@ -184,13 +164,24 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
     policy = 'security'
     no_mails = True
 
-    def testBuildCreation(self):
-        """Check if a build get created for an binary security upload.
+    def setUp(self):
+        """Setup base class and create the required new distroarchrelease."""
+        TestStagedBinaryUploadBase.setUp(self)
+        distribution = getUtility(IDistributionSet).getByName(
+            self.distribution_name)
+        distrorelease = distribution[self.distrorelease.name]
+        proc_family = ProcessorFamily.selectOneBy(name='amd64')
+        distrorelease.newArch(
+            'amd64', proc_family, True, distribution.owner)
 
-        That is the usual case, security binary uploads come after the source
-        but in the same batch.
-        NascentUpload should create an appropriate build attached to the
-        correct source for the incoming binary.
+    def testBuildCreation(self):
+        """Check if the builds get created for a binary security uploads.
+
+        That is the usual case, security binary uploads come after the
+        not published (accepted) source but in the same batch.
+
+        NascentUpload should create appropriate builds attached to the
+        correct source for the incoming binaries.
         """
         build_used = self._uploadBinary('i386')
 
@@ -198,6 +189,15 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         self.assertEqual(
             u'i386 build of baz 1.0-1 in ubuntu warty SECURITY',
             build_used.title)
+        self.assertEqual('FULLYBUILT', build_used.buildstate.name)
+
+        build_used = self._uploadBinary('amd64')
+
+        self.assertBuildsCreated(2)
+        self.assertEqual(
+            u'amd64 build of baz 1.0-1 in ubuntu warty SECURITY',
+            build_used.title)
+
         self.assertEqual('FULLYBUILT', build_used.buildstate.name)
 
     def testBuildLookup(self):

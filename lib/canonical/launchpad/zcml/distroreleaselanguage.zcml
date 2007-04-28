@@ -30,9 +30,6 @@
     permission="zope.Public"
     facet="translations">
     <browser:page
-      name="+portlet-about"
-      template="../templates/distroreleaselanguage-portlet-about.pt" />
-    <browser:page
       name="+portlet-stats"
       template="../templates/distroreleaselanguage-portlet-stats.pt" />
     <browser:page

@@ -6,7 +6,7 @@ exposed in the question is related to a bug report.
 == Adding Links ==
 
 Question #2 in firefox is about a user which has trouble displaying the
-SVG demo on the W3C site. There is an existing Malone bug report (#1)
+SVG demo on the W3C site. There is an existing Launchpad bug report (#1)
 which describes that problem. A user that wants to document that
 relationship goes to the question and click the 'Link Existing Bug'.
 
@@ -44,7 +44,7 @@ bug number.
     >>> user_browser.url
     '.../firefox/+bugs'
 
-    # We should use goBack() here but can't because of ZC #645:
+    # We should use goBack() here but can't because of bug #98372:
     # zope.testbrowser truncates document content after goBack().
     #>>> user_browser.goBack()
     >>> user_browser.open(

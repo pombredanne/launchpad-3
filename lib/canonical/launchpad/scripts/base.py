@@ -1,17 +1,23 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-import os
-import sys
+import datetime
 import logging
 from optparse import OptionParser
+import os
+import socket
+import sys
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
+import pytz
+from zope.component import getUtility
 
 from canonical.lp import initZopeless, DEFAULT_ISOLATION
 from canonical.launchpad import scripts
+from canonical.launchpad.interfaces import IScriptActivitySet
 
 
 LOCK_PATH = "/var/lock/"
+UTC = pytz.timezone('UTC')
 
 
 class LaunchpadScriptFailure(Exception):
@@ -196,11 +202,27 @@ class LaunchpadScript:
             dbuser=self.dbuser, implicitBegin=implicit_begin,
             isolation=isolation)
 
+        date_started = datetime.datetime.now(UTC)
         try:
             self.main()
         except LaunchpadScriptFailure, e:
             self.logger.error(str(e))
             sys.exit(e.exit_status)
+        else:
+            date_completed = datetime.datetime.now(UTC)
+            self.record_activity(date_started, date_completed)
+
+
+    def record_activity(self, date_started, date_completed):
+        """Record the successful completion of the script."""
+        self.txn.begin()
+        from canonical.launchpad.ftests import ANONYMOUS, login
+        login(ANONYMOUS)
+        getUtility(IScriptActivitySet).recordSuccess(
+            name=self.name,
+            date_started=date_started,
+            date_completed=date_completed)
+        self.txn.commit()
 
     #
     # Make things happen

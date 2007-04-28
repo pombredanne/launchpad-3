@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import Attribute
-from zope.schema import Datetime, Int, TextLine
+from zope.schema import Choice, Datetime, Int, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad import _
@@ -47,16 +47,14 @@ class ITranslationGroup(IHasOwner):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )
-    ownerID = Int(
-            title=_('Owner'), required=True, readonly=True
-            )
-    owner = Attribute("The owner's IPerson")
+    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
+            description=_("The owner's IPerson"))
     # joins
     translators = Attribute('The set of translators for this group.')
     projects = Attribute('The projects for which this group translates.')
-    products = Attribute('The products to which this group is directly '
-        'appointed as a translator. There may be other products that are '
-        'part of projects for which the group also translates.')
+    products = Attribute('The projects to which this group is directly '
+        'appointed as a translator. There may be other projects that are '
+        'part of project groups for which the group also translates.')
     distributions = Attribute('The distros for which this group translates.')
 
     # accessing the translator list
