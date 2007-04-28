@@ -9083,6 +9083,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (59, 16, 20, 1, '2006-01-26 14:43:18.264746', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (60, 243603, 243604, 3, '2007-02-21 10:55:03.899255', NULL, 243603, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (61, 68, 69, 3, '2007-01-31 06:57:54.592917', NULL, 68, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (62, 26, 17, 2, '2007-01-31 06:57:54.592917', NULL, 16, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -9169,7 +9170,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (88, 52, 52);
 INSERT INTO teamparticipation (id, team, person) VALUES (89, 56, 56);
 INSERT INTO teamparticipation (id, team, person) VALUES (90, 30, 56);
 INSERT INTO teamparticipation (id, team, person) VALUES (91, 57, 16);
---INSERT INTO teamparticipation (id, team, person) VALUES (92, 17, 26);
+INSERT INTO teamparticipation (id, team, person) VALUES (92, 17, 26);
 INSERT INTO teamparticipation (id, team, person) VALUES (93, 59, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (94, 60, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (95, 17, 28);
