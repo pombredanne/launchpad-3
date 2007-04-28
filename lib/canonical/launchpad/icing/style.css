@@ -33,7 +33,8 @@ kbd {
 }
 label {
   white-space: nowrap;
-  font-weight: bold;}
+  font-weight: bold;
+}
 legend {font-weight: bold;}
 legend legend {font-weight: normal;}
 .listbox { /* a scrolling list of checkboxes or radio buttons */

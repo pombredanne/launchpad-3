@@ -19,11 +19,17 @@
 
 <div metal:fill-slot="main">
 
-  <h1>
+  <div style="float: right;">
     <img src="/@@/mentoring-large" title="Mentoring available"
          tal:condition="context/mentoring_offers/count" />
-    Blueprint overview
-  </h1>
+    <img src="/@@/branch-large" title="Branch available"
+         tal:condition="context/branch_links/count" />
+    <img src="/@@/info-large"
+         title="Informational blueprint, no implementation necessary"
+         tal:condition="context/informational" />
+  </div>
+  <h1>Blueprint overview</h1>
+
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
     notice goes here
@@ -54,8 +60,11 @@
         <tr>
           <th>Implementation:</th>
           <td>
+            <img tal:condition="context/informational"
+                 src="/@@/info" alt="Informational"
+                 title="Informational blueprint, no implementation necessary"
+                 />
             <tal:impl content="context/delivery/title">Unknown</tal:impl>
-            <i tal:condition="context/informational">Informational</i>
           </td>
         </tr>
         <tr tal:condition="context/goal">
@@ -109,15 +118,13 @@
         >
           <th>Sprints:</th>
           <td>
-            <ul class="sprint">
-              <li tal:repeat="sprint_link sprint_links">
+            <tal:per_sprint tal:repeat="sprint_link sprint_links">
+                <tal:approval replace="structure sprint_link/@@+icon-status" />
                 <a
                   tal:attributes="href sprint_link/sprint/fmt:url"
                   tal:content="sprint_link/sprint/name"
-                />
-                <tal:approval replace="structure sprint_link/@@+icon-status" />
-              </li>
-            </ul>
+                /><br />
+            </tal:per_sprint>
           </td>
         </tr>
       </tbody>

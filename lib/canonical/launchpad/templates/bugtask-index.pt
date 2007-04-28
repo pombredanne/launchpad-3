@@ -35,13 +35,15 @@
         <a tal:attributes="href context/bug/owner/fmt:url"
            tal:content="context/bug/owner/browsername">Foo Bar</a>
       </div>
-      <h1>
+      <div style="float: right;">
         <img src="/@@/locked-large" title="Private"
              tal:condition="context/bug/private" />
         <img src="/@@/mentoring-large" title="Mentoring available"
              tal:condition="context/bug/mentoring_offers/count" />
-        <span tal:replace="context/bug/title">Foo doesn't work</span>
-      </h1>
+        <img src="/@@/branch-large" title="Branch available"
+             tal:condition="context/bug/bug_branches/count" />
+      </div>
+      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
 
   <tal:block condition="view/reportBugInContext" />
 

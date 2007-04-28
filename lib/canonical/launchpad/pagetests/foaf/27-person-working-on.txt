@@ -39,10 +39,10 @@ Let's see what we got on his page now.
 
     >>> browser.open('http://launchpad.dev/~name12/')
     >>> div = find_tag_by_id(browser.contents, 'working-on')
-    >>> for tag in div.findAll('li'):
+    >>> for tag in div.findAll('tr'):
     ...     print tag.find('a').renderContents()
-    5. Firefox install instructions should be complete
-    2. Blackhole Trash folder
+    Firefox install instructions should be complete
+    Blackhole Trash folder
     CD Media Integrity Check
 
 We even have a link for us to see all bugs that Sample Person is working on.
@@ -57,7 +57,6 @@ Which obviously contains only the above two bugs we changed statuses.
     >>> for link in table.findAll('a'):
     ...     print link.renderContents()
     Firefox install instructions should be complete
-    <img src="/@@/branch" />
     Blackhole Trash folder
 
 For the specs, though, we don't have a page where it's possible to list only
@@ -82,8 +81,8 @@ another one, it'll be removed from the list of bugs he's working on.
 
     >>> browser.open('http://launchpad.dev/~name12/')
     >>> div = find_tag_by_id(browser.contents, 'working-on')
-    >>> for tag in div.findAll('li'):
+    >>> for tag in div.findAll('tr'):
     ...     print tag.find('a').renderContents()
-    2. Blackhole Trash folder
+    Blackhole Trash folder
     CD Media Integrity Check
 

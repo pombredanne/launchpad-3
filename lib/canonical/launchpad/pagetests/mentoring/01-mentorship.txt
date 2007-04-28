@@ -545,3 +545,65 @@ And finally let's do it on the bug.
   >>> menu_mentoring_offer in browser.contents
   True
 
+
+Subscribing when offering mentorship
+====================================
+
+When you offer to mentor some work, you are offered the option to subscribe
+to that bug or blueprint. We will demonstrate this in action.
+
+  >>> browser = Browser()
+  >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
+  >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
+
+First we show that 'One Membership' is not initially a subscriber to the
+blueprint:
+
+  >>> subs = find_portlet(browser.contents, 'Subscribers')
+  >>> print subs
+  None
+
+Now we offer mentoring, and along the way we request to be subscribed:
+
+  >>> browser.getLink(menu_mentoring_offer).click()
+  >>> browser.getControl(name='field.subscription_request').value = True
+  >>> browser.getControl('Offer Mentoring').click()
+  >>> browser.url
+  'http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation'
+
+And now 'One Membership' is a subscriber:
+
+  >>> subs = find_portlet(browser.contents, 'Subscribers')
+  >>> 'One Membership' in subs.renderContents()
+  True
+
+
+
+Now let's do the same with a bug.
+
+  >>> browser = Browser()
+  >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
+  >>> browser.open('http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15/+bug/10')
+
+First we show that 'One Membership' is not initially a subscriber to the
+bug:
+
+  >>> subs = find_portlet(browser.contents, 'Subscribers to bug 10')
+  >>> 'One Membership' in subs.renderContents()
+  False
+
+Now we offer mentoring, and along the way we request to be subscribed:
+
+  >>> browser.getLink(menu_mentoring_offer).click()
+  >>> browser.getControl(name='field.subscription_request').value = True
+  >>> browser.getControl('Offer Mentoring').click()
+  >>> browser.url
+  'http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15/+bug/10'
+
+And now 'One Membership' is a subscriber:
+
+  >>> subs = find_portlet(browser.contents, 'Subscribers to bug 10')
+  >>> 'One Membership' in subs.renderContents()
+  True
+
+

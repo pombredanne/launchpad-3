@@ -276,15 +276,10 @@
     <div class="section">
     <div class="portlet">
       <h2>Working on&#8230;</h2>
-      <ul class="bug">
-        <li tal:repeat="bugtask bugtasks">
-          <div><a tal:attributes="href bugtask/fmt:url">
-          <span tal:replace="
-                string: ${bugtask/bug/id}. ${bugtask/bug/title}" /></a>
-          <span tal:content="string: ${bugtask/targetname}, reported by ${bugtask/owner/displayname}" />
-          </div>
-        </li>
-      </ul>
+      <table>
+        <tr tal:repeat="bugtask bugtasks"
+            tal:replace="structure bugtask/@@+listing-detailed" />
+      </table>
       <div tal:condition="bugtasks">
         <a tal:attributes="href view/getURLToAssignedBugsInProgress">
           &raquo; Show all bugs in progress
@@ -294,14 +289,10 @@
     </div>
     <div class="section">
     <div class="portlet">
-      <ul class="blueprint">
-        <li tal:repeat="spec specs">
-          <div>
-            <a tal:attributes="href spec/fmt:url">
-            <span tal:replace="spec/title" /></a>
-          </div>
-        </li>
-      </ul>
+      <table>
+        <tr tal:repeat="spec specs"
+            tal:replace="structure spec/@@+listing-simple" />
+      <table>
       <div tal:condition="specs">
         <tal:comment condition="nothing">
           XXX: This link should point to a list of the in-progress specs

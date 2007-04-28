@@ -511,6 +511,10 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
             badges += self.icon_template % (
                 "branch", "Branch exists", "/@@/branch")
 
+        if self._context.bug.specifications.count() > 0:
+            badges += self.icon_template % (
+                "blueprint", "Related to a blueprint", "/@@/blueprint")
+
         return badges
 
 
