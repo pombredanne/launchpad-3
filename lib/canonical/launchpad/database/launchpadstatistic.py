@@ -1,7 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['LaunchpadStatistic', 'LaunchpadStatisticSet']
+__all__ = [
+    'LaunchpadStatistic',
+    'LaunchpadStatisticSet',
+    ]
 
 from email.Utils import make_msgid
 
@@ -74,8 +77,9 @@ class LaunchpadStatisticSet:
 
     def updateStatistics(self, ztm):
         """See ILaunchpadStatisticSet."""
-        self._updateRosettaStatistics(ztm)
         self._updateMaloneStatistics(ztm)
+        self._updateRegistryStatistics(ztm)
+        self._updateRosettaStatistics(ztm)
         self._updateQuestionStatistics(ztm)
         getUtility(IPersonSet).updateStatistics(ztm)
 
@@ -108,6 +112,43 @@ class LaunchpadStatisticSet:
             "                      AS temp WHERE places > 1")
         self.update("shared_bug_count", cur.fetchone()[0] or 0)
         ztm.commit()
+
+    def _updateRegistryStatistics(self, ztm):
+        self.update(
+            'active_products',
+            Product.select("active IS TRUE", distinct=True).count())
+        self.update(
+            'products_with_translations',
+            Product.select('''
+                POTemplate.productseries = ProductSeries.id AND
+                Product.id = ProductSeries.product AND
+                Product.active = TRUE
+                ''',
+                clauseTables=['ProductSeries', 'POTemplate'],
+                distinct=True).count())
+        self.update(
+            'products_with_blueprints',
+            Product.select(
+                "Specification.product=Product.id AND Product.active IS TRUE",
+                distinct=True, clauseTables=['Specification']).count())
+        self.update(
+            'products_with_branches',
+            Product.select(
+                "Branch.product=Product.id AND Product.active IS TRUE",
+                distinct=True, clauseTables=['Branch']).count())
+        self.update(
+            'products_with_bugs',
+            Product.select(
+                "BugTask.product=Product.id AND Product.active IS TRUE",
+                distinct=True, clauseTables=['BugTask']).count())
+        self.update(
+            'products_with_questions',
+            Product.select(
+                "Question.product=Product.id AND Product.active IS TRUE",
+                distinct=True, clauseTables=['Question']).count())
+        self.update(
+            'reviewed_products',
+            Product.selectBy(reviewed=True, active=True).count())
 
     def _updateRosettaStatistics(self, ztm):
         self.update(

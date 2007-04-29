@@ -120,7 +120,7 @@
                      tal:attributes="href team/fmt:url">A-Team</a>
                   registered
                   <span tal:attributes="title team/datecreated/fmt:datetime"
-                        tal:content="team/datecreated/fmt:approximatedate">
+                        tal:content="team/datecreated/fmt:displaydate">
                     2007-09-17
                   </span>
               </td>
@@ -144,7 +144,7 @@
               tal:attributes="href product/fmt:url"
               tal:content="product/displayname"
               /> registered
-            <tal:date replace="product/datecreated/fmt:approximatedate" />
+            <tal:date replace="product/datecreated/fmt:displaydate" />
           </tr>
         </table>
         <p><a href="/projects/+all">&raquo; Show all projects</a></p>
