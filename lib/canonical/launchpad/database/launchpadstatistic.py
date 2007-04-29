@@ -40,6 +40,7 @@ class LaunchpadStatistic(SQLBase):
     implements(ILaunchpadStatistic)
 
     _table = 'LaunchpadStatistic'
+    _defaultOrder = 'name'
 
     # db field names
     name = StringCol(notNull=True, alternateID=True, unique=True)
@@ -51,6 +52,10 @@ class LaunchpadStatisticSet:
     """See canonical.launchpad.interfaces.ILaunchpadStatisticSet."""
 
     implements(ILaunchpadStatisticSet)
+
+    def __iter__(self):
+        """See ILaunchpadStatisticSet."""
+        return iter(LaunchpadStatistic.select(orderBy='name'))
 
     def update(self, name, value):
         """See ILaunchpadStatisticSet."""

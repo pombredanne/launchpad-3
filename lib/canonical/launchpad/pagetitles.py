@@ -504,6 +504,8 @@ launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
 
+launchpadstatisticset_index = 'Launchpad statistics'
+
 logintoken_claimprofile = 'Claim Launchpad profile'
 
 logintoken_index = 'Launchpad: redirect to the logintoken page'
