@@ -771,3 +771,12 @@ class ProductSet:
         return Product.select("Specification.product=Product.id",
             distinct=True, clauseTables=['Specification']).count()
 
+    def count_answered(self):
+        return Product.select("Question.product=Product.id",
+            distinct=True, clauseTables=['Question']).count()
+
+    def count_codified(self):
+        return Product.select("Branch.product=Product.id",
+            distinct=True, clauseTables=['Branch']).count()
+
+

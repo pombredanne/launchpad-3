@@ -1005,6 +1005,11 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
 }
 
+.tab-overview #application-footer strong {
+  background: none;
+  color: #83ad23;
+}
+
 .product.series, .project {margin-bottom: 1em;}
 
 /* --- Code --- */
