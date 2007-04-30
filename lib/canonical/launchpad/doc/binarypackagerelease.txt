@@ -88,10 +88,10 @@ BinaryPackageReleaseSet utility:
    >>> verifyObject(IBinaryPackageReleaseSet, binset)
    True
 
-   >>> ret = binset.findByNameInDistroRelease(warty.id, 'fire')
+   >>> ret = binset.findByNameInDistroRelease(warty.id, 'cdr')
    >>> for item in ret:
    ...     print item.name
-   mozilla-firefox
+   cdrkit
 
 Note that two pmounts are returned because they are published in
 different architectures:
@@ -104,7 +104,7 @@ different architectures:
 
    >>> result = binset.findByNameInDistroRelease(warty.id, 'moz')
    >>> print len(list(result))
-   1
+   2
    >>> result = binset.findByNameInDistroRelease(warty.id, 'nosuchpackage')
    >>> print len(list(result))
    0
@@ -127,10 +127,10 @@ getByNameInDistroRelease
 
    >>> result = binset.getByNameInDistroRelease(warty.id)
    >>> print len(list(result))
-   6
+   7
    >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox')
    >>> print len(list(result))
-   1
+   2
    >>> result = binset.getByNameInDistroRelease(warty.id, 'nosuchpackage')
    >>> print len(list(result))
    0
@@ -145,7 +145,7 @@ getByNameInDistroRelease
    >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
    ...                                          archtag='i386')
    >>> print len(list(result))
-   1
+   2
    >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
    ...                                          archtag='nosucharch')
    >>> print len(list(result))

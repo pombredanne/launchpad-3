@@ -299,7 +299,7 @@ counters. IDistroRelease provides a method to update its own cache:
 New values were stored:
 
   >>> warty.sourcecount
-  4
+  5
   >>> warty.binarycount
   5
 
@@ -318,4 +318,4 @@ Invoke the counter updater on this architecture:
 New values were stored:
 
   >>> warty_i386.package_count
-  6
+  7
