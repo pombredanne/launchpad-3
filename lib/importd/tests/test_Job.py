@@ -13,7 +13,6 @@ from canonical.lp.dbschema import ImportStatus
 from importd import JobStrategy
 from importd.Job import Job, CopyJob
 from importd.tests import testutil, helpers
-import importd.util
 
 
 class JobCreationTestCase(unittest.TestCase):
@@ -133,6 +132,7 @@ class TestGetJob(helpers.ZopelessTestCase):
 
     def testGetBuilders(self):
         '''get a builders list from the db'''
+        import importd.util # Local import to avoid circular import.
         importd_path = '/dummy/path/to/importd/package'
         push_prefix = '/dummy/prefix/to/push/branches/'
         source_repo = '/dummy/prefix/to/source/repo'
