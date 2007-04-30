@@ -440,8 +440,18 @@ class IProductSet(Interface):
         them in Blueprint."""
 
     def count_reviewed():
-        """return a count of the number of products in the Launchpad that
+        """Return a count of the number of products in the Launchpad that
         are both active and reviewed."""
+
+    def count_answered():
+        """Return the number of projects that have questions and answers
+        associated with them.
+        """
+
+    def count_codified():
+        """Return the number of projects that have branches associated with
+        them.
+        """
 
 
 
