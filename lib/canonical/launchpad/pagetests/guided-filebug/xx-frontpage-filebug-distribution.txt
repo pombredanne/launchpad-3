@@ -55,11 +55,11 @@ location as it is (which is Ubuntu, no package):
     ...      find_tags_by_class(user_browser.contents, 'message') ]
     ['No similar bugs were found.']
 
-Changing the bug location to a project (called "Product" on the page),
-without choosing a specific project will fail form validation, where
-previously this caused an OOPS.
+Changing the bug location to a project, without choosing a specific
+project, will fail form validation, where previously this caused an
+OOPS.
 
-    >>> user_browser.getControl('Product').selected = True
+    >>> user_browser.getControl('Project').selected = True
     >>> user_browser.getControl(name='field.comment').value = 'sausage'
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
