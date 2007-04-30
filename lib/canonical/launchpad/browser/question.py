@@ -53,7 +53,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,
-    LaunchpadEditFormView, custom_widget)
+    LaunchpadEditFormView, custom_widget, safe_action)
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
@@ -85,6 +85,7 @@ class QuestionSetView(LaunchpadFormView):
         """The error message for the scope widget."""
         return self.getWidgetError('scope')
 
+    @safe_action
     @action('Find Answers', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""

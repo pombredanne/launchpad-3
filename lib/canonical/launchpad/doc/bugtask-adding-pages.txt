@@ -27,7 +27,8 @@ We don't care about the actual rendering of the page, so we override
 the index template.
 
     >>> def get_and_setup_view(context, name, form):
-    ...     view = getView(context, name, LaunchpadTestRequest(form=form))
+    ...     view = getView(context, name, LaunchpadTestRequest(
+    ...         environ={'REQUEST_METHOD': 'POST'}, form=form))
     ...     view.index = lambda: u''
     ...     view.upstream_page = lambda: u''
     ...     return view

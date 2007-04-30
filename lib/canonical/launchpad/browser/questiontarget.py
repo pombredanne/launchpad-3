@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, stepto, stepthrough, urlappend,
-    ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
+    ApplicationMenu, GeneralFormView, LaunchpadFormView, Link, safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -291,6 +291,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         return not self.context_question_languages.issubset(
             self.user_support_languages)
 
+    @safe_action
     @action(_('Search'))
     def search_action(self, action, data):
         """Action executed when the user clicked the search button.
