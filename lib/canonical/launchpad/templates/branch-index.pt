@@ -184,8 +184,20 @@
     <li tal:repeat="rev_no context/latest_revisions"
         tal:attributes="value rev_no/sequence; id string:rev${rev_no/sequence}">
       <div>
-        By <strong tal:content="rev_no/revision/revision_author/name">
-          John Doe &lt;john.doe@example.com&gt;</strong> <span
+        By
+        <strong>
+          <tal:not-anonymous condition="view/user">
+            <span tal:replace="rev_no/revision/revision_author/name">
+              John Doe &lt;john.doe@example.com&gt;
+            </span>
+          </tal:not-anonymous>
+          <tal:anonymous condition="not:view/user">
+            <span tal:replace="rev_no/revision/revision_author/name_without_email">
+              John Doe
+            </span>
+          </tal:anonymous>
+        </strong>
+        <span
             tal:attributes="title rev_no/revision/revision_date/fmt:datetime"
             tal:content="rev_no/revision/revision_date/fmt:displaydate"
             >2005-10-05 14:34:22 WST</span>
