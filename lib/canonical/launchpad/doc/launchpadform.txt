@@ -189,6 +189,7 @@ submitted with that button.
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
+  ...     environ={'REQUEST_METHOD': 'POST'},
   ...     form={'field.displayname': 'bob',
   ...           'field.actions.change': 'Change Name'})
   >>> view = FormTestView4(context, request)
@@ -226,6 +227,7 @@ setFieldError() method (for errors specific to a field):
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
+  ...     environ={'REQUEST_METHOD': 'POST'},
   ...     form={'field.name': 'fred', 'field.password': '12345'})
   >>> view = FormTestView5(context, request)
   >>> view.setUpFields()
@@ -238,6 +240,7 @@ setFieldError() method (for errors specific to a field):
 Check that form wide errors can be reported:
 
   >>> request = LaunchpadTestRequest(
+  ...     environ={'REQUEST_METHOD': 'POST'},
   ...     form={'field.name': 'fred', 'field.password': 'fred'})
   >>> view = FormTestView5(context, request)
   >>> view.setUpFields()
@@ -251,6 +254,7 @@ Check that form wide errors can be reported:
 Check that widget specific errors can be reported:
 
   >>> request = LaunchpadTestRequest(
+  ...     environ={'REQUEST_METHOD': 'POST'},
   ...     form={'field.name': 'fred', 'field.password': 'password'})
   >>> view = FormTestView5(context, request)
   >>> view.setUpFields()
@@ -284,6 +288,7 @@ redirect the user to another URL.  The URL is specified by the
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
+  ...     environ={'REQUEST_METHOD': 'POST'},
   ...     form={'field.displayname': 'bob',
   ...           'field.actions.change': 'Change Name'})
   >>> view = FormTestView6(context, request)
@@ -329,6 +334,7 @@ rendered content is always the empty string.
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
+  ...     environ={'REQUEST_METHOD': 'POST'},
   ...     form={'field.displayname': 'bob',
   ...           'field.actions.redirect': 'Redirect'})
   >>> view = RenderFormTest(context, request)
@@ -340,6 +346,7 @@ can directly return the rendered content:
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
+  ...     environ={'REQUEST_METHOD': 'POST'},
   ...     form={'field.displayname': 'bob',
   ...           'field.actions.update': 'Update'})
   >>> view = RenderFormTest(context, request)
@@ -350,6 +357,7 @@ This is also true of failure handlers:
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
+  ...     environ={'REQUEST_METHOD': 'POST'},
   ...     form={'field.displayname': '',
   ...           'field.actions.update': 'Update'})
   >>> view = RenderFormTest(context, request)
@@ -405,6 +413,73 @@ error, the generated script will focus the first widget with an error:
   // -->
 
 
+Safe Actions
+------------
+
+By default, LaunchpadFormView requires that form submissions be done
+via POST requests.  There are a number of reasons for this:
+
+ * Form submissions usually classed as "unsafe" (according to the HTTP
+   definition), so should not be performed with a GET.
+ * If we keep all GET requests readonly, we can potentially run them
+   on read-only database transactions in the future.
+ * We do not want remote sites posting our forms, as it leaves
+   Launchpad open to Cross-site Request Forgery (XSRF) attacks.  We
+   perform additional checks on POST requests, and don't want them
+   skipped by submitting the form with GET.
+
+However, there are cases where a form action is safe (e.g. a "search"
+action).  Those actions can be marked as such:
+
+  >>> from canonical.launchpad.webapp import safe_action
+  >>> class UnsafeActionTestView(LaunchpadFormView):
+  ...     schema = IFormTest
+  ...     field_names = ['name']
+  ...
+  ...     @action(u'Change', name='change')
+  ...     def redirect_action(self, action, data):
+  ...         print 'Change'
+  ...
+  ...     @safe_action
+  ...     @action(u'Search', name='search')
+  ...     def search_action(self, action, data):
+  ...         print 'Search'
+  >>> context = FormTest()
+
+With this form, the "change" action can only be submitted with a POST
+request:
+
+  >>> request = LaunchpadTestRequest(
+  ...     environ={'REQUEST_METHOD': 'GET'},
+  ...     form={'field.name': 'foo',
+  ...           'field.actions.change': 'Change'})
+  >>> view = UnsafeActionTestView(context, request)
+  >>> view.initialize()
+  Traceback (most recent call last):
+    ...
+  UnsafeFormGetSubmissionError: field.actions.change
+
+  >>> request = LaunchpadTestRequest(
+  ...     environ={'REQUEST_METHOD': 'POST'},
+  ...     form={'field.name': 'foo',
+  ...           'field.actions.change': 'Change'})
+  >>> view = UnsafeActionTestView(context, request)
+  >>> view.initialize()
+  Change
+
+
+In contrast, the "search" action can be submitted with a GET request:
+
+  >>> request = LaunchpadTestRequest(
+  ...     environ={'REQUEST_METHOD': 'GET'},
+  ...     form={'field.name': 'foo',
+  ...           'field.actions.search': 'Search'})
+  >>> view = UnsafeActionTestView(context, request)
+  >>> view.initialize()
+  Search
+
+
+
 LaunchpadEditFormView
 ---------------------
 
@@ -444,6 +519,7 @@ object for us too:
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
+  ...     environ={'REQUEST_METHOD': 'POST'},
   ...     form={'field.displayname': 'James Henstridge',
   ...           'field.actions.change': 'Change Name'})
   >>> view = FormTestView8(context, request)

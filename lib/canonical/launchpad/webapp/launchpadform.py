@@ -10,6 +10,7 @@ __all__ = [
     'LaunchpadEditFormView',
     'action',
     'custom_widget',
+    'safe_action',
     ]
 
 import transaction
@@ -25,7 +26,7 @@ from zope.app.form.browser import (
 
 from canonical.launchpad.webapp.interfaces import (
     ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
-    IAlwaysSubmittedWidget)
+    IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.event import (
@@ -86,6 +87,12 @@ class LaunchpadFormView(LaunchpadView):
         # no action selected, so return
         if action is None:
             return
+
+        # Check to see if an attempt was made to submit a non-safe
+        # action with a GET query.
+        is_safe = getattr(action, 'is_safe', False)
+        if not is_safe and self.request.method != 'POST':
+            raise UnsafeFormGetSubmissionError(action.__name__)
 
         if errors:
             self.form_result = action.failure(data, errors)
@@ -349,3 +356,13 @@ class custom_widget:
             cls.custom_widgets = dict(cls.custom_widgets)
         cls.custom_widgets[self.field_name] = self.widget
         return cls
+
+
+def safe_action(action):
+    """A decorator used to mark a particular action as 'safe'.
+
+    In the context of LaunchpadFormView, only actions marked as safe
+    can be submitted using a GET request.
+    """
+    action.is_safe = True
+    return action
