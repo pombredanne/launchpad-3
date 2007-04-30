@@ -396,6 +396,11 @@
     />
 
   <vocabulary
+    name="UserTeamsParticipation"
+    factory="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
+    />
+
+  <vocabulary
     name="ValidPersonOrTeam"
     factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
     />

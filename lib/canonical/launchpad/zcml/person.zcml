@@ -36,6 +36,19 @@
           set_schema="canonical.launchpad.interfaces.IPerson" />
   </content>
 
+  <browser:menus
+      module="canonical.launchpad.browser.person"
+      classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
+          PersonSpecsMenu TeamBugsMenu TeamSpecsMenu PersonBranchesMenu
+          PersonSetFacets PersonSetContextMenu"
+      />
+
+  <browser:url
+      for="canonical.launchpad.interfaces.IPerson"
+      path_expression="string:~${name}"
+      parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+      />
+
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPerson"
       name="+index" />
@@ -63,19 +76,6 @@
       for="canonical.launchpad.interfaces.IPerson"
       name="+translations"
       layer="canonical.launchpad.layers.TranslationsLayer"
-      />
-
-  <browser:menus
-      module="canonical.launchpad.browser.person"
-      classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-          PersonSpecsMenu TeamBugsMenu PersonBranchesMenu
-          PersonSetFacets PersonSetContextMenu"
-      />
-
-  <browser:url
-      for="canonical.launchpad.interfaces.IPerson"
-      path_expression="string:~${name}"
-      parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
       />
 
   <browser:editform
@@ -153,6 +153,10 @@
       <browser:page
           name="+packages"
           template="../templates/person-packages.pt"
+          />
+      <browser:page
+          name="+participation"
+          template="../templates/person-participation.pt"
           />
       <browser:page
           name="+karma"
@@ -427,6 +431,13 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
+    name="+listing-simple"
+    template="../templates/team-listing-simple.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="zope.Public"
     name="+mugshots"
     template="../templates/team-mugshots.pt"
     />
@@ -507,11 +518,9 @@
       template="../templates/team-members.pt"
       />
 
-  <browser:addform
+  <browser:page
       name="+addmember"
       for="canonical.launchpad.interfaces.ITeam"
-      schema="canonical.launchpad.interfaces.ITeamMember"
-      fields="newmember"
       class="canonical.launchpad.browser.TeamMemberAddView"
       permission="launchpad.Edit"
       template="../templates/team-addmember.pt"

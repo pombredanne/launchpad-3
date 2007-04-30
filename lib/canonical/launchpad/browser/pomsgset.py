@@ -2,14 +2,15 @@
 
 __metaclass__ = type
 __all__ = [
-    'POMsgSetIndexView',
-    'POMsgSetView',
-    'POMsgSetPageView',
-    'POMsgSetFacets',
-    'POMsgSetAppMenus',
-    'POMsgSetSuggestions',
-    'POMsgSetZoomedView',
     'BaseTranslationView',
+    'POMsgSetAppMenus',
+    'POMsgSetFacets',
+    'POMsgSetIndexView',
+    'POMsgSetPageView',
+    'POMsgSetSOP',
+    'POMsgSetSuggestions',
+    'POMsgSetView',
+    'POMsgSetZoomedView',
     ]
 
 import cgi
@@ -33,16 +34,16 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.potemplate import (
+    POTemplateFacets, POTemplateSOP)
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
     ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
     IPOSubmissionSet, TranslationConflict)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
-    canonical_url)
+    ApplicationMenu, Link, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
-
 
 #
 # Translation-related formatting functions
@@ -275,43 +276,23 @@ class CustomDropdownWidget(DropdownWidget):
 #
 # Standard UI classes
 #
-
-class POMsgSetFacets(StandardLaunchpadFacets):
-    # XXX 20061004 mpt: A POMsgSet is not a structural object. It should
-    # inherit all navigation from its product or distro release.
-
+class POMsgSetFacets(POTemplateFacets):
     usedfor = IPOMsgSet
-    defaultlink = 'translations'
-    enable_only = ['overview', 'translations']
 
-    def _parent_url(self):
-        """Return the URL of the thing the PO template of this PO file is
-        attached to.
-        """
-        potemplate = self.context.pofile.potemplate
-        if potemplate.distrorelease:
-            source_package = potemplate.distrorelease.getSourcePackage(
-                potemplate.sourcepackagename)
-            return canonical_url(source_package)
-        else:
-            return canonical_url(potemplate.productseries)
+    def __init__(self, context):
+        POTemplateFacets.__init__(self, context.pofile.potemplate)
 
-    def overview(self):
-        target = self._parent_url()
-        text = 'Overview'
-        return Link(target, text)
 
-    def translations(self):
-        target = '+translate'
-        text = 'Translations'
-        return Link(target, text)
+class POMsgSetSOP(POTemplateSOP):
+
+    def __init__(self, context):
+        POTemplateSOP.__init__(self, context.pofile.potemplate)
 
 
 class POMsgSetAppMenus(ApplicationMenu):
     usedfor = IPOMsgSet
     facet = 'translations'
-    links = ['overview', 'translate', 'switchlanguages',
-             'upload', 'download', 'viewtemplate']
+    links = ['overview', 'translate', 'upload', 'download']
 
     def overview(self):
         text = 'Overview'
@@ -321,10 +302,6 @@ class POMsgSetAppMenus(ApplicationMenu):
         text = 'Translate many'
         return Link('../+translate', text, icon='languages')
 
-    def switchlanguages(self):
-        text = 'Switch languages'
-        return Link('../../', text, icon='languages')
-
     def upload(self):
         text = 'Upload a file'
         return Link('../+upload', text, icon='edit')
@@ -332,10 +309,6 @@ class POMsgSetAppMenus(ApplicationMenu):
     def download(self):
         text = 'Download'
         return Link('../+export', text, icon='download')
-
-    def viewtemplate(self):
-        text = 'View template'
-        return Link('../../', text, icon='languages')
 
 #
 # Views
@@ -414,17 +387,17 @@ class BaseTranslationView(LaunchpadView):
             #   -- kiko, 2006-10-18
             self.request.response.addErrorNotification("""
             <p>
-            Rosetta can&#8217;t handle the plural items in this file, because it
-            doesn&#8217;t yet know how plural forms work for %s.
+            Launchpad can&#8217;t handle the plural items in this file, 
+	    because it doesn&#8217;t yet know how plural forms work for %s.
             </p>
             <p>
             To fix this, please e-mail the <a
-            href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users mailing list</a>
+            href="mailto:rosetta-users@lists.ubuntu.com">Launchpad Translations users mailing list</a>
             with this information, preferably in the format described in the
-            <a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta FAQ</a>.
+            <a href="https://wiki.ubuntu.com/RosettaFAQ">FAQ</a>.
             </p>
             <p>
-            This only needs to be done once per language. Thanks for helping Rosetta.
+            This only needs to be done once per language. Thanks for helping Launchpad Translations.
             </p>
             """ % self.pofile.language.englishname)
             return
@@ -973,15 +946,22 @@ class POMsgSetView(LaunchpadView):
                              count_lines(translation) > 1 or
                              count_lines(self.msgid) > 1 or
                              count_lines(self.msgid_plural) > 1)
+            active_submission = self.context.getActiveSubmission(index)
+            is_same_translator = active_submission is not None and (
+                active_submission.person.id == self.context.reviewer.id)
+            is_same_date = active_submission is not None and (
+                active_submission.datecreated == self.context.date_reviewed)
             translation_entry = {
                 'plural_index': index,
                 'active_translation': text_to_html(
                     active, self.context.potmsgset.flags()),
                 'translation': translation,
-                'active_submission': self.context.getActiveSubmission(index),
+                'active_submission': active_submission,
                 'suggestion_block': self.suggestion_blocks[index],
                 'store_flag': index in self.plural_indices_to_store,
-                'is_multi_line': is_multi_line
+                'is_multi_line': is_multi_line,
+                'same_translator_and_reviewer': (is_same_translator and
+                                                 is_same_date)
                 }
 
             if self.message_must_be_hidden:
@@ -1146,11 +1126,7 @@ class POMsgSetView(LaunchpadView):
             # Always show messages to logged-in users.
             return False
         # For anonymous users, check the msgid.
-        return self.msgid in [
-            u'translation-credits',
-            u'_: EMAIL OF TRANSLATORS<img alt=""' +
-                u' src="/@@/translation-newline" /><br/>\nYour emails'
-            ]
+        return self.context.potmsgset.hide_translations_from_anonymous
 
     @cachedproperty
     def sequence(self):
