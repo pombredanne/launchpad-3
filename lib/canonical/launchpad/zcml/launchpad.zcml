@@ -68,7 +68,7 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
- <!-- LibrarianFailure -->
+  <!-- LibrarianFailure -->
   <browser:page
       for="canonical.librarian.interfaces.LibrarianFailure"
       name="index.html"
