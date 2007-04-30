@@ -94,6 +94,32 @@ The list of fields can be restricted with the "field_names" attribute:
   ['name', 'displayname']
 
 
+Custom Adapters
+---------------
+
+Sometimes a schema is used for a form that is not actually implemented
+by the context widget.  This can be handled by providing some custom
+adapters for the form.
+
+  >>> class IFormTest2(Interface):
+  ...     name = TextLine(title=u"Name")
+  >>> class FormAdaptersTestView(LaunchpadFormView):
+  ...     schema = IFormTest2
+  ...     @property
+  ...     def adapters(self):
+  ...         return {IFormTest2: self.context}
+
+  >>> context = FormTest()
+  >>> request = LaunchpadTestRequest()
+  >>> IFormTest2.providedBy(context)
+  False
+  >>> view = FormAdaptersTestView(context, request)
+  >>> view.setUpFields()
+  >>> view.setUpWidgets()
+  >>> view.widgets['name'].context.context is context
+  True
+
+
 Custom Widgets
 --------------
 
@@ -399,7 +425,8 @@ In other respects, it is used the same way as LaunchpadFormView:
   ...
   ...     @action(u"Change Name", name="change")
   ...     def change_action(self, action, data):
-  ...         self.updateContextFromData(data)
+  ...         if self.updateContextFromData(data):
+  ...             print 'Context was updated'
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest()
@@ -421,6 +448,7 @@ object for us too:
   ...           'field.actions.change': 'Change Name'})
   >>> view = FormTestView8(context, request)
   >>> view.initialize()
+  Context was updated
 
   >>> request.response.getStatus()
   302
@@ -433,6 +461,7 @@ possible to pass in a specific context to use instead:
 
   >>> custom_context = FormTest()
   >>> view.updateContextFromData({'displayname': u'New name'}, custom_context)
+  True
   >>> custom_context.displayname
   u'New name'
 
