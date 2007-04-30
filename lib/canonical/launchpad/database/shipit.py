@@ -880,6 +880,7 @@ class ShippingRequestSet:
         """See IShippingRequestSet"""
         # First we get the distribution of requests/shipments for the current
         # release only.
+        shipit_admins = getUtility(ILaunchpadCelebrities).shipit_admin
         cur = cursor()
         query = """
             SELECT requests, requesters,
@@ -896,12 +897,14 @@ class ShippingRequestSet:
                             ShippingRequest.id = RequestedCDs.request
                     WHERE distrorelease = %(current_release)s
                         AND status != %(cancelled)s
+                        AND recipient != %(shipit_admins)s
                     GROUP BY recipient
                     ) AS REQUEST_DISTRIBUTION
                 GROUP BY requests
                 ) AS REQUEST_DISTRIBUTION_AND_TOTALS
             """ % sqlvalues(
                     current_release=ShipItConstants.current_distrorelease,
+                    shipit_admins=shipit_admins,
                     cancelled=ShippingRequestStatus.CANCELLED)
         cur.execute(query)
         current_release_request_distribution = cur.fetchall()
@@ -922,12 +925,14 @@ class ShippingRequestSet:
                             ShippingRequest.id = RequestedCDs.request
                     WHERE distrorelease = %(current_release)s
                         AND status IN (%(approved)s, %(shipped)s)
+                        AND recipient != %(shipit_admins)s
                     GROUP BY recipient
                     ) AS SHIPMENT_DISTRIBUTION
                 GROUP BY approved_requests
                 ) AS SHIPMENT_DISTRIBUTION_AND_TOTALS
             """ % sqlvalues(
                     current_release=ShipItConstants.current_distrorelease,
+                    shipit_admins=shipit_admins,
                     approved=ShippingRequestStatus.APPROVED,
                     shipped=ShippingRequestStatus.SHIPPED)
         cur.execute(query)
@@ -944,6 +949,7 @@ class ShippingRequestSet:
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
                 WHERE distrorelease = %(current_release)s
+                    AND recipient != %(shipit_admins)s
                     AND status != %(cancelled)s);
             CREATE UNIQUE INDEX current_release_requester__unq 
                 ON current_release_requester(recipient);
@@ -956,11 +962,13 @@ class ShippingRequestSet:
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
                 WHERE distrorelease != %(current_release)s
+                    AND recipient != %(shipit_admins)s
                     AND status != %(cancelled)s);
             CREATE UNIQUE INDEX non_current_release_requester__unq 
                 ON non_current_release_requester(recipient);
             """ % sqlvalues(
                     current_release=ShipItConstants.current_distrorelease,
+                    shipit_admins=shipit_admins,
                     cancelled=ShippingRequestStatus.CANCELLED)
         cur.execute(create_tables)
 
@@ -987,6 +995,7 @@ class ShippingRequestSet:
                         AND ShippingRequest.id = RequestedCDs.request
                         AND recipient IN (
                             SELECT recipient FROM current_release_requester)
+                        AND recipient != %(shipit_admins)s
                     GROUP BY recipient
                     UNION
                     -- This one gives us the people which made feisty requests
@@ -997,12 +1006,14 @@ class ShippingRequestSet:
                           EXCEPT
                           SELECT recipient FROM non_current_release_requester
                          ) AS FIRST_TIME_REQUESTERS
+                    WHERE recipient != %(shipit_admins)s
                     ) AS RECIPIENTS_AND_COUNTS
                 GROUP BY requests
                 ) AS REQUEST_DISTRIBUTION_AND_TOTALS
             WHERE requesters > 0
             """ % sqlvalues(
                     current_release=ShipItConstants.current_distrorelease,
+                    shipit_admins=shipit_admins,
                     cancelled=ShippingRequestStatus.CANCELLED)
         cur.execute(query)
         other_releases_request_distribution = cur.fetchall()
@@ -1032,6 +1043,17 @@ class ShippingRequestSet:
                     GROUP BY recipient
                     UNION
                     -- This one gives us the people which made feisty requests
+                    -- but haven't had any approved request of previous
+                    -- releases.
+                    SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
+                    FROM RequestedCDs, ShippingRequest
+                    WHERE distrorelease != %(current_release)s
+                        AND status NOT IN (%(approved)s, %(shipped)s)
+                        AND ShippingRequest.id = RequestedCDs.request
+                        AND recipient IN (
+                            SELECT recipient FROM current_release_requester)
+                    UNION
+                    -- This one gives us the people which made feisty requests
                     -- but haven't made requests for any other releases.
                     SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
                     FROM (SELECT recipient FROM current_release_requester
@@ -1044,6 +1066,7 @@ class ShippingRequestSet:
             WHERE requesters > 0
             """ % sqlvalues(
                     current_release=ShipItConstants.current_distrorelease,
+                    shipit_admins=shipit_admins,
                     approved=ShippingRequestStatus.APPROVED,
                     shipped=ShippingRequestStatus.SHIPPED)
         cur.execute(query)
@@ -1056,8 +1079,7 @@ class ShippingRequestSet:
             other_releases_shipment_distribution,
             other_releases_request_distribution)
         row_numbers = set()
-        for row in all_results:
-            requests, requesters, avg_size = row
+        for requests, requesters, avg_size in all_results:
             row_numbers.add(requests)
 
         csv_file = StringIO()
@@ -1067,9 +1089,9 @@ class ShippingRequestSet:
         header2 = ['', 'requests', '', 'shipped', '', 'requests', '',
                    'shipped', '']
         header3 = ['# of requests', '# of people', 'avg CDs per request',
-                   '# of people', 'avg CDs pers shipment', '# of people',
+                   '# of people', 'avg CDs per shipment', '# of people',
                    'avg CDs per request', '# of people',
-                   'avg CDs pers shipment']
+                   'avg CDs per shipment']
         csv_writer.writerow(header1)
         csv_writer.writerow(header2)
         csv_writer.writerow(header3)
@@ -1103,9 +1125,7 @@ class ShippingRequestSet:
         with a value of (0,0).
         """
         d = {}
-        for row in results:
-            requests, requesters, avg_size = row
-            col1, col2, col3 = row
+        for requests, requesters, avg_size in results:
             d[requests] = (requesters, avg_size)
         for number in set(row_numbers) - set(d.keys()):
             d[number] = (0, 0)

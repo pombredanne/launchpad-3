@@ -321,7 +321,18 @@ priority requests.
   ...         for idx in range(len(fields)):
   ...             format = "%%%ds" % longest_heading
   ...             heading = format % headings[idx]
-  ...             print "%s: %s" % (heading, fields[idx])
+  ...             value = fields[idx]
+  ...             try:
+  ...                 float(value)
+  ...                 try:
+  ...                     int(value)
+  ...                 except ValueError:
+  ...                     # This is a numeric value and is not an integer, so
+  ...                     # we'll round it to two decimal places.
+  ...                     value = "%.4s" % value
+  ...             except ValueError:
+  ...                 pass
+  ...             print "%s: %s" % (heading, value)
 
   >>> pprint_csv(run.csvfile.read())
   ------------------------------------------------------------ Line 1
@@ -995,38 +1006,42 @@ and to the previous one.
 
   # Skip the first two lines since they have headers which are supposed to
   # span across multiple columns, screwing our pprint_csv() function.
-  >>> content = csv_file.read().split('\n', 2)[2]
+  >>> header1, header2, content = csv_file.read().split('\n', 2)
+  >>> print header1
+  "","","Current Release Only","","","","","Previous Releases Only",""
+  >>> print header2
+  "","requests","","shipped","","requests","","shipped",""
   >>> pprint_csv(content)
   ------------------------------------------------------------ Line 1
-          # of requests: 0
-            # of people: 0
-    avg CDs per request: 0
-            # of people: 0
-  avg CDs pers shipment: 0
-            # of people: 8
-    avg CDs per request: 0.0
-            # of people: 8
-  avg CDs pers shipment: 0.0
+         # of requests: 0
+           # of people: 0
+   avg CDs per request: 0
+           # of people: 0
+  avg CDs per shipment: 0
+           # of people: 8
+   avg CDs per request: 0.0
+           # of people: 8
+  avg CDs per shipment: 0.0
   ------------------------------------------------------------ Line 2
-          # of requests: 1
-            # of people: 10
-    avg CDs per request: 7.4
-            # of people: 7
-  avg CDs pers shipment: 7.28571428571
-            # of people: 3
-    avg CDs per request: 66.0
-            # of people: 3
-  avg CDs pers shipment: 66.0
+         # of requests: 1
+           # of people: 9
+   avg CDs per request: 7.66
+           # of people: 7
+  avg CDs per shipment: 7.28
+           # of people: 2
+   avg CDs per request: 24.0
+           # of people: 2
+  avg CDs per shipment: 24.0
   ------------------------------------------------------------ Line 3
-          # of requests: 2
-            # of people: 1
-    avg CDs per request: 1.5
-            # of people: 1
-  avg CDs pers shipment: 1.5
-            # of people: 0
-    avg CDs per request: 0
-            # of people: 0
-  avg CDs pers shipment: 0
+         # of requests: 2
+           # of people: 1
+   avg CDs per request: 1.5
+           # of people: 1
+  avg CDs per shipment: 1.5
+           # of people: 0
+   avg CDs per request: 0
+           # of people: 0
+  avg CDs per shipment: 0
 
 
 All these reports are generated periodically and stored in the Librarian by
