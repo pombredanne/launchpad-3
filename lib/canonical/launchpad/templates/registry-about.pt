@@ -12,7 +12,7 @@
     <p>Based on Edd Dumbill's DOAP framework for open source project
     descriptions, this system allows us to keep track of all the open source
     projects that ultimately are packaged in Ubuntu and its
-    derivatives, or translated in Rosetta, or have bugs tracked by Malone.</p>
+    derivatives, or translated in, or have bugs tracked by Launchpad.</p>
 
     <p>Each open source project includes a description of the project, and
     links to translations, bugs, bazaar branches of the code itself and

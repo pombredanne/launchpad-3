@@ -10,7 +10,7 @@ On the Bugs front page there is a link to file a bug.
 Since it's not known on what the bug should be filed on, the page asks
 for either a product or a package in a distribution.
 
-    >>> user_browser.getControl('Product') is not None
+    >>> user_browser.getControl('Project') is not None
     True
     >>> user_browser.getControl('Distribution') is not None
     True

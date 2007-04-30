@@ -14,7 +14,7 @@
         <tal:software replace="context/displayname">Fooix</tal:software>
       </h1>
     </metal:heading>
-  
+
     <style metal:fill-slot="head_epilogue" type="text/css">
       label {font-weight: normal;}
     </style>
