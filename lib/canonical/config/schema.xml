@@ -892,12 +892,19 @@ k            </description>
         <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
 
+    <sectiontype name="production_errorreports" extends="script_errorreports" />
+    <sectiontype name="autotest_errorreports" extends="script_errorreports" />
+
     <sectiontype name="importd">
         <key name="dbuser" datatype="string">
             <description>
                 The database user for importd and associated scripts.
             </description>
         </key>
+        <section name="*" type="production_errorreports"
+            attribute="production_errorreports" required="no" />
+        <section name="*" type="autotest_errorreports"
+            attribute="autotest_errorreports" required="no" />
     </sectiontype>
 
     <sectiontype name="canonical">
