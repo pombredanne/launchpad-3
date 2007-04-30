@@ -915,9 +915,6 @@ k            </description>
                  attribute="build" required="yes" />
 
         <key name="launch" datatype="boolean"  default="false" />
-        <!-- XXX BarryWarsaw 04-Apr-2007 Should we re-use zopeless.smtp_host
-             and zopeless.smtp_port?
-          -->
         <key name="smtp"   datatype="inet-address"   default="localhost:25" />
     </sectiontype>
 
