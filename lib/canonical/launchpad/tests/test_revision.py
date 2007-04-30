@@ -1,7 +1,5 @@
 from unittest import TestCase, TestLoader
 
-#from zope.component import getUtility
-
 from canonical.config import config
 from canonical.launchpad.database import RevisionAuthor
 from canonical.testing import LaunchpadZopelessLayer
