@@ -6,6 +6,7 @@ from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestRevisionAuthor(TestCase):
+    """Unit tests for the RevisionAuthor database class."""
 
     layer = LaunchpadZopelessLayer
 
