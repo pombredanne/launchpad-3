@@ -45,13 +45,14 @@ from canonical.launchpad.database.bugtask import (
     )
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import (
-    BugAttachmentType, DistributionReleaseStatus)
+    BugAttachmentType, DistributionReleaseStatus, BugTaskStatus)
 
 _bug_tag_query_template = """
         SELECT %(columns)s FROM %(tables)s WHERE
@@ -159,6 +160,8 @@ class Bug(SQLBase):
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
+    mentoring_offers = SQLMultipleJoin(
+            'MentoringOffer', joinColumn='bug', orderBy='id')
     # XXX: why is subscriptions ordered by ID? -- kiko, 2006-09-23
     subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id',
@@ -188,6 +191,14 @@ class Bug(SQLBase):
         result = BugTask.selectBy(bug=self)
         result.prejoin(["assignee"])
         return sorted(result, key=bugtask_sort_key)
+
+    @property
+    def is_complete(self):
+        """See IBug."""
+        for task in self.bugtasks:
+            if not task.is_complete:
+                return False
+        return True
 
     @property
     def affected_pillars(self):
@@ -509,6 +520,45 @@ class Bug(SQLBase):
         for cve in cves:
             self.linkCVE(cve)
 
+    # Several other classes need to generate lists of bugs, and
+    # one thing they often have to filter for is completeness. We maintain
+    # this single canonical query string here so that it does not have to be
+    # cargo culted into Product, Distribution, ProductSeries etc
+    completeness_clause =  """
+        BugTask.bug = Bug.id AND """ + BugTask.completeness_clause
+
+    def canMentor(self, user):
+        """See ICanBeMentored."""
+        return not (not user or
+                    self.is_complete or
+                    self.duplicateof is not None or
+                    self.isMentor(user) or
+                    not user.teams_participated_in)
+
+    def isMentor(self, user):
+        """See ICanBeMentored."""
+        return MentoringOffer.selectOneBy(bug=self, owner=user) is not None
+
+    def offerMentoring(self, user, team):
+        """See ICanBeMentored."""
+        # if an offer exists, then update the team
+        mentoringoffer = MentoringOffer.selectOneBy(bug=self, owner=user)
+        if mentoringoffer is not None:
+                mentoringoffer.team = team
+                return mentoringoffer
+        # if no offer exists, create one from scratch
+        mentoringoffer = MentoringOffer(owner=user, team=team,
+            bug=self)
+        notify(SQLObjectCreatedEvent(mentoringoffer, user=user))
+        return mentoringoffer
+
+    def retractMentoring(self, user):
+        """See ICanBeMentored."""
+        mentoringoffer = MentoringOffer.selectOneBy(bug=self, owner=user)
+        if mentoringoffer is not None:
+            notify(SQLObjectDeletedEvent(mentoringoffer, user=user))
+            MentoringOffer.delete(mentoringoffer.id)
+
     def getMessageChunks(self):
         """See IBug."""
         chunks = MessageChunk.select("""
@@ -644,6 +694,14 @@ class Bug(SQLBase):
         return BugWatch.selectFirstBy(
             bug=self, bugtracker=bugtracker, remotebug=remote_bug,
             orderBy='id')
+
+    def getBugTask(self, target):
+        """See IBug."""
+        for bugtask in self.bugtasks:
+            if bugtask.target == target:
+                return bugtask
+
+        return None
 
     def _getTags(self):
         """Get the tags as a sorted list of strings."""

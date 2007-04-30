@@ -19,6 +19,7 @@ from canonical.launchpad.fields import (
     Title, Summary, Description)
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
     ISpecificationTarget, IHasSecurityContact, PillarNameField,
@@ -38,7 +39,7 @@ class DistributionNameField(PillarNameField):
 
 class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                     ISpecificationTarget, IHasSecurityContact,
-                    IKarmaContext, IHasSprints):
+                    IKarmaContext, IHasMentoringOffers, IHasSprints):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -183,15 +184,15 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     official_answers = Bool(
         title=_('Uses Answers Officially'), required=True, 
         description=_("Check this box to indicate that this distribution "
-            "officially uses Answers for community support."))
+            "officially uses Launchpad for community support."))
     official_malone = Bool(
-        title=_('Uses Malone Officially'), required=True, 
+        title=_('Uses Bugs Officially'), required=True, 
         description=_("Check this box to indicate that this distribution "
-            "officially uses Malone for bug tracking."))
+            "officially uses Launchpad for bug tracking."))
     official_rosetta = Bool(
-        title=_('Uses Rosetta Officially'), required=True, 
+        title=_('Uses Translations Officially'), required=True, 
         description=_("Check this box to indicate that this distribution "
-            "officially uses Rosetta for translation."))
+            "officially uses Launchpad for translation."))
 
     # properties
     currentrelease = Attribute(

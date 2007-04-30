@@ -108,7 +108,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     packagings = Attribute("All of the Packaging entries for this "
         "distrorelease.")
     specifications = Attribute("The specifications targeted to this "
-        "product series.")
+        "release series.")
 
     binary_package_caches = Attribute("All of the cached binary package "
         "records for this distrorelease.")

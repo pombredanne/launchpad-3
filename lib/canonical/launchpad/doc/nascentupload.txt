@@ -381,6 +381,8 @@ another accepted candidate that conflicts with the proposed one.
 The upload will be rejected.
 
   >>> success, msgs = ed_src_dup.do_accept()
+  ERROR: BOOM:
+  <BLANKLINE>
   >>> success
   False
   >>> ed_src_dup.is_rejected
@@ -763,3 +765,94 @@ that constraint.
 
   >>> print foo_failed.rejection_message
   foo_1.0-1_i386.deb uses bzip2 compression but pre-depends on an old version of dpkg: 1.10.20
+
+
+== Dealing with Epochs and diverging binary versions ==
+
+Versions stored in Launchpad should include 'epoch'.
+
+Let's process an source upload and ensure that the resulting
+SourcePackageRelease record store a propoer 'version':
+
+  >>> bar_src_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-9/bar_1.0-9_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload.process()
+  >>> bar_src_upload.is_rejected
+  False
+  >>> success, msgs = bar_src_upload.do_accept()
+
+For source uploads, Changes.version == DSC.version == SPR.version:
+
+  >>> bar_src_upload.changes.version
+  '1:1.0-9'
+
+  >>> bar_src_upload.changes.dsc.dsc_version
+  '1:1.0-9'
+
+  >>> bar_src_queue = bar_src_upload.queue_root
+  >>> bar_spr = bar_src_queue.sources[0].sourcepackagerelease
+  >>> bar_spr.version
+  u'1:1.0-9'
+
+
+Let's accept the source and claim 'build from accepted' to process the
+respective binary:
+
+  >>> bar_src_queue.status.name
+  'NEW'
+  >>> bar_src_queue.setAccepted()
+  >>> bar_src_queue.status.name
+  'ACCEPTED'
+  >>> syncUpdate(bar_src_queue)
+
+
+We will use a modified Sync upload policy to upload unsigned binaries:
+
+  >>> binary_sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distrorelease='hoary')
+  >>> binary_sync_policy.can_upload_binaries = True
+  >>> binary_sync_policy.can_upload_mixed = True
+
+
+For a binary upload we expect the same, a BinaryPackageRelease
+'version' that includes 'epoch':
+
+  >>> bar_bin_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-9_binary/bar_1.0-9_i386.changes'),
+  ...     binary_sync_policy, mock_logger_quiet)
+  >>> bar_bin_upload.process()
+  >>> bar_bin_upload.is_rejected
+  False
+  >>> success, msgs = bar_bin_upload.do_accept()
+  >>> bar_bin_queue = bar_bin_upload.queue_root
+  >>> bar_bin_queue.status.name
+  'NEW'
+
+
+The Changesfile version always refers to the source version and the
+binary versions included in the upload can diverge between themselves
+and from the source version.
+
+  >>> bar_bin_upload.changes.version
+  '1:1.0-9'
+
+  >>> deb_file = bar_bin_upload.changes.files[0]
+  >>> deb_file.filename
+  'bar_6.6.6_i386.deb'
+
+  >>> deb_file.version
+  '1:1.0-9'
+
+  >>> deb_file.source_version
+  '1:1.0-9'
+
+  >>> deb_file.control_version
+  '1:6.6.6'
+
+Anyway, the proper value for BinaryPackageRelease.version is the
+version stored in the binary control file:
+
+  >>> bar_bpr = bar_bin_queue.builds[0].build.binarypackages[0]
+  >>> bar_bpr.version
+  u'1:6.6.6'

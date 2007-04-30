@@ -286,8 +286,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                         "%s: invalid %s field; cannot be parsed by apt: %s"
                         % (self.filename, field_name, error))
 
-        # Verify the filename matches appropriately
-
+        # Verify if version declared in changesfile is the same than that
+        # in DSC (including epochs).
         if self.dsc_version != self.version:
             yield UploadError(
                 "%s: version ('%s') in .dsc does not match version "
@@ -433,7 +433,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         release = self.policy.distrorelease.createUploadedSourcePackageRelease(
             sourcepackagename=source_name,
-            version=self.changes.version,
+            version=self.dsc_version,
             maintainer=self.maintainer['person'],
             builddepends=encoded.get('build-depends', ''),
             builddependsindep=encoded.get('build-depends-indep', ''),

@@ -27,8 +27,8 @@
       permission="launchpad.Admin"
       set_attributes="priority direction_approved" />
 
-    <!-- IBugLinkTarget -->
     <allow attributes="bugs bug_links" />
+
     <require permission="launchpad.AnyPerson" attributes="linkBug unlinkBug"/>
   </content>
 
@@ -77,6 +77,9 @@
     <browser:page
       name="+deptree"
       template="../templates/specification-deptree.pt" />
+    <browser:page
+      name="+listing-column"
+      template="../templates/specification-listing-column.pt" />
     <browser:page
       name="+listing-detailed"
       template="../templates/specification-listing-detailed.pt" />

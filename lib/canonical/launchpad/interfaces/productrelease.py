@@ -25,7 +25,7 @@ from canonical.launchpad.fields import ContentNameField
 class ProductReleaseVersionField(ContentNameField):
    
     errormessage = _(
-        "%s is already in use by another version in this product series.")
+        "%s is already in use by another version in this release series.")
 
     @property
     def _content_iface(self):
@@ -53,7 +53,7 @@ class IProductRelease(Interface):
         'The specific version number assigned to this release. Letters and '
         'numbers are acceptable, for releases like "1.2rc3".'))
     owner = Int(title=_('Owner'), required=True)
-    productseries = Choice(title=_('ProductSeries'), required=True,
+    productseries = Choice(title=_('Release Series'), required=True,
         vocabulary='FilteredProductSeries')
     codename = TextLine(title=_('Code name'), required=False,
         description=_('The release code-name. Famously, one Gnome release '
@@ -65,7 +65,7 @@ class IProductRelease(Interface):
     description = Text(title=_("Description"), required=False,
         description=_('A detailed description of the new features '
         '(though the changelog below might repeat some of this '
-        'information). The description here will be shown on the product '
+        'information). The description here will be shown on the project '
         'release home page.'))
     changelog = Text(title=_('Changelog'), required=False)
     datecreated = Datetime(title=_('Date Created'),
@@ -74,7 +74,7 @@ class IProductRelease(Interface):
     displayname = Attribute('Constructed displayname for a product release.')
     title = Attribute('Constructed title for a product release.')
     manifest = Attribute(_('Manifest Information.'))
-    product = Attribute(_('The upstream product of this release.'))
+    product = Attribute(_('The upstream project of this release.'))
     files = Attribute(_('Iterable of product release files.'))
 
     def addFileAlias(alias, file_type=UpstreamFileType.CODETARBALL):
@@ -83,7 +83,7 @@ class IProductRelease(Interface):
 
 class IProductReleaseFile(Interface):
 
-    productrelease = Choice(title=_('Product release'), required=True,
+    productrelease = Choice(title=_('Project release'), required=True,
                             vocabulary='ProductRelease')
     libraryfile = Object(schema=ILibraryFileAlias, title=_("File"),
                          description=_("The attached file."),

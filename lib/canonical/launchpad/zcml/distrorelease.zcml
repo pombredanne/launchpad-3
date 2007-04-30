@@ -166,10 +166,6 @@
       template="../templates/distrorelease-portlet-lifecycle.pt"
       />
     <browser:page
-      name="+portlet-aboutlangs"
-      facet="translations"
-      template="../templates/distrorelease-portlet-aboutlangs.pt" />
-    <browser:page
       name="+portlet-milestones"
       template="../templates/object-portlet-milestones.pt"
       />

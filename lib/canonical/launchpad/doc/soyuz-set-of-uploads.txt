@@ -635,9 +635,10 @@ Check build created
   >>> len(list(Build.selectBy(sourcepackagereleaseID=spr_id)))
   1
 
-Upload the binary
+Upload the i386 binary:
 
-  >>> expect_okays('baz_1.0-1_binary', is_new=True, upload_policy="security",
+  >>> expect_okays(
+  ...     'baz_1.0-1_single_binary', is_new=True, upload_policy="security",
   ...     distro="ubuntu", release="warty-security")
 
 Should still just have one build, and it should now be FULLYBUILT.

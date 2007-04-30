@@ -89,6 +89,7 @@ class UploadProcessor:
         self.options = options
         self.ztm = ztm
         self.log = log
+        self.last_processed_upload = None
 
     def processUploadQueue(self):
         """Search for uploads, and process them.
@@ -250,8 +251,12 @@ class UploadProcessor:
         changesfile_path = os.path.join(upload_path, changes_file)
         upload = NascentUpload(changesfile_path, policy, self.log)
 
+        # Store archive lookup error in the upload if it was the case.
         if error is not None:
-            upload.reject(str(e))
+            upload.reject(error)
+
+        # Store processed NascentUpload instance, mostly used for tests.
+        self.last_processed_upload = upload
 
         try:
             self.log.info("Processing upload %s" % upload.changes.filename)
