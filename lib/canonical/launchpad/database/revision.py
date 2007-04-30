@@ -66,7 +66,7 @@ class RevisionAuthor(SQLBase):
 
     name = StringCol(notNull=True, alternateID=True)
 
-    def getNameWithoutEmail(self):
+    def _getNameWithoutEmail(self):
         """Return the name of the revision author without the email address.
 
         If there is no name information (i.e. when the revision author only
@@ -76,6 +76,8 @@ class RevisionAuthor(SQLBase):
         if name == '':
             return None
         return name
+
+    name_without_email = property(_getNameWithoutEmail)
 
 
 class RevisionParent(SQLBase):
