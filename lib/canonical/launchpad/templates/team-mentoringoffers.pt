@@ -1,0 +1,94 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template_2col/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<p metal:fill-slot="help">
+  Launchpad lets you keep track of offers of mentorship from members of your
+  community. Anybody who is a member of a team can offer to mentor work on a
+  bug, or a blueprint. Launchpad then keeps track of those offers, and you
+  can use its listings as a convenient starting place for new contributors.
+  Read the
+  <a href="https://help.launchpad.net/MentoringManagement/">documentation</a>
+  for more detailed information.
+</p>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h1>Offers of help and mentorship</h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
+<tal:mentoring_available define="offers context/team_mentorships"
+                         condition="offers">
+
+  <p>
+    This list describes bugs and features which people have offered to
+    mentor. If you would like to join the "<span
+    tal:replace="context/title">Foo Bar</span>" Team then these would be
+    good items to work on.
+  </p>
+
+  <h2>Mentorships</h2>
+
+  <table class="listing sortable" id="mentorships">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>By</th>
+        <th>What</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="offer offers">
+        <td>
+          <span tal:content="offer/date_created/fmt:date"
+                tal:attributes="title offer/date_created/fmt:time">
+            2007-15-13
+          </span>
+        </td>
+        <td>
+          <a tal:replace="structure offer/owner/fmt:link">foobar</a>
+        </td>
+        <td>
+          <div tal:replace="structure offer/target/@@+listing-column" />
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</tal:mentoring_available>
+
+<tal:no_mentoring condition="not: context/team_mentorships">
+  <p>
+    Nobody has yet offered to mentor bug fixes or feature implementations
+    which are relevant to this team.
+    You can <a href="https://help.launchpad.net/MentoringManagement">learn
+    more about this capability in Launchpad</a>, which allows you to
+    create an "onramp to team
+    membership" consisting of bite-sized chunks of work for new people who
+    want to contribute or to prove their worth.
+  </p>
+
+  <p>
+    Use this feature with large teams, or large communities, to help new
+    participants find their feet and make useful contributions to your
+    project. Just encourage members of your team to offer mentoring on bugs
+    or specs which they know how to fix or implement, but dn't have time to
+    get to just yet. Those will show up in a list here, and it then becomes
+    easy to point new people at the list when they offer to help out but
+    don't know where to get started.
+</tal:no_mentoring>
+
+</div>
+
+</body>
+</html>

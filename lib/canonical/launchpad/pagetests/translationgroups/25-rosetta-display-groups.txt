@@ -1,9 +1,13 @@
-The new group should show up on the "Translation groups" page.
+= Translations Groups is Updated = 
 
-  >>> print http(r"""
-  ... GET /translations/groups/ HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Rosetta translation groups...
-  ...The PolyGlot Translation Group...
+The new group is displayed up on the "Translation groups" page.
 
+    >>> anon_browser.open(
+    ...     'http://translations.launchpad.dev/translations/groups/')
+    >>> translation_groups = find_tag_by_id(
+    ...     anon_browser.contents, 'translation-groups')
+    >>> for row in translation_groups.find('tbody').findAll('tr'):
+    ...     print extract_text(row.find('td').renderContents())
+    Single-language Translators
+    The PolyGlot Translation Group
+    Just a testing team

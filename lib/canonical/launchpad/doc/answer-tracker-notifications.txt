@@ -20,7 +20,7 @@ notification looks like:
 The notifications get sent to the question's subscribers, the question's
 target answer contacts as well as to the question's assignee. Initially,
 only the submitter, Sample Person, is subscribed to the question and there
- is no answer contact registered on Ubuntu, so only 1 notification is
+is no answer contact registered on Ubuntu, so only 1 notification is
 sent:
 
     >>> ubuntu.answer_contacts
@@ -33,7 +33,7 @@ sent:
 
     >>> add_notification = notifications[0]
     >>> add_notification['From']
-    'Sample Person <ticket...@support.launchpad.net>'
+    'Sample Person <question...@answers.launchpad.net>'
     >>> add_notification['To']
     'test@canonical.com'
     >>> add_notification['Subject']
@@ -85,8 +85,11 @@ sent.
     ... drive, but it won't boot.
     ...
     ... It boots straight into MacOS 9."""
+    >>> libstdcplusplus_sourcepackage = ubuntu.getSourcePackage('libstdc++')
+    >>> ubuntu_question.target = libstdcplusplus_sourcepackage
     >>> notify(SQLObjectModifiedEvent(
-    ...     ubuntu_question, unmodified_question, ['title', 'description']))
+    ...     ubuntu_question, unmodified_question, 
+    ...     ['title', 'description', 'target']))
 
 Three copies of the notification got sent, one to Sample Person, one to
 Foo Bar, and one to Ubuntu Team:
@@ -101,8 +104,10 @@ Foo Bar, and one to Ubuntu Team:
     >>> print edit_notification['Subject']
     [Question #...]: Installer doesn't work on a Mac
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Question #... on Ubuntu changed:
-    http://.../ubuntu/+question/...
+    Question #... libstdc++ in ubuntu changed:
+    http://.../ubuntu/+source/libstdc++/+question/...
+    <BLANKLINE>
+        Project: Ubuntu => libstdc++ in ubuntu
     <BLANKLINE>
     Summary changed to:
     Installer doesn't work on a Mac
@@ -115,8 +120,28 @@ Foo Bar, and one to Ubuntu Team:
     <BLANKLINE>
 
 XXX flacoste 2006/09/19 Add checks for notification of change to
-assignee, status whiteboard, priority and source package.
+assignee, status whiteboard, priority. For example, if a question is
+transfered to another QuestionTarget and priority is changed,
+the notification does not include priority.
 
+    >>> unmodified_question = Snapshot(
+    ...     ubuntu_question, providing=providedBy(ubuntu_question))
+    >>> ubuntu_question.target = ubuntu
+    >>> notify(SQLObjectModifiedEvent(
+    ...     ubuntu_question, unmodified_question, ['target']))
+    >>> notifications = sorted(pop_notifications(), key=itemgetter('To'))
+    >>> [notification['To'] for notification in notifications]
+    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
+
+    >>> edit_notification = notifications[0]
+    >>> notification_body = edit_notification.get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Question #... Ubuntu changed:
+    http://.../ubuntu/+question/...
+    <BLANKLINE>
+        Project: libstdc++ in ubuntu => Ubuntu
+    <BLANKLINE>
+  
 If we trigger a modification event when no changes worth
 notifying about was made, no notification is sent:
 
@@ -218,7 +243,7 @@ Only a change in status triggers a notification.
 
 === Bug Unlinked Notification ===
 
-A notification is also sent when a bug is unlinked from the ticket:
+A notification is also sent when a bug is unlinked from the question:
 
     >>> unmodified_question = Snapshot(ubuntu_question,
     ...     providing=providedBy(ubuntu_question))

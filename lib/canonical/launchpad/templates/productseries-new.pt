@@ -22,7 +22,7 @@
     <div metal:use-macro="context/@@launchpad_form/form">
 
       <div metal:fill-slot="extra_info" class="documentDescription">
-        A product release series aggregates a set of releases. Examples
+        A project release series aggregates a set of releases. Examples
         include "stable" and "unstable", or versioned series like "2.4" and
         "2.6".
       </div>

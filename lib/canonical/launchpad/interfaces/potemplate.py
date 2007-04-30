@@ -28,7 +28,7 @@ class IPOTemplate(IRosettaStats):
         description=_("The name of this PO template, for example "
             "'evolution-2.2'. Each translation template has a "
             "unique name in its package. It's important to get this "
-            "correct, because Rosetta will recommend alternative "
+            "correct, because Launchpad will recommend alternative "
             "translations based on the name."),
         required=True,
         vocabulary="POTemplateName")
@@ -64,14 +64,14 @@ class IPOTemplate(IRosettaStats):
         title=_("Owner"),
         required=True,
         description=_(
-            "The owner of the template in Rosetta can edit the template "
+            "The owner of the template in Launchpad can edit the template "
             "and change it's status, and can also upload new versions "
             "of the template when a new release is made or when the "
             "translation strings have been changed during development."),
         vocabulary="ValidOwner")
 
     productseries = Choice(
-        title=_("Product Branch or Series"),
+        title=_("Release Series"),
         required=False,
         vocabulary="ProductSeries")
 
@@ -159,7 +159,7 @@ class IPOTemplate(IRosettaStats):
 
     title = Attribute("A title for this template, generated.")
 
-    product = Attribute("The product to which this template belongs.")
+    product = Attribute("The project to which this template belongs.")
 
     distribution = Attribute("The distribution to which this template belongs.")
 
@@ -167,7 +167,7 @@ class IPOTemplate(IRosettaStats):
         "some number of translations.")
 
     translationtarget = Attribute("The object for which this template is "
-        "a translation. This will either be a SourcePackage or a Product "
+        "a translation. This will either be a SourcePackage or a Release "
         "Series.")
 
     date_last_updated = Datetime(

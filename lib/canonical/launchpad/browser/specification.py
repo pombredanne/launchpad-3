@@ -35,8 +35,16 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
-    IDistribution, ILaunchBag, IPersonSet, IProduct, ISpecification,
-    ISpecificationBranch, ISpecificationSet, NotFoundError)
+    IDistribution,
+    ILaunchBag,
+    IPersonSet,
+    IProduct,
+    IProject,
+    ISpecification,
+    ISpecificationBranch,
+    ISpecificationSet,
+    NotFoundError,
+    )
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -47,6 +55,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
     stepthrough, stepto)
+from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -96,6 +105,7 @@ class SpecificationContextMenu(ContextMenu):
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'linkbranch',
+             'offermentoring', 'retractmentoring',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
              'retarget']
@@ -147,6 +157,21 @@ class SpecificationContextMenu(ContextMenu):
     def status(self):
         text = 'Change status'
         return Link('+status', text, icon='edit')
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def offermentoring(self):
+        text = 'Offer mentorship'
+        user = getUtility(ILaunchBag).user
+        enabled = self.context.canMentor(user)
+        return Link('+mentor', text, icon='add', enabled=enabled)
+
+    def retractmentoring(self):
+        text = 'Retract mentorship'
+        user = getUtility(ILaunchBag).user
+        enabled = (self.context.isMentor(user) and
+                   not self.context.is_complete and
+                   user)
+        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def subscribeanother(self):
         text = 'Subscribe someone else'
@@ -211,7 +236,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+linkbranch', text, icon='add')
 
 
-class SpecificationView(LaunchpadView):
+class SpecificationView(LaunchpadView, CanBeMentoredView):
 
     __used_for__ = ISpecification
 
@@ -787,15 +812,18 @@ class SpecificationNewView(LaunchpadFormView):
 
     @property
     def field_names(self):
-        """This form is used sometimes on an IProduct or IDistribution to
-        get a new spec for them, and also on ISpecificationSet as a
-        system-wide "new spec" form. We need slightly different field names
-        in each case, so we make field_names a property.
+        """This form is used sometimes on an IProject, IProduct or
+        IDistribution to get a new spec for them, and also on
+        ISpecificationSet as a system-wide "new spec" form. We need slightly
+        different field names in each case, so we make field_names a
+        property.
         """
         field_names = ['name', 'title', 'specurl', 'summary', 'status',
                        'assignee', 'drafter', 'approver']
         if ISpecificationSet.providedBy(self.context):
             field_names.insert(0, 'target')
+        elif IProject.providedBy(self.context):
+            field_names.insert(0, 'projecttarget')
         return field_names
 
     def validate(self, data):
@@ -810,6 +838,9 @@ class SpecificationNewView(LaunchpadFormView):
             self.setFieldError('name',
                 'Please provide a name for this blueprint')
         target = data.get('target')
+        projecttarget = data.get('projecttarget')
+        if projecttarget is not None:
+            target = projecttarget
         if target is None:
             self.setFieldError('target',
                 'Please select a valid project.')
@@ -817,8 +848,8 @@ class SpecificationNewView(LaunchpadFormView):
             name = name.strip().lower()
             if target.getSpecification(name) is not None:
                 self.setFieldError('name',
-                    'There is already a blueprint with this name. Please '
-                    'try another.')
+                    'There is already a blueprint with this name for %s. '
+                    'Please try another name.' % target.displayname)
 
     @action(_('Register Blueprint'), name='register')
     def register_action(self, action, data):
@@ -828,6 +859,9 @@ class SpecificationNewView(LaunchpadFormView):
         # determine product or distribution as target
         product = distribution = None
         target = data.get('target', None)
+        projecttarget = data.get('projecttarget', None)
+        if projecttarget is not None:
+            target = projecttarget
         if target is None:
             target = self.context
         if IProduct.providedBy(target):
@@ -900,7 +934,7 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
 class SpecificationSHP(StructuralHeaderPresentation):
 
     def getIntroHeading(self):
-        return "Blueprint in %s" % cgi.escape(self.context.target.title)
+        return "Blueprint for %s" % cgi.escape(self.context.target.title)
 
     def getMainHeading(self):
         return self.context.title

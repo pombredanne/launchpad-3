@@ -17,6 +17,7 @@ __all__ = [
     'QuestionSetNavigation',
     'QuestionRejectView',
     'QuestionSetView',
+    'QuestionSOP',
     'QuestionSubscriptionView',
     'QuestionWorkflowView',
     ]
@@ -36,6 +37,7 @@ import zope.security
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
@@ -56,10 +58,11 @@ from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
 from canonical.widgets.project import ProjectScopeWidget
+from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 
 class QuestionSetNavigation(Navigation):
-
+    """A navigator for a QuestionSet."""
     usedfor = IQuestionSet
 
 
@@ -134,6 +137,7 @@ class QuestionSubscriptionView(LaunchpadView):
     """View for subscribing and unsubscribing from a question."""
 
     def initialize(self):
+        """Initialize the view from the request form."""
         if not self.user or self.request.method != "POST":
             # No post, nothing to do
             return
@@ -249,7 +253,7 @@ class QuestionSupportLanguageMixin:
             key=attrgetter('englishname'))
 
     def createLanguageField(self):
-        """Create a field to edit a question language using a special vocabulary.
+        """Create a field with a special vocabulary to edit a question language.
 
         :param the_form: The form that will use this field.
         :return: A form.Fields instance containing the language field.
@@ -295,7 +299,8 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 
     custom_widget('title', TextWidget, displayWidth=40)
 
-    search_template = ViewPageTemplateFile('../templates/question-add-search.pt')
+    search_template = ViewPageTemplateFile(
+        '../templates/question-add-search.pt')
 
     add_template = ViewPageTemplateFile('../templates/question-add.pt')
 
@@ -307,12 +312,14 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     initial_focus_widget = None
 
     def setUpFields(self):
+        """Set up the form_fields from the schema and custom_widgets."""
         # Add our language field with a vocabulary specialized for
         # display purpose.
         LaunchpadFormView.setUpFields(self)
         self.form_fields = self.createLanguageField() + self.form_fields
 
     def setUpWidgets(self):
+        """Set up the widgets using the view's form fields and the context."""
         # Only setup the widgets that needs validation
         if not self.add_action.submitted():
             fields = self.form_fields.select(*self.search_field_names)
@@ -375,6 +382,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # which is fixed in 3.3.0b1 and 3.2.1
     @action(_('Add'), failure=handleAddError)
     def add_action(self, action, data):
+        """Add a Question to an IQuestionTarget."""
         if self.shouldWarnAboutUnsupportedLanguage():
             # Warn the user that the language is not supported.
             self.searchResults = []
@@ -395,6 +403,7 @@ class QuestionChangeStatusView(LaunchpadFormView):
     schema = IQuestionChangeStatusForm
 
     def validate(self, data):
+        """Check that the status and message are valid."""
         if data.get('status') == self.context.status:
             self.setFieldError(
                 'status', _("You didn't change the status."))
@@ -404,10 +413,12 @@ class QuestionChangeStatusView(LaunchpadFormView):
 
     @property
     def initial_values(self):
+        """Return the initial view values."""
         return {'status': self.context.status}
 
     @action(_('Change Status'), name='change-status')
     def change_status_action(self, action, data):
+        """Change the Question status."""
         self.context.setStatus(self.user, data['status'], data['message'])
         self.request.response.addNotification(
             _('Question status updated.'))
@@ -415,26 +426,25 @@ class QuestionChangeStatusView(LaunchpadFormView):
 
 
 class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
-
+    """View for editing a Question."""
     schema = IQuestion
     label = 'Edit question'
-    field_names = ["title", "description", "sourcepackagename",
-                   "priority", "assignee", "whiteboard"]
+    field_names = ["title", "description", "target", "priority", "assignee", 
+                   "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)
+    custom_widget('target', LaunchpadTargetWidget)
 
     def setUpFields(self):
         """Select the subset of fields to display.
 
-        - Exclude the sourcepackagename field when question doesn't have a
-        distribution.
         - Exclude fields that the user doesn't have permission to modify.
         """
         LaunchpadEditFormView.setUpFields(self)
 
-        if self.context.distribution is None:
-            self.form_fields = self.form_fields.omit("sourcepackagename")
+        self.form_fields = self.form_fields.omit("distribution", 
+            "sourcepackagename", "product")
 
         # Add the language field with a vocabulary specialized for display
         # purpose.
@@ -448,6 +458,7 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
 
     @action(u"Continue", name="change")
     def change_action(self, action, data):
+        """Update the Question from the request form data."""
         if self.shouldWarnAboutUnsupportedLanguage():
             return self.template()
         self.updateContextFromData(data)
@@ -458,6 +469,7 @@ class QuestionMakeBugView(GeneralFormView):
     """Browser class for adding a bug from a question."""
 
     def initialize(self):
+        """Initiaize the view when a Bug may be reported for this Question."""
         question = self.context
         if question.bugs:
             # we can't make a bug when we have linked bugs
@@ -469,11 +481,13 @@ class QuestionMakeBugView(GeneralFormView):
 
     @property
     def initial_values(self):
+        """Return the initial form values."""
         question = self.context
         return {'title': '',
                 'description': question.description}
 
     def process_form(self):
+        """Process the form per the request."""
         # Override GeneralFormView.process_form because we don't
         # want form validation when the cancel button is clicked
         question = self.context
@@ -486,6 +500,7 @@ class QuestionMakeBugView(GeneralFormView):
         return GeneralFormView.process_form(self)
 
     def process(self, title, description):
+        """Create a Bug from a Question."""
         question = self.context
 
         unmodifed_question = Snapshot(question, providing=providedBy(question))
@@ -502,6 +517,7 @@ class QuestionMakeBugView(GeneralFormView):
         self._nextURL = canonical_url(bug)
 
     def submitted(self):
+        """Return True when the form was submitted."""
         return 'create' in self.request
 
 
@@ -511,17 +527,33 @@ class QuestionRejectView(LaunchpadFormView):
     field_names = ['message']
 
     def validate(self, data):
+        """Check that required information was provided."""
         if 'message' not in data:
             self.setFieldError(
                 'message', _('You must provide an explanation message.'))
 
     @action(_('Reject'))
     def reject_action(self, action, data):
+        """Reject the Question."""
         self.context.reject(self.user, data['message'])
         self.request.response.addNotification(
             _('You have rejected this question.'))
         self.request.response.redirect(canonical_url(self.context))
         return ''
+
+
+    def initialize(self):
+        """See LaunchpadFormView.
+
+        Abort early if the question is already rejected.
+        """
+        if self.context.status == QuestionStatus.INVALID:
+            self.request.response.addNotification(
+                _('The question is already rejected.'))
+            self.request.response.redirect(canonical_url(self.context))
+            return
+
+        LaunchpadFormView.initialize(self)
 
 
 class QuestionWorkflowView(LaunchpadFormView):
@@ -599,7 +631,7 @@ class QuestionWorkflowView(LaunchpadFormView):
         return (self.user == self.context.owner and
                 self.context.can_give_answer)
 
-    @action(_('I Solved my Problem'), name="selfanswer",
+    @action(_('I Solved the Problem on My Own'), name="selfanswer",
             condition=canSelfAnswer)
     def selfanswer_action(self, action, data):
         """Action called when the owner provides the solution to his problem."""
@@ -644,7 +676,7 @@ class QuestionWorkflowView(LaunchpadFormView):
         if msgid is None:
             raise UnexpectedFormData('missing answer_id')
         try:
-            data['answer']= self.context.messages[int(msgid)]
+            data['answer'] = self.context.messages[int(msgid)]
         except ValueError:
             raise UnexpectedFormData('invalid answer_id: %s' % msgid)
         except IndexError:
@@ -655,12 +687,12 @@ class QuestionWorkflowView(LaunchpadFormView):
         return (self.user == self.context.owner and
                 self.context.can_confirm_answer)
 
-    @action(_("This Solved my Problem"), name='confirm',
+    @action(_("This Solved My Problem"), name='confirm',
             condition=canConfirm)
     def confirm_action(self, action, data):
         """Confirm that an answer solved the request."""
         # The confirmation message is not given by the user when the
-        # 'This Solved my Problem' button on the main question view.
+        # 'This Solved My Problem' button on the main question view.
         if not data['message']:
             data['message'] = 'Thanks %s, that solved my question.' % (
                 data['answer'].owner.displayname)
@@ -705,6 +737,7 @@ class QuestionConfirmAnswerView(QuestionWorkflowView):
     """
 
     def initialize(self):
+        """Initialize the view from the Question state."""
         # This page is only accessible when a confirmation is possible.
         if not self.context.can_confirm_answer:
             self.request.response.addErrorNotification(_(
@@ -788,8 +821,19 @@ class SearchAllQuestionsView(SearchQuestionsView):
             return _('There are no questions with the requested statuses.')
 
 
-class QuestionContextMenu(ContextMenu):
+class QuestionSOP(StructuralObjectPresentation):
+    """Provides the structural heading for IQuestion."""
 
+    def getMainHeading(self):
+        """See IStructuralHeaderPresentation."""
+        question = self.context
+        return _('Question #${id} in ${target}',
+                 mapping=dict(
+                    id=question.id, target=question.target.displayname))
+
+
+class QuestionContextMenu(ContextMenu):
+    """Context menu of actions that can be performed upon a Question."""
     usedfor = IQuestion
     links = [
         'edit',
@@ -803,27 +847,33 @@ class QuestionContextMenu(ContextMenu):
         ]
 
     def initialize(self):
+        """Initialize the menu from the Question's state."""
         self.has_bugs = bool(self.context.bugs)
 
     def edit(self):
+        """Return a Link to the edit view."""
         text = 'Edit question'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def changestatus(self):
+        """Return a Link to the change status view."""
         return Link('+change-status', _('Change status'), icon='edit')
 
     def reject(self):
+        """Return a Link to the reject view."""
         enabled = self.user is not None and self.context.canReject(self.user)
         text = 'Reject question'
         return Link('+reject', text, icon='edit', enabled=enabled)
 
     def history(self):
+        """Return a Link to the history view."""
         text = 'History'
         return Link('+history', text, icon='list',
                     enabled=bool(self.context.messages))
 
     def subscription(self):
+        """Return a Link to the subscription view."""
         if self.user is not None and self.context.isSubscribed(self.user):
             text = 'Unsubscribe'
             icon = 'edit'
@@ -833,14 +883,17 @@ class QuestionContextMenu(ContextMenu):
         return Link('+subscribe', text, icon=icon)
 
     def linkbug(self):
+        """Return a Link to the link bug view."""
         text = 'Link existing bug'
         return Link('+linkbug', text, icon='add')
 
     def unlinkbug(self):
+        """Return a Link to the unlink bug view."""
         text = 'Remove bug link'
         return Link('+unlinkbug', text, icon='edit', enabled=self.has_bugs)
 
     def makebug(self):
+        """Return a Link to the make bug view."""
         text = 'Create bug report'
         summary = 'Create a bug report from this question.'
         return Link('+makebug', text, summary, icon='add',
@@ -848,16 +901,17 @@ class QuestionContextMenu(ContextMenu):
 
 
 class QuestionSetContextMenu(ContextMenu):
-
+    """Context menu of actions that can be preformed upon a QuestionSet."""
     usedfor = IQuestionSet
     links = ['findproduct', 'finddistro']
 
     def findproduct(self):
+        """Return a Link to the find product view."""
         text = 'Find upstream project'
         return Link('/projects', text, icon='search')
 
     def finddistro(self):
+        """Return a Link to the find distribution view."""
         text = 'Find distribution'
         return Link('/distros', text, icon='search')
-
 

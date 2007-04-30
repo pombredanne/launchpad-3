@@ -55,7 +55,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         title=_("Distribution Release"), required=False,
         vocabulary="DistroRelease")
     productseries = Choice(
-        title=_("Product Series"), required=False,
+        title=_("Release Series"), required=False,
         vocabulary="ProductSeries")
     owner = Choice(
         title=_('Submitter'), required=True, readonly=True,

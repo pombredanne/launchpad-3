@@ -46,6 +46,10 @@
             name="+portlet-relateds"
             template="../templates/translationgroup-portlet-relateds.pt"
             />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/translationgroup-portlet-details.pt"
+            />
     </browser:pages>
 
     <browser:page
@@ -67,23 +71,23 @@
         template="../templates/launchpad-editform.pt"
         />
 
-    <browser:addform
+    <browser:page
         name="+appoint"
         for="canonical.launchpad.interfaces.ITranslationGroup"
         facet="translations"
-        schema="canonical.launchpad.interfaces.ITranslator"
-        fields="translationgroup language translator"
-        keyword_arguments="translationgroup language translator"
         permission="launchpad.Edit"
-        content_factory="canonical.launchpad.database.Translator"
         class="canonical.launchpad.browser.TranslationGroupAddTranslatorView"
         template="../templates/translationgroup-appoint.pt"
-        >
-        <browser:widget
-            field="translationgroup"
-            class="canonical.widgets.ContextWidget" />
-    </browser:addform>
+        />
 
+    <browser:page
+        name="+reassign"
+        for="canonical.launchpad.interfaces.ITranslationGroup"
+        facet="translations"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.TranslationGroupReassignmentView"
+        template="../templates/object-reassignment.pt"
+        />
 
     <!-- TranslationGroupSet -->
     <securedutility

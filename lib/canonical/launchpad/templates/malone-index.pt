@@ -93,7 +93,7 @@
                         <p id="application-summary">
                           Launchpad&rsquo;s bug tracker allows collaboration
                           between software teams on bug reports and fixes.
-                          <a href="/+tour">Learn more&#8230;</a>
+                          <a href="/+about">Learn more&#8230;</a>
                         </p>
                         <div class="columns">
                           <div class="two column left">
@@ -129,9 +129,9 @@
     </div><!--main-->
     <div metal:fill-slot="help">
       <p>
-        Read more <a href="+about">about Malone</a>, the collaborative bug
-        tracker for the open source world, and how you can share information
-        about bugs in distributions and upstream.
+        Read more <a href="+about">about the Launchpad Bug Tracker</a>,
+        the collaborative bug tracker for the open source world, and how you
+        can share information about bugs in distributions and upstream.
       </p>
       <ul class="info">
         <li>
