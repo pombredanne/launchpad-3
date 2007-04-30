@@ -5,6 +5,8 @@ __all__ = [
     'Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionProperty',
     'RevisionSet']
 
+import email
+
 from zope.interface import implements
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
@@ -63,6 +65,17 @@ class RevisionAuthor(SQLBase):
     _table = 'RevisionAuthor'
 
     name = StringCol(notNull=True, alternateID=True)
+
+    def getNameWithoutEmail(self):
+        """Return the name of the revision author without the email address.
+
+        If there is no name information (i.e. when the revision author only
+        supplied their email address), return None.
+        """
+        name = email.Utils.parseaddr(self.name)[0]
+        if name == '':
+            return None
+        return name
 
 
 class RevisionParent(SQLBase):
