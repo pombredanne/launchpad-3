@@ -31,7 +31,10 @@ kbd {
   min-width: 1em;
   outline: 1px #666;
 }
-label {white-space: nowrap;}
+label {
+  white-space: nowrap;
+  font-weight: bold;
+}
 legend {font-weight: bold;}
 legend legend {font-weight: normal;}
 .listbox { /* a scrolling list of checkboxes or radio buttons */
@@ -1352,12 +1355,16 @@ body.applicationhome #container {padding-left: 20px;}
   padding: 0 20px;
   right: 240px;
 }
-* html #portlets { /* Works around Internet Explorer bug */
-  left: 20px;
+/* IE6 and lower ignore the left padding, so we add extra positioning. */
+* html #portlets {left: 20px;}
+/* IE7 gets the padding right but overcalculates the left margin, so we use
+Brothercake's "Triple-X" CSS hack to add left padding for IE7 only. */
+div[id$="portlets"] {padding-left: 280px !important;}
+div[id$="portlets"]:not([class="xxx"]) {padding-left: 20px !important;}
+@media all and (min-width:0px) {
+  div[id$="portlets"] {padding-left: 280px !important;}
 }
-#portlets .portlet {
-  width: 200px;
-}
+#portlets .portlet {width: 200px;}
 #singlecolumn {margin: 20px 20px 0 0;} /* test: front page, FAQ page */
 #mainarea #singlecolumn {margin-right: 0;}
 

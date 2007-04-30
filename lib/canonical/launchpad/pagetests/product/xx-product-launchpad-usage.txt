@@ -1,7 +1,7 @@
 = Distribution Launchpad usage =
 
-The launchpad usage flags (whether the product uses Malone, Answers or
-Rosetta officially) are controlled by the +launchpad page. 
+The launchpad usage flags (whether the product uses Bugs, Answers or
+Translations officially) are controlled by the +launchpad page. 
 
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print anon_browser.title
@@ -40,14 +40,15 @@ so let's use Sample Person, the registrant of Firefox..
     >>> registrant_browser.url
     'http://launchpad.dev/firefox/+launchpad'
 
-Firefox is currently marked as using Malone. Let's specify that it
+Firefox is currently marked as using Bugs. Let's specify that it
 doesn't use any bug tracker at all.
 
-    >>> registrant_browser.getControl('Uses Rosetta Officially').selected
+    >>> registrant_browser.getControl('Uses Translations Officially').selected
     False
     >>> registrant_browser.getControl('Uses Answers Officially').selected
     True
-    >>> registrant_browser.getControl('Bugs are tracked in Malone').selected
+    >>> registrant_browser.getControl(
+    ...     'Bugs are tracked in Launchpad').selected
     True
     >>> registrant_browser.getControl('No bug tracker').selected = True
 
@@ -96,7 +97,7 @@ Let's reset it to the way it was before.
     >>> registrant_browser.getControl('External bug tracker').selected
     True
     >>> registrant_browser.getControl(
-    ...     'Bugs are tracked in Malone').selected = True
+    ...     'Bugs are tracked in Launchpad').selected = True
     >>> registrant_browser.getControl('Change').click()
     >>> content = find_main_content(registrant_browser.contents)
     >>> status_label = content.find('th', text='Status:')

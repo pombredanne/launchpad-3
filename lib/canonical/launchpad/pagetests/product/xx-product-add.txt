@@ -1,13 +1,12 @@
 Test that the page to add a new product loads.
 
 >>> user_browser.open("http://launchpad.dev/projects/+new")
->>> 'Register an upstream open source product' in user_browser.contents
-True
-
+>>> print find_main_content(user_browser.contents).find('h1').renderContents()
+Register an upstream open source project
 
 Tests if the validator is working for the URL fields
 
->>> user_browser.getControl('Part of', index=0).value = 'mozilla'
+>>> user_browser.getControl('Part of').value = 'mozilla'
 >>> user_browser.getControl('Name', index=0).value = 'testing'
 >>> user_browser.getControl('Display Name').value = 'Test Product'
 >>> user_browser.getControl('Title').value = 'This is a Test Product'
@@ -29,10 +28,10 @@ Tests if the validator is working for the URL fields
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/projects/+new'
->>> for tag in find_tags_by_class(user_browser.contents, 'error message'):
-...     print tag.renderContents()
+>>> for message in find_tags_by_class(user_browser.contents, 'message'):
+...     print message.renderContents()
 There is 1 error.
-
+"www.test.test.com/" is not a valid URI
 
 And just 'http://' for the url
 
@@ -40,8 +39,10 @@ And just 'http://' for the url
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/projects/+new'
->>> 'http URIs must have a host name' in user_browser.contents
-True
+>>> for message in find_tags_by_class(user_browser.contents, 'message'):
+...     print message.renderContents()
+There is 1 error.
+http URIs must have a host name
 
 
 Test that the page to add a new product works.
@@ -74,7 +75,7 @@ Now we test if we leave the Home-page field empty. This should work,
 since the field is not required.
 
 >>> user_browser.open('http://launchpad.dev/projects/+new')
->>> user_browser.getControl('Project', index=0).value = 'mozilla'
+>>> user_browser.getControl('Part of').value = 'mozilla'
 >>> user_browser.getControl('Name', index=0).value = 'testing2'
 >>> user_browser.getControl('Display Name').value = 'Test Product'
 >>> user_browser.getControl('Title').value = 'This is a Test Product'
@@ -102,7 +103,7 @@ True
 Now let's try to insert a product with the same name (testing).
 
 >>> user_browser.open('http://launchpad.dev/projects/+new')
->>> user_browser.getControl('Project', index=0).value = 'mozilla'
+>>> user_browser.getControl('Part of').value = 'mozilla'
 >>> user_browser.getControl('Name', index=0).value = 'testing'
 >>> user_browser.getControl('Display Name').value = 'Test Product'
 >>> user_browser.getControl('Title').value = 'This is a Test Product'
@@ -114,11 +115,10 @@ Now let's try to insert a product with the same name (testing).
 >>> user_browser.getControl('Add').click()
 >>> user_browser.url
 'http://launchpad.dev/projects/+new'
->>> '<p class="error message">There is 1 error.</p>' in user_browser.contents
-True
->>> ('testing is already in use by another project'
-...     in user_browser.contents)
-True
+>>> for message in find_tags_by_class(user_browser.contents, 'message'):
+...     print message.renderContents()
+There is 1 error.
+testing is already in use by another project
 
 
 Normal users don't get to see the owner and reviewed fields
@@ -177,7 +177,7 @@ And now check it was correctly created:
 It's also possible to set the product's icon/emblem at creation time.
 
 >>> user_browser.open('http://launchpad.dev/projects/+new')
->>> user_browser.getControl('Project', index=0).value = 'mozilla'
+>>> user_browser.getControl('Part of').value = 'mozilla'
 >>> user_browser.getControl('Name', index=0).value = 'testing3'
 >>> user_browser.getControl('Display Name').value = 'Test Product #3'
 >>> user_browser.getControl('Title').value = 'This is a Test Product #3'

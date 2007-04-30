@@ -37,7 +37,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
         BrowserWidget.__init__(self, field, request)
         fields = [
             Choice(
-                __name__='product', title=u'Product',
+                __name__='product', title=u'Project',
                 required=True, vocabulary='Product'),
             Choice(
                 __name__='distribution', title=u"Distribution",
@@ -139,6 +139,15 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
             self.package_widget.setRenderedValue(value.sourcepackagename)
         else:
             raise AssertionError('Not a valid value: %r' % value)
+
+    def error(self):
+        """See zope.app.form.interfaces.IBrowserWidget."""
+        try:
+            if self.hasInput():
+                self.getInputValue()
+        except InputErrors, error:
+            self._error = error
+        return super(LaunchpadTargetWidget, self).error()
 
     def __call__(self):
         """See zope.app.form.interfaces.IBrowserWidget."""

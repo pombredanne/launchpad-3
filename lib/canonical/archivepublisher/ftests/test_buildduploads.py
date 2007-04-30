@@ -108,7 +108,7 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         self.assertEqual('FULLYBUILT', build_used.buildstate.name)
 
         # Force immediate publication.
-        queue_item = self._findQueue()
+        queue_item = self.uploadprocessor.last_processed_upload.queue_root
         self._publishBuildQueueItem(queue_item)
 
         # Upload powerpc binary

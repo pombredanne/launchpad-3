@@ -22,7 +22,8 @@
 
 <div metal:fill-slot="main">
 
-    <form class="central" method="get">
+    <form class="central" method="get" action="#"
+          tal:attributes="action request/URL">
       <input size="30" name="text" tal:attributes="value view/search_string" />
       <input tal:condition="view/searchrequested"
         type="submit"
