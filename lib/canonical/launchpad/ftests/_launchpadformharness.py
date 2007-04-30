@@ -16,16 +16,18 @@ class LaunchpadFormHarness:
         self.view_class = view_class
         self._render(form_values)
 
-    def _render(self, form_values=None):
-        self.request = LaunchpadTestRequest(form=form_values)
+    def _render(self, form_values=None, method='GET'):
+        self.request = LaunchpadTestRequest(
+            environ={'REQUEST_METHOD': method},
+            form=form_values)
         self.view = self.view_class(self.context, self.request)
         self.view.initialize()
 
-    def submit(self, action_name, form_values):
+    def submit(self, action_name, form_values, method='POST'):
         action_name = '%s.actions.%s' % (self.view.prefix, action_name)
         form_values = dict(form_values)
         form_values[action_name] = ''
-        self._render(form_values)
+        self._render(form_values, method)
 
     def hasErrors(self):
         return bool(self.view.errors)
