@@ -29,14 +29,37 @@ reverse-chronological order.
   ...     for revision in revision_list.fetch('li'):
   ...         revno = str(revision['value'])
   ...         for heading in revision.fetch('div'):
-  ...             print revno, heading.renderContents()
-  6...By...foo &lt;foo@localhost&gt;...2005-10-31...
-  5...By...foo &lt;foo@localhost&gt;...2005-10-31...
-  4...By...Sample Committer &lt;test@canonical.com&gt;...2005-10-31...
-  3...By...Sample Committer &lt;test@canonical.com&gt;...2005-10-31...
-  2...By...Sample Committer &lt;test@canonical.com&gt;...2005-10-31...
-  1...By...Sample Committer &lt;test@canonical.com&gt;...2005-10-31...
+  ...             print revno, extract_text(heading).encode('ascii')
+  6 By foo &lt;foo@localhost&gt; on 2005-10-31
+  5 By foo &lt;foo@localhost&gt; on 2005-10-31
+  4 By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
+  3 By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
+  2 By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
+  1 By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
 
+
+=== Email addresses ===
+
+Commit messages often (always?) have email addresses associated with them.
+'Revision information' shows that the addresses are shown to logged in users.
+However, emails should *not* be shown to anonymous users.
+
+In particular, we don't want search engine and spam bots harvesting email
+addresses.
+
+  >>> anon_browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
+  >>> anon_main = find_tag_by_id(anon_browser.contents, 'mainarea')
+  >>> for revision_list in anon_main.fetch('ol'):
+  ...     for revision in revision_list.fetch('li'):
+  ...         revno = str(revision['value'])
+  ...         for heading in revision.fetch('div'):
+  ...             print revno, extract_text(heading).encode('ascii')
+  6 By foo on 2005-10-31
+  5 By foo on 2005-10-31
+  4 By Sample Committer on 2005-10-31
+  3 By Sample Committer on 2005-10-31
+  2 By Sample Committer on 2005-10-31
+  1 By Sample Committer on 2005-10-31
 
 
 
