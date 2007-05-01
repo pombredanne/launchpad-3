@@ -1112,20 +1112,20 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   color: #9f2b33;
 }
 
-
-.statusUNCONFIRMED  { color: #993300; }
-.statusNEEDSINFO    { color: Red; }
-.statusCONFIRMED    { color: Red; }
-.statusINPROGRESS   { color: Black; }
-.statusFIXRELEASED  { color: Black; }
-.statusFIXCOMMITTED { color: Black; }
-.statusREJECTED     { color: Gray; }
-.importanceCRITICAL  { color: Red; }
-.importanceHIGH      { color: #ff6600; }
-.importanceMEDIUM    { color: Green; }
-.importanceLOW       { color: Black; }
-.importanceWISHLIST  { color: Blue; }
-.importanceUNDECIDED { color: #999; }
+.status.UNCONFIRMED   {color: #930;}
+.status.NEEDSINFO     {color: Red;}
+.status.CONFIRMED     {color: Red;}
+.status.INPROGRESS    {color: Black;}
+.status.FIXRELEASED   {color: Black;}
+.status.FIXCOMMITTED  {color: Black;}
+.status.REJECTED      {color: Gray;}
+.importance.CRITICAL  {color: Red;}
+.importance.HIGH      {color: #ff6600;}
+.importance.MEDIUM    {color: Green;}
+.importance.LOW       {color: Black;}
+.importance.WISHLIST  {color: Blue;}
+.importance.UNDECIDED {color: #999;}
+.status :link, .importance :link {color: inherit; text-decoration: none;}
 
 /* --- Blueprints --- */
 
