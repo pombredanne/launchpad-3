@@ -41,6 +41,7 @@ class CustomUploadTarballInvalidTarfile(CustomUploadError):
                    (tarfile_path, expected_dir))
         CustomUploadError.__init__(self, message)
 
+
 class CustomUploadBadUmask(CustomUploadError):
     """The environment's umask was incorrect."""
     def __init__(self, expected_umask, got_umask):
@@ -130,11 +131,11 @@ class CustomUpload:
                     continue
 
                 self.ensurePath(destpath)
-                # Also insure that the process has the expected umask.
+                # Also, ensure that the process has the expected umask.
                 old_mask = os.umask(0)
                 try:
                     if old_mask != 022:
-                        raise CustomUploadBadUmask(old_mask, 022)
+                        raise CustomUploadBadUmask(022, old_mask)
                 finally:
                     os.umask(old_mask)
                 if os.path.islink(sourcepath):

@@ -148,7 +148,7 @@ def main():
     while open_readers:
         rlist, wlist, xlist = select(open_readers, [], [], TIMEOUT)
 
-        if not rlist:
+        if len(rlist) == 0:
             if proc.poll() is not None:
                 break
             print '\nTests hung - no output for %d seconds. Killing.' % TIMEOUT
