@@ -452,7 +452,7 @@ class LaunchpadTestRequest(TestRequest):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadTestResponse()
 
-    @cachedproperty
+    @property
     def form_ng(self):
         """See ILaunchpadBrowserApplicationRequest."""
         return BrowserFormNG(self.form)
