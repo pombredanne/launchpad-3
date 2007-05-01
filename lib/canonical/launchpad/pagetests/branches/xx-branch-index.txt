@@ -75,7 +75,7 @@ This link can be followed to the bug's details page.
 
   >>> browser.getLink('bug 1').click()
   >>> print browser.title
-  Bug #1 in firefox (upstream)...
+  Bug #1 in Mozilla Firefox...
 
 
 == Unscanned branches ==

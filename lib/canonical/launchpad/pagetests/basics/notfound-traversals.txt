@@ -248,7 +248,7 @@ Check a bug is traversable by nickname:
 
 >>> check_redirect("/bugs/blackhole")
 >>> check_redirect("/bugs/blackhole")
->>> check("/ubuntu-product/+bug/blackhole")
+>>> check("/tomcat/+bug/blackhole")
 >>> check_not_found("/bugs/invalid-nickname")
 >>> check_not_found("bugs/invalid-nickname")
 

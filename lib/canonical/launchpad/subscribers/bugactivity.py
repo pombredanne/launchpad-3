@@ -100,7 +100,7 @@ def record_bug_task_added(bug_task, object_created_event):
         datechanged=UTC_NOW,
         person=object_created_event.user,
         whatchanged='bug',
-        message='assigned to ' + bug_task.name)
+        message='assigned to ' + bug_task.target.name)
 
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     """Make an activity note that a bug task was edited."""

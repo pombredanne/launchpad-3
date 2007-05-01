@@ -120,7 +120,7 @@ The edit form allows changing the product of a branch.
 
   >>> browser.open('http://launchpad.dev/~name12/+junk/junk.dev')
   >>> browser.getLink('Change branch details').click()
-  >>> browser.getControl('Product').value = 'ubuntu-product'
+  >>> browser.getControl('Product').value = 'tomcat'
   >>> browser.getControl('Change Branch').click()
 
 Posting this form should redirect us to the branch page, which is a new URL
@@ -128,7 +128,7 @@ since changing the product associated to a branch changed the branch's
 canonical URL
 
   >>> browser.url
-  'http://code.launchpad.dev/~name12/ubuntu-product/junk.dev'
+  'http://code.launchpad.dev/~name12/tomcat/junk.dev'
 
 In the same way, the edit form allows changing the name of a branch, and must
 correctly redirect to the new branch page.
@@ -137,7 +137,7 @@ correctly redirect to the new branch page.
   >>> browser.getControl('Name').value = 'junk'
   >>> browser.getControl('Change Branch').click()
   >>> browser.url
-  'http://code.launchpad.dev/~name12/ubuntu-product/junk'
+  'http://code.launchpad.dev/~name12/tomcat/junk'
 
 We can also detach a branch from a product, making it a junk branch. While we
 are it, we also reset the branch name to its original value, and check that the
