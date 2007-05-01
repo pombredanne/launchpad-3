@@ -134,7 +134,8 @@ class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-             'nominate', 'addbranch', 'linktocve', 'unlinkcve', 'filebug',
+             'nominate', 'addbranch', 'linktocve', 'unlinkcve',
+             'offermentoring', 'retractmentoring', 'filebug',
              'activitylog']
 
     def __init__(self, context):
@@ -218,6 +219,20 @@ class BugContextMenu(ContextMenu):
         enabled = bool(self.context.bug.cves)
         text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
+
+    def offermentoring(self):
+        text = 'Offer mentorship'
+        user = getUtility(ILaunchBag).user
+        enabled = self.context.bug.canMentor(user)
+        return Link('+mentor', text, icon='add', enabled=enabled)
+
+    def retractmentoring(self):
+        text = 'Retract mentorship'
+        user = getUtility(ILaunchBag).user
+        enabled = (self.context.bug.isMentor(user) and
+                   not self.context.bug.is_complete and
+                   user)
+        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def filebug(self):
         bugtarget = self.context.target
@@ -610,7 +625,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         bug_url = data.get('bug_url')
         if bug_url and target.official_malone:
             self.addError(
-                "Bug watches can not be added for %s, as it uses Malone"
+                "Bug watches can not be added for %s, as it uses Launchpad"
                 " as its official bug tracker. Alternatives are to add a"
                 " watch for another project, or a comment containing a"
                 " URL to the related bug report." % cgi.escape(
@@ -665,7 +680,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             #     doing it now, though, since it might go away completely
             #     soon. -- Bjorn Tillenius, 2006-09-13
             self.notifications.append(
-                "%s doesn't use Malone as its bug tracker. If you don't add"
+                "%s doesn't use Launchpad as its bug tracker. If you don't add"
                 " a bug watch now you have to keep track of the status"
                 " manually. You can however link to an external bug tracker"
                 " at a later stage in order to get automatic status updates."

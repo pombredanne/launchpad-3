@@ -293,7 +293,7 @@ which the bug has not yet been reported.
 >>> check_not_found("/ubuntu/warty/+source/mozilla-firefox/+bug/1/+viewstatus")
 >>> check_not_found("/ubuntu/warty/+source/mozilla-firefox/+bug/1/+editstatus")
 
-Viewing a bug in a distribution that doesn't use Malone officially, where the
+Viewing a bug in a distribution that doesn't use Bugs officially, where the
 bugtask is also assigned to a milestone (a corner case, but one that was causing
 OOPS's all the same!):
 

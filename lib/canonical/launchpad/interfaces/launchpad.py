@@ -132,15 +132,15 @@ class IMaloneApplication(ILaunchpadApplication):
     def searchTasks(search_params):
         """Search IBugTasks with the given search parameters."""
 
-    bug_count = Attribute("The number of bugs recorded in Malone")
+    bug_count = Attribute("The number of bugs recorded in Launchpad")
     bugwatch_count = Attribute("The number of links to external bug trackers")
     bugextref_count = Attribute("The number of links to outside URL's")
-    bugtask_count = Attribute("The number of bug tasks in Malone")
+    bugtask_count = Attribute("The number of bug tasks in Launchpad")
     projects_with_bugs_count = Attribute("The number of products and "
         "distributions which have bugs in Launchpad.")
     shared_bug_count = Attribute("The number of bugs that span multiple "
         "products and distributions")
-    bugtracker_count = Attribute("The number of bug trackers in Malone")
+    bugtracker_count = Attribute("The number of bug trackers in Launchpad")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
     latest_bugs = Attribute("The latest 5 bugs filed.")
 

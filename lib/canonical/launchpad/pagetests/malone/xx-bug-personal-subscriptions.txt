@@ -1,7 +1,7 @@
 Personal Subscriptions
 ======================
 
-Users can subscribe to bugs reported in Malone, via the "Subscribe" link
+Users can subscribe to bugs reported in Launchpad, via the "Subscribe" link
 in the actions portlet.
 
   >>> from canonical.launchpad.ftests.bug import (

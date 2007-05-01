@@ -813,10 +813,10 @@ Searching for None returns an empty list.
     >>> list(vocab.search(None))
     []
 
-Searching for 'team' will return an empty list, because teams are not
-part of this vocabulary.
+Searching for 'Launchpad Administrators' will return an empty list, because
+teams are not part of this vocabulary.
 
-    >>> list(vocab.search('team'))
+    >>> [item.name for item in list(vocab.search('Launchpad Administrators'))]
     []
 
 A search using part of the email address of a team will also return an
@@ -921,7 +921,7 @@ Almost all teams have the word 'team' as part of their names, so a search
 for 'team' should give us some of them.
 
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team', u'ubuntu-team']
+    [u'name18', u'name19', u'name20', u'name21', u'no-team-memberships', u'simple-team', u'testing-spanish-team', u'ubuntu-team']
 
 A search for 'support' will give us only the persons which have support
 as part of their name or displayname, or the beginning of
@@ -963,7 +963,7 @@ Almost all teams have the word 'team' as part of their names, so a
 search for 'team' should give us some of them:
 
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team', u'ubuntu-team']
+    [u'name18', u'name19', u'name20', u'name21', u'no-team-memberships', u'simple-team', u'testing-spanish-team', u'ubuntu-team']
 
 ValidTeamMember
 ---------------

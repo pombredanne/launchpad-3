@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Browser views for products."""
 
@@ -56,7 +56,7 @@ from canonical.launchpad.interfaces import (
     IProductSet, IProductSeries, IProject, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
-    IPillarNameSet, IDistribution, IHasIcon)
+    IPillarNameSet, IDistribution, IHasIcon, UnexpectedFormData)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
@@ -190,7 +190,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     def translations(self):
         text = 'Translations'
-        summary = 'Translations of %s in Rosetta' % self.context.displayname
+        summary = 'Translations of %s in Launchpad' % self.context.displayname
         return Link('', text, summary)
 
     def calendar(self):
@@ -207,8 +207,8 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'distributions', 'packages', 'branch_add', 'series_add',
-        'launchpad_usage', 'administer', 'rdf']
+        'mentorship', 'distributions', 'packages', 'branch_add',
+        'series_add', 'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -238,6 +238,10 @@ class ProductOverviewMenu(ApplicationMenu):
     def distributions(self):
         text = 'Packaging information'
         return Link('+distributions', text, icon='info')
+
+    def mentorship(self):
+        text = 'Mentoring available'
+        return Link('+mentoring', text, icon='info')
 
     def packages(self):
         text = 'Show distribution packages'
@@ -769,6 +773,12 @@ class ProductSetView(LaunchpadView):
         self.malone = form.get('malone')
         self.bazaar = form.get('bazaar')
         self.search_string = form.get('text')
+        # XXX flacoste 2007/04/27 Replace by use of getOne() once
+        # the API defined in bug #110633 is implemented.
+        if (self.search_string is not None and
+            not isinstance(self.search_string, basestring)):
+            raise UnexpectedFormData(
+                'text parameter should be a string: %s' % self.search_string)
         self.results = None
 
         self.searchrequested = False

@@ -249,7 +249,7 @@ bugtracker_index = ContextTitle(smartquote('Bug tracker "%s"'))
 
 bugtrackers_add = 'Register an external bug tracker'
 
-bugtrackers_index = 'Bug trackers registered in Malone'
+bugtrackers_index = 'Bug trackers registered in Launchpad'
 
 build_buildlog = ContextTitle('Build log for %s')
 
@@ -293,6 +293,10 @@ calendar_view_day = calendar_view
 calendar_view_week = calendar_view
 calendar_view_month = calendar_view
 calendar_view_year = calendar_view
+
+canbementored_mentoringoffer = 'Offer to mentor this work'
+
+canbementored_retractmentoring = 'Retract offer of mentorship'
 
 codeofconduct_admin = 'Administer Codes of Conduct'
 
@@ -397,7 +401,7 @@ distrorelease_packaging = ContextDisplayName('Mapping packages to upstream '
 
 distrorelease_search = ContextDisplayName('Search packages in %s')
 
-distrorelease_translations = ContextTitle('Translations of %s in Rosetta')
+distrorelease_translations = ContextTitle('Translations of %s in Launchpad')
 
 distrorelease_builds = ContextTitle('Builds for %s')
 
@@ -421,6 +425,16 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
+def hasmentoringoffers_mentoring(context, view):
+    if IPerson.providedBy(context):
+        if context.teamowner is None:
+            return 'Mentoring offered by %s' % context.title
+        else:
+            return ('Mentoring available for newcomers to %s'  %
+                    context.displayname)
+    else:
+        return 'Mentoring available in %s' % context.displayname
+
 def hasspecifications_specs(context, view):
     if IPerson.providedBy(context):
         return "Blueprints involving %s" % context.title
@@ -428,18 +442,6 @@ def hasspecifications_specs(context, view):
         return "Blueprints for %s" % context.title
 
 hassprints_sprints = ContextTitle("Events related to %s")
-
-people_adminrequestmerge = 'Merge Launchpad accounts'
-
-people_mergerequest_sent = 'Merge request sent'
-
-people_newperson = 'Create a new Launchpad profile'
-
-people_newteam = 'Register a new team in Launchpad'
-
-people_requestmerge_multiple = 'Merge Launchpad accounts'
-
-people_requestmerge = 'Merge Launchpad accounts'
 
 karmaaction_index = 'Karma actions'
 
@@ -502,6 +504,8 @@ launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
 
+launchpadstatisticset_index = 'Launchpad statistics'
+
 logintoken_claimprofile = 'Claim Launchpad profile'
 
 logintoken_index = 'Launchpad: redirect to the logintoken page'
@@ -522,7 +526,7 @@ logintoken_validateteamemail = 'Confirm e-mail address'
 
 # main_template has the code to insert one of these titles.
 
-malone_about = 'About Malone'
+malone_about = 'About Launchpad Bugs'
 
 malone_distros_index = 'Report a bug about a distribution'
 
@@ -565,6 +569,8 @@ marketing_translations_about = "About Translations"
 
 marketing_translations_faq = "FAQs about Translations"
 
+mentoringofferset_success = "Successful mentorships over the past year."
+
 # messagechunk_snippet is a fragment
 
 # messages_index is a redirect
@@ -603,8 +609,20 @@ def package_bugs(context, view):
 
 people_index = 'People and teams in Launchpad'
 
+people_adminrequestmerge = 'Merge Launchpad accounts'
+
 def people_list(context, view):
     return view.header
+
+people_mergerequest_sent = 'Merge request sent'
+
+people_newperson = 'Create a new Launchpad profile'
+
+people_newteam = 'Register a new team in Launchpad'
+
+people_requestmerge = 'Merge Launchpad accounts'
+
+people_requestmerge_multiple = 'Merge Launchpad accounts'
 
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')    
@@ -653,6 +671,8 @@ def person_index(context, view):
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
+person_mentoringoffers = ContextTitle('Mentoring offered by %s')
+
 person_packages = ContextDisplayName('Packages maintained by %s')
 
 person_packagebugs = ContextDisplayName("%s's package bug reports")
@@ -660,6 +680,8 @@ person_packagebugs = ContextDisplayName("%s's package bug reports")
 person_packagebugs_overview = person_packagebugs
 
 person_packagebugs_search = person_packagebugs
+
+person_participation = ContextTitle("Team partipation by %s")
 
 person_review = ContextDisplayName("Review %s")
 
@@ -718,11 +740,11 @@ potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-potemplatename_add = 'Add a new template name to Rosetta'
+potemplatename_add = 'Add a new template name to Launchpad'
 
-potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Rosetta'))
+potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Launchpad'))
 
-potemplatename_index = ContextTitle(smartquote('"%s" in Rosetta'))
+potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
@@ -753,7 +775,7 @@ product_packages = ContextDisplayName('%s packages in Launchpad')
 
 product_series = ContextDisplayName('%s timeline')
 
-product_translations = ContextTitle('Translations of %s in Rosetta')
+product_translations = ContextTitle('Translations of %s in Launchpad')
 
 product_translators = ContextTitle('Set translation group for %s')
 
@@ -789,9 +811,9 @@ project_edit = ContextTitle('%s project group details')
 
 project_filebug_search = bugtarget_filebug_advanced
 
-project_interest = 'Rosetta: Project group not translatable'
+project_interest = 'Launchpad Translations: Project group not translatable'
 
-project_rosetta_index = ContextTitle('Rosetta: %s')
+project_rosetta_index = ContextTitle('Launchpad Translations: %s')
 
 project_specs = ContextTitle('Blueprints for %s')
 
@@ -801,7 +823,7 @@ project_translators = ContextTitle('Set translation group for %s')
 
 projects_index = 'Project groups registered in Launchpad'
 
-projects_request = 'Rosetta: Request a project group'
+projects_request = 'Launchpad Translations: Request a project group'
 
 projects_search = 'Search for project groups in Launchpad'
 
@@ -830,7 +852,7 @@ remotebug_index = ContextTitle('%s')
 
 root_index = 'Launchpad'
 
-rosetta_about = 'About Rosetta'
+rosetta_about = 'About Launchpad Translations'
 
 rosetta_index = 'Launchpad Translations'
 
@@ -1081,6 +1103,8 @@ def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (
         context.person.browsername, context.team.browsername)
 
+team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
+
 team_newpoll = ContextTitle('New poll for team %s')
 
 team_polls = ContextTitle('Polls for team %s')
@@ -1097,12 +1121,12 @@ template_new = 'EXAMPLE NEW TITLE'
 
 temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
-translationgroup_index = ContextTitle(smartquote('"%s" Rosetta translation group'))
+translationgroup_index = ContextTitle(smartquote('"%s" Launchpad translation group'))
 
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))
 
-translationgroups_index = 'Rosetta translation groups'
+translationgroups_index = 'Launchpad translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
 

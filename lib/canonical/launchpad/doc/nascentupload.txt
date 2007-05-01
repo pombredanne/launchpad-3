@@ -380,6 +380,8 @@ another accepted candidate that conflicts with the proposed one.
 The upload will be rejected.
 
   >>> success, msgs = ed_src_dup.do_accept()
+  ERROR: BOOM:
+  <BLANKLINE>
   >>> success
   False
   >>> ed_src_dup.is_rejected

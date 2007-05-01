@@ -48,6 +48,7 @@ __all__ = [
     'SpecificationDepCandidatesVocabulary',
     'SprintVocabulary',
     'TranslationGroupVocabulary',
+    'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
@@ -325,6 +326,35 @@ def project_products_vocabulary_factory(context):
     return SimpleVocabulary([
         SimpleTerm(product, product.name, title=product.displayname)
         for product in project.products])
+
+
+class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
+    """Describes the teams in which the current user participates."""
+    _table = Person
+    _orderBy = 'displayname'
+
+    def toTerm(self, obj):
+        return SimpleTerm(
+            obj, obj.name, '%s (%s)' % (obj.displayname, obj.name))
+
+    def __iter__(self):
+        kw = {}
+        if self._orderBy:
+            kw['orderBy'] = self._orderBy
+        launchbag = getUtility(ILaunchBag)
+        if launchbag.user:
+            user = launchbag.user
+            for team in user.teams_participated_in:
+                yield self.toTerm(team)
+
+    def getTermByToken(self, token):
+        launchbag = getUtility(ILaunchBag)
+        if launchbag.user:
+            user = launchbag.user
+            for team in user.teams_participated_in:
+                if team.name == token:
+                    return self.getTerm(team)
+        raise LookupError(token)
 
 
 def project_products_using_malone_vocabulary_factory(context):

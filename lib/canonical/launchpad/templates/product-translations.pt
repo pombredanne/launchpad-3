@@ -43,7 +43,7 @@
           <p>
             To set up
             <tal:product replace="context/displayname" />
-            for translation in Rosetta, you need to upload the
+            for translation in Launchpad, you need to upload the
             <abbr>PO</abbr> template for one of its release series.
           </p>
           <ul>
@@ -66,7 +66,7 @@
         <tal:other condition="not: context/required:launchpad.Edit">
           <p>
             The <tal:product replace="context/displayname" /> product
-            is not set up for translation in Rosetta.
+            is not set up for translation in Launchpad.
           </p>
           <tal:loggedout condition="not: request/lp:person">
             <p>
@@ -80,7 +80,8 @@
               <a
                 tal:attributes="href context/owner/fmt:url"
                 tal:content="context/owner/displayname"
-              >Foo Bar</a>, the project registrant, about using Rosetta.
+		>Foo Bar</a>, the project registrant, about using Launchpad
+              for translations.
             </p>
           </tal:loggedout>
           <p tal:condition="request/lp:person">

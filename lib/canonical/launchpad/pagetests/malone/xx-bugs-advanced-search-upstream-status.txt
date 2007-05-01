@@ -17,8 +17,8 @@ There are currently four bugs open in Ubuntu.
 
 Now if we go to the advanced search and choose to list only the bugs
 needing a bug watch, only the bugs with tasks in other contexts that
-don't use Malone are shown, if at least one of those contexts doesn't
-have a bug watch.
+don't use Launchpad Bugs are shown, if at least one of those contexts 
+doesn't have a bug watch.
 
     XXX: Can't click on the link due to bug 51853.
        -- Bjorn Tillenius, 2006-07-04
@@ -37,7 +37,7 @@ have a bug watch.
       &mdash; Medium Unconfirmed
 
 There's an exception to what's shown on this filter though: if all the
-bugtasks on contexts that don't use Malone are Rejected, those bugs
+bugtasks on contexts that don't use Launchpad are Rejected, those bugs
 are not included in the report.
 
     >>> from zope.component import getUtility

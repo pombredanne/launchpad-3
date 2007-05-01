@@ -11,7 +11,7 @@
       <h1 tal:condition="view/label"
           tal:content="view/label"
           metal:fill-slot="heading">
-          Add a template name in Rosetta
+          Add a template name in Launchpad
       </h1>
 
       <legend metal:fill-slot="form_legend">New template name details</legend>
