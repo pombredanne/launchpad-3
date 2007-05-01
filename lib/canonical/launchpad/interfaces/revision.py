@@ -42,6 +42,7 @@ class IRevisionAuthor(Interface):
     """Committer of a Bazaar revision."""
 
     name = TextLine(title=_("Revision Author Name"), required=True)
+    name_without_email = Attribute("Revision author name without email address")
 
 
 class IRevisionParent(Interface):
