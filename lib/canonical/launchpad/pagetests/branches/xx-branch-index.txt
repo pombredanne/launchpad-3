@@ -71,8 +71,9 @@ where "N" is the revision sequence number.
 The revision number, author and date are all contained in a heading (h3), and
 the commit message follows as a number of paragraphs.
 
+  >>> browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
   >>> def get_commit_message(sequence):
-  ...     revision = find_tag_by_id(user_browser.contents, 'rev%s' % (sequence,))
+  ...     revision = find_tag_by_id(browser.contents, 'rev%s' % (sequence,))
   ...     return revision.fetch('p')
 
 
@@ -96,8 +97,8 @@ to that bug is created.
 
 This link can be followed to the bug's details page.
 
-  >>> user_browser.getLink('bug 1').click()
-  >>> print user_browser.title
+  >>> browser.getLink('bug 1').click()
+  >>> print browser.title
   Bug #1 in firefox (upstream)...
 
 
