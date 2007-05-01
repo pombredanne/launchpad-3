@@ -72,10 +72,7 @@ class RevisionAuthor(SQLBase):
         If there is no name information (i.e. when the revision author only
         supplied their email address), return None.
         """
-        name = email.Utils.parseaddr(self.name)[0]
-        if name == '':
-            return None
-        return name
+        return email.Utils.parseaddr(self.name)[0]
 
     name_without_email = property(_getNameWithoutEmail)
 

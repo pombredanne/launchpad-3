@@ -21,9 +21,9 @@ class TestRevisionAuthor(TestCase):
 
     def testGetNameWithoutEmailWithNoName(self):
         # If there is no name in the revision author information,
-        # name_without_email is None.
+        # name_without_email is an empty string.
         author = RevisionAuthor(name=u'jml@mumak.net')
-        self.assertEqual(None, author.name_without_email)
+        self.assertEqual('', author.name_without_email)
 
 
 def test_suite():

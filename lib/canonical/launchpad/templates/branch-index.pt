@@ -192,17 +192,11 @@
             </span>
           </tal:not-anonymous>
           <tal:anonymous condition="not:view/user">
-            <tal:has-name
-               condition="rev_no/revision/revision_author/name_without_email">
-              <span
-                 tal:replace="rev_no/revision/revision_author/name_without_email">
-                John Doe
-              </span>
-            </tal:has-name>
-            <tal:has-no-name
-                condition="not:rev_no/revision/revision_author/name_without_email">
-              &lt;email address hidden&gt;
-            </tal:has-no-name>
+            <span
+               tal:replace="rev_no/revision/revision_author/name_without_email">
+              John Doe
+            </span>
+            &lt;email address hidden&gt;
           </tal:anonymous>
         </strong>
         <span

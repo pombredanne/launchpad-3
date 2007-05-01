@@ -54,12 +54,12 @@ addresses.
   ...         revno = str(revision['value'])
   ...         for heading in revision.fetch('div'):
   ...             print revno, extract_text(heading).encode('ascii')
-  6 By foo on 2005-10-31
-  5 By foo on 2005-10-31
+  6 By foo &lt;email address hidden&gt; on 2005-10-31
+  5 By foo &lt;email address hidden&gt; on 2005-10-31
   4 By &lt;email address hidden&gt; on 2005-10-31
-  3 By Sample Committer on 2005-10-31
-  2 By Sample Committer on 2005-10-31
-  1 By Sample Committer on 2005-10-31
+  3 By Sample Committer &lt;email address hidden&gt; on 2005-10-31
+  2 By Sample Committer &lt;email address hidden&gt; on 2005-10-31
+  1 By Sample Committer &lt;email address hidden&gt; on 2005-10-31
 
 
 
