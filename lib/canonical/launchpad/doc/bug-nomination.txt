@@ -90,7 +90,7 @@ Warty nominations, it cannot be targeted to Warty.
     >>> bug_five = bugset.get(5)
 
     >>> def by_bugtargetname(bugtask):
-    ...     return bugtask.target.bugtargetname
+    ...     return bugtask.target.bugtargetname.lower()
 
     >>> tasks = sorted(bug_five.bugtasks, key=by_bugtargetname)
 
@@ -399,7 +399,6 @@ automatically.
 
     >>> for task in tasks:
     ...     print task.target.bugtargetname
-    M...
     evolution (Ubuntu Grumpy)
     evolution (Ubuntu Warty)
     evolution (Ubuntu)

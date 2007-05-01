@@ -1803,10 +1803,11 @@ class BugTaskTableRowView(LaunchpadView):
     """Browser class for rendering a bugtask row on the bug page."""
 
     def canSeeTaskDetails(self):
-        """Someone should be able to see a task's status details if this is not
-        a conjoined task, and if the bug is not a duplicate.
-        This is independent of whether they can *change* the status; you need
-        to expand the details to see any milestone set.
+        """Whether someone can see a task's status details.
+        
+        This returns true if this is not a conjoined task, and if the bug is
+        not a duplicate. It is independent of whether they can *change* the
+        status; you need to expand the details to see any milestone set.
         """
         if (self.context.conjoined_master or self.context.bug.duplicateof):
             return False
@@ -1814,7 +1815,8 @@ class BugTaskTableRowView(LaunchpadView):
             return True
 
     def getTaskRowCSSClass(self):
-        """Return the appropriate CSS class for the row in the Affects table.
+        """The appropriate CSS class for the row in the Affects table.
+        
         Currently this consists solely of highlighting the current context.
         """
         bugtask = self.context
