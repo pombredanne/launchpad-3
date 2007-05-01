@@ -368,6 +368,9 @@ class IBrowserFormNG(Interface):
     def __contains__(name):
         """Return True if a field named name was submitted."""
 
+    def __iter__():
+        """Return an iterator over the submitted field names."""
+
     def getOne(name, default=None):
         """Return the value of the field name.
 

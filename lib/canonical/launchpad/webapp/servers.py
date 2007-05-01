@@ -342,6 +342,10 @@ class BrowserFormNG:
         """See IBrowserFormNG."""
         return name in self.form
 
+    def __iter__(self):
+        """See IBrowserFormNG."""
+        return iter(self.form)
+    
     def getOne(self, name, default=None):
         """See IBrowserFormNG."""
         value = self.form.get(name, default)

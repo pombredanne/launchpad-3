@@ -111,3 +111,10 @@ no value was submitted with the field.
 
     >>> request.form_ng.getAll('another_field', [u'default'])
     [u'default']
+
+All the submitted field names can be iterated over:
+
+    >>> for name in sorted(request.form_ng):
+    ...     print name
+    a_field
+    items_field
