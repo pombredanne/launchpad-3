@@ -43,37 +43,29 @@ queue. To do this we prepare an OpenPGP key, and then run the upload handler.
 
 We need some setup for the upload handler.
 
-  >>> class MockLogger:
-  ...     def __init__(self, swallow=True):
-  ...         self.swallow = swallow
-  ...     def debug(self, s):
-  ...         if not self.swallow:
-  ...             print("DEBUG: "+s)
-  >>> class MockOptions:
-  ...     distro = "ubuntu"
-  ...     distrorelease = "hoary"
-
   >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
-  >>> from canonical.archivepublisher.tests import datadir
+  >>> from canonical.archivepublisher.tests import (
+  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
 
 Since we landed correct security adapters for DistroReleaseQueue,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 
-  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+  >>> from canonical.launchpad.ftests import login
   >>> login("foo.bar@canonical.com")
 
 Construct an upload.
 
-  >>> ed_upload = NascentUpload(findPolicyByName('anything'),
-  ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
-  >>> ed_upload.changes_filename == datadir("ed_0.2-20_i386.changes")
-  True
-  >>> ed_upload.policy.setOptions(MockOptions())
-  >>> ed_upload.policy.can_upload_binaries = True
-  >>> ed_upload.policy.can_upload_mixed = True
+  >>> anything_policy = getPolicy(
+  ...     name='anything', distro='ubuntu', distrorelease='hoary')
+  >>> anything_policy.can_upload_binaries = True
+  >>> anything_policy.can_upload_mixed = True
+
+  >>> ed_upload = NascentUpload(
+  ...     datadir('ed_0.2-20_i386.changes'),
+  ...     anything_policy, mock_logger_quiet)
+
   >>> ed_upload.process()
   >>> success, msgs = ed_upload.do_accept()
   >>> success
@@ -113,7 +105,7 @@ Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
   >>> for item in accepted_queue:
   ...     for source in item.sources:
   ...         print source.sourcepackagerelease.name
-  ...     item.realiseUpload(MockLogger(False))
+  ...     item.realiseUpload(mock_logger)
   ed
   DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary
   DEBUG: Publishing build to ubuntu/hoary/i386
@@ -263,10 +255,12 @@ done by someone else.
 
 Let's process a new upload:
 
+  >>> insecure_policy = getPolicy(
+  ...     name='insecure', distro='ubuntu', distrorelease='hoary')
+
   >>> bar_ok = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir('suite/bar_1.0-1'),
-  ...     "bar_1.0-1_source.changes", MockLogger())
-  >>> bar_ok.policy.setOptions(MockOptions())
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     insecure_policy, mock_logger_quiet)
   >>> bar_ok.process()
   >>> success, msgs = bar_ok.do_accept()
   >>> success

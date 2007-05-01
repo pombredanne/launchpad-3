@@ -87,9 +87,6 @@
             template="../templates/productseries-index.pt"
             />
         <browser:page
-            name="+importstatus"
-            template="../templates/productseries-importstatus.pt" />
-        <browser:page
             name="+macros"
             template="../templates/productseries-macros.pt" />
         <browser:page
@@ -128,7 +125,7 @@
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/productseries-translations.pt"
+            template="../templates/object-translations.pt"
             />
         <browser:page
             name="+potlist"
@@ -138,6 +135,10 @@
             name="+ubuntupkg"
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"
+            />
+        <browser:page
+            name="+importstatus"
+            template="../templates/productseries-importstatus.pt"
             />
     </browser:pages>
 

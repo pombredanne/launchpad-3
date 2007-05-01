@@ -5,11 +5,7 @@
 >
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-about" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
+<metal:rightportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-stats" />
 </metal:rightportlets>
 
@@ -43,6 +39,7 @@
           <th>Template Name</th>
           <th>Length</th>
           <th>Status</th>
+          <th>Untranslated</th>
           <th>Last Edited</th>
           <th>By</th>
         </tr>
@@ -63,6 +60,21 @@
             <span class="sortkey" tal:content="entry/translatedPercentage"/>
             <span style="white-space: nowrap"
                   tal:content="structure entry/@@+barchart" />
+          </td>
+          <td>
+            <span class="sortkey"
+              tal:content="entry/untranslatedCount">
+              0
+            </span>
+            <span
+              tal:condition="entry/untranslatedCount"
+              tal:replace="entry/untranslatedCount"
+              >
+              0
+            </span>
+            <tal:block condition="not: entry/untranslatedCount">
+                &mdash;
+            </tal:block>
           </td>
           <td>
             <span class="sortkey"
@@ -104,6 +116,24 @@
   </tal:block>
 
 </div>
+
+<div metal:fill-slot="help">
+  <p>
+    This page shows each of the translation templates in each of the source
+    packages in the
+    <span tal:replace="context/distrorelease/displayname">hoary</span>
+    release of
+    <span tal:replace="context/distrorelease/distribution/displayname">Ubuntu
+    </span>. Select a template to start translating.
+  </p>
+  <ul class="info">
+    <li>
+      <a href="https://help.launchpad.net/RosettaFAQ"
+      >Frequently asked questions</a>
+    </li>
+  </ul>
+</div>
+
 
 </body>
 </html>

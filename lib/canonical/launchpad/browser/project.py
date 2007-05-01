@@ -128,7 +128,7 @@ class ProjectSetNavigation(Navigation):
     usedfor = IProjectSet
 
     def breadcrumb(self):
-        return 'Projects'
+        return 'Project Groups'
 
     def traverse(self, name):
         # Raise a 404 on an invalid project name
@@ -161,11 +161,11 @@ class ProjectSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def register(self):
-        text = 'Register a project'
+        text = 'Register a project group'
         return Link('+new', text, icon='add')
 
     def listall(self):
-        text = 'List all projects'
+        text = 'List all project groups'
         return Link('+all', text, icon='list')
 
 
@@ -190,8 +190,8 @@ class ProjectOverviewMenu(ApplicationMenu):
     usedfor = IProject
     facet = 'overview'
     links = [
-        'edit', 'branding', 'driver', 'reassign',
-        'top_contributors', 'administer', 'rdf']
+        'edit', 'branding', 'driver', 'reassign', 'top_contributors',
+        'mentorship', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -211,12 +211,16 @@ class ProjectOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
         text = 'Appoint driver'
-        summary = 'Someone with permission to set goals for all products'
+        summary = 'Someone with permission to set goals for all projects'
         return Link('+driver', text, summary, icon='edit')
 
     def top_contributors(self):
         text = 'List top contributors'
         return Link('+topcontributors', text, icon='info')
+
+    def mentorship(self):
+        text = 'Mentoring available'
+        return Link('+mentoring', text, icon='info')
 
     def rdf(self):
         text = structured(
@@ -278,7 +282,7 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
 
     def new(self):
         text = 'Ask a question'
-        return Link('+addticket', text, icon='add')
+        return Link('+addquestion', text, icon='add')
 
 
 class ProjectTranslationsMenu(ApplicationMenu):
@@ -320,7 +324,7 @@ class ProjectEditView(LaunchpadEditFormView):
 
 class ProjectReviewView(ProjectEditView):
 
-    label = "Review upstream project details"
+    label = "Review upstream project group details"
     field_names = ['name', 'owner', 'active', 'reviewed']
 
 
@@ -345,7 +349,7 @@ class ProjectAddProductView(LaunchpadFormView):
         if not self.user:
             raise Unauthorized(
                 "Need to have an authenticated user in order to create a bug"
-                " on a product")
+                " on a project")
         # create the product
         self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
@@ -372,7 +376,7 @@ class ProjectAddProductView(LaunchpadFormView):
 
 class ProjectSetView(object):
 
-    header = "Projects registered in Launchpad"
+    header = "Project groups registered in Launchpad"
 
     def __init__(self, context, request):
         self.context = context
@@ -415,7 +419,7 @@ class ProjectAddView(LaunchpadFormView):
     field_names = ['name', 'displayname', 'title', 'summary',
                    'description', 'homepageurl',]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
-    label = _('Register a project with Launchpad')
+    label = _('Register a project group with Launchpad')
     project = None
 
     @action(_('Add'), name='add')
@@ -507,3 +511,4 @@ class ProjectAddQuestionView(QuestionAddView):
             return self.widgets['product'].getInputValue()
         else:
             return None
+

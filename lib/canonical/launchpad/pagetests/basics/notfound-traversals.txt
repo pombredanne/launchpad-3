@@ -34,8 +34,8 @@ spider -- StuartBishop 20050822
 ...         return "%s returned status %s instead of 404\n\n%s" % (
 ...             invalid_url, invalid_rc, str(invalid_output))
 
->>> def check_not_found(url):
-...     output = http("GET %s HTTP/1.1\n" % url)
+>>> def check_not_found(url, host='launchpad.dev'):
+...     output = http("GET %s HTTP/1.1\nHost: %s" % (url, host))
 ...     status = output.getStatus()
 ...     if status != 404:
 ...         return "%s returned status %s instead of 404\n\n%s" % (
@@ -64,6 +64,13 @@ spider -- StuartBishop 20050822
 >>> check("/+graphics")
 
 >>> check("/translations/+about")
+
+>>> check("/+languages", host='translations.launchpad.dev')
+>>> check("/+languages/+add", auth=True, host='translations.launchpad.dev')
+>>> check("/+languages/es", host='translations.launchpad.dev')
+>>> check("/+languages/es/+admin", auth=True, host='translations.launchpad.dev')
+>>> check_not_found("/+languages/es/foos", host='translations.launchpad.dev')
+>>> check_not_found("/+languages/foos", host='translations.launchpad.dev')
 
 >>> check("robots.txt", host="shipit.ubuntu.dev")
 
@@ -286,7 +293,7 @@ which the bug has not yet been reported.
 >>> check_not_found("/ubuntu/warty/+source/mozilla-firefox/+bug/1/+viewstatus")
 >>> check_not_found("/ubuntu/warty/+source/mozilla-firefox/+bug/1/+editstatus")
 
-Viewing a bug in a distribution that doesn't use Malone officially, where the
+Viewing a bug in a distribution that doesn't use Bugs officially, where the
 bugtask is also assigned to a milestone (a corner case, but one that was causing
 OOPS's all the same!):
 
@@ -388,7 +395,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/+builds/+build/7/")
 >>> check("/+builds/+build/7/pmount/")
 
->>> check("/support/")
+>>> check_redirect("/support/", status=301)
 
 >>> check("/sprints")
 >>> check("/sprints/ubz")
@@ -414,4 +421,9 @@ Check legacy URL redirects
 >>> check_redirect("/distros/ubuntu", status=301)
 >>> check_redirect("/products/ubuntu-product", status=301)
 >>> check_redirect("/people/stub", status=301)
+
+
+Check redirects of Unicode URLs works
+
+>>> check_not_found("/ubuntu/foo%C3%A9")
 

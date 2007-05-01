@@ -6,8 +6,19 @@
 <body>
 
 <div metal:fill-slot="main">
-
-        <h1>Upload a new version of <span tal:replace="context/title" /></h1>
+        <div>
+          <a tal:attributes="href context/potemplate/fmt:url"
+             tal:content="context/potemplate/title">
+            evolution 2.10 template
+          </a>
+        </div>
+        <h1>
+          Upload
+          <tal:language replace="context/language/englishname">
+            Spanish
+          </tal:language>
+          translation
+        </h1>
 
         <form action="+upload" method="POST" enctype="multipart/form-data">
             <table>

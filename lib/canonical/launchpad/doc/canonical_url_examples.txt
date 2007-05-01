@@ -54,7 +54,7 @@ The Bazaar homepage.
 The Answer Tracker
 
     >>> canonical_url(getUtility(IQuestionSet))
-    u'http://answers.launchpad.dev/support'
+    u'http://answers.launchpad.dev/questions'
 
 == Persons and Teams ==
 

@@ -21,6 +21,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.lp.dbschema import (
     TranslationPermission, SpecificationSort, SpecificationFilter,
     SpecificationStatus)
@@ -33,6 +35,7 @@ from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -40,6 +43,7 @@ from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.question import (
     SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
 from canonical.launchpad.database.milestone import Milestone
@@ -48,9 +52,20 @@ from canonical.launchpad.database.specification import (
 from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner,
-    IQuestionTarget, IPersonSet, NotFoundError, get_supported_languages,
-    QUESTION_STATUS_DEFAULT_SEARCH, IHasLogo, IHasMugshot, IHasIcon)
+    get_supported_languages,
+    ICalendarOwner,
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    ILaunchpadCelebrities,
+    ILaunchpadStatisticSet,
+    IPersonSet,
+    IProduct,
+    IProductSet,
+    IQuestionTarget,
+    NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
@@ -96,18 +111,21 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='programminglang', notNull=False, default=None)
     downloadurl = StringCol(dbName='downloadurl', notNull=False, default=None)
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
-    translationgroup = ForeignKey(dbName='translationgroup',
-        foreignKey='TranslationGroup', notNull=False, default=None)
-    translationpermission = EnumCol(dbName='translationpermission',
-        notNull=True, schema=TranslationPermission,
-        default=TranslationPermission.OPEN)
+    translationgroup = ForeignKey(
+        dbName='translationgroup', foreignKey='TranslationGroup', notNull=False,
+        default=None)
+    translationpermission = EnumCol(
+        dbName='translationpermission', notNull=True,
+        schema=TranslationPermission, default=TranslationPermission.OPEN)
     bugtracker = ForeignKey(
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
-    official_malone = BoolCol(dbName='official_malone', notNull=True,
-        default=False)
-    official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
-        default=False)
+    official_answers = BoolCol(
+        dbName='official_answers', notNull=True, default=False)
+    official_malone = BoolCol(
+        dbName='official_malone', notNull=True, default=False)
+    official_rosetta = BoolCol(
+        dbName='official_rosetta', notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
@@ -116,12 +134,13 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     # While the interface defines this field as required, we need to
     # allow it to be NULL so we can create new product records before
     # the corresponding series records.
-    development_focus = ForeignKey(foreignKey="ProductSeries",
-                                   dbName="development_focus",
-                                   notNull=False, default=None)
+    development_focus = ForeignKey(
+        foreignKey="ProductSeries", dbName="development_focus", notNull=False,
+        default=None)
 
-    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
-                          default=None, forceDBName=True)
+    calendar = ForeignKey(
+        dbName='calendar', foreignKey='Calendar', default=None,
+        forceDBName=True)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
@@ -312,13 +331,19 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
-                        needs_attention_from=None):
-        """See IQuestionTarget."""
+                        needs_attention_from=None, unsupported=False):
+        """See IQuestionCollection."""
+        if unsupported:
+            unsupported_target = self
+        else:
+            unsupported_target = None
+            
         return QuestionTargetSearch(
             product=self,
             search_text=search_text, status=status,
             language=language, sort=sort, owner=owner,
-            needs_attention_from=needs_attention_from).getResults()
+            needs_attention_from=needs_attention_from,
+            unsupported_target=unsupported_target).getResults()
 
 
     def findSimilarQuestions(self, title):
@@ -359,8 +384,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            'Language.id = language AND product = %s' % sqlvalues(self),
-            clauseTables=['Ticket'], distinct=True))
+            'Language.id = Question.language AND '
+            'Question.product = %s' % sqlvalues(self.id),
+            clauseTables=['Question'], distinct=True))
 
     @property
     def translatable_packages(self):
@@ -404,6 +430,27 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             return packages[0]
         # capitulate
         return None
+
+    @property
+    def mentoring_offers(self):
+        """See IProduct"""
+        via_specs = MentoringOffer.select('''
+            Specification.product = %s AND
+            Specification.id = MentoringOffer.specification
+            ''' % sqlvalues(self.id) + """ AND NOT
+            (""" + Specification.completeness_clause +")",
+            clauseTables=['Specification'],
+            distinct=True)
+        via_bugs = MentoringOffer.select('''
+            BugTask.product = %s AND
+            BugTask.bug = MentoringOffer.bug AND
+            BugTask.bug = Bug.id AND
+            Bug.private IS FALSE
+            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ + BugTask.completeness_clause + ")",
+            clauseTables=['BugTask', 'Bug'],
+            distinct=True)
+        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     @property
     def translationgroups(self):
@@ -584,16 +631,17 @@ class ProductSet:
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        return iter(self._getProducts())
+        return iter(self.all_active)
 
     @property
     def people(self):
         return getUtility(IPersonSet)
 
     def latest(self, quantity=5):
-        return self._getProducts()[:quantity]
+        return self.all_active[:quantity]
 
-    def _getProducts(self):
+    @property
+    def all_active(self):
         results = Product.selectBy(active=True, orderBy="-Product.datecreated")
         # The main product listings include owner, so we prejoin it in
         return results.prejoin(["owner"])
@@ -715,24 +763,29 @@ class ProductSet:
         results.sort(lambda a,b: cmp(a.title, b.title))
         return results
 
+    @cachedproperty
+    def stats(self):
+        return getUtility(ILaunchpadStatisticSet)
+
     def count_all(self):
-        return Product.select().count()
+        return self.stats.value('active_products')
 
     def count_translatable(self):
-        return self.getTranslatables().count()
+        return self.stats.value('products_with_translations')
 
     def count_reviewed(self):
-        return Product.selectBy(reviewed=True, active=True).count()
-
-    def count_bounties(self):
-        return Product.select("ProductBounty.product=Product.id",
-            distinct=True, clauseTables=['ProductBounty']).count()
+        return self.stats.value('reviewed_products')
 
     def count_buggy(self):
-        return Product.select("BugTask.product=Product.id",
-            distinct=True, clauseTables=['BugTask']).count()
+        return self.stats.value('products_with_translations')
 
     def count_featureful(self):
-        return Product.select("Specification.product=Product.id",
-            distinct=True, clauseTables=['Specification']).count()
+        return self.stats.value('products_with_blueprints')
+
+    def count_answered(self):
+        return self.stats.value('products_with_questions')
+
+    def count_codified(self):
+        return self.stats.value('products_with_branches')
+
 
