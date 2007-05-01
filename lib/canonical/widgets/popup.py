@@ -175,21 +175,19 @@ class SinglePopupView(object):
 
     def vocabulary(self):
         """See ISinglePopupView"""
-        if not self.request.form['vocabulary']:
+	vocabulary_name = self.request.form_ng.getOne('vocabulary') 
+	if not vocabulary_name:
             raise UnexpectedFormData('No vocabulary specified')
         try:
-            factory = zapi.getUtility(IVocabularyFactory,
-                self.request.form['vocabulary'])
+            factory = zapi.getUtility(IVocabularyFactory, vocabulary_name)
         except ComponentLookupError:
             # Couldn't find the vocabulary? Adios!
-            raise UnexpectedFormData('Unknown vocabulary %s' % 
-                                     self.request.form['vocabulary'])
+            raise UnexpectedFormData('Unknown vocabulary %s' % vocabulary_name)
 
         vocabulary = factory(self.context)
 
         if not IHugeVocabulary.providedBy(vocabulary):
-            raise UnexpectedFormData('Non-huge vocabulary %s' % 
-                                     self.request.form['vocabulary'])
+            raise UnexpectedFormData('Non-huge vocabulary %s' % vocabulary_name)
 
         return vocabulary
 
