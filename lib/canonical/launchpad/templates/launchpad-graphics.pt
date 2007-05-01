@@ -630,8 +630,8 @@
       <tr>
         <td>bounty</td>
         <td><img src="/@@/bounty" /></td>
-        <td>A bounty. This image is used in faeture listings to indicate the
-        features which have bounties associated with them, and as bullets for
+        <td>A bounty. This image is used in blueprint listings to indicate
+        those which have bounties associated with them, and as bullets for
         lists of bounties.</td>
       </tr>
       <tr>

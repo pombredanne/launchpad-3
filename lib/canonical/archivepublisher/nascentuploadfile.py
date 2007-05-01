@@ -143,6 +143,7 @@ class NascentUploadFile:
         """Whether or not the file is present on disk."""
         return os.path.exists(self.filepath)
 
+    @classmethod
     def splitComponentAndSection(self, component_and_section):
         """Split the component out of the section."""
         if "/" not in component_and_section:

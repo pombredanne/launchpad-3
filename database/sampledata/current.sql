@@ -2591,6 +2591,13 @@ INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (16, 'quest
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (17, 'answered_question_count', 3, '2007-03-18 17:27:46.40443');
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (18, 'solved_question_count', 1, '2007-03-18 17:27:46.413242');
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (19, 'projects_with_questions_count', 2, '2007-03-18 17:27:46.421899');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (20, 'active_products', 20, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (21, 'products_with_translations', 3, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (22, 'products_with_blueprints', 1, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (23, 'products_with_branches', 5, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (24, 'products_with_bugs', 5, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (25, 'products_with_questions', 1, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (26, 'reviewed_products', 1, '2007-04-29 23:45:04.416248');
 
 
 ALTER TABLE launchpadstatistic ENABLE TRIGGER ALL;

@@ -380,14 +380,6 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
-    permission="zope.Public"
-    class="canonical.launchpad.browser.PersonView"
-    name="+mentoring"
-    template="../templates/person-mentoringoffers.pt"
-    />
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonBranchesView"
     permission="zope.Public"
     facet="branches"
@@ -449,15 +441,6 @@
     name="+mugshots"
     template="../templates/team-mugshots.pt"
     />
-
-  <browser:page
-      for="canonical.launchpad.interfaces.ITeam"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.PersonView"
-      name="+mentoring"
-      template="../templates/team-mentoringoffers.pt"
-      >
-  </browser:page>
 
   <browser:page
       for="canonical.launchpad.interfaces.ITeam"
