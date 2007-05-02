@@ -1,0 +1,21 @@
+File size and mime type are displayed for each attachment
+
+    >>> from cStringIO import StringIO
+    >>> filecontent = '123456789' * 30
+    >>> foo_file = StringIO(filecontent)
+
+    >>> user_browser.open(
+    ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment")
+
+    >>> user_browser.getControl("Attachment").add_file(
+    ...     foo_file, "text/plain", "foo.txt")
+    >>> user_browser.getControl("Description").value = "description text"
+    >>> user_browser.getControl("Comment").value = "comment comment"
+    >>> user_browser.getControl("Save Changes").click()
+
+    >>> lastcomment = find_tags_by_class(
+    ...     user_browser.contents, 'boardCommentBody')[-1]
+    >>> fileinfo = '(270 bytes, text/plain)'
+    >>> lastcomment.renderContents().find(fileinfo) > 0
+    True
+

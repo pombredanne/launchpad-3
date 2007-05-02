@@ -25,7 +25,7 @@ attachment.
   >>> foo_file.seek(0)
   >>> user_browser.getControl('Attachment').add_file(
   ...   foo_file, 'text/plain', 'foo.txt')
-  >>> user_browser.getControl('Description').value = '   Some information   '
+  >>> user_browser.getControl('Description').value = '   Some information  '
   >>> user_browser.getControl('Comment').value = 'Added some information'
   >>> user_browser.getControl('Save Changes').click()
 
