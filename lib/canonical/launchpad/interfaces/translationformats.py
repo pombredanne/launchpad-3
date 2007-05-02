@@ -30,8 +30,8 @@ class ITranslationImporter(Interface):
             entry.
         :arg logger: A logger object or None.
 
-        If the entry is older than previous imported file, OldPOImported
-        exception is raised.
+        If the entry is older than previous imported file,
+        OldTranslationImported exception is raised.
 
         If the entry imported is not published and doesn't have the tag added
         by Launchpad on export time, NotExportedFromLaunchpad exception is
