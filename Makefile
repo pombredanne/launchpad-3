@@ -100,7 +100,7 @@ build:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 
-mailman_instance:
+mailman_instance: build
 	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
 		 $(PYTHON) -t buildmailman.py
 
