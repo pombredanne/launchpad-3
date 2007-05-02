@@ -941,6 +941,7 @@ class ShippingRequestSet:
         # We need to create some temporary tables to make the next queries run
         # in non-geological time.
         create_tables = """
+            -- People with non-cancelled requests for the current release.
             CREATE TEMPORARY TABLE current_release_requester
                 (recipient integer);
             INSERT INTO current_release_requester (
@@ -954,6 +955,8 @@ class ShippingRequestSet:
             CREATE UNIQUE INDEX current_release_requester__unq 
                 ON current_release_requester(recipient);
 
+            -- People with with non-cancelled requests for any release other
+            -- than the current one.
             CREATE TEMPORARY TABLE non_current_release_requester
                 (recipient integer);
             INSERT INTO non_current_release_requester (
@@ -966,9 +969,33 @@ class ShippingRequestSet:
                     AND status != %(cancelled)s);
             CREATE UNIQUE INDEX non_current_release_requester__unq 
                 ON non_current_release_requester(recipient);
+
+            -- People which made requests for any release other than the 
+            -- current one, but none of the requests were ever shipped.
+            CREATE TEMPORARY TABLE non_current_release_non_recipient
+                (recipient integer);
+            INSERT INTO non_current_release_non_recipient (
+                SELECT DISTINCT recipient
+                FROM ShippingRequest
+                    JOIN RequestedCDs
+                        ON RequestedCDs.request = ShippingRequest.id
+                WHERE distrorelease != %(current_release)s
+                    AND recipient != %(shipit_admins)s
+                    AND status NOT IN (%(shipped)s, %(cancelled)s)
+                EXCEPT
+                SELECT DISTINCT recipient
+                FROM ShippingRequest
+                    JOIN RequestedCDs
+                        ON RequestedCDs.request = ShippingRequest.id
+                WHERE distrorelease != %(current_release)s
+                    AND recipient != %(shipit_admins)s
+                    AND status = %(shipped)s);
+            CREATE UNIQUE INDEX non_current_release_non_recipient__unq 
+                ON non_current_release_non_recipient(recipient);
             """ % sqlvalues(
                     current_release=ShipItConstants.current_distrorelease,
                     shipit_admins=shipit_admins,
+                    shipped=ShippingRequestStatus.SHIPPED,
                     cancelled=ShippingRequestStatus.CANCELLED)
         cur.execute(create_tables)
 
@@ -1036,22 +1063,26 @@ class ShippingRequestSet:
                         COUNT(DISTINCT request) AS requests
                     FROM RequestedCDs, ShippingRequest
                     WHERE distrorelease != %(current_release)s
-                        AND status IN (%(approved)s, %(shipped)s)
+                        AND status = %(shipped)s
                         AND ShippingRequest.id = RequestedCDs.request
                         AND recipient IN (
                             SELECT recipient FROM current_release_requester)
                     GROUP BY recipient
                     UNION
                     -- This one gives us the people which made feisty requests
-                    -- but haven't had any approved request of previous
+                    -- but haven't had any shipped request of previous
                     -- releases.
-                    SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
+                    SELECT recipient,
+                        0 AS approved_cds_per_user, 0 AS requests
                     FROM RequestedCDs, ShippingRequest
                     WHERE distrorelease != %(current_release)s
-                        AND status NOT IN (%(approved)s, %(shipped)s)
+                        AND status != %(shipped)s
                         AND ShippingRequest.id = RequestedCDs.request
                         AND recipient IN (
                             SELECT recipient FROM current_release_requester)
+                        AND recipient IN (
+                            SELECT recipient 
+                            FROM non_current_release_non_recipient)
                     UNION
                     -- This one gives us the people which made feisty requests
                     -- but haven't made requests for any other releases.
