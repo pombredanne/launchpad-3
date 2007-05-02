@@ -6,7 +6,7 @@ and test if the edit link is working.
 Open the +addurl page.
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2/+addurl')
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2/+addurl')
 
   >>> browser.title
   'Bug #2 - Add a web link'
@@ -23,7 +23,7 @@ Add a web link to the bug from the +addurl page.
 After adding the link, you'll be redirected to the bug page.
 
   >>> browser.url
-  'http://bugs.launchpad.dev/ubuntu-product/+bug/2'
+  'http://bugs.launchpad.dev/tomcat/+bug/2'
 
 Check that the newly added web reference is there.
 
@@ -32,7 +32,7 @@ Check that the newly added web reference is there.
 
 Access the added web link +edit page.
 
-  >>> url = '/ubuntu-product/+bug/2/references/1'
+  >>> url = '/tomcat/+bug/2/references/1'
   >>> browser.getLink(url=url).click()
 
   >>> browser.title

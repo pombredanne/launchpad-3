@@ -1,7 +1,7 @@
 Check that the product main page works.
 
   >>> print http(r"""
-  ... GET /ubuntu-product HTTP/1.1
+  ... GET /tomcat HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

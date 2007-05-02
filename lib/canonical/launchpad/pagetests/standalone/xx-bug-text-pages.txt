@@ -17,7 +17,7 @@ Get text page for a single bug.
    Steve Alexander (stevea)
    Sample Person (name12)
   <BLANKLINE>
-  task: firefox (upstream)
+  task: Mozilla Firefox
   status: Unconfirmed
   reporter: Sample Person (name12)
   importance: Low

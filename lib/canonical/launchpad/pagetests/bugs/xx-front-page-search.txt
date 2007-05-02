@@ -35,7 +35,7 @@ bug listing.
     3 Bug Title Test
       mozilla-firefox (Debian Sarge) Medium Unconfirmed
     7 A test bug
-      evolution (upstream) Medium Unconfirmed
+      Evolution Medium Unconfirmed
     10 another test bug
        linux-source-2.6.15 (Ubuntu) Medium Unconfirmed
 

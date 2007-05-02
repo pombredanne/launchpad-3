@@ -34,4 +34,4 @@ Any logged-in user can edit a bugtask.
     >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
     >>> browser.open("http://localhost/firefox/+bug/6/+editstatus")
     >>> browser.title
-    'Bug #6 in firefox (upstream)...'
+    'Bug #6 in Mozilla Firefox...'

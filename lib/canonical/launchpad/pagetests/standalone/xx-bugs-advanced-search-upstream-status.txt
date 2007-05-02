@@ -55,7 +55,7 @@ are not included in the report.
 
     >>> for bugtask in bug_two.bugtasks:
     ...     print "%s, %s" % (bugtask.target.bugtargetname, bugtask.status.title)
-    Ubuntu, Rejected
+    Tomcat, Rejected
     Ubuntu, Unconfirmed
     Ubuntu Hoary, Unconfirmed
     mozilla-firefox (Debian), Rejected

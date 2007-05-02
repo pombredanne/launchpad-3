@@ -4,7 +4,7 @@ Go to the calendar subscribe page for the Ubuntu project calendar,
 while logged in as "Sample Person:
 
   >>> print backslashreplace(str(http(r"""
-  ... GET /ubuntu-project/+calendar/+subscribe HTTP/1.1
+  ... GET /apache/+calendar/+subscribe HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)))
   HTTP/1.1 200 Ok
@@ -14,7 +14,7 @@ while logged in as "Sample Person:
   ...
       <title>Subscribe to \u201cUbuntu Project Calendar\u201d</title>
   ...
-        <form action=".../ubuntu-project/+calendar/+subscribe"
+        <form action=".../apache/+calendar/+subscribe"
               method="post">
   ...
                 <input type="radio" name="subscribe"
@@ -36,7 +36,7 @@ loses the selected colour (the colour is used to identify calendars in
 the merged view).
 
   >>> print backslashreplace(str(http(r"""
-  ... POST /ubuntu-project/+calendar/+subscribe HTTP/1.1
+  ... POST /apache/+calendar/+subscribe HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 50
   ... Content-Type: application/x-www-form-urlencoded
@@ -49,7 +49,7 @@ the merged view).
   ...
       <title>Subscribe to \u201cUbuntu Project Calendar\u201d</title>
   ...
-        <form action=".../ubuntu-project/+calendar/+subscribe"
+        <form action=".../apache/+calendar/+subscribe"
               method="post">
   ...
                 <input type="radio" name="subscribe"
@@ -69,7 +69,7 @@ the merged view).
 Resubscribe to the calendar:
 
   >>> print http(r"""
-  ... POST /ubuntu-project/+calendar/+subscribe HTTP/1.1
+  ... POST /apache/+calendar/+subscribe HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 51
   ... Content-Type: application/x-www-form-urlencoded
@@ -133,7 +133,7 @@ page.  :
 Resubscribing to the calendar for the next test:
 
   >>> print http(r"""
-  ... POST /ubuntu-project/+calendar/+subscribe HTTP/1.1
+  ... POST /apache/+calendar/+subscribe HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 51
   ... Content-Type: application/x-www-form-urlencoded
@@ -150,7 +150,7 @@ Events that show up on the subscribed calendars also show up on the
 merged view:
 
   >>> print http(r"""
-  ... GET /ubuntu-project/+calendar/2004-12-06 HTTP/1.1
+  ... GET /apache/+calendar/2004-12-06 HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -160,7 +160,7 @@ merged view:
   ...
       <title>Ubuntu Project Calendar - 6 December 2004</title>
   ...
-                        <a href=".../ubuntu-project/+calendar/events/5">
+                        <a href=".../apache/+calendar/events/5">
                         16:00
                         -
                         The Mataro Sessions
@@ -179,7 +179,7 @@ merged view:
   ...
       <title>Merged Calendar for Sample Person - 6 December 2004</title>
   ...
-                        <a href=".../ubuntu-project/+calendar/events/5">
+                        <a href=".../apache/+calendar/events/5">
                         16:00
                         -
                         The Mataro Sessions
