@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces.branch import *
 from canonical.launchpad.interfaces.branchref import *
 from canonical.launchpad.interfaces.branchrevision import *
 from canonical.launchpad.interfaces.branchsubscription import *
+from canonical.launchpad.interfaces.branchvisibilitypolicy import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bugextref import *

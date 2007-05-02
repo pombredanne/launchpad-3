@@ -41,6 +41,11 @@
     />
 
   <vocabulary
+    name="BranchVisibilityPolicy"
+    factory="canonical.launchpad.vocabularies.BranchVisibilityPolicyVocabulary"
+    />
+
+  <vocabulary
     name="Bug"
     factory="canonical.launchpad.vocabularies.BugVocabulary"
     />

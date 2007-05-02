@@ -30,6 +30,7 @@ __all__ = (
 'BranchReviewStatus',
 'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
+'BranchVisibilityPolicy',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -2565,6 +2566,22 @@ class BranchSubscriptionNotificationLevel(DBSchema):
         and new revisions added to the branch.
         """)
 
+
+class BranchVisibilityPolicy(DBSchema):
+    """Branch Visibility Policy"""
+
+    PUBLIC = Item(1, """
+        Public
+        
+        Branches are public by default.
+       """)
+
+    PRIVATE = Item(2, """
+        Private
+
+        Branches are private by default.
+        """)
+    
 
 class BugNominationStatus(DBSchema):
     """Bug Nomination Status
