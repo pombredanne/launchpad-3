@@ -478,23 +478,32 @@ class ManageAnswerContactView(LaunchpadFormView):
         """Create a list of teams the user is an administrator of."""
         sort_key = attrgetter('displayname')
         terms = []
-        for team in sorted(self.user.teams_participated_in, key=sort_key):
+        for team in sorted(self.administrated_teams, key=sort_key):
             terms.append(SimpleTerm(team, team.name, team.displayname))
 
         return form.FormField(
             List(
                 __name__='answer_contact_teams',
-                title=_("Team answer contacts"),
+                title=_("Let the following teams be an answer contact for "
+                        "$context",
+                        mapping=dict(context=self.context.displayname)),
                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
                 required=False),
             custom_widget=self.custom_widgets['answer_contact_teams'])
+
+    @cachedproperty
+    def administrated_teams(self):
+        """Return the list of teams for which the user is an administrator."""
+        return [team
+                for team in self.user.teams_participated_in
+                if self.user in team.getEffectiveAdministrators()]
 
     @property
     def initial_values(self):
         user = self.user
         answer_contacts = self.context.direct_answer_contacts
         answer_contact_teams = set(
-            answer_contacts).intersection(self.user.teams_participated_in)
+            answer_contacts).intersection(self.administrated_teams)
         return {
             'want_to_be_answer_contact': user in answer_contacts,
             'answer_contact_teams': list(answer_contact_teams)
