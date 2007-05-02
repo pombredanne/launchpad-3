@@ -6,7 +6,7 @@ difference from the regular process for asking a question (documented
 in 35-question-add.txt). Firstly, we do not know the product the 
 product the question is about, so we ask the user to select one.
 Secondly, without knowing the product, we cannot show the which of the
-user's preferred languages are support.
+user's preferred languages are supported.
 
 
 == Ask a question about a Product in a Project ==
@@ -170,37 +170,32 @@ non-English languages. Dafydd speaks Japanese, so we will use him.
     >>> print soup.first('div', 'informational message').renderContents()
     You have been added as an answer contact for Mozilla Thunderbird.
 
-And we add Japanese to Sample Person's preferred languages. We then
-have a condition for certain products, Thunderbird in this example,
-where the user's languages and the answer contact's languages will
-match. This condition demonstrates the supported language behaviour. 
-Note we are using Sample Person (sample_browser) because he has 
-permission to change his preferred languages in the test environment,
-unlike No Privileged Person (user_browser).
+And we add Japanese to No Privileges Person's preferred languages. We
+then have a condition for certain products, Thunderbird in this 
+example, where the user's languages and the answer contact's languages
+will match. This condition demonstrates the supported language 
+behaviour. 
 
-    >>> sample_browser = Browser()
-    >>> sample_browser.addHeader('Authorization', 
-    ...                          'Basic test@canonical.com:test')
-    >>> sample_browser.open(
-    ...     'http://answers.launchpad.dev/~name12/+editlanguages')
-    >>> sample_browser.title 
-    "Sample Person's preferred languages"
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/~no-priv/+editlanguages')
+    >>> user_browser.title 
+    "No Privileges Person's preferred languages"
     
-    >>> sample_browser.getControl('Japanese').selected = True
-    >>> sample_browser.getControl('Save').click()
-    >>> soup = BeautifulSoup(sample_browser.contents)
+    >>> user_browser.getControl('Japanese').selected = True
+    >>> user_browser.getControl('Save').click()
+    >>> soup = BeautifulSoup(user_browser.contents)
     >>> print soup.first('div', 'informational message').renderContents()
     Added Japanese to your preferred languages.
 
-So if Sample Person were to visit the Ask a Question page for
+So if No Privileges Person were to visit the Ask a Question page for
 Thunderbird directly, he will see that Japanese, as well English (the
 default supported language), have asterisks next to them in
 the Language list. This indicates that he can ask a question in
 Japanese or English and expect someone to reply in the same language.
 
-    >>> sample_browser.open(
+    >>> user_browser.open(
     ... 'http://answers.launchpad.dev/thunderbird/+addquestion')
-    >>> print sample_browser.getControl('Language').displayOptions
+    >>> print user_browser.getControl('Language').displayOptions
     ['English (en) *', 'Japanese (ja) *']
     
 The supported languages will not be shown immediately when Sample
@@ -210,23 +205,31 @@ Mozilla Project.
 
 === Ask a non-English question about a Product in a Project ===
 
-====  Scenario when supported languages are not displayed ====
+Supported languages are only shown after the user submits the 'Product'
+associated with the project. When a user enters the 'Product' 
+information incorrectly we cannot show the supported languages to the
+user. 
 
-Sample Person visits the Ask a question page from a project just as 
-No Privileged Person did above. 
+==== Supported languages aren't displayed after choosing a product ====
 
-    >>> sample_browser.open('http://answers.launchpad.dev/mozilla')
-    >>> sample_browser.getLink('Ask a question').click()
-    >>> print sample_browser.title
+XXX sinzui 2007-05-02 #111793 (Supported languages will not be shown in
+some cases when asking questions from the Project facet)
+No Privileges Person visits the Ask a question page from a project just
+as No Privileged Person did above, but this time in wants to do so in
+Japanese. 
+
+    >>> user_browser.open('http://answers.launchpad.dev/mozilla')
+    >>> user_browser.getLink('Ask a question').click()
+    >>> print user_browser.title
     Ask a question about a project in the Mozilla Project
     
 The page displays a list of products associated with the project.
 The first item in the list is the default value, and it will be 
 submitted if the user does not change it.
 
-    >>> print sample_browser.getControl('Project').displayOptions
+    >>> print user_browser.getControl('Project').displayOptions
     ['Mozilla Firefox', 'Mozilla Thunderbird']
-    >>> print sample_browser.getControl('Project').displayValue
+    >>> print user_browser.getControl('Project').displayValue
     ['Mozilla Firefox']
 
 Like for the regular workflow, the user is shown a list of languages, 
@@ -237,61 +240,66 @@ supported languages other than the default language of English. If the
 user were to submit his question in another language, he might find 
 that the language is supported on the next page.
 
-    >>> print sample_browser.getControl('Language').displayOptions
+    >>> print user_browser.getControl('Language').displayOptions
     ['English (en) *', 'Japanese (ja)']
     
-    >>> sample_browser.getControl('Language').value = ['en']
+    >>> user_browser.getControl('Language').value = ['en']
 
-Sample Person enters a short summary of his problem and submits the 
-form with the 'Continue' button. In this case, a question for Firefox
-in English regarding SVG.
+No Privileges Person enters a short summary of his problem in English
+because Japanese is not listed as supported. He submits the form with
+the 'Continue' button without setting the product. In this case, he is
+asking a question for Firefox in English regarding SVG.
 
-    >>> sample_browser.getControl('Summary').value = (
+    >>> user_browser.getControl('Summary').value = (
     ...     'Problem displaying complex SVG')
-    >>> sample_browser.getControl('Continue').click()
+    >>> user_browser.getControl('Continue').click()
 
 He's shown a list of similar questions related to the product 
 Firefox. He can see which of his preferred languages are supported 
 for the Firefox product by reviewing which languages has asterisks
 in the Languages list--only English in the example.
 
-    >>> print sample_browser.getControl('Language').displayOptions
+    >>> print user_browser.getControl('Language').displayOptions
     ['English (en) *', 'Japanese (ja)']
     
-Sample Person can still change the product for which he's asking the
-question. He chooses Thunderbird from the 'Project' product list;
-The language list does not change because the Thunderbird was not
-submitted as the product. If he asks a question in Japanese, it will 
-be supported by Dafydd, but Sample Person will never know that.  
+No Privileges Person can still change the product for which he's asking
+the question. He relizes he should have selected Thunderbird as the 
+subject of the question. He chooses Thunderbird from the 'Project' 
+product list and reviews the list of supported languages again. The 
+language list does not change because the Thunderbird was not submitted
+as the product. 
 
-    >>> sample_browser.getControl('Mozilla Thunderbird').selected = True
-    >>> print sample_browser.getControl('Language').displayOptions
+    >>> user_browser.getControl('Mozilla Thunderbird').selected = True
+    >>> print user_browser.getControl('Language').displayOptions
     ['English (en) *', 'Japanese (ja)']
 
+If No Privileges Person asks a question in Japanese, it will be 
+supported by Dafydd, but No Privileges Person will never know that.  
 Let's stop here. The rest of this scenario is just adding a question
 as described above--filling in a description and submitting the data
 with the 'Add' button.
 
-====  Scenario when supported languages are displayed ====
+==== Supported languages are displayed after the submitting a product ====
  
-Let's try this again from the starting page, but this time, Sample
-Person chooses Thunderbird.
+Let's try this again from the starting page, but this time, No 
+Privileges Person correctly chooses Thunderbird as the subject of
+his question.
 
-    >>> sample_browser.open('http://answers.launchpad.dev/mozilla')
-    >>> sample_browser.getLink('Ask a question').click()
-    >>> print sample_browser.title
+    >>> user_browser.open('http://answers.launchpad.dev/mozilla')
+    >>> user_browser.getLink('Ask a question').click()
+    >>> print user_browser.title
     Ask a question about a project in the Mozilla Project
     
-    >>> sample_browser.getControl('Mozilla Thunderbird').selected = True
+    >>> user_browser.getControl('Mozilla Thunderbird').selected = True
     
 He writes his summary in English as he sees that is the only supported
 Language, and 'Continues' to the next page.
 
-    >>> print sample_browser.getControl('Language').displayOptions
+    >>> print user_browser.getControl('Language').displayOptions
     ['English (en) *', 'Japanese (ja)']
-    >>> sample_browser.getControl('Summary').value = (
+    >>> user_browser.getControl('Summary').value = (
     ...     'Problem displaying complex SVG')
-    >>> sample_browser.getControl('Continue').click()    
+    >>> user_browser.getControl('Continue').click()    
 
 The product Thunderbird that he selected on the previous screen is 
 still selected. He can see that this product has support for Japanese
@@ -300,28 +308,28 @@ Languages list. Japanese is supported because Dafydd speaks Japanese
 and is an answer contact for Thunderbird. We see this only after a 
 question summary is submitted for a product.
 
-    >>> print sample_browser.getControl('Language').displayOptions
+    >>> print user_browser.getControl('Language').displayOptions
     ['English (en) *', 'Japanese (ja) *']
     
-Sample Person sets the language to Japanese, changes his question 
-summary, writes a description, and submits the form with the 'Add' 
-button.
+No Privileges Person sets the language to Japanese, changes his 
+question summary, writes a description, and submits the form with the
+'Add' button.
 
-    >>> print sample_browser.getControl('Project').displayValue
+    >>> print user_browser.getControl('Project').displayValue
     ['Mozilla Thunderbird']
-    >>> sample_browser.getControl('Japanese (ja) *').selected = True
-    >>> sample_browser.getControl('Summary').value = (
+    >>> user_browser.getControl('Japanese (ja) *').selected = True
+    >>> user_browser.getControl('Summary').value = (
     ...     'Pretend this is written in Japanese')
-    >>> sample_browser.getControl('Description').value = (
+    >>> user_browser.getControl('Description').value = (
     ... "Something in kanji and hiragana.")
-    >>> sample_browser.getControl('Add').click()
+    >>> user_browser.getControl('Add').click()
 
 The user is taken to page displaying his question. Changing the 
 language or the summary did not search for similar questions 
 again--the question is created.
 
-    >>> sample_browser.url
+    >>> user_browser.url
     '.../thunderbird/+question/...'
-    >>> print sample_browser.title
+    >>> print user_browser.title
     Mozilla Thunderbird question #...Pretend this is written in Japanese...
 
