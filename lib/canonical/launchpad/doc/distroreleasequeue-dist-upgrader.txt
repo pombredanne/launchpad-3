@@ -182,9 +182,12 @@ previous upload:
   u'dist-upgrader_20060302.0120_all.tar.gz'
 
 Do the publish, i.e process the CustomUpload writing the tarball in
-the archive
+the archive.  The umask must be 022 in order to perform the upload.
 
+  >>> old_mask = os.umask(022)
   >>> queue_item.realiseUpload()
+  >>> print '%03o' % os.umask(old_mask)
+  022
 
 Check what was published in the target directory:
 
