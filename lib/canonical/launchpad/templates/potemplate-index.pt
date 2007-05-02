@@ -14,7 +14,10 @@
 
 <metal:heading fill-slot="pageheading">
   <h1>
-    Translation status of "<span tal:replace="context/name">foo-dev</span>"
+    Translation status for
+    <tal:title replace="context/title">
+      foo-dev in Evolution trunk
+    </tal:title>
   </h1>
 </metal:heading>
 

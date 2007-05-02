@@ -25,7 +25,7 @@
 
     <p metal:fill-slot="extra_info">
       The bug contact is a person or team that receives notification of all new
-      bugs opened for this product, and any changes to those bug reports.
+      bugs opened for this project, and any changes to those bug reports.
     </p>
   </div>
 

@@ -27,14 +27,14 @@ class MockLogger:
     def debug(self, s, exc_info=False):
         self.lines.append(s)
         if exc_info:
-            self.lines.append(traceback.format_exception(*sys.exc_info()))
+            for err_msg in traceback.format_exception(*sys.exc_info()):
+                self.lines.append(err_msg)
 
     info = debug
     error = debug
 
     def exception(self, s):
         self.debug(s, exc_info=True)
-        
 
 class TestUploadProcessor(unittest.TestCase):
     """Tests for uploadprocessor.py."""

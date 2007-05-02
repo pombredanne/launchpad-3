@@ -6,7 +6,7 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Rosetta translation groups</h1>
+      <h1>Launchpad translation groups</h1>
     </metal:heading>
     <div metal:fill-slot="main">
       <p>

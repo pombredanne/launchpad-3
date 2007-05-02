@@ -185,7 +185,7 @@ class DistributionOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
              'mirror_admin', 'reassign', 'addrelease', 'top_contributors',
-             'builds', 'release_mirrors', 'archive_mirrors',
+             'mentorship', 'builds', 'release_mirrors', 'archive_mirrors',
              'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
              'launchpad_usage', 'upload_admin']
 
@@ -218,6 +218,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     def top_contributors(self):
         text = 'List top contributors'
         return Link('+topcontributors', text, icon='info')
+
+    def mentorship(self):
+        text = 'Mentoring available'
+        return Link('+mentoring', text, icon='info')
 
     def release_mirrors(self):
         text = 'Show CD mirrors'

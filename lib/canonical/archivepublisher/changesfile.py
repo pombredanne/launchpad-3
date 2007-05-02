@@ -18,7 +18,8 @@ import re
 from canonical.archivepublisher.dscfile import DSCFile, SignableTagFile
 from canonical.archivepublisher.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, DebBinaryUploadFile,
-    UdebBinaryUploadFile, BaseBinaryUploadFile, SourceUploadFile)
+    UdebBinaryUploadFile, BaseBinaryUploadFile, SourceUploadFile,
+    NascentUploadFile)
 from canonical.archivepublisher.utils import (
     re_isadeb, re_issource, re_changes_file_name)
 from canonical.archivepublisher.tagfiles import (
@@ -124,6 +125,19 @@ class ChangesFile(SignableTagFile):
         except UploadError, error:
             yield error
 
+    def isCustom(self, component_and_section):
+        """Check if given 'component_and_section' matches a custom upload.
+
+        We recognize an upload as custom if it is taget to a section like
+        'raw-<something>'.
+        Further checks will be performed in CustomUploadFile class.
+        """
+        splitter = NascentUploadFile.splitComponentAndSection
+        component_name, section_name = splitter(component_and_section)
+        if section_name.startswith('raw-'):
+            return True
+        return False
+
     def processFiles(self):
         """Build objects for each file mentioned in this changesfile.
 
@@ -140,7 +154,7 @@ class ChangesFile(SignableTagFile):
             binary_match = re_isadeb.match(filename)
             filepath = os.path.join(self.dirname, filename)
             try:
-                if priority_name == '-':
+                if self.isCustom(component_and_section):
                     # This needs to be the first check, because
                     # otherwise the tarballs in custom uploads match
                     # with source_match.

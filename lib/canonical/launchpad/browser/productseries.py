@@ -401,8 +401,8 @@ class ProductSeriesView(LaunchpadView):
                     format=entry['format'])
 
             self.request.response.addInfoNotification(
-                'Thank (really) you for your upload. The file content will be'
-                ' reviewed soon by an admin and then imported into Rosetta.'
+                'Thank you for your upload. The file content will be'
+                ' reviewed soon by an admin and then imported into Launchpad.'
                 ' You can track its status from the <a href="%s">Translation'
                 ' Import Queue</a>' %
                     canonical_url(translation_import_queue_set))
@@ -416,7 +416,7 @@ class ProductSeriesView(LaunchpadView):
                 self.request.response.addInfoNotification(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be reviewed soon by an admin and then imported'
-                    ' into Rosetta. You can track its status from the'
+                    ' into Launchpad. You can track its status from the'
                     ' <a href="%s">Translation Import Queue</a>' % (
                         num,
                         canonical_url(translation_import_queue_set)))
