@@ -29,6 +29,17 @@ this architecture:
   i386
   Release</b>:
   Published
+  version 1.0
+  in component main
+  and section base
+  <BLANKLINE>
+  ...on 2007-04-11...
+  <hr />
+  <b>
+  warty
+  i386
+  Release</b>:
+  Published
   version 0.9
   in component main
   and section base

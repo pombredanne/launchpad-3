@@ -528,7 +528,7 @@ both a source and binary package of that name.
     >>> package_name_terms.count()
     1
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('mozilla-firefox', u'Mozilla Firefox Web Browser is .....')]
+    [('mozilla-firefox', u'iceweasel huh ?')]
 
 Searching for "mozilla" should return the binary package name above, and
 the source package named "mozilla".
@@ -537,8 +537,7 @@ the source package named "mozilla".
     >>> package_name_terms.count()
     2
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('mozilla', 'Not uploaded'),
-     ('mozilla-firefox', u'Mozilla Firefox Web Browser is .....')]
+    [('mozilla', 'Not uploaded'), ('mozilla-firefox', u'iceweasel huh ?')]
 
 The search does a case-insensitive, substring match.
 
@@ -561,7 +560,7 @@ All the binary packages in Launchpad.
     >>> len(bpn_terms)
     1
     >>> [(term.token, term.title) for term in bpn_terms]
-    [('mozilla-firefox', u'Mozilla Firefox Web Browser is .....')]
+    [('mozilla-firefox', u'iceweasel huh ?')]
 
 SourcePackageNameVocabulary
 ---------------------------
@@ -569,7 +568,7 @@ All the source packages in Launchpad.
 
     >>> spn_vocabulary = vocabulary_registry.get(None, 'SourcePackageName')
     >>> len(spn_vocabulary)
-    15
+    16
 
     >>> spn_terms = spn_vocabulary.searchForTerms("mozilla")
     >>> len(spn_terms)
