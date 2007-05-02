@@ -19,3 +19,28 @@ File size and mime type are displayed for each attachment
     >>> lastcomment.renderContents().find(fileinfo) > 0
     True
 
+A filesize of 2700 byte is displayed in 'KiB'
+
+    >>> from canonical.config import config
+    >>> old_value = config.launchpad.max_bug_attachment_size
+    >>> config.launchpad.max_bug_attachment_size = 5000
+
+    >>> filecontent = '123456789' * 300
+    >>> foo_file = StringIO(filecontent)
+
+    >>> user_browser.open(
+    ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment")
+
+    >>> user_browser.getControl("Attachment").add_file(
+    ...     foo_file, "text/plain", "foo.txt")
+    >>> user_browser.getControl("Description").value = "description text"
+    >>> user_browser.getControl("Comment").value = "comment comment"
+    >>> user_browser.getControl("Save Changes").click()
+
+    >>> lastcomment = find_tags_by_class(
+    ...     user_browser.contents, 'boardCommentBody')[-1]
+    >>> fileinfo = '(2.6 KiB, text/plain)'
+    >>> lastcomment.renderContents().find(fileinfo) > 0
+    True
+
+    >>> config.launchpad.max_bug_attachment_size = old_value
