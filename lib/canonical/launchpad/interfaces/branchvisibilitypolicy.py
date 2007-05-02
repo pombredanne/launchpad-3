@@ -47,7 +47,7 @@ class IBranchVisibilityPolicyItem(Interface):
 class IBranchVisibilityPolicy(Interface):
     """Specifies a list of branch visibility policy items."""
 
-    policy_list = Attribute("A list of policy items")
+    items = Attribute("A list of policy items")
 
     context = Attribute("The object that the policy applies to")
 

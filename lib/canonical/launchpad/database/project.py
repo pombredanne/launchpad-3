@@ -98,6 +98,10 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                           default=None, forceDBName=True)
 
     @property
+    def branch_visibility_policy(self):
+        raise NotImplemented()
+
+    @property
     def products(self):
         return Product.selectBy(project=self, active=True, orderBy='name')
 

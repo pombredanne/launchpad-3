@@ -142,6 +142,10 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='calendar', foreignKey='Calendar', default=None,
         forceDBName=True)
 
+    @property
+    def branch_visibility_policy(self):
+        raise NotImplemented()
+
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
         return "BugTask.product = %d" % self.id
