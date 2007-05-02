@@ -35,7 +35,8 @@ check_launchpad_on_merge: build dbfreeze_check check importdcheck hctcheck
 
 dbfreeze_check:
 	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
-	    grep database/schema/ | grep -v pending | wc -l` -eq 0 ]
+	    grep database/schema/ | grep -v pending | grep -v security.cfg | \
+	    wc -l` -eq 0 ]
 
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]

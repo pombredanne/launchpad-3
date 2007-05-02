@@ -1424,6 +1424,7 @@ class PageMacroDispatcher:
         view/macro:pagehas/applicationbuttons
         view/macro:pagehas/globalsearch
         view/macro:pagehas/heading
+        view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
         view/macro:pagehas/structuralheaderobject
 
@@ -1486,6 +1487,7 @@ class PageMacroDispatcher:
             applicationbuttons=False,
             globalsearch=False,
             heading=False,
+            pageheading=True,
             portlets=False,
             structuralheaderobject=False,
             pagetypewasset=True
@@ -1498,8 +1500,8 @@ class PageMacroDispatcher:
     _pagetypes = {
         'unset':
             LayoutElements(
-                applicationtabs=True,
                 applicationborder=True,
+                applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
                 structuralheaderobject=True,
@@ -1515,6 +1517,7 @@ class PageMacroDispatcher:
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                pageheading=False,
                 globalsearch=False,
                 heading=True),
         'pillarindex':
@@ -1523,6 +1526,7 @@ class PageMacroDispatcher:
                 applicationbuttons=True,
                 globalsearch=False,
                 heading=True,
+                pageheading=False,
                 portlets=True),
         'freeform':
             LayoutElements(),
