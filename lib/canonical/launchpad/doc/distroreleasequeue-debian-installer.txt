@@ -107,9 +107,9 @@ with the wrong permission.
 
 Reset the umask, remove any residual directories, and try again.
 
+  >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
   >>> print '%03o' % os.umask(old_mask)
   002
-  >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
 
 Process (publish) the custom upload:
 
