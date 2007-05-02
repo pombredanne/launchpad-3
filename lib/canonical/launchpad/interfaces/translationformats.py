@@ -33,6 +33,10 @@ class ITranslationImporter(Interface):
         If the entry is older than previous imported file, OldPOImported
         exception is raised.
 
+        If the entry imported is not published and doesn't have the tag added
+        by Launchpad on export time, NotExportedFromLaunchpad exception is
+        raised.
+
         Return a list of dictionaries with three keys:
             - 'pomsgset': The DB pomsgset with an error.
             - 'pomessage': The original POMessage object.
