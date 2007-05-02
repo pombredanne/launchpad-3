@@ -17,7 +17,7 @@ contacts as well as the distribution answer contacts.
     >>> logout()
 
 To reflect this, a user visiting a source package 'Answers' facet will
-see both a porlet listing the answer contacts for the source package
+see both a portlet listing the answer contacts for the source package
 and another one listing those of the distribution.
 
     >>> anon_browser.open(
@@ -35,7 +35,7 @@ and another one listing those of the distribution.
     ...     print answer_contact.renderContents()
     Sample Person
 
-To register himself as anwer contact, the user clicks on the
+To register himself as answer contact, the user clicks on the
 'Set answer contact' link. He needs to login to access that function.
 
     >>> anon_browser.getLink('Set answer contact').click()
@@ -75,7 +75,7 @@ a message is displayed to confirm the changes:
     Landscape Developers has been added as an answer contact for
     evolution in ubuntu.
 
-The answer contacts porlet for the source package was updated:
+The answer contacts portlet for the source package was updated:
 
     >>> for answer_contact in find_portlet(
     ...     browser.contents,

@@ -90,6 +90,53 @@ a error generator
   0
 
 
+=== CustomUploadFile identification ===
+
+Source and Binary files are easily recognized by a regexp on the
+filenames:
+
+ * re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?deb)$")
+ * re_issource = re.compile(r"(.+)_(.+?)\.(orig\.tar\.gz|diff\.gz|tar\.gz|dsc)$"
+
+However a custom upload is essencially a tarball, so it matches the
+is_source regexp. That's why we recognize them by identifying a set of
+custom sections:
+
+ * raw-installer
+ * raw-translations
+ * raw-dist-upgrader
+ * raw-ddtp-tarball
+
+The Changesfile.isCustom receives a 'component_and_section' chunk from
+the respective file line in the changesfile and return True if it is
+target to a custom section.
+
+We will use the current upload available and test the known
+'component_and_section' schemas.
+
+Note that the component_name and section_name are not checked for
+sanity, it'll be done later on, this method only checks if the
+section_name startswith 'raw-':
+
+ >>> ed_mixed_changes.isCustom('foo-bar')
+ False
+ >>> ed_mixed_changes.isCustom('drops/foo-bar')
+ False
+ >>> ed_mixed_changes.isCustom('drops/raw-biscuit')
+ True
+ >>> ed_mixed_changes.isCustom('drops/rawbiscuit')
+ False
+ >>> ed_mixed_changes.isCustom('drops/raw-biscuit/something')
+ True
+ >>> ed_mixed_changes.isCustom('main/raw-installer')
+ True
+ >>> ed_mixed_changes.isCustom('main/law-installer')
+ False
+
+See the CustomUploadFile checks below for specific checks on custom
+uploads.
+
+
 === ChangesFile Parsing Addresses ===
 
 Address parsing is implemented by the SignableTagFile class, which

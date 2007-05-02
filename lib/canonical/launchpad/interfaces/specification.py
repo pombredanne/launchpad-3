@@ -22,6 +22,7 @@ from canonical.launchpad.fields import (ContentNameField, Summary,
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IProject
+from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -75,7 +76,7 @@ class SpecURLField(TextLine):
             raise LaunchpadValidationError(self.errormessage % specurl)
 
 
-class ISpecification(IHasOwner):
+class ISpecification(IHasOwner, ICanBeMentored):
     """A Specification."""
 
     name = SpecNameField(
@@ -305,7 +306,7 @@ class ISpecification(IHasOwner):
     def subscription(person):
         """Return the subscription for this person to this spec, or None."""
 
-    def subscribe(person):
+    def subscribe(person, essential=False):
         """Subscribe this person to the feature specification."""
 
     def unsubscribe(person):
@@ -313,6 +314,15 @@ class ISpecification(IHasOwner):
 
     def getSubscriptionByName(name):
         """Return a subscription based on the person's name, or None."""
+
+    def isSubscribed(person):
+        """Is person subscribed to this spec?
+
+        Returns True if the user is explicitly subscribed to this spec
+        (no matter what the type of subscription), otherwise False.
+
+        If person is None, the return value is always False.
+        """
 
     # queue-related methods
     def queue(provider, requester, queuemsg=None):

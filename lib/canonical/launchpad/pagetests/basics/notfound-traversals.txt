@@ -377,6 +377,8 @@ And this is for a person:
 >>> check_redirect("/~name12/+branch/gnome-terminal/pushed/", status=301)
 >>> check_redirect("/~name12/+branch/gnome-terminal/pushed/+edit", auth=True, status=301)
 >>> check("/~name12/gnome-terminal/pushed/")
+>>> check_not_found("/~name12/+branch/gnome-terminal/fubared/")
+>>> check_not_found("/~name12/gnome-terminal/fubared/")
 >>> check("/~name12/gnome-terminal/pushed/+edit", auth=True)
 >>> check_not_found("/~name16/+bugs/1")
 >>> check("/~name16/+reportedbugs")

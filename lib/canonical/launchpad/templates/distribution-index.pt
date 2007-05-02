@@ -22,6 +22,16 @@
             <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
           </a>
         </li>
+        <li tal:define="has_mentoring context/mentoring_offers/count">
+          <a href="+mentoring" tal:condition="has_mentoring">
+            <img alt="Mentoring available"
+                 src="/+icing/but-sml-mentoring.gif"/>
+          </a>
+          <a href="+mentoring" tal:condition="not: has_mentoring">
+            <img alt="No mentoring available"
+                 src="/+icing/but-sml-mentoring-off.gif" />
+          </a>
+        </li>
       </ul>
 
   <form name="search" action="+search" method="get">

@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Browser views for products."""
 
@@ -207,8 +207,8 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'distributions', 'packages', 'branch_add', 'series_add',
-        'launchpad_usage', 'administer', 'rdf']
+        'mentorship', 'distributions', 'packages', 'branch_add',
+        'series_add', 'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -238,6 +238,10 @@ class ProductOverviewMenu(ApplicationMenu):
     def distributions(self):
         text = 'Packaging information'
         return Link('+distributions', text, icon='info')
+
+    def mentorship(self):
+        text = 'Mentoring available'
+        return Link('+mentoring', text, icon='info')
 
     def packages(self):
         text = 'Show distribution packages'
