@@ -48,11 +48,11 @@ def monkey_patch(mailman_path, config):
 
 # Set up Mailman's sys.path to pick up the top of Launchpad's tree
 import sys
-sys.path.append('%(launchpad_top)s')
+sys.path.insert(0, '%(launchpad_top)s')
 
 # Pick up Launchpad static overrides.  This will also pick up the standard
 # Mailman.Defaults.* variables.
-from canonical.mailman.monkeypatches.defaults import *
+from canonical.launchpad.mailman.monkeypatches.defaults import *
 
 # Our dynamic overrides of all the static defaults.
 SMTPHOST = '%(smtp_host)s'

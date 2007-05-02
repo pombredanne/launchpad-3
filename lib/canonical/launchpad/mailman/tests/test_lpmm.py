@@ -19,7 +19,7 @@ def test_suite():
     from canonical.config import config
     if config.mailman.build.build:
         test = doctest.DocFileSuite(
-            'test-libmailman.txt',
+            'test-lpmm.txt',
             optionflags = (doctest.ELLIPSIS     |
                            doctest.REPORT_NDIFF |
                            doctest.NORMALIZE_WHITESPACE),

@@ -907,7 +907,8 @@ k            </description>
             attribute="autotest_errorreports" required="no" />
     </sectiontype>
 
-    <sectiontype name="mailman-build" prefix="canonical.mailman.config">
+    <sectiontype name="mailman-build"
+                 prefix="canonical.launchpad.mailman.config">
         <key name="build"           datatype="boolean"      default="false" />
         <key name="prefix"          datatype=".prefix"      default=""      />
         <key name="var_dir"         datatype="string"

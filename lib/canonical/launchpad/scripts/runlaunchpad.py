@@ -11,6 +11,7 @@ import signal
 import subprocess
 
 from canonical.config import config
+from canonical.launchpad.mailman.monkeypatches import monkey_patch
 from canonical.pidfile import make_pidfile, pidfile_path
 from zope.app.server.main import main
 
@@ -59,7 +60,7 @@ class TacFile(Service):
         return self.config is not None and self.config.launch
 
     def launch(self):
-        # Don't run the server if it wasn't asked for. 
+        # Don't run the server if it wasn't asked for.
         if not self.should_launch:
             return
 
@@ -121,35 +122,7 @@ class MailmanService(Service):
         mailman_bin  = os.path.join(mailman_path, 'bin')
 
         # Monkey-patch the installed Mailman 2.1 tree.
-        from canonical.mailman.monkeypatches import monkey_patch
         monkey_patch(mailman_path, config)
-
-        # Ensure that the site list has been created.  We won't use this
-        # operationally, but it's required by Mailman 2.1.  This is the
-        # cheapest way to do this.  Throw away the actual output, since we
-        # only care about the return code.
-        sys.path.append(mailman_path)
-        import Mailman.mm_cfg
-
-        retcode = subprocess.call(
-            ('./config_list', '-o', '/dev/null',
-             Mailman.mm_cfg.MAILMAN_SITE_LIST),
-            cwd=mailman_bin,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        if retcode:
-            addr, password = config.mailman.build.site_list_owner
-
-            # The site list does not yet exist, so create it now.
-            retcode = subprocess.call(
-                ('./newlist', '--quiet',
-                 '--emailhost=' + config.mailman.build.host_name,
-                 Mailman.mm_cfg.MAILMAN_SITE_LIST,
-                 addr, password),
-                cwd=mailman_bin)
-            if retcode:
-                print >> sys.stderr, 'Could not create site list'
-                sys.exit(retcode)
 
         # Start the Mailman master qrunner.  If that succeeds, then set things
         # up so that it will be stopped when runlaunchpad.py exits.

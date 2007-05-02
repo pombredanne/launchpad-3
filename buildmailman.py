@@ -10,6 +10,7 @@ import errno
 import subprocess
 
 from canonical.config import config
+from canonical.launchpad.mailman.monkeypatches import monkey_patch
 from configs import generate_overrides
 
 basepath = filter(None, sys.path)
@@ -87,8 +88,36 @@ def build_mailman():
     except ImportError:
         print >> sys.stderr, 'Could not import the Mailman package'
         return 1
-    else:
-        return 0
+
+    # Check to see if the site list exists.  The output can go to /dev/null
+    # because we don't really care about it.  The site list exists if
+    # config_list returns a zero exit status, otherwise it doesn't
+    # (probably).  Before we can do this however, we must monkey patch
+    # Mailman, otherwise mm_cfg.py won't be set up correctly.
+    monkey_patch(mailman_path, config)
+
+    import Mailman.mm_cfg
+    retcode = subprocess.call(
+        ('./config_list', '-o', '/dev/null',
+         Mailman.mm_cfg.MAILMAN_SITE_LIST),
+        cwd=mailman_bin,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    if retcode:
+        addr, password = config.mailman.build.site_list_owner
+
+        # The site list does not yet exist, so create it now.
+        retcode = subprocess.call(
+            ('./newlist', '--quiet',
+             '--emailhost=' + config.mailman.build.host_name,
+             Mailman.mm_cfg.MAILMAN_SITE_LIST,
+             addr, password),
+            cwd=mailman_bin)
+        if retcode:
+            print >> sys.stderr, 'Could not create site list'
+            return recode
+
+    return 0
 
 
 def main():
@@ -103,7 +132,7 @@ def main():
     srcdir = os.path.join(here, src)
     sys.path = [srcdir, here] + basepath
     return build_mailman()
-    
+
 
 
 if __name__ == '__main__':

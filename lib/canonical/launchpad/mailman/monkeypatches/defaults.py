@@ -3,6 +3,12 @@
 # Pick up the standard Mailman defaults
 from Mailman.Defaults import *
 
+# Use a name for the site list that is very unlikely to conflict with any
+# possible Launchpad team name.  The default is "mailman" and that doesn't cut
+# it. :)  The site list is never used by Launchpad, but it's required by
+# Mailman 2.1.
+MAILMAN_SITE_LIST = 'unused_mailman_site_list'
+
 # We don't need to coordinate aliases with a mail server because we'll be
 # pulling incoming messages from a POP account.
 MTA = None
