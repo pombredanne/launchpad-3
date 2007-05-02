@@ -17,6 +17,7 @@ with the IBugTaskSet utility.
 
 The IDistroReleaseSet utility is accessed in the usual fashion:
 
+
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
@@ -427,7 +428,8 @@ We have several ways to copy translations between distro releases.
 
 The main one is to clone what we have in its parent distribution:
 
-   >>> humpy.copyMissingTranslationsFromParent()
+   >>> ztm = None
+   >>> humpy.copyMissingTranslationsFromParent(ztm)
 
 Note that only current PO templates are copied from the distribution parent:
 
@@ -595,7 +597,7 @@ We can see now that the changes are detected.
 
 Let's migrate the updates.
 
-    >>> humpy.copyMissingTranslationsFromParent()
+    >>> humpy.copyMissingTranslationsFromParent(ztm)
 
 Now, we should have only the update from Humpy as a difference
 
@@ -625,7 +627,7 @@ changed in Hoary?
 
 We copy missing translations...
 
-    >>> humpy.copyMissingTranslationsFromParent()
+    >>> humpy.copyMissingTranslationsFromParent(ztm)
 
 And we can see that the change is not migrated to Humpy because we already got
 a change directly there that we should not overwrite.

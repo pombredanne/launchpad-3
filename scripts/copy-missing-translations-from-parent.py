@@ -42,7 +42,7 @@ def main(argv):
     release = distribution[options.release]
 
     logger_object.info('Starting...')
-    release.copyMissingTranslationsFromParent()
+    release.copyMissingTranslationsFromParent(ztm)
 
     # We would like to update the DistroRelase statistics, but it takes
     # too long so this should be done after.
