@@ -1484,7 +1484,6 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             lowest = bounds[0]
             highest = bounds[1]
 
-            flush_database_updates()
             if ztm is not None:
                 ztm.commit()
 
@@ -1508,7 +1507,6 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 logger.info("...committing after %s seconds..." %
                     (time.time()-batchstarttime))
 
-                flush_database_updates()
                 if ztm is not None:
                     ztm.commit()
 
@@ -1887,8 +1885,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             self._copy_active_translations_as_update(cur, logger)
 
 
-    def copyMissingTranslationsFromParent(self, ztm):
+    def copyMissingTranslationsFromParent(self, ztm=None):
         """See IDistroRelease."""
+        flush_database_updates()
+        flush_database_caches()
         cur = cursor()
         # Request the translation copy.
         self._copy_active_translations(cur, ztm)

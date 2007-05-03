@@ -428,8 +428,7 @@ We have several ways to copy translations between distro releases.
 
 The main one is to clone what we have in its parent distribution:
 
-   >>> ztm = None
-   >>> humpy.copyMissingTranslationsFromParent(ztm)
+   >>> humpy.copyMissingTranslationsFromParent()
 
 Note that only current PO templates are copied from the distribution parent:
 
@@ -597,7 +596,7 @@ We can see now that the changes are detected.
 
 Let's migrate the updates.
 
-    >>> humpy.copyMissingTranslationsFromParent(ztm)
+    >>> humpy.copyMissingTranslationsFromParent()
 
 Now, we should have only the update from Humpy as a difference
 
@@ -627,7 +626,7 @@ changed in Hoary?
 
 We copy missing translations...
 
-    >>> humpy.copyMissingTranslationsFromParent(ztm)
+    >>> humpy.copyMissingTranslationsFromParent()
 
 And we can see that the change is not migrated to Humpy because we already got
 a change directly there that we should not overwrite.
