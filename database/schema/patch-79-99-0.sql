@@ -6,7 +6,7 @@ CREATE TABLE BranchVisibilityPolicy
   pillar INT REFERENCES PillarName NOT NULL,
   team INT REFERENCES Person,
   policy INT NOT NULL DEFAULT 1,
-  UNIQUE(pillar, visibility_team)
+  UNIQUE(pillar, team)
 );
 
 COMMENT ON TABLE BranchVisibilityPolicy IS 'Defines the policy for the initial visibility of branches.';
