@@ -66,4 +66,6 @@ class IBranchVisibilityPolicy(Interface):
         the policy for everyone back to the default, which is Public.
         """
 
+    def branchVisibilityTeamForUser(user):
+        """Returns the initial branch visibility for the specified user."""
         

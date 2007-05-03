@@ -143,6 +143,14 @@
   </content>
 
   <!-- BranchVisibilityPolicy -->
+  <content class="canonical.launchpad.database.BranchVisibilityPolicyItem">
+    <allow interface="canonical.launchpad.interfaces.IBranchVisibilityPolicyItem" />
+  </content>
+
+  <content class="canonical.launchpad.database.DefaultPolicyItem">
+    <allow interface="canonical.launchpad.interfaces.IBranchVisibilityPolicyItem" />
+  </content>
+
   <content class="canonical.launchpad.database.BranchVisibilityPolicyList">
     <allow interface="canonical.launchpad.interfaces.IBranchVisibilityPolicy" />
     <require

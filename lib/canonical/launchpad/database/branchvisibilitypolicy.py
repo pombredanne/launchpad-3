@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchVisibilityPolicyItem',
+    'DefaultPolicyItem',
     'BranchVisibilityPolicyList',
     ]
 
@@ -35,6 +37,21 @@ class BranchVisibilityPolicyItem(SQLBase):
         default=BranchVisibilityPolicy.PUBLIC)
 
 
+class DefaultPolicyItem:
+    """A default policy item - one that isn't stored in the DB."""
+
+    implements(IBranchVisibilityPolicyItem)
+
+    team = None
+    policy = BranchVisibilityPolicy.PUBLIC
+        
+
+def policy_item_key(item):
+    if item.team is None:
+        return None
+    return item.team.displayname
+
+
 class BranchVisibilityPolicyList:
     """Specifies a list of branch visibility policy items."""
 
@@ -48,20 +65,27 @@ class BranchVisibilityPolicyList:
     def _loadItems(self):
         # load items for context
         self.policy_items = BranchVisibilityPolicyItem.select(
-            'BranchVisibilityPolicy.pillar = %s'
+            'BranchVisibilityPolicy.pillar = %s and '
+            'BranchVisibilityPolicy.team is not NULL'
             % self.context_pillar.id
             )
+        self.default_policy = BranchVisibilityPolicyItem.selectOneBy(
+            pillar=self.context_pillar, team=None)
+        if self.default_policy is None:
+            self.default_policy = DefaultPolicyItem()
 
     @property
     def items(self):
-        return self.policy_items
+        items = list(self.policy_items)
+        items.append(self.default_policy)
+        return sorted(items, key=policy_item_key)
 
     def setTeamPolicy(self, team, policy):
         """See IBranchVisibilityPolicy."""
         item = BranchVisibilityPolicyItem.selectOneBy(
             pillar=self.context_pillar, team=team)
         if item is None:
-            item = BranchVisibilityPolicyItem.new(
+            item = BranchVisibilityPolicyItem(
                 pillar=self.context_pillar, team=team, policy=policy)
             self._loadItems()
         else:
@@ -73,4 +97,22 @@ class BranchVisibilityPolicyList:
             pillar=self.context_pillar, team=team)
         if item is not None:
             BranchVisibilityPolicyItem.delete(item.id)
-        
+            self._loadItems()
+
+    def branchVisibilityTeamForUser(self, user):
+        teams = []
+        for item in self.policy_items:
+            if (user.inTeam(item.team) and
+                item.policy != BranchVisibilityPolicy.PUBLIC):
+                teams.append(item.team)
+        team_count = len(teams)
+        if team_count == 1:
+            return teams[0]
+        elif team_count > 1:
+            return user
+        elif self.default_policy.policy == BranchVisibilityPolicy.PUBLIC:
+            return None
+        else:
+            return user
+
+

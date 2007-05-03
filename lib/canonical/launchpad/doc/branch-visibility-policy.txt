@@ -89,7 +89,7 @@ no_priv is not a member of any team.
 
     >>> def teamname(team):
     ...     if team is None:
-    ...         return "*everone*"
+    ...         return "*everyone*"
     ...     else:
     ...         return team.displayname
 
@@ -132,20 +132,20 @@ Setting the policy for *everyone* is done by passing None for the team.
     *everyone*: Private
     Launchpad Developers: Private
     
-    >>> policy.setTeamPolicy(None, BranchVisibilitiyPolicy.PUBLIC
+    >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.PUBLIC)
 
 == Removing teams from the policy object ==
 
     >>> policy.removeTeam(launchpad_team)
     >>> print_policy_items(policy)
-    *everyone*: Pubic
+    *everyone*: Public
 
 Attempting to remove a team that doesn't exist is allowed, but does not
 change the state of the policy object.
 
     >>> policy.removeTeam(launchpad_team)
     >>> print_policy_items(policy)
-    *everyone*: Pubic
+    *everyone*: Public
 
 There is always a policy for *everyone*, so attempting to remove the team
 None will always succeed.  However removing the policy for *everyone* just
@@ -153,7 +153,7 @@ brings back the default policy for *everyone* which is public.
 
     >>> policy.removeTeam(None)
     >>> print_policy_items(policy)
-    *everyone*: Pubic
+    *everyone*: Public
 
 
 == Listing the policy items ==
@@ -181,13 +181,13 @@ then up to the user to set the appropriate team for the branch at a
 later date.
 
 
-    >>> print teamname(policy.visibilityTeamForUser(no_priv))
+    >>> print teamname(policy.branchVisibilityTeamForUser(no_priv))
     *everyone*
 
-    >>> print teamname(policy.visibilityTeamForUser(sample_person))
+    >>> print teamname(policy.branchVisibilityTeamForUser(sample_person))
     Ubuntu Gnome Team
 
-    >>> print teamname(policy.visibilityTeamForUser(foo_bar))
+    >>> print teamname(policy.branchVisibilityTeamForUser(foo_bar))
     Foo Bar
 
 
@@ -197,13 +197,13 @@ visibility team is the user themselves.
 
     >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.PRIVATE)
 
-    >>> print teamname(policy.visibilityTeamForUser(no_priv))
-    No Priv
+    >>> print teamname(policy.branchVisibilityTeamForUser(no_priv))
+    No Privileges Person
 
-    >>> print teamname(policy.visibilityTeamForUser(sample_person))
+    >>> print teamname(policy.branchVisibilityTeamForUser(sample_person))
     Ubuntu Gnome Team
 
-    >>> print teamname(policy.visibilityTeamForUser(foo_bar))
+    >>> print teamname(policy.branchVisibilityTeamForUser(foo_bar))
     Foo Bar
 
         
