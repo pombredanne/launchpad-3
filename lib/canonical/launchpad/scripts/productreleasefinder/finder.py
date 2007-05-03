@@ -11,7 +11,7 @@ import mimetypes
 import urlparse
 import urllib
 
-from hct.util import path
+from cscvs import path
 
 from zope.component import getUtility
 

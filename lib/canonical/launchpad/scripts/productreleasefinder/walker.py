@@ -20,7 +20,7 @@ from urlparse import urlsplit, urljoin
 
 from BeautifulSoup import BeautifulSoup
 
-from hct.util.path import as_dir, subdir, under_only
+from cscvs.path import as_dir, subdir, under_only
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.scripts.productreleasefinder import log

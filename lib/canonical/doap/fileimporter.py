@@ -45,7 +45,7 @@ class ProductReleaseImporter:
         # ...and we're done!
 
     def _ensureProductRelease(self, filename):
-        from hct.util.path import split_version, name
+        from cscvs.path import split_version, name
         version = split_version(name(filename))[1]
         series = version.split('.')[0]
         existingSeries = ProductSeries.selectOneBy(productID=self.product.id,
