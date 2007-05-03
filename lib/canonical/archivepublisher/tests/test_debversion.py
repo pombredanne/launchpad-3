@@ -2,6 +2,8 @@
 
 """Tests for debversion."""
 
+__metaclass__ = type
+
 # These tests came from sourcerer.
 
 import unittest
