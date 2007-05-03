@@ -1072,8 +1072,7 @@ class ShippingRequestSet:
                     -- This one gives us the people which made feisty requests
                     -- but haven't had any shipped request of previous
                     -- releases.
-                    SELECT recipient,
-                        0 AS approved_cds_per_user, 0 AS requests
+                    SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
                     FROM RequestedCDs, ShippingRequest
                     WHERE distrorelease != %(current_release)s
                         AND status != %(shipped)s
@@ -1132,12 +1131,16 @@ class ShippingRequestSet:
         # -- Guilherme Salgado, 2007-04-25
         cr = self._convert_results_to_dict_and_fill_gaps(
             current_release_request_distribution, row_numbers)
+        cr = self._add_percentage_to_number_of_people(cr)
         cs = self._convert_results_to_dict_and_fill_gaps(
             current_release_shipment_distribution, row_numbers)
+        cs = self._add_percentage_to_number_of_people(cs)
         or_ = self._convert_results_to_dict_and_fill_gaps(
             other_releases_request_distribution, row_numbers)
+        or_ = self._add_percentage_to_number_of_people(or_)
         os = self._convert_results_to_dict_and_fill_gaps(
             other_releases_shipment_distribution, row_numbers)
+        os = self._add_percentage_to_number_of_people(os)
 
         for number in sorted(row_numbers):
             row = [number]
@@ -1146,6 +1149,23 @@ class ShippingRequestSet:
             csv_writer.writerow(row)
         csv_file.seek(0)
         return csv_file
+
+    def _add_percentage_to_number_of_people(self, results_dict):
+        """For each element of the given dict change the number of people to
+        store the absolute number as well as the percentage relative to the
+        total of people from all items.
+
+        The given dict must be of the form:
+            {number_of_requests: (number_of_people, average_size)}
+        """
+        total = sum(people for people, size in results_dict.values())
+        total = float(total) / 100
+        d = {}
+        for key, value in results_dict.items():
+            people, size = value
+            people = "%s (%s%%)" % (people, float(people) / total)
+            d[key] = (people, size)
+        return d
 
     def _convert_results_to_dict_and_fill_gaps(self, results, row_numbers):
         """Convert results to a dict, also filling any missing keys.
