@@ -86,7 +86,11 @@ class ServersToStart(unittest.TestCase):
         config.launch property.
         """
         services = sorted(get_services_to_run([]))
-        expected = sorted((SERVICES['mailman'], SERVICES['librarian']))
+        expected = [SERVICES['librarian']]
+        # Mailman may or may not be asked to run.
+        if config.mailman.launch:
+            expected.append(SERVICES['mailman'])
+        expected = sorted(expected)
         self.assertEqual(expected, services)
 
     def test_explicit_request_overrides(self):
