@@ -341,6 +341,19 @@ class IBug(IMessageTarget):
         Return None if no such bugtask is found.
         """
 
+    def setStatus(target, status, user):
+        """Set the status of the bugtask related to the specified target.
+
+            :target: The target of the bugtask that should be modified.
+            :status: The status the bugtask should be set to.
+            :user: The IPerson doing the change.
+
+        If a bug task was edited, emit a SQLObjectModifiedEvent and
+        return the edited bugtask.
+
+        Return None if no bugtask was edited.
+        """
+
 
 class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""
