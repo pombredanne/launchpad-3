@@ -5,9 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'IHasBranchVisibilityPolicy',
-    'IBranchVisibilityPolicyItem',
-    'IBranchVisibilityPolicy',
+    'BranchVisibilityPolicyList',
     ]
 
 from zope.interface import implements
@@ -32,7 +30,7 @@ class BranchVisibilityPolicyItem(SQLBase):
     _defaultOrder = ['pillar', 'team.displayname']
 
     pillar = ForeignKey(dbName='pillar', foreignKey='PillarName', notNull=True)
-    team = ForeignKey(dbName='visibility_team', foreignKey='Person', default=None)
+    team = ForeignKey(dbName='team', foreignKey='Person', default=None)
     policy = EnumCol(schema=BranchVisibilityPolicy, notNull=True,
         default=BranchVisibilityPolicy.PUBLIC)
 

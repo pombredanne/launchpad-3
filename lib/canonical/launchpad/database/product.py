@@ -31,6 +31,8 @@ from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.branchvisibilitypolicy import (
+    BranchVisibilityPolicyList)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
@@ -144,7 +146,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     @property
     def branch_visibility_policy(self):
-        raise NotImplemented()
+        """See IHasBranchVisibilityPolicy."""
+        return BranchVisibilityPolicyList(self)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
