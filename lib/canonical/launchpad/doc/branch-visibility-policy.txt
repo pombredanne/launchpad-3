@@ -161,8 +161,8 @@ brings back the default policy for *everyone* which is public.
 Policy items are listed in alphabetical order of the team display name
 with the policy for *everybody* being first.
 
-    >>> policy.addTeam(ubuntu_gnome_team, BranchVisibilityPolicy.PRIVATE)
-    >>> policy.addTeam(launchpad_team, BranchVisibilityPolicy.PRIVATE)
+    >>> policy.setTeamPolicy(ubuntu_gnome_team, BranchVisibilityPolicy.PRIVATE)
+    >>> policy.setTeamPolicy(launchpad_team, BranchVisibilityPolicy.PRIVATE)
 
     >>> print_policy_items(policy)
     *everyone*: Public
@@ -195,7 +195,7 @@ If the default policy for *everyone* is PRIVATE, then if the user
 is not a member of any team that has the private policy set then the
 visibility team is the user themselves.
 
-    >>> policy.addTeam(None, BranchVisibilityPolicy.PRIVATE)
+    >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.PRIVATE)
 
     >>> print teamname(policy.visibilityTeamForUser(no_priv))
     No Priv

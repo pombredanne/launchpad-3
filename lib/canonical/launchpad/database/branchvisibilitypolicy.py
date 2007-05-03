@@ -17,7 +17,7 @@ from canonical.database.sqlbase import SQLBase
 
 from canonical.lp.dbschema import BranchVisibilityPolicy
 
-from canonical.launchpad.database import PillarNameSet
+from canonical.launchpad.database import PillarName
 from canonical.launchpad.interfaces import (
     IBranchVisibilityPolicyItem, IBranchVisibilityPolicy)
 
@@ -27,7 +27,7 @@ class BranchVisibilityPolicyItem(SQLBase):
 
     implements(IBranchVisibilityPolicyItem)
     _table = 'BranchVisibilityPolicy'
-    _defaultOrder = ['pillar', 'team.displayname']
+    # _defaultOrder = ['pillar', 'team.displayname']
 
     pillar = ForeignKey(dbName='pillar', foreignKey='PillarName', notNull=True)
     team = ForeignKey(dbName='team', foreignKey='Person', default=None)

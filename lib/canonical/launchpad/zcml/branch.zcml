@@ -142,6 +142,15 @@
     <allow interface="canonical.launchpad.interfaces.IBranchSet" />
   </content>
 
+  <!-- BranchVisibilityPolicy -->
+  <content class="canonical.launchpad.database.BranchVisibilityPolicyList">
+    <allow interface="canonical.launchpad.interfaces.IBranchVisibilityPolicy" />
+    <require
+        permission="zope.Public"
+        set_schema="canonical.launchpad.interfaces.IBranchVisibilityPolicy"
+        />
+  </content>
+
   <!-- BranchDelta -->
   <content class="canonical.launchpad.components.branch.BranchDelta">
     <allow interface="canonical.launchpad.interfaces.IBranchDelta" />
