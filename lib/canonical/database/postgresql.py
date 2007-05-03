@@ -297,7 +297,7 @@ def haveTable(cur, table):
         SELECT count(*) > 0
         FROM pg_tables
         WHERE tablename=%s
-    ''' % quote(table))
+    ''' % str(quote(table)))
     return cur.fetchall()[0][0]
 
 
