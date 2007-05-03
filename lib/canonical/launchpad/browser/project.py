@@ -484,6 +484,25 @@ class ProjectAddQuestionView(QuestionAddView):
         # Add a 'product' field to the beginning of the form.
         QuestionAddView.setUpFields(self)
         self.form_fields = self.createProductField() + self.form_fields
+        
+    def setUpWidgets(self):
+        # Only setup the widgets that needs validation
+        if not self.add_action.submitted():
+            fields = self.form_fields.select(*self.search_field_names)
+        else:
+            fields = self.form_fields
+
+        # We need to initialize the widget in two phases because
+        # the language vocabulary factory will try to access the product
+        # widget to find the final context.        
+        self.widgets = form.setUpWidgets(
+            fields.select('product'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
+        self.widgets += form.setUpWidgets(
+            fields.omit('product'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
 
     def createProductField(self):
         """Create a Choice field to select one of the project's products."""

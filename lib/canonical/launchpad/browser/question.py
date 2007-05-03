@@ -45,10 +45,9 @@ from canonical.launchpad.helpers import is_english_variant, request_languages
 
 from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, ILanguageSet,
-    ILaunchpadStatisticSet,
-    IQuestion,
-    IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionSet,
-    IQuestionTarget, UnexpectedFormData)
+    ILaunchpadStatisticSet, IProject, IQuestion, IQuestionAddMessageForm, 
+    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget, 
+    UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
@@ -186,17 +185,18 @@ class QuestionLanguageVocabularyFactory:
 
     implements(IContextSourceBinder)
 
-    def __init__(self, request):
+    def __init__(self, view):
         """Create a QuestionLanguageVocabularyFactory.
 
-        :param request: The request in which the vocabulary will be used. This
-        will be used to determine the user languages.
+        :param view: The view that provides the request used to determine the 
+        user languages. The view contains the Product widget selected by the 
+        user in the case where a question is asked in the context of a Project.
         """
-        self.request = request
+        self.view = view
 
     def __call__(self, context):
         languages = set()
-        for lang in request_languages(self.request):
+        for lang in request_languages(self.view.request):
             if not is_english_variant(lang):
                 languages.add(lang)
         if (context is not None and IQuestion.providedBy(context) and
@@ -206,9 +206,26 @@ class QuestionLanguageVocabularyFactory:
 
         # Insert English as the first element, to make it the default one.
         languages.insert(0, getUtility(ILanguageSet)['en'])
+        
+        # The vocabulary indicates which languages are supported.
+        if context is not None and not IProject.providedBy(context):
+            question_target = IQuestionTarget(context)
+            supported_languages = question_target.getSupportedLanguages()
+        elif (IProject.providedBy(context) and 
+                self.view.question_target is not None):
+            # Projects do not implement IQuestionTarget--the user must
+            # choose a product while asking a question.
+            question_target = IQuestionTarget(self.view.question_target)
+            supported_languages = question_target.getSupportedLanguages()
+        else:
+            supported_languages = set([getUtility(ILanguageSet)['en']])
 
-        terms = [SimpleTerm(lang, lang.code, lang.displayname)
-                 for lang in languages]
+        terms = []
+        for lang in languages:
+            label = lang.displayname
+            if lang in supported_languages:
+                label = "%s *" % label
+            terms.append(SimpleTerm(lang, lang.code, label))
         return SimpleVocabulary(terms)
 
 
@@ -261,10 +278,14 @@ class QuestionSupportLanguageMixin:
         return form.Fields(
                 Choice(
                     __name__='language',
-                    source=QuestionLanguageVocabularyFactory(self.request),
+                    source=QuestionLanguageVocabularyFactory(view=self),
                     title=_('Language'),
                     description=_(
-                        'The language in which this question is written.')),
+                        "The language in which this question is written. "
+                        "The languages marked with a star (*) are the "
+                        "languages spoken by at least one answer contact in "
+                        "the community."
+                        )),
                 render_context=self.render_context)
 
     def shouldWarnAboutUnsupportedLanguage(self):
@@ -336,7 +357,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         """
         if 'title' not in data:
             self.setFieldError(
-                'title',_('You must enter a summary of your problem.'))
+                'title', _('You must enter a summary of your problem.'))
         if self.widgets.get('description'):
             if 'description' not in data:
                 self.setFieldError(
