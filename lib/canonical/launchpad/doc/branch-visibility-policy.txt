@@ -73,21 +73,6 @@ applies to.
     >>> print mozilla.branch_visibility_policy.context.name
     mozilla
     
-
-== Default policy ==
-
-There is an implicit policy defined for all contexts.  The implicit policy
-is that everyone can create public branches.  In order to override this
-implicit policy you need to explicitly define a policy for everyone, and
-this is done by specifying None for the team.
-
-    >>> for item in policy.items:
-    ...     print item.team.name, item.policy
-
-
-    >>> 
-
-
 == Teams and people to work with ==
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -111,6 +96,16 @@ no_priv is not a member of any team.
     >>> def print_policy_items(policy):
     ...     for item in policy.items:
     ...         print "%s: %s" % (teamname(item.team), item.policy.title)
+
+== Default policy ==
+
+There is an implicit policy defined for all contexts.  The implicit policy
+is that everyone can create public branches.  In order to override this
+implicit policy you need to explicitly define a policy for everyone, and
+this is done by specifying None for the team.
+
+    >>> print_policy_items(policy)
+    *everyone*: Public
 
 
 == Setting the policy for teams ==

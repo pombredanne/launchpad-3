@@ -51,16 +51,19 @@ class IBranchVisibilityPolicy(Interface):
 
     context = Attribute("The object that the policy applies to")
 
-    def addTeam(team, policy):
-        """Adds the team to the policy list with the specified policy.
+    def setTeamPolicy(team, policy):
+        """Sets the policy for the team.
         
-        Raises an error if the team is already specified in this context.
+        Each team can only have one policy.
         """
         
     def removeTeam(team):
         """Removes the team from the policy list.
 
-        Raises an error if the team is not specified in this context.
+        If the team exists in the items list it is removed.  If the team
+        isn't in the items list, the method returns and the state of the
+        object is unchanged.  Attempting to remove the team None returns
+        the policy for everyone back to the default, which is Public.
         """
 
         
