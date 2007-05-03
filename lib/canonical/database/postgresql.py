@@ -8,7 +8,7 @@ __metaclass__ = type
 
 import re
 
-from sqlbase import quote, quoteIdentifier, cursor
+from sqlbase import quote, quoteIdentifier, sqlvalues, cursor
 
 def listReferences(cur, table, column, _state=None):
     """Return a list of all foreign key references to the given table column
@@ -291,6 +291,26 @@ def estimateRowCount(cur, query):
     return int(match.group(1))
 
 
+def haveTable(cur, table):
+    """Is there a table of the given name?"""
+    cur.execute('''
+        SELECT count(*) > 0
+        FROM pg_tables
+        WHERE tablename=%s
+    ''' % quote(table))
+    return cur.fetchall()[0][0]
+
+
+def tableHasColumn(cur, table, column):
+    """Does a table of the given name exist and have the given column?"""
+    cur.execute('''
+        SELECT count(*) > 0
+        FROM pg_attribute
+        JOIN pg_class ON pg_class.oid = attrelid
+        WHERE relname=%s
+            AND attname=%s
+    ''' % sqlvalues(table, column))
+    return cur.fetchall()[0][0]
 
 if __name__ == '__main__':
     import psycopg
