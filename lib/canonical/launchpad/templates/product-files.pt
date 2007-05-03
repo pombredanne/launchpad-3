@@ -1,0 +1,75 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-top-contributors" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+   <h1>Download project files</h1>
+</metal:heading>
+
+<div metal:fill-slot="main"
+     tal:define="has_edit context/required:launchpad.Edit">
+
+  <p>
+    Below are files available for download, listed by the release series.
+  </p>
+
+  <form method="POST"
+        tal:attributes="action request/URL">
+    <tal:series repeat="series context/serieslist">
+
+      <h2>
+        Release series
+        &#8220;<span tal:replace="series/name">main</span>&#8221;
+      </h2>
+
+      <tal:seriesfilesexist condition="python: view.series_has_release_files(series)">
+        <table class="listing">
+          <thead>
+            <tr>
+              <th tal:condition="has_edit" width="10%">Delete</th>
+              <th width="50%">Description</th>
+              <th>Download</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tal:seriesfiles repeat="release series/releases">
+              <tr tal:repeat="file release/files">
+                <td tal:condition="has_edit"
+                    align="center">
+                  <input type="checkbox"
+                         tal:attributes="name file/libraryfile/id">
+                </td>
+                <td tal:content="file/description">Installer for i386</td>
+                <td><a tal:attributes="href python:view.file_url(series,release,file)"
+                       tal:content="file/libraryfile/filename">filename</a></td>
+              </tr>
+            </tal:seriesfiles>
+          </tbody>
+        </table>
+
+      </tal:seriesfilesexist>
+      <p tal:condition="python: not view.series_has_release_files(series)">
+        No download files linked to this series.
+      </p>
+    </tal:series>
+    <input tal:condition="has_edit"
+           type="submit"
+           name="change"
+           value="Submit Changes" />
+  </form>
+
+</div>
+</body>
+</html>

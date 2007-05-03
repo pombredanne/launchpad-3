@@ -1,0 +1,40 @@
+ProductRelease
+==============
+
+A ProductSeries can have multiple releases.  Apache2 (a ProductSeries)
+can have ProductReleases 2.0, 2.0.1, 2.1, etc.
+>>> from zope.component import getUtility
+>>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.interfaces import (
+...     IPersonSet, IProductSeries, IProductSet, NotFoundError, IProjectSet)
+>>> from canonical.database.sqlbase import flush_database_updates
+
+First, get a product that has some ProductSeries in the sample data.
+
+>>> productset = getUtility(IProductSet)
+>>> firefox = productset['firefox']
+
+A ProductSeries can be retrieved using the associated product and the
+series name.
+
+>>> trunk = firefox.getSeries('trunk')
+
+Get the product releases for trunk.
+
+
+>>> releases = trunk.releases
+>>> releases.count()
+3
+
+>>> rel = releases[0]
+
+Get the default view for the release
+>>> from zope.app.zapi import getView
+>>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+>>> req = LaunchpadTestRequest()
+>>> rel_view = getView(rel, '+adddownloadfile', req)
+>>> import pdb; pdb.set_trace()
+>>> rel_view.context.getURL()
+
+
+

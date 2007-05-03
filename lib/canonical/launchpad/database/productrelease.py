@@ -12,8 +12,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces import (
-    IProductRelease, IProductReleaseFile, IProductReleaseSet)
+    IProductRelease, IProductReleaseFile, IProductReleaseSet,
+    NotFoundError)
 
 from canonical.lp.dbschema import UpstreamFileType
 
@@ -40,8 +42,6 @@ class ProductRelease(SQLBase):
 
     files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease')
 
-    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease')
-
     # properties
     @property
     def product(self):
@@ -59,12 +59,33 @@ class ProductRelease(SQLBase):
             thetitle += ' "' + self.codename + '"'
         return thetitle
 
-    def addFileAlias(self, alias, file_type=UpstreamFileType.CODETARBALL):
+    def addFileAlias(self, alias, uploader,
+                     file_type=UpstreamFileType.CODETARBALL,
+                     description=None):
         """See IProductRelease."""
         return ProductReleaseFile(productrelease=self,
                                   libraryfile=alias,
-                                  filetype=file_type)
+                                  filetype=file_type,
+                                  description=description,
+                                  uploader=uploader)
 
+    def deleteFileAlias(self, alias):
+        """See IProductRelease."""
+        for f in self.files:
+            if f.libraryfile.id == alias.id:
+                # XXX do this if immediate removal is desired
+                #f.libraryfile.content.deleted = True
+                #f.libraryfile.destroySelf()
+                f.destroySelf()
+                return
+        raise NotFound(str(alias))
+
+    def getFileAliasByName(self, name):
+        """See IProductRelase."""
+        for f in self.files:
+            if f.libraryfile.filename == name:
+                return f.libraryfile
+        raise NotFoundError(name)
 
 class ProductReleaseFile(SQLBase):
     """A file of a product release."""
@@ -80,9 +101,16 @@ class ProductReleaseFile(SQLBase):
     filetype = EnumCol(dbName='filetype', schema=UpstreamFileType,
                        notNull=True, default=UpstreamFileType.CODETARBALL)
 
+    description = StringCol(notNull=False, default=None)
+
+    uploader = ForeignKey(dbName="uploader", foreignKey='Person',
+                          notNull=True)
+
+    dateuploaded = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+
 
 class ProductReleaseSet(object):
-    """See IProductReleaseSet""" 
+    """See IProductReleaseSet"""
     implements(IProductReleaseSet)
 
     def new(self, version, productseries, owner, codename=None, summary=None,
@@ -105,4 +133,3 @@ class ProductReleaseSet(object):
         if productrelease is None:
             return default
         return productrelease
-

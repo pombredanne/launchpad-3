@@ -625,7 +625,7 @@ people_requestmerge = 'Merge Launchpad accounts'
 people_requestmerge_multiple = 'Merge Launchpad accounts'
 
 person_answer_contact_for = ContextDisplayName(
-    'Projects for which %s is an answer contact')    
+    'Projects for which %s is an answer contact')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
@@ -773,6 +773,8 @@ product_new = 'Register a project in Launchpad'
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
+product_files = ContextDisplayName('%s project files')
+
 product_series = ContextDisplayName('%s timeline')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
@@ -780,6 +782,8 @@ product_translations = ContextTitle('Translations of %s in Launchpad')
 product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
+
+productrelease_file_add = ContextDisplayName('Add a download file to project %s')
 
 productrelease_admin = ContextTitle('Administer %s in Launchpad')
 

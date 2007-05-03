@@ -1,0 +1,89 @@
+Launchpad can show you a product's downloadable files, by series, with links to each.
+
+    >>> from zope.testbrowser.testing import Browser
+
+As an anonymous user the files for download should be shown, but not
+the delete options.
+
+    >>> anon_browser.open('http://launchpad.dev/firefox/+download')
+    >>> anon_browser.url
+    'http://launchpad.dev/firefox/+download'
+    >>> content = find_main_content(anon_browser.contents)
+    >>> row = content.find('table').find('tr')
+    >>> print extract_text(row)
+    Description
+    Download
+
+Again, for an authenticated user who is not the firefox product owner.
+
+    >>> non_owner = Browser()
+    >>> non_owner.addHeader('Authorization', 'Basic celso.providelo@canonical.com:cprov')
+    >>> non_owner.open('http://launchpad.dev/firefox/+download')
+    >>> non_owner.url
+    'http://launchpad.dev/firefox/+download'
+    >>> content = find_main_content(non_owner.contents)
+    >>> row = content.find('table').find('tr')
+    >>> print extract_text(row)
+    Description
+    Download
+
+Now, login as a firefox admin and see the delete fields
+
+    >>> firefox_owner = Browser()
+    >>> firefox_owner.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
+    >>> firefox_owner.url
+    'http://launchpad.dev/firefox/+download'
+    >>> content = find_main_content(firefox_owner.contents)
+    >>> row = content.find('table').find('tr')
+    >>> print extract_text(row)
+    Delete
+    Description
+    Download
+
+In order to add new files, the admin must navigate to the product
+release listing by selecting the individual release under the series
+name on the product index page.  In the example below the firefox has
+a 1.0 series with a 1.0.0 release.  
+
+First let's ensure a non-owner doesn't see the 'Add download file' link
+
+    >>> non_owner.open('http://launchpad.dev/firefox/1.0/1.0.0/')
+    >>> non_owner.getLink('Add download file')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0/')
+
+To add a download file the +adddownloadfile page is accessed.
+
+    >>> firefox_owner.getLink('Add download file').click()
+
+Create a file to upload.
+
+    >>> from cStringIO import StringIO
+    >>> foo_file = StringIO('Foo installer package...')
+    >>> foo_file.seek(0)
+    >>> firefox_owner.getControl(name='field.filecontent').add_file(foo_file,
+    ...    'text/plain', 'foo.txt')
+    >>> firefox_owner.getControl('Description').value="Foo installer"
+    >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
+    ...    ["Installer file"]
+    >>> firefox_owner.getControl("Add file").click()
+    >>> print firefox_owner.contents
+    <!DOCTYPE...
+    ...Your file has been uploaded...
+
+Let's go back to the page where the files are listed and ensure it
+shows up now.  Just to be sure, do it as the non-owner.
+
+
+    >>> non_owner.open('http://launchpad.dev/firefox/+download')
+    >>> non_owner.url
+    'http://launchpad.dev/firefox/+download'
+    >>> content = find_main_content(non_owner.contents)
+    >>> print content
+    <...
+    ...Foo installer...foo.txt...
+
+

@@ -17,6 +17,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductTranslationsMenu',
     'ProductView',
+    'ProductDownloadFilesView',
     'ProductAddView',
     'ProductBrandingView',
     'ProductEditView',
@@ -47,13 +48,16 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import alsoProvides, implements, providedBy
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
-    IProductSet, IProductSeries, IProject, ISourcePackage, ICountry,
+    IProductSet, IProductSeries,
+    IProject, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
     IPillarNameSet, IDistribution, IHasIcon, UnexpectedFormData)
@@ -85,6 +89,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.widgets import LaunchpadDropdownWidget
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -207,7 +212,7 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'distributions', 'packages', 'branch_add',
+        'mentorship', 'distributions', 'packages', 'files', 'branch_add',
         'series_add', 'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
@@ -246,6 +251,10 @@ class ProductOverviewMenu(ApplicationMenu):
     def packages(self):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
+
+    def files(self):
+        text = 'Download project files'
+        return Link('+download', text, icon='info')
 
     def series_add(self):
         text = 'Register a release series'
@@ -430,15 +439,13 @@ class ProductSetContextMenu(ContextMenu):
         return Link('/sprints/', 'View meetings')
 
 
-class ProductView:
+class ProductView(LaunchpadView):
 
     __used_for__ = IProduct
 
-    def __init__(self, context, request):
-        self.context = context
-        self.product = context
-        self.request = request
-        self.form = request.form
+    def initialize(self):
+        self.product = self.context
+        self.form = self.request.form
         self.status_message = None
 
     def primary_translatable(self):
@@ -561,6 +568,53 @@ class ProductView:
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
 
+class ProductDownloadFilesView(LaunchpadView):
+
+    __used_for__ = IProduct
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+
+    def initialize(self):
+        self.form = self.request.form
+        self.product = self.context
+        del_count = None
+        if 'change' in self.form and self.request.method == 'POST':
+            del(self.form['change'])
+            del_count = self.delete_files(self.form)
+        if del_count is not None:
+            if del_count <= 0:
+                self.request.response.addNotification("No files were deleted.")
+            elif del_count == 1:
+                self.request.response.addNotification("%d file has been deleted." %
+                                                      del_count)
+            else:
+                self.request.response.addNotification("%d files have been deleted." %
+                                                      del_count)
+
+    def delete_files(self, data):
+        del_keys = [int(k) for k,v in data.items() if v=='on']
+        del_count = 0
+        for series in self.product.serieslist:
+            for release in series.releases:
+                for f in release.files:
+                    if f.libraryfile.id in del_keys:
+                        release.deleteFileAlias(f.libraryfile)
+                        del_keys.remove(f.libraryfile.id)
+                        del_count += 1
+        return del_count
+
+    def series_has_release_files(self, series):
+        for release in series.releases:
+            if release.files:
+                return True
+        return False
+
+    def file_url(self, series, release, file_):
+        return "%s/%s/%s/+download/%s" % (canonical_url(self.context),
+                                          series.name,
+                                          release.version,
+                                          file_.libraryfile.filename)
 
 class ProductBrandingView(BrandingChangeView):
 
@@ -640,7 +694,6 @@ class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
             self.form_fields, self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False,
             adapters={self.schema: self.context})
-
 
 class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product release series"""
@@ -835,7 +888,7 @@ class ProductAddView(LaunchpadFormView):
 
     schema = IProduct
     field_names = ['name', 'owner', 'displayname', 'title', 'summary',
-                   'description', 'project', 'homepageurl', 
+                   'description', 'project', 'homepageurl',
                    'sourceforgeproject', 'freshmeatproject',
                    'wikiurl', 'screenshotsurl', 'downloadurl',
                    'programminglang', 'reviewed']
@@ -966,7 +1019,7 @@ class ProductShortLink(DefaultShortLink):
 
 class ProductBranchesView(BranchListingView):
     """View for branch listing for a product."""
-    
+
     extra_columns = ('author',)
 
     def _branches(self):
@@ -989,5 +1042,3 @@ class ProductBranchesView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project.')
         return message % self.context.displayname
-
-

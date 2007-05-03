@@ -3,13 +3,12 @@ Librarian Access
 
 High Level
 ----------
-
 >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
 >>> from StringIO import StringIO
 >>> data = 'This is some data'
 
 We can create LibraryFileAliases using the ILibraryFileAliasSet utility.
-This name is a mouthful, but is consistant with the rest of our naming.
+This name is a mouthful, but is consistent with the rest of our naming.
 
 >>> lfas = getUtility(ILibraryFileAliasSet)
 >>> from canonical.launchpad.interfaces import NEVER_EXPIRES
@@ -272,4 +271,23 @@ True
 >>> alias.getURL() is None
 True
 >>> client.getURLForAlias(alias.id) is None
+True
+
+
+Default View
+------------
+A librarian file has a default view that should redirect to the download URL.
+
+>>> from zope.app.zapi import getView
+>>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+>>> req = LaunchpadTestRequest()
+>>> alias = lfas.create(
+...     'text2.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
+...     )
+>>> transaction.commit()
+>>> lfa_view = getView(alias, '+index', req)
+>>> lfa_view.initialize()
+>>> lfa_url = lfa_view.context.getURL()
+>>> url = alias.getURL()
+>>> lfa_url == url
 True

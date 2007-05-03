@@ -8,9 +8,10 @@ __all__ = [
     'IProductReleaseSet',
     'IProductRelease',
     'IProductReleaseFile',
+    'IProductReleaseFileAddForm',
     ]
 
-from zope.schema import Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bytes, Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
@@ -19,18 +20,21 @@ from canonical.lp.dbschema import UpstreamFileType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.validators.version import sane_version
+from canonical.launchpad.validators.productrelease import (
+    productrelease_file_size_constraint)
+
 from canonical.launchpad.fields import ContentNameField
 
 
 class ProductReleaseVersionField(ContentNameField):
-   
+
     errormessage = _(
         "%s is already in use by another version in this release series.")
 
     @property
     def _content_iface(self):
         return IProductRelease
-    
+
     def _getByName(self, version):
         if IProductSeries.providedBy(self.context):
             productseries = self.context
@@ -77,9 +81,14 @@ class IProductRelease(Interface):
     product = Attribute(_('The upstream project of this release.'))
     files = Attribute(_('Iterable of product release files.'))
 
-    def addFileAlias(alias, file_type=UpstreamFileType.CODETARBALL):
+    def addFileAlias(alias, file_type=UpstreamFileType.CODETARBALL,
+                     description=None):
         """Add a link between this product and a library file alias."""
+    def deleteFileAlias(alias):
+        """Delete the link between this product and a library file alias."""
 
+    def getFileAliasByName(name):
+        """Return the LibraryFileAlias by file name or None if not found."""
 
 class IProductReleaseFile(Interface):
 
@@ -92,6 +101,21 @@ class IProductReleaseFile(Interface):
                       vocabulary='UpstreamFileType',
                       default=UpstreamFileType.CODETARBALL)
 
+    description = Text(title=_("Description"), required=False,
+        description=_('A detailed description of the file contents'))
+
+class IProductReleaseFileAddForm(Interface):
+    """Schema for adding ProductReleaseFiles to a project."""
+    description = Text(title=_("Description"), required=True,
+        description=_('A short description of the file contents'))
+
+    filecontent = Bytes(
+        title=u"File", required=True,
+        constraint=productrelease_file_size_constraint)
+
+    contenttype = Choice(title=_("File content type"), required=True,
+                         vocabulary='UpstreamFileType',
+                         default=UpstreamFileType.CODETARBALL)
 
 class IProductReleaseSet(Interface):
     """Auxiliary class for ProductRelease handling."""
@@ -99,10 +123,9 @@ class IProductReleaseSet(Interface):
     def new(version, owner, productseries, codename=None, shortdesc=None,
             description=None, changelog=None):
         """Create a new ProductRelease"""
-        
+
     def getBySeriesAndVersion(productseries, version, default=None):
         """Get a release by its version and productseries.
 
-        If no release is found, default will be returned. 
+        If no release is found, default will be returned.
         """
-

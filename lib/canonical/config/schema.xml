@@ -152,6 +152,13 @@ k            </description>
                 no limit.
             </description>
         </key>
+        <key name="max_productrelease_file_size" datatype="integer" required="no"
+            default="0">
+            <description>
+                Maximum size of product release download files in bytes. A value
+                of 0 means no limit.
+            </description>
+        </key>
         <key name="db_statement_timeout" datatype="integer" required="no">
             <description>
                 SQL statement timeout in milliseconds. If a statement

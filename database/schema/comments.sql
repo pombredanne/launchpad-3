@@ -261,6 +261,16 @@ COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the
 COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
 COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
 
+-- ProductReleaseFile
+
+COMMENT ON TABLE ProductReleaseFile IS 'Links a ProductRelease to one or more files in the Librarian.';
+COMMENT ON COLUMN ProductReleaseFile.productrelease IS 'This is the product release this file is associated with';
+COMMENT ON COLUMN ProductReleaseFile.libraryfile IS 'This is the librarian entry';
+COMMENT ON COLUMN ProductReleaseFile.description IS 'A description of what the file contains';
+COMMENT ON COLUMN ProductReleaseFile.filetype IS 'An enum of what kind of file this is. Code tarballs are marked for special treatment (importing into bzr)';
+COMMENT ON COLUMN ProductReleaseFile.uploader IS 'The person who uploaded this file.';
+COMMENT ON COLUMN ProductReleaseFile.dateuploaded IS 'The date this file was uploaded.';
+COMMENT on COLUMN ProductReleaseFile.id IS '';
 
 -- ProductSeries
 COMMENT ON TABLE ProductSeries IS 'A ProductSeries is a set of product releases that are related to a specific version of the product. Typically, each major release of the product starts a new ProductSeries. These often map to a branch in the revision control system of the project, such as "2_0_STABLE". A few conventional Series names are "head" for releases of the HEAD branch, "1.0" for releases with version numbers like "1.0.0" and "1.0.1".  Each product has at least one ProductSeries';
