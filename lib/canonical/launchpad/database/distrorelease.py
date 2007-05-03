@@ -1292,7 +1292,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             for j in joins
         ]
         if whereclause is not None:
-            where = where + [whereclause]
+            where = where + ['(%s)'%whereclause]
 
         # We use a regular, persistent table rather than a temp table for
         # this so that we get a chance to resume interrupted copies, and
@@ -1450,7 +1450,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         self._extract_to_holding_table(cur,
             logger,
             'POSubmission',
-            ['POMsgSet'])
+            ['POMsgSet'],
+            'active OR published')
         holding_tables.append('POSubmission')
 
         # Now pour the holding tables back into the originals
@@ -1530,6 +1531,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # to other users while running, locking them out of the database
         # during its potentially huge updates.  We should see if we can batch
         # it into smaller chunks in order to reduce lock pressure.
+
+        # XXX: JeroenVermeulen 2007-05-03, This method should become
+        # unnecessary once the "translation multicast" spec is implemented:
+        # https://launchpad.canonical.com/MulticastTranslations
 
         # The left outer join that obtains pf2 ensures that we only do the
         # copying for POFiles whose POTemplates don't have any POFiles yet.
