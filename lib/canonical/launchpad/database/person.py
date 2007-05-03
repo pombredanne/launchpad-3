@@ -656,10 +656,6 @@ class Person(SQLBase, HasSpecificationsMixin):
         assert self.hasParticipationEntryFor(team), (
             "Only call this method when you're sure the person is an indirect"
             " member of the team.")
-        # commenting out this assertion because I believe the bug that
-        # required it has now been fixed, salgado please confirm
-        # -- sabdfl 2007-04-27
-        #assert not self.isTeam()
         assert team.isTeam()
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
