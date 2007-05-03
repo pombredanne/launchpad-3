@@ -1235,7 +1235,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def _holding_table_unquoted(self, tablename):
         """Name for a holding table, but without quotes.  Use with care."""
-        return "%s_holding_%s" % (tablename, self.name)
+        return "%s_holding_%s" % (str(tablename), str(self.name))
 
     def _holding_table(self, tablename):
         """Name for a holding table to hold data being copied in tablename.
@@ -1513,6 +1513,25 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # considerations than the other case can.  Still, it may be possible
         # in the future to optimize _copy_active_translations_as_update() (the
         # other of the two cases) using a similar trick.
+
+        # Copying happens in two phases:
+        #
+        # 1. Extraction phase--for every table involved (which we'll call a
+        # "source table" here), we create a "holding table."  We fill that with
+        # all rows from the source table that we want to copy from the parent
+        # release.  We make some changes to the copied rows, such as making
+        # them belong to ourselves instead of our parent release.
+        #
+        # The first phase does not modify any tables that other clients may
+        # want to use, avoiding locking problems.
+        #
+        # 2. Pouring phase.  From each holding table we pour all rows back
+        # into the source table, deleting them from the holding table as we
+        # go.  The holding table is dropped once empty.
+        #
+        # The second phase is "batched," moving only a small number of rows at
+        # a time, then performing an intermediate commit.  This avoids holding
+        # too many locks for too long and disrupting regular database service.
 
         # A unique suffix we will use for names of holding tables.  We don't
         # use proper SQL holding tables because those will have disappeared
