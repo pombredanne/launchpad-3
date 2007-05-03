@@ -16,7 +16,7 @@ import shutil
 
 from canonical.archivepublisher.customupload import (
     CustomUpload, CustomUploadError)
-from sourcerer.deb.version import Version as make_version
+from canonical.archivepublisher.debversion import Version as make_version
 
 
 class DebianInstallerAlreadyExists(CustomUploadError):

@@ -13,8 +13,7 @@ import sys
 
 from zope.component import getUtility
 
-from sourcerer.deb.version import Version
-
+from canonical.archivepublisher.debversion import Version
 from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.config import config
 from canonical.buildmaster.master import (

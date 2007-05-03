@@ -20,7 +20,7 @@ import stat
 import tarfile
 import tempfile
 
-from sourcerer.deb.version import Version as make_version
+from canonical.archivepublisher.debversion import Version as make_version
 
 
 class CustomUploadError(Exception):

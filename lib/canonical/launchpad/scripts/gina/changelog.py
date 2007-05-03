@@ -9,7 +9,7 @@ import re, sys
 first_re = re.compile(r"^([a-z0-9][a-z0-9\\+\\.\\-]+)\s+\(([^ ]+)\)")
 urgency_re = re.compile(r'(?:urgency|priority)=([^ ,;:.]+)')
 
-from sourcerer.deb.version import Version
+from canonical.archivepublisher.debversion import Version
 
 def parse_first_line(line):
     # SRCPKGNAME (VERSION).*((urgency|priority)=\S+)?

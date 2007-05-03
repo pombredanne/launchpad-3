@@ -13,7 +13,7 @@ import shutil
 
 from canonical.archivepublisher.customupload import (
     CustomUpload, CustomUploadError)
-from sourcerer.deb.version import (
+from canonical.archivepublisher.debversion import (
     BadUpstreamError, Version as make_version)
 
 

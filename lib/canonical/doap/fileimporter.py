@@ -123,7 +123,7 @@ class ProductReleaseImporter:
 
     def getLastManifest(self):
         """Return the last manifest for this product, or None."""
-        from sourcerer.deb.version import deb_cmp
+        from canonical.archivepublisher.debversion import deb_cmp
 
         releases = list(ProductRelease.select(
             'manifest IS NOT NULL AND product = %d' % self.product
