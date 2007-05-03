@@ -1,9 +1,4 @@
 # Copyright (C) 2005-2007  Canonical Ltd.
-#
-# Distributed under the terms of the GNU General Public License as
-# published by the Free Software Foundation; either version 2 of the
-# License, or (at your option) any later version. A copy if the GNU GPL
-# version 2 is available in the file GPL.
 
 """Tests for debversion."""
 
