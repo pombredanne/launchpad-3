@@ -1,3 +1,5 @@
+== Display of filesize and mime type of attachments ==
+
 File size and mime type are displayed for each attachment
 
     >>> from cStringIO import StringIO
@@ -12,12 +14,16 @@ File size and mime type are displayed for each attachment
     >>> user_browser.getControl("Description").value = "description text"
     >>> user_browser.getControl("Comment").value = "comment comment"
     >>> user_browser.getControl("Save Changes").click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1'
 
-    >>> lastcomment = find_tags_by_class(
+    >>> last_comment = find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody')[-1]
     >>> fileinfo = '(270 bytes, text/plain)'
-    >>> lastcomment.renderContents().find(fileinfo) > 0
-    True
+    >>> for attachment in last_comment('li', {'class': 'download'}):
+    ...     print extract_text(attachment)
+    description text
+    (270 bytes, text/plain)
 
 A filesize of 2700 byte is displayed in 'KiB'
 
@@ -36,11 +42,15 @@ A filesize of 2700 byte is displayed in 'KiB'
     >>> user_browser.getControl("Description").value = "description text"
     >>> user_browser.getControl("Comment").value = "comment comment"
     >>> user_browser.getControl("Save Changes").click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1'
 
-    >>> lastcomment = find_tags_by_class(
+    >>> last_comment = find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody')[-1]
-    >>> fileinfo = '(2.6 KiB, text/plain)'
-    >>> lastcomment.renderContents().find(fileinfo) > 0
-    True
+    >>> fileinfo = '(270 bytes, text/plain)'
+    >>> for attachment in last_comment('li', {'class': 'download'}):
+    ...     print extract_text(attachment)
+    description text
+    (2.6 KiB, text/plain)
 
     >>> config.launchpad.max_bug_attachment_size = old_value
