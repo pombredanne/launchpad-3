@@ -2,6 +2,8 @@
 Alexander Limi was browsing through Launchpad and found a page for
 himself, even though he has never used Launchpad.
 
+    >>> from zope.testbrowser.testing import Browser
+    >>> browser = Browser()
     >>> browser.open('http://launchpad.dev/~limi')
     >>> browser.url
     'http://launchpad.dev/~limi'
@@ -55,14 +57,14 @@ Then he tries with Sample Person's email address.
 And once again he tries with an email address he found in Launchpad, but
 this one is associated with an unvalidated profile.
 
-    >>> browser.getControl('Email address').value = 'mpo@iki.fi'
+    >>> browser.getControl('Email address').value = 'morten@wtf.dk'
     >>> browser.getControl('E-mail Me').click()
     >>> soup = BeautifulSoup(browser.contents)
     >>> for tag in soup('div', 'message'):
     ...     print tag.renderContents()
     Although this email address is not associated with this profile, it's
     associated with yet another one. You can <a
-    href="http://launchpad.dev/~mpo/+claim">claim that other
+    href="http://launchpad.dev/~morten/+claim">claim that other
     profile</a> and then later <a href="/people/+requestmerge">combine</a>
     both of them into a single one.
 

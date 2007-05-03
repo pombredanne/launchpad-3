@@ -168,3 +168,69 @@ But in the second browser with the stale data we get an error message:
   ...     'The membership request for Dave Miller has already been processed')
   >>> message in second_browser.contents
   True
+
+
+Team Participation page
+=======================
+
+The team participation page shows the team in which a person is a direct
+member, as well as the teams in which they are an indirect member. We will
+just make sure that this page is displaying without errors in several cases:
+
+ - for a person with no memberships at all
+ - for a person with direct memberships only
+ - for a person with some indirect memberships
+ - for a team with direct memberships only
+
+First, Kiko has not joined any teams:
+
+  >>> browser = Browser()
+  >>> browser.open('http://launchpad.dev/~kiko/+participation')
+  >>> 'has not yet joined any teams' in browser.contents
+  True
+  >>> direct = find_portlet(browser.contents, 'Direct membership')
+  >>> print direct
+  None
+  >>> indirect = find_portlet(browser.contents, 'Indirect membership')
+  >>> print indirect
+  None
+
+
+Next, Mark Shuttleworth is only a direct member:
+
+  >>> browser.open('http://launchpad.dev/~sabdfl/+participation')
+  >>> 'has not yet joined any teams' in browser.contents
+  False
+  >>> direct = find_portlet(browser.contents, 'Direct membership')
+  >>> 'Launchpad Administrators' in direct.renderContents()
+  True
+  >>> indirect = find_portlet(browser.contents, 'Indirect membership')
+  >>> print indirect
+  None
+
+
+Next, Sample Person has both direct and indirect memberships:
+
+  >>> browser.open('http://launchpad.dev/~name12/+participation')
+  >>> 'has not yet joined any teams' in browser.contents
+  False
+  >>> direct = find_portlet(browser.contents, 'Direct membership')
+  >>> 'Landscape Developers' in direct.renderContents()
+  True
+  >>> indirect = find_portlet(browser.contents, 'Indirect membership')
+  >>> 'Ubuntu Gnome Team' in indirect.renderContents()
+  True
+
+
+The Ubuntu Team is only a direct member of other teams:
+
+  >>> browser.open('http://launchpad.dev/~ubuntu-team/+participation')
+  >>> 'has not yet joined any teams' in browser.contents
+  False
+  >>> direct = find_portlet(browser.contents, 'Direct membership')
+  >>> 'GuadaMen' in direct.renderContents()
+  True
+  >>> indirect = find_portlet(browser.contents, 'Indirect membership')
+  >>> print indirect
+  None
+

@@ -28,7 +28,7 @@
       <label>
         <input type="radio" value="product"
                tal:replace="structure view/options/product" />
-        Product
+       Project 
       </label>
     </td>
     <td>

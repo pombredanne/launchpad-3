@@ -50,7 +50,7 @@ person.
 
 === Assigned bugs ===
 
-    >>> anon_browser.getLink('Assigned').click()
+    >>> anon_browser.getLink('List assigned bugs').click()
     >>> print anon_browser.title
     Bugs assigned to Sample Person
     >>> print anon_browser.url
@@ -64,7 +64,7 @@ person.
 
 === Reported bugs ===
 
-    >>> anon_browser.getLink('Reported').click()
+    >>> anon_browser.getLink('List reported bugs').click()
     >>> print anon_browser.title
     Bugs reported by Sample Person
     >>> print anon_browser.url
@@ -90,7 +90,7 @@ person.
 
 === Subscribed bugs ===
 
-    >>> anon_browser.getLink('Subscribed').click()
+    >>> anon_browser.getLink('List subscribed bugs').click()
     >>> print anon_browser.title
     Bugs Sample Person is subscribed to
     >>> print anon_browser.url

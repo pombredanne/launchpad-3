@@ -1,7 +1,7 @@
 Bug Export
 ==========
 
-Some projects require regular exports of thier bugs as a condition of
+Some projects require regular exports of their bugs as a condition of
 using Launchpad.  This provides them an exit strategy in the event
 that they can't use Launchpad anymore.
 

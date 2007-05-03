@@ -191,7 +191,7 @@ class SourcePackageView(BuildRecordsView):
                 self.productseries_widget.setRenderedValue(new_ps)
                 self.status_message = 'Upstream link updated, thank you!'
             else:
-                self.status_message = 'Invalid product series given.'
+                self.status_message = 'Invalid release series given.'
 
     def published_by_pocket(self):
         """This morfs the results of ISourcePackage.published_by_pocket into

@@ -337,7 +337,7 @@ class POTemplateView(LaunchpadView):
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be imported'
-                ' soon into Rosetta. You can track its status from the'
+                ' soon into Launchpad. You can track its status from the'
                 ' <a href="%s">Translation Import Queue</a>' %
                     canonical_url(translation_import_queue))
 
@@ -353,7 +353,7 @@ class POTemplateView(LaunchpadView):
             if num > 0:
                 self.request.response.addInfoNotification(
                     'Thank you for your upload. %d files from the tarball'
-                    ' will be imported soon into Rosetta. You can track its'
+                    ' will be imported soon into Launchpad. You can track its'
                     ' status from the <a href="%s">Translation Import Queue'
                     '</a>' % (num, canonical_url(translation_import_queue)
                         )
