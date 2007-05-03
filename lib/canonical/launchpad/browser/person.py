@@ -2137,6 +2137,7 @@ class TeamJoinView(PersonView):
         user = self.user
         context = self.context
 
+        notification = None
         if request.form.get('join') and self.userCanRequestToJoin():
             policy = context.subscriptionpolicy
             user.join(context)
@@ -2147,9 +2148,13 @@ class TeamJoinView(PersonView):
                     'Successfully joined %s.' % context.displayname)
         elif request.form.get('join'):
             notification = _('You cannot join %s.' % context.displayname)
+        elif request.form.get('goback'):
+            # Nothing to do
+            pass
         else:
             raise UnexpectedFormData('No action specified')
-        request.response.addInfoNotification(notification)
+        if notification is not None:
+            request.response.addInfoNotification(notification)
         self.request.response.redirect(canonical_url(context))
 
 

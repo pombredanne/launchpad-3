@@ -31,6 +31,13 @@ team.
     ...     print tag.renderContents()
     You are an active member of this team already.
 
+We have a 'Back to tem' button, though, which just takes the user back to the
+team's home page.
+
+    >>> browser.getControl('Back to team').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail'
+
 If this was a moderated team, the membership would not have been automatically
 approved, though.
 
@@ -56,6 +63,16 @@ approved, though.
     approve your membership before you actually become a member of this team.
     ...
 
+If the user changes his mind because this is a restricted team, he can hit
+the 'Cancel' button, going back to the team's page...
+
+    >>> browser.getControl('Cancel').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail'
+
+...and then do everything again, if he really wants to join.
+
+    >>> browser.getLink('Join the team').click()
     >>> browser.getControl(name='join').click()
     >>> browser.url
     'http://launchpad.dev/~myemail'
@@ -81,6 +98,13 @@ team.
     ...     print tag.renderContents()
     my own team is a restricted team.
     Only a team administrator can add new members.
+
+But we provide a 'Back to tem' button to take the user back to the team's
+home page, since he can't join it.
+
+    >>> browser.getControl('Back to team').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail'
 
 On the team's +members page we can now see Karl as an approved member,
 James Blackwell as a proposed one and Jeff Waugh won't be there at all.
