@@ -78,7 +78,7 @@ class ProductRelease(SQLBase):
                 #f.libraryfile.destroySelf()
                 f.destroySelf()
                 return
-        raise NotFound(str(alias))
+        raise NotFoundError(str(alias))
 
     def getFileAliasByName(self, name):
         """See IProductRelase."""
