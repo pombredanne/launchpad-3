@@ -55,7 +55,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
         title=_("Distribution Release"), required=False,
         vocabulary="DistroRelease")
     productseries = Choice(
-        title=_("Product Series"), required=False,
+        title=_("Release Series"), required=False,
         vocabulary="ProductSeries")
     owner = Choice(
         title=_('Submitter'), required=True, readonly=True,
@@ -103,6 +103,9 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
 
     def isApproved():
         """Is this nomination in Approved state?"""
+
+    def canApprove(person):
+        """Is this person allowed to approve the nomination?"""
 
 
 class IBugNominationSet(Interface):

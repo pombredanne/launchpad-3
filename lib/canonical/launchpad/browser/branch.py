@@ -29,7 +29,7 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, IBugSet)
+    IBranch, IBranchSet, IBugSet, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
@@ -88,7 +88,7 @@ class BranchContextMenu(ContextMenu):
     def subscription(self):
         if self.context.hasSubscription(self.user):
             url = '+edit-subscription'
-            text = 'Edit Subscription'
+            text = 'Edit subscription'
             icon = 'edit'
         else:
             url = '+subscribe'
@@ -142,16 +142,6 @@ class BranchView(LaunchpadView):
         linkdata = BranchContextMenu(self.context).edit()
         return '%s/%s' % (canonical_url(self.context), linkdata.target)
 
-    def url(self):
-        """URL where the branch can be checked out.
-
-        This is the URL set in the database, or the Supermirror URL.
-        """
-        if self.context.url:
-            return self.context.url
-        else:
-            return self.supermirror_url()
-
     def mirror_of_ssh(self):
         """True if this a mirror branch with an sftp or bzr+ssh URL."""
         if not self.context.url:
@@ -177,17 +167,10 @@ class BranchView(LaunchpadView):
         return 'sftp://%s@bazaar.launchpad.net/%s' % (
             self.user.name, self.context.unique_name)
 
-    def missing_title_or_summary_text(self):
-        if self.context.title:
-            if self.context.summary:
-                return None
-            else:
-                return '(this branch has no summary)'
-        else:
-            if self.context.summary:
-                return '(this branch has no title)'
-            else:
-                return '(this branch has neither title nor summary)'
+    def is_hosted_branch(self):
+        """Whether this is a user-provided hosted branch."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        return self.context.url is None and self.context.owner != vcs_imports
 
 
 class BranchInPersonView(BranchView):

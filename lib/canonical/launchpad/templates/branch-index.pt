@@ -15,59 +15,52 @@
 
 <div metal:fill-slot="main">
 
-      <h1>&#8220;<tal:branch replace="context/displayname" />&#8221; branch</h1>
+  <h1>&#8220;<tal:branch replace="context/displayname" />&#8221; branch</h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
     notice goes here
   </p>
 
-      <table class="summary" tal:condition="context/url">
-
+  <table tal:condition="context/url">
     <tal:comment condition="nothing">
       <!-- This is a mirror branch, display two URLs -->
     </tal:comment>
-
-        <caption>
-
+    <caption style="margin-top:1ex" class="discreet">
       These URLs are intended for use with the
       <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
+    </caption>
+    <tbody>
+      <tr><th>Location:</th><td tal:content="context/url" /></tr>
+      <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
+    </tbody>
+  </table>
 
-        </caption>
-        <tbody>
-          <tr><th>Location:</th><td tal:content="context/url" /></tr>
-          <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
-        </tbody>
-      </table>
-      <table class="summary" tal:condition="not:context/url">
-
+  <table tal:condition="not:context/url">
     <tal:comment condition="nothing">
-      <!-- This is an upload branch, one URL and upload directions -->
+      <!-- This is a hosted or import branch, one URL -->
     </tal:comment>
-
-        <caption>
-
+    <caption style="margin-top:1ex" class="discreet">
       This URL is intended for use with the
       <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
+    </caption>
+    <tbody>
+      <tr>
+	<th>Hosted on Launchpad:</th>
+	<td tal:content="view/supermirror_url" />
+      </tr>
+    </tbody>
+  </table>
 
-        </caption>
-        <tbody>
-          <tr>
-            <th>Hosted on Launchpad:</th>
-            <td tal:content="view/supermirror_url" />
-          </tr>
-        </tbody>
-      </table>
-
-      <p tal:condition="context/summary" tal:content="context/summary">
-
+  <p tal:condition="context/summary" tal:content="context/summary">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
   </p>
 
-      <p tal:condition="not:context/summary">This branch has no summary.</p>
-      <tal:hosted-branch condition="not:context/url">
-
+  <tal:hosted-branch condition="view/is_hosted_branch">
+    <tal:comment condition="nothing">
+      <!-- This is a hosted branch, display upload directions -->
+    </tal:comment>
     <tal:not-logged-in condition="not:view/user">
       <tal:comment condition="nothing">
         <!-- The user is not logged in -->
@@ -112,12 +105,12 @@
         <tal:comment condition="nothing">
           <!-- The user is logged in and can upload to the branch -->
         </tal:comment>
-        <div id="upload-directions">
+        <p id="upload-directions">
           You can <b>upload</b> to this branch at:
-          <span class="lesser" tal:content="view/upload_url">
+          <span tal:content="view/upload_url">
             sftp://name12@bazaar.launchpad.net/~name12/gnome-terminal/pushed
           </span>
-        </div>
+        </p>
         <tal:comment condition="nothing">
           <!-- Directions to set the SSH key -->
         </tal:comment>
@@ -128,12 +121,15 @@
         </p>
       </tal:can-upload>
     </tal:logged-in>
+    <tal:comment condition="nothing">
+      <!-- End of upload directions -->
+    </tal:comment>
   </tal:hosted-branch>
 
   <tal:comment condition="nothing">
     <!-- XXX This style attribute is evil, but bold text makes the mirror error
-    difficult to read. Checked with mptt about that. - David Allouche 2006-04-09
-    -->
+    difficult to read. Checked with mpt about that.
+    - David Allouche 2006-04-09 -->
   </tal:comment>
   <p tal:condition="view/mirror_of_ssh" id="mirror-of-ssh"
        class="warning message" style="font-weight: normal">
@@ -154,11 +150,13 @@
     </span>
   </p>
 
-  <div class="highlighted lesser" tal:condition="context/whiteboard">
-    <b>Whiteboard:</b>
+  <tal:whiteboard condition="context/whiteboard">
+    <h2>Whiteboard</h2>
     <div id="branch-whiteboard-value"
-      tal:content="structure context/whiteboard/fmt:text-to-html">whiteboard</div>
-  </div>
+      tal:content="structure context/whiteboard/fmt:text-to-html">
+      Whiteboard text goes here.
+    </div>
+  </tal:whiteboard>
 
   <h2 style="clear: both;">Recent revisions</h2>
 
@@ -186,8 +184,22 @@
     <li tal:repeat="rev_no context/latest_revisions"
         tal:attributes="value rev_no/sequence; id string:rev${rev_no/sequence}">
       <div>
-        By <strong tal:content="rev_no/revision/revision_author/name">
-          John Doe &lt;john.doe@example.com&gt;</strong> <span
+        By
+        <strong>
+          <tal:not-anonymous condition="view/user">
+            <span tal:replace="rev_no/revision/revision_author/name">
+              John Doe &lt;john.doe@example.com&gt;
+            </span>
+          </tal:not-anonymous>
+          <tal:anonymous condition="not:view/user">
+            <span
+               tal:replace="rev_no/revision/revision_author/name_without_email">
+              John Doe
+            </span>
+            &lt;email address hidden&gt;
+          </tal:anonymous>
+        </strong>
+        <span
             tal:attributes="title rev_no/revision/revision_date/fmt:datetime"
             tal:content="rev_no/revision/revision_date/fmt:displaydate"
             >2005-10-05 14:34:22 WST</span>

@@ -45,7 +45,7 @@ vocabulary registry.
     >>> vocabulary_registry = getVocabularyRegistry()
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
     >>> product_vocabulary.displayname
-    'Select a Product'
+    'Select a project'
 
 
 Enumerable Vocabularies
@@ -714,7 +714,7 @@ The list of selectable projects. The results are ordered by displayname.
 
     >>> project_vocabulary = vocabulary_registry.get(None, "Project")
     >>> project_vocabulary.displayname
-    'Select a Project'
+    'Select a project group'
 
     >>> [p.title for p in project_vocabulary.search('mozilla')]
     [u'The Mozilla Project']
@@ -747,7 +747,7 @@ The list of selectable products. Results are ordered by displayname.
 
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
     >>> product_vocabulary.displayname
-    'Select a Product'
+    'Select a project'
 
     >>> list(product_vocabulary.search(None))
     []
@@ -813,10 +813,10 @@ Searching for None returns an empty list.
     >>> list(vocab.search(None))
     []
 
-Searching for 'team' will return an empty list, because teams are not
-part of this vocabulary.
+Searching for 'Launchpad Administrators' will return an empty list, because
+teams are not part of this vocabulary.
 
-    >>> list(vocab.search('team'))
+    >>> [item.name for item in list(vocab.search('Launchpad Administrators'))]
     []
 
 A search using part of the email address of a team will also return an
@@ -921,14 +921,14 @@ Almost all teams have the word 'team' as part of their names, so a search
 for 'team' should give us some of them.
 
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team', u'ubuntu-team']
+    [u'name18', u'name19', u'name20', u'name21', u'no-team-memberships', u'simple-team', u'testing-spanish-team', u'ubuntu-team']
 
 A search for 'support' will give us only the persons which have support
 as part of their name or displayname, or the beginning of
 one of its email addresses.
 
     >>> sorted(person.name for person in vocab.search('support'))
-    [u'support-tracker-janitor', u'ubuntu-team']
+    [u'ubuntu-team']
 
 Dave hasn't validated his email address; he's not a valid Person.
 
@@ -963,7 +963,7 @@ Almost all teams have the word 'team' as part of their names, so a
 search for 'team' should give us some of them:
 
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team', u'ubuntu-team']
+    [u'name18', u'name19', u'name20', u'name21', u'no-team-memberships', u'simple-team', u'testing-spanish-team', u'ubuntu-team']
 
 ValidTeamMember
 ---------------
