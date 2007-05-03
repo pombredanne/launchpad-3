@@ -1,3 +1,4 @@
+
 <tr>
   <td tal:content="structure context/image:icon" />
   <td><a tal:attributes="href context/fmt:url"

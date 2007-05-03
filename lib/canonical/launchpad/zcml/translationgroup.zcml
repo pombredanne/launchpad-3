@@ -46,6 +46,10 @@
             name="+portlet-relateds"
             template="../templates/translationgroup-portlet-relateds.pt"
             />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/translationgroup-portlet-details.pt"
+            />
     </browser:pages>
 
     <browser:page
@@ -76,6 +80,14 @@
         template="../templates/translationgroup-appoint.pt"
         />
 
+    <browser:page
+        name="+reassign"
+        for="canonical.launchpad.interfaces.ITranslationGroup"
+        facet="translations"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.TranslationGroupReassignmentView"
+        template="../templates/object-reassignment.pt"
+        />
 
     <!-- TranslationGroupSet -->
     <securedutility

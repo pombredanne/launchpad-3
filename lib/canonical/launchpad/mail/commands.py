@@ -553,7 +553,7 @@ class AffectsEmailCommand(EmailCommand):
                 "A product series can't have a source package.")
             product = release.product
             general_target = product
-        general_task = self.getBugTask(bug, general_target)
+        general_task = bug.getBugTask(general_target)
         if general_task is None:
             # A release task has to have a corresponding
             # distribution/product task.
@@ -572,10 +572,10 @@ class AffectsEmailCommand(EmailCommand):
 
         if nomination.isApproved():
             if sourcepackagename:
-                return self.getBugTask(
-                    bug, release.getSourcePackage(sourcepackagename))
+                return bug.getBugTask(
+                    release.getSourcePackage(sourcepackagename))
             else:
-                return self.getBugTask(bug, release)
+                return bug.getBugTask(release)
         else:
             # We can't return a nomination, so return the
             # distribution/product bugtask instead.

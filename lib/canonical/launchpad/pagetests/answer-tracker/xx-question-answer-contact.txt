@@ -111,3 +111,15 @@ question.
         <a href=".../~name12">Sample Person</a>
       </li>
     </ul>
+
+== Product Answer Contacts ==
+
+The 'Set answer contact' action is also available on products:
+
+    >>> browser.open('http://answers.launchpad.dev/firefox')
+    >>> browser.getLink('Set answer contact').click()
+    >>> print browser.title
+    Answer contact for Mozilla Firefox
+    >>> print browser.url
+    http://answers.launchpad.dev/firefox/+answer-contact
+

@@ -55,6 +55,7 @@ from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
     stepthrough, stepto)
+from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -104,6 +105,7 @@ class SpecificationContextMenu(ContextMenu):
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'linkbranch',
+             'offermentoring', 'retractmentoring',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
              'retarget']
@@ -155,6 +157,21 @@ class SpecificationContextMenu(ContextMenu):
     def status(self):
         text = 'Change status'
         return Link('+status', text, icon='edit')
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def offermentoring(self):
+        text = 'Offer mentorship'
+        user = getUtility(ILaunchBag).user
+        enabled = self.context.canMentor(user)
+        return Link('+mentor', text, icon='add', enabled=enabled)
+
+    def retractmentoring(self):
+        text = 'Retract mentorship'
+        user = getUtility(ILaunchBag).user
+        enabled = (self.context.isMentor(user) and
+                   not self.context.is_complete and
+                   user)
+        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def subscribeanother(self):
         text = 'Subscribe someone else'
@@ -219,7 +236,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+linkbranch', text, icon='add')
 
 
-class SpecificationView(LaunchpadView):
+class SpecificationView(LaunchpadView, CanBeMentoredView):
 
     __used_for__ = ISpecification
 
@@ -917,7 +934,7 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
 class SpecificationSHP(StructuralHeaderPresentation):
 
     def getIntroHeading(self):
-        return "Blueprint in %s" % cgi.escape(self.context.target.title)
+        return "Blueprint for %s" % cgi.escape(self.context.target.title)
 
     def getMainHeading(self):
         return self.context.title

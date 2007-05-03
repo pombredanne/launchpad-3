@@ -44,14 +44,16 @@ from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     urlappend)
 from canonical.lp.dbschema import BugTaskStatus
-from canonical.widgets.bug import BugTagsWidget, FileBugTargetWidget
-
+from canonical.widgets.bug import BugTagsWidget
+from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 class FileBugData:
     """Extra data to be added to the bug."""
 
     def __init__(self):
         self.initial_summary = None
+        self.initial_summary = None
+        self.initial_tags = []
         self.extra_description = None
         self.comments = []
         self.attachments = []
@@ -60,6 +62,7 @@ class FileBugData:
         """Set the extra file bug data from a MIME multipart message.
 
             * The Subject header is the initial bug summary.
+            * The Tags header specifies the initial bug tags.
             * The first inline part will be added to the description.
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
@@ -67,6 +70,8 @@ class FileBugData:
         mime_msg = email.message_from_string(raw_mime_msg)
         if mime_msg.is_multipart():
             self.initial_summary = mime_msg.get('Subject')
+            tags = mime_msg.get('Tags', '')
+            self.initial_tags = tags.lower().split()
             for part in mime_msg.get_payload():
                 disposition_header = part.get('Content-Disposition', 'inline')
                 # Get the type, excluding any parameters.
@@ -109,7 +114,6 @@ class FileBugViewBase(LaunchpadFormView):
 
     extra_data_token = None
     advanced_form = False
-    can_decide_security_contact = True
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -122,6 +126,9 @@ class FileBugViewBase(LaunchpadFormView):
             if self.extra_data.initial_summary:
                 self.widgets['title'].setRenderedValue(
                     self.extra_data.initial_summary)
+            if self.extra_data.initial_tags:
+                self.widgets['tags'].setRenderedValue(
+                    self.extra_data.initial_tags)
             # XXX: We should include more details of what will be added
             #      to the bug report.
             #      -- Bjorn Tillenius, 2006-01-15
@@ -225,6 +232,11 @@ class FileBugViewBase(LaunchpadFormView):
     def getSecurityContext(self):
         """Return the context used for security bugs."""
         return self.getMainContext()
+
+    @property
+    def can_decide_security_contact(self):
+        """Will we be able to discern a security contact for this?"""
+        return (self.getSecurityContext() is not None)
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
@@ -464,10 +476,11 @@ class FileBugGuidedView(FileBugViewBase):
                 " product the user selected.")
             search_context = self.widgets['product'].getInputValue()
         elif IMaloneApplication.providedBy(search_context):
-            assert self.widgets['bugtarget'].hasValidInput(), (
-                "This method should be called only when we know which"
-                " distribution the user selected.")
-            search_context = self.widgets['bugtarget'].getInputValue()
+            if self.widgets['bugtarget'].hasValidInput():
+                search_context = self.widgets['bugtarget'].getInputValue()
+            else:
+                search_context = None
+        
         return search_context
 
     @cachedproperty
@@ -478,7 +491,9 @@ class FileBugGuidedView(FileBugViewBase):
         if not title:
             return []
         search_context = self.getSearchContext()
-        if IProduct.providedBy(search_context):
+        if search_context is None:
+            return []
+        elif IProduct.providedBy(search_context):
             context_params = {'product': search_context}
         elif IDistribution.providedBy(search_context):
             context_params = {'distribution': search_context}
@@ -519,8 +534,11 @@ class FileBugGuidedView(FileBugViewBase):
     def most_common_bugs(self):
         """Return a list of the most duplicated bugs."""
         search_context = self.getSearchContext()
-        return search_context.getMostCommonBugs(
-            self.user, limit=self._MATCHING_BUGS_LIMIT)
+        if search_context is None:
+            return []
+        else:
+            return search_context.getMostCommonBugs(
+                self.user, limit=self._MATCHING_BUGS_LIMIT)
 
     @property
     def found_possible_duplicates(self):
@@ -564,7 +582,6 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     # Make inheriting the base class' actions work.
     actions = FileBugGuidedView.actions
     schema = IProjectBugAddForm
-    can_decide_security_contact = False
 
     def _getSelectedProduct(self):
         """Return the product that's selected."""
@@ -597,7 +614,7 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
 class FrontPageFileBugGuidedView(FileBugGuidedView):
     """Browser view class for the top-level +filebug page."""
     schema = IFrontPageBugAddForm
-    custom_widget('bugtarget', FileBugTargetWidget)
+    custom_widget('bugtarget', LaunchpadTargetWidget)
 
     # Make inheriting the base class' actions work.
     actions = FileBugGuidedView.actions
@@ -638,7 +655,7 @@ class FrontPageFileBugGuidedView(FileBugGuidedView):
 class FrontPageFileBugAdvancedView(FileBugAdvancedView):
     """Browser view class for the top-level +filebug-advanced page."""
     schema = IFrontPageBugAddForm
-    custom_widget('bugtarget', FileBugTargetWidget)
+    custom_widget('bugtarget', LaunchpadTargetWidget)
 
     # Make inheriting the base class' actions work.
     actions = FileBugAdvancedView.actions

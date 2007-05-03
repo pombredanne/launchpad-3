@@ -25,6 +25,7 @@ from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
     SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
@@ -218,6 +219,27 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # listified, why not spare the trouble of regenerating?
         ret = DistroRelease.selectBy(distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
+
+    @property
+    def mentoring_offers(self):
+        """See IDistribution"""
+        via_specs = MentoringOffer.select('''
+            Specification.distribution = %s AND
+            Specification.id = MentoringOffer.specification
+            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ + Specification.completeness_clause + ")",
+            clauseTables=['Specification'],
+            distinct=True)
+        via_bugs = MentoringOffer.select('''
+            BugTask.distribution = %s AND
+            BugTask.bug = MentoringOffer.bug AND
+            BugTask.bug = Bug.id AND
+            Bug.private IS FALSE
+            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ + BugTask.completeness_clause +")",
+            clauseTables=['BugTask', 'Bug'],
+            distinct=True)
+        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     @property
     def bugtargetname(self):
@@ -530,10 +552,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IQuestionTarget."""
         if person not in self.answer_contacts:
             return False
-        answer_contact_entry = AnswerContact.selectOne(
+        answer_contact = AnswerContact.selectOne(
             "distribution = %d AND person = %d"
             " AND sourcepackagename IS NULL" % (self.id, person.id))
-        answer_contact_entry.destroySelf()
+        answer_contact.destroySelf()
         return True
 
     @property

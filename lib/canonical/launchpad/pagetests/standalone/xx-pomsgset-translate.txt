@@ -163,8 +163,12 @@ First what we represent in the form when there is no translation:
 And also, we don't get anyone as the Last translator because there is no
 translation at all ;-)
 
-  >>> 'Translated by:' in browser.contents
-  False
+  >>> find_tag_by_id(browser.contents, 'translated_and_reviewed_by') is None
+  True
+  >>> find_tag_by_id(browser.contents, 'translated_by') is None
+  True
+  >>> find_tag_by_id(browser.contents, 'reviewed_by') is None
+  True
 
 Let's submit an invalid value for this message #13.
 
@@ -239,15 +243,32 @@ Check that the message #13 has the new value we submitted.
   ...     browser.contents, 'msgset_142_es_translation_0').renderContents()
   foo <code>%s</code>
 
-And now, we get someone as the Translator and also, we have a reviewer (in
-this case, it's the same):
+And now, we get the translator and reviewer, who happen to be the same in
+this instance.
 
-  >>> print browser.contents
-  <!DOCTYPE...
-  Translated by:
-  ...Carlos...
-  Reviewed by:
-  ...Carlos...
+  >>> find_tag_by_id(browser.contents, 'translated_and_reviewed_by') is None
+  False
+  >>> find_tag_by_id(browser.contents, 'translated_by') is None
+  True
+  >>> find_tag_by_id(browser.contents, 'reviewed_by') is None
+  True
+
+In some other cases where translator and reviewer are different, they are
+both shown separately:
+
+  >>> browser.open(
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
+  ...     'man/es/1/+translate')
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/man/es/1/+translate'
+  >>> find_tag_by_id(browser.contents, 'translated_and_reviewed_by') is None
+  True
+  >>> find_tag_by_id(browser.contents, 'translated_by') is None
+  False
+  >>> find_tag_by_id(browser.contents, 'reviewed_by') is None
+  False
+
+
 
 Now, we will check suggestions in this form.
 
