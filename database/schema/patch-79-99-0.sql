@@ -4,14 +4,14 @@ CREATE TABLE BranchVisibilityPolicy
 (
   id SERIAL PRIMARY KEY,
   pillar INT REFERENCES PillarName NOT NULL,
-  visibility_team INT REFERENCES Person,
+  team INT REFERENCES Person,
   policy INT NOT NULL DEFAULT 1,
   UNIQUE(pillar, visibility_team)
 );
 
 COMMENT ON TABLE BranchVisibilityPolicy IS 'Defines the policy for the initial visibility of branches.';
 COMMENT ON COLUMN BranchVisibilityPolicy.pillar IS 'Refers to the pillar that has the branch privacy.';
-COMMENT ON COLUMN BranchVisibilityPolicy.visibility_team IS 'Refers to the team that the policy applies to.  NULL is used to indicate ALL people, as there is no team defined for *everybody*.';
+COMMENT ON COLUMN BranchVisibilityPolicy.team IS 'Refers to the team that the policy applies to.  NULL is used to indicate ALL people, as there is no team defined for *everybody*.';
 COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of PUBLIC or PRIVATE.  PUBLIC is the default value.';
 
 
