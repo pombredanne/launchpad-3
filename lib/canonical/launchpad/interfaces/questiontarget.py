@@ -20,7 +20,7 @@ from zope.schema import Bool, Choice, List, Set, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.question import (
+from canonical.launchpad.interfaces.questioncollection import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.lp.dbschema import QuestionSort
 

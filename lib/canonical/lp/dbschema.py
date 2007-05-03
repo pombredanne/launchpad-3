@@ -3467,6 +3467,18 @@ class ShipItDistroRelease(DBSchema):
         The Edgy Eft release.
         """)
 
+    FEISTY = Item(4, """
+        7.04 (Feisty Fawn)
+
+        The Feisty Fawn release.
+        """)
+
+    GUTSY = Item(5, """
+        7.10 (Gutsy Gibbon)
+
+        The Gutsy Gibbon release.
+        """)
+
 
 class TextDirection(DBSchema):
     """The base text direction for a language."""

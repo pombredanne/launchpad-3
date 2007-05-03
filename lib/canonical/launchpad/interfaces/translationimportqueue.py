@@ -31,7 +31,7 @@ class ITranslationImportQueueEntry(Interface):
         title=_("Importer"),
         required=True,
         description=_(
-            "The person that imported this file in Rosetta."),
+            "The person that imported this file in Launchpad."),
         vocabulary="ValidOwner")
 
     dateimported = Datetime(
@@ -39,7 +39,7 @@ class ITranslationImportQueueEntry(Interface):
         required=True)
 
     productseries = Choice(
-        title=_("Product Branch or Series"),
+        title=_("Release Series"),
         required=False,
         vocabulary="ProductSeries")
 

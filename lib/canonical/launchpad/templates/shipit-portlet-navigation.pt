@@ -1,12 +1,10 @@
 <div
-  class="shipitPortlet shipitPortletBody"
-  style="padding: 1em; border: 1px solid #5b4832; background-color: #f6eecc;"
+  class="shipitPortlet shipitPortletBody lesser"
+  style="padding: 0.3em; border: 1px solid #5b4832; background-color: #f6eecc;"
 >
   <ul><base href="">
     <li class="search"><a href="/requests">Search Requests</a></li>
-    <li class="add"><a href="/adminrequest">Create new Dapper Request</a></li>
-    <li class="add"><a href="/adminrequest?release=edgy">
-      Create new Edgy Request</a></li>
+    <li class="add"><a href="/adminrequest">Create new Request</a></li>
     <li class="info"><a href="/exports">Generated Exports</a></li>
     <li class="info"><a href="/reports">Generated Reports</a></li>
     <li class="info"><a href="/standardoptions">Standard Options</a></li>

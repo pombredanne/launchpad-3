@@ -230,3 +230,18 @@ class DistroReleaseSourcePackageRelease:
 
         return current
 
+    def copyTo(self, distrorelease, pocket):
+        """See IDistroReleaseSourcePackageRelease."""
+        current = self.current_published
+
+        copy = SecureSourcePackagePublishingHistory(
+            distrorelease=distrorelease,
+            pocket=pocket,
+            sourcepackagerelease=current.sourcepackagerelease,
+            component=current.component,
+            section=current.section,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            embargo=False,
+        )
+        return copy

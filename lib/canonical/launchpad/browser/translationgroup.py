@@ -9,6 +9,7 @@ __all__ = ['TranslationGroupNavigation',
            'TranslationGroupSetContextMenu',
            'TranslationGroupContextMenu',
            'TranslationGroupAddTranslatorView',
+           'TranslationGroupReassignmentView',
            'TranslationGroupSetAddView']
 
 import operator
@@ -20,10 +21,14 @@ from zope.component import getUtility
 
 from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
-    ITranslationGroup, ITranslationGroupSet, ILanguageSet,
-    IPersonSet, ILaunchBag, NotFoundError
+    ITranslationGroup, ITranslationGroupSet, ITranslator, ITranslatorSet,
+    ILanguageSet, IPersonSet, ILaunchBag, NotFoundError
     )
-from canonical.launchpad.webapp import GetitemNavigation
+from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.webapp import (
+    action, canonical_url, enabled_with_permission, GetitemNavigation,
+    LaunchpadFormView, Link
+    )
 
 
 class TranslationGroupNavigation(GetitemNavigation):
@@ -42,6 +47,16 @@ class TranslationGroupSetContextMenu(RosettaContextMenu):
 
 class TranslationGroupContextMenu(RosettaContextMenu):
     usedfor = ITranslationGroup
+    links = RosettaContextMenu.links + ['appoint', 'reassign']
+
+    @enabled_with_permission('launchpad.Edit')
+    def appoint(self):
+        return Link('+appoint', "Appoint translator")
+
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        return Link('+reassign', "Change owner")
+
 
 
 class TranslationGroupView:
@@ -109,18 +124,51 @@ class TranslationGroupView:
         return result
 
 
-class TranslationGroupAddTranslatorView(AddView):
+class TranslationGroupAddTranslatorView(LaunchpadFormView):
+    """View class for the "appoint a translator" page"""
 
-    __used_for__ = ITranslationGroup
+    schema = ITranslator
+    field_names = ['language', 'translator']
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self._nextURL = '.'
-        AddView.__init__(self, context, request)
+    @action("Add", name="add")
+    def add_action(self, action, data):
+        """Appoint a translator to do translations for given language.
 
-    def nextURL(self):
-        return self._nextURL
+        Create a translator who, within this group, will be responsible for
+        the selected language.  Within a translation group, a language can
+        have at most one translator.  Of course the translator may be either a
+        person or a group, however.
+        """
+        language = data.get('language')
+        translator = data.get('translator')
+        getUtility(ITranslatorSet).new(self.context, language, translator)
+
+        self.next_url = canonical_url(self.context)
+
+    def validate(self, data):
+        """Do not allow an appointment to overwrite an existing translator.
+
+        We don't allow a translator to be appointed for a language that
+        already has a translator within that group.  If we did, it would be
+        too easy accidentally to replace a translator, e.g. by picking the
+        wrong language in this form.
+        """
+        language = data.get('language')
+        if self.context.query_translator(language):
+            self.setFieldError('language',
+                "There is already a translator for this language")
+
+
+class TranslationGroupReassignmentView(ObjectReassignmentView):
+    """View class for changing translation group owner."""
+
+    @property
+    def contextName(self):
+        return self.context.title or self.context.name
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class TranslationGroupSetAddView(AddView):

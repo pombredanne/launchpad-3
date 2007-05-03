@@ -33,7 +33,7 @@
     </p>
 
     <p class="informational message" tal:condition="not:request/lp:person">
-       You must log in to change the mapping from this product branch to its
+       You must log in to change the mapping from this project branch to its
        Ubuntu package.
     </p>
 

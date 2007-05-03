@@ -9,7 +9,7 @@ portlet which is available on the 'Answers' facet of the product or
 distro.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/ubuntu/+tickets')
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
     >>> portlet = soup.first('div', id='portlet-answer-contacts')
@@ -99,7 +99,7 @@ listed in the 'Also notified' list in the 'Subscribers' portlet on a
 question.
 
     >>> browser.open(
-    ...     'http://launchpad.dev/ubuntu/+ticket/7')
+    ...     'http://launchpad.dev/ubuntu/+question/7')
     >>> soup = BeautifulSoup(browser.contents)
     >>> portlet = soup.first('div', id='question-subscribers')
     >>> also_notified = portlet.first('b')
@@ -111,3 +111,15 @@ question.
         <a href=".../~name12">Sample Person</a>
       </li>
     </ul>
+
+== Product Answer Contacts ==
+
+The 'Set answer contact' action is also available on products:
+
+    >>> browser.open('http://answers.launchpad.dev/firefox')
+    >>> browser.getLink('Set answer contact').click()
+    >>> print browser.title
+    Answer contact for Mozilla Firefox
+    >>> print browser.url
+    http://answers.launchpad.dev/firefox/+answer-contact
+

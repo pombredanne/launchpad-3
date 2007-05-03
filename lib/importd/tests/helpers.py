@@ -8,17 +8,6 @@ import unittest
 from canonical.launchpad.ftests import harness
 from canonical.ftests import pgsql
 
-# Boilerplate to get getUtility working.
-from canonical.launchpad.interfaces import (
-    IBranchSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
-    IProductSeriesSet)
-from canonical.launchpad.utilities import LaunchpadCelebrities
-from canonical.launchpad.database import (
-    PersonSet, BranchSet, ProductSet, ProductSeriesSet)
-from zope.app.testing.placelesssetup import setUp as zopePlacelessSetUp
-from zope.app.testing.placelesssetup import tearDown as zopePlacelessTearDown
-from zope.app.testing import ztapi
-
 from importd import Job
 
 
@@ -98,19 +87,17 @@ class ZopelessHelper(harness.LaunchpadZopelessTestSetup):
 
 class ZopelessUtilitiesHelper(object):
 
+    # XXX: This helper used to call zopePlacelessSetup, and set up a few
+    # IFooSet utilities. Since we now call execute_zcml_for_scripts from the
+    # importd test runner, this is no longer needed, and actually prevented
+    # correct operation. Now, this whole class should probably be factored
+    # away. -- DavidAllouche 2007-04-27
+
     def setUp(self):
         self.zopeless_helper = ZopelessHelper()
         self.zopeless_helper.setUp()
-        # Boilerplate to get getUtility working
-        zopePlacelessSetUp()
-        ztapi.provideUtility(ILaunchpadCelebrities, LaunchpadCelebrities())
-        ztapi.provideUtility(IPersonSet, PersonSet())
-        ztapi.provideUtility(IBranchSet, BranchSet())
-        ztapi.provideUtility(IProductSet, ProductSet())
-        ztapi.provideUtility(IProductSeriesSet, ProductSeriesSet())
 
     def tearDown(self):
-        zopePlacelessTearDown()
         self.zopeless_helper.tearDown()
 
 

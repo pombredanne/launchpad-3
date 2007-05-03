@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Browser views for products."""
 
@@ -56,7 +56,7 @@ from canonical.launchpad.interfaces import (
     IProductSet, IProductSeries, IProject, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
-    IPillarNameSet, IDistribution, IHasIcon)
+    IPillarNameSet, IDistribution, IHasIcon, UnexpectedFormData)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
@@ -81,8 +81,9 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
     LaunchpadFormView, Link, Navigation, sorted_version_numbers,
     StandardLaunchpadFacets, stepto, stepthrough, structured)
-from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
+from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -189,7 +190,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     def translations(self):
         text = 'Translations'
-        summary = 'Translations of %s in Rosetta' % self.context.displayname
+        summary = 'Translations of %s in Launchpad' % self.context.displayname
         return Link('', text, summary)
 
     def calendar(self):
@@ -206,8 +207,8 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'distributions', 'packages', 'branch_add', 'series_add',
-        'launchpad_usage', 'administer', 'rdf']
+        'mentorship', 'distributions', 'packages', 'branch_add',
+        'series_add', 'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -237,6 +238,10 @@ class ProductOverviewMenu(ApplicationMenu):
     def distributions(self):
         text = 'Packaging information'
         return Link('+distributions', text, icon='info')
+
+    def mentorship(self):
+        text = 'Mentoring available'
+        return Link('+mentoring', text, icon='info')
 
     def packages(self):
         text = 'Show distribution packages'
@@ -299,7 +304,7 @@ class ProductBranchesMenu(ApplicationMenu):
 
     def branch_add(self):
         text = 'Register branch'
-        summary = 'Register a new Bazaar branch for this product'
+        summary = 'Register a new Bazaar branch for this project'
         return Link('+addbranch', text, icon='add')
 
 
@@ -402,13 +407,13 @@ class ProductSetContextMenu(ContextMenu):
     usedfor = IProductSet
 
     links = ['products', 'distributions', 'people', 'meetings',
-             'register', 'listall']
+             'all', 'register', ]
 
     def register(self):
         text = 'Register a project'
         return Link('+new', text, icon='add')
 
-    def listall(self):
+    def all(self):
         text = 'List all projects'
         return Link('+all', text, icon='list')
 
@@ -467,7 +472,7 @@ class ProductView:
                 object_translatable = {
                     'title': productseries.title,
                     'potemplates': productseries.currentpotemplates,
-                    'base_url': '/products/%s/%s' %(
+                    'base_url': '/projects/%s/%s' %(
                         self.context.name,
                         productseries.name)
                     }
@@ -592,7 +597,7 @@ class ProductChangeTranslatorsView(ProductEditView):
 
 
 class ProductReviewView(ProductEditView):
-    label = "Administer product details"
+    label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "reviewed"]
 
 
@@ -768,6 +773,12 @@ class ProductSetView(LaunchpadView):
         self.malone = form.get('malone')
         self.bazaar = form.get('bazaar')
         self.search_string = form.get('text')
+        # XXX flacoste 2007/04/27 Replace by use of getOne() once
+        # the API defined in bug #110633 is implemented.
+        if (self.search_string is not None and
+            not isinstance(self.search_string, basestring)):
+            raise UnexpectedFormData(
+                'text parameter should be a string: %s' % self.search_string)
         self.results = None
 
         self.searchrequested = False
@@ -794,6 +805,8 @@ class ProductSetView(LaunchpadView):
                 self.request.response.redirect(url)
                 return
 
+    def all_batched(self):
+        return BatchNavigator(self.context.all_active, self.request)
 
     @cachedproperty
     def matches(self):
@@ -831,7 +844,7 @@ class ProductAddView(LaunchpadFormView):
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
 
-    label = "Register an upstream open source product"
+    label = "Register an upstream open source project"
     product = None
 
     def isVCSImport(self):
@@ -914,7 +927,7 @@ class ProductBugContactEditView(SQLObjectEditView):
             self.request.response.addNotification(
                 "Successfully cleared the bug contact. There is no longer a "
                 "contact address that will receive all bugmail for this "
-                "product. You can set the bug contact again at any time.")
+                "project. You can set the bug contact again at any time.")
 
         self.request.response.redirect(canonical_url(product))
 
@@ -974,7 +987,7 @@ class ProductBranchesView(BranchListingView):
                 '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
                 'for more information about how you can use the Bazaar '
                 'revision control system to improve community participation '
-                'in this product.')
+                'in this project.')
         return message % self.context.displayname
 
 
