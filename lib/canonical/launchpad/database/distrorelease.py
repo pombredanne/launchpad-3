@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 import logging
+import psycopg
 import random
 import re
 import time
@@ -24,6 +25,7 @@ from sqlobject import (
 
 from canonical.cachedproperty import cachedproperty
 
+from canonical.database import postgresql
 from canonical.database.sqlbase import (quote_like, quote, quoteIdentifier,
     SQLBase, sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -1230,6 +1232,24 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             FROM SectionSelection AS ss WHERE ss.distrorelease = %s
             ''' % sqlvalues(self.id, self.parentrelease.id))
 
+
+    def _holding_table_unquoted(self, tablename):
+        """Name for a holding table, but without quotes.  Use with care."""
+        return "%s_holding_%s" % (tablename, self.name)
+
+    def _holding_table(self, tablename):
+        """Name for a holding table to hold data being copied in tablename.
+
+        This is used to copy translation data from the parent distrorelease to
+        self.  To reduce locking on the database, applicable data is first
+        copied to these holding tables, then modified there, and finally moved
+        back into the original table "tablename."
+
+        Return value is properly quoted for use as an SQL identifier.
+        """
+        return str(quoteIdentifier(self._holding_table_unquoted(tablename)))
+
+
     def _extract_to_holding_table(self,
             cur,
             logger,
@@ -1247,7 +1267,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         A new table is created and filled with any records from orgtable that
         match filtering criteria passed in whereclause.  The new table's name
-        is constructed as self._holding_table(orgtable).
+        is constructed as self._holding_table(orgtable).  If a table of that
+        name already existed, it is dropped first.
 
         The new table gets an additional new_id column with identifiers in the
         seqid sequence; the name seqid defaults to the original table name in
@@ -1275,6 +1296,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             idseq = "%s_id_seq" % orgtable.lower()
 
         holding = self._holding_table(orgtable)
+
+        # Drop table if it already existed.  On postgres, this syntax requires
+        # a server version of at least 8.2.
+        cur.execute("DROP TABLE IF EXISTS %s" % holding)
 
         logger.info('Extracting from %s into %s...' % (orgtable,holding))
 
@@ -1332,131 +1357,60 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         logger.info('...Extracted in %f seconds' % (time.time()-starttime))
 
 
-    def _holding_table(self, tablename):
-        """Name for a holding table to hold data being copied in tablename.
-
-        This is used to copy translation data from the parent distrorelease to
-        self.  To reduce locking on the database, applicable data is first
-        copied to these holding tables, then modified there, and finally moved
-        back into the original table "tablename."
-
-        Return value is properly quoted for use as an SQL identifier.
+    def _recoverable_holding_tables(self, cur):
+        """Do we have holding tables with recoverable data from previous run?
         """
-        return str(quoteIdentifier("%s_holding_%s" % (tablename, self.name)))
+        # The tables named here are the first and last tables in the list that
+        # _pour_holding_tables() goes through.  Keep it that way, or this will
+        # return incorrect information!
+
+        # If there are any holding tables to be poured into their source
+        # tables, there must at least be one for the last table that
+        # _pour_holding_tables() processes.
+        if not postgresql.haveTable(cur,
+                self._holding_table_unquoted('POSubmission')):
+            return False
+
+        # If the first table in our list also still exists, and it still has
+        # its new_id column, then the pouring process had not begun yet.
+        # Assume the data was not ready for pouring.
+        if postgresql.tableHasColumn(cur,
+                self._holding_table_unquoted('POTemplate'),
+                'new_id'):
+            return False
 
 
-    def _copy_active_translations_to_new_release(self, cur, logger, ztm):
-        """We're a new release; inherit translations from parent.
-
-        Translation data for the new release (self) is first copied into
-        "holding tables" with names like "POTemplate_tmp_feisty_271" and
-        processed there.  Then, at the end of the procedure, these tables are
-        all copied back to their originals.
-
-        If this procedure fails, it may leave holding tables behind.  This was
-        done deliberately to leave some forensics information for failures,
-        and also to allow admins to see what data has and has not been copied.
-
-        The holding tables have names like "POTemplate_holding_feisty" (for
-        source table POTemplate and release feisty, in this case).
-
-        If a garbage holding table left behind by an abortive run has a column
-        called new_id at the end, it contains unfinished data and may as well
-        be dropped.  If it does not have that column, the holding table was
-        already in the process of being copied back to its origin table.  In
-        that case the sensible thing to do is probably to continue copying it.
+    def _pour_holding_tables(self, cur, logger, ztm):
+        """Attempt to pour translation holding tables back into source tables.
         """
+        # Source tables that this method adds to, from their respective
+        # holding tables.
+        # Ordering of this list is significant for two reasons:
+        # 1. To maintain referential integrity while pouring--we can't insert
+        #    a row into a source table if it has a foreign key matched up with
+        #    another row in another table that hasn't been poured yet.
+        # 2. The _recoverable_holding_tables() method must know what the first
+        #    and last tables in this list are, so it can correctly detect the
+        #    state of any previous pouring run that may have been interrupted.
+        tables = [
+            'POTemplate', 'POTMsgSet', 'POMsgIDSighting', 'POFile',
+            'POMsgSet', 'POSubmission'
+        ]
 
-        # This method was extracted as one of two cases from a huge
-        # _copy_active_translations() method.  Because it only deals with the
-        # case where "self" is a new release without any existing translations
-        # attached, it can afford to be much more cavalier with ACID
-        # considerations than the other case can.  Still, it may be possible
-        # in the future to optimize _copy_active_translations_as_update() (the
-        # other of the two cases) using a similar trick.
-
-        # XXX: JeroenVermeulen 2007-04-30, Achieve idempotency!  Find ways
-        # to recognize that the copy algorithm was interrupted, and either
-        # "roll back" and retry, or "roll forward" depending.
-
-        # A unique suffix we will use for names of holding tables.  We don't
-        # use proper SQL holding tables because those will have disappeared
-        # whenever admins want to analyze a failure, figure out how far this
-        # function got in copying data, or resume after failure.
-
-        # XXX: JeroenVermeulen 2007-05-02, Write function to compose entire
-        # table name, then quote it as an SQL identifier.  No more manual
-        # concatenation.
-        holding_tables = []
-
-        # Copy relevant POTemplates from existing release into a holding
-        # table, complete with their original id fields.
-        self._extract_to_holding_table(cur,
-            logger,
-            'POTemplate',
-            [],
-            'distrorelease=%s AND iscurrent' % quote(self.parentrelease))
-        holding_tables.append('POTemplate')
-
-        # Now that we have the data "in private," where nobody else can see
-        # it, we're free to play with it.  No risk of locking other processes
-        # out of the database.
-        # Update release names in the holding table (right now they all bear
-        # our parent's name) to our own name, and set creation dates to now.
-        cur.execute('''
-            UPDATE %s
-            SET
-                distrorelease = %s,
-                datecreated =
-                    timezone('UTC'::text,
-                        ('now'::text)::timestamp(6) with time zone)
-        ''' % (self._holding_table('POTemplate'), quote(self)))
-
-
-        # Copy each POTMsgSet whose template we copied, and replace each
-        # potemplate reference with a reference to our copy of the original
-        # POTMsgSet's potemplate.
-        self._extract_to_holding_table(cur,
-            logger,
-            'POTMsgSet',
-            ['POTemplate'],
-            'POTMsgSet.sequence > 0')
-        holding_tables.append('POTMsgSet')
-
-        # Copy POMsgIDSightings, substituting their potmsgset foreign
-        # keys with references to our own, copied POTMsgSets
-        self._extract_to_holding_table(cur,
-            logger,
-            'POMsgIDSighting',
-            ['POTMsgSet'])
-        holding_tables.append('POMsgIDSighting')
-
-        # Copy POFiles, making them refer to our copied POTemplates
-        self._extract_to_holding_table(cur,
-            logger,
-            'POFile',
-            ['POTemplate'])
-        holding_tables.append('POFile')
-
-        # Same for POMsgSet, but a bit more complicated since it refers to
-        # both POFile and POTMsgSet.
-        self._extract_to_holding_table(cur,
-            logger,
-            'POMsgSet',
-            ['POFile', 'POTMsgSet'])
-        holding_tables.append('POMsgSet')
-
-        # And for POSubmission
-        self._extract_to_holding_table(cur,
-            logger,
-            'POSubmission',
-            ['POMsgSet'],
-            'active OR published')
-        holding_tables.append('POSubmission')
-
-        # Now pour the holding tables back into the originals
-        for table in holding_tables:
+        # Main loop: for each of the source tables involved in copying
+        # translations from our parent distrorelease, see if there's a
+        # matching holding table; prepare it, pour it back into the source
+        # table, and drop.
+        for table in tables:
             holding = self._holding_table(table)
+            rawholding = self._holding_table_unquoted(table)
+
+            if not postgresql.haveTable(cur, rawholding):
+                # We know we're in a suitable state for pouring.  If this
+                # table does not exist, it must be because it's been poured
+                # out completely and dropped in an earlier instance of this
+                # loop, before the failure we're apparently recovering from.
+                continue
 
             # XXX: JeroenVermeulen 2007-05-02, Lock holding table maybe, to
             # protect against accidental concurrent runs?
@@ -1464,16 +1418,21 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
             tablestarttime = time.time()
 
-            # Update ids in holding table from originals to copies
-            cur.execute("UPDATE %s SET id=new_id" % holding)
-            # Restore table to original schema
-            cur.execute("ALTER TABLE %s DROP COLUMN new_id" % holding)
+            if postgresql.tableHasColumn(cur, rawholding, 'new_id'):
+                # Update ids in holding table from originals to copies.
+                # (If this is where we got interrupted by a failure in a
+                # previous run, no harm in doing it again)
+                cur.execute("UPDATE %s SET id=new_id" % holding)
+                # Restore table to original schema
+                cur.execute("ALTER TABLE %s DROP COLUMN new_id" % holding)
+                logger.info("...rearranged ids in %f seconds..." %
+                    (time.time()-tablestarttime))
 
-            # Now move holding table's data into its source table.  This is
-            # where we first start writing to tables that other clients will
-            # be reading, so locks are a concern.  Break the writes up in
+            # Now pour holding table's data into its source table.  This is
+            # where we start writing to tables that other clients will be
+            # reading, so row locks are a concern.  Break the writes up in
             # batches of a few thousand rows.  The goal is to have these
-            # transactions running no longer than five seconds or so.
+            # transactions running no longer than five seconds or so each.
 
             # We batch simply by breaking the range of ids in our table down
             # into fixed-size intervals.  Some of those fixed-size intervals
@@ -1520,6 +1479,107 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             logger.info(
                 "Pouring %s took %f seconds." %
                     (holding,time.time()-tablestarttime))
+
+        return True
+
+
+
+    def _copy_active_translations_to_new_release(self, cur, logger, ztm):
+        """We're a new release; inherit translations from parent.
+
+        Translation data for the new release (self) is first copied into
+        "holding tables" with names like "POTemplate_tmp_feisty_271" and
+        processed there.  Then, at the end of the procedure, these tables are
+        all copied back to their originals.
+
+        If this procedure fails, it may leave holding tables behind.  This was
+        done deliberately to leave some forensics information for failures,
+        and also to allow admins to see what data has and has not been copied.
+
+        The holding tables have names like "POTemplate_holding_feisty" (for
+        source table POTemplate and release feisty, in this case).
+
+        If a holding table left behind by an abortive run has a column called
+        new_id at the end, it contains unfinished data and may as well be
+        dropped.  If it does not have that column, the holding table was
+        already in the process of being copied back to its origin table.  In
+        that case the sensible thing to do is probably to continue copying it.
+        """
+
+        # This method was extracted as one of two cases from a huge
+        # _copy_active_translations() method.  Because it only deals with the
+        # case where "self" is a new release without any existing translations
+        # attached, it can afford to be much more cavalier with ACID
+        # considerations than the other case can.  Still, it may be possible
+        # in the future to optimize _copy_active_translations_as_update() (the
+        # other of the two cases) using a similar trick.
+
+        # A unique suffix we will use for names of holding tables.  We don't
+        # use proper SQL holding tables because those will have disappeared
+        # whenever admins want to analyze a failure, figure out how far this
+        # function got in copying data, or resume after failure.
+
+        # Copy relevant POTemplates from existing release into a holding
+        # table, complete with their original id fields.
+        self._extract_to_holding_table(cur,
+            logger,
+            'POTemplate',
+            [],
+            'distrorelease=%s AND iscurrent' % quote(self.parentrelease))
+
+        # Now that we have the data "in private," where nobody else can see
+        # it, we're free to play with it.  No risk of locking other processes
+        # out of the database.
+        # Update release names in the holding table (right now they all bear
+        # our parent's name) to our own name, and set creation dates to now.
+        cur.execute('''
+            UPDATE %s
+            SET
+                distrorelease = %s,
+                datecreated =
+                    timezone('UTC'::text,
+                        ('now'::text)::timestamp(6) with time zone)
+        ''' % (self._holding_table('POTemplate'), quote(self)))
+
+
+        # Copy each POTMsgSet whose template we copied, and replace each
+        # potemplate reference with a reference to our copy of the original
+        # POTMsgSet's potemplate.
+        self._extract_to_holding_table(cur,
+            logger,
+            'POTMsgSet',
+            ['POTemplate'],
+            'POTMsgSet.sequence > 0')
+
+        # Copy POMsgIDSightings, substituting their potmsgset foreign
+        # keys with references to our own, copied POTMsgSets
+        self._extract_to_holding_table(cur,
+            logger,
+            'POMsgIDSighting',
+            ['POTMsgSet'])
+
+        # Copy POFiles, making them refer to our copied POTemplates
+        self._extract_to_holding_table(cur,
+            logger,
+            'POFile',
+            ['POTemplate'])
+
+        # Same for POMsgSet, but a bit more complicated since it refers to
+        # both POFile and POTMsgSet.
+        self._extract_to_holding_table(cur,
+            logger,
+            'POMsgSet',
+            ['POFile', 'POTMsgSet'])
+
+        # And for POSubmission
+        self._extract_to_holding_table(cur,
+            logger,
+            'POSubmission',
+            ['POMsgSet'],
+            'active OR published')
+
+        # Now pour the holding tables back into the originals
+        self._pour_holding_tables(cur, logger, ztm)
 
 
     def _copy_active_translations_as_update(self, cur, logger):
@@ -1882,7 +1942,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         logger = logging.getLogger('initialise')
 
-        if len(self.potemplates) == 0 :
+        if ( len(self.potemplates) == 0 and
+                not self._recoverable_holding_tables(cur) ):
             # We have no potemplates at all, so we need to do a full copy.
             self._copy_active_translations_to_new_release(cur, logger, ztm)
         else:
