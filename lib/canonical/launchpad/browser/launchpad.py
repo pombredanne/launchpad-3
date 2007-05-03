@@ -69,8 +69,10 @@ from canonical.launchpad.interfaces import (
     ILaunchBag,
     ILaunchpadCelebrities,
     ILaunchpadRoot,
+    ILaunchpadStatisticSet,
     ILoginTokenSet,
     IMaloneApplication,
+    IMentoringOfferSet,
     IPersonSet,
     IPillarNameSet,
     IPOTemplateNameSet,
@@ -323,7 +325,7 @@ class RosettaContextMenu(ContextMenu):
     links = ['about', 'preferences', 'import_queue', 'translation_groups']
 
     def about(self):
-        text = 'About Rosetta'
+        text = 'About Launchpad Translations'
         rosetta_application = getUtility(IRosettaApplication)
         url = '/'.join([canonical_url(rosetta_application), '+about'])
         return Link(url, text)
@@ -432,26 +434,28 @@ class LaunchpadRootNavigation(Navigation):
         return self.redirectSubTree(target_url + 'questions', status=301)
 
     stepto_utilities = {
-        'people': IPersonSet,
-        'distros': IDistributionSet,
-        'sourcepackagenames': ISourcePackageNameSet,
         'binarypackagenames': IBinaryPackageNameSet,
+        'bounties': IBountySet,
+        'bugs': IMaloneApplication,
+        '+builds': IBuilderSet,
+        '+code': IBazaarApplication,
+        'codeofconduct': ICodeOfConductSet,
+        'distros': IDistributionSet,
+        'karmaaction': IKarmaActionSet,
+        '+languages': ILanguageSet,
+        '+mentoring': IMentoringOfferSet,
+        'people': IPersonSet,
+        'potemplatenames': IPOTemplateNameSet,
         'projects': IProductSet,
         'projectgroups': IProjectSet,
-        'token': ILoginTokenSet,
-        'karmaaction': IKarmaActionSet,
-        'potemplatenames': IPOTemplateNameSet,
-        'codeofconduct': ICodeOfConductSet,
-        'bugs': IMaloneApplication,
         'registry': IRegistryApplication,
+        'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
-        'questions': IQuestionSet,
+        '+statistics': ILaunchpadStatisticSet,
+        'token': ILoginTokenSet,
         'translations': IRosettaApplication,
-        '+builds': IBuilderSet,
-        'bounties': IBountySet,
-        '+code': IBazaarApplication,
-        '+languages': ILanguageSet,
+        'questions': IQuestionSet,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,

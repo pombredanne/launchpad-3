@@ -114,7 +114,6 @@ class FileBugViewBase(LaunchpadFormView):
 
     extra_data_token = None
     advanced_form = False
-    can_decide_security_contact = True
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -233,6 +232,11 @@ class FileBugViewBase(LaunchpadFormView):
     def getSecurityContext(self):
         """Return the context used for security bugs."""
         return self.getMainContext()
+
+    @property
+    def can_decide_security_contact(self):
+        """Will we be able to discern a security contact for this?"""
+        return (self.getSecurityContext() is not None)
 
     def shouldSelectPackageName(self):
         """Should the radio button to select a package be selected?"""
@@ -472,10 +476,11 @@ class FileBugGuidedView(FileBugViewBase):
                 " product the user selected.")
             search_context = self.widgets['product'].getInputValue()
         elif IMaloneApplication.providedBy(search_context):
-            assert self.widgets['bugtarget'].hasValidInput(), (
-                "This method should be called only when we know which"
-                " distribution the user selected.")
-            search_context = self.widgets['bugtarget'].getInputValue()
+            if self.widgets['bugtarget'].hasValidInput():
+                search_context = self.widgets['bugtarget'].getInputValue()
+            else:
+                search_context = None
+        
         return search_context
 
     @cachedproperty
@@ -486,7 +491,9 @@ class FileBugGuidedView(FileBugViewBase):
         if not title:
             return []
         search_context = self.getSearchContext()
-        if IProduct.providedBy(search_context):
+        if search_context is None:
+            return []
+        elif IProduct.providedBy(search_context):
             context_params = {'product': search_context}
         elif IDistribution.providedBy(search_context):
             context_params = {'distribution': search_context}
@@ -527,8 +534,11 @@ class FileBugGuidedView(FileBugViewBase):
     def most_common_bugs(self):
         """Return a list of the most duplicated bugs."""
         search_context = self.getSearchContext()
-        return search_context.getMostCommonBugs(
-            self.user, limit=self._MATCHING_BUGS_LIMIT)
+        if search_context is None:
+            return []
+        else:
+            return search_context.getMostCommonBugs(
+                self.user, limit=self._MATCHING_BUGS_LIMIT)
 
     @property
     def found_possible_duplicates(self):
@@ -572,7 +582,6 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     # Make inheriting the base class' actions work.
     actions = FileBugGuidedView.actions
     schema = IProjectBugAddForm
-    can_decide_security_contact = False
 
     def _getSelectedProduct(self):
         """Return the product that's selected."""

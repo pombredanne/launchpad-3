@@ -45,7 +45,8 @@ Homepage also includes a list of languages.
   <a href="/+editmylanguages">
   ...Change your preferred language...
 
-There is also an "About" page that talks about how Rosetta works.
+There is also an "About" page that talks about how Launchpad 
+Translations works.
 
   >>> print http(r"""
   ... GET /translations/+about HTTP/1.1
