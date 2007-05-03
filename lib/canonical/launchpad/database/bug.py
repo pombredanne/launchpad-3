@@ -19,7 +19,7 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
+    IBug, IBugSet, IBugWatchSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
     IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroRelease,
     IProductSeries, IProductSeriesBugTask, NominationError,
@@ -424,6 +424,9 @@ class Bug(SQLBase):
         MessageChunk(message=msg, content=content, sequence=1)
 
         bugmsg = BugMessage(bug=self, message=msg)
+
+        getUtility(IBugWatchSet).fromText(content, self, owner)
+        self.findCvesInText(content)
 
         notify(SQLObjectCreatedEvent(bugmsg, user=owner))
 
