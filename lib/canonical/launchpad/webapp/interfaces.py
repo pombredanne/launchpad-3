@@ -48,6 +48,11 @@ class IAuthorization(Interface):
         The argument `user` is the person who is authenticated.
         """
 
+
+class OffsiteFormPostError(Exception):
+    """An attempt was made to post a form from a remote site."""
+
+
 #
 # Menus and Facets
 #
@@ -172,6 +177,8 @@ class IBreadcrumb(Interface):
     url = Attribute('Absolute url of this breadcrumb.')
 
     text = Attribute('Text of this breadcrumb.')
+
+    has_menu = Attribute('Whether this breadcrumb has a drop-down menu.')
 
 
 #
@@ -655,3 +662,10 @@ class IMultiLineWidgetLayout(Interface):
 
 class ICheckBoxWidgetLayout(IAlwaysSubmittedWidget):
     """A widget that is displayed like a check box with label to the right."""
+
+
+class IBreadcrumbProvider(Interface):
+    """Object that provides breadcrumb text."""
+
+    def breadcrumb():
+        """Breadcrumb text."""

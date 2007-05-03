@@ -17,7 +17,10 @@
         <allow attributes="id private bugtasks affected_pillars
                            subscriptions syncUpdate
                            date_last_updated getDirectSubscribers
-                           getIndirectSubscribers getNullBugTask" />
+                           getIndirectSubscribers mentoring_offers
+                           canMentor isMentor getNullBugTask
+                           is_complete"
+                           />
         <require
             permission="launchpad.View"
             attributes="datecreated name title description ownerID
@@ -30,7 +33,7 @@
                         isSubscribed messages getBugNotificationRecipients
                         hasBranch security_related tags getMessageChunks
                         isSubscribedToDupes getSubscribersFromDuplicates
-                        getAlsoNotifiedSubscribers getBugWatch
+                        getAlsoNotifiedSubscribers getBugWatch getBugTask
                         canBeNominatedFor getNominationFor getNominations"
             />
         <require
@@ -45,7 +48,16 @@
                             activitytimestamp activity initial_message private
                             security_related tags"
             />
+        <require
+            permission="launchpad.AnyPerson"
+            attributes="offerMentoring retractMentoring"
+            />
     </content>
+
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="BugFacets"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBug"
@@ -54,6 +66,11 @@
     <browser:url
         for="canonical.launchpad.interfaces.IBug"
         urldata="canonical.launchpad.browser.bug.BugURL" />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugNavigation"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
@@ -78,6 +95,12 @@
         permission="zope.Public"
         attribute="__call__"
         />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBug"
+        name="+listing-column"
+        template="../templates/bug-listing-column.pt"
+        permission="zope.Public" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"

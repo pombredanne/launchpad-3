@@ -1,20 +1,6 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en" metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-rosetta" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-foaf" />
-  <div tal:replace="structure context/@@+portlet-malone" />
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
+<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
+  <body>
+    <div metal:fill-slot="main">
 
   <div class="informational message" tal:condition="view/isBetaUser">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
@@ -39,45 +25,55 @@
 
       <div id="applications" tal:content="structure context/@@+applicationbuttons/main" />
       <form
-        class="central"
+        class="central front_page"
         style="text-align: center;"
-        action="/+search"
+        action="/projects/"
         method="get"
       >
         <label for="text">Is your project registered yet?</label>
-        <input id="text" type="text" name="q" size="20" />
+        <input id="text" type="text" name="text" size="20" />
         <input type="submit" value="Search" />
       </form>
-      <div class="bordered">
+
         <div class="three column left">
           <h2>What is Launchpad?</h2>
           <p id="application-summary">
-            We make it easy to <strong>collaborate 
+            We make it easy to <strong>collaborate
             across multiple projects</strong>
             in the free software world.
-            <a href="/+tour">Learn more&#8230;</a>
+            <a href="/+about">Learn&nbsp;more&#8230;</a>
           </p>
         </div>
         <div class="three column middle">
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-              <a href="https://lists.ubuntu.com/archives/launchpad-users/2007-February/001049.html">Surprised to be seeing the Launchpad beta?</a>
+              <a href="https://help.launchpad.net/MentoringManagement">
+                NEW! Mentoring management to help new contributors to your
+                project
+              </a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/BugTrackingHighlights"
-                >Intro to Launchpad bug tracking</a>
+              <a href="https://help.launchpad.net/FeatureHighlights/">
+                Feature Highlight Guide for Launchpad 1.0 (web
+                and PDF)
+              </a>
             </li>
             <li>
-              <a href="https://lists.ubuntu.com/archives/launchpad-users/2007-February/001003.html">PO exports are working again</a>
+              <a href="https://help.launchpad.net/KarmaCalculation">
+                Learn how we calculate your Launchpad karma
+              </a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/ReportingABug"
-              >Learn about reporting bugs</a>
+              <a href="/~launchpad-beta-testers/">
+                Join the Launchpad Beta Testers team to help test and debug
+                new Launchpad features
+              </a>
             </li>
-            <li>
-              <a href="https://help.launchpad.net/KarmaReductionJan07"
-              >Wondering why your karma dropped in January?</a>
+            <li tal:replace="nothing">
+              <a
+              href="">
+              </a>
             </li>
           </ul>
         </div>
@@ -91,13 +87,11 @@
             <li class="product"><a href="/aptoncd">Apt on CD</a></li>
           </ul>
         </div>
-      </div>
-    </div>
+    </div><!--main-->
     <p metal:fill-slot="help">
       This panel provides help on individual Launchpad pages.
       Open it on any page that you don&rsquo;t understand.
     </p>
   </body>
 </html>
-</tal:layout>
 <!-- 1-0 inprogress Needs images and marketing material -->

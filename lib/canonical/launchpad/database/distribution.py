@@ -25,12 +25,13 @@ from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
     SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.sprint import Sprint
+from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.binarypackagename import (
@@ -65,7 +66,7 @@ from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
     get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH,\
-    IHasGotchiAndEmblem)
+    IHasLogo, IHasMugshot, IHasIcon)
 
 from sourcerer.deb.version import Version
 
@@ -73,15 +74,14 @@ from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 
 class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   KarmaContextMixin):
+                   HasSprintsMixin, KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IHasBuildRecords, IQuestionTarget, IHasGotchiAndEmblem)
+        IDistribution, IHasBuildRecords, IQuestionTarget,
+        IHasLogo, IHasMugshot, IHasIcon)
 
+    _table = 'Distribution'
     _defaultOrder = 'name'
-    default_gotchi_resource = '/@@/distribution-mugshot'
-    default_gotchi_heading_resource = '/@@/distribution-heading'
-    default_emblem_resource = '/@@/distribution'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
     displayname = StringCol(notNull=True)
@@ -89,11 +89,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     homepage_content = StringCol(default=None)
-    emblem = ForeignKey(
+    icon = ForeignKey(
         dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    gotchi = ForeignKey(
+    mugshot = ForeignKey(
         dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
-    gotchi_heading = ForeignKey(
+    logo = ForeignKey(
         dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -107,24 +107,25 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     mirror_admin = ForeignKey(
         dbName='mirror_admin', foreignKey='Person', notNull=True)
-    translationgroup = ForeignKey(dbName='translationgroup',
-        foreignKey='TranslationGroup', notNull=False, default=None)
-    translationpermission = EnumCol(dbName='translationpermission',
-        notNull=True, schema=TranslationPermission,
-        default=TranslationPermission.OPEN)
-    lucilleconfig = StringCol(dbName='lucilleconfig', notNull=False,
-                              default=None)
-    upload_sender = StringCol(dbName='upload_sender', notNull=False,
-                              default=None)
-    upload_admin = ForeignKey(dbName='upload_admin', foreignKey='Person',
-                              default=None, notNull=False)
+    translationgroup = ForeignKey(
+        dbName='translationgroup', foreignKey='TranslationGroup', notNull=False,
+        default=None)
+    translationpermission = EnumCol(
+        dbName='translationpermission', notNull=True,
+        schema=TranslationPermission, default=TranslationPermission.OPEN)
+    lucilleconfig = StringCol(
+        dbName='lucilleconfig', notNull=False, default=None)
+    upload_sender = StringCol(
+        dbName='upload_sender', notNull=False, default=None)
+    upload_admin = ForeignKey(
+        dbName='upload_admin', foreignKey='Person', default=None, notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
-    milestones = SQLMultipleJoin('Milestone', joinColumn='distribution',
-        orderBy=['dateexpected', 'name'])
     uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution', prejoins=["uploader", "component"])
+    official_answers = BoolCol(dbName='official_answers', notNull=True,
+        default=False)
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
@@ -136,6 +137,18 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+
+    @property
+    def all_milestones(self):
+        """See IDistribution."""
+        return Milestone.selectBy(
+            distribution=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IDistribution."""
+        return Milestone.selectBy(
+            distribution=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):
@@ -165,20 +178,6 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    DistributionMirror.q.official_approved==False)
         return DistributionMirror.select(
             AND(DistributionMirror.q.distributionID==self.id, query))
-
-    @property
-    def coming_sprints(self):
-        """See IHasSprints."""
-        return Sprint.select("""
-            Specification.distribution = %s AND
-            Specification.id = SprintSpecification.specification AND
-            SprintSpecification.sprint = Sprint.id AND
-            Sprint.time_ends > 'NOW'
-            """ % sqlvalues(self.id),
-            clauseTables=['Specification', 'SprintSpecification'],
-            orderBy='time_starts',
-            distinct=True,
-            limit=5)
 
     @property
     def full_functionality(self):
@@ -220,6 +219,27 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # listified, why not spare the trouble of regenerating?
         ret = DistroRelease.selectBy(distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
+
+    @property
+    def mentoring_offers(self):
+        """See IDistribution"""
+        via_specs = MentoringOffer.select('''
+            Specification.distribution = %s AND
+            Specification.id = MentoringOffer.specification
+            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ + Specification.completeness_clause + ")",
+            clauseTables=['Specification'],
+            distinct=True)
+        via_bugs = MentoringOffer.select('''
+            BugTask.distribution = %s AND
+            BugTask.bug = MentoringOffer.bug AND
+            BugTask.bug = Bug.id AND
+            Bug.private IS FALSE
+            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ + BugTask.completeness_clause +")",
+            clauseTables=['BugTask', 'Bug'],
+            distinct=True)
+        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     @property
     def bugtargetname(self):
@@ -500,13 +520,19 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
-                        needs_attention_from=None):
-        """See IQuestionTarget."""
+                        needs_attention_from=None, unsupported=False):
+        """See IQuestionCollection."""
+        if unsupported:
+            unsupported_target = self
+        else:
+            unsupported_target = None
+            
         return QuestionTargetSearch(
             distribution=self,
             search_text=search_text, status=status,
             language=language, sort=sort, owner=owner,
-            needs_attention_from=needs_attention_from).getResults()
+            needs_attention_from=needs_attention_from,
+            unsupported_target=unsupported_target).getResults()
 
 
     def findSimilarQuestions(self, title):
@@ -526,10 +552,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IQuestionTarget."""
         if person not in self.answer_contacts:
             return False
-        answer_contact_entry = AnswerContact.selectOne(
+        answer_contact = AnswerContact.selectOne(
             "distribution = %d AND person = %d"
             " AND sourcepackagename IS NULL" % (self.id, person.id))
-        answer_contact_entry.destroySelf()
+        answer_contact.destroySelf()
         return True
 
     @property
@@ -550,9 +576,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            'Language.id = language AND distribution = %s AND '
-            'sourcepackagename IS NULL' % sqlvalues(self),
-            clauseTables=['Ticket'], distinct=True))
+            'Language.id = Question.language AND '
+            'Question.distribution = %s AND '
+            'Question.sourcepackagename IS NULL' % sqlvalues(self.id),
+            clauseTables=['Question'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""
@@ -871,7 +898,7 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, gotchi, gotchi_heading, emblem):
+            members, owner, mugshot=None, logo=None, icon=None):
         return Distribution(
             name=name,
             displayname=displayname,
@@ -882,7 +909,7 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
-            gotchi=gotchi,
-            gotchi_heading=gotchi_heading,
-            emblem=emblem)
+            mugshot=mugshot,
+            logo=logo,
+            icon=icon)
 

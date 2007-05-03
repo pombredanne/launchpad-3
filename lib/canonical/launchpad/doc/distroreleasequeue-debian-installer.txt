@@ -38,22 +38,23 @@ In order to keep the tests simple we will upload only the
 debian-installer tarball, despite the fact that it's very unlikely to
 happen in production:
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
-  >>> from canonical.archivepublisher.tests import (
-  ...     datadir, mock_options, mock_logger, mock_logger_quiet)
   >>> from canonical.launchpad.ftests import import_public_test_keys
-
   >>> import_public_test_keys()
   >>> login('foo.bar@canonical.com')
 
+  >>> from canonical.archivepublisher.nascentupload import NascentUpload
+  >>> from canonical.archivepublisher.tests import (
+  ...     datadir, getPolicy, mock_logger, mock_logger_quiet)
+
+  >>> anything_policy = getPolicy(
+  ...     name='anything', distro='ubuntutest', distrorelease=None)
+  >>> anything_policy.setDistroReleaseAndPocket('hoary-test')
+
   >>> upload = NascentUpload(
-  ...     findPolicyByName('anything'), datadir('debian-installer'),
-  ...     "debian-installer_20070214ubuntu1_i386.changes", mock_logger_quiet)
-  >>> upload.policy.setOptions(mock_options)
+  ...     datadir(
+  ...       'debian-installer/debian-installer_20070214ubuntu1_i386.changes'),
+  ...     anything_policy, mock_logger_quiet)
   >>> upload.process()
-  >>> upload.rejected
-  False
   >>> success, msgs = upload.do_accept()
   >>> success
   True
@@ -97,6 +98,19 @@ next time:
 
   >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
 
+The upload task requires that the umask be 022, otherwise things will end up
+with the wrong permission.
+
+  >>> old_mask = os.umask(002)
+  >>> upload.queue_root.realiseUpload(mock_logger_quiet)
+  ERROR: Queue item ignored: Bad umask; expected 022, got 002
+
+Reset the umask, remove any residual directories, and try again.
+
+  >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
+  >>> print '%03o' % os.umask(old_mask)
+  002
+
 Process (publish) the custom upload:
 
   >>> upload.queue_root.realiseUpload(mock_logger_quiet)
@@ -126,6 +140,37 @@ looks sane:
   >>> the_link_path = os.path.join(installer_path, the_link)
   >>> os.readlink(the_link_path)
   'ubuntu-installer/i386/pxelinux.cfg.serial-9600/default'
+
+  >>> the_dir_link = "current/images/netboot/link_to_dir"
+  >>> the_dir_link_path = os.path.join(installer_path, the_dir_link)
+  >>> os.readlink(the_dir_link_path)
+  'ubuntu-installer/i386/pxelinux.cfg.serial-9600/'
+
+Check permissions on the created directories to satisfy the
+publication path. They are created with os.makedirs() and forced to
+set permission '0755' instead of the default '0777' (see further
+details in bug #107068):
+
+  >>> oct(os.stat(installer_path).st_mode & 0777)
+  '0755'
+
+  >>> the_path = os.path.join(installer_path, os.pardir)
+  >>> oct(os.stat(the_path).st_mode & 0777)
+  '0755'
+
+Check permissions of created files and directories:
+
+  >>> the_file = ("current/images/netboot/ubuntu-installer/i386/"
+  ...             "pxelinux.cfg.serial-9600/default")
+  >>> the_file_path = os.path.join(installer_path, the_file)
+  >>> oct(os.stat(the_file_path).st_mode & 0777)
+  '0644'
+
+  >>> the_dir = ("current/images/netboot/ubuntu-installer/i386/"
+  ...            "pxelinux.cfg.serial-9600/")
+  >>> the_dir_path = os.path.join(installer_path, the_dir)
+  >>> oct(os.stat(the_dir_path).st_mode & 0777)
+  '0755'
 
 
 Remove local archive contents:

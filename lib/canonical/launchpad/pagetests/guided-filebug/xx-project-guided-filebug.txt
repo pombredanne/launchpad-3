@@ -9,16 +9,16 @@ it's still possible to file a bug from a project's main page.
     'http://launchpad.dev/gnome/+filebug'
 
 The Project filebug page is like a Product's filebug page, except that
-it also asks for a Product. Only Products that are using Malone are
+it also asks for a Product. Only Products that are using Bugs are
 shown in the list of options.
 
-    >>> user_browser.getControl('Product').options
+    >>> user_browser.getControl('Project').options
     ['evolution']
 
 After we selected a product and entered a summary, we get presented with
 a list of possible duplicates.
 
-    >>> user_browser.getControl('Product').value = ['evolution']
+    >>> user_browser.getControl('Project').value = ['evolution']
     >>> user_browser.getControl('Summary').value = 'Evolution crashes'
     >>> user_browser.getControl('Continue').click()
 
@@ -32,7 +32,7 @@ page.
     >>> user_browser.getControl('Further information').value = 'Crash.'
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
-    'http://launchpad.dev/evolution/+bug/...'
+    'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
     'Bug #... in evolution (upstream): ...Evolution crashes...'
 
@@ -47,11 +47,11 @@ filebug page.
     >>> user_browser.url
     'http://launchpad.dev/gnome/+filebug-advanced'
 
-    >>> user_browser.getControl('Product').value = ['evolution']
+    >>> user_browser.getControl('Project').value = ['evolution']
     >>> user_browser.getControl('Summary').value = 'Evolution crashes'
     >>> user_browser.getControl('Further information').value = 'Crash.'
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
-    'http://launchpad.dev/evolution/+bug/...'
+    'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
     'Bug #... in evolution (upstream): ...Evolution crashes...'

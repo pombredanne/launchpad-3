@@ -7,13 +7,11 @@ __all__ = [
     'validate_url',
     'valid_webref',
     'valid_branch_url',
-    'non_duplicate_bug',
     'non_duplicate_branch',
     'valid_bug_number',
     'valid_cve_sequence',
     'validate_new_team_email',
     'validate_new_person_email',
-    'validate_distribution_mirror_schema',
     'validate_shipit_recipientdisplayname',
     'validate_shipit_phone',
     'validate_shipit_city',
@@ -267,39 +265,6 @@ def valid_branch_url(branch_url):
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses http, https, ftp, sftp, or bzr+ssh.""")))
 
-def non_duplicate_bug(value):
-    """Prevent dups of dups.
-
-    Returns True if the dup target is not a duplicate /and/ if the
-    current bug doesn't have any duplicates referencing it /and/ if the
-    bug isn't a duplicate of itself, otherwise
-    return False.
-    """
-
-    from canonical.launchpad.interfaces.bug import IBugSet
-    bugset = getUtility(IBugSet)
-    current_bug = getUtility(ILaunchBag).bug
-    dup_target = value
-    current_bug_has_dup_refs = bool(bugset.searchAsUser(
-        user=getUtility(ILaunchBag).user,
-        duplicateof=current_bug))
-    if current_bug == dup_target:
-        raise LaunchpadValidationError(_(dedent("""
-            You can't mark a bug as a duplicate of itself.""")))
-    elif dup_target.duplicateof is not None:
-        raise LaunchpadValidationError(_(dedent("""
-            Bug %i is already a duplicate of bug %i. You can only
-            duplicate to bugs that are not duplicates themselves.
-            """% (dup_target.id, dup_target.duplicateof.id))))
-    elif current_bug_has_dup_refs:
-        raise LaunchpadValidationError(_(dedent("""
-            There are other bugs already marked as duplicates of Bug %i.
-            These bugs should be changed to be duplicates of another bug
-            if you are certain you would like to perform this change."""
-            % current_bug.id)))
-    else:
-        return True
-
 
 def non_duplicate_branch(value):
     """Ensure that this branch hasn't already been linked to this bug."""
@@ -372,26 +337,6 @@ def validate_new_person_email(email):
             "The profile you're trying to create already exists: "
             '<a href="%s">%s</a>.'), canonical_url(owner), owner.browsername)
     return True
-
-
-def validate_distribution_mirror_schema(form_values):
-    """Perform schema validation according to IDistributionMirror constraints.
-
-    This validation will take place after the values of individual widgets
-    are validated. It's necessary because we have some constraints where we
-    need to take into account the value of multiple widgets.
-
-    :form_values: A dictionary mapping IDistributionMirror attributes to the
-                  values suplied by the user.
-    """
-    errors = []
-    if not (form_values['http_base_url'] or form_values['ftp_base_url']):
-        errors.append(LaunchpadValidationError(_(
-            "All mirrors require at least an HTTP or FTP URL to be "
-            "specified.")))
-
-    if errors:
-        raise WidgetsError(errors)
 
 
 def valid_distrotask(bug, distribution, sourcepackagename=None,

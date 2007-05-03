@@ -6,7 +6,7 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Rosetta translation groups</h1>
+      <h1>Launchpad translation groups</h1>
     </metal:heading>
     <div metal:fill-slot="main">
       <p>
@@ -68,5 +68,30 @@
         </tbody>
       </table>
     </div>
+
+    <div metal:fill-slot="help">
+      <p>
+        These translation groups are available to help translate software to
+        various languages.  A group may help on any number of projects, and
+        be capable of translating into one or more languages.
+      </p>
+      <p>
+        A translation group is generally expected to work together with some
+        degree of coordination.  Some translation groups may exist to translate
+        particular classes of application, others may focus on specific language
+        families.  A translation group may even start as an arbitrary circle of
+        friends.  It is often easier to assign a translation group to work on a
+        project as a single entity with its own membership management, than to
+        keep track of individual translators on every project the group works
+        on.
+      </p>
+      <ul class="info">
+        <li>
+          <a href="https://help.launchpad.net/RosettaFAQ"
+          >Frequently asked questions</a>
+        </li>
+      </ul>
+    </div>
+
   </body>
 </html>

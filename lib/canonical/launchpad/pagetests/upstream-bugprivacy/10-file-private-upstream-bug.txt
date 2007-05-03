@@ -20,7 +20,7 @@ contact, the maintainer will be subscribed to the bug instead.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/firefox/+bug/13
+    http://bugs.launchpad.dev/firefox/+bug/13
 
 Now the reporter and the maintainer are subscribed.
 
@@ -87,7 +87,7 @@ subscribed instead.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/firefox/+bug/14
+    http://bugs.launchpad.dev/firefox/+bug/14
 
     >>> login("foo.bar@canonical.com")
 

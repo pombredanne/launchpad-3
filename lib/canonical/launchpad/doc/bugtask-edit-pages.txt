@@ -79,8 +79,7 @@ exist in Launchpad. we'll get an error message.
     u'Please fix the problems below and try again.'
     >>> for error in edit_view.errors:
     ...     print error
-    Launchpad doesn't know of any source package named 'no-such-package'
-    in Ubuntu.
+    (u"Launchpad doesn't know of any source package named 'no-such-package' in Ubuntu.", None)
 
 If we try to change the source package to a package name that another
 distribution task already has, an error message will occur. First,
@@ -129,7 +128,8 @@ directly, let's add a grumpy task first.
     >>> ubuntu_grumpy = ubuntu.getRelease('grumpy')
     >>> nomination = bug_two.addNomination(
     ...     target=ubuntu_grumpy, owner=getUtility(ILaunchBag).user)
-    >>> nomination.approve(getUtility(ILaunchBag).user)
+    >>> nomination.isApproved()
+    True
 
     >>> ubuntu_grumpy_task = bug_two.bugtasks[5]
     >>> ubuntu_grumpy_task.targetname

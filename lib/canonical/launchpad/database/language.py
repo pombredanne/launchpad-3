@@ -4,17 +4,17 @@ __metaclass__ = type
 __all__ = ['Language', 'LanguageSet']
 
 from zope.interface import implements
+from zope.component import getUtility
 
-from sqlobject import (StringCol, IntCol, BoolCol,
-    SQLRelatedJoin, SQLObjectNotFound)
+from sqlobject import (
+    StringCol, IntCol, BoolCol, SQLRelatedJoin, SQLObjectNotFound, OR,
+    CONTAINSSTRING)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 from canonical.database.enumcol import EnumCol
-
 from canonical.lp.dbschema import TextDirection
-
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILanguage, NotFoundError)
+    ILanguageSet, ILanguage, IPersonSet, NotFoundError)
 
 
 class Language(SQLBase):
@@ -22,21 +22,24 @@ class Language(SQLBase):
 
     _table = 'Language'
 
-    code = StringCol(dbName='code', notNull=True, unique=True,
-            alternateID=True)
+    code = StringCol(
+        dbName='code', notNull=True, unique=True, alternateID=True)
     nativename = StringCol(dbName='nativename')
     englishname = StringCol(dbName='englishname')
     pluralforms = IntCol(dbName='pluralforms')
     pluralexpression = StringCol(dbName='pluralexpression')
     visible = BoolCol(dbName='visible', notNull=True)
-    direction = EnumCol(dbName='direction', notNull=True,
-                        schema=TextDirection, default=TextDirection.LTR)
+    direction = EnumCol(
+        dbName='direction', notNull=True, schema=TextDirection,
+        default=TextDirection.LTR)
 
-    translators = SQLRelatedJoin('Person', joinColumn='language',
-        otherColumn='person', intermediateTable='PersonLanguage')
+    translation_teams = SQLRelatedJoin(
+        'Person', joinColumn="language",
+        intermediateTable='Translator', otherColumn='translator')
 
-    countries = SQLRelatedJoin('Country', joinColumn='language',
-        otherColumn='country', intermediateTable='SpokenIn')
+    countries = SQLRelatedJoin(
+        'Country', joinColumn='language', otherColumn='country',
+        intermediateTable='SpokenIn')
 
     @property
     def displayname(self):
@@ -59,18 +62,25 @@ class Language(SQLBase):
 
     @property
     def dashedcode(self):
-        """See ILanguage"""
+        """See ILanguage."""
         return self.code.replace('_', '-')
 
     @property
     def abbreviated_text_dir(self):
-        """See ILanguage"""
+        """See ILanguage."""
         if self.direction == TextDirection.LTR:
             return 'ltr'
         elif self.direction == TextDirection.RTL:
             return 'rtl'
         else:
             assert False, "unknown text direction"
+
+    @property
+    def translators(self):
+        """See ILanguage."""
+        personset = getUtility(IPersonSet)
+        return personset.getTranslatorsByLanguage(self)
+
 
 class LanguageSet:
     implements(ILanguageSet)
@@ -87,11 +97,21 @@ class LanguageSet:
 
     def __getitem__(self, code):
         """See ILanguageSet."""
-        assert isinstance(code, basestring), code
+        language = self.getLanguageByCode(code)
+
+        if language is None:
+            raise NotFoundError, code
+
+        return language
+
+    def getLanguageByCode(self, code):
+        """See ILanguageSet."""
+        assert isinstance(code, basestring), (
+            "%s is not a valid type for 'code'" % type(code))
         try:
             return Language.byCode(code)
         except SQLObjectNotFound:
-            raise NotFoundError, code
+            return None
 
     def keys(self):
         """See ILanguageSet."""
@@ -140,3 +160,28 @@ class LanguageSet:
             return (None, None)
 
         return (language, language_variant)
+
+    def createLanguage(self, code, englishname, nativename=None,
+                       pluralforms=None, pluralexpression=None, visible=True,
+                       direction=TextDirection.LTR):
+        """See ILanguageSet."""
+        return Language(
+            code=code, englishname=englishname, nativename=nativename,
+            pluralforms=pluralforms, pluralexpression=pluralexpression,
+            visible=visible, direction=direction)
+
+    def search(self, text):
+        """See ILanguageSet."""
+        if text:
+            text.lower()
+            results = Language.select(
+                OR (
+                    CONTAINSSTRING(Language.q.code, text),
+                    CONTAINSSTRING(Language.q.englishname, text)
+                    ),
+                orderBy='englishname'
+                )
+        else:
+            results = None
+
+        return results

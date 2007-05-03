@@ -61,7 +61,7 @@ class IPOFile(IRosettaStats):
 
     exportfile = Attribute("The Librarian alias of the last cached export.")
 
-    datecreated = Attribute("The fate this file was created.")
+    datecreated = Attribute("The date this file was created.")
 
     last_touched_pomsgset = Field(
         title=u'Translation message which was most recently touched.',
@@ -132,7 +132,7 @@ class IPOFile(IRosettaStats):
         Raise NotFoundError if it does not exist.
         """
 
-    def getPOMsgSetNotInTemplate():
+    def getPOMsgSetsNotInTemplate():
         """
         Return an iterator over message sets in this PO file that do not
         correspond to a message set in the template; eg, the template
@@ -169,10 +169,6 @@ class IPOFile(IRosettaStats):
 
     def hasMessageID(msgid):
         """Return whether a given message ID exists within this PO file."""
-
-    def pendingImport():
-        """Gives all pofiles that have a rawfile pending of import into
-        Rosetta."""
 
     def validExportCache():
         """Does this PO file have a cached export that is up to date?

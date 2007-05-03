@@ -9,6 +9,8 @@ __all__ = ['IDistributionMirror', 'IMirrorDistroArchRelease',
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
+from zope.interface.exceptions import Invalid
+from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.launchpad.fields import ContentNameField, URIField
@@ -48,9 +50,13 @@ class DistroMirrorURIField(URIField):
         # URIField has already established that we have a valid URI
         uri = URI(value)
 
-        if (IDistributionMirror.providedBy(self.context)
-            and URI(self.get(self.context)) == uri):
-            return # url was not changed
+        # This field is also used when creating new mirrors and in that case
+        # self.context is not an IDistributionMirror so it doesn't make sense
+        # to try to get the existing value of the attribute.
+        if IDistributionMirror.providedBy(self.context):
+            orig_value = self.get(self.context)
+            if orig_value is not None and URI(orig_value) == uri:
+                return # url was not changed
 
         mirror = self.getMirrorByURI(str(uri))
         if mirror is not None:
@@ -91,7 +97,7 @@ class IDistributionMirror(Interface):
         description=_('A short and unique name for this mirror.'),
         constraint=name_validator)
     displayname = TextLine(
-        title=_('Organisation Name'), required=False, readonly=False,
+        title=_('Organisation'), required=False, readonly=False,
         description=_('The name of the organization hosting this mirror.'))
     description = TextLine(
         title=_('Description'), required=False, readonly=False)
@@ -117,7 +123,7 @@ class IDistributionMirror(Interface):
         title=_('Link Speed'), required=True, readonly=False,
         vocabulary='MirrorSpeed')
     country = Choice(
-        title=_('Location (Country)'), required=True, readonly=False,
+        title=_('Location'), required=True, readonly=False,
         vocabulary='CountryName')
     content = Choice(
         title=_('Content'), required=True, readonly=False, 
@@ -146,6 +152,11 @@ class IDistributionMirror(Interface):
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+
+    @invariant
+    def mirrorMustHaveHTTPOrFTPURL(mirror):
+        if not (mirror.http_base_url or mirror.ftp_base_url):
+            raise Invalid('A mirror must have at least an HTTP or FTP URL.')
 
     def getSummarizedMirroredSourceReleases():
         """Return a summarized list of this distribution_mirror's 
