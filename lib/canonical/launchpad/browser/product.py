@@ -45,7 +45,7 @@ from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.interface import alsoProvides, implements, providedBy
+from zope.interface import alsoProvides, implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -65,7 +65,6 @@ from canonical.launchpad.browser.bugtask import (
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.person import ObjectReassignmentView
-from canonical.launchpad.browser.project import ProjectDynMenu
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
@@ -74,7 +73,6 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
@@ -82,7 +80,6 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
