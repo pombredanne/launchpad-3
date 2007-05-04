@@ -566,6 +566,7 @@ INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) 
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (17, 45, 3, 3);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (18, 37, 1, 2);
 INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (21, 56, 1, 6);
+INSERT INTO binarypackagefile (binarypackagerelease, libraryfile, filetype, id) VALUES (22, 40, 1, 7);
 
 
 ALTER TABLE binarypackagefile ENABLE TRIGGER ALL;

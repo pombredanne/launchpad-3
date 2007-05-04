@@ -276,7 +276,7 @@ mozilla-firefox, which already has its data set up.
   >>> [a.architecturetag for a in
   ...       determineArchitecturesToBuild(firefox_pub, legal_archs, warty,
   ...                                     pas_verify)]
-  [u'i386']
+  [u'hppa', u'i386']
 
 And a binary PAS listing that tries to exclude i386 and hppa from an
 arch-any build. The exclusion of i386 is ignored; see comment in
@@ -286,7 +286,7 @@ pas.py:_handleBinaryPAS for more information on why.
   >>> [a.architecturetag for a in
   ...       determineArchitecturesToBuild(firefox_pub, legal_archs, warty,
   ...                                     pas_verify)]
-  [u'i386']
+  [u'hppa', u'i386']
 
 
 Create and verify the new builds

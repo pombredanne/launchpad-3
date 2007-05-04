@@ -209,7 +209,7 @@ In brazil we don't have official archive or release mirrors, so all we see is
 the main repository.
 
     >>> [(mirror.name, mirror.country.name)
-    ...  for mirror in mirrorset.getBestMirrorsForCountry(brazil, archive)]
+    ...  for mirror in mirrorset.getBestMirrorsForCo;5Auntry(brazil, archive)]
     [(u'canonical-archive', u'United Kingdom')]
 
     >>> [(mirror.name, mirror.country.name)
