@@ -4,10 +4,11 @@
 
 __metaclass__ = type
 
-import unittest
+import gzip
 import os
-import tempfile
 import shutil
+import tempfile
+import unittest
 
 from zope.component import getUtility
 
@@ -280,8 +281,8 @@ class TestPublisher(TestNativePublishingBase):
 
         index_path = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest', 'main',
-            'source', 'Sources')
-        index_contents = open(index_path).read().splitlines()
+            'source', 'Sources.gz')
+        index_contents = gzip.GzipFile(filename=index_path).read().splitlines()
 
         self.assertEqual(
             ['Package: foo',

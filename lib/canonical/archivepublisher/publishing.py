@@ -4,6 +4,7 @@ __all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
 
 
 from datetime import datetime
+import gzip
 import logging
 from md5 import md5
 import os
@@ -264,7 +265,7 @@ class Publisher(object):
 
         self.log.debug("Generating Sources")
         temp_index = tempfile.mktemp(prefix='source-index_')
-        source_index = open(temp_index, 'wb')
+        source_index = gzip.GzipFile(fileobj=open(temp_index, 'wb'))
 
         for spp in distrorelease.getSourcePackagePublishing(
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
@@ -277,7 +278,7 @@ class Publisher(object):
             self._config.distsroot, full_name, component.name, 'source')
         if not os.path.exists(source_index_basepath):
             os.makedirs(source_index_basepath)
-        source_index_path = os.path.join(source_index_basepath, "Sources")
+        source_index_path = os.path.join(source_index_basepath, "Sources.gz")
 
         # move the the archive index file to the right place.
         os.rename(temp_index, source_index_path)
@@ -293,7 +294,7 @@ class Publisher(object):
 
             temp_prefix = '%s-index_' % arch_path
             temp_index = tempfile.mktemp(prefix=temp_prefix)
-            package_index = open(temp_index, "w")
+            package_index = gzip.GzipFile(fileobj=open(temp_index, "wb"))
 
             for bpp in distrorelease.getBinaryPackagePublishing(
                 archtag=arch.architecturetag, pocket=pocket,
@@ -307,7 +308,7 @@ class Publisher(object):
             if not os.path.exists(package_index_basepath):
                 os.makedirs(package_index_basepath)
             package_index_path = os.path.join(
-                package_index_basepath, "Packages")
+                package_index_basepath, "Packages.gz")
 
             # move the the archive index file to the right place.
             os.rename(temp_index, package_index_path)
