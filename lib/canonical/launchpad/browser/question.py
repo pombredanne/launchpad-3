@@ -21,6 +21,8 @@ __all__ = [
     'QuestionSubscriptionView',
     'QuestionWorkflowView',
     ]
+    
+import re
 
 from operator import attrgetter
 
@@ -821,6 +823,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
     """View that searches among all questions posted on Launchpad."""
 
     display_target_column = True
+    id_pattern = re.compile('^#?(\d+) *$')
 
     @property
     def pageheading(self):
@@ -840,6 +843,17 @@ class SearchAllQuestionsView(SearchQuestionsView):
                      mapping=dict(search_text=self.search_text))
         else:
             return _('There are no questions with the requested statuses.')
+            
+    def searchResults(self):
+        """Lookup a question by its id or Search all questions."""
+        id_matches = SearchAllQuestionsView.id_pattern.match(self.search_text)
+        if (id_matches is not None and
+                id_matches.group(1) is not None):
+            question = getUtility(IQuestionSet).get(id_matches.group(1))
+            if question is not None:
+                self.request.response.redirect(canonical_url(question))
+        
+        return SearchQuestionsView.searchResults(self)
 
 
 class QuestionSOP(StructuralObjectPresentation):
