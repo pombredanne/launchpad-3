@@ -311,7 +311,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
             try:
                 library_file = self.policy.distro.getFileByName(
-                    sub_dsc_file.filename, source=True, binary=False)
+                    sub_dsc_file.filename, source=True, binary=False,
+                    archive=self.policy.archive)
             except NotFoundError, error:
                 library_file = None
             else:

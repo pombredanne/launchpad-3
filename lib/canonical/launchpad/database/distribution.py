@@ -611,20 +611,23 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         raise NotFoundError(distrorelease_name)
 
-    def getFileByName(self, filename, source=True, binary=True):
+    def getFileByName(self, filename, archive=None, source=True, binary=True):
         """See IDistribution."""
         assert (source or binary), "searching in an explicitly empty " \
                "space is pointless"
+        if archive is None:
+            archive = self.main_archive
+
         if source:
             candidate = SourcePackageFilePublishing.selectFirstBy(
                 distribution=self, libraryfilealiasfilename=filename,
-                orderBy=['id'])
+                archive=archive, orderBy=['id'])
 
         if binary:
             candidate = BinaryPackageFilePublishing.selectFirstBy(
                 distribution=self,
                 libraryfilealiasfilename=filename,
-                orderBy=["-id"])
+                archive=archive, orderBy=["-id"])
 
         if candidate is not None:
             return candidate.libraryfilealias
