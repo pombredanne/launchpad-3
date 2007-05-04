@@ -124,14 +124,34 @@ class SFTPTests(SFTPTestCase):
 
     @deferToThread
     def _test_rename_directory_to_existing_directory_fails(self):
-        # 'rename dir1 dir2' should fail if 'dir2' exists.
+        # 'rename dir1 dir2' should fail if 'dir2' exists. Unfortunately, it
+        # will only fail if they both contain files/directories.
         transport = self.getTransport('~testuser/+junk')
-        transport.mkdir('dir1')
-        transport.mkdir('dir2')
-        self.assertRaises(IOError, transport.rename, 'dir1', 'dir2')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        transport.mkdir('branch/.bzr/dir1')
+        transport.mkdir('branch/.bzr/dir1/foo')
+        transport.mkdir('branch/.bzr/dir2')
+        transport.mkdir('branch/.bzr/dir2/bar')
+        self.assertRaises(
+            IOError, transport.rename, 'branch/.bzr/dir1', 'branch/.bzr/dir2')
 
     def test_rename_directory_to_existing_directory_fails(self):
         return self._test_rename_directory_to_existing_directory_fails()
+
+    @deferToThread
+    def _test_rename_directory_succeeds(self):
+        # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        transport.mkdir('branch/.bzr/dir1')
+        transport.mkdir('branch/.bzr/dir1/foo')
+        transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
+        self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
+
+    def test_rename_directory_success(self):
+        return self._test_rename_directory_succeeds()
 
 
 class MockRealm:
