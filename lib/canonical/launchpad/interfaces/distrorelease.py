@@ -103,6 +103,12 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "release.")
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this release.")
+    hide_all_translations = Bool(
+        title='Hide all translations', required=True,
+        description=('Check this if you want to hide all translations for'
+                     ' this IDistroRelease, from the user interface, so'
+                     ' only system admins are able to see them.'),
+        default=True)
 
     # related joins
     packagings = Attribute("All of the Packaging entries for this "
