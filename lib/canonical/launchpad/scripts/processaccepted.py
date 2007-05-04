@@ -57,6 +57,11 @@ def close_bugs(queue_ids):
                     status=BugTaskStatus.FIXRELEASED,
                     user=source_release.creator)
                 if edited_task is not None:
-                    # XXX: add the comment.
-                    pass
+                    assert source_release.changelog is not None, (
+                        "New source uploads should have a changelog.")
+                    bug.newMessage(
+                        owner=source_release.creator,
+                        subject=bug.followup_subject(),
+                        content=source_release.changelog)
+
 

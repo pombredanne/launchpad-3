@@ -16,12 +16,12 @@ distribution package.
     ...     CreateBugParams, IDistributionSet)
     >>> login('no-priv@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> evolution_ubuntu = ubuntu.getSourcePackage('evolution')
+    >>> pmount_ubuntu = ubuntu.getSourcePackage('pmount')
     >>> bug_params = CreateBugParams(
     ...     getUtility(ILaunchBag).user, "Test bug", "Test bug.")
-    >>> evolution_bug = evolution_ubuntu.createBug(bug_params)
-    >>> [evolution_task] = evolution_bug.bugtasks
-    >>> evolution_task.status.name
+    >>> pmount_bug = pmount_ubuntu.createBug(bug_params)
+    >>> [pmount_task] = pmount_bug.bugtasks
+    >>> pmount_task.status.name
     'UNCONFIRMED'
 
 The package source uploads are represented as DistroReleaseQueue items
@@ -35,9 +35,9 @@ is the Launchpad-bugs-fixed header.
     >>> from canonical.lp.dbschema import (
     ...     DistroReleaseQueueStatus, PackagePublishingPocket)
 
-    >>> changes = changes_template % evolution_bug.id
+    >>> changes = changes_template % pmount_bug.id
     >>> changes_file = getUtility(ILibrarianClient).addFile(
-    ...     'evolution.changes', len(changes), StringIO(changes), 'text/plain')
+    ...     'pmount.changes', len(changes), StringIO(changes), 'text/plain')
     >>> ubuntu_hoary = ubuntu.getRelease('hoary')
     >>> queue_item = DistroReleaseQueue(
     ...     status=DistroReleaseQueueStatus.DONE,
@@ -56,13 +56,14 @@ uploaded to.
     ...     DistroReleaseQueueSource, SourcePackageRelease)
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> evolution_release = SourcePackageRelease.selectFirstBy(
-    ...     sourcepackagename=evolution_ubuntu.sourcepackagename,
-    ...     uploaddistrorelease=ubuntu_hoary,
-    ...     creator=sabdfl, orderBy='id')
+    >>> pmount_release = SourcePackageRelease.get(20)
+    >>> pmount_release.sourcepackagename.name
+    u'pmount'
+    >>> pmount_release.uploaddistrorelease.name
+    u'hoary'
     >>> source_queue = DistroReleaseQueueSource(
     ...     distroreleasequeue=queue_item,
-    ...     sourcepackagerelease=evolution_release)
+    ...     sourcepackagerelease=pmount_release)
 
     # Need to commit the transaction so that the changes file can be
     # downloaded from the Librarian.
@@ -76,5 +77,55 @@ will close the specified bug.
 
     >>> from canonical.launchpad.scripts.processaccepted import close_bugs
     >>> close_bugs([queue_item.id])
-    >>> evolution_task.status.name
+    >>> pmount_task.status.name
     'FIXRELEASED'
+
+The changelog associated with the SourcePackageRelease is automatically
+added as a comment from the uploader.
+
+    >>> last_comment = pmount_bug.messages[-1]
+    >>> print pmount_release.creator.displayname
+    Mark Shuttleworth
+    >>> print last_comment.owner.displayname
+    Mark Shuttleworth
+
+    >>> print pmount_release.changelog
+    pmount (0.1-1) hoary; urgency=low
+    <BLANKLINE>
+     * Fix description (Malone #1)
+     * Fix debian (Debian #2000)
+     * Fix warty (Warty Ubuntu #1)
+    <BLANKLINE>
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300
+
+    >>> print last_comment.text_contents
+    pmount (0.1-1) hoary; urgency=low
+    <BLANKLINE>
+     * Fix description (Malone #1)
+     * Fix debian (Debian #2000)
+     * Fix warty (Warty Ubuntu #1)
+    <BLANKLINE>
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300
+
+A bug notification is sent for both the status change, and for the
+comment addition.
+
+    >>> from canonical.launchpad.database import BugNotification
+    >>> notifications = BugNotification.select(orderBy='id')
+    >>> for notification in notifications[-2:]:
+    ...     print "From %s:\n%s\n" % (
+    ...         notification.message.owner.displayname,
+    ...         notification.message.text_contents)
+    From Mark Shuttleworth:
+    ** Changed in: pmount (Ubuntu)
+           Status: Unconfirmed => Fix Released
+    <BLANKLINE>
+    From Mark Shuttleworth:
+    pmount (0.1-1) hoary; urgency=low
+    <BLANKLINE>
+     * Fix description (Malone #1)
+     * Fix debian (Debian #2000)
+     * Fix warty (Warty Ubuntu #1)
+    <BLANKLINE>
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300
+
