@@ -59,7 +59,8 @@ from canonical.archivepublisher.nascentupload import (
     NascentUpload, FatalUploadError)
 from canonical.archivepublisher.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
-from canonical.launchpad.interfaces import IDistributionSet, IPersonSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IPersonSet, IArchiveSet)
 
 from contrib.glock import GlobalLock
 
@@ -427,7 +428,7 @@ class UploadProcessor:
                 raise UploadPathError(
                     "Could not find distribution '%s'" % distro_name)
 
-            archive = person.archive
+            archive = getUtility(IArchiveSet).ensure(owner=person)
             if archive is None:
                 raise UploadPathError(
                     "Could not find PPA for '%s'" % person_name)

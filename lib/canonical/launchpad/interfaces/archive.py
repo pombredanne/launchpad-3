@@ -22,6 +22,9 @@ class IArchive(Interface):
 
     owner = Attribute("The owner of the archive, or None for the main "
                       "archive of a distribution")
+    description = Text(
+        title=_("Archive Contents Description"), required=False,
+        description=_("A short description of contents of this Archive."))
 
     def getPubConfig(distribution):
         """Return an overridden Publisher Configuration instance.
@@ -39,6 +42,9 @@ class IArchiveSet(Interface):
 
     def new(owner=None):
         """Create a new archive."""
+
+    def ensure(owner=None):
+        """Ensure the owner has an valid archive."""
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""

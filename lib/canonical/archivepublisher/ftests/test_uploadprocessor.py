@@ -257,16 +257,9 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         """Setup infrastructure for PPA tests.
 
         Additionally to the TestUploadProcessorBase.setUp, set 'breezy'
-        distrorelease, kinninson_archive and an new uploadprocessor instance.
+        distrorelease and an new uploadprocessor instance.
         """
         TestUploadProcessorBase.setUp(self)
-
-        # Make a PPA called foo for kinnison and another called bar for
-        # name16 (Foo Bar)
-        self.kinnison_archive = getUtility(IArchiveSet).new(
-            owner=getUtility(IPersonSet).getByName("kinnison"))
-        self.name16_archive = getUtility(IArchiveSet).new(
-            owner=getUtility(IPersonSet).getByName("name16"))
 
         # Extra setup for breezy
         self.setupBreezy()
@@ -307,16 +300,23 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
         Email announcement is sent and package is on queue ACCEPTED even if
         the source is NEW (PPA Auto-Accept everything).
+        Note the the name16 PPA is automatically created by a succesfully
+        upload.
         """
+        name16 = getUtility(IPersonSet).getByName("name16")
+        self.assertEqual(name16.archive, None)
+
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
+
+        self.assertNotEqual(name16.archive, None)
 
         contents = ["Subject: Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16_archive)
+            version="1.0-1", exact_match=True, archive=name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
     def testUploadToSomeoneElsePPA(self):

@@ -1377,6 +1377,8 @@ COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given t
 
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
+COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it is the case.';
+COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
