@@ -120,8 +120,7 @@ Process (publish) the custom upload:
 The current debian-installer directory (20070214ubuntu1) and a link to
 the last version (we only have the one we uploaded) should be
 presented:
-
-  >>> os.listdir(installer_path)
+  >>> sorted(os.listdir(installer_path))
   ['20070214ubuntu1', 'current']
 
 As a consistency check, let's verify one of the files inside the
