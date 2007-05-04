@@ -1357,7 +1357,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         logger.info('...Extracted in %f seconds' % (time.time()-starttime))
 
 
-    def _recoverable_holding_tables(self):
+    def _recoverable_holding_tables(self, logger):
         """Do we have holding tables with recoverable data from previous run?
         """
         # The tables named here are the first and last tables in the list that
@@ -1379,8 +1379,11 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         if postgresql.tableHasColumn(cur,
                 self._holding_table_unquoted('POTemplate'),
                 'new_id'):
+            logger.info(
+                "Previous run aborted too early for recovery; redo all")
             return False
 
+        logger.info("Recoverable data found")
         return True
 
 
@@ -1463,7 +1466,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             # more or less constant transaction costs.  Reducing batch size
             # any further is not likely to help much, but will make the
             # overall procedure take much longer.
-            min_batch_size = 100
+            min_batch_size = 10
 
             # The number of seconds we want each transaction to take.  The
             # batching algorithm tries to approximate this batch time by
@@ -2000,11 +2003,12 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         logger = logging.getLogger('initialise')
 
-        if ( len(self.potemplates) == 0 or
-                self._recoverable_holding_tables() ):
-            # We're a new distrorelease; either copy from scratch or recover
-            # from an uncompleted previous run
+        if len(self.potemplates) == 0:
+            # We're a new distrorelease; copy from scratch
             self._copy_active_translations_to_new_release(logger, ztm)
+        elif self._recoverable_holding_tables(logger):
+            # Recover data from previous, abortive run
+            self._pour_holding_tables(logger, ztm)
         else:
             # Incremental copy of updates from parent distrorelease
             self._copy_active_translations_as_update(logger)
