@@ -728,7 +728,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         distrorelease = self.policy.distrorelease
         spphs = distrorelease.getPublishedReleases(
             self.source_name, version=self.source_version,
-            include_pending=True)
+            include_pending=True, archive=self.policy.archive)
 
         sourcepackagerelease = None
         if spphs:
