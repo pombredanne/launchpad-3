@@ -12,11 +12,13 @@ __all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
 
 from warnings import warn
 import operator
+import os
 
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
 
+from canonical.archivepublisher.diskpool import poolify
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -522,6 +524,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_filename = bin_file.libraryfile.filename
         bin_size = bin_file.libraryfile.content.filesize
         bin_md5 = bin_file.libraryfile.content.md5
+        bin_filepath = os.path.join(
+            'pool/', poolify(bin_filename, self.component.name))
         # description field in index is an association of summary and
         # description, as:
         #
@@ -546,7 +550,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Provides', bpr.provides)
         fields.append('Depends', bpr.depends)
         fields.append('Conflicts', bpr.conflicts)
-        fields.append('Filename', bin_filename)
+        fields.append('Filename', bin_filepath)
         fields.append('Size', bin_size)
         fields.append('MD5sum', bin_md5)
         fields.append('Description', bin_description)

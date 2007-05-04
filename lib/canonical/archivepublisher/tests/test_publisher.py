@@ -274,6 +274,7 @@ class TestPublisher(TestNativePublishingBase):
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=cprov.archive)
+        pub_bin = self.getPubBinary(pub_source=pub_source)
 
         archive_publisher.A_publish(False)
         self.layer.txn.commit()
@@ -295,6 +296,28 @@ class TestPublisher(TestNativePublishingBase):
              'Directory: pool/main/f/foo',
              'Files:',
              ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo.dsc',
+             ''],
+            index_contents)
+
+        index_path = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest', 'main',
+            'binary-i386', 'Packages.gz')
+        index_contents = gzip.GzipFile(filename=index_path).read().splitlines()
+
+        self.assertEqual(
+            ['Package: foo-bin',
+             'Priority: Standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: i386',
+             'Version: 666',
+             'Filename: pool/main/f/foo-bin.deb',
+             'Size: 18',
+             'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
+             'Description: Foo app is great',
+             ' Well ...',
+             ' it does nothing, though',
              ''],
             index_contents)
 
