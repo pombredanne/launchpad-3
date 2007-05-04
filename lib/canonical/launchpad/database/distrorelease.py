@@ -1357,12 +1357,14 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         logger.info('...Extracted in %f seconds' % (time.time()-starttime))
 
 
-    def _recoverable_holding_tables(self, cur):
+    def _recoverable_holding_tables(self):
         """Do we have holding tables with recoverable data from previous run?
         """
         # The tables named here are the first and last tables in the list that
         # _pour_holding_tables() goes through.  Keep it that way, or this will
         # return incorrect information!
+
+        cur = cursor()
 
         # If there are any holding tables to be poured into their source
         # tables, there must at least be one for the last table that
@@ -1379,8 +1381,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 'new_id'):
             return False
 
+        return True
 
-    def _pour_holding_tables(self, cur, logger, ztm):
+
+    def _pour_holding_tables(self, logger, ztm):
         """Attempt to pour translation holding tables back into source tables.
         """
         # Source tables that this method adds to, from their respective
@@ -1396,6 +1400,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             'POTemplate', 'POTMsgSet', 'POMsgIDSighting', 'POFile',
             'POMsgSet', 'POSubmission'
         ]
+
+        cur = cursor()
 
         # Main loop: for each of the source tables involved in copying
         # translations from our parent distrorelease, see if there's a
@@ -1449,10 +1455,25 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 ztm.commit()
                 logger.info("...pre-commit in %f seconds..." % (
                     time.time() - precommitstart))
+                ztm.begin()
+                cur = cursor()
 
-            batch_size = 5000
+            # Minimum batch size.  We never process fewer rows than this in
+            # one batch because at that level, we expect to be running into
+            # more or less constant transaction costs.  Reducing batch size
+            # any further is not likely to help much, but will make the
+            # overall procedure take much longer.
+            min_batch_size = 100
+
+            # The number of seconds we want each transaction to take.  The
+            # batching algorithm tries to approximate this batch time by
+            # varying actual batch_size.
+            time_goal = 4
+
+            batch_size = min_batch_size
             while lowest <= highest:
-                next = lowest + batch_size
+                # Proceed by batch_size ids (but beware of integer overflow)
+                next = min(lowest+batch_size, highest+1)
                 logger.info("Moving ids %d-%d..." % (lowest,next))
                 batchstarttime = time.time()
 
@@ -1472,11 +1493,26 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
                 if ztm is not None:
                     ztm.commit()
+                    ztm.begin()
+                    cur = cursor()
 
-                logger.info("...batch done in %f seconds." %
-                    (time.time()-batchstarttime))
+                time_taken = time.time() - batchstarttime
+                logger.info("...batch done in %f seconds." % time_taken)
 
                 lowest = next
+
+                # Adjust batch_size to approximate time_goal.  The new
+                # batch_size is the average of two values: the previous value
+                # for batch_size, and an estimate of how many rows would take
+                # us to exactly time_goal seconds.  The estimate is very
+                # simple: rows per second on the last commit.  We get
+                # exponential decay of speed history, with an exponent of 1/2.
+                # Set a reasonable minimum for time_taken, just in case we get
+                # weird values for whatever reason and destabilize the
+                # algorithm.
+                time_taken = max(time_goal/10, time_taken)
+                batch_size = batch_size*(1 + time_goal/time_taken)/2
+                batch_size = max(min_batch_size, batch_size)
 
             cur.execute("DROP TABLE %s" % holding)
             logger.info(
@@ -1487,7 +1523,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
 
 
-    def _copy_active_translations_to_new_release(self, cur, logger, ztm):
+    def _copy_active_translations_to_new_release(self, logger, ztm):
         """We're a new release; inherit translations from parent.
 
         Translation data for the new release (self) is first copied into
@@ -1540,6 +1576,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # use proper SQL holding tables because those will have disappeared
         # whenever admins want to analyze a failure, figure out how far this
         # function got in copying data, or resume after failure.
+
+        cur = cursor()
 
         # Copy relevant POTemplates from existing release into a holding
         # table, complete with their original id fields.
@@ -1601,10 +1639,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             'active OR published')
 
         # Now pour the holding tables back into the originals
-        self._pour_holding_tables(cur, logger, ztm)
+        self._pour_holding_tables(logger, ztm)
 
 
-    def _copy_active_translations_as_update(self, cur, logger):
+    def _copy_active_translations_as_update(self, logger):
         """Receive active, updated translations from parent release.
         """
 
@@ -1626,6 +1664,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # attached and its other POFiles will no longer qualify for copying.
 
         logger.info('Filling POFile table...')
+        cur = cursor()
         cur.execute('''
             INSERT INTO POFile (
                 potemplate, language, description, topcomment, header,
@@ -1940,7 +1979,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             pofile.updateStatistics()
 
 
-    def _copy_active_translations(self, cur, ztm):
+    def _copy_active_translations(self, ztm):
         """Copy active translations from the parent into this one.
 
         This method is used in two scenarios: when a new distribution release
@@ -1965,21 +2004,20 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         logger = logging.getLogger('initialise')
 
         if ( len(self.potemplates) == 0 and
-                not self._recoverable_holding_tables(cur) ):
+                not self._recoverable_holding_tables() ):
             # We have no potemplates at all, so we need to do a full copy.
-            self._copy_active_translations_to_new_release(cur, logger, ztm)
+            self._copy_active_translations_to_new_release(logger, ztm)
         else:
             # Incremental copy of updates from parent distrorelease
-            self._copy_active_translations_as_update(cur, logger)
+            self._copy_active_translations_as_update(logger)
 
 
     def copyMissingTranslationsFromParent(self, ztm=None):
         """See IDistroRelease."""
         flush_database_updates()
         flush_database_caches()
-        cur = cursor()
         # Request the translation copy.
-        self._copy_active_translations(cur, ztm)
+        self._copy_active_translations(ztm)
 
     def getPendingPublications(self, pocket, is_careful):
         """See IPublishing."""
