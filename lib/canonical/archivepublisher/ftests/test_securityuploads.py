@@ -103,8 +103,8 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
             queue_item is not None,
             "Source Upload Failed\nGot: %s" % "\n".join(self.log.lines))
         acceptable_statuses = [
-            DistroReleaseQueueStatus.NEW,
-            DistroReleaseQueueStatus.UNAPPROVED,
+            PackageUploadStatus.NEW,
+            PackageUploadStatus.UNAPPROVED,
             ]
         if queue_item.status in acceptable_statuses:
             queue_item.setAccepted()

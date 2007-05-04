@@ -988,7 +988,7 @@ class NascentUpload:
 
             # Perform some checks on processed build(s) if there were any.
             # Ensure that only binaries for a single build were processed
-            # Then add a respective DistroReleaseQueueBuild entry for it
+            # Then add a respective PackageUploadBuild entry for it
             if len(processed_builds) > 0:
                 unique_builds = set([b.id for b in processed_builds])
                 assert len(unique_builds) == 1, (
