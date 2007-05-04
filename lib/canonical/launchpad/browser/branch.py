@@ -172,6 +172,10 @@ class BranchView(LaunchpadView):
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         return self.context.url is None and self.context.owner != vcs_imports
 
+    def mirror_status_message(self):
+        """A message from a bad scan or pull, truncated for display."""
+        return self.context.mirror_status_message[:128]
+
 
 class BranchInPersonView(BranchView):
 
