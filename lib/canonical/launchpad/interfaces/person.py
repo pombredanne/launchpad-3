@@ -633,7 +633,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """Return the teams that this person/team is an administrator of.
 
         This includes teams for which the person is the owner, a direct
-        member with admin privilege, or member of a team which such
+        member with admin privilege, or member of a team with such
         privileges.
         """
 

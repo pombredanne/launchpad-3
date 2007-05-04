@@ -491,7 +491,10 @@ admin members plus the owner in case he is not one of the admin members.
 
 Note that the team administrators can contain teams, so if you want to
 check if a user is an admin of the team, you should use inTeam() to
-check if the user is a member of these administrators:
+check if the user is a member of these administrators. For example,
+cprov isn't a direct administrator of the guadamen team, but he is
+an indirect administrator by being a member of the Ubuntu team (which
+is a direct administrator of the guadamen team):
 
     >>> guadamen_team = personset.getByName('guadamen')
     >>> [person.name for person in guadamen_team.getDirectAdministrators()]
