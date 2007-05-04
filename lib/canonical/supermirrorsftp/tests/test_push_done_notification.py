@@ -158,7 +158,7 @@ class WriteLoggingDirectory(unittest.TestCase):
         # renaming a directory is a write
         subdir = self.directory.createDirectory('bar')
         self.directory.dirty = False
-        subdir.rename('bar')
+        subdir.rename('baz')
         self.assertEqual(self.dirty, True)
 
     def test_remove(self):

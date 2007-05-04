@@ -250,7 +250,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         super(SFTPTestCase, self).tearDown()
 
         shutil.rmtree(self.userHome)
-
+        shutil.rmtree(self.server.root)
         # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
         # is "a little bogus".  Because we aren't using the bzr test runner, we
         # have to manually clean up the test????.tmp dirs.
