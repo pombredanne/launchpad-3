@@ -104,8 +104,12 @@ class Builder(SQLBase):
             return 'NOT OK : %s (%s)' % (self.failnotes, mode)
 
         if self.currentjob:
-            return 'BUILDING %s (%s)' % (self.currentjob.build.title,
-                                         mode)
+            current_build = self.currentjob.build
+            msg = 'BUILDING %s' % current_build.title
+            if current_build.is_trusted is False:
+                archive_name = build.archive.owner.name
+                return '%s [%s] (%s)' % (msg, archive_name, mode)
+            return '%s (%s)' % (msg, mode)
 
         return 'IDLE (%s)' % mode
 

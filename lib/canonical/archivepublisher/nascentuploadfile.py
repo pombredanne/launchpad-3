@@ -744,7 +744,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             self.logger.debug("No source published, checking the ACCEPTED queue")
 
             queue_candidates = distrorelease.getQueueItems(
-                status=DistroReleaseQueueStatus.ACCEPTED,
+                status=PackageUploadStatus.ACCEPTED,
                 name=self.source_name, version=self.source_version,
                 archive=self.policy.archive, exact_match=True)
 

@@ -97,9 +97,7 @@ class Build(SQLBase):
             self.distroarchrelease.architecturetag,
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
-            self.distroarchrelease.distrorelease.distribution.name,
-            self.distroarchrelease.distrorelease.name,
-            self.pocket.name)
+            self.distribution.name, self.distrorelease.name, self.pocket.name)
 
     @property
     def was_built(self):
