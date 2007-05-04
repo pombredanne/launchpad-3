@@ -1235,7 +1235,9 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def _holding_table_unquoted(self, tablename, suffix=''):
         """Name for a holding table, but without quotes.  Use with care."""
-        return "%s_holding_%s_%s" % (str(tablename), str(self.name), suffix)
+        if suffix:
+            suffix = '_%s' % suffix
+        return "%s_holding_%s%s" % (str(tablename), str(self.name), suffix)
 
     def _holding_table(self, tablename, suffix=''):
         """Name for a holding table to hold data being copied in tablename.
