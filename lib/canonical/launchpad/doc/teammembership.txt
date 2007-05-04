@@ -472,21 +472,43 @@ We can also change the sort order of the results of getMembersByStatus.
     ...  for person in t3.getMembersByStatus(deactivated, orderBy=orderBy)]
     [u'Guilherme Salgado (salgado)', u'Celso Providelo (cprov)']
 
-Another convenient method is getEffectiveAdministrators(), which returns the
+== Finding team administrators ==
+
+Another convenient method is getDirectAdministrators(), which returns the
 admin members plus the owner in case he is not one of the admin members.
 
     >>> [admin.unique_displayname for admin in t3.adminmembers]
     [u'Foo Bar (name16)']
-    >>> list(t3.getEffectiveAdministrators()) == list(t3.adminmembers)
+    >>> list(t3.getDirectAdministrators()) == list(t3.adminmembers)
     True
 
     >>> shipit_admins = personset.getByName('shipit-admins')
     >>> shipit_admins.adminmembers.count() == 0
     True
     >>> owner = shipit_admins.teamowner
-    >>> list(shipit_admins.getEffectiveAdministrators()) == [owner]
+    >>> list(shipit_admins.getDirectAdministrators()) == [owner]
     True
-    
+
+Note that the team administrators can contain teams, so if you want to
+check if a user is an admin of the team, you should use inTeam() to
+check if the user is a member of these administrators:
+
+    >>> guadamen_team = personset.getByName('guadamen')
+    >>> [person.name for person in guadamen_team.getDirectAdministrators()]
+    [u'name16', u'ubuntu-team']
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> cprov.inTeam(ubuntu_team)
+    True
+    >>> foobar in guadamen_team.getDirectAdministrators()
+    True
+    >>> cprov in guadamen_team.getDirectAdministrators()
+    False
+    >>> login('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.Edit', guadamen_team)
+    True
+
 == Querying a person for team participation ==
 
 Team membership is direct; team participation is indirect, people being

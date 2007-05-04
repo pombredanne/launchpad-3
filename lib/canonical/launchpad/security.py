@@ -892,7 +892,7 @@ def can_admin_team(team, user):
     if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
         return True
     else:
-        for person in team.getEffectiveAdministrators():
+        for person in team.getDirectAdministrators():
             if user.inTeam(person):
                 return True
     return False
