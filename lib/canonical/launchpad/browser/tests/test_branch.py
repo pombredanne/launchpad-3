@@ -28,7 +28,7 @@ class TestBranchView(unittest.TestCase):
         branch_view = BranchView(branch, request)
         full_message = branch.mirror_status_message
         self.assertEqual(
-            full_message[:128],
+            full_message[:branch_view.MAXIMUM_STATUS_MESSAGE_LENGTH] + '...',
             branch_view.mirror_status_message())
 
 

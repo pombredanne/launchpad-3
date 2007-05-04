@@ -101,6 +101,8 @@ class BranchView(LaunchpadView):
 
     __used_for__ = IBranch
 
+    MAXIMUM_STATUS_MESSAGE_LENGTH = 128
+
     def initialize(self):
         self.notices = []
         self._add_subscription_notice()
@@ -174,7 +176,8 @@ class BranchView(LaunchpadView):
 
     def mirror_status_message(self):
         """A message from a bad scan or pull, truncated for display."""
-        return self.context.mirror_status_message[:128]
+        max_length = self.MAXIMUM_STATUS_MESSAGE_LENGTH
+        return self.context.mirror_status_message[:max_length] + '...'
 
 
 class BranchInPersonView(BranchView):

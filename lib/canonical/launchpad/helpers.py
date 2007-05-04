@@ -575,3 +575,17 @@ def is_ascii_only(string):
         return False
     else:
         return True
+
+
+def truncate_text(string, max_length):
+    """Return a version of string no longer than max_length characters.
+
+    Tries not to cut off the text mid-word.
+    """
+    words = re.findall(r'\s*\S+', string)
+    truncated = words[0]
+    for word in words[1:]:
+        if len(truncated) + len(word) > max_length:
+            break
+        truncated += word
+    return truncated[:max_length]
