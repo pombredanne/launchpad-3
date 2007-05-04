@@ -475,8 +475,7 @@ In contrast, the "search" action can be submitted with a GET request:
 
 
 
-LaunchpadEditFormView
----------------------
+== LaunchpadEditFormView ==
 
 The LaunchpadEditFormView differs from LaunchpadFormView in the
 following ways:
