@@ -1445,7 +1445,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             highest = bounds[1]
 
             if ztm is not None:
+                precommitstart = time.time()
                 ztm.commit()
+                logger.info("...pre-commit in %f seconds..." % (
+                    time.time() - precommitstart))
 
             batch_size = 5000
             while lowest <= highest:
