@@ -9,7 +9,7 @@ from twisted.vfs.ivfs import PermissionError, NotFoundError
 from canonical.supermirrorsftp.sftponly import SFTPOnlyAvatar
 from canonical.supermirrorsftp.bazaarfs import (
     SFTPServerRoot, SFTPServerBranch, SFTPServerProductDir,
-    SFTPServerProductDirPlaceholder)
+    SFTPServerProductDirPlaceholder, WriteLoggingDirectory)
 from canonical.supermirrorsftp.tests.helpers import AvatarTestCase
 
 
@@ -258,6 +258,41 @@ class ProductPlaceholderTestCase(AvatarTestCase):
         self.failUnless(isinstance(noproduct, SFTPServerProductDirPlaceholder))
         return self.assertFailure(defer.maybeDeferred(
             noproduct.createDirectory, 'new-branch'), PermissionError)
+
+
+class TestSFTPServerBranch(AvatarTestCase):
+
+    def setUp(self):
+        AvatarTestCase.setUp(self)
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                Launchpad(self))
+        root = avatar.makeFileSystem().root
+        root.setListenerFactory(lambda branch_id: (lambda: None))
+        userDir = root.child('~alice')
+        d = defer.maybeDeferred(userDir.createDirectory, 'mozilla-firefox')
+        d.addCallback(lambda product: product.createDirectory('new-branch'))
+
+        # Store the branch directory
+        def _storeServerBranch(branchDirectory):
+            self.server_branch = branchDirectory
+
+        return d.addCallback(_storeServerBranch)
+
+    def testCreateBazaarDirectoryWorks(self):
+        """Creating a '.bzr' directory underneath a branch directory works."""
+        directory = self.server_branch.createDirectory('.bzr')
+        self.failUnless(isinstance(directory, WriteLoggingDirectory),
+                        "%r not instance of WriteLoggingDirectory (%r)"
+                        % (directory, type(directory)))
+
+    def testCreateNonBazaarDirectoryFails(self):
+        """Creating a non-'.bzr' directory fails.
+
+        This guarantees that users aren't creating directories beneath the
+        branch directories and putting branches in those deep directories.
+        """
+        d = defer.maybeDeferred(self.server_branch.createDirectory, 'foo')
+        return self.assertFailure(d, PermissionError)
 
 
 def test_suite():

@@ -325,3 +325,10 @@ class SFTPServerBranch(WriteLoggingDirectory):
             root = self.parent.parent.parent
             self._listener = root.listenerFactory(self.branchID)
         self._listener()
+
+    def createDirectory(self, name):
+        if name != '.bzr':
+            raise PermissionError(
+                "Can only create .bzr directories in branch directories: %s"
+                % (name,))
+        return WriteLoggingDirectory.createDirectory(self, name)
