@@ -173,6 +173,9 @@ specified, it's ignored.
     >>> another_pmount_task.status.name
     'UNCONFIRMED'
 
+XXX: The tests below fail since it can't find the librarian file alias
+     inserted above. Need to resolve this before landing.
+
     >>> close_bugs([queue_item_id])
 
     >>> pmount_task.status.name
