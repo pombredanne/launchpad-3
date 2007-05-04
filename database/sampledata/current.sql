@@ -560,14 +560,15 @@ ALTER TABLE archconfigentry ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, owner) VALUES (1, NULL);
-INSERT INTO archive (id, owner) VALUES (2, NULL);
-INSERT INTO archive (id, owner) VALUES (3, NULL);
-INSERT INTO archive (id, owner) VALUES (4, NULL);
-INSERT INTO archive (id, owner) VALUES (5, NULL);
-INSERT INTO archive (id, owner) VALUES (7, NULL);
-INSERT INTO archive (id, owner) VALUES (8, NULL);
-INSERT INTO archive (id, owner) VALUES (9, 28);
+INSERT INTO archive (id, "owner", description) VALUES (1, NULL, NULL);
+INSERT INTO archive (id, "owner", description) VALUES (2, NULL, NULL);
+INSERT INTO archive (id, "owner", description) VALUES (3, NULL, NULL);
+INSERT INTO archive (id, "owner", description) VALUES (4, NULL, NULL);
+INSERT INTO archive (id, "owner", description) VALUES (5, NULL, NULL);
+INSERT INTO archive (id, "owner", description) VALUES (7, NULL, NULL);
+INSERT INTO archive (id, "owner", description) VALUES (8, NULL, NULL);
+INSERT INTO archive (id, "owner", description) VALUES (9, 28, 'packages to help my friends.');
+INSERT INTO archive (id, "owner", description) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)');
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;

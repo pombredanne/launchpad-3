@@ -26,6 +26,8 @@ class IArchive(Interface):
         title=_("Archive Contents Description"), required=False,
         description=_("A short description of contents of this Archive."))
 
+    archive_url = Attribute("External archive URL.")
+
     def getPubConfig(distribution):
         """Return an overridden Publisher Configuration instance.
 

@@ -187,7 +187,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mirror_admin', 'reassign', 'addrelease', 'top_contributors',
              'mentorship', 'builds', 'release_mirrors', 'archive_mirrors',
              'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
-             'launchpad_usage', 'upload_admin']
+             'launchpad_usage', 'upload_admin', 'ppas']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -284,6 +284,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'Builds'
         return Link('+builds', text, icon='info')
+
+    def ppas(self):
+        text = 'Personal Package Archives'
+        return Link('+ppas', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
@@ -433,6 +437,10 @@ class DistributionView(BuildRecordsView):
 
         return sorted(releases, key=operator.attrgetter('version'),
                       reverse=True)
+
+    def getAllPPAs(self):
+        """Return alls Personal Package Archive available."""
+        return getUtility(IArchiveSet).getAllPPAs()
 
 
 class DistributionAllPackagesView(LaunchpadView):

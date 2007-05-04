@@ -199,6 +199,10 @@
             name="+builds-list"
             template="../templates/builds-list.pt"
             />
+        <browser:page
+            name="+ppas"
+            template="../templates/ppa-list.pt"
+            />
     </browser:pages>
 
     <browser:page

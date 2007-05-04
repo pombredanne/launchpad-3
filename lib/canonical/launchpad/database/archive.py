@@ -15,7 +15,7 @@ from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IArchive, IArchiveSet
-
+from canonical.launchpad.webapp.url import urlappend
 
 class Archive(SQLBase):
     implements(IArchive)
@@ -46,6 +46,12 @@ class Archive(SQLBase):
         pubconf.miscroot = None
 
         return pubconf
+
+    @property
+    def archive_url(self):
+        """See IArchive."""
+        return urlappend(
+            config.personalpackagearchive.base_url, self.owner.name)
 
 
 class ArchiveSet:

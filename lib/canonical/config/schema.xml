@@ -913,6 +913,12 @@ k            </description>
                 Directory to be created to store PPAs.
             </description>
         </key>
+        <key name="base_url" datatype="string" required="no"
+             default="http://ppa.launchpad.dev">
+            <description>
+                External base URL for PPAs.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="canonical">
