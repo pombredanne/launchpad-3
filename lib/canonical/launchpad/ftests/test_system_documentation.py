@@ -157,6 +157,15 @@ def distroreleasequeueTearDown(test):
     os.umask(test.old_umask)
     tearDown(test)
 
+def uploadQueueSetUp(test):
+    test_dbuser = config.uploadqueue.dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    setUp(test)
+    test.globs['test_dbuser'] = test_dbuser
+
+def uploadQueueTearDown(test):
+    logout()
+
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
     layer = kw.pop('layer')
@@ -310,6 +319,18 @@ special = {
             setUp=distroreleasequeueSetUp, tearDown=distroreleasequeueTearDown,
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer
+            ),
+    'bug-set-status.txt': LayeredDocFileSuite(
+            '../doc/bug-set-status.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'closing-bugs-from-changelogs.txt': LayeredDocFileSuite(
+            '../doc/closing-bugs-from-changelogs.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     }
 

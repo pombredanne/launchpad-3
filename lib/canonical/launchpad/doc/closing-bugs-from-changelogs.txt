@@ -20,9 +20,7 @@ distribution package.
     >>> bug_params = CreateBugParams(
     ...     getUtility(ILaunchBag).user, "Test bug", "Test bug.")
     >>> pmount_bug = pmount_ubuntu.createBug(bug_params)
-    >>> [pmount_task] = pmount_bug.bugtasks
-    >>> pmount_task.status.name
-    'UNCONFIRMED'
+    >>> pmount_bug_id = pmount_bug.id
 
 The package source uploads are represented as DistroReleaseQueue items
 that are associated with DistroReleaseQueueSource items and a changes
@@ -35,8 +33,9 @@ is the Launchpad-bugs-fixed header.
     >>> from canonical.lp.dbschema import (
     ...     DistroReleaseQueueStatus, PackagePublishingPocket)
 
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_hoary = ubuntu.getRelease('hoary')
-    >>> changes = changes_template % pmount_bug.id
+    >>> changes = changes_template % pmount_bug_id
     >>> changes_file = getUtility(ILibrarianClient).addFile(
     ...     'pmount.changes', len(changes), StringIO(changes), 'text/plain')
     >>> queue_item = DistroReleaseQueue(
@@ -44,7 +43,7 @@ is the Launchpad-bugs-fixed header.
     ...     distrorelease=ubuntu_hoary,
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     changesfile=changes_file, signing_key=None)
-
+    >>> queue_item_id = queue_item.id
 
 The DistroReleaseQueueSource items are linke to SourcePackageRelease
 items, but for closing bugs the only thing that mattters is who uploaded
@@ -75,8 +74,14 @@ scripts, close_bugs() is called with a list of queue item ids that have
 been published. Passing a queue item with a Launchpad-bugs-fixed header
 will close the specified bug.
 
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
+    >>> [pmount_task] = pmount_bug.bugtasks
+    >>> pmount_task.status.name
+    'UNCONFIRMED'
+
     >>> from canonical.launchpad.scripts.processaccepted import close_bugs
-    >>> close_bugs([queue_item.id])
+    >>> close_bugs([queue_item_id])
     >>> pmount_task.status.name
     'FIXRELEASED'
 
@@ -133,17 +138,15 @@ It's possible to specify more than one bug in the Launchpad-bugs-fixed
 header, each will be marked as Fix Released. If a nonexistent bug is
 specified, it's ignored.
 
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> pmount_ubuntu = ubuntu.getSourcePackage('pmount')
     >>> pmount_bug = pmount_ubuntu.createBug(bug_params)
-    >>> [pmount_task] = pmount_bug.bugtasks
-    >>> pmount_task.status.name
-    'UNCONFIRMED'
+    >>> pmount_bug_id = pmount_bug.id
     >>> another_pmount_bug = pmount_ubuntu.createBug(bug_params)
-    >>> [another_pmount_task] = another_pmount_bug.bugtasks
-    >>> another_pmount_task.status.name
-    'UNCONFIRMED'
+    >>> another_pmount_bug_id = another_pmount_bug.id
 
     >>> changes = changes_template % "%d nonexistent %d" % (
-    ...     pmount_bug.id, another_pmount_bug.id)
+    ...     pmount_bug_id, another_pmount_bug_id)
     >>> changes_file = getUtility(ILibrarianClient).addFile(
     ...     'pmount.changes', len(changes), StringIO(changes), 'text/plain')
     >>> queue_item = DistroReleaseQueue(
@@ -151,16 +154,27 @@ specified, it's ignored.
     ...     distrorelease=ubuntu_hoary,
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     changesfile=changes_file, signing_key=None)
+    >>> queue_item_id = queue_item.id
     >>> source_queue = DistroReleaseQueueSource(
     ...     distroreleasequeue=queue_item,
     ...     sourcepackagerelease=pmount_release)
 
     # Need to commit the transaction so that the changes file can be
     # downloaded from the Librarian.
-    >>> import transaction
     >>> transaction.commit()
+    >>> flush_database_updates()
 
-    >>> close_bugs([queue_item.id])
+    >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
+    >>> [pmount_task] = pmount_bug.bugtasks
+    >>> pmount_task.status.name
+    'UNCONFIRMED'
+    >>> another_pmount_bug = getUtility(IBugSet).get(another_pmount_bug_id)
+    >>> [another_pmount_task] = another_pmount_bug.bugtasks
+    >>> another_pmount_task.status.name
+    'UNCONFIRMED'
+
+    >>> close_bugs([queue_item_id])
+
     >>> pmount_task.status.name
     'FIXRELEASED'
     >>> another_pmount_task.status.name
