@@ -1484,21 +1484,23 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
             batch_size = min_batch_size
             while lowest <= highest:
-                # Proceed by batch_size ids (but beware of integer overflow)
-                next = min(lowest+batch_size, highest+1)
+                # Step through ids backwards.  This appears to be faster,
+                # possibly because we're removing records from the end of the
+                # table instead of from the beginning.
+                next = highest - batch_size
                 logger.info("Moving %d ids: %d-%d..." % (
-                    next-lowest, lowest, next))
+                    highest-next, next, highest))
                 batchstarttime = time.time()
 
                 cur.execute('''
                     INSERT INTO %s (
                         SELECT *
                         FROM %s
-                        WHERE id <= %d
+                        WHERE id >= %d
                     )''' % (table, holding, next))
                 cur.execute('''
                     DELETE FROM %s
-                    WHERE id <= %d
+                    WHERE id >= %d
                 ''' % (holding, next))
 
                 logger.info("...committing after %s seconds..." %
@@ -1512,7 +1514,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 time_taken = time.time() - batchstarttime
                 logger.info("...batch done in %f seconds." % time_taken)
 
-                lowest = next
+                highest = next
 
                 # Adjust batch_size to approximate time_goal.  The new
                 # batch_size is the average of two values: the previous value
