@@ -1,0 +1,80 @@
+= Closing bugs from changelogs =
+
+When a package is uploaded to a distribution, a bug number can be
+specified in the Launchpad-bugs-fixed header of the changes file.
+
+    >>> changes_template = """
+    ... Format: 1.7
+    ... Launchpad-bugs-fixed: %s
+    ... """
+
+The package uploads are associated with specific releases of the
+package, but the bugs they reference may be filed on the generic
+distribution package.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CreateBugParams, IDistributionSet)
+    >>> login('no-priv@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> evolution_ubuntu = ubuntu.getSourcePackage('evolution')
+    >>> bug_params = CreateBugParams(
+    ...     getUtility(ILaunchBag).user, "Test bug", "Test bug.")
+    >>> evolution_bug = evolution_ubuntu.createBug(bug_params)
+    >>> [evolution_task] = evolution_bug.bugtasks
+    >>> evolution_task.status.name
+    'UNCONFIRMED'
+
+The package source uploads are represented as DistroReleaseQueue items
+that are associated with DistroReleaseQueueSource items and a changes
+file. The only thing in the changes file that is used to close the bug
+is the Launchpad-bugs-fixed header.
+
+    >>> from StringIO import StringIO
+    >>> from canonical.launchpad.database import DistroReleaseQueue
+    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from canonical.lp.dbschema import (
+    ...     DistroReleaseQueueStatus, PackagePublishingPocket)
+
+    >>> changes = changes_template % evolution_bug.id
+    >>> changes_file = getUtility(ILibrarianClient).addFile(
+    ...     'evolution.changes', len(changes), StringIO(changes), 'text/plain')
+    >>> ubuntu_hoary = ubuntu.getRelease('hoary')
+    >>> queue_item = DistroReleaseQueue(
+    ...     status=DistroReleaseQueueStatus.DONE,
+    ...     distrorelease=ubuntu_hoary,
+    ...     pocket=PackagePublishingPocket.RELEASE,
+    ...     changesfile=changes_file, signing_key=None)
+
+
+The DistroReleaseQueueSource items are linke to SourcePackageRelease
+items, but for closing bugs the only thing that mattters is who uploaded
+it, what package name is it, and to what distribution release it was
+uploaded to.
+
+
+    >>> from canonical.launchpad.database import (
+    ...     DistroReleaseQueueSource, SourcePackageRelease)
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> evolution_release = SourcePackageRelease.selectFirstBy(
+    ...     sourcepackagename=evolution_ubuntu.sourcepackagename,
+    ...     uploaddistrorelease=ubuntu_hoary,
+    ...     creator=sabdfl, orderBy='id')
+    >>> source_queue = DistroReleaseQueueSource(
+    ...     distroreleasequeue=queue_item,
+    ...     sourcepackagerelease=evolution_release)
+
+    # Need to commit the transaction so that the changes file can be
+    # downloaded from the Librarian.
+    >>> import transaction
+    >>> transaction.commit()
+
+Right after the queue items have been processed by the publishing
+scripts, close_bugs() is called with a list of queue item ids that have
+been published. Passing a queue item with a Launchpad-bugs-fixed header
+will close the specified bug.
+
+    >>> from canonical.launchpad.scripts.processaccepted import close_bugs
+    >>> close_bugs([queue_item.id])
+    >>> evolution_task.status.name
+    'FIXRELEASED'
