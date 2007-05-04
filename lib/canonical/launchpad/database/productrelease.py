@@ -40,7 +40,8 @@ class ProductRelease(SQLBase):
     manifest = ForeignKey(dbName='manifest', foreignKey='Manifest',
                           default=None)
 
-    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease')
+    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
+                            orderBy='-dateuploaded')
 
     # properties
     @property
