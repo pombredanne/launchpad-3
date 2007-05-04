@@ -12,12 +12,23 @@
           </a>
         </li>
         <li>
-          <a href="/people/+me/+addbranch">
-            <img
-              alt="Register a branch"
-              src="/+icing/but-lrg-registerabranch.gif"
-            />
-          </a>
+          <tal:logged-in tal:condition="request/lp:person">
+            <a href="/people/+me/+addbranch">
+              <img
+                 alt="Register a branch"
+                 src="/+icing/but-lrg-registerabranch.gif"
+                 />
+            </a>
+          </tal:logged-in>
+          <tal:anonymous tal:condition="not:request/lp:person">
+            <a href="/people/+me/+addbranch/+login">
+              <img
+                 alt="Register a branch"
+                 src="/+icing/but-lrg-registerabranch.gif"
+                 />
+            </a>
+          </tal:anonymous>
+
         </li>
         <li>
           <a href="https://help.launchpad.net/VcsImports">
