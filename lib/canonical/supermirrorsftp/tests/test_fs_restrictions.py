@@ -13,6 +13,40 @@ from canonical.supermirrorsftp.bazaarfs import (
 from canonical.supermirrorsftp.tests.helpers import AvatarTestCase
 
 
+class Launchpad:
+    """Mock RPC interface to Launchpad, used for the tests in this module."""
+
+    def __init__(self, test):
+        self.test = test
+
+    def fetchProductID(self, productName):
+        """Return a fake product ID.
+
+        If productName is 'mozilla-firefox' return a valid but fake id. If
+        productName is 'no-such-product', return None signalling that the
+        product was not found.
+
+        If productName is anything else, raises an AssertionError.
+        """
+        self.test.failUnless(productName in ['mozilla-firefox',
+                                             'no-such-product'])
+        if productName == 'mozilla-firefox':
+            return defer.succeed(123)
+        else:
+            return defer.succeed(None)
+
+    def createBranch(self, userID, productID, branchName):
+        """Check the given parameters and return a fake branch ID.
+
+        If not given 1, '123' and 'new-branch' as parameters, then raise an
+        AssertionError.
+        """
+        self.test.assertEqual(1, userID)
+        self.test.assertEqual('123', productID)
+        self.test.assertEqual('new-branch', branchName)
+        return defer.succeed(0xabcdef12)
+
+
 class TestTopLevelDir(AvatarTestCase):
     def testListDirNoTeams(self):
         # list only user dir + team dirs
@@ -54,14 +88,8 @@ class TestTopLevelDir(AvatarTestCase):
 class UserDirsTestCase(AvatarTestCase):
     def testCreateValidProduct(self):
         # Test creating a product dir.
-
-        class Launchpad:
-            test = self
-            def fetchProductID(self, productName):
-                self.test.assertEqual('mozilla-firefox', productName)
-                return defer.succeed(123)
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                Launchpad())
+                                Launchpad(self))
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
         self.assertEqual(
@@ -77,20 +105,14 @@ class UserDirsTestCase(AvatarTestCase):
         return deferred
 
     def testCreateInvalidProduct(self):
-        class Launchpad:
-            test = self
-            def fetchProductID(self, productName):
-                self.test.assertEqual('mozilla-firefox', productName)
-                # None signals that the product doesn't exist
-                return defer.succeed(None)
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                Launchpad())
+                                Launchpad(self))
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
         # We expect PermissionError from a userDir.createDirectory:
         return self.assertFailure(
-            defer.maybeDeferred(userDir.createDirectory, 'mozilla-firefox'),
+            defer.maybeDeferred(userDir.createDirectory, 'no-such-product'),
             PermissionError)
 
     def testInitialBranches(self):
@@ -119,21 +141,8 @@ class UserDirsTestCase(AvatarTestCase):
 
 class ProductDirsTestCase(AvatarTestCase):
     def testCreateBranch(self):
-        # Define a mock launchpad RPC object.
-        class Launchpad:
-            test = self
-            def fetchProductID(self, productName):
-                # expect fetchProductID('mozilla-firefox')
-                self.test.assertEqual(productName, 'mozilla-firefox')
-                return defer.succeed(123)
-            def createBranch(self, userID, productID, branchName):
-                # expect createBranch(1, '123', 'new-branch')
-                self.test.assertEqual(1, userID)
-                self.test.assertEqual('123', productID)
-                self.test.assertEqual('new-branch', branchName)
-                return defer.succeed(0xabcdef12)
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                Launchpad())
+                                Launchpad(self))
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
@@ -168,10 +177,10 @@ class ProductDirsTestCase(AvatarTestCase):
 
     def testRmdirBranchDenied(self):
         # Deleting a branch directory should fail with a permission error.
-        
+
         # Create an empty branch directory
         deferred = self.testCreateBranch()
-        
+
         # Now attempt to remove the new-branch directory
         def _cb(branchDirectory):
             return branchDirectory.remove()
@@ -184,29 +193,8 @@ class ProductDirsTestCase(AvatarTestCase):
 class ProductPlaceholderTestCase(AvatarTestCase):
 
     def _setUpFilesystem(self):
-        # XXX - factor this out into a common Launchpad utility class
-        # jml, 2007-01-26
-        class Launchpad:
-            test = self
-            def fetchProductID(self, productName):
-                # expect fetchProductID('mozilla-firefox')
-                self.test.failUnless(productName in ['mozilla-firefox',
-                                                     'no-such-product'])
-                if productName == 'mozilla-firefox':
-                    return defer.succeed(123)
-                else:
-                    # None is returned if the product could not be looked up
-                    return defer.succeed(None)
-
-            def createBranch(self, userID, productID, branchName):
-                # expect createBranch(1, '123', 'new-branch')
-                self.test.assertEqual(1, userID)
-                self.test.assertEqual('123', productID)
-                self.test.assertEqual('new-branch', branchName)
-                return defer.succeed(0xabcdef12)
-
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                Launchpad())
+                                Launchpad(self))
         return avatar.makeFileSystem()
 
     def testBranchInPlaceholderNotFound(self):
