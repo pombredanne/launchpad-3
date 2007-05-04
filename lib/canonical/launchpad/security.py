@@ -892,10 +892,7 @@ def can_admin_team(team, user):
     if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
         return True
     else:
-        for person in team.getDirectAdministrators():
-            if user.inTeam(person):
-                return True
-    return False
+        return team in user.getAdministratedTeams()
 
 
 class AdminLanguageSet(OnlyRosettaExpertsAndAdmins):

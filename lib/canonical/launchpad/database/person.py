@@ -1061,6 +1061,23 @@ class Person(SQLBase, HasSpecificationsMixin):
 
         tm.syncUpdate()
 
+    def getAdministratedTeams(self):
+        """See IPerson."""
+        owner_of_teams = Person.select('''
+            Person.teamowner = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            ''' % sqlvalues(self),
+            clauseTables=['TeamParticipation'])
+        admin_of_teams = Person.select('''
+            Person.id = TeamMembership.team
+            AND TeamMembership.status = %(admin)s
+            AND TeamMembership.person = TeamParticipation.team
+            AND TeamParticipation.person = %(person)s
+            ''' % sqlvalues(person=self, admin=TeamMembershipStatus.ADMIN),
+            clauseTables=['TeamParticipation', 'TeamMembership'])
+        orderBy = SQLConstant("person_sort_key(displayname, name)")
+        return admin_of_teams.union(owner_of_teams, orderBy=orderBy)
+
     def getDirectAdministrators(self):
         """See IPerson."""
         assert self.isTeam(), 'Method should only be called on a team.'

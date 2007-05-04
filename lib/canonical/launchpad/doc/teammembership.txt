@@ -509,6 +509,12 @@ check if the user is a member of these administrators:
     >>> check_permission('launchpad.Edit', guadamen_team)
     True
 
+There is also the getAdministratedTeams() method that returns all the
+teams for which the person/team has admin rights.
+
+    >>> [team.name for team in cprov.getAdministratedTeams()]
+    [u'guadamen', u'launchpad-buildd-admins']
+
 == Querying a person for team participation ==
 
 Team membership is direct; team participation is indirect, people being

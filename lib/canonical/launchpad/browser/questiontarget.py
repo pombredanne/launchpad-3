@@ -494,9 +494,7 @@ class ManageAnswerContactView(LaunchpadFormView):
     @cachedproperty
     def administrated_teams(self):
         """Return the list of teams for which the user is an administrator."""
-        return [team
-                for team in self.user.teams_participated_in
-                if self.user in team.getEffectiveAdministrators()]
+        return self.user.getAdministratedTeams()
 
     @property
     def initial_values(self):

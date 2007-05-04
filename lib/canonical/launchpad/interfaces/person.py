@@ -629,6 +629,14 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         If no orderby is provided, Person.sortingColumns is used.
         """
 
+    def getAdministratedTeams():
+        """Return the teams that this person/team is an administrator of.
+
+        This includes teams for which the person is the owner, a direct
+        member with admin privilege, or member of a team which such
+        privileges.
+        """
+
     def getDirectAdministrators():
         """Return this team's administrators.
          
