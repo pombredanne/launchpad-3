@@ -1233,11 +1233,11 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             ''' % sqlvalues(self.id, self.parentrelease.id))
 
 
-    def _holding_table_unquoted(self, tablename):
+    def _holding_table_unquoted(self, tablename, suffix=''):
         """Name for a holding table, but without quotes.  Use with care."""
-        return "%s_holding_%s" % (str(tablename), str(self.name))
+        return "%s_holding_%s_%s" % (str(tablename), str(self.name), suffix)
 
-    def _holding_table(self, tablename):
+    def _holding_table(self, tablename, suffix=''):
         """Name for a holding table to hold data being copied in tablename.
 
         This is used to copy translation data from the parent distrorelease to
@@ -1247,7 +1247,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         Return value is properly quoted for use as an SQL identifier.
         """
-        return str(quoteIdentifier(self._holding_table_unquoted(tablename)))
+        return str(
+            quoteIdentifier(self._holding_table_unquoted(tablename, suffix)))
 
 
     def _extract_to_holding_table(self,
@@ -1354,6 +1355,11 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                     ALTER TABLE %s DROP COLUMN new_%s
                 ''' % (holding, j.lower()))
 
+        # Now that our new holding table is in a stable state, index its id
+        cur.execute('''
+            CREATE UNIQUE INDEX %s
+            ON %s (id)
+        ''' % (self._holding_table(orgtable, 'id'), holding))
         logger.info('...Extracted in %f seconds' % (time.time()-starttime))
 
 
@@ -1452,6 +1458,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             bounds = cur.fetchall()[0]
             lowest = bounds[0]
             highest = bounds[1]
+            logging.info("Up to %d rows in holding table"%(highest+1-lowest))
 
             if ztm is not None:
                 precommitstart = time.time()
@@ -1466,7 +1473,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             # more or less constant transaction costs.  Reducing batch size
             # any further is not likely to help much, but will make the
             # overall procedure take much longer.
-            min_batch_size = 10
+            min_batch_size = 1000
 
             # The number of seconds we want each transaction to take.  The
             # batching algorithm tries to approximate this batch time by
@@ -1477,7 +1484,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             while lowest <= highest:
                 # Proceed by batch_size ids (but beware of integer overflow)
                 next = min(lowest+batch_size, highest+1)
-                logger.info("Moving ids %d-%d..." % (lowest,next))
+                logger.info("Moving %d ids: %d-%d..." % (
+                    next-lowest, lowest, next))
                 batchstarttime = time.time()
 
                 cur.execute('''
@@ -1515,7 +1523,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 # algorithm.
                 time_taken = max(time_goal/10, time_taken)
                 batch_size = batch_size*(1 + time_goal/time_taken)/2
-                batch_size = max(min_batch_size, batch_size)
+                batch_size = max(batch_size, min_batch_size)
 
             cur.execute("DROP TABLE %s" % holding)
             logger.info(
