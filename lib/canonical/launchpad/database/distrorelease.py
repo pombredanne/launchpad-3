@@ -1519,9 +1519,6 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 "Pouring %s took %f seconds." %
                     (holding,time.time()-tablestarttime))
 
-        return True
-
-
 
     def _copy_active_translations_to_new_release(self, logger, ztm):
         """We're a new release; inherit translations from parent.
@@ -2003,9 +2000,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         logger = logging.getLogger('initialise')
 
-        if ( len(self.potemplates) == 0 and
-                not self._recoverable_holding_tables() ):
-            # We have no potemplates at all, so we need to do a full copy.
+        if ( len(self.potemplates) == 0 or
+                self._recoverable_holding_tables() ):
+            # We're a new distrorelease; either copy from scratch or recover
+            # from an uncompleted previous run
             self._copy_active_translations_to_new_release(logger, ztm)
         else:
             # Incremental copy of updates from parent distrorelease
