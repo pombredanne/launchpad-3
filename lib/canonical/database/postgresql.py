@@ -312,6 +312,19 @@ def tableHasColumn(cur, table, column):
     ''' % sqlvalues(table, column))
     return cur.fetchall()[0][0]
 
+
+def dropTables(cur, tables):
+    """Drop given tables (a list, one name, or None), if they exist.
+    """
+    if not tables:
+        return
+    if type(tables) != list:
+        tables = [tables]
+
+    # This syntax requires postgres 8.2 or better
+    cur.execute("DROP TABLE IF EXISTS %s" % ','.join(tables))
+
+
 if __name__ == '__main__':
     import psycopg
     con = psycopg.connect('dbname=launchpad_dev user=launchpad')
