@@ -1565,7 +1565,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 if (batch_size < min_batch_size or
                         deletions_since_analyze > 1000000 or
                         (highest-lowest)/5 < deletions_since_analyze):
+                    analyzestarttime = time.time()
                     cur.execute("ANALYZE %s (id)" % holding)
+                    logger.info("Analyzed in %f seconds" % (
+                        time.time() - analyzestarttime))
                     deletions_since_analyze = 0
 
                 batch_size = max(batch_size, min_batch_size)
