@@ -296,7 +296,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
                 "Expect: '%s'\nGot:\n%s" % (content, raw_msg))
 
     def testUploadToPPA(self):
-        """Upload to a known PPA gets there.
+        """Upload to a PPA gets there.
 
         Email announcement is sent and package is on queue ACCEPTED even if
         the source is NEW (PPA Auto-Accept everything).
@@ -318,6 +318,38 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=name16.archive)
         self.assertEqual(queue_items.count(), 1)
+
+    def testUploadToTeamPPA(self):
+        """Upload to a team PPA also gets there."""
+        ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
+        self.assertEqual(ubuntu_team.archive, None)
+
+        upload_dir = self.queueUpload("bar_1.0-1", "~ubuntu-team/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        self.assertNotEqual(ubuntu_team.archive, None)
+
+        contents = ["Subject: Accepted bar 1.0-1 (source)"]
+        self.assertEmail(contents)
+
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED, name="bar",
+            version="1.0-1", exact_match=True, archive=ubuntu_team.archive)
+        self.assertEqual(queue_items.count(), 1)
+
+    def testNotMemberUploadToTeamPPA(self):
+        """Upload to a team PPA is rejected when the uploader is not member."""
+        ubuntu_translators = getUtility(IPersonSet).getByName(
+            "ubuntu-translators")
+        self.assertEqual(ubuntu_translators.archive, None)
+
+        upload_dir = self.queueUpload("bar_1.0-1", "~ubuntu-translators/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        self.assertEqual(ubuntu_translators.archive, None)
+
+        contents = [""]
+        self.assertEmail(contents)
 
     def testUploadToSomeoneElsePPA(self):
         """Upload to a someone else's PPA gets rejected with proper message."""
