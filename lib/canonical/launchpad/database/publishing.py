@@ -15,19 +15,15 @@ import operator
 import os
 
 from zope.interface import implements
-
 from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
 
-from canonical.archivepublisher.diskpool import poolify
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
 from canonical.lp.dbschema import (
     PackagePublishingPriority, PackagePublishingStatus,
     PackagePublishingPocket)
-
 from canonical.launchpad.interfaces import (
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
@@ -36,12 +32,10 @@ from canonical.launchpad.interfaces import (
     PoolFileOverwriteError)
 
 
-
 # XXX cprov 20060818: move it away, perhaps archivepublisher/pool.py
 def makePoolPath(source_name, component_name):
     """Return the pool path for a given source name and component name."""
     from canonical.archivepublisher.diskpool import poolify
-    import os
     return os.path.join(
         'pool', poolify(source_name, component_name))
 
@@ -525,7 +519,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_size = bin_file.libraryfile.content.filesize
         bin_md5 = bin_file.libraryfile.content.md5
         bin_filepath = os.path.join(
-            'pool/', poolify(bin_filename, self.component.name))
+            makePoolPath(spr.name, self.component.name), bin_filename)
         # description field in index is an association of summary and
         # description, as:
         #

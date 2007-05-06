@@ -312,7 +312,7 @@ class TestPublisher(TestNativePublishingBase):
              'Maintainer: Foo Bar <foo@bar.com>',
              'Architecture: i386',
              'Version: 666',
-             'Filename: pool/main/f/foo-bin.deb',
+             'Filename: pool/main/f/foo/foo-bin.deb',
              'Size: 18',
              'MD5sum: 008409e7feb1c24a6ccab9f6a62d24c5',
              'Description: Foo app is great',
