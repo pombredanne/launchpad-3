@@ -81,21 +81,27 @@ class ArchiveSet:
 
     def getPendingPPAs(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""
-        query = """
+        src_query = """
         Archive.owner is not NULL AND
-        (SourcePackagePublishingHistory.archive = archive.id AND
-         SourcePackagePublishingHistory.status = %s) OR
-        (BinaryPackagePublishingHistory.archive = archive.id AND
-         BinaryPackagePublishingHistory.status = %s)
-        """ % sqlvalues(PackagePublishingStatus.PENDING,
-                        PackagePublishingStatus.PENDING)
+        SourcePackagePublishingHistory.archive = archive.id AND
+        SourcePackagePublishingHistory.status = %s
+         """ % sqlvalues(PackagePublishingStatus.PENDING)
 
-        clauseTables=['SourcePackagePublishingHistory',
-                      'BinaryPackagePublishingHistory']
+        src_archives = Archive.select(
+            src_query, clauseTables=['SourcePackagePublishingHistory'],
+            orderBy=['archive.id'], distinct=True)
 
-        return Archive.select(
-            query, clauseTables=clauseTables, orderBy=['archive.id'],
-            distinct=True)
+        bin_query = """
+        Archive.owner is not NULL AND
+        BinaryPackagePublishingHistory.archive = archive.id AND
+        BinaryPackagePublishingHistory.status = %s
+        """ % sqlvalues(PackagePublishingStatus.PENDING)
+
+        bin_archives = Archive.select(
+            bin_query, clauseTables=['BinaryPackagePublishingHistory'],
+            orderBy=['archive.id'], distinct=True)
+
+        return src_archives.union(bin_archives)
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""
