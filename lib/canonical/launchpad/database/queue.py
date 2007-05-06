@@ -153,7 +153,7 @@ class PackageUpload(SQLBase):
                             PackageUploadStatus.DONE],
                     name=source.sourcepackagerelease.name,
                     version=source.sourcepackagerelease.version,
-                    exact_match=True).count() > 0:
+                    archive=self.archive, exact_match=True).count() > 0:
                     raise QueueInconsistentStateError(
                         'This sourcepackagerelease is already accepted in %s.'
                         % distrorelease.name)

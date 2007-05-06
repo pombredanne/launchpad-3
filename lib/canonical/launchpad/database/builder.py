@@ -106,8 +106,8 @@ class Builder(SQLBase):
         if self.currentjob:
             current_build = self.currentjob.build
             msg = 'BUILDING %s' % current_build.title
-            if current_build.is_trusted is False:
-                archive_name = build.archive.owner.name
+            if not current_build.is_trusted:
+                archive_name = current_build.archive.owner.name
                 return '%s [%s] (%s)' % (msg, archive_name, mode)
             return '%s (%s)' % (msg, mode)
 
