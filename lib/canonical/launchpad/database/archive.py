@@ -13,9 +13,11 @@ from zope.interface import implements
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import IArchive, IArchiveSet
 from canonical.launchpad.webapp.url import urlappend
+from canonical.lp.dbschema import PackagePublishingStatus
+
 
 class Archive(SQLBase):
     implements(IArchive)
@@ -76,6 +78,24 @@ class ArchiveSet:
     def getAllPPAs(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""
         return Archive.select("owner is not NULL")
+
+    def getPendingPPAs(self):
+        """See canonical.launchpad.interfaces.IArchiveSet."""
+        query = """
+        Archive.owner is not NULL AND
+        (SourcePackagePublishingHistory.archive = archive.id AND
+         SourcePackagePublishingHistory.status = %s) OR
+        (BinaryPackagePublishingHistory.archive = archive.id AND
+         BinaryPackagePublishingHistory.status = %s)
+        """ % sqlvalues(PackagePublishingStatus.PENDING,
+                        PackagePublishingStatus.PENDING)
+
+        clauseTables=['SourcePackagePublishingHistory',
+                      'BinaryPackagePublishingHistory']
+
+        return Archive.select(
+            query, clauseTables=clauseTables, orderBy=['archive.id'],
+            distinct=True)
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""

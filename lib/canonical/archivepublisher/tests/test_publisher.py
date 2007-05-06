@@ -260,6 +260,33 @@ class TestPublisher(TestNativePublishingBase):
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
             archive_publisher.allowed_suites)
 
+    def testPendingArchive(self):
+        """Check Pending Archive Lookup.
+
+        IArchiveSet.getPendingPPAs should only return the archives with
+        publications in PENDING state.
+        """
+        archive_set = getUtility(IArchiveSet)
+        person_set = getUtility(IPersonSet)
+
+        cprov = person_set.getByName('cprov')
+        cprov_archive = archive_set.ensure(cprov)
+        name16 = person_set.getByName('name16')
+        name16_archive = archive_set.ensure(name16)
+
+        pub_source = self.getPubSource(
+            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+            status=PackagePublishingStatus.PENDING, archive=cprov.archive)
+
+        pub_source = self.getPubSource(
+            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+            status=PackagePublishingStatus.PUBLISHED, archive=name16.archive)
+
+        self.assertEqual(3, archive_set.getAllPPAs().count())
+        self.assertEqual(1, archive_set.getPendingPPAs().count())
+        pending_archive = archive_set.getPendingPPAs()[0]
+        self.assertEqual(cprov.archive.id, pending_archive.id)
+
     def testPPAArchiveIndex(self):
         """Building Archive Indexes from PPA publications."""
         from canonical.archivepublisher.publishing import getPublisher

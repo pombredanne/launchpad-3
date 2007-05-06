@@ -121,10 +121,10 @@ def main():
     if not options.ppa:
         archives = [distribution.main_archive]
     else:
-        # XXX cprov 20070103: we can optimize the loop by quering only the
-        # PPA with modifications pending publication. For now just iterating
-        # over all of them should do.
-        archives = getUtility(IArchiveSet).getAllPPAs()
+        if options.careful or options.careful_publishing:
+            archives = getUtility(IArchiveSet).getAllPPAs()
+        else:
+            archives = getUtility(IArchiveSet).getPendingPPAs()
         if options.distsroot is not None:
             log.error("We should not define 'distsroot' in PPA mode !")
             return

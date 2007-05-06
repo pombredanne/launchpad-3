@@ -54,5 +54,8 @@ class IArchiveSet(Interface):
     def getAllPPAs():
         """Return all existent personal archives."""
 
+    def getPendingPPAs():
+        """Return only pending publication personal archives."""
+
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
