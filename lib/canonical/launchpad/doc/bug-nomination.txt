@@ -433,11 +433,11 @@ be acceptable.
 
     >>> for task in tasks:
     ...     print task.target.bugtargetname
-    Mozilla Firefox
-    Mozilla Firefox trunk
     evolution (Ubuntu Grumpy)
     evolution (Ubuntu Warty)
     evolution (Ubuntu)
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu Grumpy)
     mozilla-firefox (Ubuntu Warty)
@@ -460,11 +460,11 @@ The same is done if the distribution task's source package is changed.
 
     >>> for task in tasks:
     ...     print task.target.bugtargetname
-    Mozilla Firefox
-    Mozilla Firefox trunk
     evolution (Ubuntu Grumpy)
     evolution (Ubuntu Warty)
     evolution (Ubuntu)
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu Grumpy)
     mozilla-firefox (Ubuntu Warty)

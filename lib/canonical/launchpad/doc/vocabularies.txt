@@ -433,7 +433,7 @@ The same is true for bug two, where the bug is targeted to Hoary.
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> for bugtask in bug_two.bugtasks:
     ...     print bugtask.targetname
-    Ubuntu
+    Tomcat
     Ubuntu
     Ubuntu Hoary
     mozilla-firefox (Debian)
@@ -756,7 +756,7 @@ The list of selectable products. Results are ordered by displayname.
     >>> l[:2]
     [u'The Evolution Groupware Application', u'The GNOME Terminal Emulator']
     >>> l[2:]
-    [u'The Gnome Panel Applets', u'Ubuntu', u'Gnome Baker']
+    [u'The Gnome Panel Applets', u'Gnome Baker']
     >>> arch = product_vocabulary.getTermByToken("arch-mirrors")
     >>> arch.title
     u'Arch archive mirrors'
@@ -1087,41 +1087,32 @@ heterogeneous.
     ...     if 'Ubuntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
     Ubuntu Linux (Distribution) - class Distribution
-    Ubuntu (Product) - class Product
     Ubuntu Test (Distribution) - class Distribution
 
-Inactive products and projects are not available
+Inactive projects and project groups are not available.
 
-    >>> ubuntu_product = getUtility(IProductSet).getByName('ubuntu-product')
-    >>> ubuntu_product in vocab
+    >>> for term in vocab:
+    ...     if 'Tomcat' in term.title:
+    ...         print term.title, '- class', term.value.__class__.__name__
+    Tomcat (Product) - class Product
+    >>> tomcat = getUtility(IProductSet).getByName('tomcat')
+    >>> tomcat in vocab
     True
-    >>> ubuntu_product.active = False
+    >>> tomcat.active = False
     >>> flush_database_updates()
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProduct")
-    >>> for term in vocab:
-    ...     if 'Ubuntu' in term.title:
-    ...         print term.title, '- class', term.value.__class__.__name__
-    Ubuntu Linux (Distribution) - class Distribution
-    Ubuntu Test (Distribution) - class Distribution
-    >>> ubuntu_product in vocab
+    >>> tomcat in vocab
     False
-
-    >>> ubuntu_product.active = True
+    >>> tomcat.active = True
     >>> flush_database_updates()
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProduct")
-    >>> for term in vocab:
-    ...     if 'Ubuntu' in term.title:
-    ...         print term.title, '- class', term.value.__class__.__name__
-    Ubuntu Linux (Distribution) - class Distribution
-    Ubuntu (Product) - class Product
-    Ubuntu Test (Distribution) - class Distribution
-    >>> ubuntu_product in vocab
+    >>> tomcat in vocab
     True
 
-Projects are not contained in this vocabulary:
+Project groups are not contained in this vocabulary:
 
-    >>> ubuntu_project = getUtility(IProjectSet).getByName('ubuntu-project')
-    >>> ubuntu_project in vocab
+    >>> apache = getUtility(IProjectSet).getByName('apache')
+    >>> apache in vocab
     False
 
 DistributionOrProductOrProjectVocabulary
@@ -1134,45 +1125,45 @@ heterogeneous.
     ...     if 'Ubuntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
     Ubuntu Linux (Distribution) - class Distribution
-    Ubuntu (Product) - class Product
-    The Ubuntu Project (Project) - class Project
     Ubuntu Test (Distribution) - class Distribution
 
-Inactive products and projects are not available
+Inactive projects and project groups are not available.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> ubuntu_product = getUtility(IProductSet).getByName('ubuntu-product')
-    >>> ubuntu_product in vocab
+    >>> tomcat = getUtility(IProductSet).getByName('tomcat')
+    >>> tomcat in vocab
     True
-    >>> ubuntu_product.active = False
-    >>> syncUpdate(ubuntu_product)
-    >>> ubuntu_product in vocab
+    >>> tomcat.active = False
+    >>> syncUpdate(tomcat)
+    >>> tomcat in vocab
     False
 
-    >>> ubuntu_project = getUtility(IProjectSet).getByName('ubuntu-project')
-    >>> ubuntu_project in vocab
+    >>> apache = getUtility(IProjectSet).getByName('apache')
+    >>> apache in vocab
     True
-    >>> ubuntu_project.active = False
-    >>> syncUpdate(ubuntu_project)
-    >>> ubuntu_project in vocab
+    >>> apache.active = False
+    >>> syncUpdate(apache)
+    >>> apache in vocab
     False
 
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProductOrProject")
     >>> for term in vocab:
-    ...     if 'Ubuntu' in term.title:
+    ...     if 'Apache' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Ubuntu Linux (Distribution) - class Distribution
-    Ubuntu Test (Distribution) - class Distribution
-    >>> getUtility(IProductSet).getByName('ubuntu-product').active = True
-    >>> getUtility(IProjectSet).getByName('ubuntu-project').active = True
+    >>> for term in vocab:
+    ...     if 'Tomcat' in term.title:
+    ...         print term.title, '- class', term.value.__class__.__name__
+    >>> getUtility(IProductSet).getByName('tomcat').active = True
+    >>> getUtility(IProjectSet).getByName('apache').active = True
     >>> flush_database_updates()
     >>> vocab = vocabulary_registry.get(None, "DistributionOrProductOrProject")
     >>> for term in vocab:
-    ...     if 'Ubuntu' in term.title:
+    ...     if 'Apache' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Ubuntu Linux (Distribution) - class Distribution
-    Ubuntu (Product) - class Product
-    The Ubuntu Project (Project) - class Project
-    Ubuntu Test (Distribution) - class Distribution
+    Apache (Project) - class Project
+    >>> for term in vocab:
+    ...     if 'Tomcat' in term.title:
+    ...         print term.title, '- class', term.value.__class__.__name__
+    Tomcat (Product) - class Product
 
 XXX: document more vocabularies here, particularly when they break!

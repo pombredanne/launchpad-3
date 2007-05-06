@@ -95,12 +95,16 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
                 message = "")
 
 def record_bug_task_added(bug_task, object_created_event):
+    if bug_task.sourcepackagename:
+        name = bug_task.targetname
+    else:
+        name = bug_task.target.name
     getUtility(IBugActivitySet).new(
         bug=bug_task.bug,
         datechanged=UTC_NOW,
         person=object_created_event.user,
         whatchanged='bug',
-        message='assigned to ' + bug_task.target.name)
+        message='assigned to ' + name)
 
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     """Make an activity note that a bug task was edited."""

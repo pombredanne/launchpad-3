@@ -348,7 +348,7 @@ Bar gets subscribed to the bug in the process:
     >>> print bug_two_in_ubuntu.bug.id
     2
     >>> print bug_two_in_ubuntu.product.name
-    ubuntu-product
+    tomcat
 
     >>> sorted(
     ...     [subscription.person.displayname for subscription in

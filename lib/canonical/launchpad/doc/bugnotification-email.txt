@@ -53,7 +53,7 @@ Let's take a look at what the notification email looks like:
     Malone pages that use more complex layouts with portlets and fancy CSS
     are sometimes not getting properly reflowed after rendering.
     <BLANKLINE>
-    ** Affects: Mozilla Firefox
+    ** Affects: firefox
          Importance: Medium
              Status: Unconfirmed
 
@@ -74,7 +74,7 @@ as well.
     Malone pages that use more complex layouts with portlets and fancy CSS
     are sometimes not getting properly reflowed after rendering.
     <BLANKLINE>
-    ** Affects: Mozilla Firefox
+    ** Affects: firefox
          Importance: Medium
              Status: Unconfirmed
     <BLANKLINE>
@@ -278,7 +278,7 @@ text representations of the changes when a bug task is edited.
     >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Changed in: Ubuntu
+    ** Changed in: tomcat
          Assignee: (unassigned) => Sample Person
            Status: Unconfirmed => Confirmed
     -----------------------------
@@ -431,7 +431,7 @@ We can also add a bugwatch while adding a new bugtask.
     >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Also affects: Mozilla Firefox via
+    ** Also affects: firefox via
        https://bugzilla.mozilla.org/show_bug.cgi?id=42
        Importance: High
            Status: Unconfirmed

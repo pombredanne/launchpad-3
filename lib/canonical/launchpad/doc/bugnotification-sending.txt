@@ -561,7 +561,7 @@ well:
     To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
     <BLANKLINE>
     ** Visibility changed to: Private.
     <BLANKLINE>
@@ -573,7 +573,7 @@ well:
     Blackhole Trash folder
     http://bugs.launchpad.dev/bugs/2
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant for Tomcat.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -596,7 +596,7 @@ well:
     To: support@ubuntu.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
     <BLANKLINE>
     ** Visibility changed to: Public.
     <BLANKLINE>
@@ -604,7 +604,7 @@ well:
     Blackhole Trash folder
     http://bugs.launchpad.dev/bugs/2
     You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Ubuntu.
+    Team, which is the registrant for Tomcat.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -933,7 +933,7 @@ makes it write out the emails it sends.
     Reply-To: Bug 2 <2@bugs.launchpad.net>
     References: foo@example.com-332342--1231
     ...
-    X-Launchpad-Message-Rationale: Registrant (Ubuntu)
+    X-Launchpad-Message-Rationale: Registrant (tomcat)
     ...
     INFO    Notifying test@canonical.com about bug 2.
     ...

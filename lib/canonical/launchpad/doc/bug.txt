@@ -741,7 +741,7 @@ You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
 
     >>> bug_two = bugset.get(2)
     >>> for task in bug_two.bugtasks: print task.target.displayname
-    Ubuntu
+    Tomcat
     Ubuntu
     Hoary
     mozilla-firefox in debian
@@ -750,7 +750,7 @@ You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
 You can also get a list of the "LP pillars" affected by a particular bug.
 
     >>> for pillar in bug_two.affected_pillars: print pillar.displayname
-    Ubuntu
+    Tomcat
     Ubuntu
     Debian
 
@@ -759,10 +759,10 @@ Yes, this is TERRIBLE sample data, but it serves to illustrate the point.
 If you are interested in bugtask targeted to a specific target, you can
 use getBugTask() to get it.
 
-    >>> ubuntu_product = getUtility(IProductSet).getByName('ubuntu-product')
-    >>> ubuntu_product_task = bug_two.getBugTask(ubuntu_product)
-    >>> ubuntu_product_task.target.name
-    u'ubuntu-product'
+    >>> tomcat = getUtility(IProductSet).getByName('tomcat')
+    >>> tomcat_task = bug_two.getBugTask(tomcat)
+    >>> tomcat_task.target.name
+    u'tomcat'
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_task = bug_two.getBugTask(ubuntu)
