@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'UploadError',
     'UploadWarning',
+    'splitComponentAndSection',
     'NascentUploadFile',
     'CustomUploadFile',
     'PackageUploadFile',
@@ -78,6 +79,13 @@ class TarFileDateChecker:
             self.ancient_files[name] = mtime
 
 
+def splitComponentAndSection(component_and_section):
+    """Split the component out of the section."""
+    if "/" not in component_and_section:
+        return "main", component_and_section
+    return component_and_section.split("/", 1)
+
+
 class NascentUploadFile:
     """A nascent uploaded file is a file on disk that is part of an upload.
 
@@ -107,7 +115,7 @@ class NascentUploadFile:
 
         self.size = int(size)
         self.component_name, self.section_name = (
-            self.splitComponentAndSection(component_and_section))
+            splitComponentAndSection(component_and_section))
 
         self.librarian = getUtility(ILibraryFileAliasSet)
 
@@ -142,13 +150,6 @@ class NascentUploadFile:
     def exists_on_disk(self):
         """Whether or not the file is present on disk."""
         return os.path.exists(self.filepath)
-
-    @classmethod
-    def splitComponentAndSection(self, component_and_section):
-        """Split the component out of the section."""
-        if "/" not in component_and_section:
-            return "main", component_and_section
-        return component_and_section.split("/", 1)
 
     #
     # DB storage helpers
@@ -561,7 +562,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
     def verifySection(self):
         """Check the section & priority match those in changesfile."""
         control_section_and_component = self.control.get('Section', '')
-        control_component, control_section = self.splitComponentAndSection(
+        control_component, control_section = splitComponentAndSection(
             control_section_and_component)
         if ((control_component, control_section) !=
             (self.component_name, self.section_name)):

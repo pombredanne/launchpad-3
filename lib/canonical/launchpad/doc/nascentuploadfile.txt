@@ -95,12 +95,80 @@ a error generator
 Source and Binary files are easily recognized by a regexp on the
 filenames:
 
- * re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?deb)$")
- * re_issource = re.compile(r"(.+)_(.+?)\.(orig\.tar\.gz|diff\.gz|tar\.gz|dsc)$"
+ >>> from canonical.archiveuploader.utils import (
+ ...     re_isadeb, re_issource)
+
+ >>> bin_match = re_isadeb.match('foo-bar_1.0_i386.deb')
+ >>> bin_match.group(0)
+ 'foo-bar_1.0_i386.deb'
+ >>> bin_match.group(1)
+ 'foo-bar'
+ >>> bin_match.group(2)
+ '1.0'
+ >>> bin_match.group(3)
+ 'i386'
+
+ >>> src_match = re_issource.match('foo_1.0.orig.tar.gz')
+ >>> src_match.group(0)
+ 'foo_1.0.orig.tar.gz'
+ >>> src_match.group(1)
+ 'foo'
+ >>> src_match.group(2)
+ '1.0'
+ >>> src_match.group(3)
+ 'orig.tar.gz'
+
+ >>> src_match = re_issource.match('foo_1.0.tar.gz')
+ >>> src_match.group(0)
+ 'foo_1.0.tar.gz'
+ >>> src_match.group(1)
+ 'foo'
+ >>> src_match.group(2)
+ '1.0'
+ >>> src_match.group(3)
+ 'tar.gz'
+
+ >>> src_match = re_issource.match('foo_1.0.diff.gz')
+ >>> src_match.group(0)
+ 'foo_1.0.diff.gz'
+ >>> src_match.group(1)
+ 'foo'
+ >>> src_match.group(2)
+ '1.0'
+ >>> src_match.group(3)
+ 'diff.gz'
+
+ >>> src_match = re_issource.match('foo_1.0.dsc')
+ >>> src_match.group(0)
+ 'foo_1.0.dsc'
+ >>> src_match.group(1)
+ 'foo'
+ >>> src_match.group(2)
+ '1.0'
+ >>> src_match.group(3)
+ 'dsc'
+
+And finally a failure:
+
+ >>> re_issource.match('foo_1.0.c') is None
+ True
+
 
 However a custom upload is essencially a tarball, so it matches the
-is_source regexp. That's why we recognize them by identifying a set of
-custom sections:
+is_source regexp:
+
+ >>> src_match = re_issource.match('dist-upgrader_1.0.tar.gz')
+ >>> src_match.group(0)
+ 'dist-upgrader_1.0.tar.gz'
+ >>> src_match.group(1)
+ 'dist-upgrader'
+ >>> src_match.group(2)
+ '1.0'
+ >>> src_match.group(3)
+ 'tar.gz'
+
+
+That's why we recognize them by identifying a set of custom sections:
 
  * raw-installer
  * raw-translations
