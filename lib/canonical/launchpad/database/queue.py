@@ -13,17 +13,27 @@ __all__ = [
 import os
 import shutil
 import tempfile
+from email import message_from_string
 
 from zope.interface import implements
 from sqlobject import (
     ForeignKey, SQLMultipleJoin, SQLObjectNotFound)
 
+from canonical.launchpad.mail import sendmail
 from canonical.archivepublisher.customupload import CustomUploadError
+from canonical.archivepublisher.nascentuploadfile import 
+    splitComponentAndSection
+from canonical.archivepublisher.tagfiles import (
+    parse_tagfile_lines, TagFileParseError)
+from canonical.archivepublisher.template_messages import (
+    rejection_template, new_template, accepted_template, announce_template)
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
-from canonical.encoding import guess as guess_encoding
+from canonical.encoding import (
+    guess as guess_encoding, ascii_smash)
+from canonical.config import config
 from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
@@ -320,42 +330,110 @@ class DistroReleaseQueue(SQLBase):
     def notify(self, sender, recipients, announcelist):
         """See IDistroReleaseQueue."""
 
-        # Get uploaded file names
-        package_files = []
+        # Get the changes file from the librarian and parse the tags to
+        # a dictionary.  This can throw exceptions but since the tag file
+        # already will have parsed elsewhere we don't need to worry about that
+        # here.  Any exceptions from the librarian can be left to the caller.
+        changeslines = changesfile.read()
+        changes = parse_tagfile_lines(changeslines)
 
-        for binfile in self.builds:
-            package_files.extend(list(binfile.build.binarypackages.files))
-        for sourcefile in self.sources:
-            package_files.extend(list(sourcefile.sourcepackagerelease.files))
-
-        # Build summary string
         summary = []
-        for file in package_files:
+        is_new = False # Is set to True if any part of the upload is new.
+        files = changes['files'].strip().split("\n")
+
+        # Build a summary string and bail out early if this is an upload
+        # for the translations section.
+        for fileline in files:
+            digest, size, component_and_section, priority, filename = (
+                fileline.strip().split())
             try:
-                distrorelease.distribution.getFileByName(file.filename)
-                summary.append("NEW: %s" % file.filename)
+                distrorelease.distribution.getFileByName(filename)
+                summary.append("NEW: %s" % filename)
+                is_new = True
             except NotFoundError:
-                summary.append(" OK: %s" % file.filename)
+                summary.append(" OK: %s" % filename)
                 if filename.endswith("dsc"):
+                    component, section = splitComponentAndSection(
+                        component_and_section)
+                    if section == 'translations':
+                        # Uploads targetted to translations should not
+                        # generate any emails
+                        logger.debug(
+                            "Skipping acceptance and announcement, it is a "
+                            "language-package upload.")
+                        return
                     summary.append("     -> Component: %s Section: %s" % (
-                        sourcefile.sourcepackagerelease.component.name,
-                        sourcefile.sourcepackagerelease.section.name))
+                        component, section))`
         summarystring = "\n".join(summary)
-        
+
         interpolations = {
             "MAINTAINERFROM": sender,
             "SENDER": sender,
             "CHANGES": changesfile.filename,
             "SUMMARY": summarystring,
-            "CHANGESFILE": guess_encoding(changesfile.read()),
+            "CHANGESFILE": guess_encoding(changeslines),
             "DISTRO": distrorelease.distribution.title,
             "DISTRORELEASE": distrorelease.name,
             "ANNOUNCE": announcelist,
             "SOURCE": sourcefile.sourcepackagerelease.name,
             "VERSION": sourcefile.sourcepackagerelease.version,
-            "ARCH": changesfile.XXX,
+            "ARCH": changes['architecture'],
+            "RECIPIENT": ", ".join(recipients),
+            "DEFAULT_RECIPIENT": "%s <%s>" % (
+                config.uploader.default_recipient_name,
+                config.uploader.default_recipient_address),
+
         }
 
+        # The template is ready.  The remainder of this function deals with
+        # whether to send a 'new' message, an acceptance message and/or an
+        # announce message.
+
+        if is_new:
+            # This is an unknown upload.
+            _sendMail(new_template % interpolations)
+            return
+
+        # Unapproved uploads coming from an insecure policy only sends
+        # an acceptance message.
+        if not self.status == DistroReleaseQueueStatus.APPROVED:
+            # Only send an acceptance message
+            interpolations["SUMMARY"] += (
+                "\nThis upload awaits approval by a distro manager\n")
+            _sendMail(accept_template % interpolations)
+            return
+
+        # Auto-approved uploads to backports skips the announcement,
+        # they are usually processed with the sync policy.
+        if self.pocket == PackagePublishingPocket.BACKPORTS:
+            logger.debug("Skipping announcement, it is a BACKPORT.")
+            _sendMail(accept_template % interpolations)
+            return
+
+        # Auto-approved binary uploads to security skips the announcement,
+        # they are usually processed with the security policy.
+        if (self.pocket == PackagePublishingPocket.SECURITY
+            and self.containsBuild):
+            logger.debug(
+                "Skipping announcement, it is a binary upload to SECURITY.")
+            _sendMail(accept_template % interpolations)
+            return
+
+        # Fallback, all the rest coming from insecure, secure and sync
+        # policies should send an acceptance and an announcement message.
+        _sendMail(accept_template % interpolations)
+        _sendMail(announce_template % interpolations)
+
+    def _sendMail(self,mail_text):
+        mail_message = message_from_string(ascii_smash(mail_text))
+        sendmail(mail_message)
+
+        logger.debug("Sent a mail:")
+        logger.debug("    Subject: %s" % mail_message['Subject'])
+        logger.debug("    Recipients: %s" % mail_message['To'])
+        logger.debug("    Body:")
+        for line in mail_message.get_payload().splitlines():
+            logger.debug(line)
 
 class DistroReleaseQueueBuild(SQLBase):
     """A Queue item's related builds (for Lucille)."""
