@@ -62,6 +62,11 @@ class BuilderGroup:
 
         for builder in self.builders:
             try:
+                # Verify if the *trusted* builder has been disabled.
+                # Untrusted builders will be always probed.
+                if not builder.builderok and builder.trusted:
+                    continue
+
                 # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
                 slave = removeSecurityProxy(builder.slave)
 
@@ -85,9 +90,6 @@ class BuilderGroup:
             # catch only known exceptions
             except (ValueError, TypeError, xmlrpclib.Fault,
                     socket.error, BuildDaemonError), reason:
-                # verify if the builder has been disabled
-                if not builder.builderok:
-                    continue
                 # repr() is required for socket.error
                 builder.failbuilder(repr(reason))
                 self.logger.debug("Builder on %s marked as failed due to: %r",
