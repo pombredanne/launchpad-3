@@ -34,7 +34,9 @@
         &#8220;<span tal:replace="series/name">main</span>&#8221;
       </h2>
 
-      <tal:seriesfilesexist condition="python: view.series_has_release_files(series)">
+      <tal:seriesfilesexist
+          define="file_cnt python:0"
+          condition="python: view.series_has_release_files(series)">
         <table class="listing">
           <thead>
             <tr>
@@ -49,7 +51,9 @@
                 <td tal:condition="has_edit"
                     align="center">
                   <input type="checkbox"
-                         tal:attributes="name file/libraryfile/id">
+                         tal:define="cbnum string:${repeat/series/index}_${repeat/release/index}_${repeat/file/index}"
+                         tal:attributes="value file/libraryfile/id;
+                         name string:checkbox_${cbnum}">
                 </td>
                 <td tal:content="file/description">Installer for i386</td>
                 <td><a tal:attributes="href python:view.file_url(series,release,file)"

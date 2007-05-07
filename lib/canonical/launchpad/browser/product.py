@@ -584,16 +584,20 @@ class ProductDownloadFilesView(LaunchpadView):
             del_count = self.delete_files(self.form)
         if del_count is not None:
             if del_count <= 0:
-                self.request.response.addNotification("No files were deleted.")
+                self.request.response.addNotification(
+                    "No files were deleted.")
             elif del_count == 1:
-                self.request.response.addNotification("%d file has been deleted." %
-                                                      del_count)
+                self.request.response.addNotification(
+                    "%d file has been deleted." %
+                    del_count)
             else:
-                self.request.response.addNotification("%d files have been deleted." %
-                                                      del_count)
+                self.request.response.addNotification(
+                    "%d files have been deleted." %
+                    del_count)
 
     def delete_files(self, data):
-        del_keys = [int(k) for k,v in data.items() if v=='on']
+        del_keys = [int(v) for k,v in data.items()
+                    if k.startswith('checkbox')]
         del_count = 0
         for series in self.product.serieslist:
             for release in series.releases:
