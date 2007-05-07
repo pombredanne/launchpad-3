@@ -82,6 +82,9 @@ applies to.
     >>> foo_bar = person_set.getByName('name16')
     >>> sample_person = person_set.getByName('name12')
     >>> no_priv = person_set.getByName('no-priv')
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> launchpad = getUtility(IProductSet).getByName('launchpad')
+    >>> policy = launchpad.branch_visibility_policy
 
 foo_bar is a member of both the launchpad team and the ubuntu gnome team.
 sample_person is an indirect member of the ubuntu_gnome_team.
@@ -207,3 +210,71 @@ visibility team is the user themselves.
     Foo Bar
 
         
+== Inherited policies ==
+
+When a branch visibility policy is created, it has an optional parameter
+of another branch visibility policy that it inherits behaviour from.
+
+The inherited behaviour only becomes apparent if there are no explicit
+policy items set for BranchVisibilityPolicy object.
+
+Branch visibility policies for projects are not created with inherited
+policies.
+
+    >>> mozilla_policy = mozilla.branch_visibility_policy
+    >>> print_policy_items(mozilla_policy)
+    *everyone*: Public
+    >>> print mozilla_policy.inherited_policy
+    None
+    >>> print mozilla_policy.isUsingInheritedPolicy()
+    False
+
+Branch visibility policies for products are created with in inherited
+policy of their project if the project exists.
+
+    >>> thunderbird_policy = thunderbird.branch_visibility_policy
+    >>> print_policy_items(thunderbird_policy)
+    *everyone*: Public
+    >>> print thunderbird_policy.inherited_policy.context.name
+    mozilla
+    >>> print thunderbird_policy.isUsingInheritedPolicy()
+    True
+
+Since the launcpad product doesn't have a project associated with it,
+there is no inherited policy.
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> launchpad = getUtility(IProductSet).getByName('launchpad')
+    >>> launchpad_policy = launchpad.branch_visibility_policy
+    >>> print launchpad_policy.inherited_policy
+    None
+    >>> print launchpad_policy.isUsingInheritedPolicy()
+    False
+
+
+Adding a team to the mozilla project will also affect products associated
+with the mozilla project that are inheriting the project's branch policy.
+
+    >>> mozilla_policy.setTeamPolicy(
+    ...     ubuntu_gnome_team, BranchVisibilityPolicy.PRIVATE)
+    >>> mozilla_policy.setTeamPolicy(None, BranchVisibilityPolicy.PRIVATE)
+
+    >>> print_policy_items(mozilla_policy)
+    *everyone*: Private
+    Ubuntu Gnome Team: Private
+
+    >>> thunderbird_policy = thunderbird.branch_visibility_policy
+    >>> print_policy_items(thunderbird_policy)
+    *everyone*: Private
+    Ubuntu Gnome Team: Private
+
+In order to avoid inheriting the policy of the project, there just needs
+to be an explicit policy item for the product.  This explicit item could
+even be the same as the default policy.
+
+    >>> thunderbird_policy.setTeamPolicy(None, BranchVisibilityPolicy.PUBLIC)
+    >>> print thunderbird_policy.isUsingInheritedPolicy()
+    False
+    >>> print_policy_items(thunderbird_policy)
+    *everyone*: Public
+

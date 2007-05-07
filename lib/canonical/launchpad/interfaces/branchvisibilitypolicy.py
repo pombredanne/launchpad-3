@@ -51,6 +51,14 @@ class IBranchVisibilityPolicy(Interface):
 
     context = Attribute("The object that the policy applies to")
 
+    inherited_policy = Attribute("""
+        An optional BranchVisibilityPolicy whose policy items are used
+        when there are no explicit policy items set for the defined
+        context.""")
+
+    def isUsingInheritedPolicy():
+        """Return True if using policy from the inherited context."""
+
     def setTeamPolicy(team, policy):
         """Sets the policy for the team.
         
