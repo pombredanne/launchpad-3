@@ -16,8 +16,14 @@ class ExecOnlySession:
 
     implements(ISession)
 
-    def __init__(self, avatar):
+    def __init__(self, avatar, reactor):
         self.avatar = avatar
+        self.reactor = reactor
+
+    @classmethod
+    def avatarAdapter(klass, avatar):
+        from twisted.internet import reactor
+        return klass(avatar, reactor)
 
     def closed(self):
         """Override me to provide specific cleanup."""
@@ -26,7 +32,15 @@ class ExecOnlySession:
         """Override me to provide specific cleanup."""
 
     def execCommand(self, protocol, command):
-        """Override me to implement command execution."""
+        """Executes `command` using `protocol` as the ProcessProtocol.
+
+        :param protocol: a ProcessProtocol, usually SSHSessionProcessProtocol.
+        :param command: A whitespace-separated command line. The first token is
+        used as the name of the executable, the rest are used as arguments.
+        """
+        args = command.split()
+        executable, args = args[0], tuple(args[1:])
+        self.reactor.spawnProcess(protocol, executable, args)
 
     def getPty(self, term, windowSize, modes):
         raise NotImplementedError()

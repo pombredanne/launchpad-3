@@ -135,7 +135,8 @@ class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
 components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
                            filetransfer.ISFTPServer)
 
-components.registerAdapter(ExecOnlySession, SFTPOnlyAvatar, ISession)
+components.registerAdapter(ExecOnlySession.avatarAdapter, SFTPOnlyAvatar,
+                           ISession)
 
 
 class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):

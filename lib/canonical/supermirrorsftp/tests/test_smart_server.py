@@ -15,6 +15,20 @@ from canonical.supermirrorsftp.tests.helpers import AvatarTestCase
 from canonical.supermirrorsftp import smartserver
 
 
+class MockReactor:
+    """Mock reactor used to check that ExecOnlySession asks the reactor to
+    spawn processes.
+    """
+
+    def __init__(self):
+        self.log = []
+
+    def spawnProcess(self, protocol, executable, args, env=None, path=None,
+                     uid=None, gid=None, usePTY=0, childFDs=None):
+        self.log.append((protocol, executable, args, env, path, uid, gid,
+                         usePTY, childFDs))
+
+
 class TestExecOnlySession(AvatarTestCase):
     """Tests for ExecOnlySession.
 
@@ -28,7 +42,8 @@ class TestExecOnlySession(AvatarTestCase):
         AvatarTestCase.setUp(self)
         self.avatar = SFTPOnlyAvatar(
             'alice', self.tmpdir, self.aliceUserDict, None)
-        self.session = smartserver.ExecOnlySession(self.avatar)
+        self.reactor = MockReactor()
+        self.session = smartserver.ExecOnlySession(self.avatar, self.reactor)
 
     def test_getPtyNotImplemented(self):
         # getPTY raises a NotImplementedError. It doesn't matter what we pass
@@ -70,9 +85,12 @@ class TestExecOnlySession(AvatarTestCase):
         self.session.closed()
 
     def test_implementsExecCommand(self):
-        # ExecOnlySession implements 'execCommand'. The exact details are up to
-        # individual subclasses.
-        self.session.execCommand(ProcessProtocol(), 'cat /etc/hostname')
+        # ExecOnlySession.execCommand spawns a process.
+        protocol = ProcessProtocol()
+        self.session.execCommand(protocol, 'cat /etc/hostname')
+        self.assertEqual([(protocol, 'cat', ('/etc/hostname',), None, None,
+                           None, None, 0, None)],
+                         self.reactor.log)
 
     def test_implementsEofReceived(self):
         # ExecOnlySession implements 'eofReceived'. The exact details are up to
