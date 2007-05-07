@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces import (
     PillarNameField, IHasLogo, IHasMugshot, IHasIcon)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload)
 
@@ -35,7 +36,8 @@ class ProductNameField(PillarNameField):
 
 class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-               IHasSprints, IHasLogo, IHasMugshot, IHasIcon):
+               IHasSprints, IHasMentoringOffers, IHasLogo, IHasMugshot,
+               IHasIcon):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -438,8 +440,18 @@ class IProductSet(Interface):
         them in Blueprint."""
 
     def count_reviewed():
-        """return a count of the number of products in the Launchpad that
+        """Return a count of the number of products in the Launchpad that
         are both active and reviewed."""
+
+    def count_answered():
+        """Return the number of projects that have questions and answers
+        associated with them.
+        """
+
+    def count_codified():
+        """Return the number of projects that have branches associated with
+        them.
+        """
 
 
 

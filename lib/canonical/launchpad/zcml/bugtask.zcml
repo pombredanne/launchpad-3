@@ -27,7 +27,8 @@
     <content class="canonical.launchpad.database.BugTask">
         <allow attributes="id bug bugID target date_assigned datecreated
                            date_confirmed date_inprogress date_closed
-                           bug_subscribers" />
+                           bug_subscribers is_complete
+                           isMentor canMentor isSubscribed" />
         <require
             permission="launchpad.View"
             attributes="product productseries sourcepackagename distribution
@@ -36,7 +37,7 @@
                         title related_tasks other_affected_pillars
                         asEmailHeaderValue getDelta
                         target_uses_malone bugtask_branches
-                        conjoined_master conjoined_slave" />
+                        conjoined_master conjoined_slave subscribe" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
@@ -55,6 +56,10 @@
                             age owner targetname title related_tasks
                             statusdisplayhtml statuselsewhere
                             setStatusFromDebbugs setImportanceFromDebbugs" />
+        <require
+            permission="launchpad.AnyPerson"
+            attributes="offerMentoring retractMentoring"
+            />
     </content>
 
     <browser:defaultView

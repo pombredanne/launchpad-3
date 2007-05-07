@@ -10,8 +10,8 @@ uploaded into the system.
   ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
   >>> from canonical.lp.dbschema import PackagePublishingPocket
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.tests import (
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> from canonical.launchpad.ftests import import_public_test_keys

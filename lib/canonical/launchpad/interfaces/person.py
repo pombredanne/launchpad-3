@@ -36,6 +36,8 @@ from canonical.launchpad.fields import (
     StrippedTextLine,
     )
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.mentoringoffer import (
+    IHasMentoringOffers)
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
@@ -93,8 +95,8 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
-              IHasIcon):
+class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
+              IHasLogo, IHasMugshot, IHasIcon):
     """A Person."""
 
     id = Int(
@@ -267,6 +269,9 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         "in this team.")
     teams_participated_in = Attribute(
         "Iterable of all Teams that this person is active in, recursive")
+    teams_indirectly_participated_in = Attribute(
+        "Iterable of all the teams in which this person is and indirect "
+        "member.")
     teams_with_icons = Attribute(
         "Iterable of all Teams that this person is active in that have "
         "icons")
@@ -316,6 +321,8 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         "feedback, sorted newest first.")
     subscribed_specs = Attribute(
         "Specifications this person has subscribed to, sorted newest first.")
+    team_mentorships = Attribute(
+        "All the offers of mentoring which are relevant to this team.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
@@ -622,9 +629,20 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         If no orderby is provided, Person.sortingColumns is used.
         """
 
-    def getEffectiveAdministrators():
-        """Return this team's administrators including the team owner
-        (regardless of whether he's a member or not).
+    def getAdministratedTeams():
+        """Return the teams that this person/team is an administrator of.
+
+        This includes teams for which the person is the owner, a direct
+        member with admin privilege, or member of a team with such
+        privileges.
+        """
+
+    def getDirectAdministrators():
+        """Return this team's administrators.
+         
+         This includes all direct members with admin rights and also
+         the team owner. Note that some other persons/teams might have admin
+         privilege by virtue of being a member of a team with admin rights.
         """
 
     def getTeamAdminsEmailAddresses():
@@ -663,6 +681,9 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         In this case, we will return both 'Rosetta pt Translators' and
         'Rosetta Translators', because we are member of both of them.
         """
+
+    def getLatestApprovedMembershipsForPerson(limit=5):
+        """Return the <limit> latest approved membrships for this person."""
 
     def addLanguage(language):
         """Add a language to this person's preferences.

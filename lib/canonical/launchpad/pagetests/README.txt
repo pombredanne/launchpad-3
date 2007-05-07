@@ -68,6 +68,13 @@ You can use the following authorization lines:
   for No Privileges Person (a normal user who is not the owner of anything):
     >>> browser.addHeader("Authorization", "Basic no-priv@canonical.com:test")
 
+  for No Team Memberships (a person who is a member of NO teams):
+    >>> browser.addHeader("Authorization", "Basic no-team-memberships@test.com:test")
+
+  for One Team Membership (a person who is a member of only one team, the
+                           simple-team which has no special privileges):
+    >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
+
   for Mark Shuttleworth: (launchpad admin, registry admin, mirror admin,
                           ubuntu team, testing spanish team)
     >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')

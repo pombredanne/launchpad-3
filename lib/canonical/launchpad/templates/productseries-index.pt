@@ -47,7 +47,7 @@
 
     </tal:has_releases>
 
-    <h2>This series in The Bazaar</h2>
+    <h2>Code for this series</h2>
 
     <div tal:replace="structure context/@@+importstatus" />
 
