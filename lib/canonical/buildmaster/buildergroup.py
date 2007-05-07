@@ -61,9 +61,6 @@ class BuilderGroup:
         self.logger.debug("Finding XMLRPC clients for the builders")
 
         for builder in self.builders:
-            # verify if the builder has been disabled
-            if not builder.builderok:
-                continue
             try:
                 # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
                 slave = removeSecurityProxy(builder.slave)
@@ -88,6 +85,9 @@ class BuilderGroup:
             # catch only known exceptions
             except (ValueError, TypeError, xmlrpclib.Fault,
                     socket.error, BuildDaemonError), reason:
+                # verify if the builder has been disabled
+                if not builder.builderok:
+                    continue
                 # repr() is required for socket.error
                 builder.failbuilder(repr(reason))
                 self.logger.debug("Builder on %s marked as failed due to: %r",

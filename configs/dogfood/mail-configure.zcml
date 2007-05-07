@@ -10,7 +10,7 @@
 
     <!-- Development configuration to avoid spamming innocent people -->
     <mail:queuedDelivery name="Mail" permission="zope.SendMail"
-        queuePath="/var/tmp/launchpad_mailqueue" mailer="stub" />
+        queuePath="/srv/launchpad.net/launchpad_mailqueue" mailer="stub" />
 
 
 </configure>
