@@ -57,10 +57,8 @@
   <tal:widget replace="structure view/has_patch_widget/hidden" />
   <tal:widget replace="structure view/component_widget/hidden" />
   <tal:widget replace="structure view/has_no_package_widget/hidden" />
-  <a href="#"
-     tal:attributes="href advanced_search_url|string:?advanced=1">
-    <small>Advanced search</small>
-  </a>
+  <a tal:attributes="href advanced_search_url|string:?advanced=1"
+  >Advanced search</a>
   <div metal:define-slot="extra-search-widgets">
   </div>
 </form>

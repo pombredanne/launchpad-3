@@ -255,8 +255,7 @@
           </span>
         </td>
       </tr>
-      <tr class="discreet secondary translation"
-          tal:condition="context/reviewer">
+      <tr class="secondary translation" tal:condition="context/reviewer">
         <th tal:condition="translation_dictionary/same_translator_and_reviewer"
             colspan="3" id="translated_and_reviewed_by">
           Translated and reviewed by:
@@ -284,8 +283,7 @@
         <div tal:replace="structure suggestions/@@+display" />
       </tal:suggestions>
     </tal:suggestion_block>
-    <tr class="discreet secondary translation"
-        tal:condition="request/lp:person">
+    <tr class="secondary translation" tal:condition="request/lp:person">
       <th colspan="3">
         <label
           tal:condition="not:view/user_is_official_translator"
