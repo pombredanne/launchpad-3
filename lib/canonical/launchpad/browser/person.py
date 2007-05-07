@@ -748,15 +748,21 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, summary, icon='mail')
 
     def joinleave(self):
-        if userIsActiveTeamMember(self.context):
+        team = self.context
+        enabled = True
+        if userIsActiveTeamMember(team):
             target = '+leave'
             text = 'Leave the Team' # &#8230;
             icon = 'remove'
         else:
+            if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+                # This is a restricted team; users can't join.
+                enabled = False
             target = '+join'
             text = 'Join the team' # &#8230;
             icon = 'add'
-        return Link(target, text, icon=icon)
+
+        return Link(target, text, icon=icon, enabled=enabled)
 
 
 class BaseListView:
@@ -1450,9 +1456,27 @@ class PersonView(LaunchpadView):
             categories.update(category for category in contrib['categories'])
         return sorted(categories, key=attrgetter('title'))
 
-    @cachedproperty
-    def recently_approved_memberships(self):
-        """Return the 5 memberships for teams most recently joined."""
+    @property
+    def subscription_policy_description(self):
+        """Return the description of this team's subscription policy."""
+        team = self.context
+        assert team.isTeam(), (
+            'This method can only be called when the context is a team.')
+        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+            description = _(
+                "This is a restricted team; new members can only be added "
+                "by one of the team's administrators.")
+        elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+            description = _(
+                "This is a moderated team; all subscriptions are subjected "
+                "to approval by one of the team's administrators.")
+        elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+            description = _(
+                "This is an open team; any user can join and no approval "
+                "is required.")
+        else:
+            raise AssertionError('Unknown subscription policy.')
+        return description
 
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
@@ -2138,7 +2162,7 @@ class TeamJoinView(PersonView):
         context = self.context
 
         notification = None
-        if request.form.get('join') and self.userCanRequestToJoin():
+        if 'join' in request.form and self.userCanRequestToJoin():
             policy = context.subscriptionpolicy
             user.join(context)
             if policy == TeamSubscriptionPolicy.MODERATED:
@@ -2146,13 +2170,14 @@ class TeamJoinView(PersonView):
             else:
                 notification = _(
                     'Successfully joined %s.' % context.displayname)
-        elif request.form.get('join'):
+        elif 'join' in request.form:
             notification = _('You cannot join %s.' % context.displayname)
-        elif request.form.get('goback'):
-            # Nothing to do
+        elif 'goback' in request.form:
+            # User clicked on the 'Go back' button, so we'll simply redirect.
             pass
         else:
-            raise UnexpectedFormData('No action specified')
+            raise UnexpectedFormData(
+                "Couldn't find any of the expected actions.")
         if notification is not None:
             request.response.addInfoNotification(notification)
         self.request.response.redirect(canonical_url(context))

@@ -656,7 +656,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         assert self.hasParticipationEntryFor(team), (
             "Only call this method when you're sure the person is an indirect"
             " member of the team.")
-        assert team.isTeam()
+        assert team.isTeam(), "You can't pass a person to this method."
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
         assert team is not None
