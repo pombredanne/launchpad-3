@@ -80,6 +80,7 @@ __all__ = [
     'TeamNavigation',
     'TeamOverviewMenu',
     'TeamReassignmentView',
+    'TeamSpecsMenu',
     'UbunteroListView',
     ]
 
@@ -171,7 +172,8 @@ class BranchTraversalMixin:
         branch_name = stepstogo.consume()
         if product_name is not None and branch_name is not None:
             branch = self.context.getBranch(product_name, branch_name)
-            return self.redirectSubTree(canonical_url(branch))
+            if branch:
+                return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
 
     def traverse(self, product_name):
@@ -432,14 +434,14 @@ class PersonBugsMenu(ApplicationMenu):
     usedfor = IPerson
     facet = 'bugs'
     links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'relatedbugs',
-             'softwarebugs']
+             'softwarebugs', 'mentoring']
 
     def relatedbugs(self):
-        text = 'Related'
+        text = 'List related bugs'
         return Link('', text, icon='bugs')
 
     def assignedbugs(self):
-        text = 'Assigned'
+        text = 'List assigned bugs'
         return Link('+assignedbugs', text, icon='bugs')
 
     def softwarebugs(self):
@@ -447,19 +449,17 @@ class PersonBugsMenu(ApplicationMenu):
         return Link('+packagebugs', text, icon='bugs')
 
     def reportedbugs(self):
-        text = 'Reported'
+        text = 'List reported bugs'
         return Link('+reportedbugs', text, icon='bugs')
 
     def subscribedbugs(self):
-        text = 'Subscribed'
+        text = 'List subscribed bugs'
         return Link('+subscribedbugs', text, icon='bugs')
 
-
-class TeamBugsMenu(PersonBugsMenu):
-
-    usedfor = ITeam
-    facet = 'bugs'
-    links = ['assignedbugs', 'relatedbugs', 'softwarebugs', 'subscribedbugs']
+    def mentoring(self):
+        text = 'Mentoring offered'
+        enabled = self.context.mentoring_offers
+        return Link('+mentoring', text, enabled=enabled, icon='info')
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -468,7 +468,7 @@ class PersonSpecsMenu(ApplicationMenu):
     facet = 'specifications'
     links = ['assignee', 'drafter', 'approver',
              'subscriber', 'registrant', 'feedback',
-             'workload', 'roadmap']
+             'workload', 'mentoring', 'roadmap']
 
     def registrant(self):
         text = 'Registrant'
@@ -502,6 +502,11 @@ class PersonSpecsMenu(ApplicationMenu):
             self.context.browsername)
         return Link('+specfeedback', text, summary, icon='info')
 
+    def mentoring(self):
+        text = 'Mentoring offered'
+        enabled = self.context.mentoring_offers
+        return Link('+mentoring', text, enabled=enabled, icon='info')
+
     def workload(self):
         text = 'Workload'
         summary = 'Show all specification work assigned'
@@ -511,6 +516,32 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Roadmap'
         summary = 'Show recommended sequence of feature implementation'
         return Link('+roadmap', text, summary, icon='info')
+
+
+class TeamSpecsMenu(PersonSpecsMenu):
+
+    usedfor = ITeam
+    facet = 'specifications'
+
+    def mentoring(self):
+        target = '+mentoring'
+        text = 'Mentoring offered'
+        summary = 'Offers of mentorship for prospective team members'
+        return Link(target, text, summary=summary, icon='info')
+
+
+class TeamBugsMenu(PersonBugsMenu):
+
+    usedfor = ITeam
+    facet = 'bugs'
+    links = ['assignedbugs', 'relatedbugs', 'softwarebugs', 'subscribedbugs',
+             'mentorships']
+
+    def mentorships(self):
+        target = '+mentoring'
+        text = 'Mentoring offered'
+        summary = 'Offers of mentorship for prospective team members'
+        return Link(target, text, summary=summary, icon='info')
 
 
 class CommonMenuLinks:
@@ -535,8 +566,9 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['edit', 'branding', 'common_edithomepage',
              'editemailaddresses', 'editlanguages', 'editwikinames',
              'editircnicknames', 'editjabberids', 'editpassword',
-             'editsshkeys', 'editpgpkeys', 'codesofconduct', 'karma',
-             'administer', 'common_packages']
+             'editsshkeys', 'editpgpkeys',
+             'memberships', 'mentoringoffers',
+             'codesofconduct', 'karma', 'common_packages', 'administer',]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -594,6 +626,17 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
             u'in Launchpad' % self.context.browsername)
         return Link(target, text, summary, icon='info')
 
+    def memberships(self):
+        target = '+participation'
+        text = 'Show team participation'
+        return Link(target, text, icon='info')
+
+    def mentoringoffers(self):
+        target = '+mentoring'
+        text = 'Mentoring offered'
+        enabled = self.context.mentoring_offers
+        return Link(target, text, enabled=enabled, icon='info')
+
     @enabled_with_permission('launchpad.Edit')
     def editsshkeys(self):
         target = '+editsshkeys'
@@ -630,8 +673,10 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = ITeam
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'mugshots', 'add_member', 'editemail', 'polls', 'add_poll',
-             'joinleave', 'reassign', 'common_packages']
+             'add_member', 'memberships', 'mugshots', 
+             'editemail', 'polls', 'add_poll',
+             'joinleave', 'mentorships', 'reassign', 'common_packages',
+             ]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -658,16 +703,29 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Show all members'
         return Link(target, text, icon='people')
 
-    def mugshots(self):
-        target = '+mugshots'
-        text = 'Show group photo'
-        return Link(target, text, icon='people')
-
     @enabled_with_permission('launchpad.Edit')
     def add_member(self):
         target = '+addmember'
         text = 'Add member'
         return Link(target, text, icon='add')
+
+    def memberships(self):
+        target = '+participation'
+        text = 'Show team participation'
+        return Link(target, text, icon='info')
+
+    def mentorships(self):
+        target = '+mentoring'
+        text = 'Mentoring available'
+        enabled = self.context.team_mentorships
+        summary = 'Offers of mentorship for prospective team members'
+        return Link(target, text, summary=summary, enabled=enabled,
+                    icon='info')
+
+    def mugshots(self):
+        target = '+mugshots'
+        text = 'Show group photo'
+        return Link(target, text, icon='people')
 
     def polls(self):
         target = '+polls'
@@ -1392,6 +1450,10 @@ class PersonView(LaunchpadView):
             categories.update(category for category in contrib['categories'])
         return sorted(categories, key=attrgetter('title'))
 
+    @cachedproperty
+    def recently_approved_memberships(self):
+        """Return the 5 memberships for teams most recently joined."""
+
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.
@@ -1433,6 +1495,17 @@ class PersonView(LaunchpadView):
     def findUserPathToTeam(self):
         assert self.user is not None
         return self.user.findPathToTeam(self.context)
+
+    def indirect_teams_via(self):
+        """Return a list of dictionaries, where each dictionary has a team
+        in which the person is an indirect member, and a path to membership
+        in that team.
+        """
+        return [{'team': team,
+                 'via': ', '.join(
+                    [viateam.displayname for viateam in
+                        self.context.findPathToTeam(team)[:-1]])}
+                for team in self.context.teams_indirectly_participated_in]
 
     def userIsParticipant(self):
         """Return true if the user is a participant of this team.

@@ -39,7 +39,7 @@ class IKarma(Interface):
         title=_("Date Created"), required=True, readonly=True,
         description=_("The date this karma was assigned to the user."))
 
-    product = Attribute(_("Product"))
+    product = Attribute(_("Project"))
 
     distribution = Attribute(_("Distribution"))
 
@@ -117,9 +117,9 @@ class IKarmaCache(Interface):
         description=_("The karma points of all actions of this category "
                       "performed by this person."))
 
-    product = Attribute(_("Product"))
+    product = Attribute(_("Project"))
 
-    project = Attribute(_("Project"))
+    project = Attribute(_("Project Group"))
 
     distribution = Attribute(_("Distribution"))
 

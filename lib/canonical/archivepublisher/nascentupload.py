@@ -818,6 +818,8 @@ class NascentUpload:
             # cause a rejection to occur. The exception is logged in the
             # reject message rather than being swallowed up.
             self.reject("Exception while accepting: %s" % e)
+            # Let's log tracebacks for uncaught exceptions ...
+            self.logger.error('BOOM:\n', exc_info=True)
             return False, self.do_reject()
 
     def do_reject(self, template=rejection_template):

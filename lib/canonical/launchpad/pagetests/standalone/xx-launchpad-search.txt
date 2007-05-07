@@ -130,3 +130,14 @@ instead.
     /@@/product The Evolution Groupware Application
     /@@/product Tomcat
     /@@/product The Gnome Panel Applets
+
+== Robustness ==
+
+When multiple search strings are submitted, an UnexpectedFormData is
+raised:
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/projects/?text=foo&text=bar')
+    Traceback (most recent call last):
+      ...
+    UnexpectedFormData: ...

@@ -143,6 +143,7 @@ class NascentUploadFile:
         """Whether or not the file is present on disk."""
         return os.path.exists(self.filepath)
 
+    @classmethod
     def splitComponentAndSection(self, component_and_section):
         """Split the component out of the section."""
         if "/" not in component_and_section:
@@ -616,7 +617,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
             for parsed_dep in apt_pkg.ParseDepends(control_pre_depends):
                 # apt_pkg is weird and returns a list containing lists
                 # containing a single tuple.
-                assert len(parsed_dep) == 1
+                assert len(parsed_dep) == 1, (
+                    "apt_pkg does not seem to like this dependency line: %r"
+                    % parsed_dep)
                 dep, version, constraint = parsed_dep[0]
                 if dep != "dpkg":
                     continue
@@ -739,13 +742,15 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # remove the support for this use case, see further
             # info in bug #55774.
             self.logger.debug("No source published, checking the ACCEPTED queue")
-            q = distrorelease.getQueueItems(
+
+            queue_candidates = distrorelease.getQueueItems(
                 status=DistroReleaseQueueStatus.ACCEPTED,
-                name=self.source_name,
-                version=self.source_version)
-            if q:
-                assert q.count() == 1
-                sourcepackagerelease = q[0].sourcepackagerelease
+                name=self.source_name, version=self.source_version,
+                exact_match=True)
+
+            for queue_item in queue_candidates:
+                if queue_item.sources.count():
+                    sourcepackagerelease = queue_item.sourcepackagerelease
 
         if sourcepackagerelease is None:
             # At this point, we can't really do much more to try

@@ -731,7 +731,39 @@ IBug.date_last_updated.
     True
 
 
-== Bug Tasks ==
+Bug Completeness
+----------------
+
+A bug is considered "complete" iff all of its bugtasks are themselves
+complete. The definition of completeness for a bugtask is that the bug has
+been rejected or a fix has been released.
+
+    >>> b8 = bugset.get(8)
+    >>> b8.is_complete
+    True
+    >>> b9 = bugset.get(9)
+    >>> b9.is_complete
+    False
+
+Let's add a new task to b8 to see if that affects the completeness.
+
+    >>> from canonical.launchpad.database import BugTask
+    >>> newtask = BugTask(bug=b8, product=firefox, owner=b8.owner)
+    >>> newtask.status.name
+    'UNCONFIRMED'
+    >>> b8.is_complete
+    False
+
+Now, let's iterate over the bug tasks, some complete and others
+incomplete, and show the status of each of the tasts:
+
+    >>> for task in b8.bugtasks:
+    ...     print task.targetname, task.is_complete
+    firefox (upstream) False
+    mozilla-firefox (Debian) True
+
+
+== Enumerating Bug Tasks ==
 
 A bug can be targeted to more than one product, distribution, or source
 package. A BugTask is used to represent a target, which has its own
@@ -749,7 +781,8 @@ You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
 
 You can also get a list of the "LP pillars" affected by a particular bug.
 
-    >>> for pillar in bug_two.affected_pillars: print pillar.displayname
+    >>> for pillar in bug_two.affected_pillars:
+    ...     print pillar.displayname
     Tomcat
     Ubuntu
     Debian

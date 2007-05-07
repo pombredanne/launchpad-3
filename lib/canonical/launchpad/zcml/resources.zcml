@@ -46,6 +46,7 @@
     <resource name="blueprint-not" file="../images/blueprint-not.png" />
     <resource name="bounty" file="../images/bounty.png" />
     <resource name="branch" file="../images/branch.png" />
+    <resource name="branch-large" file="../images/branch-large.png" />
     <resource name="bug" file="../images/bug.png" />
     <resource name="bug-critical" file="../images/bug-critical.png" />
     <resource name="bug-high" file="../images/bug-high.png" />
@@ -93,6 +94,8 @@
     <resource name="locked-large" file="../images/locked-large.png" />
     <resource name="mail" file="../images/mail.png" />
     <resource name="maybe" file="../images/maybe.png" />
+    <resource name="mentoring" file="../images/mentoring.png" />
+    <resource name="mentoring-large" file="../images/mentoring-large.png" />
     <resource name="milestone" file="../images/milestone.png" />
     <resource name="news" file="../images/news.png" />
     <resource name="no" file="../images/no.png" />

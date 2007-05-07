@@ -24,8 +24,7 @@
         <span
           tal:attributes="title context/bug/datecreated/fmt:datetime"
           tal:content="context/bug/datecreated/fmt:displaydate" />
-        by
-        <tal:reporter replace="structure context/bug/owner/fmt:link" />
+        by <tal:reporter replace="structure context/bug/owner/fmt:link" />
       </div>
       <div
         tal:condition="context/bug/security_related"
@@ -34,15 +33,15 @@
         <img alt="" src="/@@/warning" />
         <strong>Security vulnerability</strong>
       </div>
-      <h1 style="clear: both;">
-        <img
-          tal:condition="context/bug/private"
-          alt="[private]"
-          src="/@@/locked-large"
-          title="This bug can be seen only by the bug subscribers."
-        />
-        <tal:title replace="context/bug/title" />
-      </h1>
+      <div style="float: right;">
+        <img src="/@@/locked-large" title="Private"
+             tal:condition="context/bug/private" />
+        <img src="/@@/mentoring-large" title="Mentoring available"
+             tal:condition="context/bug/mentoring_offers/count" />
+        <img src="/@@/branch-large" title="Branch available"
+             tal:condition="context/bug/bug_branches/count" />
+      </div>
+      <h1 style="clear: both;" tal:content="context/bug/title">Waah</h1>
 
   <tal:block condition="view/reportBugInContext" />
 
@@ -155,6 +154,61 @@
       This description was updated. <a href="comments/0">View original description</a>.</span>
   </div>
 
+<<<<<<< TREE
+=======
+  <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
+               condition="mentoring_offers">
+    <p>
+      <img src="/@@/mentoring" alt="Mentoring"
+           title="People have offered to mentor this work" />
+      <b>Mentors:</b>
+      <tal:block repeat="mentoring_offer mentoring_offers">
+        <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
+      </tal:block>
+    </p>
+    <tal:block condition="not: context/bug/is_complete">
+      <p tal:condition="view/userIsMentor">
+        &raquo;
+        <a href="+retractmentoring">Retract my offer of mentorship</a>
+      </p>
+    </tal:block>
+  </tal:mentors>
+
+  <p tal:condition="view/userCanMentor">
+    &raquo; <a href="+mentor">Offer to mentor someone fixing this bug</a>
+  </p>
+
+  <tal:branches define="bug_branches context/bug/bug_branches"
+              condition="bug_branches">
+    <p tal:condition="context/bug/private"
+         class="warning message">
+      This bug is private, so avoid adding public branches here.
+    </p>
+
+    <table class="listing">
+      <thead>
+        <tr>
+          <th>Related Branch</th>
+          <th>Developer</th>
+          <th>Revision Hint</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="bug_branch bug_branches">
+          <td>
+            <a href="#"
+               tal:attributes="href string:${bug_branch/fmt:url}/+status"
+               tal:content="bug_branch/status/title">Under Development</a>
+          </td>
+          <td tal:content="bug_branch/branch/owner/displayname"></td>
+          <td tal:content="bug_branch/revision_hint"></td>
+        </tr>
+      </tbody>
+    </table>
+  </tal:branches>
+
+
+>>>>>>> MERGE-SOURCE
   <tal:comment repeat="comment view/getBugCommentsForDisplay">
     <metal:comment-box
         metal:use-macro="context/@@bugcomment-macros/comment-box" />

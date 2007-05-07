@@ -1,10 +1,9 @@
 <div class="portlet" tal:condition="context/specifications">
   <h2>Related blueprints</h2>
   <div class="portletBody">
-    <ul tal:condition="context/specifications" class="blueprint">
-      <li tal:repeat="spec context/specifications">
-        <a tal:attributes="href spec/fmt:url" tal:content="spec/title" />
-      </li>
-    </ul>
+    <table>
+      <tr tal:repeat="spec context/specifications"
+          tal:replace="structure spec/@@+listing-compact" />
+    </table>
   </div>
 </div>
