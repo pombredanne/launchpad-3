@@ -23,6 +23,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
+from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
@@ -81,6 +82,10 @@ class DistroReleaseQueue(SQLBase):
 
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.
+
+    # XXX julian 2007-05-06
+    # sources and builds should not be SQLMultipleJoin, there is only
+    # ever one of each at most.
     sources = SQLMultipleJoin('DistroReleaseQueueSource',
                               joinColumn='distroreleasequeue')
     builds = SQLMultipleJoin('DistroReleaseQueueBuild',
@@ -311,6 +316,45 @@ class DistroReleaseQueue(SQLBase):
         return DistroReleaseQueueCustom(distroreleasequeue=self,
                                         libraryfilealias=library_file,
                                         customformat=custom_type)
+
+    def notify(self, sender, recipients, announcelist):
+        """See IDistroReleaseQueue."""
+
+        # Get uploaded file names
+        package_files = []
+
+        for binfile in self.builds:
+            package_files.extend(list(binfile.build.binarypackages.files))
+        for sourcefile in self.sources:
+            package_files.extend(list(sourcefile.sourcepackagerelease.files))
+
+        # Build summary string
+        summary = []
+        for file in package_files:
+            try:
+                distrorelease.distribution.getFileByName(file.filename)
+                summary.append("NEW: %s" % file.filename)
+            except NotFoundError:
+                summary.append(" OK: %s" % file.filename)
+                if filename.endswith("dsc"):
+                    summary.append("     -> Component: %s Section: %s" % (
+                        sourcefile.sourcepackagerelease.component.name,
+                        sourcefile.sourcepackagerelease.section.name))
+        summarystring = "\n".join(summary)
+        
+        interpolations = {
+            "MAINTAINERFROM": sender,
+            "SENDER": sender,
+            "CHANGES": changesfile.filename,
+            "SUMMARY": summarystring,
+            "CHANGESFILE": guess_encoding(changesfile.read()),
+            "DISTRO": distrorelease.distribution.title,
+            "DISTRORELEASE": distrorelease.name,
+            "ANNOUNCE": announcelist,
+            "SOURCE": sourcefile.sourcepackagerelease.name,
+            "VERSION": sourcefile.sourcepackagerelease.version,
+            "ARCH": changesfile.XXX,
+        }
 
 
 class DistroReleaseQueueBuild(SQLBase):
