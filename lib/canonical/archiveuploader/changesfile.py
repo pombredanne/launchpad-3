@@ -15,14 +15,14 @@ __all__ = [
 import os
 import re
 
-from canonical.archivepublisher.dscfile import DSCFile, SignableTagFile
-from canonical.archivepublisher.nascentuploadfile import (
+from canonical.archiveuploader.dscfile import DSCFile, SignableTagFile
+from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, DebBinaryUploadFile,
     UdebBinaryUploadFile, BaseBinaryUploadFile, SourceUploadFile,
     splitComponentAndSection)
 from canonical.archivepublisher.utils import (
     re_isadeb, re_issource, re_changes_file_name)
-from canonical.archivepublisher.tagfiles import (
+from canonical.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
 from canonical.lp.dbschema import SourcePackageUrgency
 
