@@ -34,6 +34,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, Tag
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
+from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 
@@ -59,7 +60,7 @@ class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
 
 
-class IBugTask(IHasDateCreated, IHasBug):
+class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
 
     id = Int(title=_("Bug Task #"))
@@ -99,7 +100,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         "bug watches represents this particular bug task, leave it as "
         "(None). Linking the remote bug watch with the task in "
         "this way means that a change in the remote bug status will change "
-        "the status of this bug task in Malone."))
+        "the status of this bug task in Launchpad."))
     date_assigned = Datetime(
         title=_("Date Assigned"),
         description=_("The date on which this task was assigned to someone."))
@@ -124,7 +125,7 @@ class IBugTask(IHasDateCreated, IHasBug):
             "datecreated and now."))
     owner = Int()
     target = Attribute("The software in which this bug should be fixed")
-    target_uses_malone = Bool(title=_("Whether the bugtask's target uses Malone "
+    target_uses_malone = Bool(title=_("Whether the bugtask's target uses Launchpad"
                               "officially"))
     targetname = Text(title=_("The short, descriptive name of the target"),
                       readonly=True)
@@ -154,11 +155,34 @@ class IBugTask(IHasDateCreated, IHasBug):
     conjoined_slave = Attribute(
         "The generic bugtask in a conjoined relationship")
 
+    is_complete = Attribute(
+        "True or False depending on whether or not there is more work "
+        "required on this bug task.")
+
+    def subscribe(person):
+        """Subscribe this person to the underlying bug.
+
+        This method is required here so that MentorshipOffers can happen on
+        IBugTask. When we move to context-less bug presentation (where the
+        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
+        no longer useful.
+        """
+
+    def isSubscribed(person):
+        """Return True if the person is an explicit subscriber to the
+        underlying bug for this bugtask.
+
+        This method is required here so that MentorshipOffers can happen on
+        IBugTask. When we move to context-less bug presentation (where the
+        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
+        no longer useful.
+        """
+
     def setImportanceFromDebbugs(severity):
-        """Set the Malone BugTask importance on the basis of a debbugs
+        """Set the Launchpad BugTask importance on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',
         'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
-        the Malone importance values, and returns the relevant Malone
+        the Launchpad importance values, and returns the relevant Launchpad 
         importance.
         """
 

@@ -283,6 +283,13 @@ class BasicLaunchpadRequest:
     def stepstogo(self):
         return StepsToGo(self)
 
+    def retry(self):
+        """See IPublisherRequest."""
+        new_request = super(BasicLaunchpadRequest, self).retry()
+        # propagate the list of keys we have set in the WSGI environment
+        new_request._wsgi_keys = self._wsgi_keys
+        return new_request
+
     def getNearest(self, *some_interfaces):
         """See ILaunchpadBrowserApplicationRequest.getNearest()"""
         for context in reversed(self.traversed_objects):

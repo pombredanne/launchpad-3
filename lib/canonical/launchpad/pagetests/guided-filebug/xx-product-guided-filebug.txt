@@ -1,4 +1,4 @@
-Malone does its best to minimize duplicate bug reports. The +filebug
+Launchpad does its best to minimize duplicate bug reports. The +filebug
 page for a product starts by asking the user to see if their bug has
 already been reported.
 

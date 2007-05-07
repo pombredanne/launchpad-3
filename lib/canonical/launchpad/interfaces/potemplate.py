@@ -28,7 +28,7 @@ class IPOTemplate(IRosettaStats):
         description=_("The name of this PO template, for example "
             "'evolution-2.2'. Each translation template has a "
             "unique name in its package. It's important to get this "
-            "correct, because Rosetta will recommend alternative "
+            "correct, because Launchpad will recommend alternative "
             "translations based on the name."),
         required=True,
         vocabulary="POTemplateName")
@@ -64,7 +64,7 @@ class IPOTemplate(IRosettaStats):
         title=_("Owner"),
         required=True,
         description=_(
-            "The owner of the template in Rosetta can edit the template "
+            "The owner of the template in Launchpad can edit the template "
             "and change it's status, and can also upload new versions "
             "of the template when a new release is made or when the "
             "translation strings have been changed during development."),

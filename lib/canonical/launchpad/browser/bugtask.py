@@ -77,6 +77,7 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
+from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.authorization import check_permission
@@ -305,19 +306,19 @@ class BugTaskContextMenu(BugContextMenu):
     usedfor = IBugTask
 
 
-class BugTaskView(LaunchpadView):
+class BugTaskView(LaunchpadView, CanBeMentoredView):
     """View class for presenting information about an IBugTask."""
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
+
+        self.notices = []
 
         # Make sure we always have the current bugtask.
         if not IBugTask.providedBy(context):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
-
-        self.notices = []
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -709,7 +710,7 @@ class BugTaskEditView(GeneralFormView):
             if not IUpstreamBugTask.providedBy(self.context):
                 #XXX: Should be possible to edit the product as well,
                 #     but that's harder due to complications with bug
-                #     watches. The new product might use Malone
+                #     watches. The new product might use Launchpad
                 #     officially, thus we need to handle that case.
                 #     Let's deal with that later.
                 #     -- Bjorn Tillenius, 2006-03-01
@@ -912,7 +913,7 @@ class BugTaskEditView(GeneralFormView):
             else:
                 #XXX: Reset the bug task's status information. The right
                 #     thing would be to convert the bug watch's status to a
-                #     Malone status, but it's not trivial to do at the
+                #     Launchpad status, but it's not trivial to do at the
                 #     moment. I will fix this later.
                 #     -- Bjorn Tillenius, 2006-03-01
                 bugtask.transitionToStatus(BugTaskStatus.UNKNOWN)

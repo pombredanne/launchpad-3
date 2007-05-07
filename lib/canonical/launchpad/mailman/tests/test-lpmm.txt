@@ -1,0 +1,26 @@
+Launchpad doesn't need to talk directly to Mailman, but we can still test that
+Mailman exists and seems properly configured, and that Launchpad can import
+the shared package.  Anything more than that is left to other tests.
+
+    >>> import subprocess, os
+    >>> from canonical.config import config
+    >>> def withlist(callable, *options):
+    ...     callable_path = 'canonical.launchpad.mailman.tests.' + callable
+    ...     args = ' '.join(options)
+    ...     site_list = 'unused_mailman_site_list'
+    ...     mailman_bin = os.path.join(config.mailman.build.prefix, 'bin')
+    ...     command = './withlist %s -r %s %s' % (
+    ...         args, callable_path, site_list)
+    ...     return subprocess.call(command.split(), cwd=mailman_bin)
+
+    >>> import canonical.launchpad.mailman
+
+Mailman's site list must exist.
+
+    >>> withlist('withlist_1.test_site_list', '-q')
+    99
+
+Mailman must also be able to import the shared package.
+
+    >>> withlist('withlist_2.can_import', '-q')
+    99

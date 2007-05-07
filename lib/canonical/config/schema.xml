@@ -375,7 +375,7 @@ k            </description>
     <sectiontype name="gina">
         <key name="dbuser" datatype="string" default="gina">
             <description>
-                The database user wich will be used to make the
+                The database user which will be used to make the
                 package imports.
             </description>
         </key>
@@ -485,7 +485,7 @@ k            </description>
         <key name="bugnotification_dbuser"
              datatype="string" required="no" default="bugnotification">
             <description>
-                The database user wich will be used to send bug
+                The database user which will be used to send bug
                 notifications.
             </description>
         </key>
@@ -612,7 +612,7 @@ k            </description>
     <sectiontype name="distributionmirrorprober">
         <key name="dbuser" datatype="string" default="distributionmirror">
             <description>
-                The database user wich will be used to probe distribution
+                The database user which will be used to probe distribution
                 mirrors.
             </description>
         </key>
@@ -647,7 +647,7 @@ k            </description>
     <sectiontype name="expiredmembershipsflagger">
         <key name="dbuser" datatype="string" default="teammembership">
             <description>
-                The database user wich will be used to flag expired team
+                The database user which will be used to flag expired team
                 memberships.
             </description>
         </key>
@@ -656,7 +656,7 @@ k            </description>
     <sectiontype name="karmacacheupdater">
         <key name="dbuser" datatype="string" default="karma">
             <description>
-                The database user wich will be used to update the karmacache
+                The database user which will be used to update the karmacache
                 table.
             </description>
         </key>
@@ -673,7 +673,7 @@ k            </description>
     <sectiontype name="targetnamecacheupdater">
         <key name="dbuser" datatype="string" default="targetnamecacheupdater">
             <description>
-                The database user wich will be used to update the
+                The database user which will be used to update the
                 targetnamecache column of bugtasks.
             </description>
         </key>
@@ -684,7 +684,7 @@ k            </description>
              default="http://cve.mitre.org/cve/downloads/allitems.xml.gz" />
         <key name="dbuser" datatype="string" default="cve">
             <description>
-                The database user wich will be used to update the CVE
+                The database user which will be used to update the CVE
                 database.
             </description>
         </key>
@@ -693,7 +693,7 @@ k            </description>
     <sectiontype name="answertracker">
         <key name="dbuser" datatype="string" default="answertracker">
             <description>
-                The database user wich will be used to expire questions.
+                The database user which will be used to expire questions.
             </description>
         </key>
         <key name="email_domain" datatype="string"
@@ -892,12 +892,38 @@ k            </description>
         <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
 
+    <sectiontype name="production_errorreports" extends="script_errorreports" />
+    <sectiontype name="autotest_errorreports" extends="script_errorreports" />
+
     <sectiontype name="importd">
         <key name="dbuser" datatype="string">
             <description>
                 The database user for importd and associated scripts.
             </description>
         </key>
+        <section name="*" type="production_errorreports"
+            attribute="production_errorreports" required="no" />
+        <section name="*" type="autotest_errorreports"
+            attribute="autotest_errorreports" required="no" />
+    </sectiontype>
+
+    <sectiontype name="mailman-build"
+                 prefix="canonical.launchpad.mailman.config">
+        <key name="build"           datatype="boolean"      default="false" />
+        <key name="prefix"          datatype=".prefix"      default=""      />
+        <key name="var_dir"         datatype="string"
+             default="/var/mailman"  />
+        <key name="user_group"      datatype=".usergroup"   default="" />
+        <key name="site_list_owner" datatype=".siteowner"   default="" />
+        <key name="host_name"       datatype=".hostname"    default="" />
+    </sectiontype>
+
+    <sectiontype name="mailman" prefix="canonical.mailman.config">
+        <section name="*" type="mailman-build"
+                 attribute="build" required="yes" />
+
+        <key name="launch" datatype="boolean"  default="false" />
+        <key name="smtp"   datatype="inet-address"   default="localhost:25" />
     </sectiontype>
 
     <sectiontype name="canonical">
@@ -948,6 +974,7 @@ k            </description>
         <section name="*" type="supermirrorsftp" attribute="supermirrorsftp" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
+        <section name="*" type="mailman" attribute="mailman" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file
