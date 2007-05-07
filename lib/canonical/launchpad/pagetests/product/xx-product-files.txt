@@ -155,7 +155,7 @@ Now let's successfully upload two more files.
     >>> firefox_owner.open('http://launchpad.dev/firefox/1.0/1.0.0/')
     >>> firefox_owner.getLink('Add download file').click()
     >>> from cStringIO import StringIO
-    >>> foo_file = StringIO('Foo installer package...')
+    >>> foo_file = StringIO('Foo2 installer package...')
     >>> foo_file.seek(0)
     >>> firefox_owner.getControl(name='field.filecontent').add_file(foo_file,
     ...    'text/plain', 'foo2.txt')
@@ -216,8 +216,23 @@ are listed within series in reverse chronological order.
 
 Download one of the files.
 
-    >>> import transaction
-    >>> transaction.commit()
-    
-    >>> firefox_owner.getLink('foo2.txt').click()
+    >>> from urllib import urlopen
+    >>> from urlparse import urlparse
+    >>> firefox_owner.handleErrors = False
+XXX Downloading via the testbrowser does not work
+XXX unless the file is served by the Zope publisher.
+XXX The link resolves to a Librarian URL, which cannot
+XXX be served since it is external.
+XXX Most of the following can be replaced by 
+XXX >>> firefox_owner.getLink('foo2.txt').click()
+XXX when bug 113083 is fixed.
+XXX Mon May  7 10:02:49 2007 -- bac
+    >>> link = firefox_owner.getLink('foo2.txt')
+    >>> url_path = urlparse(link.url)[2]
+    >>> redirect_resp = http("""
+    ...     GET %s HTTP/1.1""" % url_path)
+    >>> location = redirect_resp.getOutput().split("\n")[3]
+    >>> redirect_url = location.split()[1]
+    >>> print urlopen(redirect_url).read()
+    Foo2 installer package...
 
