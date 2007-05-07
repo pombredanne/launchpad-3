@@ -62,7 +62,7 @@ class BuilderGroup:
 
         for builder in self.builders:
             try:
-                # Verify if the *trusted* builder has been disabled.
+                # Verify if *trusted* builders has been disabled.
                 # Untrusted builders will be always probed.
                 if not builder.builderok and builder.trusted:
                     continue
@@ -95,6 +95,9 @@ class BuilderGroup:
                 self.logger.debug("Builder on %s marked as failed due to: %r",
                                   builder.url, reason, exc_info=True)
             else:
+                # Update the successfully probed builder to OK state.
+                builder.builderok = True
+                builder.failnotes = None
                 # verify if the builder slave is working with sane information
                 self.rescueBuilderIfLost(builder)
 
