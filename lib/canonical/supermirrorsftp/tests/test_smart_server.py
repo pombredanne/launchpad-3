@@ -63,6 +63,23 @@ class TestExecOnlySession(AvatarTestCase):
                         "Got %r instead." % (session,))
         self.assertIdentical(self.avatar, session.avatar)
 
+    def test_implementsClosed(self):
+        # ExecOnlySession provides a 'closed' method that is generally
+        # responsible for killing the child process and cleaning things up.
+        # From the outside, it just looks like a successful no-op.
+        self.session.closed()
+
+    def test_implementsExecCommand(self):
+        # ExecOnlySession implements 'execCommand'. The exact details are up to
+        # individual subclasses.
+        self.session.execCommand(ProcessProtocol(), 'cat /etc/hostname')
+
+    def test_implementsEofReceived(self):
+        # ExecOnlySession implements 'eofReceived'. The exact details are up to
+        # individual subclasses.
+        self.session.eofReceived()
+
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

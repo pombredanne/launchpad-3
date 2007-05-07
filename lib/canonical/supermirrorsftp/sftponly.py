@@ -24,17 +24,7 @@ import os.path
 
 
 class SubsystemOnlySession(session.SSHSession, object):
-    """Session adapter that disables every request except request_subsystem."""
-
-    def __getattribute__(self, name):
-        # Get out the big hammer :)
-        # (This is easier than overriding all the different request_ methods
-        # individually, or writing an ISession adapter to give the same
-        # effect.)
-        if name.startswith('request_') and name not in ('request_subsystem',
-                                                        'request_exec'):
-            raise AttributeError(name)
-        return object.__getattribute__(self, name)
+    """Session adapter that corrects a bug in Conch."""
 
     def closeReceived(self):
         # Without this, the client hangs when its finished transferring.

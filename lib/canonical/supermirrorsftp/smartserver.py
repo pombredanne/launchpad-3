@@ -19,6 +19,15 @@ class ExecOnlySession:
     def __init__(self, avatar):
         self.avatar = avatar
 
+    def closed(self):
+        """Override me to provide specific cleanup."""
+
+    def eofReceived(self):
+        """Override me to provide specific cleanup."""
+
+    def execCommand(self, protocol, command):
+        """Override me to implement command execution."""
+
     def getPty(self, term, windowSize, modes):
         raise NotImplementedError()
 
