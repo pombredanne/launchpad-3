@@ -460,6 +460,15 @@ class SVNStrategy(CSCVSStrategy):
             'https://numexp.org/svn/numexp-core',
             'svn://svn.berlios.de/sax/sax-head',
             'http://codespeak.net/svn/pypy/dist',
+            ('https://mailman.svn.sourceforge.net/svnroot/mailman/'
+             'branches/Release_2_1-maint/mailman'),
+
+            # XXX: This entry is only needed for the initial import of
+            # mailmain/2.1, that we do using a local copy of the repository.
+            # It can be removed after the initial import is done.
+            # -- DavidAllouche 2007-05-07
+            ('file:///home/importd/tmp/mailman.svn/'
+             'branches/Release_2_1-maint/mailman'),
          ])
 
     def getSVNDirPath(self, aJob, dir):
