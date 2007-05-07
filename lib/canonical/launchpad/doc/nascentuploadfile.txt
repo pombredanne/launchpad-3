@@ -95,7 +95,7 @@ a error generator
 Source and Binary files are easily recognized by a regexp on the
 filenames:
 
- >>> from canonical.archivepublisher.utils import (
+ >>> from canonical.archiveuploader.utils import (
  ...     re_isadeb, re_issource)
 
  >>> bin_match = re_isadeb.match('foo-bar_1.0_i386.deb')
