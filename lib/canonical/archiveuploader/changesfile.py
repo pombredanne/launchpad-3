@@ -20,7 +20,7 @@ from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, DebBinaryUploadFile,
     UdebBinaryUploadFile, BaseBinaryUploadFile, SourceUploadFile,
     splitComponentAndSection)
-from canonical.archivepublisher.utils import (
+from canonical.archiveuploader.utils import (
     re_isadeb, re_issource, re_changes_file_name)
 from canonical.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
