@@ -363,7 +363,7 @@ class IBasicLaunchpadRequest(Interface):
 
 
 class IBrowserFormNG(Interface):
-    """Interface provided by request offering advanced form query methods."""
+    """Interface to manipulate submitted form data."""
 
     def __contains__(name):
         """Return True if a field named name was submitted."""
