@@ -172,7 +172,8 @@ class BranchTraversalMixin:
         branch_name = stepstogo.consume()
         if product_name is not None and branch_name is not None:
             branch = self.context.getBranch(product_name, branch_name)
-            return self.redirectSubTree(canonical_url(branch))
+            if branch:
+                return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
 
     def traverse(self, product_name):

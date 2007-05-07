@@ -101,6 +101,19 @@ next time:
 
   >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
 
+The upload task requires that the umask be 022, otherwise things will end up
+with the wrong permission.
+
+  >>> old_mask = os.umask(002)
+  >>> upload.queue_root.realiseUpload(mock_logger_quiet)
+  ERROR: Queue item ignored: Bad umask; expected 022, got 002
+
+Reset the umask, remove any residual directories, and try again.
+
+  >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
+  >>> print '%03o' % os.umask(old_mask)
+  002
+
 Process (publish) the custom upload:
 
   >>> upload.queue_root.realiseUpload(mock_logger_quiet)

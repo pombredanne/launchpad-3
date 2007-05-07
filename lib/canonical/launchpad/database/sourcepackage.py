@@ -95,11 +95,11 @@ class SourcePackageQuestionTargetMixin:
 
     def addAnswerContact(self, person):
         """See IQuestionTarget."""
-        answer_contact_entry = AnswerContact.selectOneBy(
+        answer_contact = AnswerContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             person=person)
-        if answer_contact_entry:
+        if answer_contact:
             return False
 
         AnswerContact(
@@ -110,14 +110,14 @@ class SourcePackageQuestionTargetMixin:
 
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
-        answer_contact_entry = AnswerContact.selectOneBy(
+        answer_contact = AnswerContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             person=person)
-        if not answer_contact_entry:
+        if not answer_contact:
             return False
 
-        answer_contact_entry.destroySelf()
+        answer_contact.destroySelf()
         return True
 
     @property

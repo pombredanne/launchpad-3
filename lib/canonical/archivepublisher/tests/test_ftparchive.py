@@ -179,10 +179,11 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         apt_conf = fa.generateConfig(fullpublish=True)
         self._verifyFile("apt.conf", self._confdir)
 
-        # XXX cprov 20070321: This is an extra problem. Running a-f on developer
-        # machines is wasteful. We need to find a away to split those kind of
-        # tests and avoid to run it when performing 'make check'. Although they
-        # should remain active in PQM to avoid possible regressions.
+        # XXX cprov 20070321: This is an extra problem. Running a-f on
+        # developer machines is wasteful. We need to find a away to split
+        # those kind of tests and avoid to run it when performing 'make
+        # check'. Although they should remain active in PQM to avoid possible
+        # regressions.
         assert fa.runApt(apt_conf) == 0
         self._verifyFile("Packages",
             os.path.join(self._distsdir, "hoary-test", "main", "binary-i386"))
@@ -219,9 +220,9 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         allowed_suites = set()
         allowed_suites.add(('hoary-test', PackagePublishingPocket.UPDATES))
 
-        publisher = Publisher(self._logger, self._config, self._dp,
-                              self._distribution, allowed_suites=allowed_suites,
-                              archive=self._archive)
+        publisher = Publisher(
+            self._logger, self._config, self._dp, self._distribution,
+            allowed_suites=allowed_suites, archive=self._archive)
 
         fa = FTPArchiveHandler(self._logger, self._config, self._dp,
                                self._distribution, publisher)
