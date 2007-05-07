@@ -9,6 +9,7 @@ __all__ = ['ExecOnlySession']
 from zope.interface import implements
 
 from twisted.conch.interfaces import ISession
+from twisted.internet.process import ProcessExitedAlready
 
 
 class ExecOnlySession:
@@ -19,6 +20,7 @@ class ExecOnlySession:
     def __init__(self, avatar, reactor):
         self.avatar = avatar
         self.reactor = reactor
+        self._transport = None
 
     @classmethod
     def avatarAdapter(klass, avatar):
@@ -26,10 +28,16 @@ class ExecOnlySession:
         return klass(avatar, reactor)
 
     def closed(self):
-        """Override me to provide specific cleanup."""
+        if self._transport is not None:
+            try:
+                self._transport.signalProcess('HUP')
+            except (OSError, ProcessExitedAlready):
+                pass
+            self._transport.loseConnection()
 
     def eofReceived(self):
-        """Override me to provide specific cleanup."""
+        if self._transport is not None:
+            self._transport.closeStdin()
 
     def execCommand(self, protocol, command):
         """Executes `command` using `protocol` as the ProcessProtocol.
@@ -40,7 +48,7 @@ class ExecOnlySession:
         """
         args = command.split()
         executable, args = args[0], tuple(args[1:])
-        self.reactor.spawnProcess(protocol, executable, args)
+        self._transport = self.reactor.spawnProcess(protocol, executable, args)
 
     def getPty(self, term, windowSize, modes):
         raise NotImplementedError()
