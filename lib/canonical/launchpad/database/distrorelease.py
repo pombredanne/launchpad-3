@@ -1501,6 +1501,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             # column?  When that information stales, performance degrades very
             # suddenly and very dramatically.
             deletions_since_analyze = 0
+            batches_since_analyze = 0
 
             batch_size = min_batch_size
             while lowest <= highest:
@@ -1556,13 +1557,15 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 # sequential scans.  A quick "ANALYZE" run should fix that.
                 # Doesn't take long, either, so we try to do it before the
                 # problem occurs.
-                # Re-analyze periodically (every million rows or so) just in
-                # case; when performance drops and forces batch_size down to
-                # its minimum value; and whenever we've deleted about a fifth
-                # of our remaining rows since our last run.  Disaster seems to
-                # strike around one-third, even when there are only a undred
-                # thousand or so rows left.
-                if (batch_size < min_batch_size or
+                # Re-analyze periodically just in case; plus when performance
+                # drops and forces batch_size down to its minimum value; and
+                # whenever we've deleted about a fifth of our remaining rows
+                # since our last run.  Disaster seems to strike around
+                # one-third, even when there are only a hundred thousand or so
+                # rows left.  Don't analyze too often if something else is
+                # forcing performance down, though.
+                if batches_since_analyze > 3 and (
+                        batch_size < min_batch_size or
                         deletions_since_analyze > 1000000 or
                         (highest-lowest)/5 < deletions_since_analyze):
                     analyzestarttime = time.time()
@@ -1570,13 +1573,19 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                     logger.info("Analyzed in %f seconds" % (
                         time.time() - analyzestarttime))
                     deletions_since_analyze = 0
+                    batches_sinze_analyze = 0
 
                 batch_size = max(batch_size, min_batch_size)
+                batches_since_analyze = batches_since_analyze + 1
 
-            cur.execute("DROP TABLE %s" % holding)
             logger.info(
                 "Pouring %s took %f seconds." %
                     (holding,time.time()-tablestarttime))
+
+            dropstart = time.time()
+            cur.execute("DROP TABLE %s" % holding)
+            logger.info("Dropped %s in %f seconds" % (
+                holding, time.time() - dropstart))
 
 
     def _copy_active_translations_to_new_release(self, logger, ztm):
