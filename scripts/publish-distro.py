@@ -124,7 +124,7 @@ def main():
         if options.careful or options.careful_publishing:
             archives = getUtility(IArchiveSet).getAllPPAs()
         else:
-            archives = getUtility(IArchiveSet).getPendingPPAs()
+            archives = getUtility(IArchiveSet).getPendingPublicationPPAs()
         if options.distsroot is not None:
             log.error("We should not define 'distsroot' in PPA mode !")
             return

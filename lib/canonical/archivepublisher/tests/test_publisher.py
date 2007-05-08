@@ -283,8 +283,10 @@ class TestPublisher(TestNativePublishingBase):
             status=PackagePublishingStatus.PUBLISHED, archive=name16.archive)
 
         self.assertEqual(3, archive_set.getAllPPAs().count())
-        self.assertEqual(1, archive_set.getPendingPPAs().count())
-        pending_archive = archive_set.getPendingPPAs()[0]
+
+        pending_archives = archive_set.getPendingPublicationPPAs()
+        self.assertEqual(1, pending_archives.count())
+        pending_archive = pending_archives[0]
         self.assertEqual(cprov.archive.id, pending_archive.id)
 
     def testPPAArchiveIndex(self):
