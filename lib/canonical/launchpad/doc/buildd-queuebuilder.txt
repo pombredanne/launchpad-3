@@ -322,7 +322,6 @@ Check that we only created new Build entries for the new hoary releases:
   hppa build of test-buildd-4 670 in ubuntu hoary UPDATES
   hppa build of test-buildd-6 672 in ubuntu hoary UPDATES
   i386 build of test-buildd-7 673 in ubuntu hoary UPDATES
-  
 
 And have a look at our arch-all release's build:
 
@@ -392,12 +391,10 @@ further tests for scoring are in buildd-scoring.txt)
   >>> job.lastscore
   995
 
-= PPA work =
+== PPA work ==
 
 Currently all Build/BuildQueue are processed in the same batch,
-indenpendently of the targeted archive.
-
-The entire procedure
+independently of the targeted archive.
 
 For testing PPA we will snapshot the current build/buildqueue status
 again:
@@ -410,11 +407,10 @@ the sample data:
 
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
-  >>> cprov_archive = cprov.getArchive('ubuntu-fun')
 
   >>> name6 = SourcePackageName(name="test-ppa")
   >>> spr_hoary_ppa, pub_hoary_ppa = createPackageAndPublication(
-  ...     name6, hoary, "i386", archive=cprov_archive)
+  ...     name6, hoary, "i386", archive=cprov.archive)
 
 Now we create builds and buildqueues and check their contents:
 
@@ -455,6 +451,6 @@ suffice for the build being dispatched and collected correctly (see
 buildd-slavescanner.txt):
 
   >>> ppa_job = new_jobs[0]
-  >>> ppa_job.build.archive.name
-  u'ubuntu-fun'
+  >>> ppa_job.build.archive.owner.name
+  u'cprov'
 

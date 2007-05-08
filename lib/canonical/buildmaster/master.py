@@ -239,13 +239,19 @@ class BuilddMaster:
         self._logger.info("Supported architectures: %s"
                           % " ".join(a.architecturetag for a in legal_archs))
 
-        pas_verify = BuildDaemonPackagesArchSpecific(config.builddmaster.root,
-                                                     distrorelease)
+        pas_verify = BuildDaemonPackagesArchSpecific(
+            config.builddmaster.root, distrorelease)
 
-        sources_published = distrorelease.getSourcesPublishedForAllArchives()
+        main_sources = distrorelease.getSourcesPublishedForMainArchive()
+        self._logger.info(
+            "Found %d source(s) published in %s main archive." %
+            (main_sources.count(), distrorelease.name))
 
-        self._logger.info("Found %d source(s) published in %s." %
-                          (sources_published.count(), distrorelease.name))
+        ppa_sources = distrorelease.getSourcesPublishedForAllArchives()
+        self._logger.info(
+            "Found %d source(s) published in PPAs." % ppa_sources.count())
+
+        sources_published = main_sources.union(ppa_sources)
 
         # XXX cprov 20050831: Entering this loop with no supported
         # architecture results in a corruption of the persistent DBNotes

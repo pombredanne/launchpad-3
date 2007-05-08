@@ -616,10 +616,11 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             DistributionReleaseStatus.EXPERIMENTAL,
         ]
 
-    def getSourcesPublishedForAllArchives(self):
+    def getSourcesPublishedForMainArchive(self):
         """See IDistroRelease."""
         state = PackagePublishingStatus.PUBLISHED
-        queries = ['distrorelease=%s AND status=%s' % sqlvalues(self, state)]
+        queries = ['distrorelease=%s AND status=%s AND archive=%s' %
+                   sqlvalues(self, state, self.main_archive)]
 
         if not self.isUnstable():
             queries.append(
@@ -627,6 +628,13 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         return SourcePackagePublishingHistory.select(
             " AND ".join(queries), orderBy="id")
+
+    def getSourcesPublishedForAllArchives(self):
+        """See IDistroRelease."""
+        query = """
+        distrorelease=%s AND status=%s
+        """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED)
+        return SourcePackagePublishingHistory.select(query, orderBy="id")
 
     def getSourcePackagePublishing(self, status, pocket, component=None,
                                    archive=None):
