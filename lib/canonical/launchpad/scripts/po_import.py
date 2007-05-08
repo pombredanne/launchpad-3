@@ -35,7 +35,7 @@ class ImportProcess:
             # Execute the auto approve algorithm to save Rosetta experts some
             # work when possible.
             if entry_to_import is None:
-                self.auto_approve(translation_import_queue)
+                auto_approve(translation_import_queue, self.logger, self.ztm)
                 break
 
             assert entry_to_import.import_into is not None, (
@@ -83,46 +83,46 @@ class ImportProcess:
                                   ' committing the transaction', exc_info=1)
                 self.ztm.abort()
 
-    def auto_approve(self, translation_import_queue):
-        """Attempt to approve requests without human intervention.
+def auto_approve(translation_import_queue, logger, ztm):
+    """Attempt to approve requests without human intervention.
 
-        Look for entries in translation_import_queue that look like they can
-        be approved automatically.
+    Look for entries in translation_import_queue that look like they can
+    be approved automatically.
 
-        Also, detect requests that should be blocked, and block them in their
-        entirety (with all their .pot and .po files).
-        """
+    Also, detect requests that should be blocked, and block them in their
+    entirety (with all their .pot and .po files).
+    """
 
-        # There may be corner cases where an 'optimistic approval' could
-        # import a .po file to the wrong IPOFile (but the right language).
-        # The savings justify that risk.  The problem can only occur where,
-        # for a given productseries/sourcepackage, we have two potemplates in
-        # the same directory, each with its own set of .po files, and for some
-        # reason one of the .pot files has not been added to the queue.  Then
-        # we would import both sets of .po files to that template.  This is
-        # not a big issue because the two templates will rarely share an
-        # identical msgid, and especially because it's not a very common
-        # layout in the free software world.
-        if translation_import_queue.executeOptimisticApprovals(self.ztm):
-            self.logger.info(
-                'The automatic approval system approved some entries.')
+    # There may be corner cases where an 'optimistic approval' could
+    # import a .po file to the wrong IPOFile (but the right language).
+    # The savings justify that risk.  The problem can only occur where,
+    # for a given productseries/sourcepackage, we have two potemplates in
+    # the same directory, each with its own set of .po files, and for some
+    # reason one of the .pot files has not been added to the queue.  Then
+    # we would import both sets of .po files to that template.  This is
+    # not a big issue because the two templates will rarely share an
+    # identical msgid, and especially because it's not a very common
+    # layout in the free software world.
+    if translation_import_queue.executeOptimisticApprovals(ztm):
+        logger.info(
+            'The automatic approval system approved some entries.')
 
-        removed_entries = translation_import_queue.cleanUpQueue()
-        if removed_entries > 0:
-            self.logger.info('Removed %d entries from the queue.' %
-                removed_entries)
-            self.ztm.commit()
+    removed_entries = translation_import_queue.cleanUpQueue()
+    if removed_entries > 0:
+        logger.info('Removed %d entries from the queue.' %
+            removed_entries)
+        ztm.commit()
 
-        # We need to block entries automatically to save Rosetta experts some
-        # work when a complete set of .po files and a .pot file should not be
-        # imported into the system.  We have the same corner case as with the
-        # previous approval method, but in this case it's a matter of changing
-        # the status back from "blocked" to "needs review," or approving it
-        # directly so no data will be lost and a lot of work is saved.
-        blocked_entries = (
-            translation_import_queue.executeOptimisticBlock(self.ztm))
-        if blocked_entries > 0:
-            self.logger.info('Blocked %d entries from the queue.' %
-                blocked_entries)
-            self.ztm.commit()
+    # We need to block entries automatically to save Rosetta experts some
+    # work when a complete set of .po files and a .pot file should not be
+    # imported into the system.  We have the same corner case as with the
+    # previous approval method, but in this case it's a matter of changing
+    # the status back from "blocked" to "needs review," or approving it
+    # directly so no data will be lost and a lot of work is saved.
+    blocked_entries = (
+        translation_import_queue.executeOptimisticBlock(ztm))
+    if blocked_entries > 0:
+        logger.info('Blocked %d entries from the queue.' %
+            blocked_entries)
+        ztm.commit()
 
