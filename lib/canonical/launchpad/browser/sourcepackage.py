@@ -24,6 +24,8 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import AccessDisabledError
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -48,9 +50,17 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepto('+pots')
     def pots(self):
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(
-                   distrorelease=self.context.distrorelease,
-                   sourcepackagename=self.context.sourcepackagename)
+        subset = potemplateset.getSubset(
+            distrorelease=self.context.distrorelease,
+            sourcepackagename=self.context.sourcepackagename)
+
+        if (self.context.distrorelease.hide_all_translations and
+            not check_permission('launchpad.Admin', subset)):
+            # Prevent to traverse to non admin users while we hide all
+            # translations.
+            raise AccessDisabledError
+
+        return subset
 
     @stepto('+filebug')
     def filebug(self):

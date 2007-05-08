@@ -59,6 +59,15 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
+  <!-- AccessDisabledError -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.AccessDisabledError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-accessdisabled.pt"
+      class="canonical.launchpad.webapp.error.AccessDisabledView"
+      />
+
   <!-- LibrarianFailure -->
   <browser:page
       for="canonical.librarian.interfaces.LibrarianFailure"

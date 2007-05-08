@@ -459,6 +459,8 @@ languageset_index = 'Languages in Launchpad'
 
 # launchpad_debug doesn't need a title.
 
+launchpad_accessdisabled = 'Access disabled'
+
 def launchpad_addform(context, view):
     # Returning None results in the default Launchpad page title being used.
     return getattr(view, 'page_title', None)

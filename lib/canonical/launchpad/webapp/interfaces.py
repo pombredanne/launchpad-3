@@ -18,6 +18,10 @@ class NotFoundError(KeyError):
     """Launchpad object not found."""
 
 
+class AccessDisabledError(Exception):
+    """Launchpad object access disabled."""
+
+
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 

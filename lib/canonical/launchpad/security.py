@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
-    IBugBranch, ILanguage, ILanguageSet)
+    IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -904,3 +904,7 @@ class AdminLanguage(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ILanguage
 
+
+class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = IPOTemplateSubset

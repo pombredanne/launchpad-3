@@ -9,7 +9,7 @@ __all__ = [
     'IDistroReleaseSet',
     ]
 
-from zope.schema import Choice, Int, TextLine
+from zope.schema import Bool, Choice, Int, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.fields import Title, Summary, Description
@@ -104,10 +104,10 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this release.")
     hide_all_translations = Bool(
-        title='Hide all translations', required=True,
-        description=('Check this if you want to hide all translations for'
-                     ' this IDistroRelease, from the user interface, so'
-                     ' only system admins are able to see them.'),
+        title=u'Hide all translations', required=True,
+        description=(u'Check this if you want to hide all translations for'
+                     u' this IDistroRelease, from the user interface, so'
+                     u' only system admins are able to see them.'),
         default=True)
 
     # related joins

@@ -1,0 +1,17 @@
+<html metal:use-macro="view/macro:page/freeform"
+      i18n:domain="launchpad">
+
+  <body>
+    <div metal:fill-slot="main">
+      <h1>Access is disabled</h1>
+      <p>
+        The page you try to access is disabled right now while we are doing
+        some admin tasks on Launchpad. Once we are done with such tasks you
+        will be able to reach that page again.
+      </p>
+      <p>
+        Thanks for your patiente.
+      </p>
+    </div>
+  </body>
+</html>
