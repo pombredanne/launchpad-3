@@ -23,11 +23,11 @@ import tempfile
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.nascentuploadfile import (
+from canonical.archiveuploader.nascentuploadfile import (
     UploadWarning, UploadError, NascentUploadFile, SourceUploadFile)
-from canonical.archivepublisher.tagfiles import (
+from canonical.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
-from canonical.archivepublisher.utils import (
+from canonical.archiveuploader.utils import (
     prefix_multi_line_string, safe_fix_maintainer, ParseMaintError,
     re_valid_pkg_name, re_valid_version, re_issource)
 from canonical.encoding import guess as guess_encoding
