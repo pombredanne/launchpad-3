@@ -187,7 +187,7 @@ submitted with that button.
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
-  ...     environ={'REQUEST_METHOD': 'POST'},
+  ...     method='POST',
   ...     form={'field.displayname': 'bob',
   ...           'field.actions.change': 'Change Name'})
   >>> view = FormTestView4(context, request)
@@ -225,7 +225,7 @@ setFieldError() method (for errors specific to a field):
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
-  ...     environ={'REQUEST_METHOD': 'POST'},
+  ...     method='POST',
   ...     form={'field.name': 'fred', 'field.password': '12345'})
   >>> view = FormTestView5(context, request)
   >>> view.setUpFields()
@@ -238,7 +238,7 @@ setFieldError() method (for errors specific to a field):
 Check that form wide errors can be reported:
 
   >>> request = LaunchpadTestRequest(
-  ...     environ={'REQUEST_METHOD': 'POST'},
+  ...     method='POST',
   ...     form={'field.name': 'fred', 'field.password': 'fred'})
   >>> view = FormTestView5(context, request)
   >>> view.setUpFields()
@@ -252,7 +252,7 @@ Check that form wide errors can be reported:
 Check that widget specific errors can be reported:
 
   >>> request = LaunchpadTestRequest(
-  ...     environ={'REQUEST_METHOD': 'POST'},
+  ...     method='POST',
   ...     form={'field.name': 'fred', 'field.password': 'password'})
   >>> view = FormTestView5(context, request)
   >>> view.setUpFields()
@@ -285,7 +285,7 @@ redirect the user to another URL.  The URL is specified by the
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
-  ...     environ={'REQUEST_METHOD': 'POST'},
+  ...     method='POST',
   ...     form={'field.displayname': 'bob',
   ...           'field.actions.change': 'Change Name'})
   >>> view = FormTestView6(context, request)
@@ -331,7 +331,7 @@ rendered content is always the empty string.
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
-  ...     environ={'REQUEST_METHOD': 'POST'},
+  ...     method='POST',
   ...     form={'field.displayname': 'bob',
   ...           'field.actions.redirect': 'Redirect'})
   >>> view = RenderFormTest(context, request)
@@ -343,7 +343,7 @@ can directly return the rendered content:
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
-  ...     environ={'REQUEST_METHOD': 'POST'},
+  ...     method='POST',
   ...     form={'field.displayname': 'bob',
   ...           'field.actions.update': 'Update'})
   >>> view = RenderFormTest(context, request)
@@ -354,7 +354,7 @@ This is also true of failure handlers:
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
-  ...     environ={'REQUEST_METHOD': 'POST'},
+  ...     method='POST',
   ...     form={'field.displayname': '',
   ...           'field.actions.update': 'Update'})
   >>> view = RenderFormTest(context, request)
@@ -455,7 +455,7 @@ request:
   UnsafeFormGetSubmissionError: field.actions.change
 
   >>> request = LaunchpadTestRequest(
-  ...     environ={'REQUEST_METHOD': 'POST'},
+  ...     method='POST',
   ...     form={'field.name': 'foo',
   ...           'field.actions.change': 'Change'})
   >>> view = UnsafeActionTestView(context, request)
@@ -513,7 +513,7 @@ object for us too:
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest(
-  ...     environ={'REQUEST_METHOD': 'POST'},
+  ...     method='POST',
   ...     form={'field.displayname': 'James Henstridge',
   ...           'field.actions.change': 'Change Name'})
   >>> view = FormTestView8(context, request)
