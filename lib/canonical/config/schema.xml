@@ -874,7 +874,7 @@ k            </description>
             required="no" />
     </sectiontype>
 
-    <sectiontype name="supermirrorsftp">
+    <sectiontype name="codehosting">
         <key name="authserver" datatype="string" />
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
@@ -971,7 +971,7 @@ k            </description>
         <section name="*" type="supermirror" attribute="supermirror" />
         <section name="*" type="branchscanner" attribute="branchscanner" />
         <section name="*" type="builddmaster" attribute="builddmaster" />
-        <section name="*" type="supermirrorsftp" attribute="supermirrorsftp" />
+        <section name="*" type="codehosting" attribute="codehosting" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
         <section name="*" type="mailman" attribute="mailman" />

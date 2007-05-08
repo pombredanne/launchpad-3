@@ -28,16 +28,16 @@ class SFTPService(service.Service):
 
     def makeRealm(self):
         """Create and return an authentication realm for the authserver."""
-        homedirs = config.supermirrorsftp.branches_root
-        authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
+        homedirs = config.codehosting.branches_root
+        authserver = TwistedAuthServer(config.codehosting.authserver)
         return sftponly.Realm(homedirs, authserver)
 
     def makeFactory(self, hostPublicKey, hostPrivateKey):
         """Create and return an SFTP server that uses the given public and
         private keys.
         """
-        homedirs = config.supermirrorsftp.branches_root
-        authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
+        homedirs = config.codehosting.branches_root
+        authserver = TwistedAuthServer(config.codehosting.authserver)
         portal = Portal(self.makeRealm())
         portal.registerChecker(
             sftponly.PublicKeyFromLaunchpadChecker(authserver))
@@ -51,7 +51,7 @@ class SFTPService(service.Service):
         """
         hostPublicKey, hostPrivateKey = self.makeKeys()
         sftpfactory = self.makeFactory(hostPublicKey, hostPrivateKey)
-        return strports.service(config.supermirrorsftp.port, sftpfactory)
+        return strports.service(config.codehosting.port, sftpfactory)
 
     def makeKeys(self):
         """Load the public and private host keys from the configured key pair
@@ -59,7 +59,7 @@ class SFTPService(service.Service):
 
         :return: (hostPublicKey, hostPrivateKey)
         """
-        keydir = config.supermirrorsftp.host_key_pair_path
+        keydir = config.codehosting.host_key_pair_path
         hostPublicKey = keys.getPublicKeyString(
             data=open(os.path.join(keydir,
                                    'ssh_host_key_rsa.pub'), 'rb').read())

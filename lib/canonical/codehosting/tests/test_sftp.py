@@ -291,7 +291,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
     def setUp(self):
         self.authService = AuthserverService()
         self.authService.startService()
-        self.authserver = TwistedAuthServer(config.supermirrorsftp.authserver)
+        self.authserver = TwistedAuthServer(config.codehosting.authserver)
         self.checker = sftponly.PublicKeyFromLaunchpadChecker(self.authserver)
         self.prepareTestUser()
         self.valid_login = 'testuser'
