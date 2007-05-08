@@ -179,18 +179,6 @@ class NascentUpload:
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
 
-        # Check if the policy distrorelese is already defined first.
-        # If it's not, skip pocket upload rights check, the upload
-        # is already rejected at this point.
-        distrorelease = self.policy.distrorelease
-        pocket = self.policy.pocket
-        if distrorelease and not distrorelease.canUploadToPocket(pocket):
-            self.reject(
-                "Not permitted to upload to the %s pocket in a "
-                "release in the '%s' state." % (
-                self.policy.pocket.name,
-                self.policy.distrorelease.releasestatus.name))
-
         # Perform policy checks
         self.policy.checkUpload(self)
 
