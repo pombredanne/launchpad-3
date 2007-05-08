@@ -50,13 +50,21 @@ class ExecOnlySession:
         :param command: A whitespace-separated command line. The first token is
         used as the name of the executable, the rest are used as arguments.
         """
-        executable, arguments = self.getCommandToRun(command)
+        command = self.getCommandToRun(command)
+        if command is None:
+            return
+        executable, arguments = command
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments)
 
     def getCommandToRun(self, command):
-        """Return the (executable, args) that will actually be run given
-        command. Raise ForbiddenCommand if `command` is forbidden.
+        """Return the command that will actually be run given `command`.
+
+        :param command: A command line to run.
+        :raise ForbiddenCommand: when `command` is forbidden.
+        :return: `(executable, arguments)` where `executable` is the name of an
+            executable and arguments is a sequence of command-line arguments.
+            None if no command is to be executed.
         """
         args = command.split()
         return args[0], tuple(args[1:])

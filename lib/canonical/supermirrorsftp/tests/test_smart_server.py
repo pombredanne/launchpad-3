@@ -162,6 +162,21 @@ class TestExecOnlySession(AvatarTestCase):
         self.session.eofReceived()
         self.assertEqual([('closeStdin',)], self.session._transport.log)
 
+    def test_nothingExecutedWhenGetCommandToRunReturnsNone(self):
+        # If 'getCommandToRun' returns None then execCommand doesn't spawn any
+        # process -- it just exits silently.
+        protocol = ProcessProtocol()
+
+        def getCommandToRun(command):
+            return None
+        _oldCommandToRun = self.session.getCommandToRun
+        self.session.getCommandToRun = getCommandToRun
+        try:
+            self.session.execCommand(protocol, 'cat /etc/hostname')
+            self.assertEqual([], self.reactor.log)
+        finally:
+            self.session.getCommandToRun = _oldCommandToRun
+
     def test_getAvatarAdapter(self):
         # getAvatarAdapter is a convenience classmethod so that ExecOnlySession
         # can be easily registered as an adapter for Conch avatars.
@@ -244,12 +259,21 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         self.assertEqual('foo', session.allowed_command)
         self.assertEqual('bar baz', session.executed_command_template)
 
+
+class TestSessionIntegration(AvatarTestCase):
+    """Tests for how the Conch sessions integrate with the rest of the
+    supermirror.
+    """
+
+    def setUp(self):
+        AvatarTestCase.setUp(self)
+        self.avatar = SFTPOnlyAvatar(
+            'alice', self.tmpdir, self.aliceUserDict, None)
+
     def test_avatarAdaptsToRestrictedExecOnlySession(self):
         # When Conch tries to adapt the supermirror avatar to ISession, it
         # adapts to a RestrictedExecOnlySession. This means that a
         # RestrictedExecOnlySession handles any requests to execute a command.
-        #
-        # This is something of an integration test.
         session = ISession(self.avatar)
         self.failUnless(
             isinstance(session, smartserver.RestrictedExecOnlySession),
