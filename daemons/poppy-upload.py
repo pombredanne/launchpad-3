@@ -5,7 +5,7 @@ import logging
 import optparse
 
 from canonical.poppy.server import run_server
-from canonical.poppy.poppyinterface import PoppyInterface
+from canonical.archiveuploader.poppyinterface import PoppyInterface
 from canonical.launchpad.scripts import logger, logger_options
 
 

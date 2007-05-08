@@ -41,7 +41,7 @@ Now, let's create a subprocess running the poppy FTP server. It won't
 call the upload processing tool. We'll do that ourselves in our test,
 so that we can control what's going on.
 
-  >>> from canonical.poppy.tests import (
+  >>> from canonical.archiveuploader.ftests import (
   ...     PoppyTestSetup, SoyuzUploadError)
   >>> poppy = PoppyTestSetup(incoming_dir)
   >>> poppy.startPoppy()
@@ -69,7 +69,7 @@ Good.. let's send all packages we have in the test directory to
 the poppy server. We send each package set on a different ftp
 session.
 
-  >>> from canonical.archivepublisher.tagfiles import parse_tagfile
+  >>> from canonical.archiveuploader.tagfiles import parse_tagfile
   >>> from canonical.config import config
   >>> from cStringIO import StringIO
   >>> import glob

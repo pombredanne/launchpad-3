@@ -271,8 +271,8 @@ class DistroArchRelease(SQLBase):
         dirty_pockets = set()
 
         for bpph in self.getPendingPublications(archive, pocket, is_careful):
-            if not is_careful and self.distrorelease.checkLegalPocket(
-                bpph, log):
+            if not self.distrorelease.checkLegalPocket(
+                bpph, is_careful, log):
                 continue
             bpph.publish(diskpool, log)
             dirty_pockets.add((self.distrorelease.name, bpph.pocket))
