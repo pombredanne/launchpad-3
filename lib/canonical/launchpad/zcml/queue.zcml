@@ -24,7 +24,8 @@
       <require
           permission="launchpad.Edit"
           attributes="setNew setUnapproved setRejected setAccepted setDone
-                      realiseUpload addSource addBuild addCustom syncUpdate"
+                      realiseUpload addSource addBuild addCustom syncUpdate
+                      notify"
           set_attributes="status distrorelease pocket changesfile"
           />
     </content>

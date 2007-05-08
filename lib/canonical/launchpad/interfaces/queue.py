@@ -159,6 +159,12 @@ class IDistroReleaseQueue(Interface):
         This should be used when you can't wait until the transaction is
         committed to have some updates actually written to the database.
         """
+    def notify(sender, recipients, announcelist, maintainerfrom=None):
+        """Notify by email when there is a new distroreleasequeue entry.
+
+        This will send new, accept, announce and rejection messages as
+        appropriate.
+        """
 
 
 class IDistroReleaseQueueBuild(Interface):

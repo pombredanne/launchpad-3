@@ -6,6 +6,8 @@ __all__ = ['datadir', 'getPolicy', 'mock_options', 'mock_logger',
            'mock_logger_quiet']
 
 import os
+import sys
+import traceback
 
 from canonical.archiveuploader.uploadpolicy import findPolicyByName
 
@@ -46,19 +48,28 @@ class MockUploadLogger:
     def __init__(self, verbose=True):
         self.verbose = verbose
 
-    def debug(self, message, **kw):
+    def print_traceback(self, exc_info):
+        if exc_info:
+            for err_msg in traceback.format_exception(*sys.exc_info()):
+                print err_msg
+
+    def debug(self, message, exc_info=False, **kw):
         if self.verbose is not True:
             return
         print 'DEBUG:', message
+        self.print_traceback(exc_info)
 
-    def info(self, message, **kw):
+    def info(self, message, exc_info=False, **kw):
         print 'INFO:', message
+        self.print_traceback(exc_info)
 
-    def warn(self, message, **kw):
+    def warn(self, message, exc_info=False, **kw):
         print 'WARN:', message
+        self.print_traceback(exc_info)
 
-    def error(self, message, **kw):
+    def error(self, message, exc_info=False, **kw):
         print 'ERROR:', message
+        self.print_traceback(exc_info)
 
 
 mock_options = MockUploadOptions()

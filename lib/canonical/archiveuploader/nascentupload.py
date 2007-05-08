@@ -743,73 +743,20 @@ class NascentUpload:
             self.reject("Alas, someone called do_accept when we're rejected")
             return False, self.do_reject()
         try:
-            interpolations = {
-                "MAINTAINERFROM": self.sender,
-                "SENDER": self.sender,
-                "CHANGES": self.changes.filename,
-                "SUMMARY": self.getNotificationSummary(),
-                "CHANGESFILE": guess_encoding(self.changes.filecontents),
-                "DISTRO": self.policy.distro.title,
-                "DISTRORELEASE": self.policy.distrorelease.name,
-                "ANNOUNCE": self.policy.announcelist,
-                "SOURCE": self.changes.source,
-                "VERSION": self.changes.version,
-                "ARCH": self.changes.architecture_line,
-                }
+            maintainerfrom = None
             if self.changes.signer:
-                interpolations['MAINTAINERFROM'] = self.changes.changed_by[
-                    'rfc2047']
-
+                maintainerfrom = self.changes.changed_by['rfc2047']
             recipients = self.getRecipients()
-
-            interpolations['RECIPIENT'] = ", ".join(recipients)
-            interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
 
             self.storeObjectsInDatabase()
 
-            # NEW, Auto-APPROVED and UNAPPROVED source uploads targeted to
-            # section 'translations' should not generate any emails.
-            if (self.sourceful and
-                self.changes.dsc.section_name == 'translations'):
-                self.logger.debug(
-                    "Skipping acceptance and announcement, it is a language-"
-                    "package upload.")
-                return True, []
-
-            # Unknown uploads
-            if self.is_new:
-                return True, [new_msg % interpolations]
-
-            # Known uploads
-
-            # UNAPPROVED uploads coming from 'insecure' policy only sends
-            # acceptance message.
-            if not self.policy.autoApprove(self):
-                interpolations["SUMMARY"] += (
-                    "\nThis upload awaits approval by a distro manager\n")
-                return True, [accept_msg % interpolations]
-
-            # Auto-APPROVED uploads to BACKPORTS skips announcement.
-            # usually processed with 'sync' policy
-            if self.policy.pocket == PackagePublishingPocket.BACKPORTS:
-                self.logger.debug(
-                    "Skipping announcement, it is a BACKPORT.")
-                return True, [accept_msg % interpolations]
-
-            # Auto-APPROVED binary uploads to SECURITY skips announcement.
-            # usually processed with 'security' policy
-            if (self.policy.pocket == PackagePublishingPocket.SECURITY
-                and self.binaryful):
-                self.logger.debug(
-                    "Skipping announcement, it is a binary upload to SECURITY.")
-                return True, [accept_msg % interpolations]
-
-            # Fallback, all the rest comming from 'insecure', 'secure',
-            # and 'sync' policies should send acceptance & announcement
-            # messages.
-            return True, [
-                accept_msg % interpolations,
-                announce_msg % interpolations]
+            # Send the email.
+            changesfileobject = open(self.changes.filepath, "r")
+            self.queue_root.notify(self.sender, recipients, 
+                self.policy.announcelist, changesfileobject, maintainerfrom,
+                self.logger)
+            changesfileobject.close()
+            return True, []
 
         except (SystemExit, KeyboardInterrupt):
             raise

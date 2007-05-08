@@ -66,6 +66,8 @@ unsigned changes):
   DEBUG: Building recipients list.
   ...
   DEBUG: Creating queue entry
+  ...
+  DEBUG: Thank you for your contribution to Ubuntu Linux.
 
   >>> len(msgs)
   1
