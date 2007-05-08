@@ -6,11 +6,11 @@ import unittest
 from twisted.internet import defer
 from twisted.vfs.ivfs import PermissionError, NotFoundError
 
-from canonical.supermirrorsftp.sftponly import SFTPOnlyAvatar
-from canonical.supermirrorsftp.bazaarfs import (
+from canonical.codehosting.sftponly import SFTPOnlyAvatar
+from canonical.codehosting.bazaarfs import (
     SFTPServerRoot, SFTPServerBranch, SFTPServerProductDir,
     SFTPServerProductDirPlaceholder)
-from canonical.supermirrorsftp.tests.helpers import AvatarTestCase
+from canonical.codehosting.tests.helpers import AvatarTestCase
 
 
 class TestTopLevelDir(AvatarTestCase):

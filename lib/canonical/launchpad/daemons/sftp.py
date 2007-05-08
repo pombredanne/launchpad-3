@@ -1,7 +1,7 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Provides an SFTP server which Launchpad users can use to host their Bazaar
-branches. For more information, see lib/canonical/supermirrorsftp/README.
+branches. For more information, see lib/canonical/codehosting/README.
 """
 
 __metaclass__ = type
@@ -9,17 +9,15 @@ __all__ = ['SFTPService']
 
 
 import os
-import shutil
 
 from twisted.cred.portal import Portal
 from twisted.conch.ssh import keys
 from twisted.application import service, strports
 
 from canonical.config import config
-from canonical.launchpad.daemons import tachandler
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 
-from canonical.supermirrorsftp import sftponly
+from canonical.codehosting import sftponly
 
 
 class SFTPService(service.Service):

@@ -8,9 +8,6 @@ __metaclass__ = type
 import os
 import unittest
 import stat
-import struct
-import sys
-import traceback
 
 from zope.interface import implements
 
@@ -34,8 +31,8 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.config import config
 from canonical.launchpad.daemons.authserver import AuthserverService
-from canonical.supermirrorsftp import sftponly
-from canonical.supermirrorsftp.tests.test_acceptance import (
+from canonical.codehosting import sftponly
+from canonical.codehosting.tests.test_acceptance import (
     SFTPTestCase, SSHKeyMixin, deferToThread)
 from canonical.testing import TwistedLayer
 
