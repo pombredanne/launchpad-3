@@ -921,7 +921,7 @@ class AccessBranch(AuthorizationBase):
     usedfor = IBranch
 
     def checkAuthenticated(self, user):
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         if self.obj.visibility_team is None:
             return True
         # Should lp admins be able to see the branches?
@@ -934,4 +934,7 @@ class AccessBranch(AuthorizationBase):
         
         return False
 
+    def checkUnauthenticated(self):
+        return self.obj.visibility_team is None
+    
             
