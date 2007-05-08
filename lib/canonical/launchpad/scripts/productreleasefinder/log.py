@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
 """Logging.
 
 This module contains a utility function for creating trees of logging
 instances for objects.
 """
 
-__copyright__ = "Copyright © 2004 Canonical Ltd."
-__author__    = "Scott James Remnant <scott@canonical.com>"
+__metaclass__ = type
 
 
 import logging
