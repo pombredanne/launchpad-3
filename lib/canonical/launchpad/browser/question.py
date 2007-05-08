@@ -823,7 +823,9 @@ class SearchAllQuestionsView(SearchQuestionsView):
     """View that searches among all questions posted on Launchpad."""
 
     display_target_column = True
-    id_pattern = re.compile('^#?(\d+) *$')
+    # Match contiguous digits, optionally prefixed with a '#'
+    # or with leading and trailing whitespace.
+    id_pattern = re.compile('^\s*#?(\d+)\s*$')
 
     @property
     def pageheading(self):
@@ -843,17 +845,21 @@ class SearchAllQuestionsView(SearchQuestionsView):
                      mapping=dict(search_text=self.search_text))
         else:
             return _('There are no questions with the requested statuses.')
-            
-    def searchResults(self):
-        """Lookup a question by its id or Search all questions."""
+    
+    @action(_('Search'))
+    def search_or_lookup_action(self, action, data):
+        """Action executed when the user clicked the Find Answers button.
+
+        Saves the user submitted search parameters in an instance
+        attribute and redirects to questions when the term is a question id.
+        """
+        super(SearchAllQuestionsView, self).search_action.success(data)
+        
         id_matches = SearchAllQuestionsView.id_pattern.match(self.search_text)
-        if (id_matches is not None and
-                id_matches.group(1) is not None):
+        if (id_matches is not None):
             question = getUtility(IQuestionSet).get(id_matches.group(1))
             if question is not None:
                 self.request.response.redirect(canonical_url(question))
-        
-        return SearchQuestionsView.searchResults(self)
 
 
 class QuestionSOP(StructuralObjectPresentation):

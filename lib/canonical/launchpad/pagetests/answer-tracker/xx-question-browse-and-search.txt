@@ -144,19 +144,19 @@ to jump to the question.
     >>> browser.open('http://answers.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = '9'
     >>> browser.getControl('Find Answers').click()
-        >>> from canonical.launchpad.helpers import backslashreplace
+    >>> from canonical.launchpad.helpers import backslashreplace
     >>> locators = find_tags_by_class(browser.contents, 'main')
     >>> print backslashreplace(browser.title)
     mozilla-firefox in ubuntu question #9: ...
     
 While reading the Ubuntu forums for a solution to his problem, 
 Average Joe finds some unlinked text that refers to how to
-get extensions to work. He copies the text '#6 ' from the page
+get extensions to work. He copies the text ' #6 ' from the page
 and pastes it into the main page of the Answer Tracker to read
 the answer.
     
     >>> browser.open('http://answers.launchpad.dev/')
-    >>> browser.getControl(name='field.search_text').value = '#6 '
+    >>> browser.getControl(name='field.search_text').value = ' #6 '
     >>> browser.getControl('Find Answers').click()
     >>> print backslashreplace(browser.title)
     Mozilla Firefox question #6: ...
