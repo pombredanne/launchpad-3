@@ -162,21 +162,6 @@ class TestExecOnlySession(AvatarTestCase):
         self.session.eofReceived()
         self.assertEqual([('closeStdin',)], self.session._transport.log)
 
-    def test_nothingExecutedWhenGetCommandToRunReturnsNone(self):
-        # If 'getCommandToRun' returns None then execCommand doesn't spawn any
-        # process -- it just exits silently.
-        protocol = ProcessProtocol()
-
-        def getCommandToRun(command):
-            return None
-        _oldCommandToRun = self.session.getCommandToRun
-        self.session.getCommandToRun = getCommandToRun
-        try:
-            self.session.execCommand(protocol, 'cat /etc/hostname')
-            self.assertEqual([], self.reactor.log)
-        finally:
-            self.session.getCommandToRun = _oldCommandToRun
-
     def test_getAvatarAdapter(self):
         # getAvatarAdapter is a convenience classmethod so that ExecOnlySession
         # can be easily registered as an adapter for Conch avatars.

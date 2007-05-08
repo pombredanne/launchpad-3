@@ -50,10 +50,7 @@ class ExecOnlySession:
         :param command: A whitespace-separated command line. The first token is
         used as the name of the executable, the rest are used as arguments.
         """
-        command = self.getCommandToRun(command)
-        if command is None:
-            return
-        executable, arguments = command
+        executable, arguments = self.getCommandToRun(command)
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments)
 
