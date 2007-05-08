@@ -190,12 +190,14 @@ class Publisher(object):
                         self.log.debug("Skipping domination for %s/%s" %
                                    (distrorelease.name, pocket.name))
                         continue
-                    if not distrorelease.isUnstable():
+                    if (not distrorelease.isUnstable() and
+                        distrorelease.main_archive.id == self.archive.id):
                         # We're not doing a full run and the
                         # distrorelease is now 'stable': if we try to
                         # write a release file for it, we're doing
                         # something wrong.
-                        assert pocket != PackagePublishingPocket.RELEASE
+                        assert pocket != PackagePublishingPocket.RELEASE,(
+                            "Oops, dominating stable distrorelease.")
                 judgejudy.judgeAndDominate(distrorelease, pocket, self._config)
 
     def C_doFTPArchive(self, is_careful):
@@ -216,9 +218,11 @@ class Publisher(object):
                         self.log.debug("Skipping index generation for %s/%s" %
                                        (distrorelease.name, pocket))
                         continue
-                    if not distrorelease.isUnstable():
+                    if (not distrorelease.isUnstable() and
+                        distrorelease.main_archive.id == self.archive.id):
                         # See comment in B_dominate
-                        assert pocket != PackagePublishingPocket.RELEASE
+                        assert pocket != PackagePublishingPocket.RELEASE, (
+                            "Oops, indexing stable distrorelease.")
                 for component in distrorelease.components:
                     self._writeComponentIndexes(
                         distrorelease, pocket, component)
@@ -239,10 +243,11 @@ class Publisher(object):
                         self.log.debug("Skipping release files for %s/%s" %
                                        (distrorelease.name, pocket.name))
                         continue
-                    if not distrorelease.isUnstable():
+                    if (not distrorelease.isUnstable() and
+                        distrorelease.main_archive == self.archive):
                         # See comment in B_dominate
-                        assert pocket != PackagePublishingPocket.RELEASE
-
+                        assert pocket != PackagePublishingPocket.RELEASE, (
+                            "Oops, indexing stable distrorelease.")
                 self._writeDistroRelease(distrorelease, pocket)
 
     def isDirty(self, distrorelease, pocket):

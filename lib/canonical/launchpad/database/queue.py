@@ -134,8 +134,12 @@ class PackageUpload(SQLBase):
     def setAccepted(self):
         """See IPackageUpload."""
         # Explode if something wrong like warty/RELEASE pass through
-        # NascentUpload/UploadPolicies checks
-        assert self.distrorelease.canUploadToPocket(self.pocket)
+        # NascentUpload/UploadPolicies checks for 'ubuntu' main distro.
+        if self.archive.id == self.distrorelease.distribution.main_archive.id:
+            assert self.distrorelease.canUploadToPocket(self.pocket), (
+                "Not permitted acceptance in the %s pocket in a "
+                "release in the '%s' state." % (
+                self.pocket.name, self.distrorelease.releasestatus.name))
 
         if self.status == PackageUploadStatus.ACCEPTED:
             raise QueueInconsistentStateError(
@@ -276,7 +280,7 @@ class PackageUpload(SQLBase):
 
         This is currently heuristic but may be more easily calculated later.
         """
-        assert self.sources or self.builds
+        assert self.sources or self.builds, ('No source available.')
         if self.sources:
             return self.sources[0].sourcepackagerelease
         if self.builds:
@@ -284,10 +288,15 @@ class PackageUpload(SQLBase):
 
     def realiseUpload(self, logger=None):
         """See IPackageUpload."""
-        assert self.status == PackageUploadStatus.ACCEPTED
+        assert self.status == PackageUploadStatus.ACCEPTED, (
+            "Can not publish a non-ACCEPTED queue record (%s)" % self.id)
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
-        assert self.distrorelease.canUploadToPocket(self.pocket)
+        if self.archive.id == self.distrorelease.distribution.main_archive.id:
+            assert self.distrorelease.canUploadToPocket(self.pocket), (
+                "Not permitted to publish to the %s pocket in a "
+                "release in the '%s' state." % (
+                self.pocket.name, self.distrorelease.releasestatus.name))
 
         # In realising an upload we first load all the sources into
         # the publishing tables, then the binaries, then we attempt

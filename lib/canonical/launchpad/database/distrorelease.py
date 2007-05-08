@@ -1727,8 +1727,9 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         queries.append('pocket = %s' % sqlvalues(pocket))
 
         # Exclude RELEASE pocket if the distrorelease was already released,
-        # since it should not change.
-        if not self.isUnstable():
+        # since it should not change for main archive.
+        # We allow RELEASE uploads for PPAs.
+        if not self.isUnstable() and self.main_archive == archive:
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
@@ -1744,7 +1745,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         dirty_pockets = set()
         for spph in self.getPendingPublications(archive, pocket, is_careful):
-            if not is_careful and self.checkLegalPocket(spph, log):
+            if not self.checkLegalPocket(spph, is_careful, log):
                 continue
             spph.publish(diskpool, log)
             dirty_pockets.add((self.name, spph.pocket))
@@ -1756,7 +1757,14 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         return dirty_pockets
 
-    def checkLegalPocket(self, publication, log):
+    def checkLegalPocket(self, publication, is_careful, log):
+        """Check if the publication can happen in the archive."""
+        # careful re-publishes everything:
+        if is_careful:
+            return True
+        # PPA allows everything (aka Hotel California).
+        if publication.archive != self.main_archive:
+            return True
         # If we're not republishing, we want to make sure that
         # we're not publishing packages into the wrong pocket.
         # Unfortunately for careful mode that can't hold true
@@ -1767,15 +1775,16 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                       "pocket on unstable release %s, skipping" %
                       (publication.displayname, publication.id,
                        self.displayname))
-            return True
+            return False
         if (not self.isUnstable() and
             publication.pocket == PackagePublishingPocket.RELEASE):
             log.error("Tried to publish %s (%s) into release pocket "
                       "on stable release %s, skipping" %
                       (publication.displayname, publication.id,
                        self.displayname))
-            return True
-        return False
+            return False
+
+        return True
 
     @property
     def main_archive(self):
