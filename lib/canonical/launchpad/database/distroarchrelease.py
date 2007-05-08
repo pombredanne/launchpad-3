@@ -254,7 +254,8 @@ class DistroArchRelease(SQLBase):
 
         # exclude RELEASE pocket if the distrorelease was already released,
         # since it should not change.
-        if not self.distrorelease.isUnstable():
+        if (not self.distrorelease.isUnstable() and
+            self.main_archive == archive):
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 

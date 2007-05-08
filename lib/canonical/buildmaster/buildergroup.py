@@ -474,10 +474,11 @@ class BuilderGroup:
         # Explode before collect a binary that is denied in this
         # distrorelease/pocket
         build = queueItem.build
-        assert build.distrorelease.canUploadToPocket(build.pocket), (
-            "%s (%s) can not be built for pocket %s: illegal status"
-            % (build.title, build.id,
-               build.pocket.name))
+        if build.archive == build.distrorelease.main_archive:
+            assert build.distrorelease.canUploadToPocket(build.pocket), (
+                "%s (%s) can not be built for pocket %s: illegal status"
+                % (build.title, build.id,
+                   build.pocket.name))
 
         # ensure we have the correct build root as:
         # <BUILDMASTER_ROOT>/incoming/<UPLOAD_LEAF>/<TARGET_PATH>/[FILES]

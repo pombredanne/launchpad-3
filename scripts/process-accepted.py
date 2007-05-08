@@ -75,7 +75,7 @@ def main():
                     log.debug("Processing queue for %s" % distrorelease.name)
                 else:
                     log.debug("Processing queue for %s (%s)" % (
-                        distrorelease.name, archive.archive_url)
+                        distrorelease.name, archive.archive_url))
 
                 queue_items = distrorelease.getQueueItems(
                     PackageUploadStatus.ACCEPTED, archive=archive)
