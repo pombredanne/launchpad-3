@@ -140,6 +140,15 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
         else:
             raise AssertionError('Not a valid value: %r' % value)
 
+    def error(self):
+        """See zope.app.form.interfaces.IBrowserWidget."""
+        try:
+            if self.hasInput():
+                self.getInputValue()
+        except InputErrors, error:
+            self._error = error
+        return super(LaunchpadTargetWidget, self).error()
+
     def __call__(self):
         """See zope.app.form.interfaces.IBrowserWidget."""
         self.setUpOptions()

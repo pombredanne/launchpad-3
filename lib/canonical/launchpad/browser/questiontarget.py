@@ -23,24 +23,23 @@ __all__ = [
 from operator import attrgetter
 from urllib import urlencode
 
-from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import DropdownWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, queryMultiAdapter
 from zope.formlib import form
-from zope.schema import Choice
+from zope.schema import Bool, Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
     
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
-    IDistribution, ILanguageSet, IManageAnswerContactsForm, IProject,
-    IQuestion, IQuestionCollection, IQuestionTarget,
-    ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError)
+    IDistribution, ILanguageSet, IProject, IQuestion, IQuestionCollection,
+    IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
+    NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, stepto, stepthrough, urlappend,
-    ApplicationMenu, GeneralFormView, LaunchpadFormView, Link, safe_action)
+    ApplicationMenu, LaunchpadFormView, Link, safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -455,37 +454,65 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
         return dict(language=None, languages='All', unsupported=True)
 
 
-class ManageAnswerContactView(GeneralFormView):
+class ManageAnswerContactView(LaunchpadFormView):
     """View class for managing answer contacts."""
 
-    schema = IManageAnswerContactsForm
-    label = "Manage answer contacts"
+    label = _("Manage answer contacts")
 
-    @property
-    def _keyword_arguments(self):
-        return self.fieldNames
+    custom_widget('answer_contact_teams', LabeledMultiCheckBoxWidget)
+
+    def setUpFields(self):
+        """See LaunchpadFormView."""
+        self.form_fields = form.Fields(
+            self._createUserAnswerContactField(),
+            self._createTeamAnswerContactsField())
+
+    def _createUserAnswerContactField(self):
+        """Create the want_to_be_answer_contact field."""
+        return Bool(
+                __name__='want_to_be_answer_contact',
+                title=_("I want to be an answer contact for $context",
+                        mapping=dict(context=self.context.displayname)),
+                required=False)
+
+    def _createTeamAnswerContactsField(self):
+        """Create a list of teams the user is an administrator of."""
+        sort_key = attrgetter('displayname')
+        terms = []
+        for team in sorted(self.administrated_teams, key=sort_key):
+            terms.append(SimpleTerm(team, team.name, team.displayname))
+
+        return form.FormField(
+            List(
+                __name__='answer_contact_teams',
+                title=_("Let the following teams be an answer contact for "
+                        "$context",
+                        mapping=dict(context=self.context.displayname)),
+                value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                required=False),
+            custom_widget=self.custom_widgets['answer_contact_teams'])
+
+    @cachedproperty
+    def administrated_teams(self):
+        """Return the list of teams for which the user is an administrator."""
+        return self.user.getAdministratedTeams()
 
     @property
     def initial_values(self):
         user = self.user
         answer_contacts = self.context.direct_answer_contacts
         answer_contact_teams = set(
-            answer_contacts).intersection(self.user.teams_participated_in)
+            answer_contacts).intersection(self.administrated_teams)
         return {
             'want_to_be_answer_contact': user in answer_contacts,
             'answer_contact_teams': list(answer_contact_teams)
             }
 
-    def _setUpWidgets(self):
-        if not self.user:
-            return
-        self.answer_contact_teams_widget = CustomWidgetFactory(
-            LabeledMultiCheckBoxWidget)
-        GeneralFormView._setUpWidgets(self, context=self.user)
-
-    def process(self, want_to_be_answer_contact, answer_contact_teams=None):
-        if answer_contact_teams is None:
-            answer_contact_teams = []
+    @action(_('Continue'), name='update')
+    def update_action(self, action, data):
+        """Update the answer contact registration."""
+        want_to_be_answer_contact = data['want_to_be_answer_contact']
+        answer_contact_teams = data.get('answer_contact_teams', [])
         response = self.request.response
         replacements = {'context': self.context.displayname}
         if want_to_be_answer_contact:
@@ -512,7 +539,7 @@ class ManageAnswerContactView(GeneralFormView):
                         _('$teamname has been removed as an answer contact '
                           'for $context.', mapping=replacements))
 
-        self._nextURL = canonical_url(self.context, rootsite='answers')
+        self.next_url = canonical_url(self.context, rootsite='answers')
 
 
 class QuestionTargetFacetMixin:

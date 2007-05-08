@@ -425,7 +425,15 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
-hasmentoringoffers_mentoring = ContextDisplayName('Mentoring available in %s')
+def hasmentoringoffers_mentoring(context, view):
+    if IPerson.providedBy(context):
+        if context.teamowner is None:
+            return 'Mentoring offered by %s' % context.title
+        else:
+            return ('Mentoring available for newcomers to %s'  %
+                    context.displayname)
+    else:
+        return 'Mentoring available in %s' % context.displayname
 
 def hasspecifications_specs(context, view):
     if IPerson.providedBy(context):
@@ -495,6 +503,8 @@ launchpad_unexpectedformdata = 'Error: Unexpected form data'
 launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
+
+launchpadstatisticset_index = 'Launchpad statistics'
 
 logintoken_claimprofile = 'Claim Launchpad profile'
 
@@ -657,7 +667,7 @@ def person_index(context, view):
     if context.is_valid_person_or_team:
         return '%s in Launchpad' % context.displayname
     else:
-        return "%s's contributions to Free Software" % context.displayname
+        return "%s does not use Launchpad" % context.displayname
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 

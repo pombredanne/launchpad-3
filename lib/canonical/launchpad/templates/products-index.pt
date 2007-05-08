@@ -1,23 +1,10 @@
 <html metal:use-macro="view/macro:page/pillarindex" i18n:domain="launchpad">
-  <body>
-    <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
+
+<body>
+
+  <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div class="portlet">
-    <h2>About these projects</h2>
-    <div class="portletBody portletContent">
-      <img src="/@@/info" />
-      There are <span tal:replace="context/count_all">5</span>
-      projects registered in Launchpad, of which
-      <span tal:replace="context/count_buggy">5</span> have bugs reported,
-      <span tal:replace="context/count_translatable">5</span> 
-      have translations,
-      <span tal:replace="context/count_featureful">5</span> have
-      feature specifications registered,
-      and <span tal:replace="context/count_reviewed">5</span>
-      have been reviewed.
-    </div>
-  </div>
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -133,7 +120,7 @@
                      tal:attributes="href team/fmt:url">A-Team</a>
                   registered
                   <span tal:attributes="title team/datecreated/fmt:datetime"
-                        tal:content="team/datecreated/fmt:approximatedate">
+                        tal:content="team/datecreated/fmt:displaydate">
                     2007-09-17
                   </span>
               </td>
@@ -157,13 +144,29 @@
               tal:attributes="href product/fmt:url"
               tal:content="product/displayname"
               /> registered
-            <tal:date replace="product/datecreated/fmt:approximatedate" />
+            <tal:date replace="product/datecreated/fmt:displaydate" />
           </tr>
         </table>
         <p><a href="/projects/+all">&raquo; Show all projects</a></p>
       </div>
     </div>
   </tal:no_search>
+
+  <div class="clear"></div>
+
+  <div id="application-footer">
+    There are <strong tal:content="context/count_all">19</strong>
+    projects registered in Launchpad, of which<br />
+    <strong tal:content="context/count_buggy">5</strong> have bugs reported,
+    <strong tal:content="context/count_translatable">6</strong>
+    have translations,
+    <strong tal:content="context/count_codified">7</strong>
+    have Bazaar branches,<br />
+    <strong tal:content="context/count_featureful">8</strong>
+    have blueprints,
+    and <strong tal:content="context/count_answered">9</strong>
+    have questions &amp; answers.
+  </div>
 
 </div>
 </body>
