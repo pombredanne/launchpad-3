@@ -14,7 +14,7 @@ from twisted.python import components
 from twisted.vfs.pathutils import FileSystem
 from twisted.vfs.adapters import sftp
 
-from canonical.supermirrorsftp.smartserver import ExecOnlySession
+from canonical.supermirrorsftp.smartserver import RestrictedExecOnlySession
 from canonical.supermirrorsftp.bazaarfs import SFTPServerRoot
 
 from zope.interface import implements
@@ -135,8 +135,8 @@ class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
 components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
                            filetransfer.ISFTPServer)
 
-components.registerAdapter(ExecOnlySession.avatarAdapter, SFTPOnlyAvatar,
-                           ISession)
+components.registerAdapter(RestrictedExecOnlySession.avatarAdapter,
+                           SFTPOnlyAvatar, ISession)
 
 
 class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):

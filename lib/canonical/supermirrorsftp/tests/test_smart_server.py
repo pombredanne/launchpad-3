@@ -163,5 +163,73 @@ class TestExecOnlySession(AvatarTestCase):
         self.assertEqual([('closeStdin',)], self.session._transport.log)
 
 
+class TestRestrictedExecOnlySession(AvatarTestCase):
+    """Tests for RestrictedExecOnlySession.
+
+    bzr+ssh requests to the code hosting SSH server ask the server to execute a
+    particular command: 'bzr serve --inet /'. The SSH server rejects all other
+    commands.
+
+    When it receives the expected command, the SSH server doesn't actually
+    execute the exact given command. Instead, it executes another pre-defined
+    command.
+    """
+
+    def setUp(self):
+        AvatarTestCase.setUp(self)
+        self.avatar = SFTPOnlyAvatar(
+            'alice', self.tmpdir, self.aliceUserDict, None)
+        self.reactor = MockReactor()
+
+    def test_makeRestrictedExecOnlySession(self):
+        # A RestrictedExecOnlySession is constructed with an avatar, a reactor
+        # and an expected command. A RestrictedExecOnlySession is an
+        # ExecOnlySession.
+        session = smartserver.RestrictedExecOnlySession(
+            self.avatar, self.reactor, 'bzr serve --inet /')
+        self.failUnless(isinstance(session, smartserver.ExecOnlySession),
+                        "%r not an instance of smartserver.ExecOnlySession"
+                        % (session,))
+        # XXX - This is a little arbitrary -- jml, 2007-05-08
+        self.assertEqual(self.avatar, session.avatar)
+        self.assertEqual(self.reactor, session.reactor)
+
+    def test_execCommandRejectsUnauthorizedCommands(self):
+        # execCommand rejects all commands except for the command specified in
+        # the constructor.
+
+        # Note that Conch doesn't have a well-defined way of rejecting
+        # commands: raising any exception from execCommand will do. Here we use
+        # an exception type defined in smartserver.py.
+        protocol = ProcessProtocol()
+        session = smartserver.RestrictedExecOnlySession(
+            self.avatar, self.reactor, 'bzr serve --inet /')
+        self.assertRaises(smartserver.ForbiddenCommand,
+                          session.execCommand, protocol, 'cat')
+
+    def test_execCommandRuns(self):
+        # When execCommand is asked to run the Bazaar smart server, it launches
+        # a Bazaar server customized for Launchpad.
+        protocol = ProcessProtocol()
+        session = smartserver.RestrictedExecOnlySession(
+            self.avatar, self.reactor, 'bzr serve --inet /')
+        session.execCommand(protocol, 'bzr serve --inet /')
+        self.assertEqual(
+            [(protocol, 'bzr', ('launchpad-serve', self.avatar.avatarId),
+              None, None, None, None, 0, None)],
+            self.reactor.log)
+
+    def test_avatarAdaptsToRestrictedExecOnlySession(self):
+        # When Conch tries to adapt the supermirror avatar to ISession, it
+        # adapts to an ExecOnlySession. This means that an ExecOnlySession
+        # handles any requests to execute a command.
+        session = ISession(self.avatar)
+        self.failUnless(
+            isinstance(session, smartserver.RestrictedExecOnlySession),
+            "ISession(avatar) doesn't adapt to ExecOnlySession. "
+            "Got %r instead." % (session,))
+        self.assertIdentical(self.avatar, session.avatar)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
