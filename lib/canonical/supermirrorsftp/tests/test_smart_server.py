@@ -256,6 +256,16 @@ class TestSessionIntegration(AvatarTestCase):
             'alice', self.tmpdir, self.aliceUserDict, None)
 
     def test_avatarAdaptsToRestrictedExecOnlySession(self):
+        # XXX - When we actually want to deploy the smart server on the
+        # supermirror, we should enable this test and add the following lines
+        # to sftponly.py:
+        #
+        # components.registerAdapter(
+        #     RestrictedExecOnlySession.getAvatarAdapter(
+        #         'bzr serve --inet /', 'bzr launchpad-serve %(avatarId)s'),
+        #         SFTPOnlyAvatar, ISession)
+        return
+
         # When Conch tries to adapt the supermirror avatar to ISession, it
         # adapts to a RestrictedExecOnlySession. This means that a
         # RestrictedExecOnlySession handles any requests to execute a command.
