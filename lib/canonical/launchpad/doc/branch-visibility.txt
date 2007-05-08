@@ -1,0 +1,15 @@
+= Branch Visibility =
+
+Most branches on launchpad are considered public branches, and are
+visible to everybody, even people not logged in.
+
+Some branches are also considered "private".  These are branches that
+are only visible to a specific team of people.  This team is specified
+on the branch in the attribute visibility_team.  If the visibility_team
+is not set then the branch is "public".
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/gnome-terminal/scanned')
+
+    >>> print branch.name
