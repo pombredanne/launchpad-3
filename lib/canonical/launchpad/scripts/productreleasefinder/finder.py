@@ -11,7 +11,7 @@ import mimetypes
 import urlparse
 import urllib
 
-from cscvs import path
+from cscvs.dircompare import path
 
 from zope.component import getUtility
 
