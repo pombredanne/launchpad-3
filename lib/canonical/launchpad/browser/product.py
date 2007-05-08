@@ -208,7 +208,8 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'branch_add',
-        'series_add', 'launchpad_usage', 'administer', 'rdf']
+        'series_add', 'launchpad_usage', 'administer', 'branch_visibility',
+        'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -270,6 +271,11 @@ class ProductOverviewMenu(ApplicationMenu):
     def administer(self):
         text = 'Administer'
         return Link('+review', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def branch_visibility(self):
+        text = 'Define branch visibility'
+        return Link('+branchvisibility', text, icon='edit')
 
 
 class ProductBugsMenu(ApplicationMenu):

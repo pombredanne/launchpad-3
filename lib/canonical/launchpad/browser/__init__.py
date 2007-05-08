@@ -14,6 +14,7 @@ from canonical.launchpad.browser.branch import *
 from canonical.launchpad.browser.branchlisting import *
 from canonical.launchpad.browser.branchref import *
 from canonical.launchpad.browser.branchsubscription import *
+from canonical.launchpad.browser.branchvisibilitypolicy import *
 from canonical.launchpad.browser.bug import *
 from canonical.launchpad.browser.buglinktarget import *
 from canonical.launchpad.browser.bugattachment import *
