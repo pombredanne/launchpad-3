@@ -323,7 +323,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
         pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
         self.assertEqual(pending_ppas.count(), 1)
-        self.assertEqual(pending_ppas[0], name16_archive)
+        self.assertEqual(pending_ppas[0], name16.archive)
 
     def testUploadToTeamPPA(self):
         """Upload to a team PPA also gets there."""
