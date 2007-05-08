@@ -39,7 +39,7 @@ comment, of the bug report.
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     method="POST",
     ...     form={'field.title': 'bug in bin pkg',
     ...           'field.comment': 'a bug in a bin pkg',
     ...           'packagename_option': 'choose',
@@ -80,7 +80,7 @@ the bugtask.
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     method="POST",
     ...     form={'field.title': 'a firefox bug',
     ...           'field.comment': 'a test bug',
     ...           'field.actions.submit_bug': 'Submit Bug Report'})
@@ -97,7 +97,7 @@ You can also access the +filebug page from a sourcepackage.
     >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
 
     >>> request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     method="POST",
     ...     form={'field.title': 'a firefox bug',
     ...           'field.comment': 'a test bug',
     ...           'packagename_option': 'choose',
@@ -126,7 +126,7 @@ the database.
 To add new comments, users POST to the +addcomment page:
 
     >>> request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     method="POST",
     ...     form={'field.subject': latest_ubuntu_bugtask.bug.title,
     ...           'field.comment': 'I can reproduce this bug.',
     ...           'field.actions.save': 'Save Changes'})
@@ -136,7 +136,7 @@ To add new comments, users POST to the +addcomment page:
 They may even, by mistake, post the same comment twice:
 
     >>> request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     method="POST",
     ...     form={'field.subject': latest_ubuntu_bugtask.bug.title,
     ...           'field.comment': 'I can reproduce this bug.',
     ...           'field.actions.save': 'Save Changes'})

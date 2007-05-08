@@ -35,7 +35,7 @@ Here's an example of nominating a bug for a distrorelease.
     >>> login("no-priv@canonical.com")
 
     >>> request = LaunchpadTestRequest(
-    ...     environ={"REQUEST_METHOD": "POST"},
+    ...     method="POST",
     ...     form={"field.actions.submit": "Submit Nominations",
     ...           "field.nominatable_releases": ["warty"]})
 
@@ -81,7 +81,7 @@ Here's an example of nominating a bug for a productseries.
     >>> firefox = bug_one_in_firefox.target
 
     >>> request = LaunchpadTestRequest(
-    ...     environ={"REQUEST_METHOD": "POST"},
+    ...     method="POST",
     ...     form={"field.actions.submit": "Submit Nominations",
     ...           "field.nominatable_releases": ["trunk"]})
 
@@ -192,7 +192,7 @@ launchpad.Driver permission on the nomination.
     True
 
     >>> request = LaunchpadTestRequest(
-    ...     environ={"REQUEST_METHOD": "POST"},
+    ...     method="POST",
     ...     form={"field.actions.submit": "Submit Nominations",
     ...           "field.nominatable_releases": ["grumpy"]})
 

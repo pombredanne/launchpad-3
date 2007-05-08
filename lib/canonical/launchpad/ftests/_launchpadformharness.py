@@ -17,9 +17,7 @@ class LaunchpadFormHarness:
         self._render(form_values)
 
     def _render(self, form_values=None, method='GET'):
-        self.request = LaunchpadTestRequest(
-            environ={'REQUEST_METHOD': method},
-            form=form_values)
+        self.request = LaunchpadTestRequest(method=method, form=form_values)
         self.view = self.view_class(self.context, self.request)
         self.view.initialize()
 

@@ -99,7 +99,7 @@ attachment needs to handle that:
     >>> filecontent = StringIO('')
     >>> filecontent.filename = 'foo.bar'
     >>> add_request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     method="POST",
     ...     form={'field.subject': u'Title',
     ...           'field.comment': u'Some comment.',
     ...           'field.filecontent': filecontent,
@@ -130,7 +130,7 @@ upload it:
     >>> filecontent = StringIO('x'*1025)
     >>> filecontent.filename = 'foo.txt'
     >>> add_request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     method="POST",
     ...     form={'field.subject': u'Title',
     ...           'field.comment': u'Some comment.',
     ...           'field.include_attachment': 'on',
@@ -152,7 +152,7 @@ means no limit:
     >>> old_max_bug_attachment_size = config.launchpad.max_bug_attachment_size
     >>> config.launchpad.max_bug_attachment_size = 0
     >>> add_request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     method="POST",
     ...     form={'field.subject': u'Title',
     ...           'field.comment': u'Some comment.',
     ...           'field.include_attachment': 'on',
@@ -168,8 +168,9 @@ means no limit:
 
 The request must contain either a comment or an attachment or both, but it
 must have at least one.
+
     >>> add_request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     method="POST",
     ...     form={'field.subject': u'Title',
     ...           'field.patch': u'',
     ...           'field.actions.save': 'Save Changes'})
@@ -185,7 +186,7 @@ If the request contains no attachment description the filename should be used.
     >>> filecontent = StringIO("No, sir. That's one bonehead name, but that ain't me any more.")
     >>> filecontent.filename = 'RA.txt'
     >>> add_request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     method="POST",
     ...     form={'field.subject': u'Title',
     ...           'field.comment': u'Some comment.',
     ...           'field.filecontent': filecontent,
@@ -213,7 +214,7 @@ Let's try uploading a file with some weird characters in them:
 
     >>> filecontent.filename = u'fo\xf6 bar'
     >>> add_request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     method="POST",
     ...     form={'field.subject': u'Title',
     ...           'field.comment': u'Some comment.',
     ...           'field.include_attachment': 'on',
@@ -239,7 +240,7 @@ from the librarian.
 
     >>> filecontent.filename = u'foo/bar/baz'
     >>> add_request = LaunchpadTestRequest(
-    ...     environ={'REQUEST_METHOD': 'POST'},
+    ...     method="POST",
     ...     form={'field.subject': u'Title',
     ...           'field.comment': u'Some comment.',
     ...           'field.include_attachment': 'on',

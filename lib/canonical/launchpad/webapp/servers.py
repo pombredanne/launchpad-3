@@ -387,6 +387,12 @@ class LaunchpadTestRequest(TestRequest):
     """
     implements(INotificationRequest)
 
+    def __init__(self, body_instream=None, environ=None, form=None,
+                 skin=None, outstream=None, method='GET', **kw):
+        super(LaunchpadTestRequest, self).__init__(
+            body_instream=body_instream, environ=environ, form=form,
+            skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
+
     @property
     def uuid(self):
         return self.response.uuid

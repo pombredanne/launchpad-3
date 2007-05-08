@@ -28,7 +28,7 @@ the index template.
 
     >>> def get_and_setup_view(context, name, form, method='GET'):
     ...     view = getView(context, name, LaunchpadTestRequest(
-    ...         environ={'REQUEST_METHOD': method}, form=form))
+    ...         method=method, form=form))
     ...     view.index = lambda: u''
     ...     view.upstream_page = lambda: u''
     ...     return view
