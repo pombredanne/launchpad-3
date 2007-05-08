@@ -66,11 +66,6 @@ A Launchpad user's home page contains the required <link rel="openid.server" />
 tag to allow OpenID consumers to determine the URL of the OpenID server to
 be contacted.
 
-XXX: This may be disabled before production rollout, until we are ready
-to announce the OpenID service. Until then, consumers will need to use a
-hardcoded URL or we set up some hidden URLs to be used
-    -- StuartBishop 20070214
-
 >>> anon_browser.open('http://launchpad.dev/~sabdfl')
 >>> print '\n' + anon_browser.contents
 <BLANKLINE>
@@ -80,6 +75,12 @@ hardcoded URL or we set up some hidden URLs to be used
 <link rel="openid.server" href="http://openid.launchpad.dev/" />
 </head>
 ...
+
+Teams do not have this tag of course.
+
+>>> anon_browser.open('http://launchpad.dev/~admins')
+>>> 'openid' in anon_browser.contents
+False
 
 
 == associate Mode ==

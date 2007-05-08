@@ -5,13 +5,18 @@
 
 <head>
     <tal:block metal:fill-slot="head_epilogue">
-        <tal:visible_emails condition="not: context/hide_email_addresses">
-            <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf"
-                tal:condition="context/is_valid_person_or_team" />
-        </tal:visible_emails>
-        <link tal:define="vhosts
-            modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
-            rel="openid.server" tal:attributes="href vhosts/openid/rooturl" />
+        <tal:valid_person_or_team condition="context/is_valid_person_or_team">
+            <link
+                tal:condition="not:context/hide_email_addresses" 
+                rel="meta" type="application/rdf+xml"
+                title="FOAF" href="+rdf" />
+            <link
+                tal:condition="not:context/isTeam"
+                tal:define="vhosts
+                    modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
+                rel="openid.server"
+                tal:attributes="href vhosts/openid/rooturl" />
+        </tal:valid_person_or_team>
     </tal:block>
 </head>
 
