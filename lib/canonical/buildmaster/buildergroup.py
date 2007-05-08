@@ -227,10 +227,11 @@ class BuilderGroup:
 
         # explodes before start building a denied build in distrorelease/pocket
         build = queueItem.build
-        assert build.distrorelease.canUploadToPocket(build.pocket), (
-            "%s (%s) can not be built for pocket %s: illegal status"
-            % (build.title, build.id,
-               build.pocket.name))
+        if build.archive == build.distrorelease.main_archive:
+            assert build.distrorelease.canUploadToPocket(build.pocket), (
+                "%s (%s) can not be built for pocket %s: illegal status"
+                % (build.title, build.id,
+                   build.pocket.name))
 
         # refuse builds for missing CHROOTs
         chroot = self.findChrootFor(queueItem, pocket)

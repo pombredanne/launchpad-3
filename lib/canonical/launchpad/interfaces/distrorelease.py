@@ -212,12 +212,6 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         otherwise respect the given value.
         """
 
-    def getSourcesPublishedForMainArchive():
-        """Return all sourcepackage published across in the main archives.
-
-        Return a SelectResult of SourcePackagePublishingHistory.
-        """
-
     def getSourcesPublishedForAllArchives():
         """Return all sourcepackage published across all the archives.
 
