@@ -825,7 +825,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
     display_target_column = True
     # Match contiguous digits, optionally prefixed with a '#'
     # or with leading and trailing whitespace.
-    id_pattern = re.compile('^\s*#?(\d+)\s*$')
+    id_pattern = re.compile('^#?(\d+)$')
 
     @property
     def pageheading(self):
@@ -847,8 +847,8 @@ class SearchAllQuestionsView(SearchQuestionsView):
             return _('There are no questions with the requested statuses.')
     
     @action(_('Search'))
-    def search_or_lookup_action(self, action, data):
-        """Action executed when the user clicked the Find Answers button.
+    def search_action(self, action, data):
+        """Action executed when the user clicked the 'Find Answers' button.
 
         Saves the user submitted search parameters in an instance
         attribute and redirects to questions when the term is a question id.

@@ -300,6 +300,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """
         self.search_params = dict(self.getDefaultFilter())
         self.search_params.update(**data)
+        if self.search_params.get('search_text', None) is not None:
+            self.search_params['search_text'] = (
+                self.search_params['search_text'].strip())
 
     def searchResults(self):
         """Return the questions corresponding to the search."""
