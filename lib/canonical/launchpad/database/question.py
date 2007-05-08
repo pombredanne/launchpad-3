@@ -213,8 +213,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
         return self._newMessage(
             user, comment, datecreated=datecreated,
-            action=QuestionAction.SETSTATUS, new_status=new_status,
-            update_question_dates=False)
+            action=QuestionAction.SETSTATUS, new_status=new_status)
 
     @notify_question_modified()
     def addComment(self, user, comment, datecreated=None):
