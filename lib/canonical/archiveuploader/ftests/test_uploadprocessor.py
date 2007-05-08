@@ -302,6 +302,8 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         the source is NEW (PPA Auto-Accept everything).
         Note the the name16 PPA is automatically created by a succesfully
         upload.
+        Also test IArchiveSet.getPendingAcceptancePPAs() and check it returns
+        the just-modified archive.
         """
         name16 = getUtility(IPersonSet).getByName("name16")
         self.assertEqual(name16.archive, None)
@@ -318,6 +320,10 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=name16.archive)
         self.assertEqual(queue_items.count(), 1)
+
+        pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
+        self.assertEqual(pending_ppas.count(), 1)
+        self.assertEqual(pending_ppas[0], name16_archive)
 
     def testUploadToTeamPPA(self):
         """Upload to a team PPA also gets there."""
@@ -338,7 +344,11 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.assertEqual(queue_items.count(), 1)
 
     def testNotMemberUploadToTeamPPA(self):
-        """Upload to a team PPA is rejected when the uploader is not member."""
+        """Upload to a team PPA is rejected when the uploader is not member.
+
+        Also test IArchiveSet.getPendingAcceptancePPAs(), no archives should
+        be returned since nothing was accepted.
+        """
         ubuntu_translators = getUtility(IPersonSet).getByName(
             "ubuntu-translators")
         self.assertEqual(ubuntu_translators.archive, None)
@@ -350,6 +360,9 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
         contents = [""]
         self.assertEmail(contents)
+
+        pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
+        self.assertEqual(pending_ppas.count(), 0)
 
     def testUploadToSomeoneElsePPA(self):
         """Upload to a someone else's PPA gets rejected with proper message."""

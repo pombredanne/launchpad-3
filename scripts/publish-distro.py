@@ -133,7 +133,7 @@ def main():
         if not options.ppa:
             log.info("Processing %s main_archive" % distribution.name)
         else:
-            log.info("Processing '%s' PPA" % archive.owner.name)
+            log.info("Processing %s" % archive.archive_url)
 
         publisher = getPublisher(
             archive, distribution, allowed_suites, log, options.distsroot)

@@ -63,13 +63,20 @@ def main():
         distribution = getUtility(IDistributionSet).getByName(distro_name)
 
         if options.ppa:
-            target_archives = getUtility(IArchiveSet).getAllPPAs()
+            target_archives = getUtility(
+                IArchiveSet).getPendingAcceptancePPAs()
         else:
             target_archives = [distribution.main_archive]
 
         for archive in target_archives:
             for distrorelease in distribution.releases:
-                log.debug("Processing queue for %s" % distrorelease.name)
+
+                if archive == distrorelease.main_archive:
+                    log.debug("Processing queue for %s" % distrorelease.name)
+                else:
+                    log.debug("Processing queue for %s (%s)" % (
+                        distrorelease.name, archive.archive_url)
+
                 queue_items = distrorelease.getQueueItems(
                     PackageUploadStatus.ACCEPTED, archive=archive)
                 for queue_item in queue_items:

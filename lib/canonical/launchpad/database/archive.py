@@ -16,7 +16,8 @@ from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import IArchive, IArchiveSet
 from canonical.launchpad.webapp.url import urlappend
-from canonical.lp.dbschema import PackagePublishingStatus
+from canonical.lp.dbschema import (
+    PackagePublishingStatus, PackageUploadStatus)
 
 
 class Archive(SQLBase):
@@ -79,7 +80,19 @@ class ArchiveSet:
         """See canonical.launchpad.interfaces.IArchiveSet."""
         return Archive.select("owner is not NULL")
 
-    def getPendingPPAs(self):
+    def getPendingAcceptancePPAs(self):
+        """See canonical.launchpad.interfaces.IArchiveSet."""
+        query = """
+        Archive.owner is not NULL AND
+        PackageUpload.archive = Archive.id AND
+        PackageUpload.status = %s
+        """ % sqlvalues(PackageUploadStatus.ACCEPTED)
+
+        return Archive.select(
+            query, clauseTables=['PackageUpload'],
+            orderBy=['archive.id'], distinct=True)
+
+    def getPendingPublicationPPAs(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""
         src_query = """
         Archive.owner is not NULL AND
