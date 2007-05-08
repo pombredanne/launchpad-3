@@ -1,5 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-"""ArchivePublisher utilities."""
+"""Archive uploader utilities."""
 
 __metaclass__ = type
 
@@ -22,7 +22,7 @@ __all__ = [
 import email.Header
 import re
 
-from canonical.archivepublisher.tagfiles import TagFileParseError
+from canonical.archiveuploader.tagfiles import TagFileParseError
 from canonical.encoding import guess as guess_encoding, ascii_smash
 
 
