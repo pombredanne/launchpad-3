@@ -196,7 +196,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     # Workflow methods
 
     # The lifecycle of a question is documented in
-    # https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    # https://help.launchpad.net/QuestionLifeCycle, so remember
     # to update that document for any pertinent changes.
     @notify_question_modified()
     def setStatus(self, user, new_status, comment, datecreated=None):
