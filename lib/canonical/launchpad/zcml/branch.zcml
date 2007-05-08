@@ -6,11 +6,14 @@
 
     <!-- Branch -->
     <content class="canonical.launchpad.database.Branch">
-        <allow interface="canonical.launchpad.interfaces.IBranch" />
-        <require
-            permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IBranch"
-        />
+      <require
+          permission="launchpad.View"
+          interface="canonical.launchpad.interfaces.IBranch"
+          />
+      <require
+          permission="launchpad.Edit"
+          set_schema="canonical.launchpad.interfaces.IBranch"
+          />
     </content>
 
     <browser:menus

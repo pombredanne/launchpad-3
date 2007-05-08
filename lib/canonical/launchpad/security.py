@@ -8,19 +8,20 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
-    IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
-    ITranslationGroup, ITranslationGroupSet, IProduct, IProductSeries,
-    IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
-    ISourcePackage, ILaunchpadCelebrities, IDistroRelease, IBugTracker,
-    IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
-    IShippingRequest, IShippingRequestSet, IRequestedCDs,
-    IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, IQuestion, ITranslationImportQueueEntry,
-    ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IPackageUploadQueue,
-    IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
-    IBugBranch, ILanguage, ILanguageSet)
+    IBazaarApplication, IBranch, IBuild, IBuilder, IBuilderSet,
+    IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker,
+    IDistribution, IDistributionMirror, IDistroRelease, IDistroReleaseQueue,
+    IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguageSet,
+    ILaunchpadCelebrities, IMilestone, IPackageUploadQueue, IPerson,
+    IPOFile, IPOTemplate, IPOTemplateName, IPOTemplateNameSet,
+    IPoll, IPollOption, IPollSubset, IProduct, IProductRelease,
+    IProductSeries, IQuestion, IRequestedCDs, IShipItApplication,
+    IShippingRequest, IShippingRequestSet, IShippingRun, ISourcePackage,
+    ISpecification, ISpecificationSubscription, ISprint, ISprintSpecification,
+    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
+    ITranslator, ITranslationGroup, ITranslationGroupSet,
+    ITranslationImportQueue, ITranslationImportQueueEntry,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -907,3 +908,30 @@ class AdminLanguage(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ILanguage
 
+
+class AccessBranch(AuthorizationBase):
+    """Controls visibility of branches.
+
+    Branches are considered public if the visibility_team is None.
+    A person can see the branch if the branch is public or if they
+    are a member of the visibility team, or if they are subscribed
+    to the branch.
+    """
+    permission = 'launchpad.View'
+    usedfor = IBranch
+
+    def checkAuthenticated(self, user):
+        import pdb; pdb.set_trace()
+        if self.obj.visibility_team is None:
+            return True
+        # Should lp admins be able to see the branches?
+        if user.inTeam(self.obj.visibility_team):
+            return True
+        # Check the subscribers to the branch.
+        for subscriber in self.obj.subscribers:
+            if user.inTeam(subscriber):
+                return True
+        
+        return False
+
+            

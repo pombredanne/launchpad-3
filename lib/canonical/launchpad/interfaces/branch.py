@@ -122,7 +122,10 @@ class IBranch(IHasOwner):
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "
                       "does not have a Launchpad account."))
-
+    visibility_team = Attribute(
+        "The team that can see the branch.  If None, then the branch "
+        "is visible to all.")
+    
     # Product attributes
     product = Choice(
         title=_('Project'), required=False, vocabulary='Product',
