@@ -77,7 +77,7 @@ Now that the infrastructure is ready, we prepare a set of useful methods.
 
 Firstly, we need a way to copy a test upload into the queue
 
-  >>> from canonical.archivepublisher.tests import datadir
+  >>> from canonical.archiveuploader.tests import datadir
   >>> def punt_upload_into_queue(leaf, distro):
   ...     inc_dir = os.path.join(incoming_dir, leaf)
   ...     os.mkdir(inc_dir)

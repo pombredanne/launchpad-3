@@ -11,10 +11,10 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.tests.test_uploadprocessor import (
+from canonical.archiveuploader.tests.test_uploadprocessor import (
     MockOptions, MockLogger)
-from canonical.archivepublisher.uploadpolicy import AbstractUploadPolicy
-from canonical.archivepublisher.uploadprocessor import UploadProcessor
+from canonical.archiveuploader.uploadpolicy import AbstractUploadPolicy
+from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import (
@@ -51,7 +51,7 @@ class TestUploadProcessorBase(unittest.TestCase):
         os.makedirs(os.path.join(self.queue_folder, "incoming"))
 
         self.test_files_dir = os.path.join(config.root,
-            "lib/canonical/archivepublisher/tests/data/suite")
+            "lib/canonical/archiveuploader/tests/data/suite")
 
         import_public_test_keys()
 
