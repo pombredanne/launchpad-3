@@ -135,12 +135,6 @@ class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
 components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
                            filetransfer.ISFTPServer)
 
-components.registerAdapter(
-    RestrictedExecOnlySession.getAvatarAdapter(
-        'bzr serve --inet --directory=/ --allow-writes',
-        'bzr serve --inet --directory=/ --allow-writes'),
-    SFTPOnlyAvatar, ISession)
-
 
 class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
     """UnauthorizedLogin which should be reported to the user."""
