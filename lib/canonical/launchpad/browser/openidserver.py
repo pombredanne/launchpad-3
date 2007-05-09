@@ -49,7 +49,7 @@ oidutil.log = null_log
 class IOpenIdView(Interface):
     openid_request = Attribute("OpenIDRequest")
     trust_root = Attribute("TrustRoot")
-    current_user = Attribute("Currently authenticated IPerson")
+    user = Attribute("Currently authenticated IPerson")
 
 
 class OpenIdView(LaunchpadView):
@@ -65,25 +65,8 @@ class OpenIdView(LaunchpadView):
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
-        self._state = threading.local()
-
-    @property
-    def openid_server(self):
-        """Return an seperate openid.server.server.Server instance per thread.
-        
-        I have no idea if openid.server.server.Server is thread safe,
-        but LaunchpadOpenIdStore definitely isn't thread safe.
-        """
-        try:
-            return self._state.openid_server
-        except AttributeError:
-            store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
-            self._state.openid_server = Server(store_factory())
-            return self._state.openid_server
-
-    @property
-    def current_user(self):
-        return getUtility(ILaunchBag).user
+        store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
+        self.openid_server = Server(store_factory())
 
     def render(self):
         """Handle all OpenId requests and form submissions
@@ -229,7 +212,7 @@ class OpenIdView(LaunchpadView):
         # can't trick our code into retrieving something that isn't a token.
         session['token_' + token] = (now, self.openid_request)
         self.token = token
-        return self.decide_template(foo='foobar')
+        return self.decide_template()
 
     def _sweep(self, now, session):
         """Clean our Session of tokens older than 1 hour."""
@@ -244,12 +227,12 @@ class OpenIdView(LaunchpadView):
     def isAuthenticated(self):
         """Returns True if we are logged in as the owner of the identity."""
         # Not authenticated if the user is not logged in
-        if self.current_user is None:
+        if self.user is None:
             return False
 
         # Not authenticated if we are logged in as someone other than
         # the identity's owner
-        return self.current_user.name == self.login
+        return self.user.name == self.login
 
     def isAuthorized(self):
         """Check if the identity is authorized for the trust_root"""
@@ -262,7 +245,7 @@ class OpenIdView(LaunchpadView):
 
         auth_set = getUtility(IOpenIdAuthorizationSet)
         return auth_set.isAuthorized(
-                self.current_user,
+                self.user,
                 self.openid_request.trust_root,
                 client_id
                 )
@@ -319,16 +302,17 @@ class OpenIdView(LaunchpadView):
                 expires = None
             else:
                 try:
-                    expires = (
-                            datetime.utcnow().replace(tzinfo=pytz.UTC)
-                            + timedelta(seconds=int(duration))
-                            )
+                    duration = int(duration)
                 except ValueError:
                     raise UnexpectedFormData
+                expires = (
+                        datetime.utcnow().replace(tzinfo=pytz.UTC)
+                        + timedelta(seconds=duration)
+                        )
 
             auth_set = getUtility(IOpenIdAuthorizationSet)
             auth_set.authorize(
-                    self.current_user, self.openid_request.trust_root, expires
+                    self.user, self.openid_request.trust_root, expires
                     )
 
         return self.openid_request.answer(True)

@@ -2,7 +2,7 @@
 
 == Introduction ==
 
-Launchpad is an OpenID server. If the URL is accessed by a web browser,
+Launchpad is an OpenID provider. If the URL is accessed by a web browser,
 an informative message is displayed. We replicate the one from the
 specification exactly, even though other OpenID servers take more
 liberties.
