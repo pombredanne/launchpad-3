@@ -216,7 +216,7 @@ class Publisher(object):
                 if not is_careful:
                     if not self.isDirty(distrorelease, pocket):
                         self.log.debug("Skipping index generation for %s/%s" %
-                                       (distrorelease.name, pocket))
+                                       (distrorelease.name, pocket.name))
                         continue
                     if (not distrorelease.isUnstable() and
                         distrorelease.main_archive.id == self.archive.id):
