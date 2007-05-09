@@ -60,11 +60,11 @@ class ExecOnlySession:
         :param command: A command line to run.
         :raise ForbiddenCommand: when `command` is forbidden.
         :return: `(executable, arguments)` where `executable` is the name of an
-            executable and arguments is a sequence of command-line arguments.
-            None if no command is to be executed.
+            executable and arguments is a sequence of command-line arguments
+            with the name of the executable as the first value.
         """
         args = command.split()
-        return args[0], tuple(args[1:])
+        return args[0], args
 
     def getPty(self, term, windowSize, modes):
         raise NotImplementedError()

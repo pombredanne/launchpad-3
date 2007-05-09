@@ -138,7 +138,7 @@ class TestExecOnlySession(AvatarTestCase):
         command = 'cat foo bar'
         executable, arguments = self.session.getCommandToRun(command)
         self.assertEqual('cat', executable)
-        self.assertEqual(['foo', 'bar'], list(arguments))
+        self.assertEqual(['cat', 'foo', 'bar'], list(arguments))
 
     def test_execCommandSpawnsProcess(self):
         # ExecOnlySession.execCommand spawns the appropriate process.
@@ -225,7 +225,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         # command template.
         executable, arguments = self.session.getCommandToRun('foo')
         self.assertEqual('bar', executable)
-        self.assertEqual(['baz', self.avatar.avatarId], list(arguments))
+        self.assertEqual(['bar', 'baz', self.avatar.avatarId], list(arguments))
 
     def test_getAvatarAdapter(self):
         # getAvatarAdapter is a convenience classmethod so that

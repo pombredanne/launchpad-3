@@ -2,6 +2,7 @@
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
+from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
 from twisted.conch.ssh.common import getNS, NS
@@ -15,6 +16,7 @@ from twisted.vfs.pathutils import FileSystem
 from twisted.vfs.adapters import sftp
 
 from canonical.supermirrorsftp.bazaarfs import SFTPServerRoot
+from canonical.supermirrorsftp.smartserver import RestrictedExecOnlySession
 
 from zope.interface import implements
 import binascii
@@ -132,6 +134,12 @@ class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
 
 components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
                            filetransfer.ISFTPServer)
+
+components.registerAdapter(
+    RestrictedExecOnlySession.getAvatarAdapter(
+        'bzr serve --inet --directory=/ --allow-writes',
+        'bzr serve --inet --directory=/ --allow-writes'),
+    SFTPOnlyAvatar, ISession)
 
 
 class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
