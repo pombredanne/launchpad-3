@@ -427,7 +427,8 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getIndirectSubscribers(self):
         """See IQuestion."""
-        subscribers = set(self.target.answer_contacts)
+        subscribers = set(
+            self.target.getAnswerContactsForLanguage(self.language))
 
         if self.assignee:
             subscribers.add(self.assignee)

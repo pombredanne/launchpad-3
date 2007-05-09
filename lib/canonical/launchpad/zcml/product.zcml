@@ -28,6 +28,7 @@
       name has to change. It should require RegistryAdmin
       intervention to rename a product now. -->
 <!-- https://lists.ubuntu.com/mailman/private/launchpad/2007-April/015189.html
+
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
@@ -35,8 +36,8 @@
       />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
-      answer_contacts direct_answer_contacts getSupportedLanguages
-      getQuestionLanguages"
+        answer_contacts direct_answer_contacts limited_answer_contacts 
+        getSupportedLanguages getQuestionLanguages getAnswerContactsForLanguage"
       />
     <require 
       permission="launchpad.AnyPerson"

@@ -10,8 +10,8 @@
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
-      answer_contacts direct_answer_contacts getSupportedLanguages
-      getQuestionLanguages"
+      answer_contacts direct_answer_contacts  limited_answer_contacts
+      getQuestionLanguages getAnswerContactsForLanguage getSupportedLanguages"
 	  />
     <require 
       permission="launchpad.AnyPerson"

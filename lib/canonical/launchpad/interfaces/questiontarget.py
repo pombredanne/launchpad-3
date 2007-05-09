@@ -73,13 +73,17 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :title: A phrase
         """
 
-    def addAnswerContact(person):
+    def addAnswerContact(person, limited_languages=False):
         """Add a new answer contact.
 
         :person: An IPerson.
+        :limited_languages: A boolean flag indicating whether the person
+                supports questions on his preferred languages only. When the
+                parameter is omitted, the person will recieve English language
+                questions too.
 
-        Returns True if the person was added, False if the person already was
-        an answer contact.
+        Returns True if the person was added or preferred_languages was 
+        changed, False if the person already was an answer contact.
         """
 
     def removeAnswerContact(person):
@@ -89,6 +93,13 @@ class IQuestionTarget(ISearchableByQuestionOwner):
 
         Returns True if the person was removed, False if the person wasn't an
         answer contact.
+        """
+        
+    def getAnswerContactsForLanguage(language):
+        """Return the list of Persons that provide support for a language.
+        
+        An answer contact may support questions in all languages, or choose to
+        support question in his preferred languages only.
         """
 
     def getSupportedLanguages():
@@ -113,6 +124,15 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             "IPersons that registered as answer contacts explicitely on "
             "this target. (answer_contacts may include answer contacts "
             "inherited from other context.)"),
+        value_type=Choice(vocabulary="ValidPersonOrTeam"))
+        
+    limited_answer_contacts = List(
+        title=_("Limited Answer Contacts"),
+        description=_(
+            "IPersons that are willing to provide support limited to their "
+            "preferred languages for this target. They receive email "
+            "notifications like Answer Contact, but only for questions that "
+            "are written in their preferred languages."),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
 

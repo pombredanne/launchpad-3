@@ -10,7 +10,7 @@ __all__ = [
 
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice
+from zope.schema import Bool, Choice
 
 from canonical.launchpad import _
 
@@ -43,3 +43,8 @@ class IAnswerContact(Interface):
             "The person wants to receive notifications about this "
             "sourcepackage's questions."),
         vocabulary='SourcePackageName')
+        
+    limited_languages = Bool(title=_("Preferred Languages Only"),
+        required=False, default=False, 
+        description=_("The person wants to be notified of questions in his "
+            "preferred languages only."))

@@ -20,8 +20,8 @@
       />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
-      answer_contacts direct_answer_contacts getSupportedLanguages
-      getQuestionLanguages" 
+      answer_contacts direct_answer_contacts limited_answer_contacts 
+      getSupportedLanguages getQuestionLanguages getAnswerContactsForLanguage"
       />
     <require 
       permission="launchpad.AnyPerson"

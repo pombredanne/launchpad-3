@@ -350,13 +350,20 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IQuestionTarget."""
         return SimilarQuestionsSearch(title, product=self).getResults()
 
-    def addAnswerContact(self, person):
+    def addAnswerContact(self, person, limited_languages=False):
         """See IQuestionTarget."""
-        if person in self.answer_contacts:
+        answer_contact = AnswerContact.selectOneBy(product=self, person=person)
+        if (answer_contact and 
+                answer_contact.limited_languages == limited_languages):
             return False
-        AnswerContact(
-            product=self, person=person,
-            sourcepackagename=None, distribution=None)
+        
+        if answer_contact:
+            answer_contact.limited_languages = limited_languages
+        else:
+            AnswerContact(
+                product=self, person=person,
+                sourcepackagename=None, distribution=None,
+                limited_languages=limited_languages)
         return True
 
     def removeAnswerContact(self, person):
@@ -367,6 +374,20 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             product=self, person=person)
         answer_contact.destroySelf()
         return True
+        
+    def getAnswerContactsForLanguage(self, language):
+        """See IQuestionTarget."""
+        answer_contacts = AnswerContact.select(
+            'AnswerContact.product = %d AND '
+            '(AnswerContact.limited_languages = FALSE '
+            'OR '
+            '(AnswerContact.limited_languages = TRUE AND '
+            'AnswerContact.person = PersonLanguage.person AND '
+            'PersonLanguage.language = %d))' % (self.id, language.id),
+            clauseTables=['PersonLanguage'], distinct=True)
+        return sorted(
+            [answer_contact.person for answer_contact in answer_contacts],
+            key=attrgetter('displayname'))
 
     @property
     def answer_contacts(self):
@@ -380,6 +401,16 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def direct_answer_contacts(self):
         """See IQuestionTarget."""
         return self.answer_contacts
+        
+    @property
+    def limited_answer_contacts(self):
+        """See IQuestionTarget."""
+        answer_contacts = AnswerContact.selectBy(
+            product=self,
+            limited_languages=True)
+        return sorted(
+            [answer_contact.person for answer_contact in answer_contacts],
+            key=attrgetter('displayname'))        
 
     def getQuestionLanguages(self):
         """See IQuestionTarget."""

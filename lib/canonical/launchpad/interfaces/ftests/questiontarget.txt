@@ -417,6 +417,9 @@ Only registered users can remove an answer contact:
     Traceback (most recent call last):
       ...
     Unauthorized...
+    
+Note see Limited Answer Contacts and getAnswerContactsForLanguage()
+below for
 
 == Supported Languages ==
 
@@ -456,6 +459,52 @@ because we ignore all English variants.
     ...                               key=operator.attrgetter('code'))]
     [u'ca', u'cy', u'en', u'es', u'ja']
 
+== Limited Answer Contacts ==
+
+Answer contacts may choose to receive notifications for a limited set
+of languages; refusing English, the default support language. The
+limited_answer_contacts property returns the subset of answer_contacts
+that indicated they limit their support to their preferred languages.
+
+    >>> sorted([person.name for person in target.answer_contacts])
+    [u'carlos', u'daf']
+    
+    >>> list(target.limited_answer_contacts)
+    []
+    
+    >>> target.addAnswerContact(carlos, limited_languages=True)
+    True
+    
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> sorted([person.name for person in target.limited_answer_contacts])
+    [u'carlos']
+
+Carlos is still in the set of answer contacts.
+
+    >>> sorted([person.name for person in target.answer_contacts])
+    [u'carlos', u'daf']
+
+
+== getAnswerContactsForLanguage() ==
+
+Continuing from the previous section with Carlos and Daf, the 
+getAnswerContactsForLanguage() method returns a list of answer contacts
+who support the specified language.  Support is determined in two ways:
+One, the person is a regular answer contact and the language is the 
+default support language of English (Dafydd in this example). Or two, 
+the language is among the contacts preferred languages (both Dafydd and
+Carlos).
+    
+    >>> spanish = getUtility(ILanguageSet)['es']
+    >>> answer_contacts = target.getAnswerContactsForLanguage(spanish)
+    >>> sorted([person.name for person in answer_contacts])
+    [u'carlos', u'daf']
+    
+    >>> answer_contacts = target.getAnswerContactsForLanguage(english)
+    >>> sorted([person.name for person in answer_contacts])
+    [u'daf']
+        
 == getQuestionLanguages() ==
 
 The getQuestionLanguages() method returns the set of languages used by all
