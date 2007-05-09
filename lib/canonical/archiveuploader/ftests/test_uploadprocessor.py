@@ -79,15 +79,15 @@ class TestUploadProcessorBase(unittest.TestCase):
 
         Also sets 'changeslist' and 'nominatedarchindep' properly.
         """
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        bat = ubuntu['breezy-autotest']
+        self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        bat = self.ubuntu['breezy-autotest']
         dr_set = getUtility(IDistroReleaseSet)
         self.breezy = dr_set.new(
-            ubuntu, 'breezy', 'Breezy Badger',
+            self.ubuntu, 'breezy', 'Breezy Badger',
             'The Breezy Badger', 'Black and White', 'Someone',
             '5.10', bat, bat.owner)
-        breezy_i386 = self.breezy.newArch('i386', bat['i386'].processorfamily,
-                                          True, self.breezy.owner)
+        breezy_i386 = self.breezy.newArch(
+            'i386', bat['i386'].processorfamily, True, self.breezy.owner)
         self.breezy.nominatedarchindep = breezy_i386
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
         self.breezy.initialiseFromParent()
@@ -311,15 +311,57 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        self.assertNotEqual(name16.archive, None)
-
         contents = ["Subject: Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
+
+        self.assertNotEqual(name16.archive, None)
 
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
             version="1.0-1", exact_match=True, archive=name16.archive)
         self.assertEqual(queue_items.count(), 1)
+
+        pending_queue = queue_items[0]
+        self.assertEqual(pending_queue.archive, name16.archive)
+        self.assertEqual(
+            pending_queue.pocket, PackagePublishingPocket.RELEASE)
+
+        pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
+        self.assertEqual(pending_ppas.count(), 1)
+        self.assertEqual(pending_ppas[0], name16.archive)
+
+    def testPPADistroreleaseOverrides(self):
+        """It's possible to override target distroreleases of PPA uploads.
+
+        Similar to usual PPA uploads:
+
+         * The PPA is created if necessary.
+         * Email notification is sent
+         * The upload is auto-accepted in the overridden target distrorelease.
+         * The modified PPA is found by getPendingAcceptancePPA() lookup.
+        """
+        name16 = getUtility(IPersonSet).getByName("name16")
+        self.assertEqual(name16.archive, None)
+
+        upload_dir = self.queueUpload(
+            "bar_1.0-1", "~name16/ubuntu/hoary")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = ["Subject: Accepted bar 1.0-1 (source)"]
+        self.assertEmail(contents)
+
+        self.assertNotEqual(name16.archive, None)
+
+        hoary = self.ubuntu['hoary']
+        queue_items = hoary.getQueueItems(
+            status=PackageUploadStatus.ACCEPTED, name="bar",
+            version="1.0-1", exact_match=True, archive=name16.archive)
+        self.assertEqual(queue_items.count(), 1)
+
+        pending_queue = queue_items[0]
+        self.assertEqual(pending_queue.archive, name16.archive)
+        self.assertEqual(
+            pending_queue.pocket, PackagePublishingPocket.RELEASE)
 
         pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
         self.assertEqual(pending_ppas.count(), 1)
@@ -333,10 +375,10 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~ubuntu-team/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        self.assertNotEqual(ubuntu_team.archive, None)
-
         contents = ["Subject: Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
+
+        self.assertNotEqual(ubuntu_team.archive, None)
 
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.ACCEPTED, name="bar",
@@ -356,10 +398,10 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~ubuntu-translators/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        self.assertEqual(ubuntu_translators.archive, None)
-
         contents = [""]
         self.assertEmail(contents)
+
+        self.assertEqual(ubuntu_translators.archive, None)
 
         pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
         self.assertEqual(pending_ppas.count(), 0)
@@ -412,7 +454,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes Rejected",
             "Path mismatch 'ubuntu/one/two/three/four'. "
-            "Use ~<person>/<distro>/[files] for PPAs "
+            "Use ~<person>/<distro>/[distrorelease]/[files] for PPAs "
             "and <distro>/[files] for normal uploads."]
         self.assertEmail(contents)
 
