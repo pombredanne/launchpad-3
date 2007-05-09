@@ -1,4 +1,5 @@
-<table class="sortable listing" id="language-chart" width="100%">
+<table tal:condition="view/has_pofiles"
+       class="sortable listing" id="language-chart" width="100%">
   <thead>
     <tr>
       <th>Language</th>

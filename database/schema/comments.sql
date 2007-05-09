@@ -16,6 +16,16 @@ COMMENT ON COLUMN AnswerContact.preferred_languages_only IS 'Whether or not the 
 /* Branch */
 
 COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.whiteboard IS 'Notes on the current status of the branch';
+COMMENT ON COLUMN Branch.summary IS 'A single paragraph description of the branch';
+COMMENT ON COLUMN Branch.lifecycle_status IS 'Authors assesment of the branchs maturity';
+COMMENT ON COLUMN Branch.branch_home_page IS 'This column is unused';
+COMMENT ON COLUMN Branch.landing_target IS 'This column is unused, to be replaced with a BranchLandingTarget table';
+COMMENT ON COLUMN Branch.current_delta_url IS 'This column is unused';
+COMMENT ON COLUMN Branch.current_conflicts_url IS 'This column is unused';
+COMMENT ON COLUMN Branch.current_diff_adds IS 'This column is unused';
+COMMENT ON COLUMN Branch.current_diff_deletes IS 'This column is unused';
+COMMENT ON COLUMN Branch.stats_updated IS 'This column is unused';
 COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
 COMMENT ON COLUMN Branch.last_mirrored IS 'The time when the branch was last mirrored.';
 COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when it was last mirrored.';

@@ -27,8 +27,7 @@
         permission="launchpad.AnyPerson"
         attributes="requestInfo giveAnswer expireQuestion addComment
                     subscribe unsubscribe"
-        set_attributes="title description datedue product distribution
-                        sourcepackagename language" />
+        set_attributes="title description datedue target language" />
     <require
         permission="launchpad.Moderate"
         attributes="reject" />
@@ -54,6 +53,11 @@
     provides="canonical.launchpad.interfaces.IQuestionTarget"
     factory="canonical.launchpad.components.question.question_to_questiontarget" />
 
+  <adapter
+    for="canonical.launchpad.interfaces.IQuestion"
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    factory="canonical.launchpad.browser.QuestionSOP" />
+    
   <browser:menus
       module="canonical.launchpad.browser"
       classes="QuestionContextMenu QuestionSetContextMenu"

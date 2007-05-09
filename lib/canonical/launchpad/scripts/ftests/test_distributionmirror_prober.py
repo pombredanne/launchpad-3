@@ -31,7 +31,8 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS, ConnectionSkipped,
     RedirectAwareProberProtocol, probe_archive_mirror, probe_release_mirror,
     should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
-    MIN_REQUESTS_TO_CONSIDER_RATIO)
+    MIN_REQUESTS_TO_CONSIDER_RATIO, _build_request_for_cdimage_file_list,
+    restore_http_proxy)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 
@@ -436,6 +437,11 @@ class TestMirrorCDImageProberCallbacks(LaunchpadZopelessTestCase):
     dbuser = config.distributionmirrorprober.dbuser
 
     def setUp(self):
+        self.logger = logging.getLogger('distributionmirror-prober')
+        self.logger.errorCalled = False
+        def error(msg):
+            self.logger.errorCalled = True
+        self.logger.error = error
         mirror = DistributionMirror.get(1)
         warty = DistroRelease.get(1)
         flavour = 'ubuntu'
@@ -461,40 +467,39 @@ class TestMirrorCDImageProberCallbacks(LaunchpadZopelessTestCase):
         # there's no MirrorCDImageRelease for that release and flavour.
         self.assertRaises(SQLObjectNotFound, mirror_cdimage_release.sync)
 
-    def test_timeout_is_not_propagated(self):
-        # Make sure that ensureOrDeleteMirrorCDImageRelease() does not 
-        # propagate ProberTimeout
-        failure = self.callbacks.ensureOrDeleteMirrorCDImageRelease(
-            [(defer.FAILURE, Failure(ProberTimeout('http://localhost/', 5)))])
-        # Twisted callbacks may raise or return a failure; that's why we check
-        # the return value
-        self.failIf(isinstance(failure, Failure))
+    def test_expected_failures_are_ignored(self):
+        # Any errors included in callbacks.expected_failures are simply
+        # ignored by ensureOrDeleteMirrorCDImageRelease() because they've been
+        # logged by logMissingURL() already and they're expected to happen
+        # some times.
+        self.failUnlessEqual(
+            set(self.callbacks.expected_failures),
+            set([BadResponseCode, ProberTimeout, ConnectionSkipped]))
+        exceptions = [BadResponseCode(str(httplib.NOT_FOUND)),
+                      ProberTimeout('http://localhost/', 5),
+                      ConnectionSkipped()]
+        for exception in exceptions:
+            failure = self.callbacks.ensureOrDeleteMirrorCDImageRelease(
+                [(defer.FAILURE, Failure(exception))])
+            # Twisted callbacks may raise or return a failure; that's why we
+            # check the return value.
+            self.failIf(isinstance(failure, Failure))
+            # Also, these failures are not logged to stdout/stderr since
+            # they're expected to happen.
+            self.failIf(self.logger.errorCalled)
 
-    def test_connection_skipped_is_not_propagated(self):
-        # Make sure that ensureOrDeleteMirrorCDImageRelease() does not 
-        # propagate ConnectionSkipped
+    def test_unexpected_failures_are_logged_but_not_raised(self):
+        # Errors which are not expected as logged using the
+        # prober's logger to make sure people see it while still alowing other
+        # mirrors to be probed.
         failure = self.callbacks.ensureOrDeleteMirrorCDImageRelease(
-            [(defer.FAILURE, Failure(ConnectionSkipped()))])
-        # Twisted callbacks may raise or return a failure; that's why we check
-        # the return value
-        self.failIf(isinstance(failure, Failure))
-
-    def test_badresponse_is_not_propagated(self):
-        # Make sure that ensureOrDeleteMirrorCDImageRelease() does not 
-        # propagate BadResponseCode failures.
-        failure = self.callbacks.ensureOrDeleteMirrorCDImageRelease(
-            [(defer.FAILURE,
-              Failure(BadResponseCode(str(httplib.NOT_FOUND))))])
-        # Twisted callbacks may raise or return a failure; that's why we check
-        # the return value
-        self.failIf(isinstance(failure, Failure))
-
-    def test_anything_but_timeouts_badresponses_and_skips_are_propagated(self):
-        # Any failure that is not a ProberTimeout, a BadResponseCode or a
-        # ConnectionSkipped should be propagated.
-        self.assertRaises(
-            Failure, self.callbacks.ensureOrDeleteMirrorCDImageRelease,
             [(defer.FAILURE, Failure(ZeroDivisionError()))])
+        # Twisted callbacks may raise or return a failure; that's why we
+        # check the return value.
+        self.failIf(isinstance(failure, Failure))
+        # Unlike the expected failures, these ones must be logged as errors to
+        # stdout/stderr.
+        self.failUnless(self.logger.errorCalled)
 
 
 class TestArchiveMirrorProberCallbacks(LaunchpadZopelessTestCase):
@@ -569,6 +574,14 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
     def setUp(self):
         self.logger = None
 
+    def test_MirrorCDImageRelease_records_are_deleted_before_probing(self):
+        mirror = DistributionMirror.byName('releases-mirror2')
+        self.failUnless(mirror.cdimage_releases.count() > 0)
+        # Note that calling this function won't actually probe any mirrors; we
+        # need to call reactor.run() to actually start the probing.
+        probe_release_mirror(mirror, StringIO(), [], logging)
+        self.failUnlessEqual(mirror.cdimage_releases.count(), 0)
+
     def test_archive_mirror_probe_function(self):
         mirror1 = DistributionMirror.byName('archive-mirror')
         mirror2 = DistributionMirror.byName('archive-mirror2')
@@ -637,14 +650,13 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
         restore_http_proxy(orig_proxy)
 
 
-def restore_http_proxy(http_proxy):
-    if http_proxy is None:
-        try:
-            del os.environ['http_proxy']
-        except KeyError:
-            pass
-    else:
-        os.environ['http_proxy'] = http_proxy
+class TestCDImageFileListFetching(TestCase):
+
+    def test_no_cache(self):
+        url = 'http://releases.ubuntu.com/.manifest'
+        request = _build_request_for_cdimage_file_list(url)
+        self.failUnlessEqual(request.headers['Pragma'], 'no-cache')
+        self.failUnlessEqual(request.headers['Cache-control'], 'no-cache')
 
 
 def test_suite():

@@ -48,6 +48,15 @@ class IAuthorization(Interface):
         The argument `user` is the person who is authenticated.
         """
 
+
+class OffsiteFormPostError(Exception):
+    """An attempt was made to post a form from a remote site."""
+
+
+class UnsafeFormGetSubmissionError(Exception):
+    """An attempt was made to submit an unsafe form action with GET."""
+
+
 #
 # Menus and Facets
 #

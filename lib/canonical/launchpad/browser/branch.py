@@ -29,7 +29,7 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, IBugSet)
+    IBranch, IBranchSet, IBugSet, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
@@ -88,7 +88,7 @@ class BranchContextMenu(ContextMenu):
     def subscription(self):
         if self.context.hasSubscription(self.user):
             url = '+edit-subscription'
-            text = 'Edit Subscription'
+            text = 'Edit subscription'
             icon = 'edit'
         else:
             url = '+subscribe'
@@ -166,6 +166,11 @@ class BranchView(LaunchpadView):
         """The URL the logged in user can use to upload to this branch."""
         return 'sftp://%s@bazaar.launchpad.net/%s' % (
             self.user.name, self.context.unique_name)
+
+    def is_hosted_branch(self):
+        """Whether this is a user-provided hosted branch."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        return self.context.url is None and self.context.owner != vcs_imports
 
 
 class BranchInPersonView(BranchView):

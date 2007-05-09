@@ -42,8 +42,8 @@ happen in production:
   >>> import_public_test_keys()
   >>> login('foo.bar@canonical.com')
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.tests import (
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
   ...     datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> anything_policy = getPolicy(
@@ -98,6 +98,19 @@ next time:
 
   >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
 
+The upload task requires that the umask be 022, otherwise things will end up
+with the wrong permission.
+
+  >>> old_mask = os.umask(002)
+  >>> upload.queue_root.realiseUpload(mock_logger_quiet)
+  ERROR: Queue item ignored: Bad umask; expected 022, got 002
+
+Reset the umask, remove any residual directories, and try again.
+
+  >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
+  >>> print '%03o' % os.umask(old_mask)
+  002
+
 Process (publish) the custom upload:
 
   >>> upload.queue_root.realiseUpload(mock_logger_quiet)
@@ -132,6 +145,18 @@ looks sane:
   >>> the_dir_link_path = os.path.join(installer_path, the_dir_link)
   >>> os.readlink(the_dir_link_path)
   'ubuntu-installer/i386/pxelinux.cfg.serial-9600/'
+
+Check permissions on the created directories to satisfy the
+publication path. They are created with os.makedirs() and forced to
+set permission '0755' instead of the default '0777' (see further
+details in bug #107068):
+
+  >>> oct(os.stat(installer_path).st_mode & 0777)
+  '0755'
+
+  >>> the_path = os.path.join(installer_path, os.pardir)
+  >>> oct(os.stat(the_path).st_mode & 0777)
+  '0755'
 
 Check permissions of created files and directories:
 

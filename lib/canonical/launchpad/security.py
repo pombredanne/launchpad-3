@@ -10,10 +10,11 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
     IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
-    IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
-    IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
-    IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
-    IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
+    ITranslationGroup, ITranslationGroupSet, IProduct, IProductSeries,
+    IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
+    ISourcePackage, ILaunchpadCelebrities, IDistroRelease, IBugTracker,
+    IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
+    IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, IQuestion, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
@@ -713,6 +714,22 @@ class ChangeTranslatorInGroup(OnlyRosettaExpertsAndAdmins):
                 OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
 
 
+class EditTranslationGroup(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = ITranslationGroup
+
+    def checkAuthenticated(self, user):
+        """Allow the owner of a translation group to edit the translator
+        of any language in the group."""
+        return (user.inTeam(self.obj.owner) or
+                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
+
+
+class EditTranslationGroupSet(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ITranslationGroupSet
+
+
 # XXX: Carlos Perello Marin 2005-05-24: This should be using
 # SuperSpecialPermissions when implemented.
 # See: https://launchpad.ubuntu.com/malone/bugs/753/
@@ -875,10 +892,7 @@ def can_admin_team(team, user):
     if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
         return True
     else:
-        for person in team.getEffectiveAdministrators():
-            if user.inTeam(person):
-                return True
-    return False
+        return team in user.getAdministratedTeams()
 
 
 class AdminLanguageSet(OnlyRosettaExpertsAndAdmins):
