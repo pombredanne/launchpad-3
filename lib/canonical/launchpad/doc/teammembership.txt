@@ -179,7 +179,7 @@ owner he's also a direct member of all teams)
 
 
 We can use IPerson.findPathToTeam() to check some of the relationships drawn
-above.  Either from a person to a given team ...
+above, either from a person to a given team ...
 
     >>> [team.name for team in salgado.findPathToTeam(t1)]
     [u't3', u't2', u't1']

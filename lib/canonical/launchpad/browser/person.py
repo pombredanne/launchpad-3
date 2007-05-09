@@ -761,7 +761,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             target = '+join'
             text = 'Join the team' # &#8230;
             icon = 'add'
-
         return Link(target, text, icon=icon, enabled=enabled)
 
 

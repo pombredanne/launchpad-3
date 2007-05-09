@@ -111,8 +111,8 @@ If it was a restricted team, users wouldn't even see a link to join the team.
     ...
     LinkNotFoundError
 
-If the user manually craft the URL to the +join page, he'll only se a message
-explaining that this is a restricted team.
+If the user manually craft the URL to the +join page, he'll only see a
+message explaining that this is a restricted team.
 
     >>> browser.open('http://launchpad.dev/~myemail/+join')
     >>> browser.url
