@@ -823,8 +823,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
     """View that searches among all questions posted on Launchpad."""
 
     display_target_column = True
-    # Match contiguous digits, optionally prefixed with a '#'
-    # or with leading and trailing whitespace.
+    # Match contiguous digits, optionally prefixed with a '#'.
     id_pattern = re.compile('^#?(\d+)$')
 
     @property
@@ -846,7 +845,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
         else:
             return _('There are no questions with the requested statuses.')
     
-    @action(_('Search'))
+    @action(_('Search'), name='search')
     def search_action(self, action, data):
         """Action executed when the user clicked the 'Find Answers' button.
 
@@ -856,7 +855,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
         super(SearchAllQuestionsView, self).search_action.success(data)
         
         id_matches = SearchAllQuestionsView.id_pattern.match(self.search_text)
-        if (id_matches is not None):
+        if id_matches is not None:
             question = getUtility(IQuestionSet).get(id_matches.group(1))
             if question is not None:
                 self.request.response.redirect(canonical_url(question))
