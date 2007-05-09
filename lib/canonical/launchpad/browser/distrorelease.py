@@ -36,6 +36,8 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import AccessDisabledError
 
 
 class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -54,11 +56,18 @@ class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
             # Unknown language code.
             raise NotFoundError
         drlang = self.context.getDistroReleaseLanguage(lang)
-        if drlang is not None:
-            return drlang
-        else:
+
+        if drlang is None:
             drlangset = getUtility(IDistroReleaseLanguageSet)
-            return drlangset.getDummy(self.context, lang)
+            drlang = drlangset.getDummy(self.context, lang)
+
+        if (self.context.hide_all_translations and
+            not check_permission('launchpad.Admin', drlang)):
+            # Prevent to traverse to non admin users while we hide all
+            # translations.
+            raise AccessDisabledError
+
+        return drlang
 
     @stepthrough('+source')
     def source(self, name):
