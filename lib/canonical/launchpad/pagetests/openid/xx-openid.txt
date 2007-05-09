@@ -290,6 +290,42 @@ openid.signed:return_to,mode,identity
 is_valid:true
 <BLANKLINE>
 
+
+If the consumer sends through the identity URL using %7E notation instead
+of ~, that is also supported. I think this might actually break the spec
+or be unnecessary, but I can't see any harm being done.
+
+>>> args = urlencode({
+...     'openid.mode': 'checkid_setup',
+...     'openid.identity': 'https://launchpad.dev/%7Esabdfl',
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+...     })
+>>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> sabdfl_browser.getControl('Allow').click()
+>>> print sabdfl_browser.contents
+Consumer received GET
+...
+openid.identity:https://launchpad.dev/%7Esabdfl
+...
+
+>>> [pstateless_assoc_handle] = re.findall(
+...     'assoc_handle:(.*)', sabdfl_browser.contents
+...     )
+>>> [psig] = re.findall('sig:(.*)', sabdfl_browser.contents)
+>>> args = urlencode({
+...     'openid.mode': 'check_authentication',
+...     'openid.assoc_handle': pstateless_assoc_handle,
+...     'openid.sig': psig,
+...     'openid.signed': 'return_to,mode,identity',
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+...     'openid.identity': 'https://launchpad.dev/%7Esabdfl',
+...     })
+>>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print sabdfl_browser.contents
+is_valid:true
+<BLANKLINE>
+
+
 == Sticky Authorization ==
 
 Users can select how long our OpenID server will continue to authorize

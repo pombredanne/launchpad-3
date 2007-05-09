@@ -63,17 +63,16 @@ class OpenIdView(LaunchpadView):
             "../templates/openid-invalid-identity.pt"
             )
 
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
-        store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
-        self.openid_server = Server(store_factory())
-
     def render(self):
         """Handle all OpenId requests and form submissions
 
         Returns the page contents after setting all relevant headers in
         self.request.response
         """
+        # We instantiate this here rather than in __init__ to make other
+        # methods of this class unit testable.
+        store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
+        self.openid_server = Server(store_factory())
         # Detect submission of the decide page
         if self.request.form.has_key('token'):
             self.restoreSessionOpenIdRequest()
@@ -162,6 +161,8 @@ class OpenIdView(LaunchpadView):
         'sabdfl'
         >>> view.extractName('https://launchpad.dev/~sabdfl')
         'sabdfl'
+        >>> view.extractName('https://launchpad.dev/%7Esabdfl')
+        'sabdfl'
         """
         rooturl = allvhosts.configs['mainsite'].rooturl
         if rooturl.startswith('http:'):
@@ -172,7 +173,7 @@ class OpenIdView(LaunchpadView):
             raise AssertionError("Invalid root url %s" % rooturl)
 
         # Note that we accept
-        match = re.search(r'^\s*%s~(\w+)\s*$' % url_match_string, identity)
+        match = re.search(r'^\s*%s(?:~|%%7E)(\w+)\s*$' % url_match_string, identity)
 
         if match is None:
             return None
@@ -202,7 +203,7 @@ class OpenIdView(LaunchpadView):
         # it was used to store information in the actual users session,
         # rather than the session of a malicious connection attempting a
         # man-in-the-middle attack.
-        token = '%s' % generate_uuid()
+        token = generate_uuid()
         session = self.getSession()
         # We also store the time with the openid_request so we can clear
         # out old requests after some time, say 1 hour.
