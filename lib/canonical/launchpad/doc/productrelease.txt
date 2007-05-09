@@ -81,7 +81,3 @@ Try to delete the same alias again and see that an error is raised.
     ...
     NotFoundError:...
 
-
-
-
-

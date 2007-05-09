@@ -46,10 +46,7 @@ from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.formlib import form
-from zope.interface import alsoProvides, implements, providedBy
-from zope.schema import Choice
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+from zope.interface import alsoProvides, implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -60,7 +57,8 @@ from canonical.launchpad.interfaces import (
     IProject, ISourcePackage, ICountry,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
-    IPillarNameSet, IDistribution, IHasIcon, UnexpectedFormData)
+    IPillarNameSet, IDistribution, IHasIcon, UnexpectedFormData,
+    UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
@@ -86,7 +84,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.widgets import LaunchpadDropdownWidget
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -576,9 +573,14 @@ class ProductDownloadFilesView(LaunchpadView):
         self.form = self.request.form
         self.product = self.context
         del_count = None
-        if 'change' in self.form and self.request.method == 'POST':
-            del(self.form['change'])
-            del_count = self.delete_files(self.form)
+        if 'change' in self.form:
+            if self.request.method == 'POST':
+                del(self.form['change'])
+                del_count = self.delete_files(self.form)
+            else:
+                # If there is a form submission and it is not a POST then
+                # raise an error.  This is to protect against XSS exploits.
+                raise UnsafeFormGetSubmissionError(self.form['change'])
         if del_count is not None:
             if del_count <= 0:
                 self.request.response.addNotification(

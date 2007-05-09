@@ -281,12 +281,29 @@ To get all milestones of a given product we have the .all_milestones property.
 
 We can also find all the products that have branches.
 
- >>> productset.getProductsWithBranches().count()
- 5
- >>> for product in productset.getProductsWithBranches():
- ...     print product.name
- evolution
- firefox
- gnome-terminal
- iso-codes
- thunderbird
+    >>> productset.getProductsWithBranches().count()
+    5
+    >>> for product in productset.getProductsWithBranches():
+    ...     print product.name
+    evolution
+    firefox
+    gnome-terminal
+    iso-codes
+    thunderbird
+
+== Product download files ==
+
+Attempting to delete files via a GET method are not allowed.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from zope.component import getView
+    >>> request = LaunchpadTestRequest(
+    ...     environ={'REQUEST_METHOD': 'GET'},
+    ...     form={'change': 'Submit Changes'})
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> view = getView(firefox, '+download', request)
+    >>> view.initialize()
+    Traceback (most recent call last):
+     ...
+    UnsafeFormGetSubmissionError: Submit Changes
+    
