@@ -8,20 +8,17 @@
    * CURRENT distrorelease name: `./ubuntu-helper.py -d ubuntu current`
    * DEVEVELOPMENT distrorelease name: `./ubuntu-helper.py -d ubuntu development`
    * Distorelease architectures:
-       `./ubuntu-helper.py -d ubuntu -s feisty archs`
+       `./lp-query-distro.py -d ubuntu -s feisty archs`
    * Distorelease official architectures:
-       `./ubuntu-helper.py -d ubuntu -s feisty official_archs`
+       `./lp-query-distro.py -d ubuntu -s feisty official_archs`
    * Distorelease nominated-arch-indep:
-       `./ubuntu-helper.py -d ubuntu -s feisty nominated_arch_indep`
+       `./lp-query-distro.py -d ubuntu -s feisty nominated_arch_indep`
 
    Standard Output will carry the successfully executed information and
    exit_code will be ZERO.
    In case of failure, exit_code will be different than ZERO and Standard Error
    will contain debug information.
    """
-
-
-__metaclass__ = type
 
 import _pythonpath
 

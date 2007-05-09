@@ -1404,7 +1404,7 @@ class PackageCopier(LaunchpadScript):
 
 
 class LpQueryDistro(LaunchpadScript):
-    """Base class for scripts/ftpmaster-tools/lp-query-distro.py."""
+    """Main class for scripts/ftpmaster-tools/lp-query-distro.py."""
 
     def __init__(self, *args, **kwargs):
         """Initialise dynamic 'usage' message and LaunchpadScript parent.
@@ -1443,8 +1443,8 @@ class LpQueryDistro(LaunchpadScript):
         """
         try:
             self.location = PackageLocation(
-                distribution_name = self.options.distribution_name,
-                suite_name = self.options.suite_name)
+                distribution_name=self.options.distribution_name,
+                suite_name=self.options.suite_name)
         except PackageLocationError, err:
             raise LaunchpadScriptFailure(err)
 
@@ -1481,15 +1481,16 @@ class LpQueryDistro(LaunchpadScript):
 
         if self.action_name not in self.allowed_actions:
             raise LaunchpadScriptFailure(
-                'Action "%s" is not allowed' % self.action_name)
+                'Action "%s" is not supported' % self.action_name)
 
         self._buildLocation()
 
         try:
             action_result = getattr(self, 'get_' + self.action_name)
         except AttributeError:
-            raise LaunchpadScriptFailure(
-                "'%s' not supported." % self.action_name)
+            raise AssertionError(
+                "No handler found for action '%s'" % self.action_name)
+
         presenter(action_result)
 
     def checkNoSuiteDefined(self):
@@ -1504,7 +1505,7 @@ class LpQueryDistro(LaunchpadScript):
                 "Action does not accept defined suite_name.")
 
     # XXX cprov 20070420: should be implemented in IDistribution.
-    # raising NotFoundError instead.
+    # raising NotFoundError instead. Bug #113563.
     def getReleaseByStatus(self, releasestatus):
         """Query context distribution for a distrorelese in a given status.
 
@@ -1552,23 +1553,25 @@ class LpQueryDistro(LaunchpadScript):
 
         It is restricted for the context distribution and suite.
         """
-        return " ".join([arch.architecturetag for arch in
-                         self.location.distrorelease.architectures])
+        architectures = self.location.distrorelease.architectures
+        return " ".join(arch.architecturetag for arch in architectures)
+
     @property
     def get_official_archs(self):
         """Return a space-separated list of official architecture tags.
 
-        It is restricted for the context distribution and suite.
+        It is restricted to the context distribution and suite.
         """
-        return " ".join([arch.architecturetag for arch in
-                         self.location.distrorelease.architectures
-                         if arch.official])
+        architectures = self.location.distrorelease.architectures
+        return " ".join(arch.architecturetag
+                        for arch in architectures
+                        if arch.official)
 
     @property
     def get_nominated_arch_indep(self):
         """Return the nominated arch indep architecture tag.
 
-        It is restricted for the context distribution and suite.
+        It is restricted to the context distribution and suite.
         """
         release = self.location.distrorelease
         return release.nominatedarchindep.architecturetag

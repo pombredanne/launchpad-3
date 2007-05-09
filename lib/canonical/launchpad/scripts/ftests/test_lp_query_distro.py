@@ -9,11 +9,12 @@ import sys
 import unittest
 
 from canonical.config import config
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
+from canonical.launchpad.ftests.harness import (
+    LaunchpadTestCase, LaunchpadZopelessTestCase)
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.scripts.ftpmaster import LpQueryDistro
 
-class TestLpQueryDistroScript(LaunchpadZopelessTestCase):
+class TestLpQueryDistroScript(LaunchpadTestCase):
     """Test the lp-query-distro.py script."""
 
     def runLpQueryDistro(self, extra_args=[]):
@@ -34,7 +35,7 @@ class TestLpQueryDistroScript(LaunchpadZopelessTestCase):
     def testSimpleRun(self):
         """Try a simple lp-query-distro.py run.
 
-        Check if:
+        Check that:
          * return code is ZERO,
          * standard error is empty
          * standard output contains only the 'current distrorelease' name
@@ -49,9 +50,9 @@ class TestLpQueryDistroScript(LaunchpadZopelessTestCase):
         self.assertEqual(err.strip(), '')
 
     def testMissingAction(self):
-        """Make lp-query-distro.py run fail by no give 'action'.
+        """Making lp-query-distro.py to fail by not passing an action.
 
-        Check if:
+        Check that:
          * return code is ONE,
          * standard output is empty
          * standard error contains the additional information about the failure.
@@ -66,7 +67,7 @@ class TestLpQueryDistroScript(LaunchpadZopelessTestCase):
         self.assertEqual(err.strip(), 'ERROR   <action> is required')
 
     def testUnknownAction(self):
-        """Make lp-query-distro.py run fail by give an unknown 'action'.
+        """Making lp-query-distro.py to fail by passing an unknown action.
 
         Check if:
          * return code is ONE,
@@ -80,10 +81,10 @@ class TestLpQueryDistroScript(LaunchpadZopelessTestCase):
             1, returncode, "\nScript didn't fail:%s\nStdout:\n%s\nStderr\n%s\n"
             % (returncode, out, err))
         self.assertEqual(out.strip(), '')
-        self.assertEqual(err.strip(), 'ERROR   Action "nahhh" is not allowed')
+        self.assertEqual(err.strip(), 'ERROR   Action "nahhh" is not supported')
 
     def testUnexpectedArgument(self):
-        """Make lp-query-distro.py run fail by give an unexpected argument.
+        """Making lp-query-distro.py to fail by passing unexpected action.
 
         Check if:
          * return code is ONE,
