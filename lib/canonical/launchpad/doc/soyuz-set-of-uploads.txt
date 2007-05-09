@@ -141,7 +141,7 @@ it into the accepted queue
   ...     for item in items:
   ...         item.setAccepted()
   ...         syncUpdate(item)
-  ...     items = dr.getQueueItems(status=DistroReleaseQueueStatus.UNAPPROVED)
+  ...     items = dr.getQueueItems(status=PackageUploadStatus.UNAPPROVED)
   ...     for item in items:
   ...         item.setAccepted()
   ...         syncUpdate(item)
