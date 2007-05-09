@@ -228,9 +228,9 @@ class SourcePackageView(BuildRecordsView):
         """Wrap the relationship_builder for SourcePackages.
 
         Define apt_pkg.ParseSrcDep as a relationship 'parser' and
-        IDistroRelease.getSourcePackage as 'getter'.
+        IDistroRelease.getBinaryPackage as 'getter'.
         """
-        getter = self.context.distrorelease.getSourcePackage
+        getter = self.context.distrorelease.getBinaryPackage
         parser = ParseSrcDepends
         return relationship_builder(content, parser=parser, getter=getter)
 
