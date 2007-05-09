@@ -846,6 +846,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
         else:
             return _('There are no questions with the requested statuses.')
     
+    @safe_action
     @action(_('Search'), name='search')
     def search_action(self, action, data):
         """Action executed when the user clicked the 'Find Answers' button.
