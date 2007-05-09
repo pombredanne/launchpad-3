@@ -7,4 +7,8 @@ ALTER TABLE DistroRelease
 UPDATE DistroRelease
   SET hide_all_translations = FALSE;
 
+-- Stuart asked me to add this here.
+ALTER TABLE SpokenIn
+  ADD CONSTRAINT spokenin__country__language__key UNIQUE (language, country);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (79, 99, 0);
