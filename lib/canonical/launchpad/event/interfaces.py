@@ -41,6 +41,13 @@ class IJoinTeamEvent(Interface):
     team = Attribute("The team.")
 
 
+class ITeamInvitationEvent(Interface):
+    """A new person/team has been invited to a team."""
+
+    member = Attribute("The person/team who was invited.")
+    team = Attribute("The team.")
+
+
 class IKarmaAssignedEvent(IObjectEvent):
     """Karma was assigned to a person."""
 

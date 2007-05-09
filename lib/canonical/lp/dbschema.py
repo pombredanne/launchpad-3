@@ -679,6 +679,13 @@ class TeamMembershipStatus(DBSchema):
         Your proposed subscription to this team has been declined.
         """)
 
+    INVITED = Item(7, """
+        Invited
+
+        You have been invited as a member of this team. In order to become an
+        actual member, you have to accept the invitation.
+        """)
+
 
 class TeamSubscriptionPolicy(DBSchema):
     """Team Subscription Policies
