@@ -178,7 +178,7 @@ class BranchView(LaunchpadView):
     def mirror_status_message(self):
         """A message from a bad scan or pull, truncated for display."""
         message = self.context.mirror_status_message
-        if len(message) <=  self.MAXIMUM_STATUS_MESSAGE_LENGTH:
+        if len(message) <= self.MAXIMUM_STATUS_MESSAGE_LENGTH:
             return message
         return truncate_text(
             message, self.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...'

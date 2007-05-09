@@ -1,4 +1,9 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
+"""Unit tests for BranchView."""
+
+__metaclass__ = type
+__all__ = ['TestBranchView', 'test_suite']
 
 import unittest
 
