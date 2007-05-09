@@ -46,14 +46,10 @@ from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-<<<<<<< TREE
 from zope.formlib import form
 from zope.interface import alsoProvides, implements, providedBy
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
-=======
-from zope.interface import alsoProvides, implements
->>>>>>> MERGE-SOURCE
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
