@@ -7,10 +7,8 @@ CREATE TABLE BranchVisibilityPolicy
   product INT REFERENCES Product,
   team INT REFERENCES Person,
   policy INT NOT NULL DEFAULT 1,
-  UNIQUE(project, pillar, team),
-  CONSTRAINT only_one_target(
-    project IS NOT NULL and product IS NULL or
-    project IS NULL and product IS NOT NULL) 
+  UNIQUE(project, product, team),
+  CONSTRAINT only_one_target CHECK (project IS NOT NULL and product IS NULL or project IS NULL and product IS NOT NULL) 
 );
 
 COMMENT ON TABLE BranchVisibilityPolicy IS 'Defines the policy for the initial visibility of branches.';
