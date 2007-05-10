@@ -957,29 +957,29 @@ class ShippingRequestSet:
 
             -- People with with non-cancelled requests for any release other
             -- than the current one.
-            CREATE TEMPORARY TABLE non_current_release_requester
+            CREATE TEMPORARY TABLE previous_release_requester
                 (recipient integer);
-            INSERT INTO non_current_release_requester (
+            INSERT INTO previous_release_requester (
                 SELECT DISTINCT recipient
                 FROM ShippingRequest
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
-                WHERE distrorelease != %(current_release)s
+                WHERE distrorelease < %(current_release)s
                     AND recipient != %(shipit_admins)s
                     AND status != %(cancelled)s);
-            CREATE UNIQUE INDEX non_current_release_requester__unq 
-                ON non_current_release_requester(recipient);
+            CREATE UNIQUE INDEX previous_release_requester__unq 
+                ON previous_release_requester(recipient);
 
             -- People which made requests for any release other than the 
             -- current one, but none of the requests were ever shipped.
-            CREATE TEMPORARY TABLE non_current_release_non_recipient
+            CREATE TEMPORARY TABLE previous_release_non_recipient
                 (recipient integer);
-            INSERT INTO non_current_release_non_recipient (
+            INSERT INTO previous_release_non_recipient (
                 SELECT DISTINCT recipient
                 FROM ShippingRequest
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
-                WHERE distrorelease != %(current_release)s
+                WHERE distrorelease < %(current_release)s
                     AND recipient != %(shipit_admins)s
                     AND status NOT IN (%(shipped)s, %(cancelled)s)
                 EXCEPT
@@ -987,11 +987,11 @@ class ShippingRequestSet:
                 FROM ShippingRequest
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
-                WHERE distrorelease != %(current_release)s
+                WHERE distrorelease < %(current_release)s
                     AND recipient != %(shipit_admins)s
                     AND status = %(shipped)s);
-            CREATE UNIQUE INDEX non_current_release_non_recipient__unq 
-                ON non_current_release_non_recipient(recipient);
+            CREATE UNIQUE INDEX previous_release_non_recipient__unq 
+                ON previous_release_non_recipient(recipient);
             """ % sqlvalues(
                     current_release=ShipItConstants.current_distrorelease,
                     shipit_admins=shipit_admins,
@@ -1017,7 +1017,7 @@ class ShippingRequestSet:
                     SELECT recipient, SUM(quantity) AS requested_cds_per_user,
                         COUNT(DISTINCT request) AS requests
                     FROM RequestedCDs, ShippingRequest
-                    WHERE distrorelease != %(current_release)s
+                    WHERE distrorelease < %(current_release)s
                         AND status != %(cancelled)s
                         AND ShippingRequest.id = RequestedCDs.request
                         AND recipient IN (
@@ -1031,7 +1031,7 @@ class ShippingRequestSet:
                         0 AS requests
                     FROM (SELECT recipient FROM current_release_requester
                           EXCEPT
-                          SELECT recipient FROM non_current_release_requester
+                          SELECT recipient FROM previous_release_requester
                          ) AS FIRST_TIME_REQUESTERS
                     WHERE recipient != %(shipit_admins)s
                     ) AS RECIPIENTS_AND_COUNTS
@@ -1062,7 +1062,7 @@ class ShippingRequestSet:
                         SUM(quantityapproved) AS approved_cds_per_user,
                         COUNT(DISTINCT request) AS requests
                     FROM RequestedCDs, ShippingRequest
-                    WHERE distrorelease != %(current_release)s
+                    WHERE distrorelease < %(current_release)s
                         AND status = %(shipped)s
                         AND ShippingRequest.id = RequestedCDs.request
                         AND recipient IN (
@@ -1074,21 +1074,21 @@ class ShippingRequestSet:
                     -- releases.
                     SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
                     FROM RequestedCDs, ShippingRequest
-                    WHERE distrorelease != %(current_release)s
+                    WHERE distrorelease < %(current_release)s
                         AND status != %(shipped)s
                         AND ShippingRequest.id = RequestedCDs.request
                         AND recipient IN (
                             SELECT recipient FROM current_release_requester)
                         AND recipient IN (
                             SELECT recipient 
-                            FROM non_current_release_non_recipient)
+                            FROM previous_release_non_recipient)
                     UNION
                     -- This one gives us the people which made feisty requests
                     -- but haven't made requests for any other releases.
                     SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
                     FROM (SELECT recipient FROM current_release_requester
                           EXCEPT
-                          SELECT recipient FROM non_current_release_requester
+                          SELECT recipient FROM previous_release_requester
                          ) AS FIRST_TIME_RECIPIENTS
                     ) AS RECIPIENTS_AND_COUNTS
                 GROUP BY requests
