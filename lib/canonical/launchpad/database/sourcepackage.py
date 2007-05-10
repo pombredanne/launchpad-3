@@ -176,10 +176,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
 
     def _getPublishingHistory(self, version=None, include_status=None, 
                               exclude_status=None, order_by=None):
-        """Build a query and return a list of 
-        SourcePackagePublishingHistory objects.  This is mainly a 
-        helper function for this class so that code is not duplicated.
-        include_status and exclude_status must be a sequence.
+        """Build a query and return a list of SourcePackagePublishingHistory.
+        
+        This is mainly a helper function for this class so that code is 
+        not duplicated. include_status and exclude_status must be a sequence.
         """
         clauses = []
         clauses.append(
