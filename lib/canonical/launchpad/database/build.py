@@ -128,7 +128,8 @@ class Build(SQLBase):
         """See IBuild."""
         # check if the build would be properly collected if it was
         # reset. Do not reset denied builds.
-        if not self.distrorelease.canUploadToPocket(self.pocket):
+        if (self.is_trusted and not
+            self.distrorelease.canUploadToPocket(self.pocket)):
             return False
 
         failed_buildstates = [
