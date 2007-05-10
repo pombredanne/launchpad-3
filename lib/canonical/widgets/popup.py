@@ -175,8 +175,8 @@ class SinglePopupView(object):
 
     def vocabulary(self):
         """See ISinglePopupView"""
-	vocabulary_name = self.request.form_ng.getOne('vocabulary') 
-	if not vocabulary_name:
+        vocabulary_name = self.request.form_ng.getOne('vocabulary')
+        if not vocabulary_name:
             raise UnexpectedFormData('No vocabulary specified')
         try:
             factory = zapi.getUtility(IVocabularyFactory, vocabulary_name)
