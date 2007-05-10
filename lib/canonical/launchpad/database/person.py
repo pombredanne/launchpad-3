@@ -1052,7 +1052,12 @@ class Person(SQLBase, HasSpecificationsMixin):
     # explicit permissions for all IPerson methods/attributes in the zcml but
     # that's far from optimal given the size of IPerson.
     def acceptInvitationToBeMemberOf(self, team):
-        """ ."""
+        """Accept an invitation to become a member of the given team.
+        
+        There must be a TeamMembership for this person and the given team with
+        the INVITED status. The status of this TeamMembership will be changed
+        to APPROVED.
+        """
         tm = TeamMembership.selectOneBy(person=self, team=team)
         assert tm is not None
         assert tm.status == TeamMembershipStatus.INVITED
