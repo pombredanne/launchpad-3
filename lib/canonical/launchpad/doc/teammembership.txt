@@ -39,6 +39,17 @@ XXX: This doctest needs a lot of cleanups!
     ...     foobar, 't5', 't5',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
 
+    # Make sure the teams have predictable (and different) creation dates as
+    # some of our tests depend on that.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> oldest = t1.datecreated
+    >>> removeSecurityProxy(t2).datecreated = oldest + timedelta(hours=1)
+    >>> removeSecurityProxy(t3).datecreated = oldest + timedelta(hours=2)
+    >>> removeSecurityProxy(t4).datecreated = oldest + timedelta(hours=3)
+    >>> removeSecurityProxy(t5).datecreated = oldest + timedelta(hours=4)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
 == Adding new members ==
 
 One way of adding new members to a team is by having the user himself join the
@@ -98,7 +109,6 @@ was already an active/inactive member or has never been a member before.
 
     >>> t3.addMember(
     ...     salgado, reviewer=sabdfl, status=TeamMembershipStatus.ADMIN)
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import ITeamMembershipSet
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> flush_database_updates()
@@ -169,8 +179,7 @@ owner he's also a direct member of all teams)
 
 
 We can use IPerson.findPathToTeam() to check some of the relationships drawn
-above. Note that because of https://launchpad.net/bugs/30789 we can't use it
-to check the path from a team to another one.
+above, either from a person to a given team ...
 
     >>> [team.name for team in salgado.findPathToTeam(t1)]
     [u't3', u't2', u't1']
@@ -178,6 +187,11 @@ to check the path from a team to another one.
     [u't3', u't2', u't5']
     >>> [team.name for team in salgado.findPathToTeam(t3)]
     [u't3']
+
+... or from a team to another one:
+
+    >>> [team.name for team in t3.findPathToTeam(t4)]
+    [u't2', u't1', u't4']
 
 t2 can't use its leave() method to leave t5 because it's a team and teams
 take no actions. One of t5 administrators have to go and remove t2 from t5
@@ -411,7 +425,6 @@ while the one that was inactive hasn't changed.
 
     # These two objects were updated in another transaction, so we need to
     # expire them.
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(foobar_on_admins).expire()
     >>> removeSecurityProxy(sp_on_ubuntu_translators).expire()
 

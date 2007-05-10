@@ -21,6 +21,8 @@ __all__ = [
     'QuestionSubscriptionView',
     'QuestionWorkflowView',
     ]
+    
+import re
 
 from operator import attrgetter
 
@@ -52,7 +54,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     GeneralFormView, LaunchpadView, action, LaunchpadFormView,
-    LaunchpadEditFormView, custom_widget)
+    LaunchpadEditFormView, custom_widget, safe_action)
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
@@ -84,6 +86,7 @@ class QuestionSetView(LaunchpadFormView):
         """The error message for the scope widget."""
         return self.getWidgetError('scope')
 
+    @safe_action
     @action('Find Answers', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
@@ -821,6 +824,8 @@ class SearchAllQuestionsView(SearchQuestionsView):
     """View that searches among all questions posted on Launchpad."""
 
     display_target_column = True
+    # Match contiguous digits, optionally prefixed with a '#'.
+    id_pattern = re.compile('^#?(\d+)$')
 
     @property
     def pageheading(self):
@@ -840,6 +845,22 @@ class SearchAllQuestionsView(SearchQuestionsView):
                      mapping=dict(search_text=self.search_text))
         else:
             return _('There are no questions with the requested statuses.')
+    
+    @safe_action
+    @action(_('Search'), name='search')
+    def search_action(self, action, data):
+        """Action executed when the user clicked the 'Find Answers' button.
+
+        Saves the user submitted search parameters in an instance
+        attribute and redirects to questions when the term is a question id.
+        """
+        super(SearchAllQuestionsView, self).search_action.success(data)
+        
+        id_matches = SearchAllQuestionsView.id_pattern.match(self.search_text)
+        if id_matches is not None:
+            question = getUtility(IQuestionSet).get(id_matches.group(1))
+            if question is not None:
+                self.request.response.redirect(canonical_url(question))
 
 
 class QuestionSOP(StructuralObjectPresentation):
