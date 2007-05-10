@@ -14,9 +14,10 @@ zope.publisher.IPublication for the request.
     >>> from cStringIO import StringIO
     >>> def get_request_and_publication(method='GET',
     ...                                 in_stream='', host='localhost'):
-    ...     environment = {'HTTP_HOST': host}
+    ...     environment = {'HTTP_HOST': host,
+    ...                    'REQUEST_METHOD': method }
     ...     launchpad_factory = factoryRegistry.lookup(
-    ...         'GET', 'text/html', environment)
+    ...         method, 'text/html', environment)
     ...     request_factory, publication_factory = launchpad_factory()
     ...     request = request_factory(StringIO(in_stream), environment)
     ...     # Since Launchpad doesn't use ZODB, we use None here.
