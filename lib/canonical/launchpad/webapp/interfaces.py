@@ -382,7 +382,9 @@ class IBrowserFormNG(Interface):
         """Return the the list of values submitted under field name.
 
         If the field wasn't submitted return the default value. (If default
-        is None, an empty list will be returned.
+        is None, an empty list will be returned. It is an error to use
+        something else than None or a list as default value.
+        
         This method should always return a list, if only one value was
         submitted, it will be returned in a list.
         """

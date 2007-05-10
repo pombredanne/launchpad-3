@@ -367,6 +367,9 @@ class BrowserFormNG:
         # marker.
         if default is None:
             default = []
+        else:
+            assert zope_isinstance(default, list), (
+                "default should be a list: %s" % default)
         value = self.form.get(name, default)
         if not zope_isinstance(value, list):
             value = [value]
