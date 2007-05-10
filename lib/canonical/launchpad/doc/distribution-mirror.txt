@@ -537,8 +537,10 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    creating lockfile
     INFO    Probing Archive Mirrors
     INFO    Probed 4 mirrors.
-    INFO    Disabled http://launchpad.dev/.../archive-404-mirror
-    INFO    Enabled http://launchpad.dev/.../archive-mirror
+    INFO    Disabling 1 mirror(s):
+            http://launchpad.dev/ubuntu/+mirror/archive-404-mirror
+    INFO    Re-enabling 1 mirror(s):
+            http://launchpad.dev/ubuntu/+mirror/archive-mirror
     INFO    Done.
     <BLANKLINE>
 
@@ -549,13 +551,14 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    creating lockfile
     INFO    Probing Release Mirrors
     INFO    Probed 4 mirrors.
-    INFO    Disabled http://launchpad.dev/ubuntu/+mirror/unreachable-mirror
+    INFO    Disabling 1 mirror(s):
+            http://launchpad.dev/ubuntu/+mirror/unreachable-mirror
     INFO    Done.
     <BLANKLINE>
 
-    If we run the prober again, it won't do anything, because it will realize
-    that the mirrors were probed recently, and, by default, don't need to be
-    probed again.
+If we run the prober again, it won't do anything, because it will realize
+that the mirrors were probed recently, and, by default, don't need to be
+probed again.
 
     >>> prober, stdout, stderr = run_prober('--content-type=release')
     >>> print stdout
@@ -567,8 +570,8 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    Done.
     <BLANKLINE>
 
-    But we can override the default behaviour and tell the prober to check all
-    official mirrors independently if they were probed recently or not.
+But we can override the default behaviour and tell the prober to check all
+official mirrors independently if they were probed recently or not.
 
     >>> prober, stdout, stderr = run_prober('--content-type=release --force')
     >>> print stdout
@@ -597,7 +600,8 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    creating lockfile
     INFO    Probing Release Mirrors
     INFO    Probed 4 mirrors.
-    INFO    Enabled http://launchpad.dev/ubuntu/+mirror/releases-mirror
+    INFO    Re-enabling 1 mirror(s):
+            http://launchpad.dev/ubuntu/+mirror/releases-mirror
     INFO    Done.
     <BLANKLINE>
 

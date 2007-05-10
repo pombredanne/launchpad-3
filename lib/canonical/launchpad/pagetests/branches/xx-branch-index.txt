@@ -5,8 +5,8 @@
 On the Code site, registered branches are reached by
 /<owner>/<product>/<branch-name>.
 
-  >>> browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
-  >>> main = find_tag_by_id(browser.contents, 'mainarea')
+  >>> user_browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
+  >>> main = find_tag_by_id(user_browser.contents, 'mainarea')
 
 
 === Heading ===
@@ -29,14 +29,37 @@ reverse-chronological order.
   ...     for revision in revision_list.fetch('li'):
   ...         revno = str(revision['value'])
   ...         for heading in revision.fetch('div'):
-  ...             print revno, heading.renderContents()
-  6 foo &lt;foo@localhost&gt; (2005-10-31 ...)
-  5 foo &lt;foo@localhost&gt; (2005-10-31 ...)
-  4 Sample Committer &lt;test@canonical.com&gt; (2005-10-31 ...)
-  3 Sample Committer &lt;test@canonical.com&gt; (2005-10-31 ...)
-  2 Sample Committer &lt;test@canonical.com&gt; (2005-10-31 ...)
-  1 Sample Committer &lt;test@canonical.com&gt; (2005-10-31 ...)
+  ...             print revno, extract_text(heading).encode('ascii')
+  6 By foo &lt;foo@localhost&gt; on 2005-10-31
+  5 By foo &lt;foo@localhost&gt; on 2005-10-31
+  4 By bar@localhost on 2005-10-31
+  3 By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
+  2 By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
+  1 By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
 
+
+=== Email addresses ===
+
+Commit messages often (always?) have email addresses associated with them.
+'Revision information' shows that the addresses are shown to logged in users.
+However, emails should *not* be shown to anonymous users.
+
+In particular, we don't want search engine and spam bots harvesting email
+addresses.
+
+  >>> anon_browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
+  >>> anon_main = find_tag_by_id(anon_browser.contents, 'mainarea')
+  >>> for revision_list in anon_main.fetch('ol'):
+  ...     for revision in revision_list.fetch('li'):
+  ...         revno = str(revision['value'])
+  ...         for heading in revision.fetch('div'):
+  ...             print revno, extract_text(heading).encode('ascii')
+  6 By foo &lt;email address hidden&gt; on 2005-10-31
+  5 By foo &lt;email address hidden&gt; on 2005-10-31
+  4 By &lt;email address hidden&gt; on 2005-10-31
+  3 By Sample Committer &lt;email address hidden&gt; on 2005-10-31
+  2 By Sample Committer &lt;email address hidden&gt; on 2005-10-31
+  1 By Sample Committer &lt;email address hidden&gt; on 2005-10-31
 
 
 
@@ -48,6 +71,7 @@ where "N" is the revision sequence number.
 The revision number, author and date are all contained in a heading (h3), and
 the commit message follows as a number of paragraphs.
 
+  >>> browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
   >>> def get_commit_message(sequence):
   ...     revision = find_tag_by_id(browser.contents, 'rev%s' % (sequence,))
   ...     return revision.fetch('p')
@@ -76,3 +100,52 @@ This link can be followed to the bug's details page.
   >>> browser.getLink('bug 1').click()
   >>> print browser.title
   Bug #1 in firefox (upstream)...
+
+
+== Unscanned branches ==
+
+Some branches won't have any revisions in the database. Sometimes, this is
+simply because the branch is empty. However, much of the time, the lack of
+revisions will be because of an error or delay in the scanning process.
+
+Before we can display the revisions, a branch needs to be mirrored (or
+'published') and scanned. When a branch is not yet mirrored, we'll see a
+helpful message.
+
+  >>> browser.open('http://code.launchpad.dev/~name12/firefox/main')
+  >>> print find_main_content(browser.contents)
+  <...
+  ...Recent revisions...
+  ...This branch has not been mirrored yet...
+
+
+We don't want to use the word 'mirrored' for hosted or imported branches,
+because those branches are only mirrored internally. "Published" is a better
+word for these.
+
+  >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/pushed')
+  >>> print find_main_content(browser.contents)
+  <...
+  ...Recent revisions...
+  ...This branch has not been published yet...
+
+
+If a branch has been mirrored, but not scanned, we display a different message.
+This is helpful particularly for hosted and imported branches, which are
+available for download as soon as they are published.
+
+  >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/mirrored')
+  >>> print find_main_content(browser.contents)
+  <...
+  ...Recent revisions...
+  ...This branch has not been scanned yet...
+
+
+If a branch has been mirrored and scanned, and has no revisions, then it is
+empty.
+
+  >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+  >>> print find_main_content(browser.contents)
+  <...
+  ...Recent revisions...
+  ...This branch is empty...

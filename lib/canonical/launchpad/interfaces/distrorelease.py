@@ -62,6 +62,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_("The Parent Distribution Release."), required=True,
         vocabulary='DistroRelease')
     owner = Attribute("Owner")
+    date_created = Attribute("The date this release was registered.")
     driver = Choice(
         title=_("Driver"),
         description=_(
@@ -86,8 +87,12 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     nominatedarchindep = Attribute(
         "Distroarchrelease designed to build architeture independent "
         "packages whithin this distrorelease context.")
-    milestones = Attribute(
-        'The milestones associated with this distrorelease.')
+    milestones = Attribute(_(
+        "The visible release milestones associated with this distrorelease, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All release milestones associated with this distrorelease, ordered "
+        "by date expected."))
     drivers = Attribute(
         'A list of the people or teams who are drivers for this release. '
         'This list is made up of any drivers or owners from this '
@@ -103,7 +108,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     packagings = Attribute("All of the Packaging entries for this "
         "distrorelease.")
     specifications = Attribute("The specifications targeted to this "
-        "product series.")
+        "release series.")
 
     binary_package_caches = Attribute("All of the cached binary package "
         "records for this distrorelease.")
@@ -184,12 +189,14 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         sourcepackagerelease is an ISourcePackageRelease.
         """
 
-    def getPublishedReleases(sourcepackage_or_name, pocket=None,
+    def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
                              include_pending=False, exclude_pocket=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
 
         If pocket is not specified, we look in all pockets.
+
+        If version is not specified, return packages with any version.
 
         if exclude_pocket is specified we exclude results matching that pocket.
 
@@ -222,11 +229,11 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def createUploadedSourcePackageRelease(
-        sourcepackagename, version, maintainer, dateuploaded, builddepends,
+        sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
         changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries):
+        dsc_binaries, dateuploaded=None):
         """Create an uploads SourcePackageRelease
 
         Set this distrorelease set to be the uploadeddistrorelease.
@@ -234,7 +241,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         All arguments are mandatory, they are extracted/built when
         processing and uploaded source package:
 
-         * dateuploaded: timestamp, usually UTC_NOW
+         * dateuploaded: timestamp, if not provided will be UTC_NOW
          * sourcepackagename: ISourcePackageName
          * version: string, a debian valid version
          * maintainer: IPerson designed as package maintainer
@@ -325,14 +332,19 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         DistroReleaseBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket, changesfilename, changesfilecontent):
+    def createQueueEntry(pocket, changesfilename, changesfilecontent,
+                         signingkey=None):
         """Create a queue item attached to this distrorelease and the given
         pocket.
 
         The default state is NEW, sorted sqlobject declaration, any
         modification should be performed via Queue state-machine.
+
         The changesfile argument should be the text of the .changes for this
         upload. The contents of this may be used later.
+
+        'signingkey' is the IGPGKey used to sign the changesfile or None if
+        the changesfile is unsigned.
         """
 
     def newArch(architecturetag, processorfamily, official, owner):

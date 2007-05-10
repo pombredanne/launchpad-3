@@ -79,7 +79,8 @@ def linkify_changelog(changelog, sourcepkgnametxt):
 class SourcePackageSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
-        return self.context.distrorelease.displayname + ' source package:'
+        return self.context.distribution.displayname + ' ' + \
+               self.context.distrorelease.version + ' source package:'
 
     def getMainHeading(self):
         return self.context.sourcepackagename
@@ -190,7 +191,7 @@ class SourcePackageView(BuildRecordsView):
                 self.productseries_widget.setRenderedValue(new_ps)
                 self.status_message = 'Upstream link updated, thank you!'
             else:
-                self.status_message = 'Invalid product series given.'
+                self.status_message = 'Invalid release series given.'
 
     def published_by_pocket(self):
         """This morfs the results of ISourcePackage.published_by_pocket into
@@ -227,9 +228,9 @@ class SourcePackageView(BuildRecordsView):
         """Wrap the relationship_builder for SourcePackages.
 
         Define apt_pkg.ParseSrcDep as a relationship 'parser' and
-        IDistroRelease.getSourcePackage as 'getter'.
+        IDistroRelease.getBinaryPackage as 'getter'.
         """
-        getter = self.context.distrorelease.getSourcePackage
+        getter = self.context.distrorelease.getBinaryPackage
         parser = ParseSrcDepends
         return relationship_builder(content, parser=parser, getter=getter)
 

@@ -527,6 +527,23 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+ALTER TABLE answercontact DISABLE TRIGGER ALL;
+
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (2, 13, NULL, NULL, 16, '2007-03-14 20:11:44.591006');
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (3, 13, NULL, NULL, 18, '2007-03-14 20:11:44.591006');
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (4, 9, NULL, NULL, 18, '2007-03-14 20:12:07.145528');
+
+
+ALTER TABLE answercontact ENABLE TRIGGER ALL;
+
+
 ALTER TABLE archconfig DISABLE TRIGGER ALL;
 
 
@@ -668,6 +685,8 @@ INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_p
 INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time) VALUES (23, 'Another Python twisted feature', 'Another Feature branch for twisted.', 7, NULL, 4, 'feature2', NULL, false, NULL, NULL, false, 'http://whynot.launchpad.server.com/another-branch', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, 'http://bazaar.launchpad.net/~user/+junk/feature2', NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.066804', 0, NULL);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time) VALUES (24, 'Launchpad support for Gnome Terminal', 'Add Launchpad support to Gnome Terminal', 57, 6, 57, 'launchpad', NULL, false, NULL, NULL, false, 'http://users.example.com/gnome-terminal/launchpad', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.067922', 0, NULL);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time) VALUES (25, NULL, NULL, 12, 6, NULL, 'pushed', NULL, false, NULL, NULL, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2006-10-16 18:31:43.06897', 0, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time) VALUES (26, NULL, NULL, 12, 6, NULL, 'mirrored', NULL, false, NULL, NULL, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, '2007-03-16 14:12:49.050332', NULL, 0, false, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-16 03:12:49.050332', 0, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time) VALUES (27, NULL, NULL, 12, 6, NULL, 'scanned', NULL, false, NULL, NULL, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, '2007-03-16 14:14:29.935752', NULL, 0, false, NULL, NULL, NULL, '2007-03-16 14:14:29.935752', NULL, NULL, '2007-03-16 03:14:29.935752', 0, NULL);
 
 
 ALTER TABLE branch ENABLE TRIGGER ALL;
@@ -760,6 +779,34 @@ INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (8, '2004-01-08 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, NULL, false, false, '2006-05-19 06:37:40.393303');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (9, '2004-01-09 16:42:14.080227', NULL, 'Thunderbird crashes', 'Every time I start Thunderbird it crashes.', 16, NULL, NULL, false, false, '2006-07-14 08:45:10.600579');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (10, '2004-01-10 19:42:21.890299', NULL, 'another test bug', 'test bug', 16, NULL, NULL, false, false, '2006-07-14 08:54:19.453881');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (11, '2007-03-15 20:33:56.67893', NULL, 'Make Jokosher use autoaudiosink', 'I''ve had problems when switching from Jokosher to Totem to play an Ogg.
+
+Totem appears to be playing normally but does not produce any sound.
+If I close Jokosher then you can hear totem.
+
+I''ve also had a problem when trying to playback sound within jokosher
+after switch from another app (I think it was xmms). I get a dialog
+with the following text:
+
+     Argh! Something went wrong and a serious error occurred:
+
+     Resource busy or not available.
+
+     gstalsasink.c(636): gst_alsasink_open (): /timeline/playbackbin/
+     alsasink0:
+     Device ''hw:0'' is busy
+
+After closing and reopening Jokosher, i got the same error again.
+After logging out of gnome and logging in again - I still got the same
+error message.
+
+I had to restart!
+
+Is there some way to reset alsa or the device driver - with out having
+to restart?
+
+Running on Ubuntu - with Jokosher 0.2 runscript.', 16, NULL, NULL, false, false, '2007-03-15 20:37:51.603369');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, fti, private, security_related, date_last_updated) VALUES (12, '2007-03-15 20:41:18.635493', NULL, 'Copy, Cut and Delete operations should work on selections', 'When trying to copy, cut or delete just a selected portion of an event, the operations affect the event completely. That is, you can''t select a portion and cut that piece. The whole event will be cut. Same goes for the other 2 operations.', 16, NULL, NULL, false, false, '2007-03-15 20:46:49.909153');
 
 
 ALTER TABLE bug ENABLE TRIGGER ALL;
@@ -793,6 +840,11 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (24, 10, '2006-02-22 19:42:21.890299', 16, 'bug', NULL, NULL, 'added bug');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (25, 2, '2006-03-06 10:11:02.729077', 16, 'bug', NULL, NULL, 'assigned to Ubuntu');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (26, 7, '2006-03-29 16:45:45.054836', 12, 'bug', NULL, NULL, 'assigned to evolution (Debian)');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (27, 11, '2007-03-15 20:33:56.67893', 16, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (28, 12, '2007-03-15 20:41:18.635493', 16, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (29, 12, '2007-03-15 20:41:42.154264', 16, 'jokosher: status', 'Unconfirmed', 'Confirmed', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (30, 12, '2007-03-15 20:41:42.154264', 16, 'jokosher: importance', 'Undecided', 'Critical', NULL);
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (31, 12, '2007-03-15 20:41:42.154264', 16, 'jokosher: statusexplanation', NULL, '', NULL);
 
 
 ALTER TABLE bugactivity ENABLE TRIGGER ALL;
@@ -847,6 +899,18 @@ INSERT INTO bugmessage (id, bug, message) VALUES (11, 8, 14);
 INSERT INTO bugmessage (id, bug, message) VALUES (12, 9, 15);
 INSERT INTO bugmessage (id, bug, message) VALUES (13, 10, 17);
 INSERT INTO bugmessage (id, bug, message) VALUES (14, 10, 16);
+INSERT INTO bugmessage (id, bug, message) VALUES (15, 11, 24);
+INSERT INTO bugmessage (id, bug, message) VALUES (16, 11, 25);
+INSERT INTO bugmessage (id, bug, message) VALUES (17, 11, 26);
+INSERT INTO bugmessage (id, bug, message) VALUES (18, 11, 27);
+INSERT INTO bugmessage (id, bug, message) VALUES (19, 11, 28);
+INSERT INTO bugmessage (id, bug, message) VALUES (20, 11, 29);
+INSERT INTO bugmessage (id, bug, message) VALUES (21, 11, 30);
+INSERT INTO bugmessage (id, bug, message) VALUES (22, 12, 31);
+INSERT INTO bugmessage (id, bug, message) VALUES (23, 12, 33);
+INSERT INTO bugmessage (id, bug, message) VALUES (24, 12, 34);
+INSERT INTO bugmessage (id, bug, message) VALUES (25, 12, 35);
+INSERT INTO bugmessage (id, bug, message) VALUES (26, 12, 36);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -902,6 +966,8 @@ INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (8, 12, 4, '2
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (9, 16, 9, '2006-10-16 18:31:43.15783');
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (10, 12, 9, '2006-10-16 18:31:43.158165');
 INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (11, 16, 10, '2006-10-16 18:31:43.158628');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (12, 16, 11, '2007-03-15 20:33:56.67893');
+INSERT INTO bugsubscription (id, person, bug, date_created) VALUES (13, 16, 12, '2007-03-15 20:41:18.635493');
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
@@ -945,6 +1011,8 @@ INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackag
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (27, 7, NULL, 3, NULL, 9, NULL, 999, 999, 999, NULL, '2005-01-27 16:45:45.054836', '2004-01-27 16:45:45.054836', 12, NULL, 7, NULL, NULL, 'evolution (Debian)', NULL, NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (28, 2, NULL, NULL, 3, NULL, NULL, 10, NULL, 5, NULL, NULL, '2006-08-21 22:23:08.163936', 1, NULL, NULL, NULL, NULL, 'Ubuntu Hoary', NULL, NULL, NULL, NULL);
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (29, 5, NULL, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-01-04 15:00:50.431687', 16, NULL, NULL, NULL, NULL, 'firefox 1.0 (upstream)', NULL, NULL, NULL, 2);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (30, 11, 20, NULL, NULL, NULL, NULL, 10, NULL, 5, NULL, NULL, '2007-03-15 20:33:56.67893', 16, NULL, NULL, NULL, NULL, 'jokosher (upstream)', NULL, NULL, NULL, NULL);
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, importance, assignee, date_assigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache, date_confirmed, date_inprogress, date_closed, productseries) VALUES (31, 12, 20, NULL, NULL, NULL, NULL, 20, NULL, 50, NULL, NULL, '2007-03-15 20:41:18.635493', 16, NULL, NULL, '', NULL, 'jokosher (upstream)', '2007-03-15 20:41:42.256326', NULL, NULL, NULL);
 
 
 ALTER TABLE bugtask ENABLE TRIGGER ALL;
@@ -1418,7 +1486,7 @@ ALTER TABLE developmentmanifest ENABLE TRIGGER ALL;
 
 ALTER TABLE distribution DISABLE TRIGGER ALL;
 
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti, official_answers) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntu
@@ -1427,21 +1495,21 @@ distsroot=/var/tmp/archive/ubuntu/dists
 overrideroot=/var/tmp/archive/ubuntu-overrides
 cacheroot=/var/tmp/archive/ubuntu-cache
 miscroot=/var/tmp/archive/ubuntu-misc
-', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
+', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', NULL, NULL, NULL, NULL, NULL, true);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti, official_answers) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti, official_answers) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 'debian.org', 1, NULL, 'Debian', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
-platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
+platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti, official_answers) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
+single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti, official_answers) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, NULL, 'Kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
-Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
+Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti, official_answers) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, emblem, gotchi, gotchi_heading, fti, official_answers) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntutest
@@ -1450,7 +1518,7 @@ distsroot=/var/tmp/archive/ubuntutest/dists
 overrideroot=/var/tmp/archive/ubuntutest-overrides
 cacheroot=/var/tmp/archive/ubuntutest-cache
 miscroot=/var/tmp/archive/ubuntutest-misc
-', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL, NULL);
+', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL, NULL, false);
 
 
 ALTER TABLE distribution ENABLE TRIGGER ALL;
@@ -1703,7 +1771,9 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (58, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (59, 'limi@plone.org', 10, 1, '2006-10-16 18:31:43.628504');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (60, 'janitor@support.launchpad.net', 65, 4, '2006-10-17 23:23:23.232323');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (61, 'matsubara@async.com.br', 66, 1, '2006-12-13 21:19:06.369142');
-INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (62, 'beta-admin@launchpad.net', 68, 4, '2007-01-31 06:56:25.096519');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (62, 'no-team-memberships@test.com', 243602, 4, '2007-02-19 11:17:57.755666');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (63, 'one-membership@test.com', 243603, 4, '2007-02-21 10:53:59.700105');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (64, 'beta-admin@launchpad.net', 68, 4, '2007-01-31 06:56:25.096519');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -1803,6 +1873,20 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (45, '2001-12-13 21:19:06.369142', 16, 11, 5, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (46, '2001-12-22 11:47:14.827772', 13, 14, 5, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (47, '2001-12-23 16:23:11.856461', 13, 14, 5, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (48, '2000-03-13 20:33:56.67893', 16, 1, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (49, '2000-03-13 20:34:26.518114', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (50, '2000-03-13 20:35:10.133383', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (51, '2000-03-13 20:36:01.779544', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (52, '2000-03-13 20:36:57.133832', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (53, '2000-03-13 20:37:27.991571', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (54, '2000-03-13 20:37:51.544376', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (55, '2000-03-13 20:41:18.635493', 16, 1, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (56, '2000-03-13 20:41:42.154264', 16, 17, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (57, '2000-03-13 20:41:42.154264', 16, 18, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (58, '2000-03-13 20:43:14.981111', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (59, '2000-03-13 20:45:15.852052', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (60, '2000-03-13 20:45:51.817826', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2000-03-13 20:46:49.83307', 16, 2, 20, NULL, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -1844,19 +1928,19 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (31,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (32, 6, 10, 'specbugadded', 'Linked Bug to Specification', 'The user has indicated that a particular bug is related to a specification.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (33, 6, 10, 'specbugremoved', 'Removed Bug from Specification', 'The user has indicated that a particular bug is not related to a specification.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (34, 6, 2, 'specurlchanged', 'Specification URL Updated', 'The user edited the URL of a specification.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (35, 7, 0, 'ticketcommentadded', 'Comment made on a ticket.', 'User made a comment on a ticket in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (36, 7, 1, 'tickettitlechanged', 'Ticket title changed', 'User changed the title of a ticket in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (37, 7, 3, 'ticketdescriptionchanged', 'Ticket description changed', 'User changed the description of a ticket in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (38, 7, 5, 'ticketlinkedtobug', 'Ticket linked to a bug', 'User linked a ticket in Launchpad to a bug.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (39, 7, 5, 'ticketansweraccepted', 'Ticket owner accepted answer', 'The owner of a ticket accepted one of the comments as the actual answer of a ticket.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (40, 7, 15, 'ticketanswered', 'Answered ticket', 'The comment made by a given user was accepted by the ticket owner as answering that ticket.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (41, 7, 0, 'ticketrequestedinfo', 'Requested for information on a ticket', 'User made a comment requesting for more information from a ticket owner in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (42, 7, 0, 'ticketgaveinfo', 'Gave more information on a ticket', 'User replied to a comment asking for more information on a ticket in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (43, 7, 0, 'ticketgaveanswer', 'Gave answer on a ticket', 'User made a comment containing an answer to a ticket in Launchpad. This is distinct from having that comment confirmed as solving the problem.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (44, 7, 0, 'ticketrejected', 'Rejected ticket', 'User rejected a ticket in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (45, 7, 3, 'ticketownersolved', 'Solved own ticket', 'User made a comment explaining how he solved his own problem.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (46, 7, 0, 'ticketreopened', 'Reopened ticket', 'User made a comment to reopen his ticket in Launchpad.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (47, 7, 1, 'ticketcreated', 'Created ticket', 'User created a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (35, 7, 0, 'questioncommentadded', 'Comment made on a question', 'User made a comment on a ticket in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (36, 7, 1, 'questiontitlechanged', 'Question title changed', 'User changed the title of a question in the Answer Tracker');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (37, 7, 3, 'questiondescriptionchanged', 'Question description changed', 'User changed the description of a question in the Answer Tracker');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (38, 7, 5, 'questionlinkedtobug', 'Question linked to a bug', 'User linked a question in the Answer Tracker to a bug.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (39, 7, 5, 'questionansweraccepted', 'Question owner accepted answer', 'User accepted one of the message as the actual answer to his question.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (40, 7, 15, 'questionanswered', 'Answered question', 'User posed a message that was accepted by the question owner as answering the question.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (41, 7, 0, 'questionrequestedinfo', 'Requested for information on a question', 'User post a message requesting for more information from a question owner in the Answer Tracker.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (42, 7, 0, 'questiongaveinfo', 'Gave more information on a question', 'User replied to a message asking for more information on a question in the Answer Tracker.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (43, 7, 0, 'questiongaveanswer', 'Gave answer on a question', 'User post a message containing an answer to a question in the Answer Tracker. This is distinct from having that message confirmed as solving the problem.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (44, 7, 0, 'questionrejected', 'Rejected question', 'User rejected a question in the Answer Tracker.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (45, 7, 3, 'questionownersolved', 'Solved own question', 'User post a message explaining how he solved his own problem.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (46, 7, 0, 'questionreopened', 'Reopened question', 'User posed a message to reopen his question in the Answer Tracker.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (47, 7, 1, 'questionasked', 'Asked question', 'User asked a question in the Answer Tracker.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
@@ -1932,7 +2016,7 @@ ALTER TABLE karmacategory DISABLE TRIGGER ALL;
 INSERT INTO karmacategory (id, name, title, summary) VALUES (2, 'bugs', 'Bug Management', 'This karma category covers work in the Malone bug tracking system, such as filing, closing and otherwise working with bugs.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (3, 'translations', 'Translations in Rosetta', 'This categor covers all actions related to translation using the Rosetta web translation portal. Creating new translation projects, submitting new translations and editing existing translations will all earn karma.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (6, 'specs', 'Specification Tracking', 'This category includes all karma associated with the Launchpad specification tracking system.');
-INSERT INTO karmacategory (id, name, title, summary) VALUES (7, 'support', 'Support Tracker', 'This is the category for all karma associated with technical support, and the ticket tracker in Launchpad. Help solve users problems to earn this karma.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (7, 'answers', 'Answer Tracker', 'This is the category for all karma associated with helping with users questions in the Launchpad Answer Tracker. Help solve users problems to earn this karma.');
 
 
 ALTER TABLE karmacategory ENABLE TRIGGER ALL;
@@ -2524,20 +2608,32 @@ ALTER TABLE launchpaddatabaserevision ENABLE TRIGGER ALL;
 
 ALTER TABLE launchpadstatistic DISABLE TRIGGER ALL;
 
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (1, 'potemplate_count', 9, '2007-01-15 17:58:41.976532');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (2, 'pofile_count', 28, '2007-01-15 17:58:41.994441');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (3, 'pomsgid_count', 155, '2007-01-15 17:58:42.006402');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (4, 'translator_count', 26, '2007-01-15 17:58:42.030684');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (5, 'language_count', 18, '2007-01-15 17:58:42.017508');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (6, 'products_using_rosetta', 0, '2007-01-15 17:58:41.976532');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (7, 'rosetta_translator_count', 6, '2007-01-15 17:58:42.042536');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (8, 'products_with_potemplates', 2, '2007-01-15 17:58:42.054552');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (9, 'bug_count', 10, '2007-01-15 17:58:42.06841');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (10, 'bugtask_count', 22, '2007-01-15 17:58:42.080033');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (11, 'products_using_malone', 4, '2007-01-15 17:58:42.093622');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (12, 'products_with_bugs', 4, '2007-01-15 17:58:42.105869');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (1, 'potemplate_count', 10, '2007-03-18 17:27:46.221219');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (2, 'pofile_count', 29, '2007-03-18 17:27:46.247125');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (3, 'pomsgid_count', 155, '2007-03-18 17:27:46.270903');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (4, 'translator_count', 27, '2007-03-18 17:27:46.309668');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (5, 'language_count', 18, '2007-03-18 17:27:46.292439');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (6, 'products_using_rosetta', 2, '2007-03-18 17:27:46.221219');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (7, 'rosetta_translator_count', 7, '2007-03-18 17:27:46.321317');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (8, 'products_with_potemplates', 3, '2007-03-18 17:27:46.330362');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (9, 'bug_count', 12, '2007-03-18 17:27:46.341312');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (10, 'bugtask_count', 24, '2007-03-18 17:27:46.351299');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (11, 'products_using_malone', 5, '2007-03-18 17:27:46.361282');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (12, 'projects_with_bugs', 7, '2007-03-18 17:27:46.370903');
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (13, 'people_count', 48, '2007-01-15 17:58:42.118694');
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (14, 'teams_count', 17, '2007-01-15 17:58:42.131757');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (15, 'shared_bug_count', 4, '2007-03-18 17:27:46.381918');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (16, 'question_count', 13, '2007-03-18 17:27:46.393469');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (17, 'answered_question_count', 3, '2007-03-18 17:27:46.40443');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (18, 'solved_question_count', 1, '2007-03-18 17:27:46.413242');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (19, 'projects_with_questions_count', 2, '2007-03-18 17:27:46.421899');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (20, 'active_products', 20, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (21, 'products_with_translations', 3, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (22, 'products_with_blueprints', 1, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (23, 'products_with_branches', 5, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (24, 'products_with_bugs', 5, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (25, 'products_with_questions', 1, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (26, 'reviewed_products', 1, '2007-04-29 23:45:04.416248');
 
 
 ALTER TABLE launchpadstatistic ENABLE TRIGGER ALL;
@@ -2656,7 +2752,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (46, '2006-05-24 09:31:29.606407', NULL, 2, 'ab43246197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (47, '2006-05-24 09:31:29.606407', NULL, 2, 'cabf42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (51, '2006-07-14 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (52, '2006-05-24 09:31:29.606407', NULL, 2, 'cabf42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (52, '2006-05-24 09:31:29.606407', NULL, 2, '1622db354faa9fa653804d018f3b9d5291e37d6b', false, 'e4a7193a8f72fa2755e2162512069093');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (53, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (54, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (55, '2006-12-01 16:41:34.028627', NULL, 716, '86d537a0d8b5b346d02752a853cc6ea648a0ebd7', false, 'eeb4c1e00a2e17a1eb51bd8b92fa5437');
@@ -2824,6 +2920,19 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (21, '2006-07-20 20:53:53.684848', 'Re: Play DVDs in Totem', 16, NULL, NULL, '<20060720205354.13277.37000.lptickets@Bourdieu.Contre.COM>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (22, '2006-07-20 20:56:35.442839', 'Re: mailto: problem in webpage', 12, NULL, NULL, '<20060720205635.13277.87295.lptickets@Bourdieu.Contre.COM>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (23, '2006-07-20 23:11:24.975495', 'Re: Continue playing after shutdown', 12, NULL, NULL, '<20061201222020.597.97888.lptickets@Huxley.Contre.COM>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (24, '2007-03-15 20:33:56.67893', 'Make Jokosher use autoaudiosink', 26, NULL, NULL, '<20070315203356.12919.76581.malonedeb@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (25, '2007-03-15 20:34:26.518114', 'Re: Make Jokosher use autoaudiosink', 50, NULL, NULL, '<20070315203426.12919.54628.malone@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (26, '2007-03-15 20:35:10.133383', 'Re: Make Jokosher use autoaudiosink', 66, NULL, NULL, '<20070315203510.12919.22697.malone@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (27, '2007-03-15 20:36:01.779544', 'Autoaudiosink is no longer under development', 63, NULL, NULL, '<20070315203601.12919.29640.malone@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (28, '2007-03-15 20:36:57.133832', 'Re: Autoaudiosink is no longer under development', 27, NULL, NULL, '<20070315203657.12919.48585.malone@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (29, '2007-03-15 20:37:27.991571', 'This is a really new title', 33, NULL, NULL, '<20070315203728.12919.76787.malone@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (30, '2007-03-15 20:37:51.544376', 'Re: Make Jokosher use autoaudiosink', 3, NULL, NULL, '<20070315203751.12919.49072.malone@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (31, '2007-03-15 20:41:18.635493', 'Copy, Cut and Delete operations should work on selections', 8, NULL, NULL, '<20070315204118.14326.61124.malonedeb@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (32, '2007-03-15 20:41:42.154264', 'Re: Copy, Cut and Delete operations should work on selections', 16, NULL, NULL, '<20070315204142.14326.82988.launchpad@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (33, '2007-03-15 20:43:14.981111', 'Re: Copy, Cut and Delete operations should work on selections', 45, NULL, NULL, '<20070315204315.14326.75272.malone@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (34, '2007-03-15 20:45:15.852052', 'Re: Copy, Cut and Delete operations should work on selections', 13, NULL, NULL, '<20070315204515.14326.38817.malone@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (35, '2007-03-15 20:45:51.817826', 'Re: Copy, Cut and Delete operations should work on selections', 9, NULL, NULL, '<20070315204551.14326.36994.malone@localhost>', NULL, NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (36, '2007-03-15 20:46:49.83307', 'Re: Copy, Cut and Delete operations should work on selections', 6, NULL, NULL, '<20070315204649.14326.69581.malone@localhost>', NULL, NULL);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -2877,6 +2986,47 @@ Install libdvdcss2.
 After this open totem with command ''totem dvd://'' either form terminal or from ''Run'' dialog (Alt + F2)', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (22, 22, 1, 'Problem is solved. Thanks very much. Firefox now works after the changes were made in system ->preferences', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (23, 23, 1, 'What plugin does that? And how can I install it?', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (24, 24, 1, 'I''ve had problems when switching from Jokosher to Totem to play an Ogg.
+
+Totem appears to be playing normally but does not produce any sound.
+If I close Jokosher then you can hear totem.
+
+I''ve also had a problem when trying to playback sound within jokosher
+after switch from another app (I think it was xmms). I get a dialog
+with the following text:
+
+     Argh! Something went wrong and a serious error occurred:
+
+     Resource busy or not available.
+
+     gstalsasink.c(636): gst_alsasink_open (): /timeline/playbackbin/
+     alsasink0:
+     Device ''hw:0'' is busy
+
+After closing and reopening Jokosher, i got the same error again.
+After logging out of gnome and logging in again - I still got the same
+error message.
+
+I had to restart!
+
+Is there some way to reset alsa or the device driver - with out having
+to restart?
+
+Running on Ubuntu - with Jokosher 0.2 runscript.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (25, 25, 1, 'The solution to this is to make Jokosher use autoaudiosink which will respect gnome preferences) be default, and provide an option to override it.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (26, 26, 1, 'I''m not sure that autoaudiosink is in fact the best solution. We need a better UI to allow the user to select audio sinks for the system as a whole and for specific applications.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (27, 27, 1, 'Unfortunately, the lead developer of autoaudiosink has resigned and the project is dormant.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (28, 28, 1, 'The strangest thing should be happening here. My subject titles don''t show up! Why is that? Well, because there is no new information there.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (29, 29, 1, 'And so it should be displayed again.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (30, 30, 1, 'This title, however, is the same as the bug title and so it will be suppressed in the UI.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (31, 31, 1, 'When trying to copy, cut or delete just a selected portion of an event, the operations affect the event completely. That is, you can''t select a portion and cut that piece. The whole event will be cut. Same goes for the other 2 operations.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (32, 32, 1, '** Changed in: jokosher (upstream)
+   Importance: Undecided => Critical
+       Status: Unconfirmed => Confirmed', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (33, 33, 1, 'This is a very substantial amount of work, though. The whole event model will need to be aware of the selection of specific portions. This should really be specified in some detail and then implemented in a separate branch because it will certainly destabilise the tree for a long time.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (34, 34, 1, 'It would be a remarkable feat of engineering to do this before the 0.3 release. Lets target this for fixing before 1.0 though.', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (35, 35, 1, 'Does it make sense to mark it critical if it''s not going to be fixed for a year, though?', NULL, NULL);
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (36, 36, 1, 'Yes, I think so, because that means it shows up near the top of our open bugs report and it really is a huge gaping omission.', NULL, NULL);
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
@@ -2884,8 +3034,9 @@ ALTER TABLE messagechunk ENABLE TRIGGER ALL;
 
 ALTER TABLE milestone DISABLE TRIGGER ALL;
 
-INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (1, 4, '1.0', NULL, NULL, true, NULL, NULL, '2006-10-16 18:31:44.293448');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (2, NULL, '3.1', 3, NULL, true, NULL, NULL, '2006-10-16 18:31:44.29574');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible, productseries, distrorelease, date_created) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574');
 
 
 ALTER TABLE milestone ENABLE TRIGGER ALL;
@@ -3067,12 +3218,15 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (62, 'Bug Watch Updater', NULL, NULL, NULL, 'bug-watch-updater', NULL, NULL, NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (63, 'Karl Tilbury', 'UnjDN34pTZ0xE3vbCNZDedIVpLPrA9nty9S/mOzbeefQXAEN6CMNUQ==', NULL, NULL, 'karl', NULL, NULL, NULL, NULL, 1, NULL, '2006-05-23 12:49:30.483464', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 8, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (64, 'Landscape Developers', NULL, 12, NULL, 'landscape-developers', NULL, NULL, NULL, NULL, 1, NULL, '2006-07-11 20:01:09.874128', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (65, 'Support Tracker Janitor', NULL, NULL, NULL, 'support-tracker-janitor', NULL, NULL, NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (65, 'Launchpad Answer Tracker Janitor', NULL, NULL, NULL, 'answer-tracker-janitor', NULL, NULL, NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (66, 'Diogo Matsubara', NULL, NULL, NULL, 'matsubara', NULL, NULL, NULL, NULL, 1, NULL, '2006-12-13 21:19:06.369142', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 4, 'when importing the Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk', NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (67, 'Team Membership Janitor', NULL, NULL, NULL, 'team-membership-janitor', NULL, NULL, NULL, NULL, 1, NULL, '2006-10-04 16:20:51.19954', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, 1, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (68, 'Launchpad Beta Testers Owner', 'q/esKTLj2ba0Bzu2Xdi1JA4zgC683EE3I1Vjm+hp4mY+xgikQ7YD1g==', NULL, NULL, 'launchpad-beta-owner', NULL, NULL, NULL, NULL, 1, NULL, '2007-01-31 06:56:25.096519', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (69, 'Launchpad Beta Testers', NULL, 68, 'People who are testing the new Launchpad "beta" UI.', 'launchpad-beta-testers', NULL, NULL, NULL, NULL, 1, NULL, '2007-01-31 06:57:54.592917', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243601, 'ShipIt Administrators', NULL, 1, 'ShipIt Administrators', 'shipit-admins', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-05 06:24:03.06971', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243602, 'No Team Memberships', 'PlPmrpS1styVUEK/lGn72zqxYYeZcLqKD3b5oD4/C6AyntMMFvSacw==', NULL, NULL, 'no-team-memberships', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-19 11:17:57.755666', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243603, 'One Membership', '52kdKnxgzc0LWK2ltsED9SeqQcjZgDAj+wWlaRotx3BvsXJCH0AUdQ==', NULL, NULL, 'one-membership', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-21 10:53:59.700105', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243604, 'Simple Team', NULL, 243603, 'This team should have only one member, the "One Membership" user.', 'simple-team', NULL, NULL, NULL, NULL, 3, NULL, '2007-02-21 10:55:03.899255', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -3139,6 +3293,11 @@ INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (30, 'gimp', NULL, 8, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (31, 'landscape', 16, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (32, 'launchpad', 17, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (33, 'upstart', 18, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (34, 'aptoncd', 19, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (35, 'jokosher', 20, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (36, 'bzr', 21, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (37, 'redfish', 22, NULL, NULL, true);
 
 
 ALTER TABLE pillarname ENABLE TRIGGER ALL;
@@ -3733,6 +3892,22 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
 ', true, NULL, NULL, 0, 0, 1, NULL, 12, NULL, '/man-es.po', NULL, NULL, '2007-01-19 13:00:41.049464', NULL, 752);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, last_touched_pomsgset) VALUES (33, 10, 387, NULL, ' Spanish translation for alsa-utils
+ Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
+ This file is distributed under the same license as the alsa-utils package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
+
+', 'Project-Id-Version: alsa-utils
+Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+POT-Creation-Date: 2006-08-14 18:41:07.274661+00:00
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: Spanish <es@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, NULL, NULL, 0, 0, 2, NULL, 13, NULL, 'po/alsa-utils-es.po', NULL, NULL, '2007-04-07 10:14:36.267119', NULL, 755);
 
 
 ALTER TABLE pofile ENABLE TRIGGER ALL;
@@ -3773,6 +3948,7 @@ INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (64, 52, 1, 693, '2005-08-29 16:16:58.010285');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (65, 56, 31, 702, '2007-01-05 13:04:20.092506');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (66, 66, 30, 701, '2006-12-13 21:19:06.369142');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (67, 13, 33, 708, '2007-04-07 11:09:37.437343');
 
 
 ALTER TABLE pofiletranslator ENABLE TRIGGER ALL;
@@ -4127,6 +4303,9 @@ INSERT INTO pomsgid (id, msgid) VALUES (152, 'C&alls');
 INSERT INTO pomsgid (id, msgid) VALUES (153, '%(count)d messages exported to "%(path)s (%(type)s)"');
 INSERT INTO pomsgid (id, msgid) VALUES (154, '%d messages exported to IMAP server "%s"');
 INSERT INTO pomsgid (id, msgid) VALUES (155, '%d messages exported to maildir "%s"');
+INSERT INTO pomsgid (id, msgid) VALUES (156, 'translation-credits');
+INSERT INTO pomsgid (id, msgid) VALUES (157, '_: EMAIL OF TRANSLATORS
+Your emails');
 
 
 ALTER TABLE pomsgid ENABLE TRIGGER ALL;
@@ -4344,6 +4523,8 @@ INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (208, 196, 25, '2007-01-05 10:29:04.835918', '2007-01-05 10:29:04.835918', true, 1);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (209, 197, 26, '2007-01-05 10:29:04.835918', '2007-01-05 10:29:04.835918', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (210, 198, 147, '2006-08-14 18:41:39.782681', '2006-08-14 18:41:39.782681', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (211, 199, 156, '2007-04-07 08:47:01.528605', '2007-04-07 08:47:01.528605', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (212, 200, 157, '2007-04-07 08:47:01.528605', '2007-04-07 08:47:01.528605', true, 0);
 
 
 ALTER TABLE pomsgidsighting ENABLE TRIGGER ALL;
@@ -5104,6 +5285,9 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, com
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (750, 0, 31, true, false, false, NULL, 176, false, false, false, '2007-01-05 13:04:20.092506', 56);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (751, 0, 1, false, false, false, NULL, 9, false, false, false, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (752, 0, 32, true, false, false, NULL, 166, false, false, false, '2007-01-24 19:16:06.386519', 13);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (753, 0, 33, true, false, false, NULL, 200, false, false, false, '2007-04-07 10:14:36.267119', 13);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (754, 0, 33, false, false, false, NULL, 198, false, false, false, NULL, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (755, 0, 33, true, false, false, NULL, 199, false, false, false, '2007-04-07 11:09:37.437343', 16);
 
 
 ALTER TABLE pomsgset ENABLE TRIGGER ALL;
@@ -5812,6 +5996,9 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (704, 3, 0, 659, 2, '2006-12-22 11:47:14.827772', 13, 1, false, false);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (705, 752, 0, 659, 2, '2007-01-24 19:15:32.620698', 13, 1, false, false);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (706, 752, 0, 662, 2, '2007-01-24 19:15:47.546879', 13, 1, false, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (707, 753, 0, 663, 2, '2007-04-07 10:14:36.267119', 13, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (708, 755, 0, 664, 2, '2007-04-07 10:14:36.267119', 13, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (709, 755, 0, 665, 2, '2007-04-07 11:08:56.339275', 13, 1, false, false);
 
 
 ALTER TABLE posubmission ENABLE TRIGGER ALL;
@@ -5916,7 +6103,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ASCII
 Content-Transfer-Encoding: 8bit
 ', 8, NULL, false, NULL, NULL, '2007-01-05 10:29:04.953951', NULL, 1);
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated, source_file, source_file_format) VALUES (10, 0, NULL, NULL, NULL, '2006-08-14 18:41:07.274661', 'po/alsa-utils.pot', true, 1, 13, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, path, iscurrent, messagecount, "owner", sourcepackagename, distrorelease, sourcepackageversion, "header", potemplatename, binarypackagename, languagepack, productseries, from_sourcepackagename, date_last_updated, source_file, source_file_format) VALUES (10, 0, NULL, NULL, NULL, '2006-08-14 18:41:07.274661', 'po/alsa-utils.pot', true, 3, 13, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
 POT-Creation-Date: 2006-08-14 15:01+0100
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -6163,6 +6350,8 @@ INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, file
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (196, 24, 21, 9, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL);
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (197, 26, 22, 9, '', 'modules/aggregator.module:15', '', '', NULL);
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (198, 147, 1, 10, '', 'test_browserwidget.py:34', '', '', NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (199, 156, 2, 10, '', '', '', '', NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (200, 157, 3, 10, '', '', '', '', NULL);
 
 
 ALTER TABLE potmsgset ENABLE TRIGGER ALL;
@@ -7517,6 +7706,9 @@ INSERT INTO potranslation (id, translation) VALUES (659, 'lalalala');
 INSERT INTO potranslation (id, translation) VALUES (660, 'tengo ');
 INSERT INTO potranslation (id, translation) VALUES (661, 'just a translation');
 INSERT INTO potranslation (id, translation) VALUES (662, 'blah, blah, blah');
+INSERT INTO potranslation (id, translation) VALUES (663, 'danilo@canonical.com');
+INSERT INTO potranslation (id, translation) VALUES (664, 'carlos@canonical.com');
+INSERT INTO potranslation (id, translation) VALUES (665, 'jtv@canonical.com');
 
 
 ALTER TABLE potranslation ENABLE TRIGGER ALL;
@@ -7545,29 +7737,45 @@ ALTER TABLE processorfamily ENABLE TRIGGER ALL;
 
 ALTER TABLE product DISABLE TRIGGER ALL;
 
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (1, 1, 17, 'ubuntu-product', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is available everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 16, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real projects ASAP.', '2004-09-24 20:58:00.674409', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 17, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (3, 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', '2004-09-24 20:58:00.691047', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 15, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, NULL, false, true, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (5, 5, 12, 'evolution', 'Evolution', 'The Evolution Groupware Application', 'Evolution is an email client, addressbook and calendar application that is very well integrated with the Gnome desktop. Evolution is the standard mail client in the Ubuntu distribution, and supports all current mail system standards.', 'Recently, Evolution has seen significant work to make it interoperable with the proprietary Microsoft Exchange Server protocols and formats, allowing organisations to replace Outlook on Windows with Evolution and Linux.
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (1, 1, 17, 'ubuntu-product', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is available everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 16, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real projects ASAP.', '2004-09-24 20:58:00.674409', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 17, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (3, 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', '2004-09-24 20:58:00.691047', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 15, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, NULL, false, true, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, true);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (5, 5, 12, 'evolution', 'Evolution', 'The Evolution Groupware Application', 'Evolution is an email client, addressbook and calendar application that is very well integrated with the Gnome desktop. Evolution is the standard mail client in the Ubuntu distribution, and supports all current mail system standards.', 'Recently, Evolution has seen significant work to make it interoperable with the proprietary Microsoft Exchange Server protocols and formats, allowing organisations to replace Outlook on Windows with Evolution and Linux.
 
-The current stable release series of Evolution is 2.0.', '2004-09-24 20:58:02.240163', 'http://www.gnome.org/evolution/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, NULL, true, true, NULL, NULL, NULL, NULL, 3, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (6, 5, 12, 'gnome-terminal', 'GNOME Terminal', 'The GNOME Terminal Emulator', 'Gnome Terminal is a simple terminal application for your Gnome desktop. It allows quick access to console applications, supports all console types, and has many useful features such as tabbed consoles (many consoles in a single window with quick switching between them).', 'The Gnome Terminal application fully supports Gnome 2 and is a standard part of the Gnome Desktop.', '2004-09-24 20:58:02.256678', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 14, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (7, 6, 12, 'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.258743', 'http://www.novell.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 13, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (8, 4, 12, 'thunderbird', 'Mozilla Thunderbird', 'Mozilla Thunderbird', 'The Mozilla Thunderbird email client', 'The Mozilla Thunderbird email client', '2004-09-24 20:58:04.478988', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 4, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (9, 5, 16, 'applets', 'Gnome Applets', 'The Gnome Panel Applets', 'The Gnome Panel Applets are a collection of standard widgets that can be installed on your desktop Panel. These icons act as launchers for applications, or indicators of the status of your machine. For example, panel applets exist to show you your battery status or wifi network signal strength.', 'This is the collection of Panel Applets that is part of the default Gnome release. Additional Panel Applets are available from third parties. A complete set of Panel Applets is included in the Ubuntu OS, for example.
+The current stable release series of Evolution is 2.0.', '2004-09-24 20:58:02.240163', 'http://www.gnome.org/evolution/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, NULL, true, true, NULL, NULL, NULL, NULL, 3, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (6, 5, 12, 'gnome-terminal', 'GNOME Terminal', 'The GNOME Terminal Emulator', 'Gnome Terminal is a simple terminal application for your Gnome desktop. It allows quick access to console applications, supports all console types, and has many useful features such as tabbed consoles (many consoles in a single window with quick switching between them).', 'The Gnome Terminal application fully supports Gnome 2 and is a standard part of the Gnome Desktop.', '2004-09-24 20:58:02.256678', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 14, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (7, 6, 12, 'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.258743', 'http://www.novell.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 13, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (8, 4, 12, 'thunderbird', 'Mozilla Thunderbird', 'Mozilla Thunderbird', 'The Mozilla Thunderbird email client', 'The Mozilla Thunderbird email client', '2004-09-24 20:58:04.478988', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 4, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (9, 5, 16, 'applets', 'Gnome Applets', 'The Gnome Panel Applets', 'The Gnome Panel Applets are a collection of standard widgets that can be installed on your desktop Panel. These icons act as launchers for applications, or indicators of the status of your machine. For example, panel applets exist to show you your battery status or wifi network signal strength.', 'This is the collection of Panel Applets that is part of the default Gnome release. Additional Panel Applets are available from third parties. A complete set of Panel Applets is included in the Ubuntu OS, for example.
 
-The Gnome Panel team includes Abel Kascinsky, Frederick Wurst and Andreas Andropovitch Axelsson.', '2004-10-03 16:46:09.113721', 'http://www.gnome.org/panel/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 12, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (10, NULL, 2, 'python-gnome2-dev', 'python gnome2 dev', 'python gnome2 dev', 'Python bindings for the GNOME desktop environment', 'Python bindings for the GNOME desktop environment', '2004-09-24 20:58:00.674409', 'http://www.daa.com.au/~james/software/pygtk/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 18, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (11, 5, 12, 'netapplet', 'NetApplet', 'Network Applet', 'The Novell Network Applet', 'Displays current network status and allows network switching', '2005-03-10 16:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 5, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (12, NULL, 16, 'a52dec', 'a52dec', 'Liba52 Test Decoder', 'a52dec is a test program for liba52.', 'This tool decodes ATSC A/52 streams, and also includes a demultiplexer for mpeg-1 and mpeg-2 program streams. The liba52 source code is always distributed in the a52dec package, to make sure it easier for people to test it.', '2005-04-14 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 6, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (13, 5, 16, 'gnomebaker', 'gnomebaker', 'Gnome Baker', 'Gnome Baker is a CD burning application', 'Gnome Baker burns CDs like there''s no tomorrow', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 11, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (14, NULL, 12, 'bazaar', 'Bazaar', 'Bazaar', 'Bazaar is a distributed revision control system', 'Bazaar is all about source control and double-dashes.', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 10, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (15, NULL, 1, 'alsa-utils', 'alsa-utils', 'ALSA utilities', 'Utilities for configurating and using the Advanced Linux Sound Architecture', '', '2005-09-15 09:05:11.472752', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, NULL, false, NULL, 1, NULL, true, false, NULL, NULL, NULL, NULL, 8, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (16, NULL, 12, 'landscape', 'The Landscape Project', 'The Landscape Project', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface.', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface. The scope of the project isn''t limited, and will grow up as new features are planned.
+The Gnome Panel team includes Abel Kascinsky, Frederick Wurst and Andreas Andropovitch Axelsson.', '2004-10-03 16:46:09.113721', 'http://www.gnome.org/panel/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 12, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (10, NULL, 2, 'python-gnome2-dev', 'python gnome2 dev', 'python gnome2 dev', 'Python bindings for the GNOME desktop environment', 'Python bindings for the GNOME desktop environment', '2004-09-24 20:58:00.674409', 'http://www.daa.com.au/~james/software/pygtk/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 18, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (11, 5, 12, 'netapplet', 'NetApplet', 'Network Applet', 'The Novell Network Applet', 'Displays current network status and allows network switching', '2005-03-10 16:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 5, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (12, NULL, 16, 'a52dec', 'a52dec', 'Liba52 Test Decoder', 'a52dec is a test program for liba52.', 'This tool decodes ATSC A/52 streams, and also includes a demultiplexer for mpeg-1 and mpeg-2 program streams. The liba52 source code is always distributed in the a52dec package, to make sure it easier for people to test it.', '2005-04-14 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 6, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (13, 5, 16, 'gnomebaker', 'gnomebaker', 'Gnome Baker', 'Gnome Baker is a CD burning application', 'Gnome Baker burns CDs like there''s no tomorrow', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 11, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (14, NULL, 12, 'bazaar', 'Bazaar', 'Bazaar', 'Bazaar is a distributed revision control system', 'Bazaar is all about source control and double-dashes.', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 10, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (15, NULL, 1, 'alsa-utils', 'alsa-utils', 'ALSA utilities', 'Utilities for configurating and using the Advanced Linux Sound Architecture', '', '2005-09-15 09:05:11.472752', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, NULL, false, NULL, 1, NULL, true, false, NULL, NULL, NULL, NULL, 8, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (16, NULL, 12, 'landscape', 'The Landscape Project', 'The Landscape Project', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface.', 'Landscape is a system being developed by Canonical to allow remote management of systems using a web interface. The scope of the project isn''t limited, and will grow up as new features are planned.
 
-The Landscape system consists of two major parts: a client daemon which delivers information to the server and acts on server-provided requests; and a web server responsible for handling communication with clients and the user interface itself.', '2006-07-11 19:59:17.311451', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, true, 64, NULL, NULL, NULL, 9, NULL, NULL, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading) VALUES (17, NULL, 12, 'launchpad', 'Launchpad', 'Launchpad', 'Launchpad is a catalogue of libre software projects and products. Projects registered in the Launchpad are linked to their translations in Rosetta, their bugs in Malone, their RCS imports in Bazaar, and their packages in Soyuz.', 'Launchpad''s design is inspired by the Description of a Project (DOAP) framework by Edd Dumbill, with extensions for actual releases of products.', '2006-11-24 12:48:19.178553', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, true, NULL, NULL, NULL, NULL, 19, NULL, NULL, NULL, NULL);
+The Landscape system consists of two major parts: a client daemon which delivers information to the server and acts on server-provided requests; and a web server responsible for handling communication with clients and the user interface itself.', '2006-07-11 19:59:17.311451', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, true, 64, NULL, NULL, NULL, 9, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (17, NULL, 12, 'launchpad', 'Launchpad', 'Launchpad', 'Launchpad is a catalogue of libre software projects and products. Projects registered in the Launchpad are linked to their translations in Rosetta, their bugs in Malone, their RCS imports in Bazaar, and their packages in Soyuz.', 'Launchpad''s design is inspired by the Description of a Project (DOAP) framework by Edd Dumbill, with extensions for actual releases of products.', '2006-11-24 12:48:19.178553', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, true, NULL, NULL, NULL, NULL, 19, NULL, NULL, NULL, NULL, true);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (18, NULL, 37, 'upstart', 'Upstart', 'The Upstart System Initialisation Process', 'Event-based init daemon.', 'upstart is a replacement for the /sbin/init daemon which handles starting of tasks and services during boot, stopping them during shutdown and supervising them while the system is running.', '2007-03-14 18:47:04.891546', 'http://upstart.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 20, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (19, NULL, 28, 'aptoncd', 'APTonCD', 'APTonCD, Get APT Anywhere', 'A simple yet powerful tool which allows you to create one (or more) CD/DVD-Repository containing all of the packages downloaded via apt-get or aptitude.', 'A GUI-based tool that allows you to create a CD/DVD with all downloaded packages with APT-GET, creating a removable-repository.
+
+With aptoncd you can:
+* Create a CD/DVD with all downloaded packages
+* Backup/restore all packages installeds with APT
+* Install the same packages in a lot of machines
+* Upgrade a lot of computers with same DVD
+* And more is expected...
+
+In the "Create APTonCD" feature we have the possibility to make a CD/DVD with all previously downloaded packages with apt-get or aptitude. It uses apt-cache (/var/cache/apt/archives) and scans for packages and makes a repository in one (or more) CD/DVD, exactly as the previous option.', '2007-03-14 18:53:13.112116', 'http://aptoncd.sourceforge.net/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 21, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (20, NULL, 14, 'jokosher', 'Jokosher', 'Jokosher Audio Editor', 'Jokosher is a simple yet powerful multi-track studio. With it you can create and record music, podcasts and more, all from an integrated simple environment.', 'Jokosher brings together many sources of audio into a seamless environment where you can record, mix and publish your audio content.', '2007-03-15 20:11:49.501871', 'http://www.jokosher.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, true, NULL, NULL, NULL, NULL, 22, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (21, NULL, 12, 'bzr', 'Bazaar', 'Bazaar Version Control System', 'Bazaar is a distributed revision control system. It allows team members to branch and merge upstream code very easily. Most importantly, it is very robust in handling renames so that merges across radical restructurings of the tree are efficient and correct.', 'Bazaar aims to be a distributed RCS system that the open source community loves to use.
+
+Distributed revision control systems allow multiple people to have their own branch of a project, and merge code efficiently between them. This enables new contributors to immediately have access to the full tools that previously have been limited to just the committers to a project.', '2007-03-27 16:28:27.763632', 'http://bazaar-vcs.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 23, NULL, NULL, NULL, NULL, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, emblem, gotchi, gotchi_heading, official_answers) VALUES (22, NULL, 12, 'redfish', 'Redfish', 'Redfish', 'The redfish project.', 'The redfish project.', '2007-04-18 20:58:56.846607', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, true, NULL, NULL, NULL, NULL, 24, NULL, NULL, NULL, NULL, false);
 
 
 ALTER TABLE product ENABLE TRIGGER ALL;
@@ -7808,6 +8016,11 @@ INSERT INTO productseries (id, product, name, summary, import_branch, importstat
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (17, 2, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-14 07:56:10.631636', NULL, 2, NULL, NULL);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (18, 10, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-09-14 07:56:10.631636', NULL, 2, NULL, NULL);
 INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (19, 17, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2006-11-24 12:48:19.178553', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (20, 18, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-14 18:47:04.891546', NULL, 37, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (21, 19, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-14 18:53:13.112116', NULL, 28, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (22, 20, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-15 20:11:49.501871', NULL, 14, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (23, 21, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-03-27 16:28:27.763632', NULL, 12, NULL, NULL);
+INSERT INTO productseries (id, product, name, summary, import_branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, releasefileglob, releaseverstyle, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated, driver, "owner", user_branch, date_published_sync) VALUES (24, 22, 'trunk', 'The "trunk" series represents the primary line of development rather than a stable release branch. This is sometimes also called MAIN or HEAD.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2007-04-18 20:58:56.846607', NULL, 12, NULL, NULL);
 
 
 ALTER TABLE productseries ENABLE TRIGGER ALL;
@@ -7869,37 +8082,121 @@ ALTER TABLE pushmirroraccess DISABLE TRIGGER ALL;
 ALTER TABLE pushmirroraccess ENABLE TRIGGER ALL;
 
 
+ALTER TABLE question DISABLE TRIGGER ALL;
+
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (1, 11, 'Firefox cannot render Bank Site', 'Hello, I''m trying to access http://www.citibank.com/ and the page is not rendering correctly. Is there a setting I can use to get it right? Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:46:07.392021', '2005-09-05 18:46:07.392021', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (2, 12, 'Problem showing the SVG demo on W3C site', 'Hi! I''m trying to learn about SVG but I can''t get it to work at all in firefox. Maybe there is a plugin? Help! Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:47:27.657124', '2005-09-05 18:47:27.657124', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (3, 16, 'Firefox is slow and consumes too much RAM', 'I''m running on a 486 with 32 MB ram. And Firefox is slow! What should I do?', NULL, 16, NULL, 1, 1, 30, 10, '2005-09-05 19:46:22.786269', '2005-09-05 19:46:22.786269', NULL, NULL, '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', NULL, NULL, NULL, 119);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (4, 16, 'Firefox loses focus and gets stuck', 'Every now and then I can''t type anything in the fields on a web form, and I have to click my mouse in the URL bar. Is that normal?', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 20:03:10.967079', '2005-09-05 20:03:10.967079', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (5, 12, 'Installation failed', 'I can''t install Ubuntu, it fails to find my CD-ROM drive.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-13 09:08:27.006633', '2005-10-13 09:08:27.006633', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (6, 12, 'Newly installed plug-in doesn''t seem to be used', 'I''ve installed a new plug-in in Firefox, but it doesn''t seem to be used.', NULL, NULL, 4, NULL, NULL, 18, 10, '2005-10-14 12:24:14.271257', '2005-10-14 12:24:14.271257', NULL, NULL, '2005-10-14 12:25:21.508923', NULL, NULL, NULL, NULL, NULL, 119);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (7, 16, 'Slow system', 'I get really poor hard drive performance.', NULL, NULL, NULL, 1, NULL, 15, 10, '2005-10-14 13:27:35.664194', '2005-10-14 13:27:35.664194', NULL, NULL, '2005-10-14 13:28:11.554476', NULL, NULL, NULL, NULL, NULL, 119);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (8, 12, 'Installation of Java Runtime Environment for Mozilla', 'When opening http://www.gotomypc.com/ with Mozilla, a java run time ennvironment plugin is requested.
+
+1) The plugin finder service indicates that JRE is available
+2) next screen indicates JRE "not available" and requests "manual install"
+3) clicking on "manual install" open java web site.......
+
+Question: what after?
+.......I have downloaded two available linux files "linux (self extracting)" and "linux RPM (self extracting)".', NULL, NULL, NULL, 1, 1, 18, 10, '2006-07-20 20:21:38.853569', '2006-07-20 20:21:38.853569', NULL, NULL, '2006-07-20 20:52:07.054216', NULL, NULL, NULL, NULL, NULL, 119);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (9, 12, 'mailto: problem in webpage', 'I am not able to open my email client if i click on a mailto: link in a webpage in Firefox 1.5.0.4 (ubuntu dapper).
+
+Earlier I could do this but since balsa was installed and then uninstalled, things have not been the same. balsa used to start when a mailto: link was clicked on a webpage. balsa is an email client bundled with dapper.
+
+I am using thunderbird as the default email client or wish that it becomes default again.', NULL, 16, NULL, 1, 1, 20, 10, '2006-07-20 20:24:52.3877', '2006-07-20 20:56:35.442839', NULL, NULL, '2006-07-20 20:49:47.551344', '2006-07-20 20:56:35.442839', NULL, NULL, NULL, 4, 119);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (10, 12, 'Play DVDs in Totem', 'How do you play DVDs in Totem..........?', NULL, NULL, NULL, 1, NULL, 18, 10, '2006-07-20 20:34:29.635511', '2006-07-20 20:34:29.635511', NULL, NULL, '2006-07-20 20:53:53.684848', NULL, NULL, NULL, NULL, NULL, 119);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (11, 12, 'Continue playing after shutdown', 'I want to be able to shut down and start a mp3 where I left off, because some mp3s are 16++ hours long.', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-07-20 20:40:50.467875', '2006-07-20 23:11:24.975495', NULL, NULL, '2006-07-20 20:48:24.975495', NULL, NULL, NULL, NULL, NULL, 119);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (12, 13, 'Problema al recompilar kernel con soporte smp (doble-núcleo)', 'Tengo un portatil con un procesador intel centrino Cuore Duo T2300 y tengo Ubuntu Dapper instalado con la mayoría de drivers instalados, pero me falta activar el hiper-threading para que me detecte el doble núcleo ya que así utilizará al 100% la capacidad del procesador.
+
+Para activar esta opcion (SMP) necesito recompilar la kernel (bajada desde kernel.org hoy mismo). Descomprimo el archivo del kernel e entro en el directorio que se ha creado y copio el .config que tengo hecho de la última configuracion de Ubuntu (la instalada con el cd de Ubuntu que se encuentra en la carpeta /boot/".config"). Una vez hecho esto hago el ''make oldconfig menuconfig'' y empiza el proceso, despues de unas cuantas preguntas veo que omite el paso de dejarme escoger el tipo de procesador y veo que me pone una n en la pregunta "Symmetric multi-processing support (SMP) [N/y/?] n" i tambien me escoge automaticamente la familia del procesador y me la asigna a 486 que no es el doble núcleo.
+
+No se como hacer para que funcione el doble-núcleo recompilando la kernel, puede que haga algo mal i que me escoja automaticamente por culpa de la configuracion antigua (oldconfig) pero no lo se. Que hago mal?
+
+', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-10-20 16:52:18.179187', '2006-10-20 16:52:18.179187', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 387);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (13, 29, 'Problemas de Impressão no Firefox', 'Olá a todos!
+
+Não sei se isso acontece com todo mundo, mas aqui não consigo imprimir corretamente uma página com o Firefox, sempre sai cortado. Minha impressora é uma HP400 e uso papel A4, mas a impressão sai sempre como se estivesse selecionado o tamanho "letter", e isso mesmo mudando no mozilla para A4. Creio que não é um problema de configuração de impressora, pois isso só acontece com o Mozilla, em outros programas a impressão é normal.', NULL, NULL, 4, NULL, NULL, 10, 10, '2006-10-20 17:03:21.847064', '2006-10-20 17:03:21.847064', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 521);
+
+
+ALTER TABLE question ENABLE TRIGGER ALL;
+
+
+ALTER TABLE questionbug DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE questionbug ENABLE TRIGGER ALL;
+
+
+ALTER TABLE questionmessage DISABLE TRIGGER ALL;
+
+INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (1, 6, 12, 35, 18);
+INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (2, 7, 13, 10, 15);
+INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (3, 11, 18, 35, 18);
+INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (4, 9, 19, 35, 18);
+INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (5, 8, 20, 35, 18);
+INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (6, 10, 21, 35, 18);
+INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (7, 9, 22, 40, 20);
+INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (8, 11, 23, 80, 10);
+
+
+ALTER TABLE questionmessage ENABLE TRIGGER ALL;
+
+
+ALTER TABLE questionreopening DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE questionreopening ENABLE TRIGGER ALL;
+
+
+ALTER TABLE questionsubscription DISABLE TRIGGER ALL;
+
+INSERT INTO questionsubscription (id, question, person, date_created) VALUES (1, 7, 16, '2006-10-16 18:31:53.201104');
+INSERT INTO questionsubscription (id, question, person, date_created) VALUES (2, 3, 16, '2006-10-16 18:31:53.202983');
+INSERT INTO questionsubscription (id, question, person, date_created) VALUES (3, 8, 12, '2006-10-16 18:31:53.203527');
+INSERT INTO questionsubscription (id, question, person, date_created) VALUES (4, 9, 12, '2006-10-16 18:31:53.204048');
+INSERT INTO questionsubscription (id, question, person, date_created) VALUES (5, 10, 12, '2006-10-16 18:31:53.204568');
+INSERT INTO questionsubscription (id, question, person, date_created) VALUES (6, 11, 12, '2006-10-16 18:31:53.205087');
+INSERT INTO questionsubscription (id, question, person, date_created) VALUES (7, 12, 13, '2006-11-09 16:52:18.179187');
+INSERT INTO questionsubscription (id, question, person, date_created) VALUES (8, 13, 29, '2006-11-09 17:03:21.847064');
+
+
+ALTER TABLE questionsubscription ENABLE TRIGGER ALL;
+
+
 ALTER TABLE requestedcds DISABLE TRIGGER ALL;
 
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (1, 1, 8, 1, 2, 1, 8);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (2, 1, 1, 1, 2, 2, 1);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (3, 1, 1, 1, 2, 3, 1);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (4, 2, 5, 1, 2, 1, 5);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (7, 3, 10, 1, 2, 1, 10);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (11, 4, 1, 1, 2, 2, 1);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (13, 5, 1, 1, 2, 3, 1);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (14, 5, 1, 2, 2, 1, 1);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (16, 6, 10, 2, 2, 1, 10);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (19, 7, 5, 2, 2, 2, 5);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (36, 12, 10, 1, 2, 1, 10);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (37, 13, 5, 3, 2, 1, 5);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (1, 1, 8, 1, 4, 1, 8);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (2, 1, 1, 1, 4, 2, 1);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (3, 1, 1, 1, 4, 3, 1);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (4, 2, 5, 1, 4, 1, 5);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (7, 3, 10, 1, 4, 1, 10);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (11, 4, 1, 1, 4, 2, 1);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (13, 5, 1, 1, 4, 3, 1);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (14, 5, 1, 2, 4, 1, 1);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (16, 6, 10, 2, 4, 1, 10);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (19, 7, 5, 2, 4, 2, 5);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (36, 12, 10, 1, 4, 1, 10);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (37, 13, 5, 3, 4, 1, 5);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (40, 14, 9, 1, 1, 1, 9);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (41, 14, 6, 1, 1, 2, 6);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (42, 14, 9, 1, 1, 3, 9);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (43, 15, 9, 1, 1, 1, 9);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (44, 15, 6, 1, 1, 2, 6);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (45, 15, 9, 1, 1, 3, 9);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (136, 16, 5, 3, 2, 1, 5);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (137, 16, 5, 2, 2, 1, 5);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (145, 17, 8, 2, 2, 1, 8);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (146, 17, 2, 2, 2, 2, 2);
-INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (154, 18, 1, 3, 2, 1, 1);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (136, 16, 5, 3, 4, 1, 5);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (137, 16, 5, 2, 4, 1, 5);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (145, 17, 8, 2, 4, 1, 8);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (146, 17, 2, 2, 4, 2, 2);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (154, 18, 1, 3, 4, 1, 1);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (155, 19, 50, 1, 3, 1, 50);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (156, 19, 0, 1, 3, 2, 0);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (157, 19, 0, 1, 3, 3, 0);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (158, 19, 50, 2, 3, 1, 50);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (159, 19, 0, 2, 3, 2, 0);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (160, 19, 50, 3, 3, 1, 50);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (161, 20, 8, 1, 4, 1, 0);
 
 
 ALTER TABLE requestedcds ENABLE TRIGGER ALL;
@@ -7913,7 +8210,7 @@ INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owne
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (4, '2005-10-31 17:21:47.38177', 'initial import (empty)', 11, NULL, 25, 'test@canonical.com-20051031165248-6f1bb97973c2b4f4', '2005-10-31 11:52:48.37692');
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (5, '2005-10-31 17:21:47.66327', 'add foo', 11, NULL, 25, 'test@canonical.com-20051031165338-5f2f3d6b10bb3bf0', '2005-10-31 11:53:38.324658');
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (6, '2005-10-31 17:21:47.701102', 'fix bug 1', 11, NULL, 25, 'test@canonical.com-20051031165532-3113df343e494daa', '2005-10-31 11:55:32.559368');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (7, '2005-10-31 17:21:47.745231', 'merge new feature', 11, NULL, 25, 'test@canonical.com-20051031165901-43b9644ec2eacc4e', '2005-10-31 11:59:01.742211');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (7, '2005-10-31 17:21:47.745231', 'merge new feature', 13, NULL, 25, 'test@canonical.com-20051031165901-43b9644ec2eacc4e', '2005-10-31 11:59:01.742211');
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (8, '2005-10-31 17:21:47.786347', 'resolve criss-cross', 12, NULL, 25, 'foo@localhost-20051031170239-5fce7d6bd3f01efc', '2005-10-31 12:02:39.750015');
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (9, '2005-10-31 17:21:47.82293', 'fix bug in bar', 12, NULL, 25, 'foo@localhost-20051031170357-1301ad6d387feb23', '2005-10-31 12:03:57.157495');
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (10, '2005-10-31 17:21:47.917914', 'add a new feature', 12, NULL, 25, 'foo@localhost-20051031165758-48acedf2b6a2e898', '2005-10-31 11:57:58.936419');
@@ -7937,6 +8234,7 @@ INSERT INTO revisionauthor (id, name) VALUES (9, 'dave.miller');
 INSERT INTO revisionauthor (id, name) VALUES (10, 'jeff.waugh');
 INSERT INTO revisionauthor (id, name) VALUES (11, 'Sample Committer <test@canonical.com>');
 INSERT INTO revisionauthor (id, name) VALUES (12, 'foo <foo@localhost>');
+INSERT INTO revisionauthor (id, name) VALUES (13, 'bar@localhost');
 
 
 ALTER TABLE revisionauthor ENABLE TRIGGER ALL;
@@ -7957,6 +8255,22 @@ INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (10, 1, 
 
 
 ALTER TABLE revisionparent ENABLE TRIGGER ALL;
+
+
+ALTER TABLE revisionproperty DISABLE TRIGGER ALL;
+
+INSERT INTO revisionproperty (id, revision, name, value) VALUES (1, 11, 'lp:foo', 'extended value');
+INSERT INTO revisionproperty (id, revision, name, value) VALUES (2, 11, 'lp:bar', '455');
+
+
+ALTER TABLE revisionproperty ENABLE TRIGGER ALL;
+
+
+ALTER TABLE scriptactivity DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE scriptactivity ENABLE TRIGGER ALL;
 
 
 
@@ -8175,22 +8489,22 @@ ALTER TABLE shipment ENABLE TRIGGER ALL;
 
 ALTER TABLE shippingrequest DISABLE TRIGGER ALL;
 
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (1, 52, 55, NULL, '2006-02-01 18:38:24.526648', NULL, NULL, false, 'No Privileges Person', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027', NULL, NULL, 1);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (2, 22, NULL, NULL, '2006-04-01 18:38:24.526648', NULL, NULL, false, 'Stuart Bishop', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, 1);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (3, 51, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'Helge Kreutzmann', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027', NULL, NULL, 1);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (4, 2, NULL, NULL, '2006-01-01 18:38:24.526648', NULL, NULL, false, 'Robert Collins', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 45, '999432423', '+55 16 3374-2027', NULL, NULL, 1);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (5, 23, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', NULL, NULL, 1);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (6, 28, NULL, 55, '2006-02-01 18:38:24.526648', NULL, NULL, false, 'Celso Providelo', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 19, '999432423', '+55 16 3374-2027', NULL, NULL, 3);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (7, 27, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'Daniel Debonzi', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', NULL, NULL, 1);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (12, 6, NULL, NULL, '2006-03-08 18:38:24.526648', NULL, 'I want 100 more CDs.', false, 'Jeff Waugh', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', NULL, NULL, 0);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (13, 243601, NULL, NULL, '2006-03-09 18:38:24.526648', NULL, 'I need 50 more CDs to give away to my friends.', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 198, '999432423', '+55 16 3374-2027', NULL, NULL, 0);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (14, 8, 55, NULL, '2005-05-19 18:38:24.526648', NULL, NULL, false, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 226, '999432423', '+55 16 3374-2027', NULL, 1, 4);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (15, 23, 55, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', NULL, 2, 4);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (16, 56, 55, NULL, '2006-03-01 19:38:24.526648', NULL, NULL, true, 'Jordi Mallach', 'Somewhere', 'in "this" world', 'Some
-Organization', 'whatever', 'not mandatory', 32, '04277', '+55 16 3374-2027', NULL, NULL, 1);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (17, 8, 55, NULL, '2006-03-19 18:38:24.526648', NULL, NULL, true, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 2, '999432423', '+55 16 3374-2027', NULL, 3, 4);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (18, 23, 55, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, 4, 4);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status) VALUES (19, 243601, NULL, NULL, '2006-10-17 20:53:11.714301', NULL, NULL, false, 'Marilize Coetzee', 'Somewhere around here', NULL, NULL, 'fdas fd as fa', NULL, 9, '43243242', '432432', NULL, NULL, 1);
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (1, 52, 55, NULL, '2006-02-01 18:38:24.526648', NULL, NULL, false, 'No Privileges Person', 'Rue de Rivoli', '1345', NULL, 'Paris', NULL, 25, '999432423', '+55 16 3374-2027', NULL, NULL, 1, 'ruederivoli1345paris');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (2, 22, NULL, NULL, '2006-04-01 18:38:24.526648', NULL, NULL, false, 'Stuart Bishop', 'Rua das Assembleias', 'n. 10', NULL, 'Rio de Janeiro', 'RJ', 95, '999432423', '+55 16 3374-2027', NULL, NULL, 1, 'ruadasassembleiasn10riodejaneiro');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (3, 51, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'Helge Kreutzmann', 'Av. Paulista', NULL, NULL, 'Sao Paulo', 'SP', 35, '999432423', '+55 16 3374-2027', NULL, NULL, 1, 'avpaulistasaopaulo');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (4, 2, NULL, NULL, '2006-01-01 18:38:24.526648', NULL, NULL, false, 'Robert Collins', 'Orlando Damiano', '2212', NULL, 'Sao Carlos', 'SP', 45, '999432423', '+55 16 3374- 2027', NULL, NULL, 1, 'orlandodamiano2212saocarlos');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (5, 23, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Fifth Avenue 1456', NULL, NULL, 'New York', 'NY', 32, '999432423', '+55 16 3374- 2027', NULL, NULL, 1, 'fifthavenue1456newyork');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (6, 28, NULL, 55, '2006-02-01 18:38:24.526648', NULL, NULL, false, 'Celso Providelo', 'Rua das Laranjeiras 134', NULL, NULL, 'Rio de Janeiro', 'RJ', 19, '999432423', '+55 16 3374-2027', NULL, NULL, 3, 'ruadaslaranjeiras134riodejaneiro');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (7, 27, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'Daniel Debonzi', 'Cinder Bluff Bank 98', NULL, NULL, 'Cape Town', NULL, 32, '999432423', '+55 16 3374- 2027', NULL, NULL, 1, 'cinderbluffbank98capetown');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (12, 6, NULL, NULL, '2006-03-08 18:38:24.526648', NULL, 'I want 100 more CDs.', false, 'Jeff Waugh', 'Hidden Lagoon Gardens', '5423', NULL, 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', NULL, NULL, 0, 'hiddenlagoongardens5423whatever');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (13, 243601, NULL, NULL, '2006-03-09 18:38:24.526648', NULL, 'I need 50 more CDs to give away to my friends.', false, 'Marilize Coetzee', 'Somewhere', '5423', NULL, 'whatever', 'not mandatory', 198, '999432423', '+55 16 3374-2027', NULL, NULL, 0, 'somewhere5423whatever');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (14, 8, 55, NULL, '2005-05-19 18:38:24.526648', NULL, NULL, false, 'James Blackwell', 'Misty Oak Jetty', '5423', NULL, 'whatever', 'not mandatory', 226, '999432423', '+55 16 3374-2027', NULL, 1, 4, 'mistyoakjetty5423whatever');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (15, 23, 55, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Pleasant Pond Ledge', '5423', NULL, 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', NULL, 2, 4, 'pleasantpondledge5423whatever');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (16, 56, 55, NULL, '2006-03-01 19:38:24.526648', NULL, NULL, true, 'Jordi Mallach', 'Ridge Rustic Park', 'in "this" world', 'Some Organization', 'whatever', 'not mandatory', 32, '04277', '+55 16 3374-2027', NULL, NULL, 1, 'ridgerusticparkinthisworldwhatever');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (17, 8, 55, NULL, '2006-03-19 18:38:24.526648', NULL, NULL, true, 'James Blackwell', 'Tawny View Vista', '5423', NULL, 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, 3, 4, 'tawnyviewvista5423whatever');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (18, 23, 55, NULL, '2006-03-01 18:38:24.526648', NULL, NULL, false, 'David Allouche', 'Velvet Zephyr Woods', '5423', NULL, 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, 4, 4, 'velvetzephyrwoods5423whatever');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (19, 243601, NULL, NULL, '2006-10-17 20:53:11.714301', NULL, NULL, false, 'Marilize Coetzee', 'Somewhere around here', NULL, NULL, 'fdas fd as fa', NULL, 9, '43243242', '432432', NULL, NULL, 1, 'somewherearoundherefdasfdasfa');
+INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address) VALUES (20, 1, NULL, NULL, '2006-02-01 18:38:24.526648', NULL, NULL, false, 'Somebody Else', 'Rue de Rivoli', '1345', NULL, 'Paris', NULL, 25, '999432423', '+55 16 3374-2027', NULL, NULL, 6, 'ruederivoli1345paris');
 
 
 ALTER TABLE shippingrequest ENABLE TRIGGER ALL;
@@ -8244,7 +8558,7 @@ ALTER TABLE sourcepackagename ENABLE TRIGGER ALL;
 
 ALTER TABLE sourcepackagerelease DISABLE TRIGGER ALL;
 
-INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, NULL, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1), alsa-utils', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4), alsa-utils', 'any', NULL, 1, NULL, 1, 1, 3, 1, 'Mark Shuttleworth <mark@canonical.com>', '3.6.2', '1.0', 'mozilla-firefox');
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, NULL, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1), pmount', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4), pmount', 'any', NULL, 1, NULL, 1, 1, 3, 1, 'Mark Shuttleworth <mark@canonical.com>', '3.6.2', '1.0', 'mozilla-firefox');
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, 'all', NULL, 2, NULL, 1, 9, 3, 1, NULL, NULL, NULL, NULL);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, 'any', NULL, 3, NULL, 1, 10, 3, 1, NULL, NULL, NULL, NULL);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 2, NULL, 1, 10, 1, 1, NULL, NULL, NULL, NULL);
@@ -8687,6 +9001,7 @@ ALTER TABLE sprintspecification ENABLE TRIGGER ALL;
 ALTER TABLE sshkey DISABLE TRIGGER ALL;
 
 INSERT INTO sshkey (id, person, keytype, keytext, "comment", date_created) VALUES (1, 12, 2, 'AAAAB3NzaC1kc3MAAAEBAPfhCA15ZaT08brwVXwpJjcZT6QFIipzF1sGy57HY7QPi/W+uljr1VcCHzWdlSmda7YpTCTx0NFYYQIccQRGX6zYL8v1w9FSRCAnxxUJmqEhsUDFYFdVTa9uLCrs3MSbmh7wwFPdRrGrO6X5x7T4dMZQwykSZrOVdpLcCHRgrMZslLomIAjERn6OAQNiGFz7B2tEi/3Soqd52bGJwOtGymRiAXkPSLbH7KfzSCe34ytdh6BD+4SrgSoa+TL3VDV70QAdlOFXD42ZHl3Sc0Tde4LbZeYq2Uf84DOATLZBbOYpRSqTLkM9XngpnvCRVb6dxEQfgODDw783tEuPpySLj2EAAAAVANpUVgivDjt9gFibN/AXfYy1meeBAAABAB6FtnMywmWZg2lr2I3nDfE5U5QbGUQB/ZEP98ZkSkhOcF29VlnGOxyb2/VZbVTLa/btlPF82L4An/c8VKtKZnel7LnAlMoArdgzQNXGVQQVtnaWwM26ydgDzkSSIes3elNZgsfnPRBvaF0ol9Tqju0rNGKjnr3ZOX/NX+42bxpjRnxYj1h56yP2jKKeGfjorI6JK1YfqBAiTxzaDMzSpknnrbztaKJoh7IFqMMOp9ANSFh7H106pEaCv3ebCTJZprtWqNKjb2zum7OQPRz3upA0qx22ocTokjv4itXJ6yj/BvGu9qdOIQFXuB2rsFtLZtS8ATueOly0GzyeiZBx/AEAAAEBAO8jRYjL7tAYnVlO1p6UzPOicAuGCFWfNbBEDRAXoSgLNdj451jStw+eUc9ZVz7tG/XRVZsiavtFHb2cbrcfX1YOd69xi0m+IY6mo3yKt3irQRokDtt376sHoUdHgj2ozySZJgG8IJndtoS+VQQy6NdClA3fNFb96bF865eNaRYoHJO9ZI84lkWQL++MLzIuyFfCs1hSlapyyuHC8kFmF7AQdrVZvbohSbnWs+w53nIW8nAA7z21wAukvE1Pl6AQyG0e7U1sYS8Pc8dtmzJvdtVZWBl02/gqQJ7f06mFvnsN45rR1Uyxnrwl6rbFwqabZDlyD5Ac6Icbvz9SG1gBOiI=', 'andrew@trogdor', '2006-10-16 18:31:53.030784');
+INSERT INTO sshkey (id, person, keytype, keytext, "comment", date_created) VALUES (2, 1, 2, 'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==', 'Private key in lib/canonical/supermirrorsftp/tests/id_dsa', '2007-03-30 03:39:27.689516');
 
 
 ALTER TABLE sshkey ENABLE TRIGGER ALL;
@@ -8711,13 +9026,6 @@ INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, 
 
 
 ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
-
-
-ALTER TABLE supportcontact DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE supportcontact ENABLE TRIGGER ALL;
 
 
 ALTER TABLE teammembership DISABLE TRIGGER ALL;
@@ -8781,7 +9089,9 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (57, 16, 32, 3, '2007-01-17 14:13:39.692693', NULL, 16, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (58, 12, 20, 2, '2007-01-26 14:43:18.264746', NULL, 16, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (59, 16, 20, 1, '2006-01-26 14:43:18.264746', NULL, NULL, NULL);
-INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (60, 68, 69, 3, '2007-01-31 06:57:54.592917', NULL, 68, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (60, 243603, 243604, 3, '2007-02-21 10:55:03.899255', NULL, 243603, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (61, 68, 69, 3, '2007-01-31 06:57:54.592917', NULL, 68, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (62, 26, 17, 2, '2007-01-31 06:57:54.592917', NULL, 16, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -8885,6 +9195,31 @@ INSERT INTO teamparticipation (id, team, person) VALUES (105, 18, 12);
 INSERT INTO teamparticipation (id, team, person) VALUES (106, 20, 12);
 INSERT INTO teamparticipation (id, team, person) VALUES (107, 68, 68);
 INSERT INTO teamparticipation (id, team, person) VALUES (108, 69, 68);
+INSERT INTO teamparticipation (id, team, person) VALUES (109, 59, 59);
+INSERT INTO teamparticipation (id, team, person) VALUES (110, 60, 60);
+INSERT INTO teamparticipation (id, team, person) VALUES (111, 61, 61);
+INSERT INTO teamparticipation (id, team, person) VALUES (112, 64, 64);
+INSERT INTO teamparticipation (id, team, person) VALUES (113, 67, 67);
+INSERT INTO teamparticipation (id, team, person) VALUES (114, 69, 69);
+INSERT INTO teamparticipation (id, team, person) VALUES (115, 243601, 243601);
+INSERT INTO teamparticipation (id, team, person) VALUES (116, 53, 53);
+INSERT INTO teamparticipation (id, team, person) VALUES (117, 55, 55);
+INSERT INTO teamparticipation (id, team, person) VALUES (118, 17, 17);
+INSERT INTO teamparticipation (id, team, person) VALUES (119, 18, 18);
+INSERT INTO teamparticipation (id, team, person) VALUES (120, 19, 19);
+INSERT INTO teamparticipation (id, team, person) VALUES (121, 20, 20);
+INSERT INTO teamparticipation (id, team, person) VALUES (122, 21, 21);
+INSERT INTO teamparticipation (id, team, person) VALUES (123, 24, 24);
+INSERT INTO teamparticipation (id, team, person) VALUES (124, 25, 25);
+INSERT INTO teamparticipation (id, team, person) VALUES (125, 30, 30);
+INSERT INTO teamparticipation (id, team, person) VALUES (126, 31, 31);
+INSERT INTO teamparticipation (id, team, person) VALUES (127, 32, 32);
+INSERT INTO teamparticipation (id, team, person) VALUES (128, 57, 57);
+INSERT INTO teamparticipation (id, team, person) VALUES (129, 58, 58);
+INSERT INTO teamparticipation (id, team, person) VALUES (130, 243602, 243602);
+INSERT INTO teamparticipation (id, team, person) VALUES (131, 243603, 243603);
+INSERT INTO teamparticipation (id, team, person) VALUES (132, 243604, 243603);
+INSERT INTO teamparticipation (id, team, person) VALUES (133, 243604, 243604);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -8895,89 +9230,6 @@ ALTER TABLE temporaryblobstorage DISABLE TRIGGER ALL;
 
 
 ALTER TABLE temporaryblobstorage ENABLE TRIGGER ALL;
-
-
-ALTER TABLE ticket DISABLE TRIGGER ALL;
-
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (1, 11, 'Firefox cannot render Bank Site', 'Hello, I''m trying to access http://www.citibank.com/ and the page is not rendering correctly. Is there a setting I can use to get it right? Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:46:07.392021', '2005-09-05 18:46:07.392021', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (2, 12, 'Problem showing the SVG demo on W3C site', 'Hi! I''m trying to learn about SVG but I can''t get it to work at all in firefox. Maybe there is a plugin? Help! Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:47:27.657124', '2005-09-05 18:47:27.657124', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (3, 16, 'Firefox is slow and consumes too much RAM', 'I''m running on a 486 with 32 MB ram. And Firefox is slow! What should I do?', NULL, 16, NULL, 1, 1, 30, 10, '2005-09-05 19:46:22.786269', '2005-09-05 19:46:22.786269', NULL, NULL, '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', NULL, NULL, NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (4, 16, 'Firefox loses focus and gets stuck', 'Every now and then I can''t type anything in the fields on a web form, and I have to click my mouse in the URL bar. Is that normal?', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 20:03:10.967079', '2005-09-05 20:03:10.967079', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (5, 12, 'Installation failed', 'I can''t install Ubuntu, it fails to find my CD-ROM drive.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-13 09:08:27.006633', '2005-10-13 09:08:27.006633', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (6, 12, 'Newly installed plug-in doesn''t seem to be used', 'I''ve installed a new plug-in in Firefox, but it doesn''t seem to be used.', NULL, NULL, 4, NULL, NULL, 18, 10, '2005-10-14 12:24:14.271257', '2005-10-14 12:24:14.271257', NULL, NULL, '2005-10-14 12:25:21.508923', NULL, NULL, NULL, NULL, NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (7, 16, 'Slow system', 'I get really poor hard drive performance.', NULL, NULL, NULL, 1, NULL, 15, 10, '2005-10-14 13:27:35.664194', '2005-10-14 13:27:35.664194', NULL, NULL, '2005-10-14 13:28:11.554476', NULL, NULL, NULL, NULL, NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (8, 12, 'Installation of Java Runtime Environment for Mozilla', 'When opening http://www.gotomypc.com/ with Mozilla, a java run time ennvironment plugin is requested.
-
-1) The plugin finder service indicates that JRE is available
-2) next screen indicates JRE "not available" and requests "manual install"
-3) clicking on "manual install" open java web site.......
-
-Question: what after?
-.......I have downloaded two available linux files "linux (self extracting)" and "linux RPM (self extracting)".', NULL, NULL, NULL, 1, 1, 18, 10, '2006-07-20 20:21:38.853569', '2006-07-20 20:21:38.853569', NULL, NULL, '2006-07-20 20:52:07.054216', NULL, NULL, NULL, NULL, NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (9, 12, 'mailto: problem in webpage', 'I am not able to open my email client if i click on a mailto: link in a webpage in Firefox 1.5.0.4 (ubuntu dapper).
-
-Earlier I could do this but since balsa was installed and then uninstalled, things have not been the same. balsa used to start when a mailto: link was clicked on a webpage. balsa is an email client bundled with dapper.
-
-I am using thunderbird as the default email client or wish that it becomes default again.', NULL, 16, NULL, 1, 1, 20, 10, '2006-07-20 20:24:52.3877', '2006-07-20 20:56:35.442839', NULL, NULL, '2006-07-20 20:49:47.551344', '2006-07-20 20:56:35.442839', NULL, NULL, NULL, 4, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (10, 12, 'Play DVDs in Totem', 'How do you play DVDs in Totem..........?', NULL, NULL, NULL, 1, NULL, 18, 10, '2006-07-20 20:34:29.635511', '2006-07-20 20:34:29.635511', NULL, NULL, '2006-07-20 20:53:53.684848', NULL, NULL, NULL, NULL, NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (11, 12, 'Continue playing after shutdown', 'I want to be able to shut down and start a mp3 where I left off, because some mp3s are 16++ hours long.', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-07-20 20:40:50.467875', '2006-07-20 23:11:24.975495', NULL, NULL, '2006-07-20 20:48:24.975495', NULL, NULL, NULL, NULL, NULL, 119);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (12, 13, 'Problema al recompilar kernel con soporte smp (doble-núcleo)', 'Tengo un portatil con un procesador intel centrino Cuore Duo T2300 y tengo Ubuntu Dapper instalado con la mayoría de drivers instalados, pero me falta activar el hiper-threading para que me detecte el doble núcleo ya que así utilizará al 100% la capacidad del procesador.
-
-Para activar esta opcion (SMP) necesito recompilar la kernel (bajada desde kernel.org hoy mismo). Descomprimo el archivo del kernel e entro en el directorio que se ha creado y copio el .config que tengo hecho de la última configuracion de Ubuntu (la instalada con el cd de Ubuntu que se encuentra en la carpeta /boot/".config"). Una vez hecho esto hago el ''make oldconfig menuconfig'' y empiza el proceso, despues de unas cuantas preguntas veo que omite el paso de dejarme escoger el tipo de procesador y veo que me pone una n en la pregunta "Symmetric multi-processing support (SMP) [N/y/?] n" i tambien me escoge automaticamente la familia del procesador y me la asigna a 486 que no es el doble núcleo.
-
-No se como hacer para que funcione el doble-núcleo recompilando la kernel, puede que haga algo mal i que me escoja automaticamente por culpa de la configuracion antigua (oldconfig) pero no lo se. Que hago mal?
-
-', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-10-20 16:52:18.179187', '2006-10-20 16:52:18.179187', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 387);
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (13, 29, 'Problemas de Impressão no Firefox', 'Olá a todos!
-
-Não sei se isso acontece com todo mundo, mas aqui não consigo imprimir corretamente uma página com o Firefox, sempre sai cortado. Minha impressora é uma HP400 e uso papel A4, mas a impressão sai sempre como se estivesse selecionado o tamanho "letter", e isso mesmo mudando no mozilla para A4. Creio que não é um problema de configuração de impressora, pois isso só acontece com o Mozilla, em outros programas a impressão é normal.', NULL, NULL, 4, NULL, NULL, 10, 10, '2006-10-20 17:03:21.847064', '2006-10-20 17:03:21.847064', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 521);
-
-
-ALTER TABLE ticket ENABLE TRIGGER ALL;
-
-
-ALTER TABLE ticketbug DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE ticketbug ENABLE TRIGGER ALL;
-
-
-ALTER TABLE ticketmessage DISABLE TRIGGER ALL;
-
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (1, 6, 12, 35, 18);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (2, 7, 13, 10, 15);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (3, 11, 18, 35, 18);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (4, 9, 19, 35, 18);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (5, 8, 20, 35, 18);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (6, 10, 21, 35, 18);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (7, 9, 22, 40, 20);
-INSERT INTO ticketmessage (id, ticket, message, "action", new_status) VALUES (8, 11, 23, 80, 10);
-
-
-ALTER TABLE ticketmessage ENABLE TRIGGER ALL;
-
-
-ALTER TABLE ticketreopening DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE ticketreopening ENABLE TRIGGER ALL;
-
-
-ALTER TABLE ticketsubscription DISABLE TRIGGER ALL;
-
-INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (1, 7, 16, '2006-10-16 18:31:53.201104');
-INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (2, 3, 16, '2006-10-16 18:31:53.202983');
-INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (3, 8, 12, '2006-10-16 18:31:53.203527');
-INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (4, 9, 12, '2006-10-16 18:31:53.204048');
-INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (5, 10, 12, '2006-10-16 18:31:53.204568');
-INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (6, 11, 12, '2006-10-16 18:31:53.205087');
-INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (7, 12, 13, '2006-11-09 16:52:18.179187');
-INSERT INTO ticketsubscription (id, ticket, person, date_created) VALUES (8, 13, 29, '2006-11-09 17:03:21.847064');
-
-
-ALTER TABLE ticketsubscription ENABLE TRIGGER ALL;
 
 
 ALTER TABLE translationgroup DISABLE TRIGGER ALL;
@@ -9052,6 +9304,9 @@ INSERT INTO validpersonorteamcache (id) VALUES (65);
 INSERT INTO validpersonorteamcache (id) VALUES (68);
 INSERT INTO validpersonorteamcache (id) VALUES (69);
 INSERT INTO validpersonorteamcache (id) VALUES (243601);
+INSERT INTO validpersonorteamcache (id) VALUES (243602);
+INSERT INTO validpersonorteamcache (id) VALUES (243603);
+INSERT INTO validpersonorteamcache (id) VALUES (243604);
 
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;
@@ -9165,6 +9420,8 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (51, 52, 'https://wiki.
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (52, 62, 'https://wiki.ubuntu.com/', 'BugWatchUpdater');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (53, 65, 'https://wiki.ubuntu.com/', 'SupportTrackerJanitor');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (54, 66, 'https://wiki.ubuntu.com/', 'DiogoMatsubara');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (55, 243602, 'https://wiki.ubuntu.com/', 'NoTeamMemberships');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (56, 243603, 'https://wiki.ubuntu.com/', 'OneMembership');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;

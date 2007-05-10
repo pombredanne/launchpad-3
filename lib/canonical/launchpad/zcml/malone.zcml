@@ -109,4 +109,5 @@
         attribute="redirect_to_assignedbugs"
         permission="launchpad.AnyPerson"
         />
+
 </configure>

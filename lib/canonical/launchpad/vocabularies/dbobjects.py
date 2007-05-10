@@ -48,6 +48,7 @@ __all__ = [
     'SpecificationDepCandidatesVocabulary',
     'SprintVocabulary',
     'TranslationGroupVocabulary',
+    'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
@@ -236,7 +237,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
 
     _table = Product
     _orderBy = 'displayname'
-    displayname = 'Select a Product'
+    displayname = 'Select a project'
 
     def __contains__(self, obj):
         # Sometimes this method is called with an SQLBase instance, but
@@ -282,7 +283,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
 
     _table = Project
     _orderBy = 'displayname'
-    displayname = 'Select a Project'
+    displayname = 'Select a project group'
 
     def __contains__(self, obj):
         where = "active='t' and id=%d"
@@ -325,6 +326,35 @@ def project_products_vocabulary_factory(context):
     return SimpleVocabulary([
         SimpleTerm(product, product.name, title=product.displayname)
         for product in project.products])
+
+
+class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
+    """Describes the teams in which the current user participates."""
+    _table = Person
+    _orderBy = 'displayname'
+
+    def toTerm(self, obj):
+        return SimpleTerm(
+            obj, obj.name, '%s (%s)' % (obj.displayname, obj.name))
+
+    def __iter__(self):
+        kw = {}
+        if self._orderBy:
+            kw['orderBy'] = self._orderBy
+        launchbag = getUtility(ILaunchBag)
+        if launchbag.user:
+            user = launchbag.user
+            for team in user.teams_participated_in:
+                yield self.toTerm(team)
+
+    def getTermByToken(self, token):
+        launchbag = getUtility(ILaunchBag)
+        if launchbag.user:
+            user = launchbag.user
+            for team in user.teams_participated_in:
+                if team.name == token:
+                    return self.getTerm(team)
+        raise LookupError(token)
 
 
 def project_products_using_malone_vocabulary_factory(context):
@@ -646,7 +676,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
 class ProductSeriesVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
-    displayname = 'Select a Product Series'
+    displayname = 'Select a Release Series'
     _table = ProductSeries
     _orderBy = [Product.q.name, ProductSeries.q.name]
     _clauseTables = ['Product']
@@ -811,12 +841,13 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         # should be revisited after we've unblocked users.
         if target is not None:
             if IProject.providedBy(target):
-                milestones = shortlist((milestone
-                                        for product in target.products
-                                        for milestone in product.milestones),
-                                       longest_expected=40)
+                milestones = shortlist(
+                    (milestone for product in target.products
+                     for milestone in product.all_milestones),
+                    longest_expected=40)
             else:
-                milestones = shortlist(target.milestones, longest_expected=40)
+                milestones = shortlist(
+                    target.all_milestones, longest_expected=40)
         else:
             # We can't use context to reasonably filter the
             # milestones, so let's just grab all of them.
@@ -1012,7 +1043,7 @@ class DistributionUsingMaloneVocabulary:
 class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
 
     _table = DistroRelease
-    _orderBy = [Distribution.q.name, DistroRelease.q.name]
+    _orderBy = ["Distribution.displayname", "-DistroRelease.date_created"]
     _clauseTables = ['Distribution']
 
     def __iter__(self):
@@ -1026,7 +1057,8 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         # NB: We use '/' as the separator because '-' is valid in
         # a distribution.name
         token = '%s/%s' % (obj.distribution.name, obj.name)
-        return SimpleTerm(obj, token, obj.title)
+        title = "%s: %s" % (obj.distribution.displayname, obj.title)
+        return SimpleTerm(obj, token, title)
 
     def getTermByToken(self, token):
         try:
@@ -1103,7 +1135,7 @@ class BugNominatableReleaseVocabularyBase(NamedSQLObjectVocabulary):
     """Base vocabulary class for releases for which a bug can be nominated."""
 
     def __iter__(self):
-        bug = self.context
+        bug = self.context.bug
 
         releases = self._getNominatableObjects()
 
@@ -1199,7 +1231,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
-    displayname = 'Select a distribution or product'
+    displayname = 'Select a project'
     _filter = AND(OR(
             PillarName.q.distributionID != None,
             PillarName.q.productID != None
@@ -1223,3 +1255,4 @@ class DistributionOrProductOrProjectVocabulary(PillarVocabularyBase):
             return obj.active
         else:
             return IDistribution.providedBy(obj)
+

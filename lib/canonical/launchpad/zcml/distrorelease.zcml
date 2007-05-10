@@ -50,6 +50,14 @@
     classes="DistroReleaseNavigation"
     />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.IDistroRelease"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.DistroReleaseDynMenu"
+      attribute="__call__"
+      name="+menudata"
+      />
+
   <browser:url
     for="canonical.launchpad.interfaces.IDistroRelease"
     path_expression="name"
@@ -75,6 +83,12 @@
     for="canonical.launchpad.interfaces.IDistroRelease"
     layer="canonical.launchpad.layers.BugsLayer"
     name="+bugs-index" />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    name="+translations"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroRelease"
@@ -152,22 +166,12 @@
       template="../templates/distrorelease-portlet-lifecycle.pt"
       />
     <browser:page
-      name="+portlet-translations"
-      facet="translations"
-      template="../templates/distrorelease-portlet-translations.pt"
-      />
-    <browser:page
-      name="+portlet-langstats"
-      facet="translations"
-      template="../templates/distrorelease-portlet-langstats.pt"
-      />
-    <browser:page
-      name="+portlet-aboutlangs"
-      facet="translations"
-      template="../templates/distrorelease-portlet-aboutlangs.pt" />
-    <browser:page
       name="+portlet-milestones"
       template="../templates/object-portlet-milestones.pt"
+      />
+    <browser:page
+      name="+milestones"
+      template="../templates/object-milestones.pt"
       />
     <browser:page
       name="+latest-uploads"

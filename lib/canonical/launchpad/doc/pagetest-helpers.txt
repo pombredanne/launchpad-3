@@ -269,15 +269,58 @@ Sometimes we are just interested in a portion of text that is displayed
 to the end user, and we don't want necessarily to check how the text
 is displayed (ie. bold, italics, coloured et al).
 
+    >>> extract_text = test.globs['extract_text']
+    >>> print extract_text(
+    ...     '<p>A paragraph with <b>inline</b> <i>style</i>.</p>')
+    A paragraph with inline style.
+
+The function also takes care of inserting proper white space for
+block level and other elements introducing a visual separation:
+
+    >>> print extract_text( # doctest: -NORMALIZE_WHITESPACE
+    ...     '<p>Para 1</p><p>Para 2<br>Line 2</p><ul><li>Item 1</li>'
+    ...     '<li>Item 2</li></ul><div>Div 1</div><h1>A heading</h1>')
+    Para 1
+    Para 2
+    Line 2
+    Item 1
+    Item 2
+    Div 1
+    A heading
+
+Of course, the function ignores processing instructions, declaration,
+comments and render CDATA section has plain text.
+
+    >>> print extract_text(
+    ...     '<?php echo("Hello world!")?><!-- A comment -->'
+    ...     '<?A declaration.><![CDATA[Some << characters >>]]>')
+    Some << characters >>
+
+The function also does some white space normalization, since formatted
+HTML usually contains a lot of white space and that pagetests are run
+using NORMALIZE_WHITESPACE, diff output in the case of failure often
+contains lot of white space noise. So whitespace is stripped from the
+beginning and end of the result, runs of space and tabs is replaced by
+a single space. Runs of newlines is replaced by one newline.
+(Note also that non-breaking space entities are also transformed into
+regular space.)
+
+    >>> print extract_text( # doctest: -NORMALIZE_WHITESPACE
+    ...     '   <p>Some  \t  white space    <br /></p>   '
+    ...     '<p>Another&nbsp; &#160;  paragraph.</p><p><p>'
+    ...     '<p>A final one</p>   ')
+    Some white space
+    Another paragraph.
+    A final one
+
 The extract_text method is often used in conjunction with the other
-find_xxx helper methods to identify the text to display.  This is due
-to the function taking a BeautifulSoup instance as a parameter rather
-than a plain string.
+find_xxx helper methods to identify the text to display.  Because of
+this the function also accepts BeautifulSoup instance as a parameter
+rather than a plain string.
 
-  >>> extract_text = test.globs['extract_text']
-  >>> print extract_text(find_portlet(content, 'Portlet 2'))
-  Portlet 2 Contents of portlet 2
-
+    >>> print extract_text(find_portlet(content, 'Portlet 2'))
+    Portlet 2
+    Contents of portlet 2
 
 == parse_relationship_section ==
 

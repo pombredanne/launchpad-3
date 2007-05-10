@@ -12,7 +12,6 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.widgets.bugtask import LaunchpadRadioWidget
 from canonical.widgets.itemswidgets import (
     LaunchpadDropdownWidget, LaunchpadRadioWidget)
 
@@ -68,7 +67,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
 
         items = []
         malone_item_arguments = dict(
-            index=0, text=self._renderLabel("Bugs are tracked in Malone", 0),
+            index=0, text=self._renderLabel("Bugs are tracked in Launchpad", 0),
             value="malone", name=self.name, cssClass=self.cssClass)
         project = product.project
         if project is None or project.bugtracker is None:

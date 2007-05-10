@@ -72,14 +72,20 @@ class SourcePackageQuestionTargetMixin:
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
-                        needs_attention_from=None):
-        """See IQuestionTarget."""
+                        needs_attention_from=None, unsupported=False):
+        """See IQuestionCollection."""
+        if unsupported:
+            unsupported_target = self
+        else:
+            unsupported_target = None
+            
         return QuestionTargetSearch(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             search_text=search_text, status=status,
             language=language, sort=sort, owner=owner,
-            needs_attention_from=needs_attention_from).getResults()
+            needs_attention_from=needs_attention_from,
+            unsupported_target=unsupported_target).getResults()
 
     def findSimilarQuestions(self, title):
         """See IQuestionTarget."""
@@ -89,11 +95,11 @@ class SourcePackageQuestionTargetMixin:
 
     def addAnswerContact(self, person):
         """See IQuestionTarget."""
-        answer_contact_entry = AnswerContact.selectOneBy(
+        answer_contact = AnswerContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             person=person)
-        if answer_contact_entry:
+        if answer_contact:
             return False
 
         AnswerContact(
@@ -104,14 +110,14 @@ class SourcePackageQuestionTargetMixin:
 
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
-        answer_contact_entry = AnswerContact.selectOneBy(
+        answer_contact = AnswerContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             person=person)
-        if not answer_contact_entry:
+        if not answer_contact:
             return False
 
-        answer_contact_entry.destroySelf()
+        answer_contact.destroySelf()
         return True
 
     @property
@@ -139,11 +145,11 @@ class SourcePackageQuestionTargetMixin:
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            'Language.id = language AND distribution = %s AND '
-            'sourcepackagename = %s'
+            'Language.id = Question.language AND '
+            'Question.distribution = %s AND '
+            'Question.sourcepackagename = %s'
                 % sqlvalues(self.distribution, self.sourcepackagename),
-            clauseTables=['Ticket'], distinct=True))
-
+            clauseTables=['Question'], distinct=True))
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
@@ -422,9 +428,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.status != %s
+            SourcePackagePublishingHistory.status = %s
             """ % sqlvalues(self.distrorelease, self.sourcepackagename,
-                            PackagePublishingStatus.REMOVED),
+                            PackagePublishingStatus.PUBLISHED),
             clauseTables=['SourcePackageRelease'])
         # create the dictionary with the set of pockets as keys
         thedict = {}

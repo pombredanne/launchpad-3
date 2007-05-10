@@ -14,7 +14,6 @@
   </metal:rightportlets>
 
   <metal:heading fill-slot="pageheading">
-    <h3 tal:content="context/title">Context title goes here</h3>
     <tal:untranslatable condition="not: context/translatables">
       <h1 tal:condition="context/required:launchpad.Edit">
         How to set up translations
@@ -33,7 +32,7 @@
         Select a project to begin translating it into your own language.
         If a project for <span tal:content="context/displayname">Project
         </span> is not listed here, check that it&#8217;s
-        <a href="/products">registered with Launchpad</a>, and follow the
+        <a href="/projects">registered with Launchpad</a>, and follow the
         instructions described at
         <a href="https://help.launchpad.net/RosettaFAQ">RosettaFAQ</a>
       </p>

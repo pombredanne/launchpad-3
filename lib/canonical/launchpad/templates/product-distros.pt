@@ -14,7 +14,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Product Title</h3>
   <h1>Packages by distribution</h1>
 </metal:heading>
 
@@ -27,7 +26,7 @@
   </p>
 
   <p class="informational message" tal:condition="not: context/serieslist">
-    No product branches registered for 
+    No project branches registered for 
     <span tal:replace="context/displayname">Foomatic</span>. Please
     <a href="+addseries">register a branch</a> and then you will be able to
     link it to distribution packages.
@@ -42,7 +41,7 @@
         <tr>
           <th>Release</th>
           <th>Source Package</th>
-          <th>Product Series</th>
+          <th>Release Series</th>
           <th>Package Version</th>
         </tr>
       </thead>

@@ -19,7 +19,16 @@
 
 <div metal:fill-slot="main">
 
-      <h1 tal:content="context/title">Specification title</h1>
+  <div style="float: right;">
+    <img src="/@@/mentoring-large" title="Mentoring available"
+         tal:condition="context/mentoring_offers/count" />
+    <img src="/@@/branch-large" title="Branch available"
+         tal:condition="context/branch_links/count" />
+    <img src="/@@/info-large"
+         title="Informational blueprint, no implementation necessary"
+         tal:condition="context/informational" />
+  </div>
+  <h1>Blueprint overview</h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
@@ -27,9 +36,9 @@
   </p>
 
   <p tal:condition="context/superseded_by" class="warning message">
-    This specification has been superseded. See the newer specification
+    This blueprint has been superseded. See the newer blueprint
     "<b><a tal:content="context/superseded_by/title"
-           tal:attributes="href context/superseded_by/fmt:url">new spec
+           tal:attributes="href context/superseded_by/fmt:url">new blueprint
     title</a></b>" for updated plans.
   </p>
 
@@ -51,8 +60,11 @@
         <tr>
           <th>Implementation:</th>
           <td>
+            <img tal:condition="context/informational"
+                 src="/@@/info" alt="Informational"
+                 title="Informational blueprint, no implementation necessary"
+                 />
             <tal:impl content="context/delivery/title">Unknown</tal:impl>
-            <i tal:condition="context/informational">Informational</i>
           </td>
         </tr>
         <tr tal:condition="context/goal">
@@ -79,33 +91,24 @@
         <tr>
           <th>Assignee:</th>
           <td>
-            <a
-              tal:condition="context/assignee"
-              tal:content="context/assignee/browsername"
-              tal:attributes="href context/assignee/fmt:url"
-            >Foo Bar</a>
+            <a tal:condition="context/assignee"
+               tal:replace="structure context/assignee/fmt:link">Foo Bar</a>
             <tal:none condition="not: context/assignee">None</tal:none>
           </td>
         </tr>
         <tr>
           <th>Drafter:</th>
           <td>
-            <a
-              tal:condition="context/drafter"
-              tal:content="context/drafter/browsername"
-              tal:attributes="href context/drafter/fmt:url"
-            >Foo Bar</a>
+            <a tal:condition="context/drafter"
+               tal:replace="structure context/drafter/fmt:link">Foo Bar</a>
             <tal:none condition="not: context/drafter">None</tal:none>
           </td>
         </tr>
         <tr>
           <th>Approver:</th>
           <td>
-            <a
-              tal:condition="context/approver"
-              tal:content="context/approver/browsername"
-              tal:attributes="href context/approver/fmt:url"
-            >Foo Bar</a>
+            <a tal:condition="context/approver"
+               tal:replace="structure context/approver/fmt:link">Foo Bar</a>
             <tal:none condition="not: context/approver">None</tal:none>
           </td>
         </tr>
@@ -115,21 +118,19 @@
         >
           <th>Sprints:</th>
           <td>
-            <ul class="sprint">
-              <li tal:repeat="sprint_link sprint_links">
+            <tal:per_sprint tal:repeat="sprint_link sprint_links">
+                <tal:approval replace="structure sprint_link/@@+icon-status" />
                 <a
                   tal:attributes="href sprint_link/sprint/fmt:url"
                   tal:content="sprint_link/sprint/name"
-                />
-                <tal:approval replace="structure sprint_link/@@+icon-status" />
-              </li>
-            </ul>
+                /><br />
+            </tal:per_sprint>
           </td>
         </tr>
       </tbody>
     </table>
     <tal:desc replace="structure context/summary/fmt:text-to-html">
-      The spec summary will go here.
+      The blueprint summary will go here.
     </tal:desc>
     <ul class="menu">
       <li class="link">
@@ -148,11 +149,34 @@
         <span tal:replace="context/milestone/name">1.0</span>.</a>
     </tal:has_milestone>
 
-    <tal:whiteboard condition="context/whiteboard">
-      <h2>Whiteboard</h2>
-      <div tal:content="structure context/whiteboard/fmt:text-to-html"
-      >Whiteboard text goes here.</div>
-    </tal:whiteboard>
+  <tal:mentors define="mentoring_offers context/mentoring_offers"
+               condition="mentoring_offers">
+    <p>
+      <img src="/@@/mentoring" alt="Mentoring"
+           title="People have offered to mentor this work" />
+      <b>Mentors:</b>
+      <tal:block repeat="mentoring_offer mentoring_offers">
+        <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
+      </tal:block>
+    </p>
+    <tal:block condition="not: context/is_complete">
+      <p tal:condition="view/userIsMentor">
+        &raquo;
+        <a href="+retractmentoring">Retract my offer of mentorship</a>
+      </p>
+    </tal:block>
+  </tal:mentors>
+
+  <p tal:condition="view/userCanMentor">
+    &raquo; <a href="+mentor">Offer to mentor someone implementing
+    this blueprint</a>
+  </p>
+
+  <tal:whiteboard condition="context/whiteboard">
+    <h2>Whiteboard</h2>
+    <div tal:content="structure context/whiteboard/fmt:text-to-html"
+    >Whiteboard text goes here.</div>
+  </tal:whiteboard>
 
   <tal:deptree condition="view/has_dep_tree">
 
@@ -161,7 +185,7 @@
     <tal:block tal:replace="structure context/@@+deptreeimgtag" />
 
     <p class="discreet">
-      * Specifications in grey have been implemented.
+      * Blueprints in grey have been implemented.
     </p>
 
   </tal:deptree>
@@ -169,7 +193,7 @@
       <ul class="nearby menu" tal:condition="context/goal">
         <li>
           <a tal:attributes="href context/goal/fmt:url">
-            Other <tal:goal replace="context/goal/displayname" /> specifications
+            Other <tal:goal replace="context/goal/displayname" /> blueprints
           </a>
         </li>
       </ul>

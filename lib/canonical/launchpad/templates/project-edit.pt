@@ -7,7 +7,7 @@
 >
   <body>
     <metal:heading fill-slot="heading">    
-      <h1>Change project details</h1>
+      <h1>Change project group details</h1>
     </metal:heading>
 
     <div metal:fill-slot="main">
@@ -16,14 +16,14 @@
 
           <p metal:fill-slot="extra_info">
             Avoid changing the Name,
-            because that will change the project&#8217;s <abbr>URL</abbr>,
+            because that will change the project group&#8217;s <abbr>URL</abbr>,
             which will break all links from outside Launchpad.
             Take care with your changes,
             because they will be visible immediately.
           </p>
-        
+
       </div>
-    
+
     </div>
 
   </body>

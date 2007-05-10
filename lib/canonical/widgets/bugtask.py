@@ -14,17 +14,16 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
-    IDisplayWidget, IInputWidget, InputErrors, ConversionError,
-    WidgetInputError)
+    IDisplayWidget, IInputWidget, InputErrors, WidgetInputError,
+    ConversionError)
 from zope.schema.interfaces import ValidationError, InvalidValue
 from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
 
 from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import canonical_url
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 class BugTaskAssigneeWidget(Widget):
     """A widget for setting the assignee on an IBugTask."""
@@ -420,9 +419,9 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
             try:
                 return self.convertTokensToValues([input])[0]
             except InvalidValue:
-                raise LaunchpadValidationError(
+                raise ConversionError(
                     "Launchpad doesn't know of any source package named"
-                    " '%s' in %s.", input, distribution.displayname)
+                    " '%s' in %s." % (input, distribution.displayname))
         return source
 
 
@@ -443,7 +442,7 @@ class AssigneeDisplayWidget(BrowserWidget):
             assignee = assignee_field.get(bugtask)
         if assignee:
             person_img = renderElement(
-                'img', style="padding-bottom: 2px", src="/@@/user", alt="")
+                'img', style="padding-bottom: 2px", src="/@@/person", alt="")
             return renderElement(
                 'a', href=canonical_url(assignee),
                 contents="%s %s" % (person_img, escape(assignee.browsername)))
@@ -477,11 +476,11 @@ class DBItemDisplayWidget(BrowserWidget):
             return renderElement('span', contents='&mdash;')
 
 
-class NewLineToSpacesWidget(TextWidget):
+class NewLineToSpacesWidget(StrippedTextWidget):
     """A widget that replaces new line characters with spaces."""
 
     def _toFieldValue(self, input):
-        value = TextWidget._toFieldValue(self, input)
+        value = StrippedTextWidget._toFieldValue(self, input)
         if value is not self.context.missing_value:
             lines = value.splitlines()
             value = ' '.join(lines)

@@ -61,6 +61,14 @@ class MaloneApplication:
         return getUtility(IBugTrackerSet).search().count()
 
     @property
+    def projects_with_bugs_count(self):
+        return getUtility(ILaunchpadStatisticSet).value('projects_with_bugs')
+
+    @property
+    def shared_bug_count(self):
+        return getUtility(ILaunchpadStatisticSet).value('shared_bug_count')
+
+    @property
     def top_bugtrackers(self):
         return getUtility(IBugTrackerSet).getMostActiveBugTrackers(limit=5)
 
@@ -93,7 +101,12 @@ class RosettaApplication:
     def translatable_products(self):
         """See IRosettaApplication."""
         products = getUtility(IProductSet)
-        return products.translatables()
+        return products.getTranslatables()
+
+    def featured_products(self):
+        """See IRosettaApplication."""
+        products = getUtility(IProductSet)
+        return products.featuredTranslatables()
 
     def translatable_distroreleases(self):
         """See IRosettaApplication."""

@@ -29,7 +29,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Foo Series: main</h3>
   <h1>Upload new translation resources</h1>
 </metal:heading>
 
@@ -42,7 +41,7 @@
     files (<code>.tar</code>, <code>.tar.gz</code>, <code>.tgz</code> or
     <code>.tar.bz2</code>).
     The files you upload will be reviewed by an admin before they appear in
-    Rosetta.  We do this for new uploads so that we can check that things are
+    Launchpad.  We do this for new uploads so that we can check that things are
     set up properly.  Further uploads of these files will not need to be
     reviewed.
   </p>

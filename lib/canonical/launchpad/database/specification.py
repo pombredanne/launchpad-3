@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 from zope.interface import implements
+from zope.event import notify
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLMultipleJoin, SQLRelatedJoin, BoolCol)
@@ -35,7 +36,11 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.helpers import (
     contactEmailAddresses, shortlist)
 
+from canonical.launchpad.event.sqlobjectevent import (
+    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.specificationdependency import (
     SpecificationDependency)
 from canonical.launchpad.database.specificationbranch import (
@@ -50,6 +55,9 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
 
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, shortlist)
+from canonical.launchpad.components import ObjectDelta
 from canonical.launchpad.components.specification import SpecificationDelta
 
 
@@ -111,6 +119,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
+    mentoring_offers = SQLMultipleJoin(
+            'MentoringOffer', joinColumn='specification', orderBy='id')
     subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
@@ -247,6 +257,40 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 reqlist.append(fbreq)
         return reqlist
 
+    def canMentor(self, user):
+        """See ICanBeMentored."""
+        return not (not user or
+                    self.isMentor(user) or
+                    self.is_complete or
+                    not user.teams_participated_in)
+
+    def isMentor(self, user):
+        """See ICanBeMentored."""
+        return MentoringOffer.selectOneBy(
+            specification=self, owner=user) is not None
+
+    def offerMentoring(self, user, team):
+        """See ICanBeMentored."""
+        # if an offer exists, then update the team
+        mentoringoffer = MentoringOffer.selectOneBy(
+            specification=self, owner=user)
+        if mentoringoffer is not None:
+            mentoringoffer.team = team
+            return mentoringoffer
+        # if no offer exists, create one from scratch
+        mentoringoffer = MentoringOffer(owner=user, team=team,
+            specification=self)
+        notify(SQLObjectCreatedEvent(mentoringoffer, user=user))
+        return mentoringoffer
+
+    def retractMentoring(self, user):
+        """See ICanBeMentored."""
+        mentoringoffer = MentoringOffer.selectOneBy(
+            specification=self, owner=user)
+        if mentoringoffer is not None:
+            notify(SQLObjectDeletedEvent(mentoringoffer, user=user))
+            MentoringOffer.delete(mentoringoffer.id)
+
     def notificationRecipientAddresses(self):
         """See ISpecification."""
         related_people = [
@@ -380,40 +424,18 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def getDelta(self, old_spec, user):
         """See ISpecification."""
-        changes = {}
-        for field_name in ("title", "summary", "whiteboard", "specurl",
-            "productseries", "distrorelease", "milestone"):
-            # fields for which we simply show the new value when they
-            # change
-            old_val = getattr(old_spec, field_name)
-            new_val = getattr(self, field_name)
-            if old_val != new_val:
-                changes[field_name] = new_val
-
-        for field_name in ("name", "priority", "status", "target", "approver",
-                "assignee", "drafter"):
-            # fields for which we show old => new when their values change
-            old_val = getattr(old_spec, field_name)
-            new_val = getattr(self, field_name)
-            if old_val != new_val:
-                changes[field_name] = {}
-                changes[field_name]["old"] = old_val
-                changes[field_name]["new"] = new_val
-
-        old_bugs = old_spec.bugs
-        new_bugs = self.bugs
-        for bug in old_bugs:
-            if bug not in new_bugs:
-                if not changes.has_key('bugs_unlinked'):
-                    changes['bugs_unlinked'] = []
-                changes['bugs_unlinked'].append(bug)
-        for bug in new_bugs:
-            if bug not in old_bugs:
-                if not changes.has_key('bugs_linked'):
-                    changes['bugs_linked'] = []
-                changes['bugs_linked'].append(bug)
-
-        if changes:
+        delta = ObjectDelta(old_spec, self)
+        delta.recordNewValues(("title", "summary", "whiteboard",
+                               "specurl", "productseries",
+                               "distrorelease", "milestone"))
+        delta.recordNewAndOld(("name", "priority", "status", "target",
+                               "approver", "assignee", "drafter"))
+        delta.recordListAddedAndRemoved("bugs",
+                                        "bugs_linked",
+                                        "bugs_unlinked")
+        
+        if delta.changes:
+            changes = delta.changes
             changes["specification"] = self
             changes["user"] = user
 
@@ -424,10 +446,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     # subscriptions
     def subscription(self, person):
         """See ISpecification."""
-        for sub in self.subscriptions:
-            if sub.person.id == person.id:
-                return sub
-        return None
+        return SpecificationSubscription.selectOneBy(
+                specification=self, person=person)
 
     def getSubscriptionByName(self, name):
         """See ISpecification."""
@@ -436,14 +456,16 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 return sub
         return None
 
-    def subscribe(self, person, essential):
+    def subscribe(self, person, essential=None):
         """See ISpecification."""
         # first see if a relevant subscription exists, and if so, return it
         sub = self.subscription(person)
-        if sub is not None:
+        if sub is not None and essential is not None:
             sub.essential = essential
             return sub
         # since no previous subscription existed, create and return a new one
+        if essential is None:
+            essential = False
         return SpecificationSubscription(specification=self,
             person=person, essential=essential)
 
@@ -454,6 +476,13 @@ class Specification(SQLBase, BugLinkTargetMixin):
             if sub.person.id == person.id:
                 SpecificationSubscription.delete(sub.id)
                 return
+
+    def isSubscribed(self, person):
+        """See canonical.launchpad.interfaces.ISpecification."""
+        if person is None:
+            return False
+
+        return bool(self.subscription(person))
 
     # queueing
     def queue(self, reviewer, requester, queuemsg=None):

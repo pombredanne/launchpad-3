@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = ['ProductSeriesNavigation',
+           'ProductSeriesDynMenu',
            'ProductSeriesSOP',
            'ProductSeriesFacets',
            'ProductSeriesOverviewMenu',
@@ -18,6 +19,8 @@ __all__ = ['ProductSeriesNavigation',
            'get_series_branch_error']
 
 import cgi
+from datetime import datetime
+import pytz
 
 from BeautifulSoup import BeautifulSoup
 
@@ -45,11 +48,16 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from canonical.launchpad import _
+
+
+def quote(text):
+    return cgi.escape(text, quote=True)
 
 
 class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
@@ -226,8 +234,8 @@ def get_series_branch_error(product, branch):
     """
     if branch.product != product:
         return ('<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.'
-                % (canonical_url(branch), cgi.escape(branch.unique_name),
-                   canonical_url(product), cgi.escape(product.displayname)))
+                % (canonical_url(branch), quote(branch.unique_name),
+                   canonical_url(product), quote(product.displayname)))
     return None
 
 
@@ -380,7 +388,7 @@ class ProductSeriesView(LaunchpadView):
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be'
-                ' reviewed soon by an admin and then imported into Rosetta.'
+                ' reviewed soon by an admin and then imported into Launchpad.'
                 ' You can track its status from the <a href="%s">Translation'
                 ' Import Queue</a>' %
                     canonical_url(translation_import_queue_set))
@@ -395,7 +403,7 @@ class ProductSeriesView(LaunchpadView):
                 self.request.response.addInfoNotification(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be reviewed soon by an admin and then imported'
-                    ' into Rosetta. You can track its status from the'
+                    ' into Launchpad. You can track its status from the'
                     ' <a href="%s">Translation Import Queue</a>' % (
                         num,
                         canonical_url(translation_import_queue_set)))
@@ -407,6 +415,56 @@ class ProductSeriesView(LaunchpadView):
             self.request.response.addWarningNotification(
                 "Ignored your upload because the file you uploaded was not"
                 " recognised as a file that can be imported.")
+
+    def hasVcsImportSuccessStatus(self):
+        """Whether we know if the the last import attempt was successful."""
+        return (
+            self.context.importstatus is not None
+            and self.context.importstatus >= ImportStatus.PROCESSING
+            and self.context.datefinished is not None
+            and self.context.datelastsynced is not None
+            and self.context.datefinished >= self.context.datelastsynced)
+
+    def lastVcsImportSuccessful(self):
+        """Whether the last attempt to sync with upstream succeeded."""
+        assert self.context.datefinished is not None
+        assert self.context.datelastsynced is not None
+        return self.context.datefinished == self.context.datelastsynced
+
+    @property
+    def lastVcsImportAttemptAge(self):
+        """How long ago was a vcs-import sync last attempted."""
+        assert self.context.datefinished is not None
+        now = datetime.now(pytz.timezone('UTC'))
+        return now - self.context.datefinished
+
+    def hasVcsImportBranchAge(self):
+        """Whether we know when the published branch was last synced."""
+        if (self.context.datelastsynced is None
+                or self.context.import_branch is None
+                or self.context.import_branch.last_mirrored is None):
+            return False
+        last_mirrored = self.context.import_branch.last_mirrored
+        return (last_mirrored > self.context.datelastsynced
+                or self.context.datepublishedsync is not None)
+
+    @property
+    def currentVcsImportBranchAge(self):
+        """How long ago the published Bazaar branch was last synced."""
+        branch = self.context.import_branch
+        assert branch is not None
+        assert branch.last_mirrored is not None
+        assert self.context.datelastsynced is not None
+        if branch.last_mirrored > self.context.datelastsynced:
+            # Branch was published since last successful sync.
+            timestamp = self.context.datelastsynced
+        else:
+            # The currently published branch still has the data from the
+            # previous sync.
+            timestamp = self.context.datepublishedsync
+        assert timestamp is not None
+        now = datetime.now(pytz.timezone('UTC'))
+        return now - timestamp
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
@@ -490,33 +548,39 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
             # are unset.
             if not (cvsroot or self.getWidgetError('cvsroot')):
                 self.setFieldError('cvsroot',
-                                   'Please enter a CVS root.')
+                                   'Enter a CVS root.')
             if not (cvsmodule or self.getWidgetError('cvsmodule')):
                 self.setFieldError('cvsmodule',
-                                   'Please enter a CVS module.')
+                                   'Enter a CVS module.')
             if not (cvsbranch or self.getWidgetError('cvsbranch')):
                 self.setFieldError('cvsbranch',
-                                   'Please enter a CVS branch.')
+                                   'Enter a CVS branch.')
             if cvsroot and cvsmodule and cvsbranch:
                 series = getUtility(IProductSeriesSet).getByCVSDetails(
                     cvsroot, cvsmodule, cvsbranch)
                 if self.context != series and series is not None:
-                    self.addError('CVS repository details already in use '
-                                  'by another product.')
+                    self.addError(
+                        "Those CVS details are already specified for"
+                        " <a href=\"%s\">%s %s</a>."
+                        % (quote(canonical_url(series)),
+                           quote(series.product.displayname),
+                           quote(series.displayname)))
 
         elif rcstype == RevisionControlSystems.SVN:
             svnrepository = data.get('svnrepository')
             if not (svnrepository or self.getWidgetError('svnrepository')):
                 self.setFieldError('svnrepository',
-                                   'Please give valid Subversion server '
-                                   'details.')
+                    "Enter the URL of a Subversion branch.")
             if svnrepository:
                 series = getUtility(IProductSeriesSet).getBySVNDetails(
                     svnrepository)
                 if self.context != series and series is not None:
                     self.setFieldError('svnrepository',
-                                       'Subversion repository details '
-                                       'already in use by another product.')
+                        "This Subversion branch URL is already specified for"
+                        " <a href=\"%s\">%s %s</a>."
+                        % (quote(canonical_url(series)),
+                           quote(series.product.displayname),
+                           quote(series.displayname)))
 
         if self.resettoautotest_action.submitted():
             if rcstype is None:
@@ -684,3 +748,11 @@ class ProductSeriesShortLink(DefaultShortLink):
 
     def getLinkText(self):
         return self.context.displayname
+
+
+class ProductSeriesDynMenu(DynMenu):
+
+    def mainMenu(self):
+        for release in self.context.releases:
+            yield self.makeLink(release.title, context=release)
+

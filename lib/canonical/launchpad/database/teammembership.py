@@ -86,7 +86,7 @@ class TeamMembership(SQLBase):
         subject = 'Launchpad: %s team membership about to expire' % team.name
 
         admins_names = []
-        admins = team.getEffectiveAdministrators()
+        admins = team.getDirectAdministrators()
         assert admins.count() >= 1
         if admins.count() == 1:
             admin = admins[0]
@@ -140,12 +140,10 @@ class TeamMembership(SQLBase):
         # is allowed. All allowed transitions are in the TeamMembership spec.
         if self.status in [admin, approved]:
             assert status in [admin, approved, expired, deactivated]
-        elif self.status in [deactivated]:
-            assert status in [approved]
-        elif self.status in [expired]:
-            assert status in [approved]
+        elif self.status in [deactivated, expired]:
+            assert status in [proposed, approved]
         elif self.status in [proposed]:
-            assert status in [approved, declined]
+            assert status in [approved, admin, declined]
         elif self.status in [declined]:
             assert status in [proposed, approved]
 
@@ -161,13 +159,10 @@ class TeamMembership(SQLBase):
 
         self.syncUpdate()
 
-        # XXX: The logic here is not correct, as deactivated or expired
-        # members should be able to propose themselves as members.
-        # https://launchpad.net/bugs/5997
-        if ((status == approved and self.status != admin) or
-            (status == admin and self.status != approved)):
+        if status in [admin, approved]:
             _fillTeamParticipation(self.person, self.team)
-        elif status in [deactivated, expired]:
+        else:
+            assert status in [proposed, declined, deactivated, expired]
             _cleanTeamParticipation(self.person, self.team)
 
         # When a member proposes himself, a more detailed notification is
@@ -347,13 +342,9 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
     each superteam of <team>.
     """
     for subteam in team.getSubTeams():
-        # There's no need to worry for the case where person == subteam because
-        # a team doesn't have a teamparticipation entry for itself and then a
-        # call to team.hasParticipationEntryFor(team) will always return
-        # False.
-        if person.hasParticipationEntryFor(subteam):
-            # This is an indirect member of this team and thus it should
-            # be kept as so.
+        if person.hasParticipationEntryFor(subteam) and person != subteam:
+            # This is an indirect member of the given team, so we must not
+            # remove his participation entry for that team.
             return
 
     result = TeamParticipation.selectOneBy(person=person, team=team)

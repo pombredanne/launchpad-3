@@ -1,19 +1,24 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'BranchRevision',
-           'RevisionSet']
+__all__ = [
+    'Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionProperty',
+    'RevisionSet']
+
+import email
 
 from zope.interface import implements
-from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
+from sqlobject import (
+    ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
 
-from canonical.launchpad.interfaces import (
-    IRevision, IRevisionAuthor, IRevisionParent, IBranchRevision, IRevisionSet)
-from canonical.launchpad.helpers import shortlist
-
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.launchpad.interfaces import (
+    IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
+    IRevisionSet)
+from canonical.launchpad.helpers import shortlist
 
 
 class Revision(SQLBase):
@@ -32,6 +37,8 @@ class Revision(SQLBase):
                             alternateMethodName='byRevisionID')
     revision_date = UtcDateTimeCol(notNull=False)
 
+    properties = SQLMultipleJoin('RevisionProperty', joinColumn='revision')
+
     @property
     def parents(self):
         """See IRevision.parents"""
@@ -47,6 +54,10 @@ class Revision(SQLBase):
         """
         return [parent.parent_id for parent in self.parents]
 
+    def getProperties(self):
+        """See IRevision."""
+        return dict((prop.name, prop.value) for prop in self.properties)
+
 
 class RevisionAuthor(SQLBase):
     implements(IRevisionAuthor)
@@ -54,6 +65,16 @@ class RevisionAuthor(SQLBase):
     _table = 'RevisionAuthor'
 
     name = StringCol(notNull=True, alternateID=True)
+
+    def _getNameWithoutEmail(self):
+        """Return the name of the revision author without the email address.
+
+        If there is no name information (i.e. when the revision author only
+        supplied their email address), return None.
+        """
+        return email.Utils.parseaddr(self.name)[0]
+
+    name_without_email = property(_getNameWithoutEmail)
 
 
 class RevisionParent(SQLBase):
@@ -70,19 +91,17 @@ class RevisionParent(SQLBase):
     parent_id = StringCol(notNull=True)
 
 
-class BranchRevision(SQLBase):
-    """The association between a revision and a branch."""
+class RevisionProperty(SQLBase):
+    """A property on a revision. See IRevisionProperty."""
 
-    implements(IBranchRevision)
+    implements(IRevisionProperty)
 
-    _table = 'BranchRevision'
-    
-    branch = ForeignKey(
-        dbName='branch', foreignKey='Branch', notNull=True)
+    _table = 'RevisionProperty'
 
-    sequence = IntCol()
     revision = ForeignKey(
         dbName='revision', foreignKey='Revision', notNull=True)
+    name = StringCol(notNull=True)
+    value = StringCol(notNull=True)
 
 
 class RevisionSet:
@@ -93,8 +112,10 @@ class RevisionSet:
         return Revision.selectOneBy(revision_id=revision_id)
 
     def new(self, revision_id, log_body, revision_date, revision_author, owner,
-            parent_ids):
+            parent_ids, properties):
         """See IRevisionSet.new()"""
+        if properties is None:
+            properties = {}
         # create a RevisionAuthor if necessary:
         try:
             author = RevisionAuthor.byName(revision_author)
@@ -113,5 +134,9 @@ class RevisionSet:
             seen_parents.add(parent_id)
             RevisionParent(revision=revision, sequence=sequence,
                            parent_id=parent_id)
-        
+
+        # Create revision properties.
+        for name, value in properties.iteritems():
+            RevisionProperty(revision=revision, name=name, value=value)
+
         return revision

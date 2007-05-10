@@ -202,7 +202,7 @@ answer questions.
 For a person, it is the same list than its list of known languages,
 with the addition that English is always assumed to be supported:
 
-    >>> sample_person = getUtility(IPersonSet).getByName('name16')
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> language_codes(sample_person.languages)
     []
     >>> language_codes(sample_person.getSupportedLanguages())
@@ -325,3 +325,63 @@ And questions on which the user commented:
 
     >>> sorted(language.code for language in carlos.getQuestionLanguages())
     [u'en', u'es', u'pt_BR']
+
+== getDirectAnswerQuestionTargets() ==
+
+IPerson defines getDirectAnswerQuestionTargets that can be used to retrieve
+a list of IQuestionTargets that a person subscribed himself to as an
+answer contact.
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv.getDirectAnswerQuestionTargets()
+    []
+    
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> firefox.addAnswerContact(no_priv)
+    True
+    
+    >>> for target in no_priv.getDirectAnswerQuestionTargets():
+    ...    print target.name
+    firefox
+
+== getTeamAnswerQuestionTargets() ==
+    
+IPerson defines getTeamAnswerQuestionTargets that retreives a list of
+IQuestionTargets that the person is subscribed to indirectly as an
+answer contact through his team membership.
+
+    >>> landscape_team = getUtility(IPersonSet).getByName(
+    ...    "landscape-developers")
+    >>> landscape_team.addMember(no_priv, foo_bar)
+    >>> no_priv.inTeam(landscape_team)
+    True
+    
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu.addAnswerContact(landscape_team)
+    True
+    
+    >>> sorted([target.name
+    ...         for target in no_priv.getTeamAnswerQuestionTargets()])
+    [u'ubuntu']
+    
+Indirect team membership is also taken in consideration. For example, 
+the Landscape Team joins the Translator Team. So targets for which the
+Translator team is an answer contact will be included in No Privileges 
+Person's supported IQuestionTargets:
+
+    >>> translator_team = getUtility(IPersonSet).getByName('ubuntu-translators')
+    >>> no_priv.inTeam(translator_team)
+    False
+    >>> translator_team.addMember(landscape_team, carlos)
+    >>> no_priv.hasParticipationEntryFor(translator_team)
+    True
+    >>> evolution_package = ubuntu.getSourcePackage('evolution')
+    >>> evolution_package.addAnswerContact(translator_team)
+    True
+    >>> sorted([target.name
+    ...         for target in no_priv.getTeamAnswerQuestionTargets()])
+    [u'evolution', u'ubuntu']
+
+    
