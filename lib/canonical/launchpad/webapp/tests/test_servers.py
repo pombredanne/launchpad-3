@@ -42,6 +42,18 @@ class SetInWSGIEnvironmentTestCase(unittest.TestCase):
         request.setInWSGIEnvironment('key', 'second value')
         self.assertEqual(request._orig_env['key'], 'second value')
 
+    def test_set_after_retry(self):
+        # Test that setInWSGIEnvironment() a key in the environment
+        # can be set twice over a request retry.
+        from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
+        data = StringIO.StringIO('foo')
+        env = {}
+        request = LaunchpadBrowserRequest(data, env)
+        request.setInWSGIEnvironment('key', 'first value')
+        new_request = request.retry()
+        new_request.setInWSGIEnvironment('key', 'second value')
+        self.assertEqual(new_request._orig_env['key'], 'second value')
+
 
 def test_suite():
     suite = unittest.TestSuite()

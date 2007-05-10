@@ -86,7 +86,7 @@ class TeamMembership(SQLBase):
         subject = 'Launchpad: %s team membership about to expire' % team.name
 
         admins_names = []
-        admins = team.getEffectiveAdministrators()
+        admins = team.getDirectAdministrators()
         assert admins.count() >= 1
         if admins.count() == 1:
             admin = admins[0]

@@ -279,6 +279,13 @@ class BasicLaunchpadRequest:
     def stepstogo(self):
         return StepsToGo(self)
 
+    def retry(self):
+        """See IPublisherRequest."""
+        new_request = super(BasicLaunchpadRequest, self).retry()
+        # propagate the list of keys we have set in the WSGI environment
+        new_request._wsgi_keys = self._wsgi_keys
+        return new_request
+
     def getNearest(self, *some_interfaces):
         """See ILaunchpadBrowserApplicationRequest.getNearest()"""
         for context in reversed(self.traversed_objects):
@@ -386,6 +393,12 @@ class LaunchpadTestRequest(TestRequest):
     True
     """
     implements(INotificationRequest)
+
+    def __init__(self, body_instream=None, environ=None, form=None,
+                 skin=None, outstream=None, method='GET', **kw):
+        super(LaunchpadTestRequest, self).__init__(
+            body_instream=body_instream, environ=environ, form=form,
+            skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
 
     @property
     def uuid(self):

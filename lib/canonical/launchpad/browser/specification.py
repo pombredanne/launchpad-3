@@ -54,7 +54,7 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
-    stepthrough, stepto)
+    safe_action, stepthrough, stepto)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
@@ -917,6 +917,7 @@ class SpecificationLinkBranchView(LaunchpadFormView):
 class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     """View for the Blueprints index page."""
 
+    @safe_action
     @action('Find blueprints', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""

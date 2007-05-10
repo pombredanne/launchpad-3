@@ -39,6 +39,17 @@ XXX: This doctest needs a lot of cleanups!
     ...     foobar, 't5', 't5',
     ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
 
+    # Make sure the teams have predictable (and different) creation dates as
+    # some of our tests depend on that.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> oldest = t1.datecreated
+    >>> removeSecurityProxy(t2).datecreated = oldest + timedelta(hours=1)
+    >>> removeSecurityProxy(t3).datecreated = oldest + timedelta(hours=2)
+    >>> removeSecurityProxy(t4).datecreated = oldest + timedelta(hours=3)
+    >>> removeSecurityProxy(t5).datecreated = oldest + timedelta(hours=4)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
 == Adding new members ==
 
 One way of adding new members to a team is by having the user himself join the
@@ -96,7 +107,6 @@ was already an active/inactive member or has never been a member before.
     >>> sabdfl = personset.getByName('sabdfl')
     >>> t3.addMember(
     ...     salgado, reviewer=sabdfl, status=TeamMembershipStatus.ADMIN)
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import ITeamMembershipSet
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> flush_database_updates()
@@ -199,8 +209,7 @@ owner he's also a direct member of all teams)
 
 
 We can use IPerson.findPathToTeam() to check some of the relationships drawn
-above. Note that because of https://launchpad.net/bugs/30789 we can't use it
-to check the path from a team to another one.
+above, either from a person to a given team ...
 
     >>> [team.name for team in salgado.findPathToTeam(t1)]
     [u't3', u't2', u't1']
@@ -208,6 +217,11 @@ to check the path from a team to another one.
     [u't3', u't2', u't5']
     >>> [team.name for team in salgado.findPathToTeam(t3)]
     [u't3']
+
+... or from a team to another one:
+
+    >>> [team.name for team in t3.findPathToTeam(t4)]
+    [u't2', u't1', u't4']
 
 t2 can't use its leave() method to leave t5 because it's a team and teams
 take no actions. One of t5 administrators have to go and remove t2 from t5
@@ -443,7 +457,6 @@ while the one that was inactive hasn't changed.
 
     # These two objects were updated in another transaction, so we need to
     # expire them.
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(foobar_on_admins).expire()
     >>> removeSecurityProxy(sp_on_ubuntu_translators).expire()
 
@@ -504,21 +517,52 @@ We can also change the sort order of the results of getMembersByStatus.
     ...  for person in t3.getMembersByStatus(deactivated, orderBy=orderBy)]
     [u'Guilherme Salgado (salgado)', u'Celso Providelo (cprov)']
 
-Another convenient method is getEffectiveAdministrators(), which returns the
+== Finding team administrators ==
+
+Another convenient method is getDirectAdministrators(), which returns the
 admin members plus the owner in case he is not one of the admin members.
 
     >>> [admin.unique_displayname for admin in t3.adminmembers]
     [u'Foo Bar (name16)']
-    >>> list(t3.getEffectiveAdministrators()) == list(t3.adminmembers)
+    >>> list(t3.getDirectAdministrators()) == list(t3.adminmembers)
     True
 
     >>> shipit_admins = personset.getByName('shipit-admins')
     >>> shipit_admins.adminmembers.count() == 0
     True
     >>> owner = shipit_admins.teamowner
-    >>> list(shipit_admins.getEffectiveAdministrators()) == [owner]
+    >>> list(shipit_admins.getDirectAdministrators()) == [owner]
     True
-    
+
+Note that the team administrators can contain teams, so if you want to
+check if a user is an admin of the team, you should use inTeam() to
+check if the user is a member of these administrators. For example,
+cprov isn't a direct administrator of the guadamen team, but he is
+an indirect administrator by being a member of the Ubuntu team (which
+is a direct administrator of the guadamen team):
+
+    >>> guadamen_team = personset.getByName('guadamen')
+    >>> [person.name for person in guadamen_team.getDirectAdministrators()]
+    [u'name16', u'ubuntu-team']
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> cprov.inTeam(ubuntu_team)
+    True
+    >>> foobar in guadamen_team.getDirectAdministrators()
+    True
+    >>> cprov in guadamen_team.getDirectAdministrators()
+    False
+    >>> login('celso.providelo@canonical.com')
+    >>> check_permission('launchpad.Edit', guadamen_team)
+    True
+
+There is also the getAdministratedTeams() method that returns all the
+teams for which the person/team has admin rights.
+
+    >>> [team.name for team in cprov.getAdministratedTeams()]
+    [u'guadamen', u'launchpad-buildd-admins']
+
 == Querying a person for team participation ==
 
 Team membership is direct; team participation is indirect, people being
