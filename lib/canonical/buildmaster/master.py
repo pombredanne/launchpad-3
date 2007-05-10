@@ -642,6 +642,8 @@ class BuilddMaster:
             return
 
         try:
+            # Resume build XEN-images
+            builders.resumeBuilder(builder)
             # send chroot
             builders.giveToBuilder(builder, chroot, self.librarian)
             # build filemap structure with the files required in this build.

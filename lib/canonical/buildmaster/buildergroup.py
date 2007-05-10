@@ -161,6 +161,15 @@ class BuilderGroup:
         if not self.okslaves:
             self.logger.warn("No builders are available")
 
+    def resumeBuilder(self, builder):
+        """XXX cprov 20070510: Please FIX ME ASAP !"""
+        self.logger.debug("Resuming %s" % builder.url)
+        hostname = builder.url.split(':')[1][2:].split('.')[0]
+        host_url = '%s-host.ppa' % hostname
+        ssh_cmd = "ssh -v -i ~/.ssh/ppa-reset-builder ppa@%s" % host_url
+        self.logger.debug('Running: %s' % ssh_cmd)
+        os.system(ssh_cmd)
+
     def failBuilder(self, builder, reason):
         """Mark builder as failed.
 
