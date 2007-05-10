@@ -583,6 +583,9 @@ def openid_decide(context, view):
 
 openid_index = 'Launchpad OpenID Server'
 
+def openid_invalid_identity(context, view):
+    return 'Invalid OpenID identity %s' % view.openid_request.identity
+
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
 
@@ -592,7 +595,7 @@ def people_list(context, view):
     return view.header
 
 person_answer_contact_for = ContextDisplayName(
-    'Projects for which %s is an answer contact')    
+    'Projects for which %s is an answer contact')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 

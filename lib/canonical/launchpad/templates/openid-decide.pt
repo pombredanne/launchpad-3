@@ -2,9 +2,7 @@
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
-<body tal:define="vhosts
-    modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
-
+<body>
     <div metal:fill-slot="main">
         <p>A site identifying as
             <em tal:content="view/openid_request/trust_root" />

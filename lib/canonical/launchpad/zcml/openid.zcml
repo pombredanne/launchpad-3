@@ -3,7 +3,7 @@
 
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
-        for="*"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         permission="zope.Public"
         name="+openid"
         class="canonical.launchpad.browser.openidserver.OpenIdView"

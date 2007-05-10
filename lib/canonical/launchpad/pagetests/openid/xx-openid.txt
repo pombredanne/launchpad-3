@@ -135,6 +135,39 @@ openid.mode:id_res
 openid.user_setup_url:http://openid.launchpad.dev/?...
 <BLANKLINE>
 
+
+An error is returned to the consumer if an attempt to login as a team is
+made.
+
+>>> args = urlencode({
+...     'openid.mode': 'checkid_immediate',
+...     'openid.identity': 'https://launchpad.dev/~admins',
+...     'openid.assoc_handle': assoc_handle,
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+...     })
+>>> user_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print user_browser.contents
+Consumer received GET
+openid.mode:id_res
+openid.user_setup_url:http://openid.launchpad.dev/?...
+<BLANKLINE>
+
+An error is returned to the consumer if an attempt to login as an invalid
+user.
+
+>>> args = urlencode({
+...     'openid.mode': 'checkid_immediate',
+...     'openid.identity': 'https://launchpad.dev/~limi',
+...     'openid.assoc_handle': assoc_handle,
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+...     })
+>>> user_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print user_browser.contents
+Consumer received GET
+openid.mode:id_res
+openid.user_setup_url:http://openid.launchpad.dev/?...
+<BLANKLINE>
+
 We test a success below in the 'Sticky Authorization' section.
 
 
@@ -179,7 +212,6 @@ openid.mode:cancel
 <BLANKLINE>
 
 
-
 Now, lets do that again but allow the request. This will require us
 to log in to Launchpad before being redirected back to the consumer
 informing it that the request is valid.
@@ -195,6 +227,7 @@ http://openid.launchpad.dev/+openid/+login?...
 >>> anon_browser.getControl('Password', index=0).value = 'test'
 >>> anon_browser.getControl('Log In', index=0).click()
 >>> sabdfl_browser = anon_browser # We are now logged in
+>>> anon_browser = setupBrowser() # Reset anon_browser to be anon
 
 >>> print sabdfl_browser.url
 http://launchpad.dev/+openid-consumer?...
@@ -345,7 +378,6 @@ openid.return_to:http://launchpad.dev/+openid-consumer
 Now that we have authorized for 1 hour, further auth requests
 automatically succeed without user intervention.
 
-
 >>> sabdfl_browser.open(setup_url)
 >>> print sabdfl_browser.contents
 Consumer received GET
@@ -353,5 +385,64 @@ Consumer received GET
 openid.identity:https://launchpad.dev/~sabdfl
 openid.mode:id_res
 openid.return_to:http://launchpad.dev/+openid-consumer
+...
+
+
+== Identity Ownership ==
+
+You cannot log in as someone elses identity. If you try to, you will be
+prompted with a login screen to connect as the correct user.
+
+Immediate mode:
+
+>>> args = urlencode({
+...     'openid.mode': 'checkid_immediate',
+...     'openid.identity': 'https://launchpad.dev/~stub',
+...     'openid.assoc_handle': assoc_handle,
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+...     })
+>>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print sabdfl_browser.contents
+Consumer received GET
+openid.mode:id_res
+openid.user_setup_url:http://openid.launchpad.dev/?...
+<BLANKLINE>
+
+Interactive mode:
+
+>>> [setup_url] = re.findall(
+...     '(?m)^openid.user_setup_url:(.*)$', sabdfl_browser.contents
+...     )
+>>> sabdfl_browser.open(setup_url)
+>>> sabdfl_browser.getControl('Allow').click()
+Traceback (most recent call last):
+...
+Unauthorized: You are not yet authorized to use this OpenID identifier.
+
+== Invalid identities ==
+
+If you attempt interactive authentication with an invalid OpenID
+identifier, you get a nice error page.
+
+>>> args = urlencode({
+...     'openid.mode': 'checkid_immediate',
+...     'openid.identity': 'https://launchpad.dev/~limi',
+...     'openid.assoc_handle': assoc_handle,
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+...     })
+>>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> [setup_url] = re.findall(
+...     '(?m)^openid.user_setup_url:(.*)$', sabdfl_browser.contents
+...     )
+>>> sabdfl_browser.open(setup_url)
+>>> print '\n' + sabdfl_browser.contents
+<BLANKLINE>
+...
+that is not a valid Launchpad OpenID identity URL, such as
+<strong>http://launchpad.dev/~sabdfl</strong>
+...
+<form action="http://launchpad.dev/+openid-consumer?openid.mode=cancel">
+<input type="submit" value="Continue" />
+</form>
 ...
 

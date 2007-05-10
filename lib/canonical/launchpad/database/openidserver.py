@@ -49,6 +49,8 @@ class OpenIdAuthorizationSet:
         if expires is None:
             expires = NEVER_EXPIRES
 
+        assert not person.isTeam(), 'Attempting to authorize a team.'
+
         existing = OpenIdAuthorization.selectOneBy(
                 personID=person.id,
                 trust_root=trust_root,

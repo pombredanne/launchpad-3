@@ -31,7 +31,7 @@ from openid import oidutil
 
 from canonical.launchpad.interfaces import (
         ILaunchBag, IOpenIdAuthorizationSet, UnexpectedFormData,
-        ILaunchpadOpenIdStoreFactory,
+        ILaunchpadOpenIdStoreFactory, IPersonSet,
         )
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -63,16 +63,17 @@ class OpenIdView(LaunchpadView):
             "../templates/openid-invalid-identity.pt"
             )
 
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
+        self.openid_server = Server(store_factory())
+
     def render(self):
         """Handle all OpenId requests and form submissions
 
         Returns the page contents after setting all relevant headers in
         self.request.response
         """
-        # We instantiate this here rather than in __init__ to make other
-        # methods of this class unit testable.
-        store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
-        self.openid_server = Server(store_factory())
         # Detect submission of the decide page
         if self.request.form.has_key('token'):
             self.restoreSessionOpenIdRequest()
@@ -103,30 +104,32 @@ class OpenIdView(LaunchpadView):
             return self.default_template()
 
         if self.openid_request.mode in ['checkid_immediate', 'checkid_setup']:
+
             self.login = self.extractName(self.openid_request.identity)
-            if self.login is None:
-                # Failed to extract the username from the identity, which
-                # means this is not a valid Launchpad identity.
-                # Display an error message to the user and let them
-                # continue.
-                if self.current_user is None:
-                    self.login = 'username'
-                else:
-                    self.login = self.current_user.name
-                return self.invalid_identity_template()
 
             if self.isAuthorized():
                 # User has previously allowed auth to this site, or we
                 # wish to force auth to be allowed to this site
                 openid_response = self.openid_request.answer(True)
 
+
             elif self.openid_request.immediate:
-                # An immediate request has come through, but we can't
-                # approve it without asking the user. So report fail to
-                # the consumer.
+                # Immediate requests must fail if user is not logged in.
                 openid_response = self.openid_request.answer(
-                        False, allvhosts.configs['openid'].rooturl
-                        )
+                    False, allvhosts.configs['openid'].rooturl
+                    )
+
+            elif self.login is None:
+                # Failed to extract the username from the identity, which
+                # means this is not a valid Launchpad identity.
+                # Display an error message to the user and let them
+                # continue.
+                if self.user is None:
+                    self.login = 'username'
+                else:
+                    self.login = self.user.name
+                return self.invalid_identity_template()
+
             else:
                 # We have an interactive id check request (checkid_setup).
                 # Render a page allowing the user to choose how to proceed.
@@ -152,10 +155,12 @@ class OpenIdView(LaunchpadView):
         """Return the Person.name from the OpenID identitifier.
         
         Returns None if the identity was not a valid Launchpad OpenID
-        identifier.
+        identifier. This includes checks that the name belongs to a valid
+        person and is not a team.
 
         >>> view = OpenIdView(None, None)
         >>> view.extractName('foo')
+        >>> view.extractName('https://launchpad.dev/~admins')
         >>> view.extractName('http://example.com/~sabdfl')
         >>> view.extractName('http://launchpad.dev/~sabdfl')
         'sabdfl'
@@ -173,12 +178,25 @@ class OpenIdView(LaunchpadView):
             raise AssertionError("Invalid root url %s" % rooturl)
 
         # Note that we accept
-        match = re.search(r'^\s*%s(?:~|%%7E)(\w+)\s*$' % url_match_string, identity)
+        match = re.search(
+                r'^\s*%s(?:~|%%7E)(\w+)\s*$' % url_match_string, identity
+                )
 
         if match is None:
             return None
-        else:
-            return match.group(1)
+
+        name = match.group(1)
+
+        person_set = getUtility(IPersonSet)
+        person = person_set.getByName(name)
+
+        if person is None:
+            return None
+
+        if not person.is_valid_person:
+            return None
+
+        return name
 
     @property
     def trust_root(self):
