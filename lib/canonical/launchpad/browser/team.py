@@ -278,6 +278,11 @@ class TeamMemberAddView(LaunchpadFormView):
 
         self.context.addMember(newmember, reviewer=self.user,
                                status=TeamMembershipStatus.APPROVED)
-        self.request.response.addInfoNotification(
-            "%s (%s) was added as a member of %s." % (
-            newmember.browsername, newmember.name, self.context.browsername))
+        if newmember.isTeam():
+            msg = "%s has been invited to join this team." % (
+                  newmember.unique_displayname)
+        else:
+            msg = "%s has been added as a member of this team." % (
+                  newmember.unique_displayname)
+        self.request.response.addInfoNotification(msg)
+

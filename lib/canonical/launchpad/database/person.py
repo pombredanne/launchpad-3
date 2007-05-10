@@ -33,7 +33,7 @@ from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
-from canonical.launchpad.event.team import JoinTeamEvent
+from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import (
     contactEmailAddresses, is_english_variant, shortlist)
 
@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
     ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH, IProduct,
     IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasLogo, IHasMugshot,
-    IHasIcon, JoinNotAllowed)
+    IHasIcon, JoinNotAllowed, ILaunchBag)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -1003,24 +1003,30 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         assert self.isTeam()
         to_addrs = set()
-        for person in self.getEffectiveAdministrators():
+        for person in self.getDirectAdministrators():
             to_addrs.update(contactEmailAddresses(person))
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None):
         """See IPerson."""
-        assert self.isTeam()
+        assert self.isTeam(), "You cannot add members to a person."
+        assert status in [TeamMembershipStatus.APPROVED,
+                          TeamMembershipStatus.PROPOSED,
+                          TeamMembershipStatus.ADMIN]
 
+        event = JoinTeamEvent
         if person.isTeam():
             assert not self.hasParticipationEntryFor(person), (
                 "Team '%s' is a member of '%s'. As a consequence, '%s' can't "
                 "be added as a member of '%s'"
                 % (self.name, person.name, person.name, self.name))
+            # Teams can only be invited as members, meaning that one of the
+            # team's admins will have to accept the invitation before the team
+            # is made a member.
+            status = TeamMembershipStatus.INVITED
+            event = TeamInvitationEvent
 
-        assert status in [TeamMembershipStatus.APPROVED,
-                          TeamMembershipStatus.PROPOSED,
-                          TeamMembershipStatus.ADMIN]
         old_status = None
         expires = self.defaultexpirationdate
         tm = TeamMembership.selectOneBy(person=person, team=self)
@@ -1035,7 +1041,25 @@ class Person(SQLBase, HasSpecificationsMixin):
             TeamMembershipSet().new(
                 person, self, status, dateexpires=expires, reviewer=reviewer,
                 reviewercomment=comment)
-            notify(JoinTeamEvent(person, self))
+            notify(event(person, self))
+
+    # This method is not in the IPerson interface because we want to protect
+    # it with a launchpad.Edit permission. We could do that by defining
+    # explicit permissions for all IPerson methods/attributes in the zcml but
+    # that's far from optimal given the size of IPerson.
+    def acceptInvitationToBeMemberOf(self, team):
+        """Accept an invitation to become a member of the given team.
+        
+        There must be a TeamMembership for this person and the given team with
+        the INVITED status. The status of this TeamMembership will be changed
+        to APPROVED.
+        """
+        tm = TeamMembership.selectOneBy(person=self, team=team)
+        assert tm is not None
+        assert tm.status == TeamMembershipStatus.INVITED
+        tm.setStatus(
+            TeamMembershipStatus.APPROVED, getUtility(ILaunchBag).user)
+        tm.syncUpdate()
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
@@ -1057,9 +1081,26 @@ class Person(SQLBase, HasSpecificationsMixin):
 
         tm.syncUpdate()
 
-    def getEffectiveAdministrators(self):
+    def getAdministratedTeams(self):
         """See IPerson."""
-        assert self.isTeam()
+        owner_of_teams = Person.select('''
+            Person.teamowner = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            ''' % sqlvalues(self),
+            clauseTables=['TeamParticipation'])
+        admin_of_teams = Person.select('''
+            Person.id = TeamMembership.team
+            AND TeamMembership.status = %(admin)s
+            AND TeamMembership.person = TeamParticipation.team
+            AND TeamParticipation.person = %(person)s
+            ''' % sqlvalues(person=self, admin=TeamMembershipStatus.ADMIN),
+            clauseTables=['TeamParticipation', 'TeamMembership'])
+        orderBy = SQLConstant("person_sort_key(displayname, name)")
+        return admin_of_teams.union(owner_of_teams, orderBy=orderBy)
+
+    def getDirectAdministrators(self):
+        """See IPerson."""
+        assert self.isTeam(), 'Method should only be called on a team.'
         owner = Person.select("id = %s" % sqlvalues(self.teamowner))
         # We can't use Person.sortingColumns with union() queries
         # because the table name Person is not available in that

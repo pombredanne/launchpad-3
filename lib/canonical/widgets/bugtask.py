@@ -23,6 +23,7 @@ from zope.app.form.utility import setUpWidget
 from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
 from canonical.launchpad.webapp import canonical_url
 from canonical.widgets.popup import SinglePopupWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 class BugTaskAssigneeWidget(Widget):
     """A widget for setting the assignee on an IBugTask."""
@@ -475,11 +476,11 @@ class DBItemDisplayWidget(BrowserWidget):
             return renderElement('span', contents='&mdash;')
 
 
-class NewLineToSpacesWidget(TextWidget):
+class NewLineToSpacesWidget(StrippedTextWidget):
     """A widget that replaces new line characters with spaces."""
 
     def _toFieldValue(self, input):
-        value = TextWidget._toFieldValue(self, input)
+        value = StrippedTextWidget._toFieldValue(self, input)
         if value is not self.context.missing_value:
             lines = value.splitlines()
             value = ' '.join(lines)

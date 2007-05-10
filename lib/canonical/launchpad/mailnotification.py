@@ -818,20 +818,57 @@ def notify_bug_attachment_removed(bugattachment, event):
     bug.addChangeNotification(change_info, person=event.user)
 
 
+def notify_invitation_to_join_team(event):
+    """Notify team admins that the team has been invited to join another team.
+
+    The notification will include a link to a page in which any team admin can
+    accept the invitation.
+
+    XXX: At some point we may want to extend this functionality to allow
+    invites to be sent to users as well, but for now we only use it for teams.
+    -- Guilherme Salgado, 2007-05-08
+    """
+    member = event.member
+    assert member.isTeam()
+    team = event.team
+    membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+        member, team)
+    assert membership is not None
+
+    reviewer = membership.reviewer
+    admin_addrs = member.getTeamAdminsEmailAddresses()
+    from_addr = format_address('Launchpad', config.noreply_from_address)
+    subject = (
+        'Launchpad: %s was invited to join %s' % (member.name, team.name))
+    templatename = 'membership-invitation.txt'
+    template = get_email_template(templatename)
+    msg = template % {
+        'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
+        'member': '%s (%s)' % (member.browsername, member.name),
+        'team': '%s (%s)' % (team.browsername, team.name),
+        'membership_invitations_url': 
+            "%s/+membership-invitations" % canonical_url(member)}
+    msg = MailWrapper().format(msg)
+    simple_sendmail(from_addr, admin_addrs, subject, msg)
+
+
 def notify_team_join(event):
-    """Notify team administrators that a new joined (or tried to) the team.
+    """Notify team admins that a new user joined (or tried to join) the team.
 
     If the team's policy is Moderated, the email will say that the membership
     is pending approval. Otherwise it'll say that the user has joined the team
     and who added that person to the team.
     """
     user = event.user
+    assert not user.isTeam(), (
+        "Teams cannot join other teams without being invited first.")
     team = event.team
     membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
     assert membership is not None
     reviewer = membership.reviewer
-    approved, admin = [
-        TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN]
+    approved, admin, proposed = [
+        TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN,
+        TeamMembershipStatus.PROPOSED]
     admin_addrs = team.getTeamAdminsEmailAddresses()
 
     from_addr = format_address('Launchpad', config.noreply_from_address)
@@ -843,10 +880,7 @@ def notify_team_join(event):
 
         subject = (
             'Launchpad: %s is now a member of %s' % (user.name, team.name))
-        if user.isTeam():
-            templatename = 'new-member-notification-for-teams.txt'
-        else:
-            templatename = 'new-member-notification.txt'
+        templatename = 'new-member-notification.txt'
 
         template = get_email_template(templatename)
         msg = template % {
@@ -875,11 +909,14 @@ def notify_team_join(event):
         template = get_email_template('new-member-notification-for-admins.txt')
         subject = (
             'Launchpad: %s is now a member of %s' % (user.name, team.name))
-    else:
+    elif membership.status == proposed:
         template = get_email_template('pending-membership-approval.txt')
         subject = (
             "Launchpad: %s wants to join team %s" % (user.name, team.name))
         headers = {"Reply-To": user.preferredemail.email}
+    else:
+        raise AssertionError(
+            "Unexpected membership status: %s" % membership.status)
 
     msg = MailWrapper().format(template % replacements)
     simple_sendmail(from_addr, admin_addrs, subject, msg, headers=headers)
@@ -1106,11 +1143,13 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         for linked_bug in bugs.difference(old_bugs):
             info_fields.append(
                 indent + 'Linked to bug: #%s\n' % linked_bug.id +
-                indent + canonical_url(linked_bug))
+                indent + '%s\n' % canonical_url(linked_bug) +
+                indent + '"%s"' % linked_bug.title)
         for unlinked_bug in old_bugs.difference(bugs):
             info_fields.append(
                 indent + 'Removed link to bug: #%s\n' % unlinked_bug.id +
-                indent + canonical_url(unlinked_bug))
+                indent + '%s\n' % canonical_url(unlinked_bug) +
+                indent + '"%s"' % unlinked_bug.title)
 
         if question.title != old_question.title:
             info_fields.append('Summary changed to:\n%s' % question.title)
@@ -1335,6 +1374,7 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
             'question_url': canonical_url(self.question),
             'bugtask_url':canonical_url(self.bugtask),
             'bug_id': self.bugtask.bug.id,
+            'bugtask_title': self.bugtask.bug.title,
             'old_status': self.old_bugtask.status.title,
             'new_status': self.bugtask.status.title,
             'statusexplanation': statusexplanation}

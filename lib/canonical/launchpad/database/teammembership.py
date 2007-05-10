@@ -86,7 +86,7 @@ class TeamMembership(SQLBase):
         subject = 'Launchpad: %s team membership about to expire' % team.name
 
         admins_names = []
-        admins = team.getEffectiveAdministrators()
+        admins = team.getDirectAdministrators()
         assert admins.count() >= 1
         if admins.count() == 1:
             admin = admins[0]
@@ -132,6 +132,7 @@ class TeamMembership(SQLBase):
         declined = TeamMembershipStatus.DECLINED
         deactivated = TeamMembershipStatus.DEACTIVATED
         proposed = TeamMembershipStatus.PROPOSED
+        invited = TeamMembershipStatus.INVITED
 
         # Flush the cache used by the Person.inTeam method
         self.person._inTeam_cache = {}
@@ -141,11 +142,15 @@ class TeamMembership(SQLBase):
         if self.status in [admin, approved]:
             assert status in [admin, approved, expired, deactivated]
         elif self.status in [deactivated, expired]:
-            assert status in [proposed, approved]
+            assert status in [proposed, approved, invited]
         elif self.status in [proposed]:
             assert status in [approved, admin, declined]
         elif self.status in [declined]:
             assert status in [proposed, approved]
+        elif self.status in [invited]:
+            assert status in [approved]
+        else:
+            raise AssertionError("Unknown status: %s" % self.status)
 
         old_status = self.status
         self.status = status
@@ -166,7 +171,8 @@ class TeamMembership(SQLBase):
             _cleanTeamParticipation(self.person, self.team)
 
         # When a member proposes himself, a more detailed notification is
-        # sent to the team admins; that's why we don't send anything here.
+        # sent to the team admins by a subscriber of JoinTeamEvent; that's
+        # why we don't send anything here.
         if self.person == self.reviewer and self.status == proposed:
             return
 
@@ -202,8 +208,6 @@ class TeamMembership(SQLBase):
         else:
             comment = ""
 
-        subject = ('Launchpad: Membership change: %(member)s in %(team)s'
-                   % {'member': self.person.name, 'team': self.team.name})
         replacements = {
             'member_name': member.unique_displayname,
             'team_name': team.unique_displayname,
@@ -212,9 +216,25 @@ class TeamMembership(SQLBase):
             'reviewer_name': reviewer_name,
             'comment': comment}
 
+        template_name = 'membership-statuschange'
+        subject = ('Launchpad: Membership change: %(member)s in %(team)s'
+                   % {'member': member.name, 'team': team.name})
+        if new_status == TeamMembershipStatus.EXPIRED:
+            template_name = 'membership-expired'
+            subject = (
+                'Launchpad: %s expired from %s' % (member.name, team.name))
+        elif (new_status == TeamMembershipStatus.APPROVED and
+              old_status != TeamMembershipStatus.ADMIN):
+            subject = 'Launchpad: %s added to %s' % (member.name, team.name)
+            if old_status == TeamMembershipStatus.INVITED:
+                template_name = 'membership-invitation-accepted'
+        else:
+            # Use the default template and subject.
+            pass
+
         if admins_emails:
             admins_template = get_email_template(
-                'membership-statuschange-impersonal.txt')
+                "%s-impersonal.txt" % template_name)
             admins_msg = MailWrapper().format(admins_template % replacements)
             simple_sendmail(from_addr, admins_emails, subject, admins_msg)
 
@@ -222,9 +242,9 @@ class TeamMembership(SQLBase):
         # won't have a single email address to send this notification to.
         if member_email and self.reviewer != member:
             if member.isTeam():
-                template = 'membership-statuschange-impersonal.txt'
+                template = '%s-impersonal.txt' % template_name
             else:
-                template = 'membership-statuschange-personal.txt'
+                template = '%s-personal.txt' % template_name
             member_template = get_email_template(template)
             member_msg = MailWrapper().format(member_template % replacements)
             simple_sendmail(from_addr, member_email, subject, member_msg)
@@ -243,7 +263,8 @@ class TeamMembershipSet:
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
-        assert status in [proposed, approved, admin]
+        invited = TeamMembershipStatus.INVITED
+        assert status in [proposed, approved, admin, invited]
         tm = TeamMembership(
             person=person, team=team, status=status, dateexpires=dateexpires,
             reviewer=reviewer, reviewercomment=reviewercomment)

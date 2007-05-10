@@ -385,7 +385,8 @@ class PersonFacets(StandardLaunchpadFacets):
 
     def answers(self):
         text = 'Answers'
-        summary = 'Questions that involves %s' % self.context.browsername
+        summary = (
+            'Questions that %s is involved with' % self.context.browsername)
         return Link('', text, summary)
 
     def translations(self):

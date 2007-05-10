@@ -679,6 +679,13 @@ class TeamMembershipStatus(DBSchema):
         Your proposed subscription to this team has been declined.
         """)
 
+    INVITED = Item(7, """
+        Invited
+
+        You have been invited as a member of this team. In order to become an
+        actual member, you have to accept the invitation.
+        """)
+
 
 class TeamSubscriptionPolicy(DBSchema):
     """Team Subscription Policies
@@ -1574,7 +1581,7 @@ class QuestionStatus(DBSchema):
     This enum tells us the current status of the question.
 
     The lifecycle of a question is documented in
-    https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    https://help.launchpad.net/QuestionLifeCycle, so remember
     to update that document for any pertinent changes.
     """
 

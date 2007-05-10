@@ -182,10 +182,6 @@
       </table>
     </tal:block>
 
-    <ul class="add" tal:condition="context/required:launchpad.Edit">
-      <li><a href="+addmember">Add a new member</a></li>
-    </ul>
-
   </tal:block>
 </div>
 

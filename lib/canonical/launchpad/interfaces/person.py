@@ -628,9 +628,20 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         If no orderby is provided, Person.sortingColumns is used.
         """
 
-    def getEffectiveAdministrators():
-        """Return this team's administrators including the team owner
-        (regardless of whether he's a member or not).
+    def getAdministratedTeams():
+        """Return the teams that this person/team is an administrator of.
+
+        This includes teams for which the person is the owner, a direct
+        member with admin privilege, or member of a team with such
+        privileges.
+        """
+
+    def getDirectAdministrators():
+        """Return this team's administrators.
+         
+         This includes all direct members with admin rights and also
+         the team owner. Note that some other persons/teams might have admin
+         privilege by virtue of being a member of a team with admin rights.
         """
 
     def getTeamAdminsEmailAddresses():
