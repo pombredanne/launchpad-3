@@ -7,20 +7,20 @@
 import unittest
 import sys
 import shutil
-from canonical.archivepublisher.tests import datadir
+from canonical.archiveuploader.tests import datadir
 
 class Testtagfiles(unittest.TestCase):
 
     def testImport(self):
-        """canonical.archivepublisher.tagfiles should be importable"""
-        from canonical.archivepublisher.tagfiles import TagFile
-        from canonical.archivepublisher.tagfiles import TagFileParseError
-        from canonical.archivepublisher.tagfiles import parse_tagfile
+        """canonical.archiveuploader.tagfiles should be importable"""
+        from canonical.archiveuploader.tagfiles import TagFile
+        from canonical.archiveuploader.tagfiles import TagFileParseError
+        from canonical.archiveuploader.tagfiles import parse_tagfile
 
     def testTagFileOnSingular(self):
-        """canonical.archivepublisher.tagfiles.TagFile should parse a singular stanza
+        """canonical.archiveuploader.tagfiles.TagFile should parse a singular stanza
         """
-        from canonical.archivepublisher.tagfiles import TagFile
+        from canonical.archiveuploader.tagfiles import TagFile
         f = TagFile(file(datadir("singular-stanza"), "r"))
         seenone = False
         for stanza in f:
@@ -31,8 +31,8 @@ class Testtagfiles(unittest.TestCase):
             self.assertEquals("FooBar" in stanza, False)
 
     def testTagFileOnSeveral(self):
-        """canonical.archivepublisher.tagfiles.TagFile should parse multiple stanzas"""
-        from canonical.archivepublisher.tagfiles import TagFile
+        """canonical.archiveuploader.tagfiles.TagFile should parse multiple stanzas"""
+        from canonical.archiveuploader.tagfiles import TagFile
         f = TagFile(file(datadir("multiple-stanzas"), "r"))
         seen = 0
         for stanza in f:
@@ -43,63 +43,63 @@ class Testtagfiles(unittest.TestCase):
         self.assertEquals(seen > 1, True)
 
     def testCheckParseChangesOkay(self):
-        """canonical.archivepublisher.tagfiles.parse_tagfile should work on a good
+        """canonical.archiveuploader.tagfiles.parse_tagfile should work on a good
            changes file
         """
-        from canonical.archivepublisher.tagfiles import parse_tagfile
+        from canonical.archiveuploader.tagfiles import parse_tagfile
         p = parse_tagfile(datadir("good-signed-changes"))
 
     def testCheckParseBadChangesRaises(self):
-        """canonical.archivepublisher.tagfiles.parse_chantges should raise
+        """canonical.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on failure
         """
-        from canonical.archivepublisher.tagfiles import parse_tagfile
-        from canonical.archivepublisher.tagfiles import TagFileParseError
+        from canonical.archiveuploader.tagfiles import parse_tagfile
+        from canonical.archiveuploader.tagfiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("badformat-changes"), 1)
 
     def testCheckParseEmptyChangesRaises(self):
-        """canonical.archivepublisher.tagfiles.parse_chantges should raise
+        """canonical.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on empty
         """
-        from canonical.archivepublisher.tagfiles import parse_tagfile
-        from canonical.archivepublisher.tagfiles import TagFileParseError
+        from canonical.archiveuploader.tagfiles import parse_tagfile
+        from canonical.archiveuploader.tagfiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("empty-file"), 1)
 
     def testCheckParseMalformedSigRaises(self):
-        """canonical.archivepublisher.tagfiles.parse_chantges should raise
+        """canonical.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on malformed signatures
         """
-        from canonical.archivepublisher.tagfiles import parse_tagfile
-        from canonical.archivepublisher.tagfiles import TagFileParseError
+        from canonical.archiveuploader.tagfiles import parse_tagfile
+        from canonical.archiveuploader.tagfiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("malformed-sig-changes"), 1)
 
     def testCheckParseMalformedMultilineRaises(self):
-        """canonical.archivepublisher.tagfiles.parse_chantges should raise
+        """canonical.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on malformed continuation lines"""
-        from canonical.archivepublisher.tagfiles import parse_tagfile
-        from canonical.archivepublisher.tagfiles import TagFileParseError
+        from canonical.archiveuploader.tagfiles import parse_tagfile
+        from canonical.archiveuploader.tagfiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile, datadir("bad-multiline-changes"), 1)
 
     def testCheckParseUnterminatedSigRaises(self):
-        """canonical.archivepublisher.tagfiles.parse_chantges should raise
+        """canonical.archiveuploader.tagfiles.parse_chantges should raise
            TagFileParseError on unterminated signatures
         """
-        from canonical.archivepublisher.tagfiles import parse_tagfile
-        from canonical.archivepublisher.tagfiles import TagFileParseError
+        from canonical.archiveuploader.tagfiles import parse_tagfile
+        from canonical.archiveuploader.tagfiles import TagFileParseError
         self.assertRaises(TagFileParseError,
                           parse_tagfile,
                           datadir("unterminated-sig-changes"),
                           1)
 
     def testParseChangesNotVulnerableToArchExploit(self):
-        """canonical.archivepublisher.tagfiles.parse_tagfile should not be vulnerable
+        """canonical.archiveuploader.tagfiles.parse_tagfile should not be vulnerable
            to tags outside of the signed portion
         """
-        from canonical.archivepublisher.tagfiles import parse_tagfile
+        from canonical.archiveuploader.tagfiles import parse_tagfile
         tf = parse_tagfile(datadir("changes-with-exploit-top"))
         self.assertRaises(KeyError, tf.__getitem__, "you")
         tf = parse_tagfile(datadir("changes-with-exploit-bottom"))

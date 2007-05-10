@@ -51,9 +51,9 @@ import shutil
 
 from canonical.launchpad.mail import sendmail
 from canonical.encoding import ascii_smash
-from canonical.archivepublisher.nascentupload import (
+from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError)
-from canonical.archivepublisher.uploadpolicy import (
+from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 
 from contrib.glock import GlobalLock

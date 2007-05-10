@@ -37,6 +37,7 @@ __all__ = [
     'LaunchpadEditFormView',
     'action',
     'custom_widget',
+    'safe_action',
     'expand_numbers',
     'sorted_version_numbers',
     'sorted_dotted_numbers',
@@ -51,7 +52,8 @@ from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory
     )
 from canonical.launchpad.webapp.launchpadform import (
-    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
+    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget,
+    safe_action)
 from canonical.launchpad.webapp.menu import (
     Link, FacetMenu, ApplicationMenu, ContextMenu, structured,
     enabled_with_permission, nearest_context_with_adapter, nearest_adapter
