@@ -351,7 +351,6 @@ class OpenIdView(LaunchpadView):
         return ISession(self.request)[SESSION_PKG_KEY]
 
     def renderProtocolError(self, exception):
-        # XXX: Is this tested? -- StuartBishop 20070226
         response = self.request.response
         if exception.whichEncoding() == ENCODE_URL:
             url = exception.encodeToURL()

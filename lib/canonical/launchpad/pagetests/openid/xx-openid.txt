@@ -446,3 +446,29 @@ that is not a valid Launchpad OpenID identity URL, such as
 </form>
 ...
 
+== Broken Consumers ==
+
+Really bad requests might trigger a protocol error
+
+>>> args = urlencode({
+...     'openid.mode': 'whoops',
+...     })
+>>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print sabdfl_browser.contents
+error:No decoder for mode 'whoops'
+mode:error
+<BLANKLINE>
+
+If there is a valid return_to, then the consumer gets notified.
+
+>>> args = urlencode({
+...     'openid.mode': 'whoops',
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+...     })
+>>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print sabdfl_browser.contents
+Consumer received GET
+openid.error:No decoder for mode 'whoops'
+openid.mode:error
+<BLANKLINE>
+
