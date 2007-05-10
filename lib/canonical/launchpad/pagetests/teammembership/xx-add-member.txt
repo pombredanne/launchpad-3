@@ -13,8 +13,7 @@ Any administrator of a team can add new members to that team.
     >>> for tag in find_tags_by_class(browser.contents,
     ...                               'informational message'):
     ...     print tag.renderContents()
-    Celso Providelo (cprov) was added as a member of Landscape Developers.
-
+    Celso Providelo (cprov) has been added as a member of this team.
 
 Let's make sure that 'cprov' is now an Approved member of 'landscape-developers'
 
@@ -40,11 +39,61 @@ If the new member is already an approved member of that team, we'll say that.
     There is 1 error.
     Celso Providelo (cprov) is already a member of Landscape Developers.
 
-The new member can't be a team without active members.
+On the other hand, if the member is among the inactive/proposed members of
+the team, we'll simply change the membership's status and say that it was
+successfully added.
+
+    >>> from canonical.lp.dbschema import TeamMembershipStatus
+    >>> cprov_landscape_membership.setStatus(
+    ...     TeamMembershipStatus.DEACTIVATED, landscape_team.teamowner)
+    >>> cprov_landscape_membership.syncUpdate()
+
+    >>> browser.url
+    'http://launchpad.dev/%7Elandscape-developers/+addmember'
+    >>> browser.getControl('New member').value = 'cprov'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    Celso Providelo (cprov) has been added as a member of this team.
+
+== Adding teams ==
+
+Teams are not added as members like we do with people. Instead, teams are
+invited and one of their admins have to accept the invitation for them to
+become a member.
+
+    >>> browser.open('http://launchpad.dev/~landscape-developers/+addmember')
+    >>> browser.getControl('New member').value = 'launchpad'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    Launchpad Developers (launchpad) has been invited to join this team.
+
+As we can see, the launchpad team will not be one of the team's active
+members.
+
+    >>> launchpad = Person.byName('launchpad')
+    >>> launchpad in landscape_team.activemembers
+    False
+    >>> membership = TeamMembership.selectOneBy(
+    ...     person=launchpad, team=landscape_team)
+    >>> membership.statusname
+    'Invited'
+
+
+One thing to keep in mind is that we can't invite a team without active
+members.
+XXX: This restriction was added as a workaround for
+https://launchpad.net/bugs/94164, but I don't think it's the correct fix for
+the bug sice we could skip the notification sent to the team in this case.
+-- Guilherme Salgado, 2007-05-09
 
     # Ideally we should do this using the web UI, but doing it this way is a
     # lot simpler.
-    >>> from canonical.lp.dbschema import TeamMembershipStatus
     >>> carlos = Person.byName('carlos')
     >>> ubuntu_translators = Person.byName('ubuntu-translators')
     >>> carlos_translators_membership = TeamMembership.selectOneBy(
@@ -61,20 +110,3 @@ The new member can't be a team without active members.
     There is 1 error.
     You can't add a team that doesn't have any active members.
 
-On the other hand, if the member is among the inactive/proposed members of
-the team, we'll simply change the membership's status and say that it was
-successfully added.
-
-    >>> cprov_landscape_membership.setStatus(
-    ...     TeamMembershipStatus.DEACTIVATED, landscape_team.teamowner)
-    >>> cprov_landscape_membership.syncUpdate()
-
-    >>> browser.url
-    'http://launchpad.dev/%7Elandscape-developers/+addmember'
-    >>> browser.getControl('New member').value = 'cprov'
-    >>> browser.getControl('Add Member').click()
-
-    >>> for tag in find_tags_by_class(browser.contents,
-    ...                               'informational message'):
-    ...     print tag.renderContents()
-    Celso Providelo (cprov) was added as a member of Landscape Developers.
