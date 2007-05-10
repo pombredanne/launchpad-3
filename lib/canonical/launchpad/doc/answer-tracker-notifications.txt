@@ -172,7 +172,7 @@ bug that has been linked to it:
     >>> unmodified_question = Snapshot(
     ...     ubuntu_question, providing=providedBy(ubuntu_question))
     >>> params = CreateBugParams(
-    ...     owner=no_priv, title=ubuntu_question.title,
+    ...     owner=no_priv, title="Installer fails on a Mac PPC",
     ...     comment=ubuntu_question.description)
     >>> bug = ubuntu_question.target.createBug(params)
     >>> ubuntu_question.linkBug(bug)
@@ -191,6 +191,7 @@ bug that has been linked to it:
     <BLANKLINE>
         Linked to bug: #...
         http://.../bugs/...
+        "Installer fails on a Mac PPC"
     <BLANKLINE>
 
 === Linked Bug Status Changed Notification ===
@@ -224,6 +225,7 @@ of changes to the bug status:
     This bug really happened to me.
     <BLANKLINE>
     http://.../ubuntu/+bug/...
+    "Installer fails on a Mac PPC"
     <BLANKLINE>
     --
     You received this email because you are a subscriber of
@@ -264,6 +266,7 @@ A notification is also sent when a bug is unlinked from the question:
     <BLANKLINE>
         Removed link to bug: #13
         http://.../bugs/13
+        "Installer fails on a Mac PPC"
     <BLANKLINE>
 
 == Workflow Notifications ==

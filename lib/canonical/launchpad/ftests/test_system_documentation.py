@@ -141,6 +141,22 @@ def statisticianTearDown(test):
     logout()
     LaunchpadZopelessTestSetup().tearDown()
 
+def distroreleasequeueSetUp(test):
+    setUp(test)
+    # The test requires that the umask be set to 022, and in fact this comment
+    # was made in irc on 13-Apr-2007:
+    #
+    # (04:29:18 PM) kiko: barry, cprov says that the local umask is controlled
+    # enough for us to rely on it
+    #
+    # Setting it here reproduces the environment that the doctest expects.
+    # Save the old umask so we can reset it in the tearDown().
+    test.old_umask = os.umask(022)
+
+def distroreleasequeueTearDown(test):
+    os.umask(test.old_umask)
+    tearDown(test)
+
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
     layer = kw.pop('layer')
@@ -288,6 +304,12 @@ special = {
             '../doc/script-monitoring.txt',
             setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
             layer=LaunchpadZopelessLayer
+            ),
+    'distroreleasequeue-debian-installer.txt': FunctionalDocFileSuite(
+            '../doc/distroreleasequeue-debian-installer.txt',
+            setUp=distroreleasequeueSetUp, tearDown=distroreleasequeueTearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer
             ),
     }
 

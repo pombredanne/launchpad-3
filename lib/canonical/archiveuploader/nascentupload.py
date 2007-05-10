@@ -21,12 +21,12 @@ import os
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.changesfile import ChangesFile
-from canonical.archivepublisher.dscfile import DSCFile
-from canonical.archivepublisher.nascentuploadfile import (
+from canonical.archiveuploader.changesfile import ChangesFile
+from canonical.archiveuploader.dscfile import DSCFile
+from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
-from canonical.archivepublisher.template_messages import (
+from canonical.archiveuploader.template_messages import (
     rejection_template, new_template, accepted_template, announce_template)
 from canonical.config import config
 from canonical.encoding import guess as guess_encoding
