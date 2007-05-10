@@ -30,10 +30,15 @@
   >Who is <tal:name replace="context/browsername">Fred</tal:name>?</h1>
   <h1 tal:condition="context/isTeam" tal:content="context/browsername" />
 
-  <tal:homepage tal:condition="context/homepage_content"
-    content="structure context/homepage_content/fmt:text-to-html" />
-  <tal:team-description
-    replace="structure context/teamdescription/fmt:text-to-html" />
+  <div
+    class="description"
+    tal:condition="context/homepage_content"
+    tal:content="structure context/homepage_content/fmt:text-to-html"
+  />
+  <div
+    class="description"
+    tal:content="structure context/teamdescription/fmt:text-to-html"
+  />
   <ul class="buttons" tal:define="mentorships context/team_mentorships"
                       tal:condition="context/isTeam">
     <li tal:condition="mentorships">

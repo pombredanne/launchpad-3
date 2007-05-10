@@ -10,14 +10,17 @@
   <span tal:replace="structure context/image:mugshot" />
   <h1 tal:content="context/title">Name of project</h1>
 
-  <div class="documentDescription" tal:content="context/summary">
+  <div class="description" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
     just a single paragraph of text really, giving the project
     highlights.
   </div>
 
-  <div tal:content="structure context/description/fmt:text-to-html"
-       tal:condition="context/description">
+  <div
+    class="description"
+    tal:content="structure context/description/fmt:text-to-html"
+    tal:condition="context/description"
+  >
     $Product.description goes here. This should be a longer piece of
     text, up to three paragraphs in length, which gives much more
     detailed information about the open source project in question.

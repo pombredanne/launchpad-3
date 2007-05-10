@@ -947,7 +947,8 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
 #application-footer strong {font-weight: normal;}
 
-.report, .boardComment {font-size: 1.125em;} /* bug descriptions/comments */
+.description, .report, .boardComment {font-size: 1.125em;}
+/* person/project/bug descriptions, bug comments */
 .report h2 {font-size: 1.4em;}
 .boardComment {border: 1px solid #ddd; margin: 1em 0 1.5em;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
