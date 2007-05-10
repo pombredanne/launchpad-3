@@ -5,6 +5,7 @@ __metaclass__ = type
 import unittest
 
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.database import Person
 
@@ -20,14 +21,15 @@ class TestPerson(LaunchpadFunctionalTestCase):
         # sample_person._getDirectMemberIParticipateIn(ubuntu_team) won't
         # return anything.
         self.failUnless(sample_person in warty_team.activemembers)
-        self.failUnless(warty_team in ubuntu_team.proposedmembers)
+        self.failUnless(warty_team in ubuntu_team.invitedmembers)
         self.failUnlessEqual(
             sample_person._getDirectMemberIParticipateIn(ubuntu_team), None)
 
         # If we make warty_team an active member of Ubuntu team, then the
         # _getDirectMemberIParticipateIn() call will actually return
         # warty_team.
-        ubuntu_team.addMember(warty_team, reviewer=sample_person)
+        login(warty_team.teamowner.preferredemail.email)
+        warty_team.acceptInvitationToBeMemberOf(ubuntu_team)
         flush_database_updates()
         self.failUnless(warty_team in ubuntu_team.activemembers)
         self.failUnlessEqual(

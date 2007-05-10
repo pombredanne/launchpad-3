@@ -17,22 +17,18 @@ Let's have a look at the proposed members that we have.
     >>> for tag in table.findAll('a'):
     ...     print tag.span.renderContents()
     Andrew Bennetts
-    Warty Security Team
 
-Now we'll approve 'Warty Security Team' and decline 'Andrew Bennetts'.
+Now we'll approve 'Andrew Bennetts'.
 
-    >>> browser.getControl(name='action_7').value = ['decline']
-    >>> browser.getControl(name='action_20').value = ['approve']
+    >>> browser.getControl(name='action_7').value = ['approve']
     >>> browser.getControl('Submit').click()
 
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+members'
     >>> table = find_tag_by_id(browser.contents, 'activemembers')
     >>> table_contents = table.renderContents()
-    >>> 'Warty Security Team' in table_contents
-    True
     >>> 'Andrew Bennetts' in table_contents
-    False
+    True
 
 And now we see that there are no pending members left.
 

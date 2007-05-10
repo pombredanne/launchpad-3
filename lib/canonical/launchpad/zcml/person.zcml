@@ -536,7 +536,6 @@
     name="+members"
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
-    class="canonical.launchpad.browser.TeamMembersView"
     template="../templates/team-members.pt"
     />
 

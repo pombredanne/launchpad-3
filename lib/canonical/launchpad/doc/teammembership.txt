@@ -482,10 +482,11 @@ You can check a person's direct memberships by using myactivememberships:
     ...  for membership in salgado.myactivememberships]
     [(u'admins', 'Administrator'), (u't4', 'Approved')]
 
-And you can check which direct memberships a team has by using activememberships:
+And you can check which direct memberships a team has by using
+getActiveMemberships():
 
     >>> [(membership.person.name, membership.status.title)
-    ...  for membership in t3.activememberships]
+    ...  for membership in t3.getActiveMemberships()]
     [(u'cprov', 'Approved'), (u'name16', 'Administrator')]
 
 A team has a number of other methods that return the people which are members

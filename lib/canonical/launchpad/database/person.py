@@ -1158,6 +1158,11 @@ class Person(SQLBase, HasSpecificationsMixin):
         return self.allmembers.count()
 
     @property
+    def invitedmembers(self):
+        """See IPerson."""
+        return self.getMembersByStatus(TeamMembershipStatus.INVITED)
+
+    @property
     def deactivatedmembers(self):
         """See IPerson."""
         return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
@@ -1166,11 +1171,6 @@ class Person(SQLBase, HasSpecificationsMixin):
     def expiredmembers(self):
         """See IPerson."""
         return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
-
-    @property
-    def declinedmembers(self):
-        """See IPerson."""
-        return self.getMembersByStatus(TeamMembershipStatus.DECLINED)
 
     @property
     def proposedmembers(self):
@@ -1204,12 +1204,20 @@ class Person(SQLBase, HasSpecificationsMixin):
     @property
     def inactivemembers(self):
         """See IPerson."""
-        # See comment in Person.activememberships
+        # See comment in Person.activemembers
         orderBy = SQLConstant("person_sort_key(displayname, name)")
         return self.expiredmembers.union(self.deactivatedmembers,
-                                          orderBy=orderBy)
+                                         orderBy=orderBy)
 
-    # XXX: myactivememberships and activememberships are rather
+    @property
+    def pendingmembers(self):
+        """See IPerson."""
+        # See comment in Person.activemembers
+        orderBy = SQLConstant("person_sort_key(displayname, name)")
+        return self.proposedmembers.union(
+            self.invitedmembers, orderBy=orderBy)
+
+    # XXX: myactivememberships and getActiveMemberships are rather
     # confusingly named, and I just fixed bug 2871 as a consequence of
     # this. Is there a way to improve it?
     #   -- kiko, 2005-10-07
@@ -1224,16 +1232,34 @@ class Person(SQLBase, HasSpecificationsMixin):
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    @property
-    def activememberships(self):
+    def getActiveMemberships(self):
         """See IPerson."""
-        return TeamMembership.select('''
-            TeamMembership.team = %s AND status in %s AND
-            Person.id = TeamMembership.person
-            ''' % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
-                                      TeamMembershipStatus.ADMIN]),
-            clauseTables=['Person'],
-            orderBy=Person.sortingColumns)
+        return self._getMembershipsByStatuses(
+            [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED])
+
+    def getInactiveMemberships(self):
+        """See IPerson."""
+        return self._getMembershipsByStatuses(
+            [TeamMembershipStatus.EXPIRED, TeamMembershipStatus.DEACTIVATED])
+
+    def getInvitedMemberships(self):
+        """See IPerson."""
+        return self._getMembershipsByStatuses([TeamMembershipStatus.INVITED])
+
+    def getProposedMemberships(self):
+        """See IPerson."""
+        return self._getMembershipsByStatuses([TeamMembershipStatus.PROPOSED])
+
+    def _getMembershipsByStatuses(self, statuses):
+        assert self.isTeam(), 'This method is only available for teams.'
+        statuses = ",".join(str(status) for status in statuses)
+        query = """
+            TeamMembership.status IN (%s)
+            AND Person.id = TeamMembership.person
+            AND TeamMembership.team = %d
+            """ % (statuses, self.id)
+        return TeamMembership.select(
+            query, clauseTables=['Person'], orderBy=Person.sortingColumns)
 
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See IPerson."""
@@ -1640,7 +1666,7 @@ class PersonSet:
     def find(self, text, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            # See comment in Person.activememberships
+            # See comment in Person.activemembers
             orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
@@ -1657,7 +1683,7 @@ class PersonSet:
     def findPerson(self, text="", orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            # See comment in Person.activememberships
+            # See comment in Person.activemembers
             orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         base_query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
@@ -1682,7 +1708,7 @@ class PersonSet:
     def findTeam(self, text, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            # See comment in Person.activememberships
+            # See comment in Person.activemembers
             orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT

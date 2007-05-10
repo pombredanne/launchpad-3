@@ -290,41 +290,6 @@ class TeamMembershipSet:
                              TeamMembershipStatus.APPROVED))
         return TeamMembership.select(query)
 
-    def getTeamMembersCount(self, team):
-        """See ITeamMembershipSet"""
-        return TeamMembership.selectBy(team=team).count()
-
-    def _getMembershipsByStatuses(self, team, statuses, orderBy=None):
-        if orderBy is None:
-            orderBy = self._defaultOrder
-        clauses = []
-        for status in statuses:
-            clauses.append("TeamMembership.status = %s" % sqlvalues(status))
-        clauses = " OR ".join(clauses)
-        query = ("(%s) AND Person.id = TeamMembership.person AND "
-                 "TeamMembership.team = %d" % (clauses, team.id))
-        return TeamMembership.select(query, clauseTables=['Person'],
-                                     orderBy=orderBy)
-
-    def getActiveMemberships(self, team, orderBy=None):
-        """See ITeamMembershipSet"""
-        statuses = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
-        return self._getMembershipsByStatuses(
-            team, statuses, orderBy=orderBy)
-
-    def getInactiveMemberships(self, team, orderBy=None):
-        """See ITeamMembershipSet"""
-        statuses = [TeamMembershipStatus.EXPIRED,
-                    TeamMembershipStatus.DEACTIVATED]
-        return self._getMembershipsByStatuses(
-            team, statuses, orderBy=orderBy)
-
-    def getProposedMemberships(self, team, orderBy=None):
-        """See ITeamMembershipSet"""
-        statuses = [TeamMembershipStatus.PROPOSED]
-        return self._getMembershipsByStatuses(
-            team, statuses, orderBy=orderBy)
-
 
 class TeamParticipation(SQLBase):
     implements(ITeamParticipation)
