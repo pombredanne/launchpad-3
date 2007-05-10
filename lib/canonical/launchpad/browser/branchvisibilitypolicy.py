@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'AddBranchVisibilityPolicyItemView',
+    'RemoveBranchVisibilityPolicyItemView',
     'BranchVisibilityPolicyView',
     ]
 
@@ -13,7 +15,7 @@ from canonical.lp.dbschema import BranchVisibilityPolicy
 
 from canonical.launchpad.interfaces import IHasBranchVisibilityPolicy, IBranchVisibilityPolicyItem
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView)
+    action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget, LabeledMultiCheckBoxWidget
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.schema import Choice, List
@@ -21,15 +23,38 @@ from zope.formlib import form
 from zope.app.form import CustomWidgetFactory
 
 
-class BranchVisibilityPolicyView(LaunchpadFormView):
-    ""
-    schema = IBranchVisibilityPolicyItem
-    # 
-    field_names = ['team','policy']
+class AddBranchVisibilityPolicyItemView(LaunchpadFormView):
 
-    initial_values = {'team': None,
-                      'policy': BranchVisibilityPolicy.PRIVATE,
-                      'policy_items': None}
+    schema = IBranchVisibilityPolicyItem
+
+    pagetitle = "Add branch visibility policy item"
+
+    initial_values = {'policy': BranchVisibilityPolicy.PRIVATE}
+
+    @property
+    def adapters(self):
+        return {IBranchVisibilityPolicyItem: self.context}
+    
+    @property
+    def policy(self):
+        return self.context.branch_visibility_policy
+
+    @action(_('Set policy for team'), name='set_policy')
+    def set_policy_action(self, action, data):
+        "Set the branch policy for the team."
+        self.policy.setTeamPolicy(data['team'], data['policy'])
+
+    @property
+    def next_url(self):
+        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        return canonical_url(self.context) + '/+branchvisibility'
+
+
+class RemoveBranchVisibilityPolicyItemView(LaunchpadFormView):
+
+    schema = IBranchVisibilityPolicyItem
+
+    pagetitle = "Remove branch visibility policy items"
 
     @property
     def adapters(self):
@@ -54,44 +79,50 @@ class BranchVisibilityPolicyView(LaunchpadFormView):
         else:
             return item.team.name
 
-    #def _validate(self, action, data):
-    #    import pdb; pdb.set_trace()
-    #    LaunchpadEditFormView._validate(self, action, data)
-
     def _currentPolicyItemsField(self):
 
         terms = [SimpleTerm(item, self._policyToken(item),
                             self._policyDescription(item))
-                 for item in self.policy.items]
+                 for item in self.policy.items
+                 if not item._implicit]
 
-        #vocab = SimpleVocabulary(terms)
-        #import pdb; pdb.set_trace()
         return form.Fields(
             List(
                 __name__='policy_items',
                 title=_("Policy Items"),
                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
-                required=False),
+                required=True),
             render_context=self.render_context,
             custom_widget=CustomWidgetFactory(LabeledMultiCheckBoxWidget))
 
     def setUpFields(self):
-        LaunchpadFormView.setUpFields(self)
-        # import pdb; pdb.set_trace()
-        self.form_fields = (self._currentPolicyItemsField() +
-                            self.form_fields.select('team', 'policy'))
+        self.form_fields = self._currentPolicyItemsField()
 
-
-    @action(_('Remove'), name='remove')
+    @action(_('Remove selected policy items'), name='remove')
     def remove_action(self, action, data):
         "Remove selected policy items"
+        for item in data['policy_items']:
+            self.policy.removeTeam(item.team)
 
-    @action(_('Add'), name='add')
-    def add_action(self, action, data):
-        "Add new item"
+    @property
+    def next_url(self):
+        return canonical_url(self.context) + '/+branchvisibility'
 
-    
-    # We want to have a field that lists all the current policy items
-    # with radio buttons, allowing the user to remove them.
 
+class BranchVisibilityPolicyView(LaunchpadView):
+    ""
+
+    @property
+    def policy(self):
+        return self.context.branch_visibility_policy
+
+    @property
+    def can_remove_items(self):
+        """You cannot remove items if using inherited policy or
+        if there is only the default policy item.
+        """
+        policy_items = self.policy.items
+        only_default_policy = (
+            len(policy_items) == 1 and policy_items[0]._implicit)
+        return not (only_default_policy or self.policy.isUsingInheritedPolicy())
     

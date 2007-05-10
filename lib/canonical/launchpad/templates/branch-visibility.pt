@@ -10,7 +10,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:condition="context/project"
+  <div tal:condition="context/project | nothing"
        tal:replace="structure context/project/@@+portlet-details" />
 </metal:rightportlets>
 
@@ -18,10 +18,33 @@
 
   <h2>Branch visibility policy</h2>
 
+  <p tal:condition="view/policy/isUsingInheritedPolicy" class="informational">
+    Using inherted policy from 
+    <a tal:attributes="href view/policy/inherited_policy/context/fmt:url"
+       tal:content="view/policy/inherited_policy/context/displayname">
+      Project</a>.
+  </p>
+
+  <p>Changing the branch visibility policies for teams does not change
+  the visibility of any existing branches.</p>
+
+  <ul>
+    <li tal:repeat="item view/policy/items">
+      <tal:team replace="item/team/displayname"
+                condition="item/team">Team Name</tal:team>
+      <tal:team condition="not: item/team">Everyone</tal:team>
+      : <tal:policy replace="item/policy/title">Public</tal:policy>
+
+    </li>
+  </ul>
 
 
-  <div metal:use-macro="context/@@launchpad_form/form">
-  </div>
+
+  <a href="+addbranchvisibilitypolicy">Set policy for a team</a>
+
+  <tal:can-remove condition="view/can_remove_items">
+    <a href="+removebranchvisibilitypolicy">Remove items</a>
+  </tal:can-remove>
 
 </div>
 

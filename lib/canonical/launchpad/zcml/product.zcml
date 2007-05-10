@@ -318,15 +318,6 @@
     />
 
   <browser:page
-    name="+branchvisibility"
-    for="canonical.launchpad.interfaces.IProduct"
-    facet="overview"
-    class="canonical.launchpad.browser.BranchVisibilityPolicyView"
-    permission="launchpad.Admin"
-    template="../templates/branch-visibility.pt"
-    />
-
-  <browser:page
     name="+changetranslators"
     for="canonical.launchpad.interfaces.IProduct"
     facet="translations"
