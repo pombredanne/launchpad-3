@@ -21,6 +21,7 @@ class IBugTarget(Interface):
     # XXX, Brad Bollenbach, 2006-08-02: This attribute name smells. See
     # https://launchpad.net/bugs/54974.
     bugtargetname = Attribute("A display name for this bug target")
+    bugtargetid = Attribute("The target's name as shown in mail notifications")
 
     open_bugtasks = Attribute("A list of open bugTasks for this target.")
     closed_bugtasks = Attribute("A list of closed bugTasks for this target.")

@@ -127,6 +127,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return "%s %s" % (self.product.displayname, self.name)
 
     @property
+    def bugtargetid(self):
+        """See IBugTarget."""
+        return "%s/%s" % (self.product.name, self.name)
+
+    @property
     def drivers(self):
         """See IProductSeries."""
         drivers = set()

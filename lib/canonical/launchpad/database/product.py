@@ -273,6 +273,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IBugTarget."""
         return self.displayname
 
+    @property
+    def bugtargetid(self):
+        """See IBugTarget."""
+        return self.name
+
     def getLatestBranches(self, quantity=5):
         """See IProduct."""
         # XXX Should use Branch.date_created. See bug 38598.

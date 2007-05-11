@@ -68,7 +68,8 @@ All bugtasks ever reported:
     [1, 2, 3, 8]
 
 Bug targets have a bugtargetname attribute, which returns a value suitable for
-display in bug-related pages.
+display in bug-related pages; and a bugtargetid attribute, which returns a
+value suitable for display in e-mail messages.
 
     >>> from canonical.launchpad.interfaces import IProductSet, IBugTarget
 
@@ -92,13 +93,23 @@ display in bug-related pages.
 
     >>> print firefox.bugtargetname
     Mozilla Firefox
+    >>> print firefox.bugtargetid
+    firefox
     >>> print firefox_1_0.bugtargetname
     Mozilla Firefox 1.0
+    >>> print firefox_1_0.bugtargetid
+    firefox/1.0
     >>> print debian.bugtargetname
     Debian
+    >>> print debian.bugtargetid
+    debian
     >>> print debian_firefox.bugtargetname
+    mozilla-firefox (Debian)
+    >>> print debian_firefox.bugtargetid
     mozilla-firefox (Debian)
     >>> print debian_woody.bugtargetname
     Debian Woody
     >>> print debian_woody_firefox.bugtargetname
+    mozilla-firefox (Debian Woody)
+    >>> print debian_woody_firefox.bugtargetid
     mozilla-firefox (Debian Woody)

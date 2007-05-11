@@ -229,6 +229,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         return "%s (%s)" % (self.name, self.distrorelease.fullreleasename)
 
     @property
+    def bugtargetid(self):
+        """See IBugTarget."""
+        return "%s (%s)" % (self.name, self.distrorelease.fullreleasename)
+
+    @property
     def title(self):
         titlestr = self.sourcepackagename.name
         titlestr += ' in ' + self.distribution.displayname

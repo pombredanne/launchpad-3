@@ -129,6 +129,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                               "officially"))
     targetname = Text(title=_("The short, descriptive name of the target"),
                       readonly=True)
+    targetid = Text(title=_(
+        "The target as represented in e-mail notifications"), readonly=True)
     title = Text(title=_("The title of the bug related to this bugtask"),
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "

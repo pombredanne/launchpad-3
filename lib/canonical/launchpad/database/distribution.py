@@ -246,6 +246,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IBugTarget."""
         return self.displayname
 
+    @property
+    def bugtargetid(self):
+        """See IBugTarget."""
+        return self.name
+
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
         return "BugTask.distribution = %d" % self.id

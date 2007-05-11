@@ -148,6 +148,11 @@ class BugTaskMixin:
         return self.targetnamecache
 
     @property
+    def targetid(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        return self.targetnamecache
+
+    @property
     def target(self):
         # We explicitly reference attributes here (rather than, say,
         # IDistroBugTask.providedBy(self)), because we can't assume this
