@@ -194,19 +194,6 @@
           template="launchpad/templates/root-portlet-foaf.pt" />
     </browser:pages>
 
-    <!-- The root index for the debug view at /+debug-index.
-
-         This is a good place to get access to functionality we're
-         developing, but don't want explicitly linked yet.
-      -->
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="+debug-index"
-        template="launchpad/templates/debug-root-index.pt"
-        permission="zope.Public"
-        layer="canonical.launchpad.layers.DebugLayer"
-        />
-
     <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
 
