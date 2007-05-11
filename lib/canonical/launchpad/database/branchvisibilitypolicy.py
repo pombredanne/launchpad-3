@@ -29,8 +29,6 @@ class BranchVisibilityPolicyItem(SQLBase):
 
     implements(IBranchVisibilityPolicyItem)
     _table = 'BranchVisibilityPolicy'
-    # The policy item is explicitly defined in the database.
-    _implicit = False
 
     project = ForeignKey(dbName='project', foreignKey='Project')
     product = ForeignKey(dbName='product', foreignKey='Product')
@@ -38,17 +36,6 @@ class BranchVisibilityPolicyItem(SQLBase):
     policy = EnumCol(schema=BranchVisibilityPolicy, notNull=True,
         default=BranchVisibilityPolicy.PUBLIC)
 
-
-class DefaultPolicyItem:
-    """A default policy item - one that isn't stored in the DB."""
-
-    implements(IBranchVisibilityPolicyItem)
-    # The policy item is the implicit public policy.
-    _implicit = True
-
-    team = None
-    policy = BranchVisibilityPolicy.PUBLIC
-        
 
 def policy_item_key(item):
     if item.team is None:
@@ -85,13 +72,7 @@ class BranchVisibilityPolicyList:
             query = "BranchVisibilityPolicy.product = %s" % self.product.id
         else:
             query = "BranchVisibilityPolicy.project = %s" % self.project.id
-        self.policy_items = shortlist(BranchVisibilityPolicyItem.select(
-            '%s and BranchVisibilityPolicy.team is not NULL'
-            % query))
-        self.default_policy = BranchVisibilityPolicyItem.selectOneBy(
-            product=self.product, project=self.project, team=None)
-        if self.default_policy is None:
-            self.default_policy = DefaultPolicyItem()
+        self.policy_items = shortlist(BranchVisibilityPolicyItem.select(query))
 
     @property
     def items(self):
@@ -100,11 +81,7 @@ class BranchVisibilityPolicyList:
         if self.isUsingInheritedPolicy():
             return self.inherited_policy.items
         # Copy the policy_items list, don't just get a reference to it.
-        items = list(self.policy_items)
-        # Only add the default policy item if it is explicitly defined.
-        if not self.default_policy._implicit:
-            items.append(self.default_policy)
-        return sorted(items, key=policy_item_key)
+        return sorted(self.policy_items, key=policy_item_key)
 
     def isUsingInheritedPolicy(self):
         """See IBranchVisibilityPolicy."""
@@ -113,10 +90,7 @@ class BranchVisibilityPolicyList:
             return False
         # If there are no explictly defined policy items, use the
         # inherited policy.
-        if len(self.policy_items) == 0 and self.default_policy._implicit:
-            return True
-        else:
-            return False
+        return len(self.policy_items) == 0
 
     def setTeamPolicy(self, team, policy):
         """See IBranchVisibilityPolicy."""
@@ -149,9 +123,9 @@ class BranchVisibilityPolicyList:
             return None
 
         if items[0].team is None:
-            default_policy = items.pop(0)
+            default_policy = items.pop(0).policy
         else:
-            default_policy = DefaultPolicyItem()
+            default_policy = BranchVisibilityPolicy.PUBLIC
 
         teams = []
         for item in items:
@@ -163,7 +137,7 @@ class BranchVisibilityPolicyList:
             return teams[0]
         elif team_count > 1:
             return user
-        elif default_policy.policy == BranchVisibilityPolicy.PUBLIC:
+        elif default_policy == BranchVisibilityPolicy.PUBLIC:
             return None
         else:
             return user
