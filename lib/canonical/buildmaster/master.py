@@ -605,6 +605,7 @@ class BuilddMaster:
             builder = builders.firstAvailable(
                 is_trusted=build_candidate.is_trusted)
             if not builder:
+                self._logger.warn('No Builder Available')
                 break
             # either dispatch or mark obsolete builds (sources superseded
             # or removed) as SUPERSEDED.

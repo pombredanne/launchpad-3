@@ -643,6 +643,8 @@ class BuilderGroup:
         self.logger.warning("***** %s is GIVENBACK by %s *****"
                             % (buildid, queueItem.builder.name))
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
+        queueItem.builder = None
+        queueItem.buildstart = None
         slave.clean()
         # XXX cprov 20060530: Currently this information is not
         # properly presented in the Web UI. We will discuss it in
@@ -660,10 +662,13 @@ class BuilderGroup:
         Return None if there is none available.
         """
         for builder in self.builders:
+            self._logger.debug('probing %s' % builder.url)
             if builder.builderok:
                 if builder.manual:
+                    self._logger.warn('builder in MANUAL')
                     continue
                 if builder.trusted != is_trusted:
+                    self._logger.warn('builder incompatible')
                     continue
                 # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
                 slave = removeSecurityProxy(builder.slave)
