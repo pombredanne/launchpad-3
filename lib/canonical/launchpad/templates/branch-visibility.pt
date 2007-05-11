@@ -28,6 +28,12 @@
   <p>Changing the branch visibility policies for teams does not change
   the visibility of any existing branches.</p>
 
+  <tal:no-policies condition="not: view/policy/items">
+    Everything is <strong>PUBLIC</strong>.
+  </tal:no-policies>
+
+  <tal:has-policies condition="view/policy/items">
+
   <ul>
     <li tal:repeat="item view/policy/items">
       <tal:team replace="item/team/displayname"
@@ -38,7 +44,7 @@
     </li>
   </ul>
 
-
+  </tal:has-policies>
 
   <a href="+addbranchvisibilitypolicy">Set policy for a team</a>
 

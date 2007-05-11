@@ -121,8 +121,6 @@ class BranchVisibilityPolicyView(LaunchpadView):
         """You cannot remove items if using inherited policy or
         if there is only the default policy item.
         """
-        policy_items = self.policy.items
-        only_default_policy = (
-            len(policy_items) == 1 and policy_items[0]._implicit)
-        return not (only_default_policy or self.policy.isUsingInheritedPolicy())
+        return (len(self.policy.items) > 0 and
+                not self.policy.isUsingInheritedPolicy())
     
