@@ -381,12 +381,12 @@ class ProjectSetView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.form = self.request.form
-        self.soyuz = self.form.get('soyuz', None)
-        self.rosetta = self.form.get('rosetta', None)
-        self.malone = self.form.get('malone', None)
-        self.bazaar = self.form.get('bazaar', None)
-        self.text = self.form.get('text', None)
+        self.form = self.request.form_ng
+        self.soyuz = self.form.getOne('soyuz', None)
+        self.rosetta = self.form.getOne('rosetta', None)
+        self.malone = self.form.getOne('malone', None)
+        self.bazaar = self.form.getOne('bazaar', None)
+        self.text = self.form.getOne('text', None)
         self.searchrequested = False
         if (self.text is not None or
             self.bazaar is not None or

@@ -19,7 +19,7 @@ from canonical.archiveuploader.dscfile import DSCFile, SignableTagFile
 from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, DebBinaryUploadFile,
     UdebBinaryUploadFile, BaseBinaryUploadFile, SourceUploadFile,
-    NascentUploadFile)
+    splitComponentAndSection)
 from canonical.archiveuploader.utils import (
     re_isadeb, re_issource, re_changes_file_name)
 from canonical.archiveuploader.tagfiles import (
@@ -132,8 +132,8 @@ class ChangesFile(SignableTagFile):
         'raw-<something>'.
         Further checks will be performed in CustomUploadFile class.
         """
-        splitter = NascentUploadFile.splitComponentAndSection
-        component_name, section_name = splitter(component_and_section)
+        component_name, section_name = splitComponentAndSection(
+            component_and_section)
         if section_name.startswith('raw-'):
             return True
         return False
