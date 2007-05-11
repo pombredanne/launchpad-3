@@ -168,7 +168,7 @@ class BuilderGroup:
         host_url = '%s-host.ppa' % hostname
         ssh_cmd = "ssh -v -i ~/.ssh/ppa-reset-builder ppa@%s" % host_url
         self.logger.debug('Running: %s' % ssh_cmd)
-        os.system(ssh_cmd)
+        #os.system(ssh_cmd)
 
     def failBuilder(self, builder, reason):
         """Mark builder as failed.
@@ -662,7 +662,7 @@ class BuilderGroup:
         Return None if there is none available.
         """
         for builder in self.builders:
-            self.logger.debug('probing %s' % builder.url)
+            #self.logger.debug('probing %s' % builder.url)
             if builder.builderok:
                 if builder.manual:
                     #self.logger.warn('builder in MANUAL')

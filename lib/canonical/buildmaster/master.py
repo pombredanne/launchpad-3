@@ -577,7 +577,6 @@ class BuilddMaster:
 
         self._logger.debug("Found %d NEEDSBUILD" % candidates.count())
 
-
         result = {}
 
         for job in candidates:
