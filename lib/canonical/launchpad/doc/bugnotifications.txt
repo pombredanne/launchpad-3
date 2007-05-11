@@ -465,7 +465,7 @@ During bulk imports or changes of bugs, we often want to suppress
 email notifications.  Due to the previous operation, there are pending
 bug notifications for bug six:
 
-    >>> notifications = BugNotification.select(bug=6, date_emailed=None)
+    >>> notifications = BugNotification.selectBy(bugID=6, date_emailed=None)
     >>> notifications.count()
     3
 
@@ -473,7 +473,7 @@ These notifications can be expired using the expireNotifications()
 method:
 
     >>> bug_six.expireNotifications()
-    >>> notifications = BugNotification.select(bug=6, date_emailed=None)
+    >>> notifications = BugNotification.selectBy(bugID=6, date_emailed=None)
     >>> notifications.count()
     0
 
