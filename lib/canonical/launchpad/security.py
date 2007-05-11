@@ -914,3 +914,8 @@ class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
 class AdminDistroReleaseLanguage(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IDistroReleaseLanguage
+
+
+class AdminDistroReleaseTranslations(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IDistroRelease

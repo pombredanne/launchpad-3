@@ -9,6 +9,10 @@
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
     <allow interface="canonical.launchpad.interfaces.IPublishing"/>
+    <require
+        permission="launchpad.TranslationsAdmin"
+        set_attributes="hide_all_translations"
+        />
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish
          shedloads of data. -->
