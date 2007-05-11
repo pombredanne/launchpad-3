@@ -12,6 +12,7 @@ TESTOPTS=
 SHHH=${PYTHON} utilities/shhh.py
 STARTSCRIPT=runlaunchpad.py
 Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
+TWISTEDPATH=$(shell pwd)/sourcecode/twisted
 HERE:=$(shell pwd)
 
 LPCONFIG=default
@@ -34,7 +35,8 @@ check_launchpad_on_merge: build dbfreeze_check check importdcheck hctcheck
 
 dbfreeze_check:
 	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
-	    grep database/schema/ | grep -v pending | wc -l` -eq 0 ]
+	    grep database/schema/ | grep -v pending | grep -v security.cfg | \
+	    wc -l` -eq 0 ]
 
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]
@@ -79,7 +81,7 @@ check: build
 	${PYTHON} -t ./test_on_merge.py -vv
 
 lint:
-	@sh ./utilities/lint.sh
+	@bash ./utilities/lint.sh
 
 #lintmerge:
 #	@# Thank Stuart, not me!
@@ -97,6 +99,10 @@ inplace: build
 build:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
+
+mailman_instance: build
+	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
+		 $(PYTHON) -t buildmailman.py
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
@@ -124,8 +130,14 @@ ftest_inplace: inplace
 
 run: inplace stop bzr_version_info
 	rm -f thread*.request
-	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -C $(CONFFILE)
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -t $(STARTSCRIPT) -r librarian -C $(CONFFILE)
+
+run_all: inplace stop bzr_version_info
+	rm -f thread*.request
+	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
+		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman \
+		 -C $(CONFFILE)
 
 bzr_version_info:
 	rm -f bzr-version-info.py bzr-version-info.pyc

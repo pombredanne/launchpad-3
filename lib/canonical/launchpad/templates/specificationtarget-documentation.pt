@@ -20,9 +20,9 @@
 <div metal:fill-slot="main" tal:define="specs view/documentation">
 
   <p>
-    To classify a specification as documentation, check the
+    To classify a blueprint as documentation, check the
     &#8220;Is Informational&#8221; box on its &#8220;Edit Details&#8221;
-    page. When the specification is marked "Approved" then it will show
+    page. When the blueprint is marked "Approved" then it will show
     up in this listing.
   </p>
 
@@ -37,7 +37,7 @@
       <span tal:replace="context/displayname">Mozilla</span>.
     </tal:no_specs>
     <tal:has_specs condition="specs">
-      <span tal:replace="specs/count:len">7</span> specification(s) listed.
+      <span tal:replace="specs/count:len">7</span> blueprint(s) listed.
     </tal:has_specs>
   </p>
 

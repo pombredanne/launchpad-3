@@ -138,9 +138,9 @@ None
 The IBranchSet can tell us how many branches there are registered.
 
 >>> branchset.count()
-29
+30
 
-(25 in the sample data, and two added above.)
+(28 in the sample data, and two added above.)
 
 == Determing the number of branches with bugs ==
 
@@ -363,14 +363,32 @@ True
 
 Branches can be subscribed to and unsubscribed from by a Person.
 
+Branch subscriptions now have extra attributes associated with them.
+The notification_level is used to control what email is sent to the
+subscribed user, and max_diff_lines is used to control the size of
+any generated diffs between revisions that are emailed out.
+
+Both of these attributes are contolled through the UI through the use
+of the enumerated types: BranchSubscriptionDiffSize, and 
+BranchSubscriptionNotificationLevel.
+
 >>> from canonical.launchpad.interfaces import IPerson, IBranchSubscription
+>>> from canonical.lp.dbschema import (
+...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 >>> sabdfl = personset.getByName('sabdfl')
 >>> sabdfl.subscribed_branches.count()
 0
->>> subscription = gterm_dev.subscribe(sabdfl)
+>>> subscription = gterm_dev.subscribe(
+...     sabdfl,
+...     BranchSubscriptionNotificationLevel.FULL, 
+...     BranchSubscriptionDiffSize.FIVEKLINES)
 >>> verifyObject(IBranchSubscription, subscription)
 True
 >>> subscription.branch == gterm_dev and subscription.person == sabdfl
+True
+>>> subscription.notification_level == BranchSubscriptionNotificationLevel.FULL
+True
+>>> subscription.max_diff_lines == BranchSubscriptionDiffSize.FIVEKLINES
 True
 >>> gterm_dev.subscriptions[0] == subscription
 True
@@ -396,7 +414,8 @@ the branches registered, authored and subscribed to by this person.
 ...     title, summary=title, date_created=now.next())
 >>> junkcode.author = lifeless
 >>> syncUpdate(junkcode)
->>> unused = gterm_dev.subscribe(lifeless)
+>>> unused = gterm_dev.subscribe(lifeless, 
+...            BranchSubscriptionNotificationLevel.NOEMAIL, None)
 >>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
 True
 
@@ -501,6 +520,33 @@ database. getByRevisionId returns None.
 
 >>> revisionset.getByRevisionId('missing-revision-id') is None
 True
+
+== Getting the tip revision for a Branch ==
+
+The last revision that we have stored in the database for any given branch
+is identified by the branch attribute "last_scanned_id".  This is the textual
+revision_id for the bzr revision.  The reason that it is a text id rather than
+an integer foreign key is so it can easily be compared to the
+"last_mirrored_id".  The "last_mirrored_id" is set by the branch puller, and is
+used to identify when a scan is needed for a branch.
+
+>>> branch = branchset.get(1)
+>>> branch.last_scanned_id
+>>> branch.getTipRevision() is None
+True
+
+>>> branch.last_scanned_id = 'null:'
+>>> branch.getTipRevision() is None
+True
+
+>>> branch.last_scanned_id = 'test@canonical.com-20051031165248-6f1bb97973c2b4f4'
+>>> rev = branch.getTipRevision()
+>>> print rev.owner.name
+admins
+>>> print rev.date_created
+2005-10-31 17:21:47.381770+00:00
+>>> print rev.log_body
+initial import (empty)
 
 
 == Branch Scan List ==
@@ -631,9 +677,8 @@ Batching of the branch pages relies (ideally) on a quick simple query
 that can have the result set limited in order to only return a partial
 result set.  The getBranchesForPerson method on IBranchSet will 
 return all branches associated with that person:
-  - subscribed branches by person or team the person is a member of
-  - person is author of the branch
-  - owner is person or team the person is a member of
+  - subscribed branches by person
+  - person is author or owner of the branch
 
   >>> from canonical.launchpad.interfaces import (
   ...     DEFAULT_BRANCH_STATUS_IN_LISTING)
@@ -641,7 +686,6 @@ return all branches associated with that person:
   ...     personset.getByName('ddaa'), DEFAULT_BRANCH_STATUS_IN_LISTING)
   >>> for branch in branches:
   ...     print branch.lifecycle_status.title, branch.unique_name
-  New ~vcs-imports/evolution/main
   New ~ddaa/gnome-terminal/dev
   New ~ddaa/+junk/junkcode
 

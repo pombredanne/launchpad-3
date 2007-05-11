@@ -6,7 +6,7 @@ __all__ = ['AnswerContact']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol
+from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IAnswerContact
@@ -18,7 +18,7 @@ class AnswerContact(SQLBase):
     implements(IAnswerContact)
 
     _defaultOrder = ['id']
-    _table = 'SupportContact'
+    _table = 'AnswerContact'
 
     person = ForeignKey(
         dbName='person', notNull=True, foreignKey='Person')

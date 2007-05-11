@@ -50,7 +50,25 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
-  <!-- UnexpectedFormData -->
+  <!-- OffsiteFormPostError -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.OffsiteFormPostError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-unexpectedformdata.pt"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+ 
+  <!-- UnsafeFormGetSubmissionError -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.UnsafeFormGetSubmissionError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-unexpectedformdata.pt"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+
+  <!-- LibrarianFailure -->
   <browser:page
       for="canonical.librarian.interfaces.LibrarianFailure"
       name="index.html"
@@ -117,20 +135,6 @@
       />
 
   <browser:page
-      name="+search"
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      class="canonical.launchpad.browser.SearchProjectsView"
-      template="../templates/launchpad-search.pt"
-      permission="zope.Public" />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
-      name="+editmylanguages"
-      />
-
-  <browser:page
       for="*"
       attribute="logout"
       class="canonical.launchpad.webapp.login.CookieLogoutPage"
@@ -161,6 +165,15 @@
       template="../templates/launchpad-restrictedinfo.pt"
       permission="zope.Public"
       class="canonical.launchpad.webapp.login.RestrictedLoginInfo"
+      />
+
+  <!-- Other non-application-specific pages. -->
+
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.RedirectToEditLanguagesView"
+      name="+editmylanguages"
       />
 
   <!-- A page to list all the icons in LP -->
@@ -243,7 +256,7 @@
       template="../templates/product-code-index.pt"
       permission="zope.Public"
       />
-  
+
 </facet>
 
 <!--
@@ -296,20 +309,21 @@ these URLs in Apache.
   permission="zope.Public"
   />
 
-<browser:pages
+<browser:page
   for="zope.interface.Interface"
-  class="canonical.launchpad.browser.StructuralObjectPresentationView"
+  class="canonical.launchpad.browser.StructuralHeaderPresentationView"
   permission="zope.Public"
->
-  <browser:page
-    name="+structural-header"
-    template="../templates/launchpad-structuralheader.pt"
+  name="+structural-header"
+  template="../templates/launchpad-structuralheader.pt"
   />
-  <browser:page
-    name="+structural-footer"
-    template="../templates/launchpad-structuralfooter.pt"
+
+<browser:page
+  for="zope.interface.Interface"
+  class="canonical.launchpad.browser.StructuralFooterPresentationView"
+  permission="zope.Public"
+  name="+structural-footer"
+  template="../templates/launchpad-structuralfooter.pt"
   />
-</browser:pages>
 
 <browser:page
   for="*"

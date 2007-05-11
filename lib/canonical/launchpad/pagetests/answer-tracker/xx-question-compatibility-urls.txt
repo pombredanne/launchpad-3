@@ -1,0 +1,79 @@
+= Backward Compatible URLs =
+
+The Answer Tracker was renamed from the old Technical Support Tracker.
+As part of that rename many URLs were changed to reflect the new
+terminology. We provide redirect from the old names to the new ones.
+
+== Main application ==
+
+    >>> browser.open('http://launchpad.dev/support')
+    >>> print browser.url
+    http://answers.launchpad.dev/questions
+
+    >>> browser.open('http://launchpad.dev/support/+tickets')
+    >>> print browser.url
+    http://answers.launchpad.dev/questions/+questions
+
+== Answer Contact Page ==
+
+    >>> user_browser.open('http://launchpad.dev/firefox/+support-contact')
+    >>> print user_browser.url
+    http://answers.launchpad.dev/firefox/+answer-contact
+
+== Add Question Page ==
+
+    >>> user_browser.open('http://launchpad.dev/firefox/+addticket')
+    >>> print user_browser.url
+    http://answers.launchpad.dev/firefox/+addquestion
+
+    >>> user_browser.open('http://launchpad.dev/mozilla/+addticket')
+    >>> print user_browser.url
+    http://answers.launchpad.dev/mozilla/+addquestion
+
+== My Questions Page ==
+
+    >>> user_browser.open('http://launchpad.dev/firefox/+mytickets')
+    >>> print user_browser.url
+    http://answers.launchpad.dev/firefox/+myquestions
+
+== Questions Listing ==
+
+    >>> browser.open('http://launchpad.dev/firefox/+tickets')
+    >>> print browser.url
+    http://answers.launchpad.dev/firefox/+questions
+
+== Question Page ==
+
+    >>> browser.open('http://launchpad.dev/firefox/+ticket/1')
+    >>> print browser.url
+    http://answers.launchpad.dev/firefox/+question/1
+
+== Person Questions Listing ==
+
+    >>> browser.open('http://launchpad.dev/~name12/+tickets')
+    >>> print browser.url
+    http://answers.launchpad.dev/~name12/+questions
+
+    >>> browser.open('http://launchpad.dev/~name12/+answeredtickets')
+    >>> print browser.url
+    http://answers.launchpad.dev/~name12/+answeredquestions
+
+    >>> browser.open('http://launchpad.dev/~name12/+assignedtickets')
+    >>> print browser.url
+    http://answers.launchpad.dev/~name12/+assignedquestions
+
+    >>> browser.open('http://launchpad.dev/~name12/+commentedtickets')
+    >>> print browser.url
+    http://answers.launchpad.dev/~name12/+commentedquestions
+
+    >>> browser.open('http://launchpad.dev/~name12/+createdtickets')
+    >>> print browser.url
+    http://answers.launchpad.dev/~name12/+createdquestions
+
+    >>> browser.open('http://launchpad.dev/~name12/+needattentiontickets')
+    >>> print browser.url
+    http://answers.launchpad.dev/~name12/+needattentionquestions
+
+    >>> browser.open('http://launchpad.dev/~name12/+subscribedtickets')
+    >>> print browser.url
+    http://answers.launchpad.dev/~name12/+subscribedquestions

@@ -14,17 +14,16 @@ from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.browser.textwidgets import TextWidget
 from zope.app.form.browser.widget import BrowserWidget, renderElement
 from zope.app.form.interfaces import (
-    IDisplayWidget, IInputWidget, InputErrors, ConversionError,
-    WidgetInputError)
+    IDisplayWidget, IInputWidget, InputErrors, WidgetInputError,
+    ConversionError)
 from zope.schema.interfaces import ValidationError, InvalidValue
 from zope.app.form import Widget, CustomWidgetFactory
 from zope.app.form.utility import setUpWidget
 
 from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import canonical_url
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 class BugTaskAssigneeWidget(Widget):
     """A widget for setting the assignee on an IBugTask."""
@@ -70,7 +69,7 @@ class BugTaskAssigneeWidget(Widget):
         # If the user has chosen to assign this bug to somebody else,
         # ensure that they actually provided a valid input value for
         # the assignee field.
-        if self.request.form.get(self.name + ".option") == self.assign_to:
+        if self.request.form_ng.getOne(self.name + ".option") == self.assign_to:
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
                         self.name, self.label,
@@ -109,9 +108,9 @@ class BugTaskAssigneeWidget(Widget):
         """See zope.app.form.interfaces.IInputWidget."""
         self.validate()
 
-        form = self.request.form
+        form = self.request.form_ng
 
-        assignee_option = form.get(self.name + ".option")
+        assignee_option = form.getOne(self.name + ".option")
         if assignee_option == self.assign_to:
             # The user has chosen to use the assignee chooser widget
             # to select an assignee.
@@ -191,7 +190,7 @@ class BugTaskAssigneeWidget(Widget):
         """
         # Give form values in the request precedence in deciding which
         # radio button should be selected.
-        selected_option = self.request.form.get(self.name + ".option")
+        selected_option = self.request.form_ng.getOne(self.name + ".option")
         if selected_option:
             return selected_option
 
@@ -270,7 +269,7 @@ class BugTaskBugWatchWidget(RadioWidget):
         one uses getInputValue(), which it shouldn't do.
         """
         if not self._renderedValueSet():
-            return self.request.form.get(self.name, self._missing)
+            return self.request.form_ng.getOne(self.name, self._missing)
         else:
             return self._toFormValue(self._data)
 
@@ -420,9 +419,9 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
             try:
                 return self.convertTokensToValues([input])[0]
             except InvalidValue:
-                raise LaunchpadValidationError(
+                raise ConversionError(
                     "Launchpad doesn't know of any source package named"
-                    " '%s' in %s.", input, distribution.displayname)
+                    " '%s' in %s." % (input, distribution.displayname))
         return source
 
 
@@ -477,11 +476,11 @@ class DBItemDisplayWidget(BrowserWidget):
             return renderElement('span', contents='&mdash;')
 
 
-class NewLineToSpacesWidget(TextWidget):
+class NewLineToSpacesWidget(StrippedTextWidget):
     """A widget that replaces new line characters with spaces."""
 
     def _toFieldValue(self, input):
-        value = TextWidget._toFieldValue(self, input)
+        value = StrippedTextWidget._toFieldValue(self, input)
         if value is not self.context.missing_value:
             lines = value.splitlines()
             value = ' '.join(lines)

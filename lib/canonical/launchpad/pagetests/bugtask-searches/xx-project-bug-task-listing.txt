@@ -18,22 +18,26 @@ project.  Bugs in the Firefox product are displayed.
 
 == Bug Badge Decoration ==
 
-We are wanting to have badges for associated branches.
+We are wanting to have badges for associated branches, mentorship,
+specifications etc.
 
   >>> def names_and_branches(contents):
   ...     table = find_tag_by_id(contents, 'buglisting')
   ...     for row in table.tbody.fetch('tr'):
   ...         description_cell = row.fetch('td')[2]
   ...         anchors = description_cell.fetch('a')
+  ...         imgs = description_cell.fetch('img')
   ...         print anchors[0].get('href')
-  ...         for anchor in anchors[1:]:
-  ...            print "  Branch:", anchor.get('href')
+  ...         for img in imgs:
+  ...            print "  Badge:", img.get('alt')
 
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bugs')
   >>> names_and_branches(browser.contents)
-  http://bugs.launchpad.dev/firefox/+bug/5
-    Branch: http://code.launchpad.dev/~name12/firefox/main
-  http://bugs.launchpad.dev/firefox/+bug/4
-    Branch: http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2
-    Branch: http://code.launchpad.dev/~name12/firefox/main
-  http://bugs.launchpad.dev/firefox/+bug/1
+  /firefox/+bug/5
+    Badge: branch
+  /firefox/+bug/4
+    Badge: branch
+  /firefox/+bug/1
+    Badge: blueprint
+
+

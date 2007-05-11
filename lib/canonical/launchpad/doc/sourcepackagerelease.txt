@@ -134,7 +134,6 @@ Some of the 20 required arguments are foreign keys or DB contants:
   >>> arg_comp = getUtility(IComponentSet)['universe']
   >>> arg_sect = getUtility(ISectionSet)['web']
   >>> arg_key = getUtility(IGPGKeySet).get(1)
-  >>> arg_dateuploaded = UTC_NOW
   >>> arg_maintainer = hoary.owner
   >>> arg_creator = hoary.owner
   >>> arg_urgency = SourcePackageUrgency.LOW
@@ -161,7 +160,7 @@ ISourcePackageRelease, it will automatically set the
 'uploaddistrorelease' to the API entry point, in this case Hoary.
 
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
-  ...     arg_name, version, arg_maintainer, arg_dateuploaded,
+  ...     arg_name, version, arg_maintainer, 
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
   ...     arg_urgency, changelog, dsc, arg_key, arg_sect, arg_manifest,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
@@ -176,18 +175,6 @@ Throw away the DB changes:
 
   >>> transaction.abort()
 
-
-Verify the 'meta_binary' attribute:
-
-   >>> spr_test = SourcePackageRelease.get(20)
-   >>> spr_test.name
-   u'pmount'
-
-   >>> from canonical.launchpad.interfaces import (
-   ...    IDistroReleaseBinaryPackage)
-
-   >>> IDistroReleaseBinaryPackage.providedBy(spr_test.meta_binaries[0])
-   True
 
 Counting bugs
 -------------
@@ -246,6 +233,9 @@ correspondent to the alias (long) we already have.
    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
    >>> file_alias = getUtility(ILibraryFileAliasSet)[alias]
 
+   >>> spr_test = SourcePackageRelease.get(20)
+   >>> spr_test.name
+   u'pmount'
    >>> spr_test.attachTranslationFiles(file_alias, True)
 
 The commit is needed to see the new entries

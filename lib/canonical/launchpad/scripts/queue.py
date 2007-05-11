@@ -28,11 +28,11 @@ from canonical.launchpad.interfaces import (
     IComponentSet, ISectionSet, QueueInconsistentStateError,
     IPersonSet)
 
-from canonical.archivepublisher.tagfiles import (
+from canonical.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
-from canonical.archivepublisher.template_messages import (
+from canonical.archiveuploader.template_messages import (
     announce_template, rejection_template)
-from canonical.archivepublisher.utils import (
+from canonical.archiveuploader.utils import (
     safe_fix_maintainer, ParseMaintError)
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config

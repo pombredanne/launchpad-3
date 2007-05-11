@@ -10,6 +10,7 @@ __all__ = [
     'LaunchpadEditFormView',
     'action',
     'custom_widget',
+    'safe_action',
     ]
 
 import transaction
@@ -25,7 +26,7 @@ from zope.app.form.browser import (
 
 from canonical.launchpad.webapp.interfaces import (
     ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
-    IAlwaysSubmittedWidget)
+    IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.event import (
@@ -87,6 +88,12 @@ class LaunchpadFormView(LaunchpadView):
         if action is None:
             return
 
+        # Check to see if an attempt was made to submit a non-safe
+        # action with a GET query.
+        is_safe = getattr(action, 'is_safe', False)
+        if not is_safe and self.request.method != 'POST':
+            raise UnsafeFormGetSubmissionError(action.__name__)
+
         if errors:
             self.form_result = action.failure(data, errors)
             self._abort()
@@ -142,7 +149,25 @@ class LaunchpadFormView(LaunchpadView):
         # do we want to do anything with ignore_request?
         self.widgets = form.setUpWidgets(
             self.form_fields, self.prefix, context, self.request,
-            data=self.initial_values, ignore_request=False)
+            data=self.initial_values, adapters=self.adapters,
+            ignore_request=False)
+
+    @property
+    def adapters(self):
+        """Provide custom adapters for use when setting up the widgets."""
+        return {}
+
+    @property
+    def action_url(self):
+        """Set the default action URL for the form."""
+
+        # XXX: 20070413 bac
+        # Rather than use a property it is tempting to just cache the value of
+        # request.getURL.  This caching cannot be done in __init__ as the full
+        # URL has not been traversed at instantiation time.  It could be
+        # done in 'initialize' if the functionality for initialization and
+        # form processing are split.
+        return self.request.getURL()
 
     @property
     def initial_values(self):
@@ -292,6 +317,8 @@ class LaunchpadEditFormView(LaunchpadFormView):
         emitted.
 
         This method should be called by an action method of the form.
+
+        Returns True if there were any changes to apply.
         """
         if context is None:
             context = self.context
@@ -300,12 +327,15 @@ class LaunchpadEditFormView(LaunchpadFormView):
 
         notify(SQLObjectToBeModifiedEvent(context, data))
 
-        if form.applyChanges(context, self.form_fields, data):
+        was_changed = form.applyChanges(context, self.form_fields,
+                                        data, self.adapters)
+        if was_changed:
             field_names = [form_field.__name__
                            for form_field in self.form_fields]
             notify(SQLObjectModifiedEvent(context,
                                           context_before_modification,
                                           field_names))
+        return was_changed
 
 
 class custom_widget:
@@ -326,3 +356,13 @@ class custom_widget:
             cls.custom_widgets = dict(cls.custom_widgets)
         cls.custom_widgets[self.field_name] = self.widget
         return cls
+
+
+def safe_action(action):
+    """A decorator used to mark a particular action as 'safe'.
+
+    In the context of LaunchpadFormView, only actions marked as safe
+    can be submitted using a GET request.
+    """
+    action.is_safe = True
+    return action

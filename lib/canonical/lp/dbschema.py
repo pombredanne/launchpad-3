@@ -28,6 +28,7 @@ __all__ = (
 'BranchLifecycleStatus',
 'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
+'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
 'BugBranchStatus',
 'BugNominationStatus',
@@ -1573,7 +1574,7 @@ class QuestionStatus(DBSchema):
     This enum tells us the current status of the question.
 
     The lifecycle of a question is documented in
-    https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    https://help.launchpad.net/QuestionLifeCycle, so remember
     to update that document for any pertinent changes.
     """
 
@@ -2487,6 +2488,46 @@ class BranchReviewStatus(DBSchema):
         """)
 
 
+class BranchSubscriptionDiffSize(DBSchema):
+    """Branch Subscription Diff Size
+
+    When getting branch revision notifications, the person can set a size
+    limit of the diff to send out. If the generated diff is greater than
+    the specified number of lines, then it is omitted from the email.
+    This enumerated type defines the number of lines as a choice
+    so we can sensibly limit the user to a number of size choices.
+    """
+
+    NODIFF = Item(0, """
+        Don't send diffs
+
+        Don't send generated diffs with the revision notifications.
+        """, sortkey=0)
+    
+    HALFKLINES = Item(500, """
+        500 lines
+
+        Limit the generated diff to 500 lines.
+        """, sortkey=500)
+    
+    ONEKLINES  = Item(1000, """
+        1000 lines
+
+        Limit the generated diff to 1000 lines.
+        """, sortkey=1000)
+    
+    FIVEKLINES = Item(5000, """
+        5000 lines
+
+        Limit the generated diff to 5000 lines.
+        """, sortkey=5000)
+    
+    WHOLEDIFF  = Item(-1, """
+        Send entire diff
+
+        Don't limit the size of the diff.
+        """, sortkey=1000000)
+
 
 class BranchSubscriptionNotificationLevel(DBSchema):
     """Branch Subscription Notification Level
@@ -2511,18 +2552,19 @@ class BranchSubscriptionNotificationLevel(DBSchema):
         """)
 
     DIFFSONLY = Item(2, """
-        Branch diff notifications only
+        Branch revision notifications only
 
         Only send notifications about new revisions added to this
         branch.
         """)
 
     FULL = Item(3, """
-        Branch attribute and diff notifications
+        Branch attribute and revision notifications
 
         Send notifications for both branch attribute updates
         and new revisions added to the branch.
         """)
+
 
 class BugNominationStatus(DBSchema):
     """Bug Nomination Status
@@ -3336,6 +3378,13 @@ class ShippingRequestStatus(DBSchema):
         This request needs special consideration.
         """)
 
+    DUPLICATEDADDRESS = Item(6, """
+        Pending Special Consideration (dupe address)
+
+        This request needs special consideration because other users already
+        requested CDs to the same address.
+        """)
+
 
 class ShippingService(DBSchema):
     """The Shipping company we use to ship CDs."""
@@ -3416,6 +3465,18 @@ class ShipItDistroRelease(DBSchema):
         6.10 (Edgy Eft)
 
         The Edgy Eft release.
+        """)
+
+    FEISTY = Item(4, """
+        7.04 (Feisty Fawn)
+
+        The Feisty Fawn release.
+        """)
+
+    GUTSY = Item(5, """
+        7.10 (Gutsy Gibbon)
+
+        The Gutsy Gibbon release.
         """)
 
 

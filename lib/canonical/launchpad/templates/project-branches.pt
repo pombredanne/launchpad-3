@@ -26,7 +26,7 @@
                 </td>
             </tr>
             <tr tal:condition="not: prod/branches">
-                <td>No Bazaar branches for this project.</td>
+                <td>No Bazaar branches for this project group.</td>
             </tr>
             <tr>
               <th>Primary Release Branches</th>
@@ -36,7 +36,7 @@
                 </td>
             </tr>
             <tr tal:condition="not: prod/serieslist">
-                <td>No release branches for this project.</td>
+                <td>No release branches for this project group.</td>
             </tr>
         </table>
 

@@ -4,7 +4,8 @@ __metaclass__ = type
 __all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
            'ShippingRequest', 'ShippingRequestSet', 'RequestedCDs',
            'Shipment', 'ShipmentSet', 'ShippingRun', 'ShippingRunSet',
-           'ShipItReport', 'ShipItReportSet']
+           'ShipItReport', 'ShipItReportSet',
+           'MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT']
 
 from StringIO import StringIO
 import csv
@@ -17,8 +18,8 @@ from zope.component import getUtility
 
 import pytz
 
-from sqlobject import (
-    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
+from sqlobject.sqlbuilder import AND, SQLConstant
+from sqlobject import ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol
 
 from canonical.config import config
 from canonical.uuid import generate_uuid
@@ -42,9 +43,12 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
     IRequestedCDs, IShippingRequestSet, ILaunchpadCelebrities, IShipment,
     IShippingRun, IShippingRunSet, IShipmentSet, ShippingRequestPriority,
-    IShipItReport, IShipItReportSet, ShipItConstants,
-    SOFT_MAX_SHIPPINGRUN_SIZE, ILibraryFileAliasSet)
+    IShipItReport, IShipItReportSet, ShipItConstants, ILibraryFileAliasSet,
+    SOFT_MAX_SHIPPINGRUN_SIZE, MAX_CDS_FOR_UNTRUSTED_PEOPLE)
 from canonical.launchpad.database.country import Country
+
+
+MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT = 10
 
 
 class ShippingRequest(SQLBase):
@@ -74,6 +78,9 @@ class ShippingRequest(SQLBase):
     reason = StringCol(default=None)
     highpriority = BoolCol(notNull=True, default=False)
 
+    # This is maintained by a DB trigger, so it can be None here even though
+    # the DB won't allow that.
+    normalized_address = StringCol(default=None)
     city = StringCol(notNull=True)
     phone = StringCol(default=None)
     country = ForeignKey(dbName='country', foreignKey='Country', notNull=True)
@@ -252,6 +259,8 @@ class ShippingRequest(SQLBase):
                     % self.shipment.shippingrun.datecreated.date())
         elif self.isPendingSpecial():
             return ShippingRequestStatus.PENDINGSPECIAL.title.lower()
+        elif self.isDuplicatedAddress():
+            return ShippingRequestStatus.DUPLICATEDADDRESS.title.lower()
         elif self.isDenied():
             return ShippingRequestStatus.DENIED.title.lower()
         elif self.isCancelled():
@@ -283,6 +292,10 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.DENIED
 
+    def isDuplicatedAddress(self):
+        """See IShippingRequest"""
+        return self.status == ShippingRequestStatus.DUPLICATEDADDRESS
+
     def isPendingSpecial(self):
         """See IShippingRequest"""
         return self.status == ShippingRequestStatus.PENDINGSPECIAL
@@ -291,6 +304,7 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         statuses = [ShippingRequestStatus.DENIED,
                     ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.DUPLICATEDADDRESS,
                     ShippingRequestStatus.PENDING]
         return self.status in statuses
 
@@ -298,8 +312,13 @@ class ShippingRequest(SQLBase):
         """See IShippingRequest"""
         statuses = [ShippingRequestStatus.APPROVED,
                     ShippingRequestStatus.PENDINGSPECIAL,
+                    ShippingRequestStatus.DUPLICATEDADDRESS,
                     ShippingRequestStatus.PENDING]
         return self.status in statuses
+
+    def markAsDuplicatedAddress(self):
+        """See IShippingRequest"""
+        self.status = ShippingRequestStatus.DUPLICATEDADDRESS
 
     def markAsPendingSpecial(self):
         """See IShippingRequest"""
@@ -340,6 +359,29 @@ class ShippingRequest(SQLBase):
         self.status = ShippingRequestStatus.CANCELLED
         self.whocancelled = whocancelled
 
+    def addressIsDuplicated(self):
+        """See IShippingRequest"""
+        return self.getRequestsWithSameAddressFromOtherUsers().count() > 0
+
+    def getRequestsWithSameAddressFromOtherUsers(self, limit=5):
+        """See IShippingRequest"""
+        query = """
+            SELECT ShippingRequest.id
+            FROM ShippingRequest
+            JOIN RequestedCDs ON ShippingRequest.id = RequestedCDs.request
+            WHERE normalized_address = %(address)s
+                AND country = %(country)s
+                AND recipient != %(recipient)s
+                AND status NOT IN (%(cancelled)s, %(denied)s)
+                AND RequestedCDs.distrorelease = %(release)s
+            """ % sqlvalues(
+                address=self.normalized_address, recipient=self.recipient,
+                denied=ShippingRequestStatus.DENIED, country=self.country,
+                cancelled=ShippingRequestStatus.CANCELLED,
+                release=self.distrorelease)
+        return ShippingRequest.select(
+            "id IN (%s)" % query, limit=limit, orderBy='-daterequested')
+
 
 class ShippingRequestSet:
     """See IShippingRequestSet"""
@@ -353,21 +395,19 @@ class ShippingRequestSet:
         except (SQLObjectNotFound, ValueError):
             return default
 
-    def processRequestsPendingSpecial(
-            self, status=ShippingRequestStatus.DENIED):
+    def processRequests(self, status, new_status):
         """See IShippingRequestSet"""
-        if status == ShippingRequestStatus.APPROVED:
+        if new_status == ShippingRequestStatus.APPROVED:
             action = 'approved'
             method_name = 'approve'
-        elif status == ShippingRequestStatus.DENIED:
+        elif new_status == ShippingRequestStatus.DENIED:
             action = 'denied'
             method_name = 'deny'
         else:
             raise AssertionError(
-                'status must be either APPROVED or DENIED: %r' % status)
+                'new_status must be APPROVED or DENIED: %r' % new_status)
 
-        requests = ShippingRequest.selectBy(
-            status=ShippingRequestStatus.PENDINGSPECIAL)
+        requests = ShippingRequest.selectBy(status=status)
         request_messages = []
         for request in requests:
             info = ("Request #%d, made by '%s' containing %d CDs\n(%s)"
@@ -377,8 +417,8 @@ class ShippingRequestSet:
             getattr(request, method_name)()
         template = get_email_template('shipit-mass-process-notification.txt')
         body = template % {
-            'requests_info': "\n".join(request_messages), 'action': action,
-            'pending_special': ShippingRequestStatus.PENDINGSPECIAL}
+            'requests_info': "\n".join(request_messages),
+            'action': action, 'status': status}
         to_addr = shipit_admins = config.shipit.admins_email_address
         from_addr = config.shipit.ubuntu_from_email_address
         subject = "Report of auto-%s requests" % action
@@ -610,8 +650,7 @@ class ShippingRequestSet:
             'Shipped Kubuntu PPC CDs', 'Shipped Edubuntu x86 CDs',
             'Shipped Edubuntu AMD64 CDs', 'Shipped Edubuntu PPC CDs',
             'Normal-prio shipments', 'High-prio shipments',
-            'Average request size',
-            'Percentage of requested CDs that were approved',
+            'Average request size', 'Approved CDs (percentage)',
             'Percentage of total shipped CDs', 'Continent']
         csv_writer.writerow(header)
         requested_cd_count = self._getRequestedCDCount(
@@ -934,19 +973,21 @@ class StandardShipItRequestSet:
                 quantityppc=quantityppc, quantityamd64=quantityamd64,
                 isdefault=isdefault)
 
-    def getAll(self):
+    def getByFlavour(self, flavour, user=None):
         """See IStandardShipItRequestSet"""
-        return StandardShipItRequest.select()
-
-    def getByFlavour(self, flavour):
-        """See IStandardShipItRequestSet"""
-        return StandardShipItRequest.selectBy(flavour=flavour)
+        query = "flavour = %s" % sqlvalues(flavour)
+        if user is None or not user.is_trusted_on_shipit:
+            query += (" AND quantityx86 + quantityppc + quantityamd64 <= %s"
+                      % sqlvalues(MAX_CDS_FOR_UNTRUSTED_PEOPLE))
+        orderBy = SQLConstant("quantityx86 + quantityppc + quantityamd64, id")
+        return StandardShipItRequest.select(query, orderBy=orderBy)
 
     def getAllGroupedByFlavour(self):
         """See IStandardShipItRequestSet"""
         standard_requests = {}
         for flavour in ShipItFlavour.items:
-            standard_requests[flavour] = self.getByFlavour(flavour)
+            standard_requests[flavour] = StandardShipItRequest.selectBy(
+                flavour=flavour)
         return standard_requests
 
     def get(self, id, default=None):

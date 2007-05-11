@@ -143,6 +143,8 @@ k            </description>
             default="https://devpad.canonical.com/~jamesh/oops.cgi/" />
         <key name="default_batch_size" datatype="integer" required="no"
             default="50" />
+        <key name="branchlisting_batch_size" datatype="integer" required="no"
+            default="100" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
             default="0">
             <description>
@@ -222,6 +224,17 @@ k            </description>
             only launchpad admins may access the site.
             </description>
         </key>
+        <key name="http_proxy" datatype="string" default="http://squid.internal:3128/">
+            <description>
+                Proxy to be used when issuing HTTP requests.
+            </description>
+        </key>
+        <key name="site_message" datatype="string" default="">
+            <description>
+            If this is provided, the message given in the string will appear
+            in the site status bar at the top of every page.
+            </description>
+        </key>
         <section name="*" type="launchpad_session" attribute="session"
             required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
@@ -232,6 +245,20 @@ k            </description>
                 If set, the host name to redirect beta testers to.
             </description>
             <example>beta.launchpad.net</example>
+        </key>
+        <key name="non_restricted_hostname" datatype="string"
+             default="launchpad.net">
+	    <description>
+                If restrict_to_team is set (such as on the beta
+                website), then this indicates the hostname suffix for
+                the non-restricted version of Launchpad.  Replacing
+                config.launchpad.vhosts.mainsite.hostname with this
+                value in a URI should give a valid host.
+
+                This is intended to provide a way for non beta-testers
+                to get back to the production instance if they are
+                given a beta URL.
+            </description>
         </key>
     </sectiontype>
     <sectiontype name="gina_target">
@@ -348,7 +375,7 @@ k            </description>
     <sectiontype name="gina">
         <key name="dbuser" datatype="string" default="gina">
             <description>
-                The database user wich will be used to make the
+                The database user which will be used to make the
                 package imports.
             </description>
         </key>
@@ -458,7 +485,7 @@ k            </description>
         <key name="bugnotification_dbuser"
              datatype="string" required="no" default="bugnotification">
             <description>
-                The database user wich will be used to send bug
+                The database user which will be used to send bug
                 notifications.
             </description>
         </key>
@@ -486,12 +513,6 @@ k            </description>
         <description>
             Shipit-specific configuration options.
         </description>
-        <key name="switch_to_edgy" datatype="boolean" default="false">
-            <description>
-                This key allows us to switch to edgy's shipit without having
-                to do a launchpad roll out.
-            </description>
-        </key>
         <key name="dbuser" datatype="string" default="shipit" />
         <key name="admins_email_address" datatype="string"
              default="info@shipit.ubuntu.com"/>
@@ -513,7 +534,7 @@ k            </description>
                 From-address used in PO import, export and language pack
                 notifications.
             </description>
-	</key>
+        </key>
     </sectiontype>
 
     <sectiontype name="poimport">
@@ -591,7 +612,7 @@ k            </description>
     <sectiontype name="distributionmirrorprober">
         <key name="dbuser" datatype="string" default="distributionmirror">
             <description>
-                The database user wich will be used to probe distribution
+                The database user which will be used to probe distribution
                 mirrors.
             </description>
         </key>
@@ -608,6 +629,12 @@ k            </description>
                 reply.
             </description>
         </key>
+        <key name="use_proxy" datatype="boolean" default="true">
+            <description>
+                Should we set an http_proxy environment variable before
+                running the prober?
+            </description>
+        </key>
         <key name="localhost_only" datatype="boolean" default="false">
             <description>
                 If true, the mirror prober will only try to connect to
@@ -620,7 +647,7 @@ k            </description>
     <sectiontype name="expiredmembershipsflagger">
         <key name="dbuser" datatype="string" default="teammembership">
             <description>
-                The database user wich will be used to flag expired team
+                The database user which will be used to flag expired team
                 memberships.
             </description>
         </key>
@@ -629,7 +656,7 @@ k            </description>
     <sectiontype name="karmacacheupdater">
         <key name="dbuser" datatype="string" default="karma">
             <description>
-                The database user wich will be used to update the karmacache
+                The database user which will be used to update the karmacache
                 table.
             </description>
         </key>
@@ -646,7 +673,7 @@ k            </description>
     <sectiontype name="targetnamecacheupdater">
         <key name="dbuser" datatype="string" default="targetnamecacheupdater">
             <description>
-                The database user wich will be used to update the
+                The database user which will be used to update the
                 targetnamecache column of bugtasks.
             </description>
         </key>
@@ -657,20 +684,20 @@ k            </description>
              default="http://cve.mitre.org/cve/downloads/allitems.xml.gz" />
         <key name="dbuser" datatype="string" default="cve">
             <description>
-                The database user wich will be used to update the CVE
+                The database user which will be used to update the CVE
                 database.
             </description>
         </key>
     </sectiontype>
 
     <sectiontype name="answertracker">
-        <key name="dbuser" datatype="string" default="tickettracker">
+        <key name="dbuser" datatype="string" default="answertracker">
             <description>
-                The database user wich will be used to expire tickets.
+                The database user which will be used to expire questions.
             </description>
         </key>
         <key name="email_domain" datatype="string"
-            default="support.launchpad.net" >
+            default="answers.launchpad.net" >
             <description>
                 The email domain, to which incomings emails should be
                 sent.
@@ -679,7 +706,7 @@ k            </description>
         <key name="days_before_expiration" datatype="integer"
              default="15">
             <description>
-                The number of days of inactivity required before a ticket in
+                The number of days of inactivity required before a question in
                 the open or needs information state is expired.
             </description>
         </key>
@@ -781,6 +808,13 @@ k            </description>
                 Directory to be created to store build results.
             </description>
         </key>
+        <key name="crondaily_lockfile" datatype="string"
+             default="/srv/launchpad.net/ubuntu-archive/cron.daily.lock">
+            <description>
+             cron.daily lockfile path, it's probed in order to suppress
+             buildd-queue-builder runs during the publication process.
+            </description>
+        </key>
         <key name="send_build_notification" datatype="boolean"
              default="yes">
             <description>
@@ -845,12 +879,21 @@ k            </description>
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
         <key name="port" datatype="string" default="tcp:5022" />
+        <key name="launch" datatype="boolean" required="no" default="no" />
+        <key name="spew" datatype="boolean" required="no" default="no" />
+        <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
 
     <sectiontype name="authserver">
         <key name="dbuser" datatype="string" default="authserver" />
         <key name="port" datatype="string" default="tcp:8999" />
+        <key name="launch" datatype="boolean" required="no" default="no" />
+        <key name="spew" datatype="boolean" required="no" default="no" />
+        <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
+
+    <sectiontype name="production_errorreports" extends="script_errorreports" />
+    <sectiontype name="autotest_errorreports" extends="script_errorreports" />
 
     <sectiontype name="importd">
         <key name="dbuser" datatype="string">
@@ -858,6 +901,29 @@ k            </description>
                 The database user for importd and associated scripts.
             </description>
         </key>
+        <section name="*" type="production_errorreports"
+            attribute="production_errorreports" required="no" />
+        <section name="*" type="autotest_errorreports"
+            attribute="autotest_errorreports" required="no" />
+    </sectiontype>
+
+    <sectiontype name="mailman-build"
+                 prefix="canonical.launchpad.mailman.config">
+        <key name="build"           datatype="boolean"      default="false" />
+        <key name="prefix"          datatype=".prefix"      default=""      />
+        <key name="var_dir"         datatype="string"
+             default="/var/mailman"  />
+        <key name="user_group"      datatype=".usergroup"   default="" />
+        <key name="site_list_owner" datatype=".siteowner"   default="" />
+        <key name="host_name"       datatype=".hostname"    default="" />
+    </sectiontype>
+
+    <sectiontype name="mailman" prefix="canonical.mailman.config">
+        <section name="*" type="mailman-build"
+                 attribute="build" required="yes" />
+
+        <key name="launch" datatype="boolean"  default="false" />
+        <key name="smtp"   datatype="inet-address"   default="localhost:25" />
     </sectiontype>
 
     <sectiontype name="canonical">
@@ -887,7 +953,7 @@ k            </description>
         <section name="*" type="zeca" attribute="zeca" />
         <section name="*" type="statistician" attribute="statistician" />
         <section name="*" type="productreleasefinder"
-		 attribute="productreleasefinder" />
+                 attribute="productreleasefinder" />
         <section name="*" type="gina" attribute="gina" />
         <section name="*" type="karmacacheupdater"
             attribute="karmacacheupdater" />
@@ -908,6 +974,7 @@ k            </description>
         <section name="*" type="supermirrorsftp" attribute="supermirrorsftp" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
+        <section name="*" type="mailman" attribute="mailman" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

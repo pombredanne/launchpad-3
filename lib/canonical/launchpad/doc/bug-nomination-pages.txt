@@ -34,9 +34,10 @@ Here's an example of nominating a bug for a distrorelease.
 
     >>> login("no-priv@canonical.com")
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     "field.actions.submit": "Submit Nominations",
-    ...     "field.nominatable_releases": ["warty"]})
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={"field.actions.submit": "Submit Nominations",
+    ...           "field.nominatable_releases": ["warty"]})
 
     >>> nomination_view = getView(
     ...     bug_one_in_ubuntu_firefox, "+nominate", request)
@@ -79,9 +80,10 @@ Here's an example of nominating a bug for a productseries.
 
     >>> firefox = bug_one_in_firefox.target
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     "field.actions.submit": "Submit Nominations",
-    ...     "field.nominatable_releases": ["trunk"]})
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={"field.actions.submit": "Submit Nominations",
+    ...           "field.nominatable_releases": ["trunk"]})
 
     >>> nomination_view = getView(
     ...     bug_one_in_firefox, "+nominate", request)
@@ -189,9 +191,10 @@ launchpad.Driver permission on the nomination.
     >>> cprov.inTeam(ubuntu_team)
     True
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     "field.actions.submit": "Submit Nominations",
-    ...     "field.nominatable_releases": ["grumpy"]})
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={"field.actions.submit": "Submit Nominations",
+    ...           "field.nominatable_releases": ["grumpy"]})
 
     >>> nomination_view = getView(bug_one_in_ubuntu_firefox, "+nominate", request)
     >>> launchbag.clear()

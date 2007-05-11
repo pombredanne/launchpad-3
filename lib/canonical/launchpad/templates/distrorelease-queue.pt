@@ -97,8 +97,6 @@
                         tal:condition="view/availableActions"/>
               </td>
   	      <td>
-                <span tal:replace="
-                      string: ${queue/displayname} (${queue/displayarchs})"/>
                 <img tal:condition="queue/containsSource"
                      alt="[Source]" src="/@@/package-source" title="Source"/>
                 <img tal:condition="queue/containsBuild"
@@ -106,9 +104,6 @@
                 <img tal:condition="queue/containsInstaller"
                      alt="[Installer]" src="/@@/ubuntu-icon"
                      title="Installer"/>
-                <img tal:condition="queue/containsTranslation"
-                     alt="[Translation]" src="/@@/translation-file"
-                     title="Translation"/>
                 <img tal:condition="queue/containsUpgrader"
                      alt="[Upgrader]" src="/@@/topic"
                      title="Upgrader"/>
@@ -116,6 +111,11 @@
                      alt="[Debian Description Translation Project Indexes]"
                      src="/@@/topic"
                      title="Debian Description Translation Project Indexes"/>
+                <span tal:replace="
+                      string: ${queue/displayname} (${queue/displayarchs})"/>
+                <img tal:condition="queue/containsTranslation"
+                     alt="[Translation]" src="/@@/translation-file"
+                     title="Translation"/>
               </td>
               <td tal:content="queue/displayversion">2.0.17-6</td>
               <td tal:content="queue/pocket/title">Updates</td>

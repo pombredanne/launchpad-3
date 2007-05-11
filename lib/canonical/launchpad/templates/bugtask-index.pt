@@ -25,7 +25,7 @@
 <div metal:fill-slot="main">
 
       <div>
-        <tal:icon replace="structure context/fmt:icon" />
+        <tal:icon replace="structure context/image:icon" />
         Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>,
         first reported
         <span
@@ -34,6 +34,14 @@
         by
         <a tal:attributes="href context/bug/owner/fmt:url"
            tal:content="context/bug/owner/browsername">Foo Bar</a>
+      </div>
+      <div style="float: right;">
+        <img src="/@@/locked-large" title="Private"
+             tal:condition="context/bug/private" />
+        <img src="/@@/mentoring-large" title="Mentoring available"
+             tal:condition="context/bug/mentoring_offers/count" />
+        <img src="/@@/branch-large" title="Branch available"
+             tal:condition="context/bug/bug_branches/count" />
       </div>
       <h1 tal:content="context/bug/title">Foo doesn't work</h1>
 
@@ -122,6 +130,28 @@
           class="discreet lesser">
       This description was updated. <a href="comments/0">View original description</a>.</span>
   </div>
+
+  <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
+               condition="mentoring_offers">
+    <p>
+      <img src="/@@/mentoring" alt="Mentoring"
+           title="People have offered to mentor this work" />
+      <b>Mentors:</b>
+      <tal:block repeat="mentoring_offer mentoring_offers">
+        <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
+      </tal:block>
+    </p>
+    <tal:block condition="not: context/bug/is_complete">
+      <p tal:condition="view/userIsMentor">
+        &raquo;
+        <a href="+retractmentoring">Retract my offer of mentorship</a>
+      </p>
+    </tal:block>
+  </tal:mentors>
+
+  <p tal:condition="view/userCanMentor">
+    &raquo; <a href="+mentor">Offer to mentor someone fixing this bug</a>
+  </p>
 
   <tal:branches define="bug_branches context/bug/bug_branches"
               condition="bug_branches">

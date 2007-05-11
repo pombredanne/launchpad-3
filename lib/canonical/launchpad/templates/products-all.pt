@@ -1,18 +1,12 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Products registered in Launchpad</h1>
-    </metal:heading>
-
-<div metal:fill-slot="main">
-
-    <div tal:repeat="product context"
+<html metal:use-macro="view/macro:page/pillarindex" i18n:domain="launchpad">
+<body>
+  <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
+  <div metal:fill-slot="main" tal:define="batch view/all_batched">
+    <h1>All projects registered</h1>
+    <tal:navigation replace="structure batch/@@+navigation-links-upper" />
+    <div tal:repeat="product batch/currentBatch"
          tal:replace="structure product/@@+listing-detailed" />
-
-    </div>
-  </body>
+    <tal:navigation replace="structure batch/@@+navigation-links-lower" />
+  </div>
+</body>
 </html>

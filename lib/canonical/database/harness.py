@@ -1,4 +1,5 @@
-#
+#! /usr/bin/python2.4 -i
+
 # This is designed to be used as follows:
 #
 #   python -i harness.py

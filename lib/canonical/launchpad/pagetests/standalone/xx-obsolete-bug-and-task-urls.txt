@@ -1,4 +1,4 @@
-We recently made obsolete two URLs in Malone:
+We recently made obsolete two URLs in Launchpad:
 
 1. The Anorak bug listing URL:
 
