@@ -665,10 +665,10 @@ class BuilderGroup:
             self.logger.debug('probing %s' % builder.url)
             if builder.builderok:
                 if builder.manual:
-                    self.logger.warn('builder in MANUAL')
+                    #self.logger.warn('builder in MANUAL')
                     continue
                 if builder.trusted != is_trusted:
-                    self.logger.warn('builder incompatible')
+                    #self.logger.warn('builder incompatible')
                     continue
                 # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
                 slave = removeSecurityProxy(builder.slave)
