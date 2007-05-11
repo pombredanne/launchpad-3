@@ -115,10 +115,14 @@ class ChangesFile(SignableTagFile):
         Process 'maintainer' and 'changed_by' addresses separately and return
         an iterator over all exceptions generated while processing them.
         """
-        try:
-            self.maintainer = self.parseAddress(self._dict['maintainer'])
-        except UploadError, error:
-            yield error
+        if self.signer:
+            # We only set the maintainer attribute up if we received a
+            # signed upload.  This is desireable because it avoids us
+            # doing ensurePerson() for buildds and sync owners.
+            try:
+                self.maintainer = self.parseAddress(self._dict['maintainer'])
+            except UploadError, error:
+                yield error
 
         try:
             self.changed_by = self.parseAddress(self._dict['changed-by'])
