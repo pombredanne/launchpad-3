@@ -197,6 +197,4 @@
     <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
 
-    <include package="canonical.lp" />
-
 </configure>
