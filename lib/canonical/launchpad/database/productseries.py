@@ -127,7 +127,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return "%s %s" % (self.product.displayname, self.name)
 
     @property
-    def bugtargetid(self):
+    def bugtargetname(self):
         """See IBugTarget."""
         return "%s/%s" % (self.product.name, self.name)
 

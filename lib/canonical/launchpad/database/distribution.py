@@ -247,7 +247,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.displayname
 
     @property
-    def bugtargetid(self):
+    def bugtargetname(self):
         """See IBugTarget."""
         return self.name
 

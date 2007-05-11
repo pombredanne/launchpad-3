@@ -274,7 +274,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         return self.displayname
 
     @property
-    def bugtargetid(self):
+    def bugtargetname(self):
         """See IBugTarget."""
         return self.name
 

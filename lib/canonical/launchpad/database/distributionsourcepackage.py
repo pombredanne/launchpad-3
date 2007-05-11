@@ -68,7 +68,7 @@ class DistributionSourcePackage(BugTargetBase,
         return "%s (%s)" % (self.name, self.distribution.displayname)
 
     @property
-    def bugtargetid(self):
+    def bugtargetname(self):
         """See IBugTarget."""
         return "%s (%s)" % (self.name, self.distribution.displayname)
 
