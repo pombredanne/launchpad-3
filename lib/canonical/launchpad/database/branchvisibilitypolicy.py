@@ -77,7 +77,6 @@ class BranchVisibilityPolicyList:
             self.project = project
         
         self.inherited_policy = inherited_policy
-        self.context_pillar = PillarName.selectOneBy(name=context.name)
         self._loadItems()
 
     def _loadItems(self):
@@ -89,8 +88,7 @@ class BranchVisibilityPolicyList:
             query = "BranchVisibilityPolicy.project = %s" % self.project.id
         self.policy_items = shortlist(BranchVisibilityPolicyItem.select(
             '%s and BranchVisibilityPolicy.team is not NULL'
-            % (query, self.context_pillar.id)
-            ))
+            % query))
         self.default_policy = BranchVisibilityPolicyItem.selectOneBy(
             product=self.product, project=self.project, team=None)
         if self.default_policy is None:

@@ -150,7 +150,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         inherited_policy = None
         if self.project:
             inherited_policy = self.project.branch_visibility_policy
-        return BranchVisibilityPolicyList(self, inherited_policy)
+        return BranchVisibilityPolicyList(
+            product=self, inherited_policy=inherited_policy)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
