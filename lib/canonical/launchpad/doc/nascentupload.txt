@@ -76,7 +76,8 @@ After that there are also some overall_checks which helps to
 investigate if the files contained in the uploads have a sane
 relationship.
 
-Now, the upload of quodlibet was signed, and in that case we parse the
+Now, the upload of quodlibet was signed, and the "anything" policy
+verifies the signer. When we do signature verification, we parse the
 maintainer field of the changes file, and ensure that a Person record
 exists for it:
 
@@ -121,8 +122,8 @@ is 'native' (only a TARBALL, no diff + orig) or 'has_orig' (uses ORIG
   ed_0.2-20.diff.gz <...SourceUploadFile...>
   ed_0.2.orig.tar.gz <...SourceUploadFile...>
 
-Since the source doesn't need to be signed, we don't try and parse the
-maintainer for it:
+Since the sync_policy doesn't require the upload to be signed, we don't
+try and parse the maintainer for it:
 
   >>> ed_source_upload.changes.signer is None
   True
@@ -186,8 +187,8 @@ uploads, so they are alway False:
   >>> ed_binary_upload.hasorig
   False
 
-Since binaries are always unsigned, we don't try and parse the
-maintainer for them either:
+Since the binary policy lets things through unsigned, we don't try and
+parse the maintainer for them either:
 
   >>> ed_binary_upload.changes.signer is None
   True
