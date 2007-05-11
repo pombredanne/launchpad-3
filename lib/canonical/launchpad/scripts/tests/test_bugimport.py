@@ -12,6 +12,7 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces import (
     IBugSet, IEmailAddressSet, IPersonSet, IProductSet)
 from canonical.launchpad.scripts import bugimport
@@ -399,6 +400,13 @@ class ImportBugTestCase(unittest.TestCase):
     def tearDown(self):
         logout()
 
+    def assertNoPendingNotifications(self, bug):
+        notifications = BugNotification.selectBy(bug=bug, date_emailed=None)
+        count = notifications.count()
+        self.assertEqual(count, 0,
+                         'Found %d pending notifications for bug %d'
+                         % (count, bug.id))
+
     def test_import_bug(self):
         # Test that various features of the bug are imported from the XML.
         product = getUtility(IProductSet).getByName('netapplet')
@@ -496,6 +504,8 @@ class ImportBugTestCase(unittest.TestCase):
         # mime type forced to text/plain because we have a patch
         self.assertEqual(attachment2.libraryfile.mimetype, 'text/plain')
 
+        self.assertNoPendingNotifications(bug)
+
     def test_duplicate_bug(self):
         # Process two bugs, the second being a duplicate of the first.
         product = getUtility(IProductSet).getByName('netapplet')
@@ -510,6 +520,9 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertNotEqual(bug100, None)
 
         self.assertEqual(bug100.duplicateof, bug42)
+
+        self.assertNoPendingNotifications(bug100)
+        self.assertNoPendingNotifications(bug42)
 
     def test_pending_duplicate_bug(self):
         # Same as above, but process the pending duplicate bug first.
@@ -529,6 +542,9 @@ class ImportBugTestCase(unittest.TestCase):
         self.assertTrue(42 not in importer.pending_duplicates)
 
         self.assertEqual(bug100.duplicateof, bug42)
+
+        self.assertNoPendingNotifications(bug100)
+        self.assertNoPendingNotifications(bug42)
 
     def test_public_security_bug(self):
         # Test that we can import a public security bug.

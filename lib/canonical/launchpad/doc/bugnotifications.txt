@@ -457,3 +457,24 @@ message is sent.
     >>> print latest_notification.message.text_contents
     ** This bug is no longer a duplicate of bug 3
        Bug Title Test
+
+
+10. Expiring Notifications
+
+During bulk imports or changes of bugs, we often want to suppress
+email notifications.  Due to the previous operation, there are pending
+bug notifications for bug six:
+
+    >>> notifications = BugNotification.select(bug=6, date_emailed=None)
+    >>> notifications.count()
+    3
+
+These notifications can be expired using the expireNotifications()
+method:
+
+    >>> bug_six.expireNotifications()
+    >>> notifications = BugNotification.select(bug=6, date_emailed=None)
+    >>> notifications.count()
+    0
+
+

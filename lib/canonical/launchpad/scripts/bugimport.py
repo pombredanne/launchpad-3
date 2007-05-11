@@ -335,6 +335,9 @@ class BugImporter:
 
         self.handleDuplicate(bug, bug_id, get_value(bugnode, 'duplicateof'))
         self.bug_id_map[bug_id] = bug.id
+
+        # clear any pending bug notifications
+        bug.expireNotifications()
         return bug
 
     def createMessage(self, commentnode, defaulttitle=None):
