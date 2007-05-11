@@ -5,27 +5,45 @@ In addition to subscribing / unsubscribing yourself, it is possible to add a
 person as a subscriber to the bug. You would use this feature to subscribe
 someone else to the bug.
 
-First, let's make sure we can see the page.
+You have to be logged in to subscribe someone else.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
-    >>> user_browser.headers['status']
-    '200 Ok'
+    >>> test_url = 'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
+    >>> bug_url = 'http://bugs.launchpad.dev/firefox/+bug/1'
+    
+    >>> anon_browser.handleErrors = True
+    >>> anon_browser.open(test_url)
+    >>> anon_browser.url == test_url
+    False
+    
+    >>> user_browser.open(test_url)
+    >>> user_browser.url == test_url
+    True
 
-Now, we'll subscribe sabdfl to the bug.
+Lets make sure our subscribee isn't already subscribed.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber')
-    >>> user_browser.getControl("Person").value = "sabdfl"
-    >>> user_browser.getControl("Add").click()
-    >>> user_browser.url
-    'http://bugs.launchpad.dev/firefox/+bug/1'
-
-Now, we should see Mark Shuttleworth as a subscriber.
+    >>> subscribee = 'no-priv'
+    >>> subscribee_name = 'No Privileges Person'
 
     >>> from canonical.launchpad.ftests.test_pages import find_portlet
-    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> portlet = find_portlet(user_browser.contents, 'Subscribers to bug 1')
-    >>> for ul in portlet('ul'):
-    ...   print ul.renderContents()
-    <BLANKLINE>
-    ...Mark Shuttleworth...
+    >>> user_browser.open(bug_url)
+    >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
+    >>> subscribee_name not in subs.renderContents()
+    True
+
+Now, we'll subscribe our subscribee to the bug.
+
+    >>> user_browser.open(test_url)
+    >>> user_browser.getControl("Person").value = subscribee
+    >>> user_browser.getControl("Add").click()
+    >>> user_browser.url == bug_url
+    True
+    
+
+Now, we should see our subscribee in the list of subscribers to this bug.
+
+    >>> from canonical.launchpad.ftests.test_pages import find_portlet
+    >>> user_browser.open(bug_url)
+    >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
+    >>> subscribee_name in subs.renderContents()
+    True
 
