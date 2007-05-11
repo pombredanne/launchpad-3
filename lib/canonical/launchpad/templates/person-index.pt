@@ -11,7 +11,7 @@
                 rel="meta" type="application/rdf+xml"
                 title="FOAF" href="+rdf" />
             <link
-                tal:condition="not:context/isTeam"
+                tal:condition="context/is_openid_enabled"
                 tal:define="vhosts
                     modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
                 rel="openid.server"

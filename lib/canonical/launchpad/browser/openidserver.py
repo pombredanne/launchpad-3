@@ -193,7 +193,7 @@ class OpenIdView(LaunchpadView):
         if person is None:
             return None
 
-        if not person.is_valid_person:
+        if not person.is_openid_enabled:
             return None
 
         return name

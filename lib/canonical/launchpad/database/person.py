@@ -18,6 +18,7 @@ from sqlobject import (
     SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
+from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -805,6 +806,28 @@ class Person(SQLBase, HasSpecificationsMixin):
         if self.isTeam():
             return False
         return self.is_valid_person_or_team
+
+    @property
+    def is_openid_enabled(self):
+        """See IPerson."""
+        if self.isTeam():
+            return False
+
+        if not self.is_valid_person:
+            return False
+
+        if config.launchpad.openid_users == 'all':
+            return True
+
+        openid_users = getUtility(IPersonSet).getByName(
+                config.launchpad.openid_users
+                )
+        assert openid_users is not None, \
+                'No Person %s found' % config.launchpad.openid_users
+        if self.inTeam(openid_users):
+            return True
+
+        return False
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):

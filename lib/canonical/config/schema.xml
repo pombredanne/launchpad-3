@@ -243,6 +243,13 @@ k            </description>
             </description>
             <example>beta.launchpad.net</example>
         </key>
+        <key name="openid_users" datatype="string"
+            default="launchpad">
+            <description>
+                The team that can use Launchpad as an OpenID provider.
+                Set to 'all' for open access.
+            </description>
+        </key>
     </sectiontype>
     <sectiontype name="gina_target">
         <description>
