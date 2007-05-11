@@ -103,13 +103,15 @@ no_priv is not a member of any team.
 == Default policy ==
 
 There is an implicit policy defined for all contexts.  The implicit policy
-is that everyone can create public branches.  In order to override this
+is that everyone can create public branches.  The implicit policy is not
+returned with the items attribute.  In order to override this
 implicit policy you need to explicitly define a policy for everyone, and
 this is done by specifying None for the team.
 
     >>> print_policy_items(policy)
+    >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.PUBLIC)
+    >>> print_policy_items(policy)
     *everyone*: Public
-
 
 == Setting the policy for teams ==
 
@@ -150,13 +152,11 @@ change the state of the policy object.
     >>> print_policy_items(policy)
     *everyone*: Public
 
-There is always a policy for *everyone*, so attempting to remove the team
-None will always succeed.  However removing the policy for *everyone* just
-brings back the default policy for *everyone* which is public.
+In order to remove a policy assigned to everyone you pass None in for the
+team name.
 
     >>> policy.removeTeam(None)
     >>> print_policy_items(policy)
-    *everyone*: Public
 
 
 == Listing the policy items ==
@@ -166,7 +166,11 @@ with the policy for *everybody* being first.
 
     >>> policy.setTeamPolicy(ubuntu_gnome_team, BranchVisibilityPolicy.PRIVATE)
     >>> policy.setTeamPolicy(launchpad_team, BranchVisibilityPolicy.PRIVATE)
+    >>> print_policy_items(policy)
+    Launchpad Developers: Private
+    Ubuntu Gnome Team: Private
 
+    >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.PUBLIC)
     >>> print_policy_items(policy)
     *everyone*: Public
     Launchpad Developers: Private
@@ -222,8 +226,6 @@ Branch visibility policies for projects are not created with inherited
 policies.
 
     >>> mozilla_policy = mozilla.branch_visibility_policy
-    >>> print_policy_items(mozilla_policy)
-    *everyone*: Public
     >>> print mozilla_policy.inherited_policy
     None
     >>> print mozilla_policy.isUsingInheritedPolicy()
@@ -233,8 +235,6 @@ Branch visibility policies for products are created with in inherited
 policy of their project if the project exists.
 
     >>> thunderbird_policy = thunderbird.branch_visibility_policy
-    >>> print_policy_items(thunderbird_policy)
-    *everyone*: Public
     >>> print thunderbird_policy.inherited_policy.context.name
     mozilla
     >>> print thunderbird_policy.isUsingInheritedPolicy()
@@ -277,4 +277,3 @@ even be the same as the default policy.
     False
     >>> print_policy_items(thunderbird_policy)
     *everyone*: Public
-

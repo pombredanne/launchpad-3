@@ -102,7 +102,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def branch_visibility_policy(self):
         """See IHasBranchVisibilityPolicy."""
-        return BranchVisibilityPolicyList(self)
+        return BranchVisibilityPolicyList(project=self)
 
     @property
     def products(self):

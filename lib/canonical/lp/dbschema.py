@@ -1575,7 +1575,7 @@ class QuestionStatus(DBSchema):
     This enum tells us the current status of the question.
 
     The lifecycle of a question is documented in
-    https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    https://help.launchpad.net/QuestionLifeCycle, so remember
     to update that document for any pertinent changes.
     """
 

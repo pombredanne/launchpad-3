@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'BranchVisibilityPolicyItem',
-    'DefaultPolicyItem',
     'BranchVisibilityPolicyList',
     ]
 
@@ -33,7 +32,8 @@ class BranchVisibilityPolicyItem(SQLBase):
     # The policy item is explicitly defined in the database.
     _implicit = False
 
-    pillar = ForeignKey(dbName='pillar', foreignKey='PillarName', notNull=True)
+    project = ForeignKey(dbName='project', foreignKey='Project')
+    product = ForeignKey(dbName='product', foreignKey='Product')
     team = ForeignKey(dbName='team', foreignKey='Person', default=None)
     policy = EnumCol(schema=BranchVisibilityPolicy, notNull=True,
         default=BranchVisibilityPolicy.PUBLIC)
@@ -61,22 +61,35 @@ class BranchVisibilityPolicyList:
 
     implements(IBranchVisibilityPolicy)
 
-    def __init__(self, context, inherited_policy=None):
-        self.context = context
+    def __init__(self, product=None, project=None, inherited_policy=None):
+        # Exactly one of product or project should be not None.
+        assert (product is None and project is not None or
+                product is not None and project is None), (
+            "Only one of product or project can be set")
+        if product is not None:
+            self.context = product
+            self.product = product
+            self.project = None
+        else:
+            self.context = project
+            self.product = None
+            self.project = project
+        
         self.inherited_policy = inherited_policy
-        self.context_pillar = PillarName.selectOneBy(name=context.name)
         self._loadItems()
 
     def _loadItems(self):
         # The query is listified here to get something we can
         # actually query the length of.
+        if self.product is not None:
+            query = "BranchVisibilityPolicy.product = %s" % self.product.id
+        else:
+            query = "BranchVisibilityPolicy.project = %s" % self.project.id
         self.policy_items = shortlist(BranchVisibilityPolicyItem.select(
-            'BranchVisibilityPolicy.pillar = %s and '
-            'BranchVisibilityPolicy.team is not NULL'
-            % self.context_pillar.id
-            ))
+            '%s and BranchVisibilityPolicy.team is not NULL'
+            % query))
         self.default_policy = BranchVisibilityPolicyItem.selectOneBy(
-            pillar=self.context_pillar, team=None)
+            product=self.product, project=self.project, team=None)
         if self.default_policy is None:
             self.default_policy = DefaultPolicyItem()
 
@@ -88,7 +101,9 @@ class BranchVisibilityPolicyList:
             return self.inherited_policy.items
         # Copy the policy_items list, don't just get a reference to it.
         items = list(self.policy_items)
-        items.append(self.default_policy)
+        # Only add the default policy item if it is explicitly defined.
+        if not self.default_policy._implicit:
+            items.append(self.default_policy)
         return sorted(items, key=policy_item_key)
 
     def isUsingInheritedPolicy(self):
@@ -106,10 +121,11 @@ class BranchVisibilityPolicyList:
     def setTeamPolicy(self, team, policy):
         """See IBranchVisibilityPolicy."""
         item = BranchVisibilityPolicyItem.selectOneBy(
-            pillar=self.context_pillar, team=team)
+            product=self.product, project=self.project, team=team)
         if item is None:
             item = BranchVisibilityPolicyItem(
-                pillar=self.context_pillar, team=team, policy=policy)
+                product=self.product, project=self.project, team=team,
+                policy=policy)
             self._loadItems()
         else:
             item.policy = policy
@@ -117,7 +133,7 @@ class BranchVisibilityPolicyList:
     def removeTeam(self, team):
         """See IBranchVisibilityPolicy."""
         item = BranchVisibilityPolicyItem.selectOneBy(
-            pillar=self.context_pillar, team=team)
+            product=self.product, project=self.project, team=team)
         if item is not None:
             BranchVisibilityPolicyItem.delete(item.id)
             self._loadItems()
@@ -142,5 +158,3 @@ class BranchVisibilityPolicyList:
             return None
         else:
             return user
-
-
