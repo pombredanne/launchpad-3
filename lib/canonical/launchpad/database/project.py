@@ -234,11 +234,11 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
     # XXX: A Project shouldn't provide IBugTarget, since it's not really
-    #      a bug target, thus bugtargetname and createBug don't make sense
-    #      here. IBugTarget should be split into two interfaces; one that
+    #      a bug target, thus bugtargetdisplayname and createBug don't make
+    #      sense here. IBugTarget should be split into two interfaces; one that
     #      makes sense for Project to implement, and one containing the rest
     #      of IBugTarget. -- Bjorn Tillenius, 2006-08-17
-    bugtargetname = None
+    bugtargetdisplayname = None
 
     def searchTasks(self, search_params):
         """See IBugTarget."""

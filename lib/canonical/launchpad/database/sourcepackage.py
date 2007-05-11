@@ -224,7 +224,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             self.distrorelease.displayname, self.sourcepackagename.name)
 
     @property
-    def bugtargetname(self):
+    def bugtargetdisplayname(self):
         """See IBugTarget."""
         return "%s (%s)" % (self.name, self.distrorelease.fullreleasename)
 

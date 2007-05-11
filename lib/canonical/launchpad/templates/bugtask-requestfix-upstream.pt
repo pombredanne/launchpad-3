@@ -33,7 +33,7 @@
 
         <div>
           <a tal:attributes="href product/fmt:url"
-             tal:content="product/bugtargetname">
+             tal:content="product/bugtargetdisplayname">
             Mozilla Firefox
           </a> (<a tal:attributes="href string:+choose-affected-product?field.product=${product/name}">Choose another project</a>)
           <input type="hidden" tal:replace="structure product_widget/hidden" />

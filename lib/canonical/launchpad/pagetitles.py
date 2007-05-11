@@ -200,7 +200,7 @@ def buglisting_embedded_advanced_search(context, view):
 
 def bugnomination_edit(context, view):
     return 'Manage nomination for bug #%d in %s' % (
-        context.bug.id, context.target.bugtargetname)
+        context.bug.id, context.target.bugtargetdisplayname)
 
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (

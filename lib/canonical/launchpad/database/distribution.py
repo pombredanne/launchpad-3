@@ -242,7 +242,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     @property
-    def bugtargetname(self):
+    def bugtargetdisplayname(self):
         """See IBugTarget."""
         return self.displayname
 

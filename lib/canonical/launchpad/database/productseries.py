@@ -122,7 +122,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             productseries=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
-    def bugtargetname(self):
+    def bugtargetdisplayname(self):
         """See IBugTarget."""
         return "%s %s" % (self.product.displayname, self.name)
 

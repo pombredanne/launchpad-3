@@ -327,7 +327,7 @@ class IBug(IMessageTarget, ICanBeMentored):
     def getNominations(target=None):
         """Return a list of all IBugNominations for this bug.
 
-        The list is ordered by IBugNominations.target.bugtargetname.
+        The list is ordered by IBugNominations.target.bugtargetdisplayname.
 
         Optional filtering arguments:
 

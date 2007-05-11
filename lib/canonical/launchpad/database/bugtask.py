@@ -295,7 +295,7 @@ class NullBugTask(BugTaskMixin):
         # For a INullBugTask, there is no targetname in the database, of
         # course, so we fallback on calculating the targetname in
         # Python.
-        return self.target.bugtargetname
+        return self.target.bugtargetdisplayname
 
 
 def BugTaskToBugAdapter(bugtask):
@@ -602,7 +602,8 @@ class BugTask(SQLBase, BugTaskMixin):
         # We also can't simply update kw with the value we want for
         # targetnamecache because we need to access bugtask attributes
         # that may be available only after SQLBase.set() is called.
-        SQLBase.set(self, **{'targetnamecache': self.target.bugtargetname})
+        SQLBase.set(
+            self, **{'targetnamecache': self.target.bugtargetdisplayname})
 
     def setImportanceFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -697,7 +698,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        targetname = self.target.bugtargetname
+        targetname = self.target.bugtargetdisplayname
         if self.targetnamecache != targetname:
             self.targetnamecache = targetname
 

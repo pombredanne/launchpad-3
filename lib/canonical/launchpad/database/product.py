@@ -269,7 +269,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             (x.sourcepackagename.name, x.distribution.name))
 
     @property
-    def bugtargetname(self):
+    def bugtargetdisplayname(self):
         """See IBugTarget."""
         return self.displayname
 

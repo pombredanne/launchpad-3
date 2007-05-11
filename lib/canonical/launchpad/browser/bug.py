@@ -804,7 +804,7 @@ class BugEditView(BugEditViewBase):
             self.notifications.append(
                 'The tag "%s" hasn\'t yet been used by %s before.'
                 ' Is this a new tag? %s' % (
-                    new_tag, bugtarget.bugtargetname, confirm_button))
+                    new_tag, bugtarget.bugtargetdisplayname, confirm_button))
             self._confirm_new_tags = True
 
     @action('Change', name='change')

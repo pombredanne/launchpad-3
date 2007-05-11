@@ -663,8 +663,8 @@ class Bug(SQLBase):
     def getNominations(self, target=None):
         """See IBug."""
         # Define the function used as a sort key.
-        def by_bugtargetname(nomination):
-            return nomination.target.bugtargetname.lower()
+        def by_bugtargetdisplayname(nomination):
+            return nomination.target.bugtargetdisplayname.lower()
 
         nominations = BugNomination.selectBy(bugID=self.id)
         if IProduct.providedBy(target):
@@ -682,7 +682,7 @@ class Bug(SQLBase):
                     filtered_nominations.append(nomination)
             nominations = filtered_nominations
 
-        return sorted(nominations, key=by_bugtargetname)
+        return sorted(nominations, key=by_bugtargetdisplayname)
 
     def getBugWatch(self, bugtracker, remote_bug):
         """See IBug."""
