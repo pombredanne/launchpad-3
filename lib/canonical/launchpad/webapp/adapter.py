@@ -75,8 +75,8 @@ def _wasDisconnected(msg):
 
 class RetryPsycopgIntegrityError(psycopg.IntegrityError, Retry):
     """Act like a psycopg IntegrityError, but also inherit from Retry
-       so the Zope3 publishing machinery will retry requests if it is
-       raised, as per Bug 31755.
+    so the Zope3 publishing machinery will retry requests if it is
+    raised, as per Bug 31755.
     """
     def __init__(self, exc_info):
         Retry.__init__(self, exc_info)
@@ -92,7 +92,7 @@ class ReconnectingConnection:
     """A Python DB-API connection class that handles disconnects."""
 
     _connection = None
-    _isDead = False
+    _is_dead = False
     _generation = 0
 
     def __init__(self, connection_factory):
@@ -108,7 +108,7 @@ class ReconnectingConnection:
         If we need to reconnect, the connection generation number is
         incremented.
         """
-        if self._isDead:
+        if self._is_dead:
             raise Retry((DisconnectedConnectionError,
                          DisconnectedConnectionError('Already disconnected'),
                          None))
@@ -116,11 +116,11 @@ class ReconnectingConnection:
             return
         try:
             self._connection = self._connection_factory()
+            self._generation += 1
         except psycopg.OperationalError:
-            self._disconnected()
-        self._generation += 1
+            self._handleDisconnection()
 
-    def _disconnected(self):
+    def _handleDisconnection(self):
         """Note that we were disconnected from the database.
 
         This resets the internal _connection attribute, and marks the
@@ -129,11 +129,12 @@ class ReconnectingConnection:
 
         This function should be called from an exception handler.
         """
-        self._isDead = True
+        self._is_dead = True
         self._connection = None
         raise Retry(sys.exc_info())
 
     def _checkDisconnect(self, _function, *args, **kwargs):
+        """Call a function, checking for database disconnections."""
         try:
             return _function(*args, **kwargs)
         except psycopg.IntegrityError:
@@ -150,7 +151,7 @@ class ReconnectingConnection:
             raise RetryPsycopgIntegrityError(sys.exc_info())
         except psycopg.Error, exc:
             if exc.args and _wasDisconnected(exc.args[0]):
-                self._disconnected()
+                self._handleDisconnection()
             else:
                 raise
 
@@ -166,7 +167,8 @@ class ReconnectingConnection:
         """Rollback the database connection.
 
         If this results in a disconnection error, we ignore it and set
-        the connection to None so it gets reconnected next time."""
+        the connection to None so it gets reconnected next time.
+        """
         if self._connection is not None:
             try:
                 self._connection.rollback()
@@ -175,7 +177,7 @@ class ReconnectingConnection:
                     self._connection = None
                 else:
                     raise
-        self._isDead = False
+        self._is_dead = False
 
     def cursor(self):
         return ReconnectingCursor(self)
@@ -242,14 +244,14 @@ class ReconnectingDatabaseAdapter(PsycopgAdapter):
                 self._v_connection = PsycopgConnection(
                     self.Connection(self._connection_factory), self)
             except psycopg.Error, error:
-                raise DatabaseException, str(error)
+                raise DatabaseException(str(error))
 
 
 # ---- Session database adapter
 
 class SessionDatabaseAdapter(ReconnectingDatabaseAdapter):
-    """A subclass of PsycopgAdapter that stores its connection information
-    in the central launchpad configuration
+    """A subclass of ReconnectionDatabaseAdapter that stores its
+    connection information in the central launchpad configuration.
     """
     
     def __init__(self, dsn=None):
@@ -379,7 +381,7 @@ class RequestStatementTimedOut(RequestExpired):
 class LaunchpadConnection(ReconnectingConnection):
     """A simple wrapper around a DB-API connection object.
 
-    Overrides the cursor() method to return CursorWrapper objects.
+    Overrides the cursor() method to return LaunchpadCursor objects.
     """
     
     def cursor(self):
@@ -457,8 +459,8 @@ class LaunchpadCursor(ReconnectingCursor):
 
 
 class LaunchpadDatabaseAdapter(ReconnectingDatabaseAdapter):
-    """A subclass of PsycopgAdapter that performs some additional
-    connection setup.
+    """A subclass of ReconnectingDatabaseAdapter that performs some
+    additional connection setup.
     """
     implements(ILaunchpadDatabaseAdapter)
 
