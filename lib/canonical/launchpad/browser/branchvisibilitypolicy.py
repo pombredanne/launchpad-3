@@ -83,8 +83,7 @@ class RemoveBranchVisibilityPolicyItemView(LaunchpadFormView):
 
         terms = [SimpleTerm(item, self._policyToken(item),
                             self._policyDescription(item))
-                 for item in self.policy.items
-                 if not item._implicit]
+                 for item in self.policy.items]
 
         return form.Fields(
             List(
