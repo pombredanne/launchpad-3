@@ -13,7 +13,7 @@ from canonical.supermirrorsftp.bazaarfs import (
 from canonical.supermirrorsftp.tests.helpers import AvatarTestCase
 
 
-class Launchpad:
+class FakeLaunchpad:
     """Mock RPC interface to Launchpad, used for the tests in this module."""
 
     def __init__(self, test):
@@ -89,7 +89,7 @@ class UserDirsTestCase(AvatarTestCase):
     def testCreateValidProduct(self):
         # Test creating a product dir.
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                Launchpad(self))
+                                FakeLaunchpad(self))
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
         self.assertEqual(
@@ -106,7 +106,7 @@ class UserDirsTestCase(AvatarTestCase):
 
     def testCreateInvalidProduct(self):
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                Launchpad(self))
+                                FakeLaunchpad(self))
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
@@ -142,7 +142,7 @@ class UserDirsTestCase(AvatarTestCase):
 class ProductDirsTestCase(AvatarTestCase):
     def testCreateBranch(self):
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                Launchpad(self))
+                                FakeLaunchpad(self))
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
@@ -194,7 +194,7 @@ class ProductPlaceholderTestCase(AvatarTestCase):
 
     def _setUpFilesystem(self):
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                Launchpad(self))
+                                FakeLaunchpad(self))
         return avatar.makeFileSystem()
 
     def testBranchInPlaceholderNotFound(self):
@@ -265,7 +265,7 @@ class TestSFTPServerBranch(AvatarTestCase):
     def setUp(self):
         AvatarTestCase.setUp(self)
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                Launchpad(self))
+                                FakeLaunchpad(self))
         root = avatar.makeFileSystem().root
         root.setListenerFactory(lambda branch_id: (lambda: None))
         userDir = root.child('~alice')
