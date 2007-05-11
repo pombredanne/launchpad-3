@@ -131,6 +131,14 @@ class BugTaskDelta:
     def targetname(self):
         return self.bugtask.targetname
 
+    @property
+    def bugtargetname(self):
+        return self.bugtask.bugtargetname
+
+    @property
+    def bugtargetdisplayname(self):
+        return self.bugtask.bugtargetdisplayname
+
 
 class BugTaskMixin:
     """Mix-in class for some property methods of IBugTask implementations."""
@@ -143,12 +151,12 @@ class BugTaskMixin:
         return title
 
     @property
-    def targetname(self):
+    def bugtargetdisplayname(self):
         """See canonical.launchpad.interfaces.IBugTask."""
         return self.targetnamecache
 
     @property
-    def targetid(self):
+    def bugtargetname(self):
         """See canonical.launchpad.interfaces.IBugTask."""
         return self.targetnamecache
 

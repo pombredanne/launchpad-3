@@ -15,8 +15,8 @@
                   searchTasks isBugContact open_bugtasks closed_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
                   unconfirmed_bugtasks all_bugtasks getUsedBugTags
-                  getUsedBugTagsWithOpenCounts bugtargetname bugtargetid
-                  getMostCommonBugs getBugCounts" />
+                  getUsedBugTagsWithOpenCounts bugtargetdisplayname
+                  bugtargetname getMostCommonBugs getBugCounts" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addBugContact removeBugContact subscribe createBug" />

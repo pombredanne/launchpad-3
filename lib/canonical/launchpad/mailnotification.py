@@ -305,7 +305,7 @@ def generate_bug_add_email(bug, new_recipients=False):
     bug_info = []
     # Add information about the affected upstreams and packages.
     for bugtask in bug.bugtasks:
-        bug_info.append(u"** Affects: %s" % bugtask.targetname)
+        bug_info.append(u"** Affects: %s" % bugtask.target.bugtargetname)
         bug_info.append(u"     Importance: %s" % bugtask.importance.title)
 
         if bugtask.assignee:
@@ -493,7 +493,7 @@ def get_bug_edit_notification_texts(bug_delta):
             bugtask_deltas = [bugtask_deltas]
         for bugtask_delta in bugtask_deltas:
             change_info = u"** Changed in: %s\n" % (
-                bugtask_delta.targetname)
+                bugtask_delta.bugtargetname)
 
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),
@@ -540,11 +540,11 @@ def get_bug_edit_notification_texts(bug_delta):
         for added_bugtask in added_bugtasks:
             if added_bugtask.bugwatch:
                 change_info = u"** Also affects: %s via\n" % (
-                    added_bugtask.targetname)
+                    added_bugtask.target.bugtargetname)
                 change_info += u"   %s\n" % added_bugtask.bugwatch.url
             else:
                 change_info = u"** Also affects: %s\n" % (
-                    added_bugtask.targetname)
+                    added_bugtask.target.bugtargetname)
             change_info += u"%13s: %s\n" % (u"Importance",
                 added_bugtask.importance.title)
             if added_bugtask.assignee:

@@ -476,21 +476,21 @@ The "target" of an IBugTask is one of the following things:
     >>> got_target.sourcepackagename == expected_target.sourcepackagename
     True
 
-Each task has a "targetname" and a "targetid", strings describing the site
-of the task. They concatenate the names of the distribution,
+Each task has a "bugtargetdisplayname" and a "bugtargetname", strings
+describing the site of the task. They concatenate the names of the distribution,
 
     >>> bugtask = bugtaskset.get(17)
-    >>> bugtask.targetname
+    >>> bugtask.bugtargetdisplayname
     u'mozilla-firefox (Ubuntu)'
-    >>> bugtask.targetid
+    >>> bugtask.bugtargetname
     u'mozilla-firefox (Ubuntu)'
 
 distro release, or product;
 
     >>> bugtask = bugtaskset.get(2)
-    >>> bugtask.targetname
+    >>> bugtask.bugtargetdisplayname
     u'Mozilla Firefox'
-    >>> bugtask.targetid
+    >>> bugtask.bugtargetname
     u'firefox'
 
 the name of the source package (if any); and the name of the binary

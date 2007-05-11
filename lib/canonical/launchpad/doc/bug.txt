@@ -759,7 +759,7 @@ incomplete, and show the status of each of the tasts:
 
     >>> for task in b8.bugtasks:
     ...     print task.targetname, task.is_complete
-    firefox (upstream) False
+    Mozilla Firefox False
     mozilla-firefox (Debian) True
 
 

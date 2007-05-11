@@ -94,6 +94,10 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
+    bugtargetdisplayname = Text(
+        title=_("The short, descriptive name of the target"), readonly=True)
+    bugtargetname = Text(
+        title=_("The target as presented in mail notifications"), readonly=True)
     bugwatch = Choice(title=_("Remote Bug Details"), required=False,
         vocabulary='BugWatch', description=_("Select the bug watch that "
         "represents this task in the relevant bug tracker. If none of the "
@@ -129,8 +133,6 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                               "officially"))
     targetname = Text(title=_("The short, descriptive name of the target"),
                       readonly=True)
-    targetid = Text(title=_(
-        "The target as represented in e-mail notifications"), readonly=True)
     title = Text(title=_("The title of the bug related to this bugtask"),
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "

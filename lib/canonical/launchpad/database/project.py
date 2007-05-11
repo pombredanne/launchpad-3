@@ -295,6 +295,16 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Product.project = %s""" % sqlvalues(self.id),
             clauseTables=['Question', 'Product'], distinct=True))
 
+    @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return self.displayname
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return self.name
+
 
 class ProjectSet:
     implements(IProjectSet)
