@@ -335,6 +335,15 @@ class DistroReleaseQueue(SQLBase):
         # a dictionary.  This can throw exceptions but since the tag file
         # already will have parsed elsewhere we don't need to worry about that
         # here.  Any exceptions from the librarian can be left to the caller.
+
+        # XXX 20070511 julian:
+        # Requiring an open changesfile object is a bit ugly but it is required
+        # because of several problems:
+        # a) We don't know if the librarian has the file committed or not yet
+        # b) Passing a changesfile object instead means that we get an
+        #    unordered dictionary which can't be translated back exactly.
+        # For now, it's just easier to re-read the original file if the caller
+        # requires us to do that instead of using the librarian's copy.
         if changesfileobject is None:
             changesfileobject = self.changesfile
         changeslines = changesfileobject.read().split("\n")
@@ -378,8 +387,12 @@ class DistroReleaseQueue(SQLBase):
             "DISTRO": self.distrorelease.distribution.title,
             "DISTRORELEASE": self.distrorelease.name,
             "ANNOUNCE": announcelist,
-            "SOURCE": self.sourcepackagerelease.name,
-            "VERSION": self.sourcepackagerelease.version,
+# XXX needs a fix.  The following commented line works but I want to avoid 
+# a dependency on sourcepackagerelease here if possible so that the tests 
+# are easier.
+#"SOURCE": self.sourcepackagerelease.name,
+            "SOURCE": "FIXME",
+            "VERSION": changes['version'],
             "ARCH": changes['architecture'],
             "RECIPIENT": ", ".join(recipients),
             "DEFAULT_RECIPIENT": "%s <%s>" % (
@@ -429,6 +442,7 @@ class DistroReleaseQueue(SQLBase):
         # policies should send an acceptance and an announcement message.
         self._sendMail(accepted_template % interpolations, logger)
         self._sendMail(announce_template % interpolations, logger)
+        return
 
     def _sendMail(self,mail_text,logger=None):
         mail_message = message_from_string(ascii_smash(mail_text))
@@ -440,6 +454,7 @@ class DistroReleaseQueue(SQLBase):
         debug(logger, "    Body:")
         for line in mail_message.get_payload().splitlines():
             debug(logger, line)
+
 
 class DistroReleaseQueueBuild(SQLBase):
     """A Queue item's related builds (for Lucille)."""

@@ -741,7 +741,8 @@ class NascentUpload:
         """
         if self.is_rejected:
             self.reject("Alas, someone called do_accept when we're rejected")
-            return False, self.do_reject()
+            self.do_reject()
+            return False
         try:
             maintainerfrom = None
             if self.changes.signer:
@@ -751,12 +752,16 @@ class NascentUpload:
             self.storeObjectsInDatabase()
 
             # Send the email.
+            # There is also a small corner case here where the DB transaction
+            # may fail yet this email will be sent.  The chances of this are
+            # very small, and at some point the script infrastructure will
+            # only send emails when the script exits successfully.
             changesfileobject = open(self.changes.filepath, "r")
             self.queue_root.notify(self.sender, recipients, 
                 self.policy.announcelist, changesfileobject, maintainerfrom,
                 self.logger)
             changesfileobject.close()
-            return True, []
+            return True
 
         except (SystemExit, KeyboardInterrupt):
             raise
@@ -767,7 +772,8 @@ class NascentUpload:
             self.reject("Exception while accepting: %s" % e)
             # Let's log tracebacks for uncaught exceptions ...
             self.logger.error('BOOM:\n', exc_info=True)
-            return False, self.do_reject()
+            self.do_reject()
+            return False
 
     def do_reject(self, template=rejection_template):
         """Reject the current upload given the reason provided."""

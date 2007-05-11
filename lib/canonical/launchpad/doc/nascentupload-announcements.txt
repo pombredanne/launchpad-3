@@ -104,6 +104,8 @@ override sync policy to allow binary uploads):
   DEBUG: Building recipients list.
   ...
   DEBUG: Creating queue entry
+  ...
+  DEBUG: Thank you for your contribution to Ubuntu Linux.
 
 We simply ignores messages generated at this step because they are not
 going to exist in production. We simply need this binary to be published
