@@ -46,15 +46,7 @@ def null_log(message, level=0):
 oidutil.log = null_log
 
 
-class IOpenIdView(Interface):
-    openid_request = Attribute("OpenIDRequest")
-    trust_root = Attribute("TrustRoot")
-    user = Attribute("Currently authenticated IPerson")
-
-
 class OpenIdView(LaunchpadView):
-    implements(IOpenIdView)
-
     openid_request = None
 
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")

@@ -7,7 +7,6 @@
         permission="zope.Public"
         name="+openid"
         class="canonical.launchpad.browser.openidserver.OpenIdView"
-        allowed_interface="canonical.launchpad.browser.openidserver.IOpenIdView"
         />
 
     <content class="canonical.launchpad.database.OpenIdAuthorization">
