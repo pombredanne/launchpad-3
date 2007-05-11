@@ -140,12 +140,21 @@ class BranchVisibilityPolicyList:
 
     def branchVisibilityTeamForUser(self, user):
         """See IBranchVisibilityPolicy."""
-        teams = []
+        # We use the items property here in order to correctly handle
+        # the situations where we are using inherited values.
         items = self.items
-        # We know that the first item is the policy for everyone.
-        default_policy = items[0]
-        team_policies = items[1:]
-        for item in team_policies:
+
+        if len(items) == 0:
+            # If there are no policy items defined, then it must be public.
+            return None
+
+        if items[0].team is None:
+            default_policy = items.pop(0)
+        else:
+            default_policy = DefaultPolicyItem()
+
+        teams = []
+        for item in items:
             if (user.inTeam(item.team) and
                 item.policy != BranchVisibilityPolicy.PUBLIC):
                 teams.append(item.team)
