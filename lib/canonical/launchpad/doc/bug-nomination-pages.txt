@@ -17,7 +17,7 @@ the bug to releases for which they are drivers.
     >>> bug_one_in_ubuntu_firefox = getUtility(IBugTaskSet).get(17)
     >>> print bug_one_in_ubuntu_firefox.bug.id
     1
-    >>> print bug_one_in_ubuntu_firefox.target.bugtargetname
+    >>> print bug_one_in_ubuntu_firefox.target.bugtargetdisplayname
     mozilla-firefox (Ubuntu)
 
     >>> nomination_view = getView(
@@ -74,7 +74,7 @@ Here's an example of nominating a bug for a productseries.
     >>> bug_one_in_firefox = getUtility(IBugTaskSet).get(2)
     >>> print bug_one_in_firefox.bug.id
     1
-    >>> print bug_one_in_firefox.target.bugtargetname
+    >>> print bug_one_in_firefox.target.bugtargetdisplayname
     Mozilla Firefox
 
     >>> firefox = bug_one_in_firefox.target
@@ -159,7 +159,7 @@ For example, bug one is currently nominated for Hoary and Warty.
 
     >>> ubuntu_nominations = bug_one.getNominations(ubuntu)
     >>> for nomination in ubuntu_nominations:
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
     Ubuntu Warty
 
@@ -201,7 +201,7 @@ launchpad.Driver permission on the nomination.
     >>> def print_nominations(nominations):
     ...     for nomination in nominations:
     ...         print "%s, %s" % (
-    ...             nomination.target.bugtargetname,
+    ...             nomination.target.bugtargetdisplayname,
     ...             nomination.status.title)
     >>> print_nominations(bug_one.getNominations(ubuntu))
     Ubuntu Hoary, Declined

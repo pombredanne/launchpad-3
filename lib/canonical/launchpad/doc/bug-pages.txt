@@ -420,7 +420,7 @@ and nominations. This table is rendered with the
     ...     bug_one_bugtask.bug, "+bugtasks-and-nominations-table", request)
 
 The getBugTasksAndNominations method returns a list of bugtasks and
-nominations to render in the table, sorted by bugtargetname. Approved
+nominations to render in the table, sorted by bugtargetdisplayname. Approved
 nominations are not included in the returned results, because an
 approved nomination will have created a task anyway.
 
@@ -439,7 +439,7 @@ approved nomination will have created a task anyway.
     ...         print "%s, %s, %s" % (
     ...             get_object_type(task_or_nomination),
     ...             task_or_nomination.status.title,
-    ...             task_or_nomination.target.bugtargetname)
+    ...             task_or_nomination.target.bugtargetdisplayname)
 
     >>> tasks_and_nominations = (
     ...     bugtasks_and_nominations_view.getBugTasksAndNominations())

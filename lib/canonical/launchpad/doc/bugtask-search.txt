@@ -55,7 +55,7 @@ bugs return all of Firefox' bugs.
     True
 
     >>> found_targets = set(
-    ...     bugtask.target.bugtargetname for bugtask in found_bugtasks)
+    ...     bugtask.target.bugtargetdisplayname for bugtask in found_bugtasks)
     >>> for target_name in sorted(found_targets):
     ...     print target_name
     Mozilla Firefox
@@ -84,7 +84,7 @@ previous bugs (since he is also a bug contact for the Firefox product).
     True
 
     >>> found_targets = set(
-    ...     bugtask.target.bugtargetname for bugtask in found_bugtasks)
+    ...     bugtask.target.bugtargetdisplayname for bugtask in found_bugtasks)
     >>> for target_name in sorted(found_targets):
     ...     print target_name
     Mozilla Firefox

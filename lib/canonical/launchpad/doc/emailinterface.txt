@@ -994,7 +994,7 @@ Because Sample Person isn't a driver of Ubuntu, he's not allowed to
 target a bug directly, instead a nomination was created.
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
 
 The same happens if we try to target another release.
@@ -1007,7 +1007,7 @@ The same happens if we try to target another release.
     Ubuntu
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
     Ubuntu Warty
 
@@ -1021,7 +1021,7 @@ Targeting an existing nomination won't create another nomination.
     Ubuntu
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
     Ubuntu Warty
 
@@ -1095,7 +1095,7 @@ driver of the release, only a nomination will be created.
     mozilla-firefox (Ubuntu)
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
 
 Nominating product series work the same way as for distro releases.
@@ -1117,7 +1117,7 @@ nomination is automatically approved.
     mozilla-firefox (Ubuntu)
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Mozilla Firefox trunk
     Ubuntu Hoary
 
@@ -1135,7 +1135,7 @@ will be created if one doesn't exist.
     Mozilla Firefox
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Evolution trunk
 
     >>> login('test@canonical.com')
