@@ -352,6 +352,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     def addAnswerContact(self, person, limited_languages=False):
         """See IQuestionTarget."""
+        if limited_languages == True:
+            assert len(shortlist(person.languages)) != 0, (
+                "%s has no supported languages to limit." % person.name)
         answer_contact = AnswerContact.selectOneBy(product=self, person=person)
         if (answer_contact and 
                 answer_contact.limited_languages == limited_languages):

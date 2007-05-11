@@ -44,6 +44,8 @@ from canonical.launchpad.database.distroreleasesourcepackagerelease import (
     DistroReleaseSourcePackageRelease)
 from canonical.launchpad.database.build import Build
 
+from canonical.launchpad.helpers import shortlist
+
 
 class SourcePackageQuestionTargetMixin:
     """Implementation of IQuestionTarget for SourcePackage."""
@@ -95,6 +97,9 @@ class SourcePackageQuestionTargetMixin:
 
     def addAnswerContact(self, person, limited_languages=False):
         """See IQuestionTarget."""
+        if limited_languages == True:
+            assert len(shortlist(person.languages)) != 0, (
+                "%s has no supported languages to limit." % person.name)
         answer_contact = AnswerContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
@@ -134,6 +139,7 @@ class SourcePackageQuestionTargetMixin:
         return sorted(answer_contacts, key=attrgetter('displayname'))
             
     def get_answer_contacts_for_language(self, language):
+        """See IQuestionTarget."""
         answer_contacts = AnswerContact.select(
             'AnswerContact.distribution = %d AND '
             'AnswerContact.sourcepackagename = %d AND '

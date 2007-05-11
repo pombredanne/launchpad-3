@@ -384,6 +384,17 @@ is only available to registered users.
     Unauthorized...
     >>> login('no-priv@canonical.com')
 
+You cannot add an answer contact with the limited_languages=True
+parameter when the Person has not configured his preferred languages.
+
+    >>> from canonical.launchpad.helpers import shortlist
+    >>> shortlist(name18.languages)
+    []
+    >>> target.addAnswerContact(name18, limited_languages=True)
+    Traceback (most recent call last):
+     ...
+    AssertionError: name18 has no supported languages to limit... 
+    
 This method will return True when the contact was added the list and
 False when it was already on the list:
 
