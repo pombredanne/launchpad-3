@@ -34,6 +34,8 @@
     content="structure context/homepage_content/fmt:text-to-html" />
   <tal:team-description
     replace="structure context/teamdescription/fmt:text-to-html" />
+  <div id="subscription_policy" tal:condition="context/isTeam"
+       tal:content="view/subscription_policy_description" />
   <ul class="buttons" tal:define="mentorships context/team_mentorships"
                       tal:condition="context/isTeam">
     <li tal:condition="mentorships">
@@ -46,11 +48,14 @@
         <img alt="Mentorships" src="/+icing/but-sml-mentoring-off.gif">
       </a>
     </li>
-    <li tal:condition="not: view/userIsParticipant">
-      <a href="+join" title="Sign up as a member of this team">
-        <img alt="Join!" src="/+icing/but-sml-jointhisteam.gif" />
-      </a>
-    </li>
+    <tal:not-restricted
+        condition="not: context/subscriptionpolicy/enumvalue:RESTRICTED">
+      <li tal:condition="not: view/userIsParticipant">
+        <a href="+join" title="Sign up as a member of this team">
+          <img alt="Join!" src="/+icing/but-sml-jointhisteam.gif" />
+        </a>
+      </li>
+    </tal:not-restricted>
   </ul>
 
   <tal:valid-person-or-team condition="context/is_valid_person_or_team">

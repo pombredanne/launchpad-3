@@ -17,6 +17,9 @@ from zope.app.wsgi import WSGIPublisherApplication
 from zope.server.http.commonaccesslogger import CommonAccessLogger
 import zope.publisher.publish
 from zope.publisher.interfaces import IRequest
+from zope.security.proxy import isinstance as zope_isinstance
+
+from canonical.cachedproperty import cachedproperty
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import IShipItApplication
@@ -25,7 +28,8 @@ from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
-    INotificationRequest, INotificationResponse)
+    IBrowserFormNG, INotificationRequest, INotificationResponse,
+    UnexpectedFormData)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -326,6 +330,51 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
 
+    @cachedproperty
+    def form_ng(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return BrowserFormNG(self.form)
+
+
+class BrowserFormNG:
+    """Wrapper that provides IBrowserFormNG around a regular form dict."""
+    
+    implements(IBrowserFormNG)
+
+    def __init__(self, form):
+        """Create a new BrowserFormNG that wraps a dict containing form data."""
+        self.form = form
+
+    def __contains__(self, name):
+        """See IBrowserFormNG."""
+        return name in self.form
+
+    def __iter__(self):
+        """See IBrowserFormNG."""
+        return iter(self.form)
+    
+    def getOne(self, name, default=None):
+        """See IBrowserFormNG."""
+        value = self.form.get(name, default)
+        if zope_isinstance(value, (list, tuple)):
+            raise UnexpectedFormData(
+                'Expected only one value form field %s: %s' % (name, value))
+        return value
+    
+    def getAll(self, name, default=None):
+        """See IBrowserFormNG."""
+        # We don't want a mutable as a default parameter, so we use None as a
+        # marker.
+        if default is None:
+            default = []
+        else:
+            assert zope_isinstance(default, list), (
+                "default should be a list: %s" % default)
+        value = self.form.get(name, default)
+        if not zope_isinstance(value, list):
+            value = [value]
+        return value
+
 
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
 
@@ -391,8 +440,21 @@ class LaunchpadTestRequest(TestRequest):
     True
     >>> request.notifications is request.response.notifications
     True
+
+    It also provides the form_ng attribute that is available from
+    LaunchpadBrowserRequest.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> verifyObject(IBrowserFormNG, request.form_ng)
+    True
     """
     implements(INotificationRequest)
+
+    def __init__(self, body_instream=None, environ=None, form=None,
+                 skin=None, outstream=None, method='GET', **kw):
+        super(LaunchpadTestRequest, self).__init__(
+            body_instream=body_instream, environ=environ, form=form,
+            skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
 
     @property
     def uuid(self):
@@ -405,6 +467,11 @@ class LaunchpadTestRequest(TestRequest):
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadTestResponse()
+
+    @property
+    def form_ng(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return BrowserFormNG(self.form)
 
 
 class LaunchpadTestResponse(LaunchpadBrowserResponse):

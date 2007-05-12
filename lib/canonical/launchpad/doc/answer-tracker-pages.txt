@@ -283,30 +283,17 @@ The QuestionMakeBugView is used to handle the creation of a bug from a
 question. In addition to creating a bug, this operation will also link
 the bug to the question.
 
-If the user cancels a bug creation request, the user is redirected back
-the question page.
-
-    >>> login('foo.bar@canonical.com')
-    >>> request = LaunchpadTestRequest(form={'cancel': 'cancel'})
-    >>> request.method = 'POST'
-    >>> makebug = getView(question_three, '+makebug', request)
-    >>> makebug.initialize()
-    >>> makebug.process_form()
-    ''
-    >>> list(question_three.bugs)
-    []
-
 If the user creates a bug, a "Linked to bug" notification is sent and
 the user is subscribed to the bug.
 
+    >>> login('foo.bar@canonical.com')
     >>> request = LaunchpadTestRequest(
-    ...     form={'create': 'create',
+    ...     form={'field.actions.create': 'Create',
     ...           'field.title': 'Bug title',
     ...           'field.description': 'Bug description.'})
     >>> request.method = 'POST'
-    >>> makebug = getView(question_three, '+makebug', request)
+    >>> makebug = getMultiAdapter((question_three, request), name='+makebug')
     >>> makebug.initialize()
-    >>> makebug.process_form()
     >>> sorted(bug.id for bug in question_three.bugs)
     [13L]
     >>> print question_three.bugs[0].title
@@ -332,9 +319,10 @@ the user is subscribed to the bug.
 
 If the question already has bugs linked to it, no new bug can be created.
 
-    >>> request = LaunchpadTestRequest(form={'create': 'create'})
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.actions.create': 'create'})
     >>> request.method = 'POST'
-    >>> makebug = getView(question_three, '+makebug', request)
+    >>> makebug = getMultiAdapter((question_three, request), name='+makebug')
     >>> makebug.initialize()
     >>> for n in request.notifications:
     ...     print n.message
