@@ -1,6 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-"""Script to provide easy integration layer with non-native scripts.
+"""It provides easy integration of other scripts without database access.
 
    It should provide an easy way to retrieve current information from Launchpad
    System when using plain shell scripts, for example:
