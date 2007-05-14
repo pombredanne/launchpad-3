@@ -9,9 +9,9 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.ftests.test_uploadprocessor import (
+from canonical.archiveuploader.ftests.test_uploadprocessor import (
     TestUploadProcessorBase)
-from canonical.archivepublisher.uploadprocessor import UploadProcessor
+from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.build import Build
@@ -153,8 +153,8 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
     This class will start to tests all known/possible cases using a test
     (empty) upload and its binary.
 
-     * 'lib/canonical/archivepublisher/tests/data/suite/baz_1.0-1/'
-     * 'lib/canonical/archivepublisher/tests/data/suite/baz_1.0-1_binary/'
+     * 'lib/canonical/archiveuploader/tests/data/suite/baz_1.0-1/'
+     * 'lib/canonical/archiveuploader/tests/data/suite/baz_1.0-1_binary/'
     """
     name = 'baz'
     version = '1.0-1'

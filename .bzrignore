@@ -32,3 +32,4 @@ database/schema/diagrams/*.dot
 sourcecode/twisted
 thread*.request
 ./TAGS
+lib/mailman

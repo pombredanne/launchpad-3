@@ -15,14 +15,14 @@ __all__ = [
 import os
 import re
 
-from canonical.archivepublisher.dscfile import DSCFile, SignableTagFile
-from canonical.archivepublisher.nascentuploadfile import (
+from canonical.archiveuploader.dscfile import DSCFile, SignableTagFile
+from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, DebBinaryUploadFile,
     UdebBinaryUploadFile, BaseBinaryUploadFile, SourceUploadFile,
-    NascentUploadFile)
-from canonical.archivepublisher.utils import (
+    splitComponentAndSection)
+from canonical.archiveuploader.utils import (
     re_isadeb, re_issource, re_changes_file_name)
-from canonical.archivepublisher.tagfiles import (
+from canonical.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
 from canonical.lp.dbschema import SourcePackageUrgency
 
@@ -115,10 +115,14 @@ class ChangesFile(SignableTagFile):
         Process 'maintainer' and 'changed_by' addresses separately and return
         an iterator over all exceptions generated while processing them.
         """
-        try:
-            self.maintainer = self.parseAddress(self._dict['maintainer'])
-        except UploadError, error:
-            yield error
+        if self.signer:
+            # We only set the maintainer attribute up if we received a
+            # signed upload.  This is desireable because it avoids us
+            # doing ensurePerson() for buildds and sync owners.
+            try:
+                self.maintainer = self.parseAddress(self._dict['maintainer'])
+            except UploadError, error:
+                yield error
 
         try:
             self.changed_by = self.parseAddress(self._dict['changed-by'])
@@ -132,8 +136,8 @@ class ChangesFile(SignableTagFile):
         'raw-<something>'.
         Further checks will be performed in CustomUploadFile class.
         """
-        splitter = NascentUploadFile.splitComponentAndSection
-        component_name, section_name = splitter(component_and_section)
+        component_name, section_name = splitComponentAndSection(
+            component_and_section)
         if section_name.startswith('raw-'):
             return True
         return False

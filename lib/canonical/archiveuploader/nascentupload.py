@@ -21,12 +21,12 @@ import os
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.changesfile import ChangesFile
-from canonical.archivepublisher.dscfile import DSCFile
-from canonical.archivepublisher.nascentuploadfile import (
+from canonical.archiveuploader.changesfile import ChangesFile
+from canonical.archiveuploader.dscfile import DSCFile
+from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
-from canonical.archivepublisher.template_messages import (
+from canonical.archiveuploader.template_messages import (
     rejection_template, new_template, accepted_template, announce_template)
 from canonical.config import config
 from canonical.encoding import guess as guess_encoding
@@ -843,10 +843,12 @@ class NascentUpload:
         """Return a list of recipients including every address we trust."""
         recipients = []
         self.logger.debug("Building recipients list.")
-        maintainer = self.changes.maintainer['person']
         changer = self.changes.changed_by['person']
 
         if self.changes.signer:
+            # Note that self.changes.maintainer is only available for
+            # signed uploads.
+            maintainer = self.changes.maintainer['person']
             recipients.append(self.changes.signer_address['person'])
 
             if (maintainer != self.changes.signer and

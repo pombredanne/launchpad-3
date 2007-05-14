@@ -7,18 +7,18 @@
 import unittest
 import sys
 import shutil
-from canonical.archivepublisher.tests import datadir
+from canonical.archiveuploader.tests import datadir
 
 
 class TestUtilities(unittest.TestCase):
 
     def testImport(self):
-        """canonical.archivepublisher.utils should be importable"""
-        import canonical.archivepublisher.utils
+        """canonical.archiveuploader.utils should be importable"""
+        import canonical.archiveuploader.utils
 
     def testPrefixMultilineString(self):
-        """canonical.archivepublisher.utils.prefix_multi_line_string should work"""
-        from canonical.archivepublisher.utils import prefix_multi_line_string
+        """canonical.archiveuploader.utils.prefix_multi_line_string should work"""
+        from canonical.archiveuploader.utils import prefix_multi_line_string
         self.assertEquals("A:foo\nA:bar",
                           prefix_multi_line_string("foo\nbar", "A:"))
         self.assertEquals("A:foo\nA:bar",
@@ -27,9 +27,9 @@ class TestUtilities(unittest.TestCase):
                           prefix_multi_line_string("foo\n\nbar", "A:", 1))
 
     def testExtractComponent(self):
-        """canonical.archivepublisher.utils.extract_component_from_section should work
+        """canonical.archiveuploader.utils.extract_component_from_section should work
         """
-        from canonical.archivepublisher.utils import extract_component_from_section
+        from canonical.archiveuploader.utils import extract_component_from_section
 
         (sect, comp) = extract_component_from_section("libs")
         self.assertEquals(sect, "libs")
@@ -49,20 +49,20 @@ class TestUtilities(unittest.TestCase):
         self.assertEquals(comp, "restricted")
 
     def testBuildFileListFromChanges(self):
-        """canonical.archivepublisher.utils.build_file_list should be capable of
+        """canonical.archiveuploader.utils.build_file_list should be capable of
            reading changes files
         """
-        from canonical.archivepublisher.utils import build_file_list
-        from canonical.archivepublisher.tagfiles import parse_tagfile
+        from canonical.archiveuploader.utils import build_file_list
+        from canonical.archiveuploader.tagfiles import parse_tagfile
 
         ch = parse_tagfile(datadir("good-signed-changes"))
         fl = build_file_list(ch)
         self.assertEquals("abiword_2.0.10-1.2_mips.deb" in fl, True)
 
     def testFixMaintainerOkay(self):
-        """canonical.archivepublisher.utils.fix_maintainer should parse correct values
+        """canonical.archiveuploader.utils.fix_maintainer should parse correct values
         """
-        from canonical.archivepublisher.utils import fix_maintainer
+        from canonical.archiveuploader.utils import fix_maintainer
         cases = (
             ("No\xc3\xa8l K\xc3\xb6the <noel@debian.org>",
              "No\xc3\xa8l K\xc3\xb6the <noel@debian.org>",
@@ -133,10 +133,10 @@ class TestUtilities(unittest.TestCase):
             self.assertEquals(case[4], d)
 
     def testFixMaintainerRaises(self):
-        """canonical.archivepublisher.utils.fix_maintainer should raise on incorrect
+        """canonical.archiveuploader.utils.fix_maintainer should raise on incorrect
            values
         """
-        from canonical.archivepublisher.utils import fix_maintainer, ParseMaintError
+        from canonical.archiveuploader.utils import fix_maintainer, ParseMaintError
         cases = (
             "James Troup",
             "James Troup <james>",
