@@ -61,12 +61,23 @@ Now, we are going to select the amount of entries that need to be reviewed.
   132: 'tiene<samp> </samp>'
   146: '<code>%d</code> foo'
 
+Next, lets see entries which have changed in Launchpad.
+
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
+  ...     'evolution-2.2/es/+translate?show=changed_in_launchpad')
+  >>> user_browser.url
+  'http://.../evolution-2.2/es/+translate?show=changed_in_launchpad'
+
+  >>> print_shown_messages(user_browser)
+  134: '<samp> </samp>caratas'
+
 We are now at the end of this template. Let's try the form submission
 to be sure that we don't redirect to a broken URL but to the first batch.
 
   >>> user_browser.getControl('Save & Continue').click()
   >>> user_browser.url
-  'http://...evolution-2.2/es/+translate?show=need_review&start=10'
+  'http://...evolution-2.2/es/+translate?show=changed_in_launchpad&start=10'
 
 Another thing that filtering should do is to move to the start of the set of
 messages when the filtering rule changes but preserving batch size.

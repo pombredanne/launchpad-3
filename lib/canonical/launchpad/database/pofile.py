@@ -389,6 +389,35 @@ class POFile(SQLBase, RosettaStats):
 
         return results
 
+    def getPOTMsgSetChangedInLaunchpad(self, slice=None):
+        """See IPOFile."""
+        # A POT set has "new" suggestions if there is a POMsgSet with
+        # submissions after active translation was reviewed
+        results = POTMsgSet.select('''POTMsgSet.id IN (
+            SELECT POTMsgSet.id
+            FROM POTMsgSet
+            LEFT OUTER JOIN POMsgSet ON
+                POTMsgSet.id = POMsgSet.potmsgset AND
+                POMsgSet.pofile = %s
+            LEFT OUTER JOIN POSubmission ps1 ON
+                ps1.pomsgset = POMsgSet.id
+            LEFT OUTER JOIN POSubmission ps2 ON
+                ps2.pomsgset = ps1.pomsgset AND
+                ps2.pluralform = ps1.pluralform AND
+                ps2.id != ps1.id
+            WHERE
+                ps1.published IS TRUE AND
+                ps2.active IS TRUE AND
+                POTMsgSet.sequence > 0 AND
+                POTMsgSet.potemplate = %s)
+            ''' % sqlvalues(self.id, self.potemplate.id),
+            orderBy='POTmsgSet.sequence')
+
+        if slice is not None:
+            results = results[slice]
+
+        return results
+
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""
         results = POTMsgSet.select('''
@@ -442,6 +471,11 @@ class POFile(SQLBase, RosettaStats):
             isfuzzy IS TRUE AND
             sequence > 0
             """ % sqlvalues(self.id)).count()
+
+    def changedInLaunchpadCount(self):
+        """See IPOFile."""
+        return self.getPOTMsgSetChangedInLaunchpad().count()
+
 
     def expireAllMessages(self):
         """See IPOFile."""
@@ -961,6 +995,10 @@ class DummyPOFile(RosettaStats):
         """See IPOFile."""
         return self.potemplate.getPOTMsgSets(slice)
 
+    def getPOTMsgChangedInLaunchpad(self, slice=None):
+        """See IPOFile."""
+        return None
+
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""
         return None
@@ -989,6 +1027,10 @@ class DummyPOFile(RosettaStats):
 
     @property
     def fuzzy_count(self):
+        """See IPOFile."""
+        return 0
+
+    def changedInLaunchpadCount(self):
         """See IPOFile."""
         return 0
 

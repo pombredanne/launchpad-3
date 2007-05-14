@@ -119,6 +119,12 @@
               >
               translated
             </option>
+            <option value="changed_in_launchpad"
+              tal:attributes="selected
+              request/htmlform:show/selected/changed_in_launchpad"
+              >
+              changed in Launchpad
+            </option>
           </select>
           <input
             type="submit" value="Filter" />
