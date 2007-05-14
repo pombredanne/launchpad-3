@@ -1008,12 +1008,13 @@ class Person(SQLBase, HasSpecificationsMixin):
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None):
+                  comment=None, force_team_add=False):
         """See IPerson."""
         assert self.isTeam(), "You cannot add members to a person."
         assert status in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED,
-                          TeamMembershipStatus.ADMIN]
+                          TeamMembershipStatus.ADMIN], (
+            "You can't add a member with this status: %s." % status.name)
 
         event = JoinTeamEvent
         if person.isTeam():
@@ -1021,11 +1022,13 @@ class Person(SQLBase, HasSpecificationsMixin):
                 "Team '%s' is a member of '%s'. As a consequence, '%s' can't "
                 "be added as a member of '%s'"
                 % (self.name, person.name, person.name, self.name))
-            # Teams can only be invited as members, meaning that one of the
-            # team's admins will have to accept the invitation before the team
-            # is made a member.
-            status = TeamMembershipStatus.INVITED
-            event = TeamInvitationEvent
+            # By default, teams can only be invited as members, meaning that
+            # one of the team's admins will have to accept the invitation 
+            # before the team is made a member. If force_team_add is True,
+            # though, then we'll add a team as if it was a person.
+            if not force_team_add:
+                status = TeamMembershipStatus.INVITED
+                event = TeamInvitationEvent
 
         old_status = None
         expires = self.defaultexpirationdate
@@ -1059,7 +1062,6 @@ class Person(SQLBase, HasSpecificationsMixin):
         assert tm.status == TeamMembershipStatus.INVITED
         tm.setStatus(
             TeamMembershipStatus.APPROVED, getUtility(ILaunchBag).user)
-        tm.syncUpdate()
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
@@ -1078,8 +1080,6 @@ class Person(SQLBase, HasSpecificationsMixin):
         else:
             tm.reviewer = reviewer
             tm.comment = comment
-
-        tm.syncUpdate()
 
     def getAdministratedTeams(self):
         """See IPerson."""

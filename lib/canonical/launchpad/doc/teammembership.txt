@@ -68,6 +68,7 @@ member of that team --somebody has to approve his membership first:
     >>> [m.displayname for m in t3.allmembers]
     [u'Foo Bar']
     >>> t3.setMembershipData(salgado, TeamMembershipStatus.APPROVED, reviewer)
+    >>> flush_database_updates()
     >>> [m.displayname for m in t3.allmembers]
     [u'Foo Bar', u'Guilherme Salgado']
 

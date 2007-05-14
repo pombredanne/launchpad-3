@@ -622,12 +622,16 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """
 
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None):
+                  comment=None, force_team_add=False):
         """Add the given person as a member of this team.
 
         If the given person is already a member of this team we'll simply
         change its membership status. Otherwise a new TeamMembership is
         created with the given status.
+
+        If the person is actually a team and force_team_add is False, the
+        team will actually be invited to join this one. Otherwise the team
+        is added as if it were a person.
 
         The given status must be either Approved, Proposed or Admin.
 
