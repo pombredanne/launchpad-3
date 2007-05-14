@@ -30,10 +30,11 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
@@ -117,6 +118,29 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 return None
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
+
+    @property
+    def mentoring_offers(self):
+        """See IProject"""
+        via_specs = MentoringOffer.select('''
+            Product.project = %s AND
+            Specification.product = Product.id AND
+            Specification.id = MentoringOffer.specification
+            ''' % sqlvalues(self.id) + """ AND NOT
+            (""" + Specification.completeness_clause +")",
+            clauseTables=['Product', 'Specification'],
+            distinct=True)
+        via_bugs = MentoringOffer.select('''
+            Product.project = %s AND
+            BugTask.product = Product.id AND
+            BugTask.bug = MentoringOffer.bug AND
+            BugTask.bug = Bug.id AND
+            Bug.private IS FALSE
+            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ + BugTask.completeness_clause + ")",
+            clauseTables=['Product', 'BugTask', 'Bug'],
+            distinct=True)
+        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     def translatables(self):
         """See IProject."""
@@ -245,16 +269,23 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See BugTargetBase."""
         return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
 
-
     # IQuestionCollection
     def searchQuestions(self, search_text=None,
-                        status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
-                        sort=None, owner=None, needs_attention_from=None):
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, owner=None,
+                        needs_attention_from=None, unsupported=False):
         """See IQuestionCollection."""
+        if unsupported:
+            unsupported_target = self
+        else:
+            unsupported_target = None
+            
         return QuestionTargetSearch(
-            search_text=search_text, status=status, language=language,
-            sort=sort, owner=owner, needs_attention_from=needs_attention_from,
-            project=self).getResults()
+            project=self,
+            search_text=search_text, status=status,
+            language=language, sort=sort, owner=owner,
+            needs_attention_from=needs_attention_from,
+            unsupported_target=unsupported_target).getResults()
 
     def getQuestionLanguages(self):
         """See IQuestionCollection."""

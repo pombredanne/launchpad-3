@@ -93,20 +93,20 @@ There is one email and it's for the error we produced.
   >>> print msg.get_payload(decode=True)
   Hello Mark Shuttleworth,
   <BLANKLINE>
-  On ..., you uploaded a file with
-  firefox in Mozilla Firefox trunk in Rosetta.
+  On ..., you uploaded a file with translation templates for firefox in
+  Mozilla Firefox trunk to Launchpad.
   <BLANKLINE>
-  We didn't import it because we found errors in the file format.
+  We were unable to import the file because of errors in its format.
   <BLANKLINE>
-  You can check this file with the 'msgfmt' command. Please fix any
-  error raised by that tool and upload the file again. If you check
-  the file and you don't find any error in it, please, contact us to
-  help you with this problem.
+  You can check your file for correct formatting with the 'msgfmt' command.
+  Please fix any errors raised by msgfmt and upload the file again. If you
+  check the file and you don't find any error in it, please look for an
+  answer or file a question at https://answers.launchpad.net/rosetta/
   <BLANKLINE>
   For your convenience, you can get the file you uploaded at:
   http://localhost:58000/.../firefox.pot
   <BLANKLINE>
-  Thanks for using Rosetta.
+  Thank you,
   <BLANKLINE>
-  The Rosetta SWAT Team
+  The Launchpad team
   <BLANKLINE>

@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>
@@ -83,6 +83,20 @@
 
   </tal:block>
 
+</div>
+
+<div metal:fill-slot="help">
+  <p>
+    This page shows an overview of translations that
+    <span tal:replace="context/browsername">Random J. Hacker</span> has
+    contributed to, as well as current translation group memberships.
+  </p>
+  <ul class="info">
+    <li>
+      <a href="https://help.launchpad.net/RosettaFAQ"
+      >Frequently asked questions</a>
+    </li>
+  </ul>
 </div>
 
 

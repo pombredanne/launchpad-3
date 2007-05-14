@@ -11,6 +11,7 @@ __all__ = [
     'QuestionCollectionLatestQuestionsView',
     'QuestionCollectionMyQuestionsView',
     'QuestionCollectionNeedAttentionView',
+    'QuestionCollectionUnsupportedView',
     'QuestionCollectionOpenCountView',
     'QuestionCollectionAnswersMenu',
     'QuestionTargetFacetMixin',
@@ -22,24 +23,27 @@ __all__ = [
 from operator import attrgetter
 from urllib import urlencode
 
-from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import DropdownWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, queryMultiAdapter
-
+from zope.formlib import form
+from zope.schema import Bool, Choice, List
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+    
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
-    IDistribution, ILanguageSet, IManageAnswerContactsForm, IProject,
-    ISearchableByQuestionOwner, ISearchQuestionsForm, IQuestionCollection,
-    IQuestionTarget, NotFoundError)
+    IDistribution, ILanguageSet, IProject, IQuestion, IQuestionCollection,
+    IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
+    NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, stepto, stepthrough, urlappend,
-    ApplicationMenu, GeneralFormView, LaunchpadFormView, Link)
+    ApplicationMenu, LaunchpadFormView, Link, safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
 
 class AskAQuestionButtonView:
@@ -119,9 +123,10 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     schema = ISearchQuestionsForm
 
+    custom_widget('languages', LaunchpadRadioWidget, orientation='horizontal')
+    custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
     custom_widget('status', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
-    custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
 
     template = ViewPageTemplateFile('../templates/question-listing.pt')
 
@@ -132,6 +137,12 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     # Will contain the parameters used by searchResults
     search_params = None
+    
+    def setUpFields(self):
+        """See LaunchpadFormView."""
+        LaunchpadFormView.setUpFields(self)
+        if self.show_languages_radio:
+            self.form_fields = self.createLanguagesField() + self.form_fields
 
     def setUpWidgets(self):
         """See LaunchpadFormView."""
@@ -143,6 +154,37 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             if widget and not widget.hasValidInput():
                 widget.setRenderedValue(value)
 
+    def createLanguagesField(self):
+        """Create a field to choose a set of languages.
+
+        Create a specialized vocabulary based on the user's preferred languages.
+        If the user is anonymous, the languages submited in the browser's
+        request will be used.
+        """    
+        languages = set()
+        for lang in request_languages(self.request):
+            if not is_english_variant(lang):
+                languages.add(lang.displayname)
+        if (self.context is not None and IQuestion.providedBy(self.context) and
+            self.context.language.code != 'en'):
+            languages.add(self.context.language.displayname)
+        languages = list(languages)
+        languages.insert(0, getUtility(ILanguageSet)['en'].displayname)
+        preferred_term = SimpleTerm(
+            'Preferred', 'Preferred', ', '.join(languages))
+        all_term = SimpleTerm('All', 'All', _('All Languages'))
+        
+        return form.Fields(
+                Choice(
+                    __name__='languages',
+                    title=_('View Languages'),
+                    vocabulary=SimpleVocabulary([all_term, preferred_term]),
+                    required=True,
+                    description=_(
+                        'The languages to filter the search results by.')),
+                custom_widget=self.custom_widgets['languages'],
+                render_context=self.render_context)
+        
     @cachedproperty
     def status_title_map(self):
         """Return a dictionary mapping set of statuses to their title.
@@ -155,8 +197,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         for status in QuestionStatus.items:
             mapping[frozenset([status])] = status.title
 
-        mapping[frozenset([QuestionStatus.ANSWERED, QuestionStatus.SOLVED])] = _(
-            'Answered')
+        mapping[frozenset(
+            [QuestionStatus.ANSWERED, QuestionStatus.SOLVED])] = _('Answered')
 
         return mapping
 
@@ -219,7 +261,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     def getDefaultFilter(self):
         """Hook for subclass to provide a default search filter."""
-        return {}
+        return dict(languages='Preferred')
 
     @property
     def search_text(self):
@@ -243,26 +285,12 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         return self.context.getQuestionLanguages()
 
     @property
-    def all_languages_shown(self):
-        """Return whether all the used languages are displayed."""
-        if self.request.form.get('all_languages'):
-            return True
-        return self.context_question_languages.issubset(
-            self.user_support_languages)
-
-    @property
-    def displayed_languages(self):
-        """Return the question languages displayed ordered by language name."""
-        displayed_languages = self.user_support_languages.intersection(
-            self.context_question_languages)
-        return sorted(displayed_languages, key=attrgetter('englishname'))
-
-    @property
-    def show_all_languages_checkbox(self):
-        """Whether to show the 'All Languages' checkbox or not."""
+    def show_languages_radio(self):
+        """Whether to show the 'View Languages' radio buttons or not."""
         return not self.context_question_languages.issubset(
             self.user_support_languages)
 
+    @safe_action
     @action(_('Search'))
     def search_action(self, action, data):
         """Action executed when the user clicked the search button.
@@ -272,6 +300,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """
         self.search_params = dict(self.getDefaultFilter())
         self.search_params.update(**data)
+        if self.search_params.get('search_text', None) is not None:
+            self.search_params['search_text'] = (
+                self.search_params['search_text'].strip())
 
     def searchResults(self):
         """Return the questions corresponding to the search."""
@@ -280,10 +311,13 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             # Copy it so that it doesn't get mutated accidently.
             self.search_params = dict(self.getDefaultFilter())
 
-        if self.request.form.get('all_languages'):
-            self.search_params['language'] = None
+        if (self.search_params.get('languages', 'Preferred') == 'Preferred'):
+            self.search_params['language'] = self.user_support_languages 
         else:
-            self.search_params['language'] = self.user_support_languages
+            self.search_params['language'] = None
+        
+        # Remove the 'languages' param since it is only used by the view.
+        self.search_params.pop('languages', None)
 
         # The search parameters used is defined by the union of the fields
         # present in ISearchQuestionsForm (search_text, status, sort) and the
@@ -347,8 +381,8 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
 
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
-        return {'owner': self.user,
-                'status': set(QuestionStatus.items)}
+        return dict(owner=self.user, status=set(QuestionStatus.items),
+                    languages='Preferred')
 
 
 class QuestionCollectionNeedAttentionView(SearchQuestionsView):
@@ -384,40 +418,104 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
 
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
-        return {'needs_attention_from': self.user}
+        return dict(needs_attention_from=self.user, languages='Preferred')
 
 
-class ManageAnswerContactView(GeneralFormView):
+class QuestionCollectionUnsupportedView(SearchQuestionsView):
+    """SearchQuestionsView specialization for the unsupported questions report.
+     
+     It displays questions that are asked in an unsupported language for the
+     questiontarget context.
+     """
+                
+    @property
+    def pageheading(self):
+        """See SearchQuestionsView."""
+        if self.search_text:
+            return _('Unsupported questions matching "${search_text}" '
+                     'for ${context}', mapping=dict(
+                        context=self.context.displayname,
+                        search_text=self.search_text))
+        else:
+            return _('Unsupported questions for ${context}',
+                      mapping={'context': self.context.displayname})
+                     
+    @property
+    def empty_listing_message(self):
+        """See SearchQuestionsView."""
+        if self.search_text:
+            return _('No unsupported questions matching "${search_text}" '
+                     'for ${context}.', mapping=dict(
+                        context=self.context.displayname,
+                        search_text=self.search_text))
+        else:
+            return _("No questions are unsupported for ${context}.",
+                      mapping={'context': self.context.displayname})
+    
+    def getDefaultFilter(self):
+        """See SearchQuestionsView."""
+        return dict(language=None, languages='All', unsupported=True)
+
+
+class ManageAnswerContactView(LaunchpadFormView):
     """View class for managing answer contacts."""
 
-    schema = IManageAnswerContactsForm
-    label = "Manage answer contacts"
+    label = _("Manage answer contacts")
 
-    @property
-    def _keyword_arguments(self):
-        return self.fieldNames
+    custom_widget('answer_contact_teams', LabeledMultiCheckBoxWidget)
+
+    def setUpFields(self):
+        """See LaunchpadFormView."""
+        self.form_fields = form.Fields(
+            self._createUserAnswerContactField(),
+            self._createTeamAnswerContactsField())
+
+    def _createUserAnswerContactField(self):
+        """Create the want_to_be_answer_contact field."""
+        return Bool(
+                __name__='want_to_be_answer_contact',
+                title=_("I want to be an answer contact for $context",
+                        mapping=dict(context=self.context.displayname)),
+                required=False)
+
+    def _createTeamAnswerContactsField(self):
+        """Create a list of teams the user is an administrator of."""
+        sort_key = attrgetter('displayname')
+        terms = []
+        for team in sorted(self.administrated_teams, key=sort_key):
+            terms.append(SimpleTerm(team, team.name, team.displayname))
+
+        return form.FormField(
+            List(
+                __name__='answer_contact_teams',
+                title=_("Let the following teams be an answer contact for "
+                        "$context",
+                        mapping=dict(context=self.context.displayname)),
+                value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                required=False),
+            custom_widget=self.custom_widgets['answer_contact_teams'])
+
+    @cachedproperty
+    def administrated_teams(self):
+        """Return the list of teams for which the user is an administrator."""
+        return self.user.getAdministratedTeams()
 
     @property
     def initial_values(self):
         user = self.user
         answer_contacts = self.context.direct_answer_contacts
         answer_contact_teams = set(
-            answer_contacts).intersection(self.user.teams_participated_in)
+            answer_contacts).intersection(self.administrated_teams)
         return {
             'want_to_be_answer_contact': user in answer_contacts,
             'answer_contact_teams': list(answer_contact_teams)
             }
 
-    def _setUpWidgets(self):
-        if not self.user:
-            return
-        self.answer_contact_teams_widget = CustomWidgetFactory(
-            LabeledMultiCheckBoxWidget)
-        GeneralFormView._setUpWidgets(self, context=self.user)
-
-    def process(self, want_to_be_answer_contact, answer_contact_teams=None):
-        if answer_contact_teams is None:
-            answer_contact_teams = []
+    @action(_('Continue'), name='update')
+    def update_action(self, action, data):
+        """Update the answer contact registration."""
+        want_to_be_answer_contact = data['want_to_be_answer_contact']
+        answer_contact_teams = data.get('answer_contact_teams', [])
         response = self.request.response
         replacements = {'context': self.context.displayname}
         if want_to_be_answer_contact:
@@ -444,7 +542,7 @@ class ManageAnswerContactView(GeneralFormView):
                         _('$teamname has been removed as an answer contact '
                           'for $context.', mapping=replacements))
 
-        self._nextURL = canonical_url(self.context, rootsite='answers')
+        self.next_url = canonical_url(self.context, rootsite='answers')
 
 
 class QuestionTargetFacetMixin:
@@ -490,6 +588,7 @@ class QuestionCollectionAnswersMenu(ApplicationMenu):
             {'field.status': statuses,
              'field.sort': sort,
              'field.search_text': '',
+             'field.languages': 'Preferred',
              'field.actions.search': 'Search',
              'field.status': statuses}, doseq=True)
 
@@ -516,8 +615,13 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
 
     usedfor = IQuestionTarget
     facet = 'answers'
-    links = QuestionCollectionAnswersMenu.links + ['new', 'answer_contact']
-
+    links = QuestionCollectionAnswersMenu.links + (
+        ['unsupported', 'new', 'answer_contact'])
+        
+    def unsupported(self):
+        text = 'Unsupported'
+        return Link('+unsupported', text, icon='question')
+        
     def new(self):
         text = 'Ask a question'
         return Link('+addquestion', text, icon='add')

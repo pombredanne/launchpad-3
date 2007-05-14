@@ -29,7 +29,7 @@
 
     <div tal:content="structure context/description/fmt:text-to-html">
         $ProductRelease.description goes here. This is longer, like the
-        product release notes.
+        project release notes.
     </div>
 
     <p tal:condition="not: context/description">

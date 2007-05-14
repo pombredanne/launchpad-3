@@ -17,6 +17,9 @@ from zope.app.wsgi import WSGIPublisherApplication
 from zope.server.http.commonaccesslogger import CommonAccessLogger
 import zope.publisher.publish
 from zope.publisher.interfaces import IRequest
+from zope.security.proxy import isinstance as zope_isinstance
+
+from canonical.cachedproperty import cachedproperty
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import IShipItApplication
@@ -25,7 +28,8 @@ from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadBrowserApplicationRequest, IBasicLaunchpadRequest,
-    INotificationRequest, INotificationResponse)
+    IBrowserFormNG, INotificationRequest, INotificationResponse,
+    UnexpectedFormData)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -271,12 +275,20 @@ class BasicLaunchpadRequest:
     def __init__(self, body_instream, environ, response=None):
         self.breadcrumbs = []
         self.traversed_objects = []
+        self._wsgi_keys = set()
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
     @property
     def stepstogo(self):
         return StepsToGo(self)
+
+    def retry(self):
+        """See IPublisherRequest."""
+        new_request = super(BasicLaunchpadRequest, self).retry()
+        # propagate the list of keys we have set in the WSGI environment
+        new_request._wsgi_keys = self._wsgi_keys
+        return new_request
 
     def getNearest(self, *some_interfaces):
         """See ILaunchpadBrowserApplicationRequest.getNearest()"""
@@ -289,13 +301,15 @@ class BasicLaunchpadRequest:
     def setInWSGIEnvironment(self, key, value):
         """Set a key-value pair in the WSGI environment of this request.
 
-        Raises KeyError if the key is already present in the environment.
+        Raises KeyError if the key is already present in the environment
+        but not set with setInWSGIEnvironment().
         """
         # This method expects the BasicLaunchpadRequest mixin to be used
         # with a base that provides self._orig_env.
-        if key in self._orig_env:
+        if key not in self._wsgi_keys and key in self._orig_env:
             raise KeyError("'%s' already present in wsgi environment." % key)
         self._orig_env[key] = value
+        self._wsgi_keys.add(key)
 
 
 class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
@@ -315,6 +329,51 @@ class LaunchpadBrowserRequest(BasicLaunchpadRequest, BrowserRequest,
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse()
+
+    @cachedproperty
+    def form_ng(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return BrowserFormNG(self.form)
+
+
+class BrowserFormNG:
+    """Wrapper that provides IBrowserFormNG around a regular form dict."""
+    
+    implements(IBrowserFormNG)
+
+    def __init__(self, form):
+        """Create a new BrowserFormNG that wraps a dict containing form data."""
+        self.form = form
+
+    def __contains__(self, name):
+        """See IBrowserFormNG."""
+        return name in self.form
+
+    def __iter__(self):
+        """See IBrowserFormNG."""
+        return iter(self.form)
+    
+    def getOne(self, name, default=None):
+        """See IBrowserFormNG."""
+        value = self.form.get(name, default)
+        if zope_isinstance(value, (list, tuple)):
+            raise UnexpectedFormData(
+                'Expected only one value form field %s: %s' % (name, value))
+        return value
+    
+    def getAll(self, name, default=None):
+        """See IBrowserFormNG."""
+        # We don't want a mutable as a default parameter, so we use None as a
+        # marker.
+        if default is None:
+            default = []
+        else:
+            assert zope_isinstance(default, list), (
+                "default should be a list: %s" % default)
+        value = self.form.get(name, default)
+        if not zope_isinstance(value, list):
+            value = [value]
+        return value
 
 
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
@@ -347,7 +406,9 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
                 status = 307
             else:
                 status = 303
-        super(LaunchpadBrowserResponse, self).redirect(location, status=status)
+        super(LaunchpadBrowserResponse, self).redirect(
+                unicode(location).encode('UTF-8'), status=status
+                )
 
 
 def adaptResponseToSession(response):
@@ -379,8 +440,21 @@ class LaunchpadTestRequest(TestRequest):
     True
     >>> request.notifications is request.response.notifications
     True
+
+    It also provides the form_ng attribute that is available from
+    LaunchpadBrowserRequest.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> verifyObject(IBrowserFormNG, request.form_ng)
+    True
     """
     implements(INotificationRequest)
+
+    def __init__(self, body_instream=None, environ=None, form=None,
+                 skin=None, outstream=None, method='GET', **kw):
+        super(LaunchpadTestRequest, self).__init__(
+            body_instream=body_instream, environ=environ, form=form,
+            skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
 
     @property
     def uuid(self):
@@ -393,6 +467,11 @@ class LaunchpadTestRequest(TestRequest):
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadTestResponse()
+
+    @property
+    def form_ng(self):
+        """See ILaunchpadBrowserApplicationRequest."""
+        return BrowserFormNG(self.form)
 
 
 class LaunchpadTestResponse(LaunchpadBrowserResponse):
