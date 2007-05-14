@@ -654,16 +654,14 @@ class Person(SQLBase, HasSpecificationsMixin):
         # This is our guarantee that _getDirectMemberIParticipateIn() will
         # never return None
         assert self.hasParticipationEntryFor(team), (
-            "Only call this method when you're sure the person is an indirect"
-            " member of the team.")
+            "%s doesn't seem to be a member/participant in %s"
+            % (self.name, team.name))
         assert team.isTeam(), "You can't pass a person to this method."
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
-        assert team is not None
         while team != self:
             path.insert(0, team)
             team = self._getDirectMemberIParticipateIn(team)
-            assert team is not None
         return path
 
     def _getDirectMemberIParticipateIn(self, team):
@@ -682,9 +680,14 @@ class Person(SQLBase, HasSpecificationsMixin):
             TeamParticipation.q.teamID == Person.q.id,
             TeamParticipation.q.personID == self.id)
         clauseTables = ['TeamMembership', 'TeamParticipation']
-        return Person.selectFirst(
+        member = Person.selectFirst(
             query, clauseTables=clauseTables, orderBy='datecreated')
-
+        assert member is not None, (
+            "%(person)s is an indirect member of %(team)s but %(person)s "
+            "is not a participant in any direct member of %(team)s"
+            % dict(person=self.name, team=team.name))
+        return member
+            
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
