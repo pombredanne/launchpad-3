@@ -989,7 +989,7 @@ class QuestionNotification:
             if person == self.question.owner:
                 recipients.add(person)
             elif question_language not in person.getSupportedLanguages():
-               skipped.add(person)
+                skipped.add(person)
             elif not person.preferredemail and not list(person.languages):
                 # For teams without an email address nor a set of supported
                 # languages, only notify the members that actually speak the
@@ -1250,7 +1250,7 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
     }
 
     def initialize(self):
-        """Set the template that will be used based on the new comment action."""
+        """Set the template based on the new comment action."""
         QuestionModifiedDefaultNotification.initialize(self)
         if self.new_message:
             self.body_template = self.body_template_by_action.get(
@@ -1281,6 +1281,7 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
             self.question.title)
 
     def shouldNotify(self):
+        """Return True when the question is in an unsupported language."""
         return self.unsupported_language
 
     def getRecipients(self):
@@ -1290,7 +1291,8 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
     def getBody(self):
         """See QuestionNotification."""
         question = self.question
-        return get_email_template('question-unsupported-languages-added.txt') % {
+        return get_email_template(
+                'question-unsupported-languages-added.txt') % {
             'target_name': question.target.displayname,
             'question_id': question.id,
             'question_url': canonical_url(question),
@@ -1302,6 +1304,7 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
     """Notification sent when a linked bug status is changed."""
 
     def initialize(self):
+        """Create a notifcation for a linked bug status change."""
         assert ISQLObjectModifiedEvent.providedBy(self.event), (
             "Should only be subscribed for ISQLObjectModifiedEvent.")
         assert IBugTask.providedBy(self.event.object), (
