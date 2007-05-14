@@ -7978,8 +7978,8 @@ ALTER TABLE productrelease ENABLE TRIGGER ALL;
 
 ALTER TABLE productreleasefile DISABLE TRIGGER ALL;
 
-INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, uploader, dateuploaded) VALUES (5, 3, 1, 2, 16, '2005-06-06 08:59:51.926792');
-INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, uploader, dateuploaded) VALUES (7, 1, 1, 1, 12, '2005-06-06 08:59:51.925908');
+INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, uploader, date_uploaded) VALUES (5, 3, 1, 2, 16, '2005-06-06 08:59:51.926792');
+INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, uploader, date_uploaded) VALUES (7, 1, 1, 1, 12, '2005-06-06 08:59:51.925908');
 
 
 ALTER TABLE productreleasefile ENABLE TRIGGER ALL;

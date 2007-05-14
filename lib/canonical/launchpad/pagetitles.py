@@ -42,7 +42,6 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMaloneApplication, IPerson)
 from canonical.launchpad.webapp import smartquote
-from canonical.launchpad.webapp.authorization import check_permission
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
@@ -783,7 +782,7 @@ product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
-productrelease_file_add = ContextDisplayName('Add a download file to project %s')
+productrelease_file_add = ContextDisplayName('Add a file to %s')
 
 productrelease_admin = ContextTitle('Administer %s in Launchpad')
 

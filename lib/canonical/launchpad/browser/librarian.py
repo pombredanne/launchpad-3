@@ -9,14 +9,14 @@ __all__ = [
     ]
 
 from canonical.launchpad.interfaces import ILibraryFileAlias
-from canonical.launchpad.webapp import canonical_url, LaunchpadView
+from canonical.launchpad.webapp import LaunchpadView
 
 class LibraryFileAliasView(LaunchpadView):
-    """View to handle redirection for downloading files by URL
+    """View to handle redirection for downloading files by URL.
 
     Rather than reference downloadable files via the obscure Librarian
     URL, downloadable files can be referenced via the Product Release URL, e.g.
-    http://launchpad.net/firefox/1.0./1.0.0/+download/firefox-1.0.0.tgz
+    http://launchpad.net/firefox/1.0./1.0.0/+download/firefox-1.0.0.tgz.
     """
 
     __used_for__ = ILibraryFileAlias

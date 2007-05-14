@@ -23,15 +23,14 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 # launchpad
 from canonical.launchpad.interfaces import (
-    IProductRelease, IPOTemplateSet, IProductReleaseSet, ICountry,
-    ILaunchBag, IProductReleaseFileAddForm, ILibraryFileAliasSet)
+    IProductRelease, IProductReleaseSet,
+    ILaunchBag, ILibraryFileAliasSet, IProductReleaseFileAddForm)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
-from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
-    Navigation, canonical_url, ContextMenu,
-    GetitemNavigation, LaunchpadView, LaunchpadFormView, Link,
+    canonical_url, ContextMenu,
+    GetitemNavigation, LaunchpadFormView, Link,
     enabled_with_permission, custom_widget, action, stepthrough)
 
 
@@ -130,11 +129,11 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
 
     @action('Add file', name='add')
     def add_action(self, action, data):
-        file_ = self.request.form.get(self.widgets['filecontent'].name)
+        file_upload = self.request.form.get(self.widgets['filecontent'].name)
         # XXX write a proper upload widget. -- BradCrittenden, 2007-04-26
-        if file_ and data['description']:
+        if file_upload and data['description']:
             # replace slashes in the filename with less problematic dashes.
-            filename = file_.filename.replace('/', '-')
+            filename = file_upload.filename.replace('/', '-')
 
             # create the alias for the file
             alias = getUtility(ILibraryFileAliasSet).create(
@@ -145,5 +144,5 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
                                       uploader=self.user,
                                       description=data['description'])
             self.request.response.addNotification(
-                "Your file has been uploaded.")
+                "Your file '%s' has been uploaded." % filename)
         self.next_url = canonical_url(self.context)

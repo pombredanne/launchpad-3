@@ -12,7 +12,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces import (
     IProductRelease, IProductReleaseFile, IProductReleaseSet,
     NotFoundError)
@@ -41,7 +40,7 @@ class ProductRelease(SQLBase):
                           default=None)
 
     files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
-                            orderBy='-dateuploaded')
+                            orderBy='-date_uploaded')
 
     # properties
     @property
@@ -74,12 +73,9 @@ class ProductRelease(SQLBase):
         """See IProductRelease."""
         for f in self.files:
             if f.libraryfile.id == alias.id:
-                # XXX do this if immediate removal is desired
-                #f.libraryfile.content.deleted = True
-                #f.libraryfile.destroySelf()
                 f.destroySelf()
                 return
-        raise NotFoundError(str(alias))
+        raise NotFoundError(alias.filename)
 
     def getFileAliasByName(self, name):
         """See IProductRelase."""
@@ -107,7 +103,7 @@ class ProductReleaseFile(SQLBase):
     uploader = ForeignKey(dbName="uploader", foreignKey='Person',
                           notNull=True)
 
-    dateuploaded = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    date_uploaded = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
 
 class ProductReleaseSet(object):

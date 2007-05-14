@@ -53,8 +53,7 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
-    IProductSet, IProductSeries,
-    IProject, ISourcePackage, ICountry,
+    ICountry, IProductSet, IProductSeries, IProject, ISourcePackage,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
     IPillarNameSet, IDistribution, IHasIcon, UnexpectedFormData,
@@ -566,29 +565,25 @@ class ProductDownloadFilesView(LaunchpadView):
 
     __used_for__ = IProduct
 
-    def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
-
     def initialize(self):
         self.form = self.request.form
         self.product = self.context
         del_count = None
-        if 'change' in self.form:
+        if 'delete_files' in self.form:
             if self.request.method == 'POST':
-                del(self.form['change'])
+                del(self.form['delete_files'])
                 del_count = self.delete_files(self.form)
             else:
                 # If there is a form submission and it is not a POST then
                 # raise an error.  This is to protect against XSS exploits.
-                raise UnsafeFormGetSubmissionError(self.form['change'])
+                raise UnsafeFormGetSubmissionError(self.form['delete_files'])
         if del_count is not None:
             if del_count <= 0:
                 self.request.response.addNotification(
                     "No files were deleted.")
             elif del_count == 1:
                 self.request.response.addNotification(
-                    "%d file has been deleted." %
-                    del_count)
+                    "1 file has been deleted.")
             else:
                 self.request.response.addNotification(
                     "%d files have been deleted." %

@@ -21,28 +21,35 @@
 <div metal:fill-slot="main"
      tal:define="has_edit context/required:launchpad.Edit">
 
-  <p>
-    Below are files available for download, listed by the release series.
-  </p>
-
   <form method="POST"
         tal:attributes="action request/URL">
     <tal:series repeat="series context/serieslist">
 
       <h2>
-        Release series
-        &#8220;<span tal:replace="series/name">main</span>&#8221;
+        Release series &#8220;<tal:name
+                               tal:replace="series/name">main</tal:name>&#8221;
       </h2>
 
+      <p tal:condition="has_edit">
+        <tal:releases condition="series/releases">
+          Add download file for release:
+          <tal:release repeat="release series/releases">
+            <a tal:attributes="href string:${series/name}/${release/version}/+adddownloadfile"
+               tal:content="release/version"
+              >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
+          </tal:release>
+        </tal:releases>
+      </p>
+
       <tal:seriesfilesexist
-          define="file_cnt python:0"
-          condition="python: view.series_has_release_files(series)">
+          condition="series/release_files">
         <table class="listing">
           <thead>
             <tr>
               <th tal:condition="has_edit" width="10%">Delete</th>
-              <th width="50%">Description</th>
               <th>Download</th>
+              <th>Release</th>
+              <th width="50%">Description</th>
             </tr>
           </thead>
           <tbody>
@@ -55,23 +62,28 @@
                          tal:attributes="value file/libraryfile/id;
                          name string:checkbox_${cbnum}">
                 </td>
-                <td tal:content="file/description">Installer for i386</td>
-                <td><a tal:attributes="href python:view.file_url(series,release,file)"
+                <td>
+                  <img src="/@@/download" />
+                  <a tal:attributes="href python:view.file_url(series,release,file)"
                        tal:content="file/libraryfile/filename">filename</a></td>
+                <td tal:content="release/version">version</td>
+                <td tal:content="file/description">Installer for i386</td>
               </tr>
             </tal:seriesfiles>
           </tbody>
         </table>
 
       </tal:seriesfilesexist>
-      <p tal:condition="python: not view.series_has_release_files(series)">
-        No download files linked to this series.
-      </p>
+      <tal:not_owner condition="not: has_edit">
+        <p tal:condition="not: series/release_files">
+          No download files are linked to this series.
+        </p>
+      </tal:not_owner>
     </tal:series>
     <input tal:condition="has_edit"
            type="submit"
-           name="change"
-           value="Submit Changes" />
+           name="delete_files"
+           value="Delete Files" />
   </form>
 
 </div>
