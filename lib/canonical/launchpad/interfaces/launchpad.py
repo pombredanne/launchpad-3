@@ -53,6 +53,7 @@ __all__ = [
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
     'IMaloneApplication',
+    'INotificationRecipientSet',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
@@ -405,5 +406,43 @@ class IAppFrontPageSearchForm(Interface):
 
     scope = Choice(title=_('Search scope'), required=False,
                    vocabulary='DistributionOrProductOrProject')
+
+
+class INotificationRecipientSet(Interface):
+    """Represents a set of notification recipients and rationales.
+
+    All Launchpad emails should include a footer explaining why the user
+    is receiving the email. An INotificationRecipientSet encapsulates a
+    list of recipients along the rationale for being on the recipients list.
+
+    The pattern for using this are as follows: email addresses in an
+    INotificationRecipientSet are being notified because of a specific
+    event (for instance, because a bug changed). The rationales describe
+    why that email addresses is included in the recipient list,
+    detailing subscription types, membership in teams and/or other
+    possible reasons.
+
+    You are meant to implement an API that defines how emails and
+    rationales are added to an INotificationRecipientSet; this is
+    to be kept private between your INotificationRecipientSet
+    implementation and the content class which defines the
+    subscriptions..
+    """
+    def getEmails():
+        """Return all email addresses registered, sorted alphabetically."""
+
+    def getReason(email):
+        """Return a reason tuple containing (text, header) for an address.
+
+        The text is meant to appear in the notification footer. The header
+        should be a short code that will appear in an
+        X-Launchpad-Message-Rationale header for automatic filtering.
+        """
+
+    def update(recipient_set):
+        """Updates this instance's reasons with reasons from another set.
+
+        :param recipient_set: An `INotificationRecipientSet`.
+        """
 
 

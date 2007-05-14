@@ -3,14 +3,18 @@
 """Bug notifications."""
 
 __metaclass__ = type
-__all__ = ['IBugNotification', 'IBugNotificationSet',
-           'INotificationRecipientSet', 'BugNotificationRecipients']
+__all__ = [
+    'IBugNotification',
+    'IBugNotificationSet',
+    'BugNotificationRecipients',
+    ]
 
 from zope.interface import Attribute, Interface, implements
 from zope.schema import Bool, Datetime
 
 from canonical.launchpad.fields import BugField
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.launchpad import (
+    IHasOwner, INotificationRecipientSet)
 
 
 class IBugNotification(IHasOwner):
@@ -36,34 +40,6 @@ class IBugNotificationSet(Interface):
 
     def getNotificationsToSend():
         """Returns the notifications pending to be sent."""
-
-
-class INotificationRecipientSet(Interface):
-    """Represents a set of email addresses and rationales.
-
-    The pattern for using this are as follows: email addresses in an
-    INotificationRecipientSet are being notified because of a specific
-    event (for instance, because a bug changed). The rationales describe
-    why that email addresses is included in the recipient list,
-    detailing subscription types, membership in teams and/or other
-    possible reasons.
-
-    You are meant to implement an API that defines how emails and
-    rationales are added to an INotificationRecipientSet; this is
-    to be kept private between your INotificationRecipientSet
-    implementation and the content class which defines the
-    subscriptions..
-    """
-    # XXX: this is meant to be moved to a more generic location once it
-    # is used by somebody else. -- kiko, 2007-03-20
-    def getEmails():
-        """Returns all email addresses registered, sorted alphabetically."""
-
-    def getReason(email):
-        """Returns a reason tuple containing (text, header) for an address."""
-
-    def update(recipient_set):
-        """Updates this instance's reasons with reasons from another BNR."""
 
 
 class BugNotificationRecipients:
@@ -95,10 +71,10 @@ class BugNotificationRecipients:
         specify which bug ID it is a duplicate of.
 
         Note that there are two duplicate situations that are
-        important: 
+        important:
           - One is when this bug is a duplicate of another bug:
             the subscribers to the main bug get notified of our
-            changes. 
+            changes.
           - Another is when the bug we are changing has
             duplicates; in that case, direct subscribers of
             duplicate bugs get notified of our changes.
