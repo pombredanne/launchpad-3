@@ -33,7 +33,7 @@ import tempfile
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.utils import re_extract_src_version
+from canonical.archiveuploader.utils import re_extract_src_version
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
