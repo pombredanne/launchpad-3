@@ -429,7 +429,7 @@ class POFileTranslateView(BaseTranslationView):
             self.shown_count = self.context.fuzzy_count
         elif self.show == 'new_suggestions':
             self.show_new_suggestions = True
-            self.shown_count = self.context.new_suggestions_count
+            self.shown_count = self.context.messagesWithNewSuggestionsCount()
         else:
             raise AssertionError("Bug in _initializeShowOption")
 

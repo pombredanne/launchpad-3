@@ -463,8 +463,7 @@ class POFile(SQLBase, RosettaStats):
             sequence > 0
             """ % sqlvalues(self.id)).count()
 
-    @property
-    def new_suggestions_count(self):
+    def messagesWithNewSuggestionsCount(self):
         """See IPOFile."""
         return self.getPOTMsgSetWithNewSuggestions().count()
 
@@ -1019,6 +1018,9 @@ class DummyPOFile(RosettaStats):
     @property
     def fuzzy_count(self):
         """See IPOFile."""
+        return 0
+
+    def messagesWithNewSuggestionsCount(self):
         return 0
 
     def currentPercentage(self):

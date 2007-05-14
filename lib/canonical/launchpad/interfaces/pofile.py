@@ -82,9 +82,6 @@ class IPOFile(IRosettaStats):
 
     fuzzy_count = Attribute("The number of 'fuzzy' messages in this po file.")
 
-    new_suggestions_count = Attribute(
-        "The number of messages with new suggestions in this po file.")
-
     from_sourcepackagename = Field(
         title=u'The source package this pofile comes from.',
         description=(u'The source package this pofile comes from (set it only'
@@ -114,6 +111,11 @@ class IPOFile(IRosettaStats):
     def untranslated():
         """
         Return an iterator over untranslated message sets in this PO file.
+        """
+
+    def messagesWithNewSuggestionsCount():
+        """
+        Return the number of messages with new suggestions since last review.
         """
 
     def __iter__():
