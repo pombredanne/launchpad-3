@@ -231,7 +231,7 @@ member.
 
     >>> member_notification['To']
     'marilize@hbd.com'
-    >>> print member_notification.get_payload()
+    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
     Celso Providelo (cprov) added you as a member of Ubuntu Team (ubuntu-
@@ -243,7 +243,7 @@ member.
     >>> print admins_notification['To']
     colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com, mark@hbd.com,
     foo.bar@canonical.com
-    >>> print admins_notification.get_payload()
+    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
     Marilize Coetzee (marilize) has been added as a member of Ubuntu Team
@@ -254,12 +254,11 @@ member.
     <BLANKLINE>
     Regards,
     The Launchpad team
-    <BLANKLINE>
 
 
-If the newly added member is actually a team, we'll only send an invitation to
-the team's admins, telling them that the membership will only be activated if
-they accept the invitation.
+By default, if the newly added member is actually a team, we'll only send
+an invitation to the team's admins, telling them that the membership will
+only be activated if they accept the invitation.
 
     >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
     >>> from canonical.launchpad.helpers import contactEmailAddresses
@@ -272,7 +271,7 @@ they accept the invitation.
     >>> [notification] = pop_notifications()
     >>> print notification['To']
     mark@hbd.com
-    >>> print notification.get_payload()
+    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
     Celso Providelo (cprov) has invited Mirror Administrators (ubuntu-
@@ -317,6 +316,43 @@ team which just became a member and to the admins of the hosting team.
     Mark Shuttleworth (sabdfl) has accepted the invitation to make Mirror
     Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
     team).
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+
+
+It's also possible to forcibly add a team as a member of another one, by
+passing force_team_add=True to the addMember() method.
+
+    >>> landscape = personset.getByName('landscape-developers')
+    >>> ubuntu_team.addMember(landscape, reviewer=cprov, force_team_add=True)
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    2
+    >>> admins_notification, member_notification = pop_notifications()
+    >>> member_notification['To']
+    'test@canonical.com'
+    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hello,
+    <BLANKLINE>
+    Celso Providelo (cprov) added Landscape Developers (landscape-
+    developers) (which you are a member of) as a member of Ubuntu Team
+    (ubuntu-team).
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+
+    >>> print admins_notification['To']
+    colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com, mark@hbd.com,
+    foo.bar@canonical.com
+    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hello,
+    <BLANKLINE>
+    Landscape Developers (landscape-developers) has been added as a member
+    of Ubuntu Team (ubuntu-team) by Celso Providelo (cprov). Follow the link
+    below for more details.
+    <BLANKLINE>
+        http://launchpad.dev/~ubuntu-team/+member/landscape-developers
     <BLANKLINE>
     Regards,
     The Launchpad team

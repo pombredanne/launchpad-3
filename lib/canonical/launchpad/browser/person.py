@@ -2737,10 +2737,12 @@ class TeamReassignmentView(ObjectReassignmentView):
         # proposed members they'll be made administrators of the team.
         if newOwner not in team.inactivemembers:
             team.addMember(
-                newOwner, reviewer=oldOwner, status=TeamMembershipStatus.ADMIN)
+                newOwner, reviewer=oldOwner,
+                status=TeamMembershipStatus.ADMIN, force_team_add=True)
         if oldOwner not in team.inactivemembers:
             team.addMember(
-                oldOwner, reviewer=oldOwner, status=TeamMembershipStatus.ADMIN)
+                oldOwner, reviewer=oldOwner,
+                status=TeamMembershipStatus.ADMIN, force_team_add=True)
 
 
 class PersonLatestQuestionsView(LaunchpadView):

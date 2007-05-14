@@ -14,8 +14,8 @@ class JoinTeamEvent:
 
     implements(IJoinTeamEvent)
 
-    def __init__(self, user, team):
-        self.user = user
+    def __init__(self, person, team):
+        self.person = person
         self.team = team
 
 

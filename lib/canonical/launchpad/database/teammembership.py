@@ -124,8 +124,6 @@ class TeamMembership(SQLBase):
 
     def setStatus(self, status, reviewer, reviewercomment=None):
         """See ITeamMembership"""
-        assert status != self.status, (
-            'New status (%s) is the same as the current one.' % status.name)
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
         expired = TeamMembershipStatus.EXPIRED
@@ -137,20 +135,21 @@ class TeamMembership(SQLBase):
         # Flush the cache used by the Person.inTeam method
         self.person._inTeam_cache = {}
 
-        # Make sure the transition from the current status to the given status
+        # Make sure the transition from the current status to the given one
         # is allowed. All allowed transitions are in the TeamMembership spec.
-        if self.status in [admin, approved]:
-            assert status in [admin, approved, expired, deactivated]
-        elif self.status in [deactivated, expired]:
-            assert status in [proposed, approved, invited]
-        elif self.status in [proposed]:
-            assert status in [approved, admin, declined]
-        elif self.status in [declined]:
-            assert status in [proposed, approved]
-        elif self.status in [invited]:
-            assert status in [approved]
-        else:
-            raise AssertionError("Unknown status: %s" % self.status)
+        state_transition = {
+            admin: [approved, expired, deactivated],
+            approved: [admin, expired, deactivated],
+            deactivated: [proposed, approved, invited],
+            expired: [proposed, approved, invited],
+            proposed: [approved, admin, declined],
+            declined: [proposed, approved],
+            invited: [approved]}
+        assert self.status in state_transition, (
+            "Unknown status: %s" % self.status.name)
+        assert status in state_transition[self.status], (
+            "Bad state trasition from %s to %s"
+            % (self.status.name, status.name))
 
         old_status = self.status
         self.status = status
@@ -161,8 +160,6 @@ class TeamMembership(SQLBase):
             and status in [admin, approved]):
             # Inactive member has become active; update datejoined
             self.datejoined = datetime.now(pytz.timezone('UTC'))
-
-        self.syncUpdate()
 
         if status in [admin, approved]:
             _fillTeamParticipation(self.person, self.team)
