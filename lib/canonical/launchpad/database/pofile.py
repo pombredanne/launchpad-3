@@ -393,6 +393,17 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         # A POT set has "new" suggestions if there is a POMsgSet with
         # submissions after active translation was reviewed
+        # XXX 20070514 DaniloSegan: this logic will break with the following
+        # scenario:
+        #   1. message is translated in package (active == published),
+        #      or it's untranslated
+        #   2. unapproved suggestions are submitted
+        #   3. message is translated in package differently, thus
+        #      setting the new review date
+        # This will 'shadow' suggestions submitted in 2.  We can fix this by
+        # having 'is_reviewed' on each POSubmission and using that to filter
+        # messages here.
+        #
         results = POTMsgSet.select('''
             POTMsgSet.potemplate = %s AND
             POTMsgSet.sequence > 0 AND
