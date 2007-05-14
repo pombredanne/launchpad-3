@@ -216,18 +216,17 @@ Now, lets do that again but allow the request. This will require us
 to log in to Launchpad before being redirected back to the consumer
 informing it that the request is valid.
 
->>> anon_browser.handleErrors = True
->>> anon_browser.open(setup_url)
->>> anon_browser.getControl('Allow').click()
+>>> sabdfl_browser = setupBrowser()
+>>> sabdfl_browser.handleErrors = True
+>>> sabdfl_browser.open(setup_url)
+>>> sabdfl_browser.getControl('Allow').click()
 
->>> print anon_browser.url
+>>> print sabdfl_browser.url
 http://openid.launchpad.dev/+openid/+login?...
->>> anon_browser.handleErrors = False
->>> anon_browser.getControl('E-mail address', index=0).value = 'mark@hbd.com'
->>> anon_browser.getControl('Password', index=0).value = 'test'
->>> anon_browser.getControl('Log In', index=0).click()
->>> sabdfl_browser = anon_browser # We are now logged in
->>> anon_browser = setupBrowser() # Reset anon_browser to be anon
+>>> sabdfl_browser.handleErrors = False
+>>> sabdfl_browser.getControl('E-mail address', index=0).value = 'mark@hbd.com'
+>>> sabdfl_browser.getControl('Password', index=0).value = 'test'
+>>> sabdfl_browser.getControl('Log In', index=0).click()
 
 >>> print sabdfl_browser.url
 http://launchpad.dev/+openid-consumer?...
