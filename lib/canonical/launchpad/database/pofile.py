@@ -403,7 +403,8 @@ class POFile(SQLBase, RosettaStats):
         # This will 'shadow' suggestions submitted in 2.  We can fix this by
         # having 'is_reviewed' on each POSubmission and using that to filter
         # messages here.
-        #
+        # However, messages like these would be rare and few, so there's still
+        # a lot of value in having the filter like this.
         results = POTMsgSet.select('''
             POTMsgSet.potemplate = %s AND
             POTMsgSet.sequence > 0 AND
