@@ -436,9 +436,12 @@ class ProductView(LaunchpadView):
 
     __used_for__ = IProduct
 
+    def __init__(self, context, request):
+	LaunchpadView.__init__(self, context, request)
+        self.form = request.form_ng
+
     def initialize(self):
         self.product = self.context
-        self.form = self.request.form
         self.status_message = None
 
     def primary_translatable(self):
@@ -797,18 +800,12 @@ class ProductSetView(LaunchpadView):
     max_results_to_display = config.launchpad.default_batch_size
 
     def initialize(self):
-        form = self.request.form
-        self.soyuz = form.get('soyuz')
-        self.rosetta = form.get('rosetta')
-        self.malone = form.get('malone')
-        self.bazaar = form.get('bazaar')
-        self.search_string = form.get('text')
-        # XXX flacoste 2007/04/27 Replace by use of getOne() once
-        # the API defined in bug #110633 is implemented.
-        if (self.search_string is not None and
-            not isinstance(self.search_string, basestring)):
-            raise UnexpectedFormData(
-                'text parameter should be a string: %s' % self.search_string)
+        form = self.request.form_ng
+        self.soyuz = form.getOne('soyuz')
+        self.rosetta = form.getOne('rosetta')
+        self.malone = form.getOne('malone')
+        self.bazaar = form.getOne('bazaar')
+        self.search_string = form.getOne('text')
         self.results = None
 
         self.searchrequested = False
@@ -819,7 +816,7 @@ class ProductSetView(LaunchpadView):
             self.soyuz is not None):
             self.searchrequested = True
 
-        if form.get('exact_name'):
+        if form.getOne('exact_name'):
             # If exact_name is supplied, we try and locate this name in
             # the ProductSet -- if we find it, bingo, redirect. This
             # argument can be optionally supplied by callers.
@@ -830,7 +827,7 @@ class ProductSetView(LaunchpadView):
                 pass
             else:
                 url = canonical_url(product)
-                if form.get('malone'):
+                if form.getOne('malone'):
                     url = url + "/+bugs"
                 self.request.response.redirect(url)
                 return

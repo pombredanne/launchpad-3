@@ -69,7 +69,7 @@ class BugTaskAssigneeWidget(Widget):
         # If the user has chosen to assign this bug to somebody else,
         # ensure that they actually provided a valid input value for
         # the assignee field.
-        if self.request.form.get(self.name + ".option") == self.assign_to:
+        if self.request.form_ng.getOne(self.name + ".option") == self.assign_to:
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
                         self.name, self.label,
@@ -108,9 +108,9 @@ class BugTaskAssigneeWidget(Widget):
         """See zope.app.form.interfaces.IInputWidget."""
         self.validate()
 
-        form = self.request.form
+        form = self.request.form_ng
 
-        assignee_option = form.get(self.name + ".option")
+        assignee_option = form.getOne(self.name + ".option")
         if assignee_option == self.assign_to:
             # The user has chosen to use the assignee chooser widget
             # to select an assignee.
@@ -190,7 +190,7 @@ class BugTaskAssigneeWidget(Widget):
         """
         # Give form values in the request precedence in deciding which
         # radio button should be selected.
-        selected_option = self.request.form.get(self.name + ".option")
+        selected_option = self.request.form_ng.getOne(self.name + ".option")
         if selected_option:
             return selected_option
 
@@ -269,7 +269,7 @@ class BugTaskBugWatchWidget(RadioWidget):
         one uses getInputValue(), which it shouldn't do.
         """
         if not self._renderedValueSet():
-            return self.request.form.get(self.name, self._missing)
+            return self.request.form_ng.getOne(self.name, self._missing)
         else:
             return self._toFormValue(self._data)
 

@@ -22,7 +22,8 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.launchpad.webapp.interfaces import (
     NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag, IBreadcrumb,
     IBasicLaunchpadRequest, IAfterTraverseEvent, AfterTraverseEvent,
-    IBeforeTraverseEvent, BeforeTraverseEvent,UnsafeFormGetSubmissionError,
+    IBeforeTraverseEvent, BeforeTraverseEvent, UnexpectedFormData,
+    UnsafeFormGetSubmissionError,
     )
 
 __all__ = [
@@ -74,10 +75,6 @@ __all__ = [
 
 class NameNotAvailable(KeyError):
     """You're trying to set a name, but the name you chose is not available."""
-
-
-class UnexpectedFormData(AssertionError):
-    """Got form data that is not what is expected by a form handler."""
 
 
 class ILaunchpadCelebrities(Interface):
