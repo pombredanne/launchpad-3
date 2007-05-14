@@ -254,6 +254,7 @@ returned.
 ...     'openid.trust_root': 'http://com',
 ...     'whatever': 'blah',
 ...     })
+>>> sabdfl_browser.handleErrors = True
 >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
 >>> print sabdfl_browser.contents
 Consumer received GET
@@ -413,6 +414,7 @@ Interactive mode:
 ...     '(?m)^openid.user_setup_url:(.*)$', sabdfl_browser.contents
 ...     )
 >>> sabdfl_browser.open(setup_url)
+>>> sabdfl_browser.handleErrors = False
 >>> sabdfl_browser.getControl('Allow').click()
 Traceback (most recent call last):
 ...
@@ -452,6 +454,7 @@ Really bad requests might trigger a protocol error
 >>> args = urlencode({
 ...     'openid.mode': 'whoops',
 ...     })
+>>> sabdfl_browser.handleErrors = True
 >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
 >>> print sabdfl_browser.contents
 error:No decoder for mode 'whoops'

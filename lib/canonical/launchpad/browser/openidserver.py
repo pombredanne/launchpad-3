@@ -77,18 +77,15 @@ class OpenIdView(LaunchpadView):
                 raise UnexpectedFormData("Invalid action")
 
         # Not a form submission, so extract the OpenIDRequest from the request.
-        try:
-            # Convert our Unicode arguments Z3 gives us back to ASCII so
-            # the error messages the OpenID library gives us are nicer (it
-            # relies on repr())
-            args = {}
-            for key, value in self.request.form.items():
-                if key.startswith('openid.'):
-                    args[key.encode('US-ASCII')] = value.encode('US-ASCII')
-            # NB: Will be None if there are no parameters in the request.
-            self.openid_request = self.openid_server.decodeRequest(args)
-        except ProtocolError, exception:
-            return self.renderProtocolError(exception)
+        # Convert our Unicode arguments Z3 gives us back to ASCII so
+        # the error messages the OpenID library gives us are nicer (it
+        # relies on repr())
+        args = {}
+        for key, value in self.request.form.items():
+            if key.startswith('openid.'):
+                args[key.encode('US-ASCII')] = value.encode('US-ASCII')
+        # NB: Will be None if there are no parameters in the request.
+        self.openid_request = self.openid_server.decodeRequest(args)
 
         # Not an OpenID request, so display a message explaining what this
         # is to nosy users.
@@ -342,13 +339,16 @@ class OpenIdView(LaunchpadView):
     def getSession(self):
         return ISession(self.request)[SESSION_PKG_KEY]
 
-    def renderProtocolError(self, exception):
+
+class ProtocolErrorView(LaunchpadView):
+    """Render a ProtocolError raised by the openid library."""
+    def render(self):
         response = self.request.response
-        if exception.whichEncoding() == ENCODE_URL:
-            url = exception.encodeToURL()
+        if self.context.whichEncoding() == ENCODE_URL:
+            url = self.context.encodeToURL()
             response.redirect(url)
         else:
             response.setStatus(200)
         response.setHeader('Content-Type', 'text/plain;charset=utf-8')
-        return exception.encodeToKVForm()
+        return self.context.encodeToKVForm()
 
