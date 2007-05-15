@@ -257,7 +257,6 @@ Delete the file foo2.txt.
     ...     name="checkbox_0_0_1")
     >>> checkbox.value = checkbox.options
     >>> firefox_owner.getControl("Delete Files").click()
-    >>> print firefox_owner.contents
     >>> get_feedback_messages(firefox_owner)
     [u'1 file has been deleted.']
 
