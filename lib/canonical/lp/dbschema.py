@@ -3058,7 +3058,7 @@ class BuildStatus(DBSchema):
         uploaded correctly. It's mainly genereated by failures in
         process-upload which quietly rejects the binary upload resulted
         by the build procedure.
-        In those cases all the build historic information will be stores (
+        In those cases all the build historic information will be stored (
         buildlog, datebuilt, duration, builder, etc) and the buildd admins
         will be notified via process-upload about the reason of the rejection.
         """)

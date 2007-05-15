@@ -530,13 +530,13 @@ class BuilderGroup:
         uploader_process = subprocess.Popen(
             uploader_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        # Nothing should be written to the stdout/stderr, but it's safe
+        # Nothing should be written to the stdout/stderr.
         upload_stdout, upload_stderr = uploader_process.communicate()
 
         # XXX cprov 20070417: we do not check uploader_result_code
         # anywhere. We need to find out what will be best strategy
-        # when it failed HARD (there is a hige effort in process-upload
-        # to not return error, it only happen when the code is broken)
+        # when it failed HARD (there is a huge effort in process-upload
+        # to not return error, it only happen when the code is broken).
         uploader_result_code = uploader_process.returncode
         self.logger.debug("Uploader returned %d" % uploader_result_code)
 
@@ -549,13 +549,23 @@ class BuilderGroup:
             os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
 
         # Store build information, build record was already updated during
-        # the binary upload
+        # the binary upload.
         self.storeBuildInfo(
             queueItem, slave, librarian, buildid, dependencies)
 
         # The famous 'flush_updates + clear_cache' will make visible the
         # DB changes done in process-upload, considering that the
         # transaction was set with READ_COMMITED_ISOLATION isolation level.
+
+        #from canonical.database.sqlbase import (
+        #    cursor, READ_COMMITTED_ISOLATION)
+        #cur = cursor()
+        #cur.execute('SHOW transaction_isolation')
+        #isolation_str = cur.fetchone()[0]
+        #assert isolation_str == READ_COMMITTED_ISOLATION, (
+        #    'BuildMaster/BuilderGroup transaction isolation should be '
+        #    'READ_COMMITTED_ISOLATION')
+
         flush_database_updates()
         clear_current_connection_cache()
 
@@ -567,9 +577,11 @@ class BuilderGroup:
         # a problem.
         # For both situations we will mark the builder as FAILEDTOUPLOAD
         # and the and update the build details (datebuilt, duration,
-        # buildlog, builder) in LP. We expect process-upload has sent
-        # a email to the buildd-admins list containing all the information
-        # required to reprocess the binary upload manually.
+        # buildlog, builder) in LP. A build-failure-notification will be
+        # sent to the lp-build-admin celebrity and to the sourcepackagerelease
+        # uploader about this occurrence. The failure notification will
+        # also content the information required to manually reprocess the
+        # binary upload when it was the case.
         build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
         if (build.buildstate != dbschema.BuildStatus.FULLYBUILT or
             len(build.binarypackages) == 0):
@@ -584,7 +596,7 @@ class BuilderGroup:
         # Release the builder for another job.
         slave.clean()
         # Commit the transaction so that the uploader can see the updated
-        # build record
+        # build record.
         self.commit()
 
     def buildStatus_PACKAGEFAIL(self, queueItem, slave, librarian, buildid,
