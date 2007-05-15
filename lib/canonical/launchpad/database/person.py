@@ -1007,7 +1007,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         assert self.isTeam()
         to_addrs = set()
-        for person in self.getEffectiveAdministrators():
+        for person in self.getDirectAdministrators():
             to_addrs.update(contactEmailAddresses(person))
         return sorted(to_addrs)
 
@@ -1061,9 +1061,26 @@ class Person(SQLBase, HasSpecificationsMixin):
 
         tm.syncUpdate()
 
-    def getEffectiveAdministrators(self):
+    def getAdministratedTeams(self):
         """See IPerson."""
-        assert self.isTeam()
+        owner_of_teams = Person.select('''
+            Person.teamowner = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            ''' % sqlvalues(self),
+            clauseTables=['TeamParticipation'])
+        admin_of_teams = Person.select('''
+            Person.id = TeamMembership.team
+            AND TeamMembership.status = %(admin)s
+            AND TeamMembership.person = TeamParticipation.team
+            AND TeamParticipation.person = %(person)s
+            ''' % sqlvalues(person=self, admin=TeamMembershipStatus.ADMIN),
+            clauseTables=['TeamParticipation', 'TeamMembership'])
+        orderBy = SQLConstant("person_sort_key(displayname, name)")
+        return admin_of_teams.union(owner_of_teams, orderBy=orderBy)
+
+    def getDirectAdministrators(self):
+        """See IPerson."""
+        assert self.isTeam(), 'Method should only be called on a team.'
         owner = Person.select("id = %s" % sqlvalues(self.teamowner))
         # We can't use Person.sortingColumns with union() queries
         # because the table name Person is not available in that
