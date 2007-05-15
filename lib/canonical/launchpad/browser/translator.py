@@ -2,6 +2,8 @@
 
 __metaclass__ = type
 
+import cgi
+
 from canonical.launchpad.interfaces import ITranslator
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, action, canonical_url)
@@ -33,7 +35,7 @@ class TranslatorEditView(LaunchpadEditFormView):
             # this edit.
             existing_translator_link = '<a href="%s">%s</a>' % (
                 canonical_url(existing_translator.translator),
-                existing_translator.translator.displayname)
+                cgi.escape(existing_translator.translator.displayname))
 
             self.setFieldError('language',
                 '%s is already a translator for this language' % (

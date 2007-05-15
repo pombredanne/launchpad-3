@@ -47,33 +47,35 @@
                     <th tal:condition="context/required:launchpad.Edit"></th>
                   </tr>
                 </thead>
-                <tr tal:repeat="translator view/translator_list">
-                  <td tal:content="translator/lang" />
-                  <td><a tal:content="translator/person/browsername"
-                          tal:attributes="href translator/person/fmt:url" />
-                  </td>
-                  <td><a tal:attributes="href translator/code"><img
-                         src="/@@/edit" alt="Change"
-                         title="Change Translator"></a>
-                  </td>
-                  <td>
-                    <span class="sortkey"
-                      tal:content="translator/datecreated/fmt:datetime" />
-                    <span
-                      tal:attributes="title translator/datecreated/fmt:datetime"
-                      tal:content="translator/datecreated/fmt:approximatedate">
-                      2007-09-17
-                    </span>
-                  </td>
-                  <td>
-                    <a
-                      tal:attributes="href string:${translator/code}/+remove">
-                      <input type="image" style="border: 0;"
-                             src="/@@/remove" alt="Remove Translator"
-                             title="Remove Translator" name="rmform" />
-                    </a>
-                  </td>
-                </tr>
+                <tbody>
+                  <tr tal:repeat="translator view/translator_list">
+                    <td tal:content="translator/lang" />
+                    <td><a tal:content="translator/person/browsername"
+                            tal:attributes="href translator/person/fmt:url" />
+                    </td>
+                    <td><a tal:attributes="href translator/code"><img
+                           src="/@@/edit" alt="Change"
+                           title="Change Translator"></a>
+                    </td>
+                    <td>
+                      <span class="sortkey"
+                        tal:content="translator/datecreated/fmt:datetime" />
+                      <span
+                        tal:attributes="title translator/datecreated/fmt:datetime"
+                        tal:content="translator/datecreated/fmt:approximatedate">
+                        2007-09-17
+                      </span>
+                    </td>
+                    <td>
+                      <a
+                        tal:attributes="href string:${translator/code}/+remove">
+                        <input type="image" style="border: 0;"
+                               src="/@@/remove" alt="Remove Translator"
+                               title="Remove Translator" name="rmform" />
+                      </a>
+                    </td>
+                  </tr>
+                </tbody>
               </table>
             </tal:translators>
             <tal:no-translators condition="not: context/translators">

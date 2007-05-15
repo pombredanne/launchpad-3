@@ -1,6 +1,4 @@
-When editing translation group details, we could rename the translation group
-but the system shouldn't break if the user chooses an already existing
-translation group with the new choosed name.
+When editing translation group details, we could rename the translation group.
 
   >>> admin_browser.open(
   ...     'http://translations.launchpad.dev/+translation-groups')
@@ -30,7 +28,8 @@ Change the name.
   >>> admin_browser.getControl('Name').value = u'polyglot'
   >>> admin_browser.getControl('Change').click()
 
-The system detected the error so we didn't move away from this form.
+The system detected that we tried to use an already existing name, so we
+didn't move away from this form.
 
   >>> print admin_browser.url
   http://translations.launchpad.dev/+translation-groups/testing-translation-team/+edit
