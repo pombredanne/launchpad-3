@@ -18,12 +18,13 @@ class TestPerson(LaunchpadFunctionalTestCase):
         ubuntu_team = Person.byName('ubuntu-team')
         # Sample Person is an active member of Warty Security Team which in
         # turn is a proposed member of Ubuntu Team. That means
-        # sample_person._getDirectMemberIParticipateIn(ubuntu_team) won't
-        # return anything.
+        # sample_person._getDirectMemberIParticipateIn(ubuntu_team) will fail
+        # with an AssertionError.
         self.failUnless(sample_person in warty_team.activemembers)
         self.failUnless(warty_team in ubuntu_team.invitedmembers)
-        self.failUnlessEqual(
-            sample_person._getDirectMemberIParticipateIn(ubuntu_team), None)
+        self.failUnlessRaises(
+            AssertionError, sample_person._getDirectMemberIParticipateIn,
+            ubuntu_team)
 
         # If we make warty_team an active member of Ubuntu team, then the
         # _getDirectMemberIParticipateIn() call will actually return

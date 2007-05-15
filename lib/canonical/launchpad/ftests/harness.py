@@ -74,7 +74,7 @@ def _reconnect_sqlos(dbuser=None):
     da = getUtility(IZopeDatabaseAdapter, name)
     if dbuser is None:
         dbuser = config.launchpad.dbuser
-    da.connect(dbuser)
+    da.switchUser(dbuser)
 
     # Confirm that the database adapter *really is* connected.
     assert da.isConnected(), 'Failed to reconnect'
