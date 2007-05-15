@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="malone"
 >
   <body>
@@ -24,7 +24,7 @@
     <table class="sortable listing" id="latestwatches">
       <thead>
         <tr>
-          <th>Malone bug</th>
+          <th>Launchpad bug</th>
           <th>Remote bug</th>
           <th>Status</th>
         </tr>
@@ -36,7 +36,7 @@
             <img alt="" src="/@@/bug" />
             <a href="#" tal:attributes="href watch/bug/fmt:url">
               #<span tal:replace="watch/bug/id">34</span>:
-               <span tal:replace="watch/bug/title">Malone Bug Title</span>
+               <span tal:replace="watch/bug/title">Launchpad Bug Title</span>
             </a>
           </td>
           <td><a tal:content="watch/remotebug"

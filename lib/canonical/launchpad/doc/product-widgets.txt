@@ -2,7 +2,7 @@ Choosing a Product Bugtracker
 ----------------------------
 
 When choosing which bug tracker a Product uses, there are three possible
-options. A product can choose to use Malone as its bug tracker, an external
+options. A product can choose to use Launchpad as its bug tracker, an external
 bug tracker, or no specific bug tracker, which means either none or its
 Project's bug tracker. This information is captured using two
 attributes, 'official_malone' and 'bugtracker', and we'll use a custom
@@ -11,7 +11,7 @@ presented to the user as radio buttons, where the option for using an
 external bug tracker includes a dropdown for choosing the correct
 tracker.
 
-Let's take Firefox as an example, it uses Malone as its bug tracker.
+Let's take Firefox as an example, it uses Launchpad as its bug tracker.
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -40,7 +40,7 @@ selected, since that's what the custom field's missing value represent.
     ...         else:
     ...             print 'NOT SELECTED'
     >>> print_items(widget())
-    Bugs are tracked in Malone NOT SELECTED
+    Bugs are tracked in Launchpad NOT SELECTED
     No bug tracker SELECTED
     External bug tracker NOT SELECTED
 
@@ -62,7 +62,7 @@ bug tracker to track its bugs.
     >>> firefox.project.bugtracker = gnome_bugzilla
 
     >>> print_items(widget())
-    Bugs are tracked in Malone NOT SELECTED
+    Bugs are tracked in Launchpad NOT SELECTED
     The <a...>project</a> bug tracker: 
                 <a...>GnomeGBug GTracker</a> SELECTED
     External bug tracker NOT SELECTED
@@ -74,7 +74,7 @@ again showed.
     >>> firefox.project = None
 
     >>> print_items(widget())
-    Bugs are tracked in Malone NOT SELECTED
+    Bugs are tracked in Launchpad NOT SELECTED
     No bug tracker SELECTED
     External bug tracker NOT SELECTED
 
@@ -87,23 +87,23 @@ External bug tracker option will be selected.
     >>> widget.setRenderedValue(mozilla_bugtracker)
 
     >>> print_items(widget())
-    Bugs are tracked in Malone NOT SELECTED
+    Bugs are tracked in Launchpad NOT SELECTED
     No bug tracker NOT SELECTED
     External bug tracker SELECTED
 
 The custom field has a marker attribute which represents Malone. If we
-call setRenderedValue with this marker, the "Bugs are tracked in Malone"
+call setRenderedValue with this marker, the "Bugs are tracked in Launchpad"
 option is selected
 
     >>> widget.setRenderedValue(widget.context.malone_marker)
     >>> print_items(widget())
-    Bugs are tracked in Malone SELECTED
+    Bugs are tracked in Launchpad SELECTED
     No bug tracker NOT SELECTED
     External bug tracker NOT SELECTED
 
 Now, let's pass some request values to the widget to show how it reacts
 on different user inputs. We start by simply passing 'malone' to it,
-which means that bugs are tracked in Malone. This will mean that
+which means that bugs are tracked in Launchpad. This will mean that
 getInputValue will return the special Malone marker object we used
 above. We'll also pass a bug tracker value to the widget, which won't
 affect what getInputValue() returns.

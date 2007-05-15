@@ -10,7 +10,7 @@
     <h2 i18n:translate="">No translatable templates available</h2>
 
     <p i18n:translate=""><span tal:replace="context/displayname" />
-    does not have any strings to be translated through Rosetta. If
+    does not have any strings to be translated through Launchpad. If
     you think this is incorrect, please send an email to
     <a href="mailto:rosetta-users@lists.ubuntu.com">the Rosetta
     mailing list</a> or file a bug in our
@@ -25,7 +25,7 @@
       <!-- Listing of MANY templates -->
 
       <p>
-        These templates can be translated using Rosetta.
+        These templates can be translated using Launchpad.
       </p>
 
       <table class="listing">
@@ -82,7 +82,8 @@
 
       </div>
 
-      <div tal:replace="structure context/@@+rosetta-status-legend" />
+      <div tal:condition="view/languages"
+      	   tal:replace="structure context/@@+rosetta-status-legend" />
 
     </tal:listing>
 

@@ -6,9 +6,19 @@
 
   <body>
     <div metal:fill-slot="main">
-
-      <h1>Translations download</h1>
-
+      <div>
+        <a tal:attributes="href context/potemplate/fmt:url"
+           tal:content="context/potemplate/title">
+          evolution 2.10 template
+        </a>
+      </div>
+      <h1>
+        Download
+        <tal:language replace="context/language/englishname">
+          Spanish
+        </tal:language>
+        translation
+      </h1>
       <form action="" method="post">
         <div class="field" tal:repeat="format view/formats">
           <label>

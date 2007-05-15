@@ -19,7 +19,7 @@ Import the test keys so we have them ready for verification
 We need to be logged into the security model in order to get any further
 
   >>> login('foo.bar@canonical.com')
-  >>> from canonical.archivepublisher.tests import (
+  >>> from canonical.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
 
@@ -33,7 +33,7 @@ considered) for the upload in question.
   >>> modified_insecure_policy.can_upload_binaries = True
   >>> modified_insecure_policy.can_upload_mixed = True
 
-  >>> from canonical.archivepublisher.changesfile import ChangesFile
+  >>> from canonical.archiveuploader.changesfile import ChangesFile
 
   >>> ed_mixed_changes = ChangesFile(
   ...     datadir('ed_0.2-20_i386.changes'),
@@ -90,12 +90,127 @@ a error generator
   0
 
 
+=== CustomUploadFile identification ===
+
+Source and Binary files are easily recognized by a regexp on the
+filenames:
+
+ >>> from canonical.archiveuploader.utils import (
+ ...     re_isadeb, re_issource)
+
+ >>> bin_match = re_isadeb.match('foo-bar_1.0_i386.deb')
+ >>> bin_match.group(0)
+ 'foo-bar_1.0_i386.deb'
+ >>> bin_match.group(1)
+ 'foo-bar'
+ >>> bin_match.group(2)
+ '1.0'
+ >>> bin_match.group(3)
+ 'i386'
+
+ >>> src_match = re_issource.match('foo_1.0.orig.tar.gz')
+ >>> src_match.group(0)
+ 'foo_1.0.orig.tar.gz'
+ >>> src_match.group(1)
+ 'foo'
+ >>> src_match.group(2)
+ '1.0'
+ >>> src_match.group(3)
+ 'orig.tar.gz'
+
+ >>> src_match = re_issource.match('foo_1.0.tar.gz')
+ >>> src_match.group(0)
+ 'foo_1.0.tar.gz'
+ >>> src_match.group(1)
+ 'foo'
+ >>> src_match.group(2)
+ '1.0'
+ >>> src_match.group(3)
+ 'tar.gz'
+
+ >>> src_match = re_issource.match('foo_1.0.diff.gz')
+ >>> src_match.group(0)
+ 'foo_1.0.diff.gz'
+ >>> src_match.group(1)
+ 'foo'
+ >>> src_match.group(2)
+ '1.0'
+ >>> src_match.group(3)
+ 'diff.gz'
+
+ >>> src_match = re_issource.match('foo_1.0.dsc')
+ >>> src_match.group(0)
+ 'foo_1.0.dsc'
+ >>> src_match.group(1)
+ 'foo'
+ >>> src_match.group(2)
+ '1.0'
+ >>> src_match.group(3)
+ 'dsc'
+
+And finally a failure:
+
+ >>> re_issource.match('foo_1.0.c') is None
+ True
+
+
+However a custom upload is essencially a tarball, so it matches the
+is_source regexp:
+
+ >>> src_match = re_issource.match('dist-upgrader_1.0.tar.gz')
+ >>> src_match.group(0)
+ 'dist-upgrader_1.0.tar.gz'
+ >>> src_match.group(1)
+ 'dist-upgrader'
+ >>> src_match.group(2)
+ '1.0'
+ >>> src_match.group(3)
+ 'tar.gz'
+
+
+That's why we recognize them by identifying a set of custom sections:
+
+ * raw-installer
+ * raw-translations
+ * raw-dist-upgrader
+ * raw-ddtp-tarball
+
+The Changesfile.isCustom receives a 'component_and_section' chunk from
+the respective file line in the changesfile and return True if it is
+target to a custom section.
+
+We will use the current upload available and test the known
+'component_and_section' schemas.
+
+Note that the component_name and section_name are not checked for
+sanity, it'll be done later on, this method only checks if the
+section_name startswith 'raw-':
+
+ >>> ed_mixed_changes.isCustom('foo-bar')
+ False
+ >>> ed_mixed_changes.isCustom('drops/foo-bar')
+ False
+ >>> ed_mixed_changes.isCustom('drops/raw-biscuit')
+ True
+ >>> ed_mixed_changes.isCustom('drops/rawbiscuit')
+ False
+ >>> ed_mixed_changes.isCustom('drops/raw-biscuit/something')
+ True
+ >>> ed_mixed_changes.isCustom('main/raw-installer')
+ True
+ >>> ed_mixed_changes.isCustom('main/law-installer')
+ False
+
+See the CustomUploadFile checks below for specific checks on custom
+uploads.
+
+
 === ChangesFile Parsing Addresses ===
 
 Address parsing is implemented by the SignableTagFile class, which
 is base for ChangesFile and DSCFile.
 
-  >>> from canonical.archivepublisher.dscfile import SignableTagFile
+  >>> from canonical.archiveuploader.dscfile import SignableTagFile
   >>> sig_file = SignableTagFile()
 
 Note that the policy.{distrorelease, pocket} must be already
@@ -218,7 +333,7 @@ and storing a DSC file in the LP system.
 The DSC file itself contains information about what was used to build
 the given version of source.
 
-  >>> from canonical.archivepublisher.dscfile import (
+  >>> from canonical.archiveuploader.dscfile import (
   ...    DSCFile, DSCUploadedFile)
 
   >>> ed_mixed_dsc = DSCFile(
@@ -228,13 +343,13 @@ the given version of source.
   ...     modified_insecure_policy, mock_logger_quiet)
 
   >>> ed_mixed_dsc
-  <canonical.archivepublisher.dscfile.DSCFile ...>
+  <canonical.archiveuploader.dscfile.DSCFile ...>
 
 So this object is exactly the same than what we already have created
 in the ChangesFile instance.
 
   >>> ed_mixed_changes.dsc
-  <canonical.archivepublisher.dscfile.DSCFile ...>
+  <canonical.archiveuploader.dscfile.DSCFile ...>
 
 The DSCFile also presents a similar behaviour to access its parsed
 contents:
@@ -301,7 +416,7 @@ disk:
 Sub-DSCFiles are DSCUploadedFile objects.
 
   >>> ed_mixed_dsc.files[0]
-  <canonical.archivepublisher.dscfile.DSCUploadedFile ...>
+  <canonical.archiveuploader.dscfile.DSCUploadedFile ...>
 
 We can also inspect the list of files declared in this DSC:
 
