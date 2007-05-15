@@ -6,6 +6,6 @@ want to recieve questions only in their preerred languages.
 SET client_min_messages=ERROR;
 
 ALTER TABLE AnswerContact
-    ADD COLUMN limited_languages BOOLEAN DEFAULT False NOT NULL;
+    ADD COLUMN want_english BOOLEAN DEFAULT True NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (79, 97, 0);
