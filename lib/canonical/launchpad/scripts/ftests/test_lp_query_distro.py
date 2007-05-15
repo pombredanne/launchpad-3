@@ -9,13 +9,14 @@ import sys
 import unittest
 
 from canonical.config import config
-from canonical.launchpad.ftests.harness import (
-    LaunchpadTestCase, LaunchpadZopelessTestCase)
+from canonical.testing import LaunchpadLayer
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.scripts.ftpmaster import LpQueryDistro
 
-class TestLpQueryDistroScript(LaunchpadTestCase):
+class TestLpQueryDistroScript(unittest.TestCase):
     """Test the lp-query-distro.py script."""
+    layer = LaunchpadLayer
 
     def runLpQueryDistro(self, extra_args=[]):
         """Run lp-query.distro.py, returning the result and output.
