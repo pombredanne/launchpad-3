@@ -269,7 +269,7 @@ COMMENT ON COLUMN ProductReleaseFile.libraryfile IS 'This is the librarian entry
 COMMENT ON COLUMN ProductReleaseFile.description IS 'A description of what the file contains';
 COMMENT ON COLUMN ProductReleaseFile.filetype IS 'An enum of what kind of file this is. Code tarballs are marked for special treatment (importing into bzr)';
 COMMENT ON COLUMN ProductReleaseFile.uploader IS 'The person who uploaded this file.';
-COMMENT ON COLUMN ProductReleaseFile.dateuploaded IS 'The date this file was uploaded.';
+COMMENT ON COLUMN ProductReleaseFile.date_uploaded IS 'The date this file was uploaded.';
 COMMENT on COLUMN ProductReleaseFile.id IS '';
 
 -- ProductSeries
