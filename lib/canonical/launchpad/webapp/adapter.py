@@ -61,12 +61,19 @@ def _wasDisconnected(msg):
     The message will either be a string, or a dictionary mapping
     cursors to string messages.
     """
+    # XXX: 20070514 James Henstridge
+    # This function needs to check exception messages in order to do
+    # its job.  Hopefully we can clean this up when switching to
+    # psycopg2, since it exposes the Postgres error codes through its
+    # exceptions.
     if isinstance(msg, basestring):
         if (msg.startswith('server closed the connection unexpectedly') or
             msg.startswith('could not connect to server') or
             msg.startswith('no connection to the server')):
             return True
     elif isinstance(msg, dict):
+        # Some errors from the connection have a cursor => message
+        # dictionary as a value.
         for value in msg.itervalues():
             if _wasDisconnected(value):
                 return True
@@ -183,6 +190,16 @@ class ReconnectingConnection:
         return ReconnectingCursor(self)
 
 
+def _handle_disconnections(function_name):
+    """Helper routine for generating wrappers that check for disconnection."""
+    def func(self, *args, **kwargs):
+        self._ensureCursor()
+        return self.connection._checkDisconnect(
+            getattr(self._cursor, function_name), *args, **kwargs)
+    func.__name__ = function_name
+    return func
+
+
 class ReconnectingCursor:
     """A Python DB-API cursor class that handles disconnects."""
 
@@ -195,7 +212,9 @@ class ReconnectingCursor:
 
     def _ensureCursor(self):
         self.connection._ensureConnected()
-        # if the generation numbers don't match, we have an old cursor
+        # If the cursor and connection generation numbers do not
+        # match, then our cursor belongs to a previous (disconnected)
+        # connection.
         if self._generation != self.connection._generation:
             self._cursor = None
         if self._cursor is None:
@@ -207,30 +226,11 @@ class ReconnectingCursor:
         self._ensureCursor()
         return getattr(self._cursor, name)
 
-    def execute(self, *args, **kwargs):
-        self._ensureCursor()
-        return self.connection._checkDisconnect(
-            self._cursor.execute, *args, **kwargs)
-
-    def executemany(self, *args, **kwargs):
-        self._ensureCursor()
-        return self.connection._checkDisconnect(
-            self._cursor.executemany, *args, **kwargs)
-
-    def fetchone(self, *args, **kwargs):
-        self._ensureCursor()
-        return self.connection._checkDisconnect(
-            self._cursor.fetchone, *args, **kwargs)
-
-    def fetchmany(self, *args, **kwargs):
-        self._ensureCursor()
-        return self.connection._checkDisconnect(
-            self._cursor.fetchmany, *args, **kwargs)
-
-    def fetchall(self, *args, **kwargs):
-        self._ensureCursor()
-        return self.connection._checkDisconnect(
-            self._cursor.fetchall, *args, **kwargs)
+    execute = _handle_disconnections('execute')
+    executemany = _handle_disconnections('executemany')
+    fetchone = _handle_disconnections('fetchone')
+    fetchmany = _handle_disconnections('fetchmany')
+    fetchall = _handle_disconnections('fetchall')
 
 
 class ReconnectingDatabaseAdapter(PsycopgAdapter):
