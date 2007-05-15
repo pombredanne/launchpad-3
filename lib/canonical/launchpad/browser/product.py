@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Browser views for products."""
 
@@ -45,8 +45,7 @@ from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.formlib import form
-from zope.interface import alsoProvides, implements, providedBy
+from zope.interface import alsoProvides, implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -66,7 +65,6 @@ from canonical.launchpad.browser.bugtask import (
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.person import ObjectReassignmentView
-from canonical.launchpad.browser.project import ProjectDynMenu
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
@@ -75,7 +73,6 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
@@ -83,7 +80,6 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -438,7 +434,7 @@ class ProductView:
         self.context = context
         self.product = context
         self.request = request
-        self.form = request.form
+        self.form = request.form_ng
         self.status_message = None
 
     def primary_translatable(self):
@@ -610,36 +606,15 @@ class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        #XXX: self.updateContextFromData(data) is not used since we need
-        #     to pass an adapters dictionary to form.applyChanges in
-        #     order to prevent adaptation failures while trying adapt to
-        #     IProductLaunchpadUsageForm.
-        #     -- Bjorn Tillenius, 2006-09-05
-        context_before_modification = Snapshot(
-            self.context, providing=providedBy(self.context))
-        if form.applyChanges(
-                self.context, self.form_fields, data,
-                adapters={self.schema: self.context}):
-            field_names = [form_field.__name__
-                           for form_field in self.form_fields]
-            notify(SQLObjectModifiedEvent(self.context,
-                                          context_before_modification,
-                                          field_names))
+        self.updateContextFromData(data)
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    #XXX: setUpWidgets is needed only because we need to pass in adapters
-    #     in order to prevent zope.formlib trying adapt the context to
-    #     IProductLaunchpadUsageForm. We should decide how to solve this
-    #     properly and modify LaunchpadEditFormView accordingly.
-    #     -- Bjorn Tillenius, 2006-09-05
-    def setUpWidgets(self):
-        self.widgets = form.setUpWidgets(
-            self.form_fields, self.prefix, self.context, self.request,
-            data=self.initial_values, ignore_request=False,
-            adapters={self.schema: self.context})
+    @property
+    def adapters(self):
+        return {self.schema: self.context}
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -767,18 +742,12 @@ class ProductSetView(LaunchpadView):
     max_results_to_display = config.launchpad.default_batch_size
 
     def initialize(self):
-        form = self.request.form
-        self.soyuz = form.get('soyuz')
-        self.rosetta = form.get('rosetta')
-        self.malone = form.get('malone')
-        self.bazaar = form.get('bazaar')
-        self.search_string = form.get('text')
-        # XXX flacoste 2007/04/27 Replace by use of getOne() once
-        # the API defined in bug #110633 is implemented.
-        if (self.search_string is not None and
-            not isinstance(self.search_string, basestring)):
-            raise UnexpectedFormData(
-                'text parameter should be a string: %s' % self.search_string)
+        form = self.request.form_ng
+        self.soyuz = form.getOne('soyuz')
+        self.rosetta = form.getOne('rosetta')
+        self.malone = form.getOne('malone')
+        self.bazaar = form.getOne('bazaar')
+        self.search_string = form.getOne('text')
         self.results = None
 
         self.searchrequested = False
@@ -789,7 +758,7 @@ class ProductSetView(LaunchpadView):
             self.soyuz is not None):
             self.searchrequested = True
 
-        if form.get('exact_name'):
+        if form.getOne('exact_name'):
             # If exact_name is supplied, we try and locate this name in
             # the ProductSet -- if we find it, bingo, redirect. This
             # argument can be optionally supplied by callers.
@@ -800,7 +769,7 @@ class ProductSetView(LaunchpadView):
                 pass
             else:
                 url = canonical_url(product)
-                if form.get('malone'):
+                if form.getOne('malone'):
                     url = url + "/+bugs"
                 self.request.response.redirect(url)
                 return

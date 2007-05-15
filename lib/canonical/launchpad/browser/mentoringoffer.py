@@ -24,9 +24,14 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBug,
     IBugTask,
+    IDistribution,
     IMentoringOffer,
     IMentoringOfferSet,
     ILaunchBag,
+    IPerson,
+    IProduct,
+    IProject,
+    ITeam,
     )
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation,
@@ -146,8 +151,50 @@ class MentoringOfferRetractView(LaunchpadFormView, CanBeMentoredView):
 
 class HasMentoringOffersView(LaunchpadView):
 
+    # these flags determine which columns will be displayed. In the
+    # initialise() method, some columns may be disabled based on the type of
+    # context (person, team, project, mentorship manager)
+    show_person = True
+    show_team = True
+    show_date = True
+    show_work = True
+
+    # these flags govern some of the content of the spec page, which allows
+    # us to vary the text flow slightly without creating large numbers of
+    # template fragments
+    is_person = False
+    is_team = False
+    is_pillar = False
+    is_manager = False
+
+    def initialize(self):
+        if IPerson.providedBy(self.context):
+            if self.context.teamowner is None:
+                self.is_person = True
+                self.show_person = False
+            else:
+                self.is_team = True
+                self.show_team = False
+        elif (IDistribution.providedBy(self.context) or
+              IProduct.providedBy(self.context) or
+              IProject.providedBy(self.context)):
+            self.is_pillar = True
+        elif IMentoringOfferSet.providedBy(self.context):
+            self.is_manager = True
+        else:
+            raise AssertionError, 'Unknown mentorship listing site'
+        mapping = {'name': self.context.displayname}
+        if self.is_person:
+            self.title = _('Mentoring offered by $name', mapping=mapping)
+        else:
+            self.title = _('Offers of mentoring for $name', mapping=mapping)
+
     def batched_offers(self):
-        return BatchNavigator(self.context.mentoring_offers, self.request)
+        if self.is_team:
+            resultset = self.context.team_mentorships
+        else:
+            resultset = self.context.mentoring_offers
+        return BatchNavigator(resultset, self.request)
 
 
 class MentoringOfferSetView(HasMentoringOffersView):

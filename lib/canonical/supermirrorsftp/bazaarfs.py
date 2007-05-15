@@ -289,10 +289,8 @@ class WriteLoggingFile(osfs.OSFile):
 class SFTPServerBranch(WriteLoggingDirectory):
     """For /~username/product/branch, and below.
 
-    Anything is allowed here, except for tricks like symlinks that point above
-    this point.
-
-    Can also be used for Bazaar 1.x branches.
+    Only allows '.bzr' directories to be made directly. Underneath that,
+    anything goes.
     """
     def __init__(self, avatar, branchID, branchName, parent):
         self.branchID = branchID
@@ -325,3 +323,10 @@ class SFTPServerBranch(WriteLoggingDirectory):
             root = self.parent.parent.parent
             self._listener = root.listenerFactory(self.branchID)
         self._listener()
+
+    def createDirectory(self, name):
+        if name != '.bzr':
+            raise PermissionError(
+                "Can only create .bzr directories in branch directories: %s"
+                % (name,))
+        return WriteLoggingDirectory.createDirectory(self, name)
