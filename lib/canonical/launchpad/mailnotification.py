@@ -853,17 +853,16 @@ def notify_invitation_to_join_team(event):
 
 
 def notify_team_join(event):
-    """Notify team admins that a new user joined (or tried to join) the team.
+    """Notify team admins that a new person joined (or tried to join) the team.
 
     If the team's policy is Moderated, the email will say that the membership
-    is pending approval. Otherwise it'll say that the user has joined the team
-    and who added that person to the team.
+    is pending approval. Otherwise it'll say that the person has joined the
+    team and who added that person to the team.
     """
-    user = event.user
-    assert not user.isTeam(), (
-        "Teams cannot join other teams without being invited first.")
+    person = event.person
     team = event.team
-    membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(user, team)
+    membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+        person, team)
     assert membership is not None
     reviewer = membership.reviewer
     approved, admin, proposed = [
@@ -873,19 +872,21 @@ def notify_team_join(event):
 
     from_addr = format_address('Launchpad', config.noreply_from_address)
 
-    if reviewer != user and membership.status in [approved, admin]:
-        # Somebody added this user as a member, we better send a notification
-        # to the user too.
-        member_addrs = contactEmailAddresses(user)
+    if reviewer != person and membership.status in [approved, admin]:
+        # Somebody added this person as a member, we better send a
+        # notification to the person too.
+        member_addrs = contactEmailAddresses(person)
 
         subject = (
-            'Launchpad: %s is now a member of %s' % (user.name, team.name))
+            'Launchpad: %s is now a member of %s' % (person.name, team.name))
         templatename = 'new-member-notification.txt'
+        if person.isTeam():
+            templatename = 'new-member-notification-for-teams.txt'
 
         template = get_email_template(templatename)
         msg = template % {
             'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
-            'member': '%s (%s)' % (user.browsername, user.name),
+            'member': '%s (%s)' % (person.browsername, person.name),
             'team': '%s (%s)' % (team.browsername, team.name)}
         msg = MailWrapper().format(msg)
         simple_sendmail(from_addr, member_addrs, subject, msg)
@@ -899,7 +900,7 @@ def notify_team_join(event):
         return
 
     replacements = {
-        'person_name': "%s (%s)" % (user.browsername, user.name),
+        'person_name': "%s (%s)" % (person.browsername, person.name),
         'team_name': "%s (%s)" % (team.browsername, team.name),
         'reviewer_name': "%s (%s)" % (reviewer.browsername, reviewer.name),
         'url': canonical_url(membership)}
@@ -908,12 +909,12 @@ def notify_team_join(event):
     if membership.status in [approved, admin]:
         template = get_email_template('new-member-notification-for-admins.txt')
         subject = (
-            'Launchpad: %s is now a member of %s' % (user.name, team.name))
+            'Launchpad: %s is now a member of %s' % (person.name, team.name))
     elif membership.status == proposed:
         template = get_email_template('pending-membership-approval.txt')
         subject = (
-            "Launchpad: %s wants to join team %s" % (user.name, team.name))
-        headers = {"Reply-To": user.preferredemail.email}
+            "Launchpad: %s wants to join team %s" % (person.name, team.name))
+        headers = {"Reply-To": person.preferredemail.email}
     else:
         raise AssertionError(
             "Unexpected membership status: %s" % membership.status)
@@ -1026,7 +1027,7 @@ class QuestionNotification:
             if person == self.question.owner:
                 recipients.add(person)
             elif question_language not in person.getSupportedLanguages():
-               skipped.add(person)
+                skipped.add(person)
             elif not person.preferredemail and not list(person.languages):
                 # For teams without an email address nor a set of supported
                 # languages, only notify the members that actually speak the
@@ -1287,7 +1288,7 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
     }
 
     def initialize(self):
-        """Set the template that will be used based on the new comment action."""
+        """Set the template based on the new comment action."""
         QuestionModifiedDefaultNotification.initialize(self)
         if self.new_message:
             self.body_template = self.body_template_by_action.get(
@@ -1318,6 +1319,7 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
             self.question.title)
 
     def shouldNotify(self):
+        """Return True when the question is in an unsupported language."""
         return self.unsupported_language
 
     def getRecipients(self):
@@ -1327,7 +1329,8 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
     def getBody(self):
         """See QuestionNotification."""
         question = self.question
-        return get_email_template('question-unsupported-languages-added.txt') % {
+        return get_email_template(
+                'question-unsupported-languages-added.txt') % {
             'target_name': question.target.displayname,
             'question_id': question.id,
             'question_url': canonical_url(question),
@@ -1339,6 +1342,7 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
     """Notification sent when a linked bug status is changed."""
 
     def initialize(self):
+        """Create a notifcation for a linked bug status change."""
         assert ISQLObjectModifiedEvent.providedBy(self.event), (
             "Should only be subscribed for ISQLObjectModifiedEvent.")
         assert IBugTask.providedBy(self.event.object), (

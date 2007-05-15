@@ -18,6 +18,7 @@ from sqlobject import (
     SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
+from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -654,16 +655,14 @@ class Person(SQLBase, HasSpecificationsMixin):
         # This is our guarantee that _getDirectMemberIParticipateIn() will
         # never return None
         assert self.hasParticipationEntryFor(team), (
-            "Only call this method when you're sure the person is an indirect"
-            " member of the team.")
+            "%s doesn't seem to be a member/participant in %s"
+            % (self.name, team.name))
         assert team.isTeam(), "You can't pass a person to this method."
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
-        assert team is not None
         while team != self:
             path.insert(0, team)
             team = self._getDirectMemberIParticipateIn(team)
-            assert team is not None
         return path
 
     def _getDirectMemberIParticipateIn(self, team):
@@ -682,9 +681,14 @@ class Person(SQLBase, HasSpecificationsMixin):
             TeamParticipation.q.teamID == Person.q.id,
             TeamParticipation.q.personID == self.id)
         clauseTables = ['TeamMembership', 'TeamParticipation']
-        return Person.selectFirst(
+        member = Person.selectFirst(
             query, clauseTables=clauseTables, orderBy='datecreated')
-
+        assert member is not None, (
+            "%(person)s is an indirect member of %(team)s but %(person)s "
+            "is not a participant in any direct member of %(team)s"
+            % dict(person=self.name, team=team.name))
+        return member
+            
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
@@ -860,6 +864,28 @@ class Person(SQLBase, HasSpecificationsMixin):
             return False
         return self.is_valid_person_or_team
 
+    @property
+    def is_openid_enabled(self):
+        """See IPerson."""
+        if self.isTeam():
+            return False
+
+        if not self.is_valid_person:
+            return False
+
+        if config.launchpad.openid_users == 'all':
+            return True
+
+        openid_users = getUtility(IPersonSet).getByName(
+                config.launchpad.openid_users
+                )
+        assert openid_users is not None, \
+                'No Person %s found' % config.launchpad.openid_users
+        if self.inTeam(openid_users):
+            return True
+
+        return False
+
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
         """See IPerson."""
@@ -1008,12 +1034,13 @@ class Person(SQLBase, HasSpecificationsMixin):
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None):
+                  comment=None, force_team_add=False):
         """See IPerson."""
         assert self.isTeam(), "You cannot add members to a person."
         assert status in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED,
-                          TeamMembershipStatus.ADMIN]
+                          TeamMembershipStatus.ADMIN], (
+            "You can't add a member with this status: %s." % status.name)
 
         event = JoinTeamEvent
         if person.isTeam():
@@ -1021,11 +1048,13 @@ class Person(SQLBase, HasSpecificationsMixin):
                 "Team '%s' is a member of '%s'. As a consequence, '%s' can't "
                 "be added as a member of '%s'"
                 % (self.name, person.name, person.name, self.name))
-            # Teams can only be invited as members, meaning that one of the
-            # team's admins will have to accept the invitation before the team
-            # is made a member.
-            status = TeamMembershipStatus.INVITED
-            event = TeamInvitationEvent
+            # By default, teams can only be invited as members, meaning that
+            # one of the team's admins will have to accept the invitation 
+            # before the team is made a member. If force_team_add is True,
+            # though, then we'll add a team as if it was a person.
+            if not force_team_add:
+                status = TeamMembershipStatus.INVITED
+                event = TeamInvitationEvent
 
         old_status = None
         expires = self.defaultexpirationdate
@@ -1059,7 +1088,6 @@ class Person(SQLBase, HasSpecificationsMixin):
         assert tm.status == TeamMembershipStatus.INVITED
         tm.setStatus(
             TeamMembershipStatus.APPROVED, getUtility(ILaunchBag).user)
-        tm.syncUpdate()
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
@@ -1078,8 +1106,6 @@ class Person(SQLBase, HasSpecificationsMixin):
         else:
             tm.reviewer = reviewer
             tm.comment = comment
-
-        tm.syncUpdate()
 
     def getAdministratedTeams(self):
         """See IPerson."""
@@ -1158,6 +1184,11 @@ class Person(SQLBase, HasSpecificationsMixin):
         return self.allmembers.count()
 
     @property
+    def invitedmembers(self):
+        """See IPerson."""
+        return self.getMembersByStatus(TeamMembershipStatus.INVITED)
+
+    @property
     def deactivatedmembers(self):
         """See IPerson."""
         return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
@@ -1166,11 +1197,6 @@ class Person(SQLBase, HasSpecificationsMixin):
     def expiredmembers(self):
         """See IPerson."""
         return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
-
-    @property
-    def declinedmembers(self):
-        """See IPerson."""
-        return self.getMembersByStatus(TeamMembershipStatus.DECLINED)
 
     @property
     def proposedmembers(self):
@@ -1204,12 +1230,20 @@ class Person(SQLBase, HasSpecificationsMixin):
     @property
     def inactivemembers(self):
         """See IPerson."""
-        # See comment in Person.activememberships
+        # See comment in Person.activemembers
         orderBy = SQLConstant("person_sort_key(displayname, name)")
         return self.expiredmembers.union(self.deactivatedmembers,
-                                          orderBy=orderBy)
+                                         orderBy=orderBy)
 
-    # XXX: myactivememberships and activememberships are rather
+    @property
+    def pendingmembers(self):
+        """See IPerson."""
+        # See comment in Person.activemembers
+        orderBy = SQLConstant("person_sort_key(displayname, name)")
+        return self.proposedmembers.union(
+            self.invitedmembers, orderBy=orderBy)
+
+    # XXX: myactivememberships and getActiveMemberships are rather
     # confusingly named, and I just fixed bug 2871 as a consequence of
     # this. Is there a way to improve it?
     #   -- kiko, 2005-10-07
@@ -1224,16 +1258,34 @@ class Person(SQLBase, HasSpecificationsMixin):
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
-    @property
-    def activememberships(self):
+    def getActiveMemberships(self):
         """See IPerson."""
-        return TeamMembership.select('''
-            TeamMembership.team = %s AND status in %s AND
-            Person.id = TeamMembership.person
-            ''' % sqlvalues(self.id, [TeamMembershipStatus.APPROVED,
-                                      TeamMembershipStatus.ADMIN]),
-            clauseTables=['Person'],
-            orderBy=Person.sortingColumns)
+        return self._getMembershipsByStatuses(
+            [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED])
+
+    def getInactiveMemberships(self):
+        """See IPerson."""
+        return self._getMembershipsByStatuses(
+            [TeamMembershipStatus.EXPIRED, TeamMembershipStatus.DEACTIVATED])
+
+    def getInvitedMemberships(self):
+        """See IPerson."""
+        return self._getMembershipsByStatuses([TeamMembershipStatus.INVITED])
+
+    def getProposedMemberships(self):
+        """See IPerson."""
+        return self._getMembershipsByStatuses([TeamMembershipStatus.PROPOSED])
+
+    def _getMembershipsByStatuses(self, statuses):
+        assert self.isTeam(), 'This method is only available for teams.'
+        statuses = ",".join(str(status) for status in statuses)
+        query = """
+            TeamMembership.status IN (%s)
+            AND Person.id = TeamMembership.person
+            AND TeamMembership.team = %d
+            """ % (statuses, self.id)
+        return TeamMembership.select(
+            query, clauseTables=['Person'], orderBy=Person.sortingColumns)
 
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See IPerson."""
@@ -1640,7 +1692,7 @@ class PersonSet:
     def find(self, text, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            # See comment in Person.activememberships
+            # See comment in Person.activemembers
             orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
@@ -1657,7 +1709,7 @@ class PersonSet:
     def findPerson(self, text="", orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            # See comment in Person.activememberships
+            # See comment in Person.activemembers
             orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         base_query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
@@ -1682,7 +1734,7 @@ class PersonSet:
     def findTeam(self, text, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            # See comment in Person.activememberships
+            # See comment in Person.activemembers
             orderBy = SQLConstant("person_sort_key(displayname, name)")
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
@@ -1853,6 +1905,14 @@ class PersonSet:
         cur.execute('UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
                     % vars())
         skip.append(('gpgkey','owner'))
+
+        # Update OpenID. Just trash the authorizations for from_id - don't
+        # risk opening up auth wider than the user actually wants.
+        cur.execute("""
+                DELETE FROM OpenIdAuthorization WHERE person=%(from_id)d
+                """ % vars()
+                )
+        skip.append(('openidauthorization', 'person'))
 
         # Update WikiName. Delete the from entry for our internal wikis
         # so it can be reused. Migrate the non-internal wikinames.

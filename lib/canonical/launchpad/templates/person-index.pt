@@ -5,10 +5,18 @@
 
 <head>
     <tal:block metal:fill-slot="head_epilogue">
-      <tal:visible_emails condition="not: context/hide_email_addresses">
-        <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf"
-              tal:condition="context/is_valid_person_or_team" />
-      </tal:visible_emails>
+        <tal:valid_person_or_team condition="context/is_valid_person_or_team">
+            <link
+                tal:condition="not:context/hide_email_addresses" 
+                rel="meta" type="application/rdf+xml"
+                title="FOAF" href="+rdf" />
+            <link
+                tal:condition="context/is_openid_enabled"
+                tal:define="vhosts
+                    modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
+                rel="openid.server"
+                tal:attributes="href vhosts/openid/rooturl" />
+        </tal:valid_person_or_team>
     </tal:block>
 </head>
 
@@ -186,7 +194,7 @@
 
   <div class="right">
     <div class="section">
-    <div class="portlet">
+    <div class="portlet" id="membership-summary">
       <h2 tal:condition="not: context/isTeam">Contact details</h2>
       <h2 tal:condition="context/isTeam">Team and membership summary</h2>
       <table class="summary">

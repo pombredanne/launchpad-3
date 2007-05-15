@@ -238,6 +238,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         title=_("This is an active user and not a team."), readonly=True)
     is_valid_person_or_team = Bool(
         title=_("This is an active user or a team."), readonly=True)
+    is_openid_enabled = Bool(
+        title=_("This user can use Launchpad as an OpenID provider."),
+        readonly=True)
     is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -264,9 +267,6 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     myactivememberships = Attribute(
         "List of TeamMembership objects for Teams this Person is an active "
         "member of.")
-    activememberships = Attribute(
-        "List of TeamMembership objects for people who are active members "
-        "in this team.")
     teams_participated_in = Attribute(
         "Iterable of all Teams that this person is active in, recursive")
     teams_indirectly_participated_in = Attribute(
@@ -296,10 +296,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
-    declinedmembers = Attribute("List of members with DECLINED status")
     inactivemembers = Attribute(
         "List of members with EXPIRED or DEACTIVATED status")
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
+    invitedmembers = Attribute("List of members with INVITED status")
+    pendingmembers = Attribute(
+        "List of members with INVITED or PROPOSEDstatus")
     specifications = Attribute(
         "Any specifications related to this person, either because the are "
         "a subscriber, or an assignee, or a drafter, or the creator. "
@@ -406,6 +408,34 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     def personCannotHaveIcon(person):
         if person.icon is not None and not person.isTeam():
             raise Invalid('Only teams can have an icon.')
+
+    def getActiveMemberships():
+        """Return all active TeamMembership objects of this team.
+
+        Active TeamMemberships are the ones with the ADMIN or APPROVED status.
+
+        The results are ordered using Person.sortingColumns.
+        """
+
+    def getInvitedMemberships():
+        """Return all TeamMemberships of this team with the INVITED status.
+
+        The results are ordered using Person.sortingColumns.
+        """
+
+    def getInactiveMemberships():
+        """Return all inactive TeamMemberships of this team.
+
+        Inactive memberships are the ones with status EXPIRED or DEACTIVATED.
+
+        The results are ordered using Person.sortingColumns.
+        """
+
+    def getProposedMemberships():
+        """Return all TeamMemberships of this team with the PROPOSED status.
+
+        The results are ordered using Person.sortingColumns.
+        """
 
     def getBugContactPackages():
         """Return a list of packages for which this person is a bug contact.
@@ -595,12 +625,16 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """
 
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None):
+                  comment=None, force_team_add=False):
         """Add the given person as a member of this team.
 
         If the given person is already a member of this team we'll simply
         change its membership status. Otherwise a new TeamMembership is
         created with the given status.
+
+        If the person is actually a team and force_team_add is False, the
+        team will actually be invited to join this one. Otherwise the team
+        is added as if it were a person.
 
         The given status must be either Approved, Proposed or Admin.
 
