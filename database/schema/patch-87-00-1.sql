@@ -59,4 +59,4 @@ CREATE TABLE OpenIDSettings (
 );
 */
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (79, 13, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 00, 1);
