@@ -21,7 +21,9 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationGroup"
-        name="+index" />
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationGroup"
@@ -94,7 +96,9 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
-        name="+index" />
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:page
         name="+new"
