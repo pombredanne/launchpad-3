@@ -19,6 +19,7 @@ __all__ = [
     'PackageLocation',
     'PackageCopyError',
     'PackageCopier',
+    'LpQueryDistro'
     ]
 
 import apt_pkg
@@ -32,26 +33,20 @@ import tempfile
 
 from zope.component import getUtility
 
+from canonical.archiveuploader.utils import re_extract_src_version
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
     ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet)
+from canonical.launchpad.scripts.base import (
+    LaunchpadScript, LaunchpadScriptFailure)
+from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingPriority)
-
+    PackagePublishingPocket, PackagePublishingPriority,
+    DistributionReleaseStatus)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
-from canonical.launchpad.scripts.base import (LaunchpadScript,
-    LaunchpadScriptFailure)
-from canonical.lp import READ_COMMITTED_ISOLATION
-
-
-# XXX cprov 20060502: Redefining same regexp code from dak_utils,
-# we do not expose it via imports of this module. As soon as we
-# finish the redesign/cleanup of all scripts, all those expressions
-# will be defined here and dak_utils won't be necessary anymore.
-re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
 
 
 class ArchiveOverriderError(Exception):
@@ -1406,3 +1401,178 @@ class PackageCopier(LaunchpadScript):
 
             self.logger.info("Copied: %s" % binary_copied.title)
             return binary_copied
+
+
+class LpQueryDistro(LaunchpadScript):
+    """Main class for scripts/ftpmaster-tools/lp-query-distro.py."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialise dynamic 'usage' message and LaunchpadScript parent.
+
+        Also initialise the list 'allowed_arguments'.
+        """
+        self.allowed_actions = [
+            'current', 'development', 'archs', 'official_archs',
+            'nominated_arch_indep']
+        self.usage = '%%prog <%s>' % ' | '.join(self.allowed_actions)
+        LaunchpadScript.__init__(self, *args, **kwargs)
+
+    def add_my_options(self):
+        """Add 'distribution' and 'suite' context options."""
+        self.parser.add_option(
+            '-d', '--distribution', dest='distribution_name',
+            default='ubuntu', help='Context distribution name.')
+        self.parser.add_option(
+            '-s', '--suite', dest='suite_name', default=None,
+            help='Context suite name.')
+
+    def main(self):
+        """Main procedure, basically a runAction wrapper.
+
+        Execute the given and allowed action using the default presenter
+        (see self.runAction for further information).
+        """
+        self.runAction()
+
+    def _buildLocation(self):
+        """Build a PackageLocation object
+
+        The location will correspond to the given 'distribution' and 'suite',
+        Any PackageLocationError occurring at this point will be masked into
+        LaunchpadScriptFailure.
+        """
+        try:
+            self.location = PackageLocation(
+                distribution_name=self.options.distribution_name,
+                suite_name=self.options.suite_name)
+        except PackageLocationError, err:
+            raise LaunchpadScriptFailure(err)
+
+    def defaultPresenter(self, result):
+        """Default result presenter.
+
+        Directly prints result in the standard output (print).
+        """
+        print result
+
+    def runAction(self, presenter=None):
+        """Run a given initialised action (self.action_name).
+
+        It accepts an optional 'presenter' which will be used to
+        store/present the action result.
+
+        Ensure at least one argument was passed, known as 'action'.
+        Verify if the given 'action' is listed as an 'allowed_action'.
+        Raise LaunchpadScriptFailure if those requirements were not
+        accomplished.
+
+        It builds context 'location' object (see self._buildLocation).
+
+        It may raise LaunchpadScriptFailure is the 'action' is not properly
+        supported by the current code (missing corresponding property).
+        """
+        if presenter is None:
+            presenter = self.defaultPresenter
+
+        if len(self.args) != 1:
+            raise LaunchpadScriptFailure('<action> is required')
+
+        [self.action_name] = self.args
+
+        if self.action_name not in self.allowed_actions:
+            raise LaunchpadScriptFailure(
+                'Action "%s" is not supported' % self.action_name)
+
+        self._buildLocation()
+
+        try:
+            action_result = getattr(self, 'get_' + self.action_name)
+        except AttributeError:
+            raise AssertionError(
+                "No handler found for action '%s'" % self.action_name)
+
+        presenter(action_result)
+
+    def checkNoSuiteDefined(self):
+        """Raises LaunchpadScriptError if a suite location was passed.
+
+        It is re-used in action properties to avoid conflicting contexts,
+        i.e, passing an arbitrary 'suite' and asking for the CURRENT suite
+        in the context distribution.
+        """
+        if self.options.suite_name is not None:
+            raise LaunchpadScriptFailure(
+                "Action does not accept defined suite_name.")
+
+    # XXX cprov 20070420: should be implemented in IDistribution.
+    # raising NotFoundError instead. Bug #113563.
+    def getReleaseByStatus(self, releasestatus):
+        """Query context distribution for a distrorelese in a given status.
+
+        I may raise LaunchpadScriptError if no suitable distrorelease in a
+        given status was found.
+        """
+        for release in self.location.distribution.releases:
+            if release.releasestatus == releasestatus:
+                return release
+        raise LaunchpadScriptFailure(
+                "Could not find a %s distrorelease in %s"
+                % (status.name, self.location.distribution.name))
+
+    @property
+    def get_current(self):
+        """Return the name of the CURRENT distrorelease.
+
+        It is restricted for the context distribution.
+        It may raise LaunchpadScriptFailure if a suite was passed in the
+        command-line.
+        See self.getReleaseByStatus for further information
+        """
+        self.checkNoSuiteDefined()
+        release = self.getReleaseByStatus(
+            DistributionReleaseStatus.CURRENT)
+        return release.name
+
+    @property
+    def get_development(self):
+        """Return the name of the DEVELOPMENT distrorelease.
+
+        It is restricted for the context distribution.
+        It may raise LaunchpadScriptFailure if a suite was passed in the
+        command-line.
+        See self.getReleaseByStatus for further information
+        """
+        self.checkNoSuiteDefined()
+        release = self.getReleaseByStatus(
+            DistributionReleaseStatus.DEVELOPMENT)
+        return release.name
+
+    @property
+    def get_archs(self):
+        """Return a space-separated list of architecture tags.
+
+        It is restricted for the context distribution and suite.
+        """
+        architectures = self.location.distrorelease.architectures
+        return " ".join(arch.architecturetag for arch in architectures)
+
+    @property
+    def get_official_archs(self):
+        """Return a space-separated list of official architecture tags.
+
+        It is restricted to the context distribution and suite.
+        """
+        architectures = self.location.distrorelease.architectures
+        return " ".join(arch.architecturetag
+                        for arch in architectures
+                        if arch.official)
+
+    @property
+    def get_nominated_arch_indep(self):
+        """Return the nominated arch indep architecture tag.
+
+        It is restricted to the context distribution and suite.
+        """
+        release = self.location.distrorelease
+        return release.nominatedarchindep.architecturetag
+

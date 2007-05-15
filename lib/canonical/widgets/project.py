@@ -51,7 +51,8 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
             attributes = dict(
                 type='radio', name=self.name, value=option,
                 id='%s.option.%s' % (self.name, option))
-            if self.request.form.get(self.name, self.default_option) == option:
+            if self.request.form_ng.getOne(
+                     self.name, self.default_option) == option:
                 attributes['checked'] = 'checked'
             if option == 'project':
                 attributes['onclick'] = (
@@ -74,18 +75,19 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
 
     def getInputValue(self):
         """See zope.app.form.interfaces.IInputWidget."""
-        scope = self.request.form.get(self.name)
+        scope = self.request.form_ng.getOne(self.name)
         if scope == 'all':
             return None
         elif scope == 'project':
-            if not self.request.form.get(self.target_widget.name):
+            if not self.request.form_ng.getOne(self.target_widget.name):
                 self._error = LaunchpadValidationError(
                     'Please enter a project name')
                 raise self._error
             try:
                 return self.target_widget.getInputValue()
             except ConversionError:
-                entered_name = self.request.form.get("%s.target" % self.name)
+                entered_name = self.request.form_ng.getOne(
+                     "%s.target" % self.name)
                 self._error = LaunchpadValidationError(
                     "There is no project named '%s' registered in"
                     " Launchpad", entered_name)

@@ -1362,12 +1362,7 @@ body.applicationhome #container {padding-left: 20px;}
 /* IE6 and lower ignore the left padding, so we add extra positioning. */
 * html #portlets {left: 20px;}
 /* IE7 gets the padding right but overcalculates the left margin, so we use
-Brothercake's "Triple-X" CSS hack to add left padding for IE7 only. */
-div[id$="portlets"] {padding-left: 280px !important;}
-div[id$="portlets"]:not([class="xxx"]) {padding-left: 20px !important;}
-@media all and (min-width:0px) {
-  div[id$="portlets"] {padding-left: 280px !important;}
-}
+a conditional comment in main-template.pt to work around the above rule. */
 #portlets .portlet {width: 200px;}
 #singlecolumn {margin: 20px 20px 0 0;} /* test: front page, FAQ page */
 #mainarea #singlecolumn {margin-right: 0;}
