@@ -115,3 +115,11 @@ But Sample Person is now listed as its owner:
   ...     print t.renderContents()
   Sample Person
 
+That means that Sample Person is allowed to administer "his" group.
+
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/translations/groups/monolingua/')
+  >>> browser.getLink('Appoint')
+  <...+appoint'>
+
