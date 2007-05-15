@@ -57,11 +57,7 @@ This connection object can be used like any other connection:
     >>> cursor.execute('invalid sql that will abort the transaction')
     Traceback (most recent call last):
       ...
-    ProgrammingError: ERROR:  syntax error at or near "invalid"
-    LINE 1: invalid sql that will abort the transaction
-            ^
-    <BLANKLINE>
-    invalid sql that will abort the transaction
+    ProgrammingError: ERROR:  syntax error at or near "invalid"...
     >>> db.rollback()
 
 
