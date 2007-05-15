@@ -84,6 +84,17 @@ members.
     >>> membership.statusname
     'Invited'
 
+And nor will the admins of Landscape Developers be able to do any changes
+with the TeamMembership representing the invitation sent to the Launchpad
+team, not even if they manually craft the URL.
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/~landscape-developers/+member/launchpad')
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Invited member
+    Launchpad Developers (launchpad) has been invited to join this team, but
+    hasn't responded to the invitation yet.
 
 One thing to keep in mind is that we can't invite a team without active
 members.
@@ -102,6 +113,7 @@ the bug sice we could skip the notification sent to the team in this case.
     ...     TeamMembershipStatus.DEACTIVATED, ubuntu_translators.teamowner)
     >>> carlos_translators_membership.syncUpdate()
 
+    >>> browser.open('http://launchpad.dev/~landscape-developers/+addmember')
     >>> browser.getControl('New member').value = 'ubuntu-translators'
     >>> browser.getControl('Add Member').click()
 
