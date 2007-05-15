@@ -286,7 +286,7 @@ pas.py:_handleBinaryPAS for more information on why.
   >>> [a.architecturetag for a in
   ...       determineArchitecturesToBuild(firefox_pub, legal_archs, warty,
   ...                                     pas_verify)]
-  [u'hppa', u'i386']
+  [u'i386']
 
 
 Create and verify the new builds
@@ -317,7 +317,7 @@ Check that we only created new Build entries for the new hoary releases:
   hppa build of test-buildd-4 670 in ubuntu hoary UPDATES
   hppa build of test-buildd-6 672 in ubuntu hoary UPDATES
   i386 build of test-buildd-7 673 in ubuntu hoary UPDATES
-  
+
 
 And have a look at our arch-all release's build:
 
