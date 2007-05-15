@@ -409,7 +409,7 @@ another accepted candidate that conflicts with the proposed one.
 The upload will be rejected.
 
   >>> success, msgs = ed_src_dup.do_accept()
-  ERROR: BOOM:
+  ERROR: Exception while accepting:
   <BLANKLINE>
   >>> success
   False
@@ -417,7 +417,7 @@ The upload will be rejected.
   True
 
   >>> print ed_src_dup.rejection_message
-  Exception while accepting: This sourcepackagerelease is already accepted in hoary.
+  This sourcepackagerelease is already accepted in hoary.
 
 We rely on process-upload transaction rollback to not store bogus
 queue entry in the database.
@@ -531,7 +531,8 @@ Build creation is done based on the SourcePackageRelease object, step 4:
 
   >>> from canonical.lp.dbschema import PackagePublishingPocket
   >>> multibar_build = multibar_spr.createBuild(
-  ...     hoary['i386'], PackagePublishingPocket.RELEASE)
+  ...     hoary['i386'], PackagePublishingPocket.RELEASE,
+  ...     multibar_src_queue.archive)
 
   >>> multibar_build.buildstate.name
   'NEEDSBUILD'
