@@ -416,6 +416,23 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "Signer has no upload rights to this PPA"]
         self.assertEmail(contents)
 
+    def testUploadSignedByNonUbuntero(self):
+        """ """
+        name16 = getUtility(IPersonSet).getByName("name16")
+        self.assertEqual(name16.archive, None)
+
+        name16.activesignatures[0].active = False
+        self.layer.commit()
+
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes Rejected",
+            "PPA uploads must be signed by an 'ubuntero'."]
+        self.assertEmail(contents)
+
+
     def testUploadToUnknownDistribution(self):
         """Upload to unknown distribution gets proper rejection email."""
         upload_dir = self.queueUpload("bar_1.0-1", "biscuit")

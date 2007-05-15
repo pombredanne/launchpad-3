@@ -118,6 +118,9 @@ class AbstractUploadPolicy:
             if self.pocket != PackagePublishingPocket.RELEASE:
                 upload.reject(
                     "PPA uploads must be for the RELEASE pocket.")
+            if not upload.changes.signer.is_ubuntero:
+                upload.reject(
+                    "PPA uploads must be signed by an 'ubuntero'.")
         else:
             if not self.distrorelease.canUploadToPocket(self.pocket):
                 upload.reject(
