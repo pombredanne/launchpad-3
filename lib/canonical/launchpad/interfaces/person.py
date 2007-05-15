@@ -446,12 +446,11 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """Return the teams that cause this person to be a participant of the
         given team.
 
-        If there are more than one path leading this person to the given team,
+        If there is more than one path leading this person to the given team,
         only the one with the oldest teams is returned.
 
-        This method must not be called from a team object, because of
-        https://launchpad.net/bugs/30789. It also can't be called if this
-        person is not an indirect member of the given team.
+        This method must not be called if this person is not an indirect
+        member of the given team.
         """
 
     def isTeam():

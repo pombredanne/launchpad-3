@@ -217,6 +217,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def releases(self):
+        """See IDistribution."""
         # This is used in a number of places and given it's already
         # listified, why not spare the trouble of regenerating?
         ret = DistroRelease.selectBy(distribution=self)
@@ -225,19 +226,19 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def mentoring_offers(self):
         """See IDistribution"""
-        via_specs = MentoringOffer.select('''
+        via_specs = MentoringOffer.select("""
             Specification.distribution = %s AND
             Specification.id = MentoringOffer.specification
-            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ % sqlvalues(self.id) + """ AND NOT (
             """ + Specification.completeness_clause + ")",
             clauseTables=['Specification'],
             distinct=True)
-        via_bugs = MentoringOffer.select('''
+        via_bugs = MentoringOffer.select("""
             BugTask.distribution = %s AND
             BugTask.bug = MentoringOffer.bug AND
             BugTask.bug = Bug.id AND
             Bug.private IS FALSE
-            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ % sqlvalues(self.id) + """ AND NOT (
             """ + BugTask.completeness_clause +")",
             clauseTables=['BugTask', 'Bug'],
             distinct=True)
@@ -312,6 +313,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def currentrelease(self):
+        """See IDistribution."""
         # XXX: this should be just a selectFirst with a case in its
         # order by clause -- kiko, 2006-03-18
 
@@ -343,6 +345,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def bugCounter(self):
+        """See IDistribution."""
         counts = []
 
         severities = [BugTaskStatus.UNCONFIRMED,
@@ -406,6 +409,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def all_specifications(self):
+        """See IHasSpecifications."""
         return self.specifications(filter=[SpecificationFilter.ALL])
 
     def specifications(self, sort=None, quantity=None, filter=None):
@@ -895,6 +899,7 @@ class DistributionSet:
         return Distribution.get(distributionid)
 
     def count(self):
+        """See IDistributionSet."""
         return Distribution.select().count()
 
     def getDistros(self):
@@ -910,6 +915,7 @@ class DistributionSet:
 
     def new(self, name, displayname, title, description, summary, domainname,
             members, owner, main_archive, mugshot=None, logo=None, icon=None):
+        """See IDistributionSet."""
         return Distribution(
             name=name,
             displayname=displayname,

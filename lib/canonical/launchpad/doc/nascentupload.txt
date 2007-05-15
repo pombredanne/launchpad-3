@@ -35,6 +35,8 @@ managed archive.
   >>> insecure_policy = getPolicy(
   ...     name='insecure', distro='ubuntu', distrorelease='hoary')
 
+  >>> anything_policy = getPolicy(
+  ...     name='anything', distro='ubuntu', distrorelease='hoary')
 
 == Constructing a NascentUpload object ==
 
@@ -52,7 +54,7 @@ Otherwise a NascentFile containing a ChangesFile is ready to use.
 
   >>> quodlibet = NascentUpload(
   ...     datadir("quodlibet_0.13.1-1_i386.changes"),
-  ...     buildd_policy, mock_logger_quiet)
+  ...     anything_policy, mock_logger_quiet)
 
   >>> quodlibet.changes
   <canonical.archiveuploader.changesfile.ChangesFile ...>
@@ -73,6 +75,17 @@ collect all errors that may be generated. (see doc/nascentuploadfile.txt)
 After that there are also some overall_checks which helps to
 investigate if the files contained in the uploads have a sane
 relationship.
+
+Now, the upload of quodlibet was signed, and the "anything" policy
+verifies the signer. When we do signature verification, we parse the
+maintainer field of the changes file, and ensure that a Person record
+exists for it:
+
+  >>> quodlibet.changes.signer is not None
+  True
+  >>> p = quodlibet.changes.maintainer['person']
+  >>> p.name, p.displayname
+  (u'buildd', u'Ubuntu/i386 Build Daemon')
 
 
 === Sourceful Uploads ===
@@ -108,6 +121,14 @@ is 'native' (only a TARBALL, no diff + orig) or 'has_orig' (uses ORIG
   ed_0.2-20.dsc <...DSCFile...>
   ed_0.2-20.diff.gz <...SourceUploadFile...>
   ed_0.2.orig.tar.gz <...SourceUploadFile...>
+
+Since the sync_policy doesn't require the upload to be signed, we don't
+try and parse the maintainer for it:
+
+  >>> ed_source_upload.changes.signer is None
+  True
+  >>> print ed_source_upload.changes.maintainer
+  None
 
 ed_source upload is *sourceful*:
 
@@ -168,6 +189,13 @@ uploads, so they are alway False:
   >>> ed_binary_upload.hasorig
   False
 
+Since the binary policy lets things through unsigned, we don't try and
+parse the maintainer for them either:
+
+  >>> ed_binary_upload.changes.signer is None
+  True
+  >>> print ed_binary_upload.changes.maintainer
+  None
 
 Other Changesfile information are also checked across the uploads
 files specified. For instance, the changesfile Architecture list line
