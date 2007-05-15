@@ -2694,6 +2694,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_acc
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (59, 59, 'salgado-mugshot.jpg', 'image/jpeg', NULL, '2006-07-31 15:41:34.028627');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (60, 60, 'es.po', 'application/x-po', NULL, '2007-01-03 17:26:27.288968');
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (61, 61, 'language-pack-ar_1.0.dsc', 'application/dsc', NULL, '2007-02-15 14:26:27.288968');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (62, 62, 'iceweasel-1.0.dsc', 'application/dsc', NULL, '2007-05-14 23:21:11.121446');
 
 
 ALTER TABLE libraryfilealias ENABLE TRIGGER ALL;
@@ -2758,6 +2759,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, d
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (59, '2006-05-24 09:31:29.606407', NULL, 2, 'fabb42e197a6a7f222db0f1978c7cb232b87c5ee', false, 'whatever                        ');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (60, '2007-01-03 17:26:27.288968', NULL, 11793, 'df3a6670671781d5e08d7795ca1ada776815d87f', false, 'e8120781cd606202fd259a4f0d4585bb');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (61, '2007-02-15 14:26:27.288968', NULL, 100, 'df3a6670671781d5e08d7795ca1ada776815d87f', false, 'e8120781cd606202fd259a4f0d4585bb');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted, md5) VALUES (62, '2007-05-14 23:21:11.121446', NULL, 123, 'd06b970f258e57547ef1104fba3499eb4ab43ff6', false, '767e1635f55ff5e833410523decec438');
 
 
 ALTER TABLE libraryfilecontent ENABLE TRIGGER ALL;
@@ -3220,9 +3222,9 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (68, 'Launchpad Beta Testers Owner', 'q/esKTLj2ba0Bzu2Xdi1JA4zgC683EE3I1Vjm+hp4mY+xgikQ7YD1g==', NULL, NULL, 'launchpad-beta-owner', NULL, NULL, NULL, NULL, 1, NULL, '2007-01-31 06:56:25.096519', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (69, 'Launchpad Beta Testers', NULL, 68, 'People who are testing the new Launchpad "beta" UI.', 'launchpad-beta-testers', NULL, NULL, NULL, NULL, 1, NULL, '2007-01-31 06:57:54.592917', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243601, 'ShipIt Administrators', NULL, 1, 'ShipIt Administrators', 'shipit-admins', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-05 06:24:03.06971', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243602, 'No Team Memberships', 'PlPmrpS1styVUEK/lGn72zqxYYeZcLqKD3b5oD4/C6AyntMMFvSacw==', NULL, NULL, 'no-team-memberships', NULL, '''team'':3A,6A ''membership'':4A,7A ''no-team-membership'':1A', NULL, NULL, 1, NULL, '2007-02-19 11:17:57.755666', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243603, 'One Membership', '52kdKnxgzc0LWK2ltsED9SeqQcjZgDAj+wWlaRotx3BvsXJCH0AUdQ==', NULL, NULL, 'one-membership', NULL, '''one'':2A,4A ''membership'':3A,5A ''one-membership'':1A', NULL, NULL, 1, NULL, '2007-02-21 10:53:59.700105', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243604, 'Simple Team', NULL, 243603, 'This team should have only one member, the "One Membership" user.', 'simple-team', NULL, '''team'':3A,5A ''simpl'':2A,4A ''simple-team'':1A', NULL, NULL, 3, NULL, '2007-02-21 10:55:03.899255', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243602, 'No Team Memberships', 'PlPmrpS1styVUEK/lGn72zqxYYeZcLqKD3b5oD4/C6AyntMMFvSacw==', NULL, NULL, 'no-team-memberships', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-19 11:17:57.755666', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243603, 'One Membership', '52kdKnxgzc0LWK2ltsED9SeqQcjZgDAj+wWlaRotx3BvsXJCH0AUdQ==', NULL, NULL, 'one-membership', NULL, NULL, NULL, NULL, 1, NULL, '2007-02-21 10:53:59.700105', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, gotchi, hide_email_addresses, creation_rationale, creation_comment, registrant, gotchi_heading) VALUES (243604, 'Simple Team', NULL, 243603, 'This team should have only one member, the "One Membership" user.', 'simple-team', NULL, NULL, NULL, NULL, 3, NULL, '2007-02-21 10:55:03.899255', NULL, 'UTC', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -8550,6 +8552,7 @@ INSERT INTO sourcepackagename (id, name) VALUES (24, 'cdrkit');
 INSERT INTO sourcepackagename (id, name) VALUES (25, 'language-pack-de');
 INSERT INTO sourcepackagename (id, name) VALUES (26, 'iceweasel');
 
+
 ALTER TABLE sourcepackagename ENABLE TRIGGER ALL;
 
 
@@ -8601,6 +8604,7 @@ INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetyp
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (33, 54, 3, 8);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (34, 61, 3, 9);
 INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (35, 3, 1, 10);
+INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetype, id) VALUES (35, 62, 3, 11);
 
 
 ALTER TABLE sourcepackagereleasefile ENABLE TRIGGER ALL;
@@ -9421,6 +9425,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (53, 65, 'https://wiki.
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (54, 66, 'https://wiki.ubuntu.com/', 'DiogoMatsubara');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (55, 243602, 'https://wiki.ubuntu.com/', 'NoTeamMemberships');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (56, 243603, 'https://wiki.ubuntu.com/', 'OneMembership');
+
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;
 
