@@ -28,7 +28,7 @@ from canonical.database.sqlbase import quote
 from canonical.database.constants import UTC_NOW
 
 from canonical.archivepublisher.diskpool import poolify
-from canonical.archivepublisher.tagfiles import parse_tagfile
+from canonical.archiveuploader.tagfiles import parse_tagfile
 
 from canonical.lp.dbschema import (
     PackagePublishingStatus, BuildStatus, SourcePackageFormat,

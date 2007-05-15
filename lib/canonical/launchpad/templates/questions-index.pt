@@ -15,6 +15,12 @@
                         </ul>
                         <form class="central" action="" method="get"
                               tal:attributes="action request/URL">
+                          <input
+                            id="field.languages.1"
+                            type="hidden"
+                            name="field.languages"
+                            value="Preferred"
+                          />
                           <table>
                             <tbody>
                               <tr>

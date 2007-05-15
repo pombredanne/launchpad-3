@@ -15,8 +15,8 @@
 
       <div class="info"
             tal:replace="nothing">
-        <h5>Rosetta</h5>
-        <p><strong>Rosetta is a web-based system for translating open source software into any language.</strong>
+        <h5>Translations</h5>
+        <p><strong>Translations is a web-based system for translating open source software into any language.</strong>
           All you need to start translating is a web browser, a good knowledge of the application you're translating,
           and a thorough understanding of the English language</p>
       </div> <!-- info -->

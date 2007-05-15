@@ -17,7 +17,10 @@
         <allow attributes="id private bugtasks affected_pillars
                            subscriptions syncUpdate
                            date_last_updated getDirectSubscribers
-                           getIndirectSubscribers getNullBugTask" />
+                           getIndirectSubscribers mentoring_offers
+                           canMentor isMentor getNullBugTask
+                           is_complete"
+                           />
         <require
             permission="launchpad.View"
             attributes="datecreated name title description ownerID
@@ -30,7 +33,7 @@
                         isSubscribed messages getBugNotificationRecipients
                         hasBranch security_related tags getMessageChunks
                         isSubscribedToDupes getSubscribersFromDuplicates
-                        getAlsoNotifiedSubscribers getBugWatch
+                        getAlsoNotifiedSubscribers getBugWatch getBugTask
                         canBeNominatedFor getNominationFor getNominations"
             />
         <require
@@ -38,12 +41,17 @@
             attributes="addChangeNotification addCommentNotification addWatch
                         linkCVE unlinkCVE findCvesInText newMessage
                         linkMessage addBranch addAttachment unsubscribeFromDupes
-                        subscribe unsubscribe addNomination"
+                        subscribe unsubscribe addNomination
+                        expireNotifications"
             set_attributes="datecreated date_last_updated name title description
                             ownerID owner duplicateof communityscore
                             communitytimestamp hits hitstimestamp activityscore
                             activitytimestamp activity initial_message private
                             security_related tags"
+            />
+        <require
+            permission="launchpad.AnyPerson"
+            attributes="offerMentoring retractMentoring"
             />
     </content>
 
@@ -88,6 +96,12 @@
         permission="zope.Public"
         attribute="__call__"
         />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBug"
+        name="+listing-column"
+        template="../templates/bug-listing-column.pt"
+        permission="zope.Public" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
