@@ -80,6 +80,7 @@ __all__ = [
     'TeamNavigation',
     'TeamOverviewMenu',
     'TeamReassignmentView',
+    'TeamSpecsMenu',
     'UbunteroListView',
     ]
 
@@ -154,13 +155,13 @@ class BranchTraversalMixin:
     * '/~ddaa/bazaar/devel' points to the branch whose owner
     name is 'ddaa', whose product name is 'bazaar', and whose branch name
     is 'devel'.
-    
+
     * '/~sabdfl/+junk/junkcode' points to the branch whose
     owner name is 'sabdfl', with no associated product, and whose branch
     name is 'junkcode'.
 
     * '/~ddaa/+branch/bazaar/devel' redirects to '/~ddaa/bazaar/devel'
-    
+
     """
 
     @stepto('+branch')
@@ -171,7 +172,8 @@ class BranchTraversalMixin:
         branch_name = stepstogo.consume()
         if product_name is not None and branch_name is not None:
             branch = self.context.getBranch(product_name, branch_name)
-            return self.redirectSubTree(canonical_url(branch))
+            if branch:
+                return self.redirectSubTree(canonical_url(branch))
         raise NotFoundError
 
     def traverse(self, product_name):
@@ -383,7 +385,8 @@ class PersonFacets(StandardLaunchpadFacets):
 
     def answers(self):
         text = 'Answers'
-        summary = 'Questions that involves %s' % self.context.browsername
+        summary = (
+            'Questions that %s is involved with' % self.context.browsername)
         return Link('', text, summary)
 
     def translations(self):
@@ -432,14 +435,14 @@ class PersonBugsMenu(ApplicationMenu):
     usedfor = IPerson
     facet = 'bugs'
     links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'relatedbugs',
-             'softwarebugs']
+             'softwarebugs', 'mentoring']
 
     def relatedbugs(self):
-        text = 'Related'
+        text = 'List related bugs'
         return Link('', text, icon='bugs')
 
     def assignedbugs(self):
-        text = 'Assigned'
+        text = 'List assigned bugs'
         return Link('+assignedbugs', text, icon='bugs')
 
     def softwarebugs(self):
@@ -447,19 +450,17 @@ class PersonBugsMenu(ApplicationMenu):
         return Link('+packagebugs', text, icon='bugs')
 
     def reportedbugs(self):
-        text = 'Reported'
+        text = 'List reported bugs'
         return Link('+reportedbugs', text, icon='bugs')
 
     def subscribedbugs(self):
-        text = 'Subscribed'
+        text = 'List subscribed bugs'
         return Link('+subscribedbugs', text, icon='bugs')
 
-
-class TeamBugsMenu(PersonBugsMenu):
-
-    usedfor = ITeam
-    facet = 'bugs'
-    links = ['assignedbugs', 'relatedbugs', 'softwarebugs', 'subscribedbugs']
+    def mentoring(self):
+        text = 'Mentoring offered'
+        enabled = self.context.mentoring_offers
+        return Link('+mentoring', text, enabled=enabled, icon='info')
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -468,7 +469,7 @@ class PersonSpecsMenu(ApplicationMenu):
     facet = 'specifications'
     links = ['assignee', 'drafter', 'approver',
              'subscriber', 'registrant', 'feedback',
-             'workload', 'roadmap']
+             'workload', 'mentoring', 'roadmap']
 
     def registrant(self):
         text = 'Registrant'
@@ -502,6 +503,11 @@ class PersonSpecsMenu(ApplicationMenu):
             self.context.browsername)
         return Link('+specfeedback', text, summary, icon='info')
 
+    def mentoring(self):
+        text = 'Mentoring offered'
+        enabled = self.context.mentoring_offers
+        return Link('+mentoring', text, enabled=enabled, icon='info')
+
     def workload(self):
         text = 'Workload'
         summary = 'Show all specification work assigned'
@@ -511,6 +517,32 @@ class PersonSpecsMenu(ApplicationMenu):
         text = 'Roadmap'
         summary = 'Show recommended sequence of feature implementation'
         return Link('+roadmap', text, summary, icon='info')
+
+
+class TeamSpecsMenu(PersonSpecsMenu):
+
+    usedfor = ITeam
+    facet = 'specifications'
+
+    def mentoring(self):
+        target = '+mentoring'
+        text = 'Mentoring offered'
+        summary = 'Offers of mentorship for prospective team members'
+        return Link(target, text, summary=summary, icon='info')
+
+
+class TeamBugsMenu(PersonBugsMenu):
+
+    usedfor = ITeam
+    facet = 'bugs'
+    links = ['assignedbugs', 'relatedbugs', 'softwarebugs', 'subscribedbugs',
+             'mentorships']
+
+    def mentorships(self):
+        target = '+mentoring'
+        text = 'Mentoring offered'
+        summary = 'Offers of mentorship for prospective team members'
+        return Link(target, text, summary=summary, icon='info')
 
 
 class CommonMenuLinks:
@@ -535,8 +567,9 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['edit', 'branding', 'common_edithomepage',
              'editemailaddresses', 'editlanguages', 'editwikinames',
              'editircnicknames', 'editjabberids', 'editpassword',
-             'editsshkeys', 'editpgpkeys', 'codesofconduct', 'karma',
-             'administer', 'common_packages']
+             'editsshkeys', 'editpgpkeys',
+             'memberships', 'mentoringoffers',
+             'codesofconduct', 'karma', 'common_packages', 'administer',]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -594,6 +627,17 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
             u'in Launchpad' % self.context.browsername)
         return Link(target, text, summary, icon='info')
 
+    def memberships(self):
+        target = '+participation'
+        text = 'Show team participation'
+        return Link(target, text, icon='info')
+
+    def mentoringoffers(self):
+        target = '+mentoring'
+        text = 'Mentoring offered'
+        enabled = self.context.mentoring_offers
+        return Link(target, text, enabled=enabled, icon='info')
+
     @enabled_with_permission('launchpad.Edit')
     def editsshkeys(self):
         target = '+editsshkeys'
@@ -630,8 +674,10 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = ITeam
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'editemail', 'polls', 'add_poll', 'joinleave',
-             'reassign', 'common_packages']
+             'add_member', 'memberships', 'mugshots', 
+             'editemail', 'polls', 'add_poll',
+             'joinleave', 'mentorships', 'reassign', 'common_packages',
+             ]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -664,6 +710,24 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Add member'
         return Link(target, text, icon='add')
 
+    def memberships(self):
+        target = '+participation'
+        text = 'Show team participation'
+        return Link(target, text, icon='info')
+
+    def mentorships(self):
+        target = '+mentoring'
+        text = 'Mentoring available'
+        enabled = self.context.team_mentorships
+        summary = 'Offers of mentorship for prospective team members'
+        return Link(target, text, summary=summary, enabled=enabled,
+                    icon='info')
+
+    def mugshots(self):
+        target = '+mugshots'
+        text = 'Show group photo'
+        return Link(target, text, icon='people')
+
     def polls(self):
         target = '+polls'
         text = 'Show polls'
@@ -685,15 +749,20 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, summary, icon='mail')
 
     def joinleave(self):
-        if userIsActiveTeamMember(self.context):
+        team = self.context
+        enabled = True
+        if userIsActiveTeamMember(team):
             target = '+leave'
             text = 'Leave the Team' # &#8230;
             icon = 'remove'
         else:
+            if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+                # This is a restricted team; users can't join.
+                enabled = False
             target = '+join'
             text = 'Join the team' # &#8230;
             icon = 'add'
-        return Link(target, text, icon=icon)
+        return Link(target, text, icon=icon, enabled=enabled)
 
 
 class BaseListView:
@@ -1387,6 +1456,28 @@ class PersonView(LaunchpadView):
             categories.update(category for category in contrib['categories'])
         return sorted(categories, key=attrgetter('title'))
 
+    @property
+    def subscription_policy_description(self):
+        """Return the description of this team's subscription policy."""
+        team = self.context
+        assert team.isTeam(), (
+            'This method can only be called when the context is a team.')
+        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+            description = _(
+                "This is a restricted team; new members can only be added "
+                "by one of the team's administrators.")
+        elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+            description = _(
+                "This is a moderated team; all subscriptions are subjected "
+                "to approval by one of the team's administrators.")
+        elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+            description = _(
+                "This is an open team; any user can join and no approval "
+                "is required.")
+        else:
+            raise AssertionError('Unknown subscription policy.')
+        return description
+
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.
@@ -1428,6 +1519,17 @@ class PersonView(LaunchpadView):
     def findUserPathToTeam(self):
         assert self.user is not None
         return self.user.findPathToTeam(self.context)
+
+    def indirect_teams_via(self):
+        """Return a list of dictionaries, where each dictionary has a team
+        in which the person is an indirect member, and a path to membership
+        in that team.
+        """
+        return [{'team': team,
+                 'via': ', '.join(
+                    [viateam.displayname for viateam in
+                        self.context.findPathToTeam(team)[:-1]])}
+                for team in self.context.teams_indirectly_participated_in]
 
     def userIsParticipant(self):
         """Return true if the user is a participant of this team.
@@ -1791,12 +1893,25 @@ class PersonTranslationView(LaunchpadView):
                   for record in batchnav.currentBatch())
         if ids:
             cache = list(getUtility(IPOTemplateSet).getByIDs(ids))
+
         return batchnav
 
     @cachedproperty
     def translation_groups(self):
         """Return translation groups a person is a member of."""
         return list(self.context.translation_groups)
+
+    def should_display_message(self, pomsgset):
+        """Should a certain POMsgSet be displayed.
+
+        Return False if user is not logged in and message may contain
+        sensitive data such as email addresses.
+
+        Otherwise, return True.
+        """
+        if self.user:
+            return True
+        return not(pomsgset.potmsgset.hide_translations_from_anonymous)
 
 
 class PersonGPGView(LaunchpadView):
@@ -2046,7 +2161,8 @@ class TeamJoinView(PersonView):
         user = self.user
         context = self.context
 
-        if request.form.get('join') and self.userCanRequestToJoin():
+        notification = None
+        if 'join' in request.form and self.userCanRequestToJoin():
             policy = context.subscriptionpolicy
             user.join(context)
             if policy == TeamSubscriptionPolicy.MODERATED:
@@ -2054,11 +2170,16 @@ class TeamJoinView(PersonView):
             else:
                 notification = _(
                     'Successfully joined %s.' % context.displayname)
-        elif request.form.get('join'):
+        elif 'join' in request.form:
             notification = _('You cannot join %s.' % context.displayname)
+        elif 'goback' in request.form:
+            # User clicked on the 'Go back' button, so we'll simply redirect.
+            pass
         else:
-            raise UnexpectedFormData('No action specified')
-        request.response.addInfoNotification(notification)
+            raise UnexpectedFormData(
+                "Couldn't find any of the expected actions.")
+        if notification is not None:
+            request.response.addInfoNotification(notification)
         self.request.response.redirect(canonical_url(context))
 
 
@@ -2791,32 +2912,32 @@ class SearchSubscribedQuestionsView(SearchQuestionsView):
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
-                 
+
 class PersonAnswerContactForView(LaunchpadView):
     """View used to show all the IQuestionTargets that an IPerson is an answer
     contact for.
     """
-    
+
     @cachedproperty
     def direct_question_targets(self):
         """List of IQuestionTargets that the context is a direct answer contact.
-        
+
         Sorted alphabetically by title.
         """
         return sorted(
-            self.context.getDirectAnswerQuestionTargets(), 
+            self.context.getDirectAnswerQuestionTargets(),
             key=attrgetter('title'))
 
     @cachedproperty
     def team_question_targets(self):
         """List of IQuestionTargets for the context's team membership.
-        
+
         Sorted alphabetically by title.
         """
         return sorted(
-            self.context.getTeamAnswerQuestionTargets(), 
+            self.context.getTeamAnswerQuestionTargets(),
             key=attrgetter('title'))
-                        
+
     def showRemoveYourselfLink(self):
         """The link is only shown when the page is in the user's own profile."""
         return self.user == self.context
@@ -2833,42 +2954,42 @@ class PersonAnswersMenu(ApplicationMenu):
         summary="Projects for which %s is an answer contact for" % (
             self.context.displayname)
         return Link('+answer-contact-for', 'Answer contact for', summary)
-        
+
     def answered(self):
         summary = 'Questions answered by %s' % self.context.displayname
-        return Link('+answeredtickets', 'Answered', summary, icon='question')
+        return Link('+answeredquestions', 'Answered', summary, icon='question')
 
     def assigned(self):
         summary = 'Questions assigned to %s' % self.context.displayname
-        return Link('+assignedtickets', 'Assigned', summary, icon='question')
+        return Link('+assignedquestions', 'Assigned', summary, icon='question')
 
     def created(self):
         summary = 'Questions asked by %s' % self.context.displayname
-        return Link('+createdtickets', 'Asked', summary, icon='question')
+        return Link('+createdquestions', 'Asked', summary, icon='question')
 
     def commented(self):
         summary = 'Questions commented on by %s' % (
             self.context.displayname)
-        return Link('+commentedtickets', 'Commented', summary, icon='question')
+        return Link('+commentedquestions', 'Commented', summary, icon='question')
 
     def need_attention(self):
         summary = 'Questions needing %s attention' % (
             self.context.displayname)
-        return Link('+needattentiontickets', 'Need attention', summary,
+        return Link('+needattentionquestions', 'Need attention', summary,
                     icon='question')
 
     def subscribed(self):
         text = 'Subscribed'
         summary = 'Questions subscribed to by %s' % (
                 self.context.displayname)
-        return Link('+subscribedtickets', text, summary, icon='question')
+        return Link('+subscribedquestions', text, summary, icon='question')
 
 
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
     extra_columns = ('author', 'product', 'role')
-    
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForPerson(
             self.context, self.selected_lifecycle_status)
@@ -2895,7 +3016,7 @@ class PersonAuthoredBranchesView(BranchListingView):
 
     extra_columns = ('product',)
     title_prefix = 'Authored'
-    
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
             self.context, self.selected_lifecycle_status)
@@ -2906,7 +3027,7 @@ class PersonRegisteredBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
     title_prefix = 'Registered'
-    
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
             self.context, self.selected_lifecycle_status)
@@ -2917,7 +3038,7 @@ class PersonSubscribedBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
     title_prefix = 'Subscribed'
-    
+
     def _branches(self):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
             self.context, self.selected_lifecycle_status)
@@ -2930,4 +3051,4 @@ class PersonTeamBranchesView(LaunchpadView):
     def teams_with_branches(self):
         return [team for team in self.context.teams_participated_in
                 if team.branches.count() > 0]
-    
+

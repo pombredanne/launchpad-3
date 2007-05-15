@@ -29,7 +29,7 @@
         This link should appear in the appropriate widget description,
         but cannot because of bug #72730.
       </tal:comment>
-      <p><a href="/people/+editlanguages">Change your
+      <p><a href="/people/+me/+editlanguages">Change your
         preferred languages</a> to modify the list of languages available
         for writing the question.
       </p>

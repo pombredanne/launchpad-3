@@ -84,11 +84,9 @@ getByName() also accepts an argument to ignore inactive products.
 You can also use the IProductSet to see some statistics on products.
 
     >>> print productset.count_translatable()
-    2
-    >>> print productset.count_bounties()
-    2
+    3
     >>> print productset.count_buggy()
-    5
+    3
     >>> print productset.count_reviewed()
     1
 
@@ -164,6 +162,20 @@ None will of course be returned.
     >>> firefox.bugtracker = None
     >>> firefox.getExternalBugTracker() is None
     True
+
+
+== Answer Tracking ==
+
+Firefox uses the Answer Tracker as the official application to provide
+answers to questions.
+
+    >>> firefox.official_answers
+    True
+    
+Alsa does not use Launchpad to track answers.
+
+    >>> alsa.official_answers
+    False
 
 
 == Product Creation ==

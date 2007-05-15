@@ -11,7 +11,8 @@ import os
 import re
 import unittest
 
-from BeautifulSoup import BeautifulSoup, Comment, NavigableString
+from BeautifulSoup import (BeautifulSoup, Comment, Declaration,
+    NavigableString, PageElement, ProcessingInstruction, Tag)
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.testbrowser.testing import Browser
@@ -102,27 +103,55 @@ def find_main_content(content):
     return soup.find(attrs={'id': 'singlecolumn'}) # single-column page
 
 
-def extract_text(soup):
+
+IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
+ELEMENTS_INTRODUCING_NEWLINE = [
+    'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'pre', 'dl',
+    'div', 'noscript', 'blockquote', 'form', 'hr', 'table', 'fieldset',
+    'address', 'li', 'dt', 'dd', 'th', 'td', 'caption', 'br']
+
+
+NEWLINES_RE = re.compile(u'\n+')
+LEADING_AND_TRAILING_SPACES_RE = re.compile(u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
+TABS_AND_SPACES_RE = re.compile(u'[ \t]+')
+NBSP_RE = re.compile(u'&nbsp;|&#160;')
+
+
+def extract_text(content):
     """Return the text stripped of all tags.
 
-    >>> soup = BeautifulSoup(
-    ...    '<html><!-- comment --><h1>Title</h1><p>foo bar</p></html>')
-    >>> extract_text(soup)
-    u'Titlefoo bar'
+    All runs of tabs and spaces are replaced by a single space and runs of
+    newlines are replaced by a single newline. Leading and trailing white
+    spaces is stripped.
     """
-    # XXX Tim Penhey 22-01-2007
-    # At the moment this does not nicely give whitespace between
-    # tags that would have visual separation when rendered.
-    # eg. <p>foo</p><p>bar</p>
-    result = u''
-    for node in soup:
-        if isinstance(node, Comment):
-            pass
+    if not isinstance(content, PageElement):
+        soup = BeautifulSoup(content)
+    else:
+        soup = content
+
+    result = []
+    nodes = list(soup)
+    while nodes:
+        node = nodes.pop(0)
+        if type(node) in IGNORED_ELEMENTS:
+            continue
         elif isinstance(node, NavigableString):
-            result = result + unicode(node)
+            result.append(unicode(node))
         else:
-            result = result + extract_text(node)
-    return result
+            if isinstance(node, Tag):
+                if node.name.lower() in ELEMENTS_INTRODUCING_NEWLINE:
+                    result.append(u'\n')
+            # Process this node's children next.
+            nodes[0:0] = list(node)
+
+    text = u''.join(result)
+    text = NBSP_RE.sub(' ', text)
+    text = TABS_AND_SPACES_RE.sub(' ', text)
+    text = LEADING_AND_TRAILING_SPACES_RE.sub('', text)
+    text = NEWLINES_RE.sub('\n', text)
+
+    # Remove possible newlines at beginning and end.
+    return text.strip()
 
 
 # XXX cprov 20070207: This function seems to be more specific to a particular
@@ -144,6 +173,25 @@ def parse_relationship_section(content):
         else:
             content = whitespace_re.sub(' ', li.string.strip())
             print 'TEXT: "%s"' % content
+
+
+def print_tab_links(content):
+    """Print tabs url or 'Unavailable' if there isn't one."""
+    chooser = find_tag_by_id(content, 'applicationchooser')
+    tabs = chooser.findAll('li')
+    for tab in tabs:
+        if 'current' in tab['class']:
+            print '%s: %s' % (tab.a.string, tab.a['href'])
+        else:
+            print '%s: Unavailable' % (tab.string,)
+
+
+def print_action_links(content):
+    """Print action menu urls."""
+    actions = find_portlet(content, 'Actions')
+    entries = actions.findAll('li')
+    for entry in entries:
+        print '%s: %s' % (entry.a.string, entry.a['href'])
 
 
 def setUpGlobs(test):
@@ -173,6 +221,8 @@ def setUpGlobs(test):
     test.globs['find_main_content'] = find_main_content
     test.globs['extract_text'] = extract_text
     test.globs['parse_relationship_section'] = parse_relationship_section
+    test.globs['print_tab_links'] = print_tab_links
+    test.globs['print_action_links'] = print_action_links
 
 
 class PageStoryTestCase(unittest.TestCase):
@@ -303,7 +353,6 @@ def test_suite():
 
     for storydir in stories:
         suite.addTest(PageTestSuite(storydir))
-    suite.addTest(doctest.DocTestSuite())
     return suite
 
 if __name__ == '__main__':

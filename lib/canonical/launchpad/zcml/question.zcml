@@ -27,8 +27,7 @@
         permission="launchpad.AnyPerson"
         attributes="requestInfo giveAnswer expireQuestion addComment
                     subscribe unsubscribe"
-        set_attributes="title description datedue product distribution
-                        sourcepackagename language" />
+        set_attributes="title description datedue target language" />
     <require
         permission="launchpad.Moderate"
         attributes="reject" />
@@ -54,6 +53,11 @@
     provides="canonical.launchpad.interfaces.IQuestionTarget"
     factory="canonical.launchpad.components.question.question_to_questiontarget" />
 
+  <adapter
+    for="canonical.launchpad.interfaces.IQuestion"
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    factory="canonical.launchpad.browser.QuestionSOP" />
+    
   <browser:menus
       module="canonical.launchpad.browser"
       classes="QuestionContextMenu QuestionSetContextMenu"
@@ -65,7 +69,7 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.IQuestion"
-    path_expression="string:+ticket/${id}"
+    path_expression="string:+question/${id}"
     attribute_to_parent="target"
     rootsite="answers"
     />
@@ -116,19 +120,15 @@
     template="../templates/question-subscription.pt"
     for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.QuestionSubscriptionView"
-    permission="launchpad.AnyPerson" />
-
-  <browser:generalform
+    permission="launchpad.AnyPerson"
+    />
+  <browser:page
     name="+makebug"
-    schema="canonical.launchpad.interfaces.IBug"
     for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.QuestionMakeBugView"
-    label="Create a bug based on question"
-    fields="title description"
-    arguments="title description"
     permission="launchpad.AnyPerson"
-    template="../templates/question-makebug.pt" />
-
+    template="../templates/question-makebug.pt"
+    />
   <browser:page
     name="+edit"
     for="canonical.launchpad.interfaces.IQuestion"
@@ -183,7 +183,7 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.IQuestionSet"
-    path_expression="string:support"
+    path_expression="string:questions"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     rootsite="answers"
     />
@@ -210,7 +210,7 @@
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionSet"
     class="canonical.launchpad.browser.SearchAllQuestionsView"
-    name="+tickets"
+    name="+questions"
     permission="zope.Public"
     />
 

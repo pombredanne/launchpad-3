@@ -65,6 +65,25 @@ These are parsed into webapp.vhost.allvhosts.
     ----
 
 
+The hostnames and alternative hostnames for all virtual hosts are
+collected into a set.  This provides a quick way to determine if a
+hostname is handled by this Launchpad instance:
+
+    >>> for hostname in sorted(allvhosts.hostnames):
+    ...     print hostname
+    answers.launchpad.dev
+    blueprints.launchpad.dev
+    bugs.launchpad.dev
+    code.launchpad.dev
+    launchpad.dev
+    localhost
+    shipit.edubuntu.dev
+    shipit.kubuntu.dev
+    shipit.ubuntu.dev
+    translations.launchpad.dev
+    xmlrpc.launchpad.dev
+
+
 LaunchpadRequestPublicationFactory chooses the right request and publication to
 use by looking at the Host header. If we pass in the main Launchpad
 site host name, MainLaunchpadPublication will be chosen.

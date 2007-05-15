@@ -15,7 +15,7 @@ these CDs are sent to the user.
   >>> from canonical.launchpad.database import ShippingRun
   >>> from canonical.launchpad.interfaces import (
   ...    IStandardShipItRequestSet, IShippingRequestSet, IPersonSet,
-  ...    IShippingRequest, ILaunchBag, IShipmentSet, ShippingRequestPriority)
+  ...    IShippingRequest, ILaunchBag, ShippingRequestPriority)
   >>> requestset = getUtility(IShippingRequestSet)
   >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
@@ -165,12 +165,12 @@ We have 16 requests, and two of them are cancelled
    (5, u'ddaa'), (6, u'cprov'), (7, u'debonzi'), (12, u'jdub'),
    (13, u'shipit-admins'), (14, u'jblack'), (15, u'ddaa'),
    (16, u'jordi'), (17, u'jblack'), (18, u'ddaa'), (19, u'shipit-admins'),
-   (20L, u'name16')]
+   (20, u'sabdfl'), (21L, u'name16')]
 
   >>> cancelled = ShippingRequestStatus.CANCELLED
   >>> sorted((shipreq.id, shipreq.recipient.name) 
   ...        for shipreq in requestset.search(status=cancelled))
-  [(6, u'cprov'), (20L, u'name16')]
+  [(6, u'cprov'), (21L, u'name16')]
 
 Two of them are pending review, because their recipients asked for extra CDs.
 
@@ -207,21 +207,27 @@ of a given distrorelease (or both, obviously).
    (u'James Blackwell', 17), (u'ShipIt Administrators', 19)]
 
   >>> from canonical.lp.dbschema import ShipItDistroRelease
-  >>> dapper = ShipItDistroRelease.DAPPER
+  >>> feisty = ShipItDistroRelease.FEISTY
   >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distrorelease=dapper)]
+  ...  for shipreq in requestset.search(distrorelease=feisty)]
   [(u'Robert Collins', 4), (u'No Privileges Person', 1),
-   (u'Celso Providelo', 6), (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
+   (u'Celso Providelo', 6), (u'Mark Shuttleworth', 20),
+   (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
    (u'Daniel Henrique Debonzi', 7), (u'David Allouche', 18),
    (u'Jordi Mallach', 16), (u'Jeff Waugh', 12),
    (u'ShipIt Administrators', 13), (u'James Blackwell', 17),
-   (u'Stuart Bishop', 2), (u'Foo Bar', 20L)]
+   (u'Stuart Bishop', 2), (u'Foo Bar', 21L)]
 
   >>> edubuntu = ShipItFlavour.EDUBUNTU
   >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distrorelease=dapper, flavour=edubuntu)]
+  ...  for shipreq in requestset.search(distrorelease=feisty, flavour=edubuntu)]
   [(u'David Allouche', 18), (u'Jordi Mallach', 16),
    (u'ShipIt Administrators', 13)]
+
+  >>> edgy = ShipItDistroRelease.EDGY
+  >>> [(shipreq.recipient.displayname , shipreq.id)
+  ...  for shipreq in requestset.search(distrorelease=edgy)]
+  [(u'ShipIt Administrators', 19)]
 
 
 Another way of searching is by using any part of the recipient's name or the
@@ -241,8 +247,40 @@ beginning of his email address.
   ['info@shipit.ubuntu.com']
 
 
-Exporting requests
-------------------
+== Standard request templates ==
+
+We want most of the people to use the standard options we provide when making
+new requests, because if we give them a text field for entering the quantity,
+lots of people will just enter as many as they can, just because they can.
+
+These options are presented as a set of radio buttons and their visibility
+changes according to the logged in user. That is, some users get to see all
+options while others can see only the options with at most N CDs.
+
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> sabdfl.is_trusted_on_shipit
+    True
+    >>> optionset = getUtility(IStandardShipItRequestSet)
+    >>> for option in optionset.getByFlavour(ShipItFlavour.UBUNTU, sabdfl):
+    ...     print option.description
+    1 Ubuntu CD (1 64-bit PC Edition)
+    1 Ubuntu CD (1 Mac Edition)
+    1 Ubuntu CD (1 PC Edition)
+    5 Ubuntu CDs (5 PC Edition)
+    10 Ubuntu CDs (8 PC Edition, 1 64-bit PC Edition, 1 Mac Edition)
+    10 Ubuntu CDs (10 PC Edition)
+
+    >>> jdub = getUtility(IPersonSet).getByName('jdub')
+    >>> jdub.is_trusted_on_shipit
+    False
+    >>> for option in optionset.getByFlavour(ShipItFlavour.UBUNTU, jdub):
+    ...     print option.description
+    1 Ubuntu CD (1 64-bit PC Edition)
+    1 Ubuntu CD (1 Mac Edition)
+    1 Ubuntu CD (1 PC Edition)
+    5 Ubuntu CDs (5 PC Edition)
+
+== Exporting requests ==
 
 When exporting requests, we'll want to get all approved requests that weren't
 approved yet, with a given priority. This is done using the
@@ -339,34 +377,6 @@ shipped, by running the shipit-exports cronscript.
   >>> run.requests[0].highpriority
   False
 
-Since we're now allowing shipit admins to make requests for Edgy CDs, we need
-to have a separate export containing only Edgy requests. Similarly, these
-Edgy requests won't be included in the default export.
-
-  >>> len(requestset.getUnshippedRequestsIDs(ShippingRequestPriority.NORMAL,
-  ...                                        ShipItDistroRelease.EDGY))
-  1
-
-  >>> args = '-q --priority=normal --distrorelease=edgy'
-  >>> process = subprocess.Popen(
-  ...     'cronscripts/shipit-exports.py %s' % args, shell=True,
-  ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  >>> (out, err) = process.communicate()
-  >>> out, err
-  ('', '')
-  >>> process.returncode
-  0
-
-  >>> transaction.commit()
-  >>> flush_database_updates()
-  >>> len(requestset.getUnshippedRequestsIDs(ShippingRequestPriority.NORMAL,
-  ...                                        ShipItDistroRelease.EDGY))
-  0
-  >>> run = ShippingRun.select(orderBy='-datecreated', limit=1)[0]
-  >>> sorted([request.id for request in run.requests])
-  [19]
-
-
 Generating reports
 ------------------
 
@@ -384,27 +394,6 @@ ShipItConstants.current_distrorelease.
   ...     current_release_only=False)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
-                          Country: Antarctica
-             Total Shipped Ubuntu: 50
-            Total Shipped Kubuntu: 50
-           Total Shipped Edubuntu: 50
-                    Total Shipped: 150
-           Shipped Ubuntu x86 CDs: 50
-         Shipped Ubuntu AMD64 CDs: 0
-           Shipped Ubuntu PPC CDs: 0
-          Shipped Kubuntu x86 CDs: 50
-        Shipped Kubuntu AMD64 CDs: 0
-          Shipped Kubuntu PPC CDs: 0
-         Shipped Edubuntu x86 CDs: 50
-       Shipped Edubuntu AMD64 CDs: 0
-         Shipped Edubuntu PPC CDs: 0
-            Normal-prio shipments: 1
-              High-prio shipments: 0
-             Average request size: 150
-        Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 59.52%
-                        Continent: Antarctica
-  ------------------------------------------------------------ Line 2
                           Country: Bermuda
              Total Shipped Ubuntu: 10
             Total Shipped Kubuntu: 0
@@ -423,9 +412,9 @@ ShipItConstants.current_distrorelease.
               High-prio shipments: 0
              Average request size: 10
         Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 3.97%
+  Percentage of total shipped CDs: 9.80%
                         Continent: North America
-  ------------------------------------------------------------ Line 3
+  ------------------------------------------------------------ Line 2
                           Country: British Indian Ocean Territory
              Total Shipped Ubuntu: 25
             Total Shipped Kubuntu: 11
@@ -444,9 +433,9 @@ ShipItConstants.current_distrorelease.
               High-prio shipments: 1
              Average request size: 10
         Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 16.27%
+  Percentage of total shipped CDs: 40.20%
                         Continent: Asia
-  ------------------------------------------------------------ Line 4
+  ------------------------------------------------------------ Line 3
                           Country: Burkina Faso
              Total Shipped Ubuntu: 10
             Total Shipped Kubuntu: 0
@@ -465,9 +454,9 @@ ShipItConstants.current_distrorelease.
               High-prio shipments: 0
              Average request size: 10
         Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 3.97%
+  Percentage of total shipped CDs: 9.80%
                         Continent: Africa
-  ------------------------------------------------------------ Line 5
+  ------------------------------------------------------------ Line 4
                           Country: China
              Total Shipped Ubuntu: 1
             Total Shipped Kubuntu: 0
@@ -486,9 +475,9 @@ ShipItConstants.current_distrorelease.
               High-prio shipments: 0
              Average request size: 1
         Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 0.40%
+  Percentage of total shipped CDs: 0.98%
                         Continent: Asia
-  ------------------------------------------------------------ Line 6
+  ------------------------------------------------------------ Line 5
                           Country: France
              Total Shipped Ubuntu: 0
             Total Shipped Kubuntu: 10
@@ -507,9 +496,9 @@ ShipItConstants.current_distrorelease.
               High-prio shipments: 1
              Average request size: 5
         Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 4.37%
+  Percentage of total shipped CDs: 10.78%
                         Continent: Europe
-  ------------------------------------------------------------ Line 7
+  ------------------------------------------------------------ Line 6
                           Country: Heard Island and McDonald Islands
              Total Shipped Ubuntu: 5
             Total Shipped Kubuntu: 0
@@ -528,9 +517,9 @@ ShipItConstants.current_distrorelease.
               High-prio shipments: 0
              Average request size: 5
         Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 1.98%
+  Percentage of total shipped CDs: 4.90%
                         Continent: Antarctica
-  ------------------------------------------------------------ Line 8
+  ------------------------------------------------------------ Line 7
                           Country: United States
              Total Shipped Ubuntu: 24
             Total Shipped Kubuntu: 0
@@ -549,7 +538,7 @@ ShipItConstants.current_distrorelease.
               High-prio shipments: 0
              Average request size: 24
         Approved CDs (percentage): 100.00%
-  Percentage of total shipped CDs: 9.52%
+  Percentage of total shipped CDs: 23.53%
                         Continent: North America
 
   >>> csv_file = requestset.generateCountryBasedReport(
@@ -708,9 +697,6 @@ ShipItConstants.current_distrorelease.
   ------------------------------------------------------------ Line 5
         Number of CDs: 24
   Number of Shipments: 2
-  ------------------------------------------------------------ Line 6
-        Number of CDs: 150
-  Number of Shipments: 1
 
   >>> csv_file = requestset.generateShipmentSizeBasedReport(
   ...     current_release_only=True)

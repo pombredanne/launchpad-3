@@ -8,11 +8,12 @@ import os.path
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
+from zope.schema import ValidationError
 
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IDistroRelease, IPersonSet,
-        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
+        IBug, IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError,
@@ -103,7 +104,7 @@ class EmailCommand:
                         num_arguments_expected=self._numberOfArguments,
                         num_arguments_got=num_arguments_got))
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """Converts the string argument to Python objects.
 
         Returns a dict with names as keys, and the Python objects as
@@ -167,7 +168,7 @@ class EditEmailCommand(EmailCommand):
     def execute(self, context, current_event):
         """See IEmailCommand."""
         self._ensureNumberOfArguments()
-        args = self.convertArguments()
+        args = self.convertArguments(context)
 
         edited_fields = set()
         if ISQLObjectModifiedEvent.providedBy(current_event):
@@ -202,7 +203,7 @@ class PrivateEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         private_arg = self.string_args[0]
         if private_arg == 'yes':
@@ -221,7 +222,7 @@ class SecurityEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         [security_flag] = self.string_args
         if security_flag == 'yes':
@@ -329,9 +330,35 @@ class SummaryEmailCommand(EditEmailCommand):
 
         return EditEmailCommand.execute(self, bug, current_event)
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         return {'title': self.string_args[0]}
+
+
+class DuplicateEmailCommand(EditEmailCommand):
+    """Marks a bug as a duplicate of another bug."""
+
+    implements(IBugEditEmailCommand)
+    _numberOfArguments = 1
+
+    def convertArguments(self, context):
+        """See EmailCommand."""
+        [bug_id] = self.string_args
+        if bug_id == 'no':
+            # 'no' is a special value for unmarking a bug as a duplicate.
+            return {'duplicateof': None}
+        try:
+            bug = getUtility(IBugSet).getByNameOrID(bug_id)
+        except NotFoundError:
+            raise EmailProcessingError(
+                get_error_message('no-such-bug.txt', bug_id=bug_id))
+        duplicate_field = IBug['duplicateof'].bind(context)
+        try:
+            duplicate_field.validate(bug)
+        except ValidationError, error:
+            raise EmailProcessingError(error.doc())
+
+        return {'duplicateof': bug}
 
 
 class CVEEmailCommand(EmailCommand):
@@ -485,12 +512,12 @@ class AffectsEmailCommand(EmailCommand):
         except BugTargetNotFound, error:
             raise EmailProcessingError(unicode(error))
         event = None
-        bugtask = self.getBugTask(bug, bug_target)
+        bugtask = bug.getBugTask(bug_target)
         if (bugtask is None and
             IDistributionSourcePackage.providedBy(bug_target)):
             # If there's a distribution task with no source package, use
             # that one.
-            bugtask = self.getBugTask(bug, bug_target.distribution)
+            bugtask = bug.getBugTask(bug_target.distribution)
             if bugtask is not None:
                 bugtask_before_edit = Snapshot(
                     bugtask, providing=IDistroBugTask)
@@ -526,7 +553,7 @@ class AffectsEmailCommand(EmailCommand):
                 "A product series can't have a source package.")
             product = release.product
             general_target = product
-        general_task = self.getBugTask(bug, general_target)
+        general_task = bug.getBugTask(general_target)
         if general_task is None:
             # A release task has to have a corresponding
             # distribution/product task.
@@ -545,10 +572,10 @@ class AffectsEmailCommand(EmailCommand):
 
         if nomination.isApproved():
             if sourcepackagename:
-                return self.getBugTask(
-                    bug, release.getSourcePackage(sourcepackagename))
+                return bug.getBugTask(
+                    release.getSourcePackage(sourcepackagename))
             else:
-                return self.getBugTask(bug, release)
+                return bug.getBugTask(release)
         else:
             # We can't return a nomination, so return the
             # distribution/product bugtask instead.
@@ -580,19 +607,6 @@ class AffectsEmailCommand(EmailCommand):
             assert False, "Not a valid bug target: %r" % bug_target
 
 
-    #XXX: This method should be moved to helpers.py or BugTaskSet.
-    #     -- Bjorn Tillenius, 2005-06-10
-    def getBugTask(self, bug, target):
-        """Returns a bug task that has the path as a target.
-
-        Returns None if no such bugtask is found.
-        """
-        for bugtask in bug.bugtasks:
-            if bugtask.target == target:
-                return bugtask
-
-        return None
-
 class AssigneeEmailCommand(EditEmailCommand):
     """Assigns someone to the bug."""
 
@@ -600,7 +614,7 @@ class AssigneeEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         person_name_or_email = self.string_args[0]
 
@@ -640,7 +654,7 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         item_name = self.string_args[0]
         dbschema = self.dbschema
@@ -701,6 +715,7 @@ class EmailCommands:
         'summary': SummaryEmailCommand,
         'subscribe': SubscribeEmailCommand,
         'unsubscribe': UnsubscribeEmailCommand,
+        'duplicate': DuplicateEmailCommand,
         'cve': CVEEmailCommand,
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,

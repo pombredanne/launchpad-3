@@ -917,11 +917,11 @@ class QuestionNotification:
         """Return a formatted email address suitable for user in the From
         header of the question notification.
 
-        Default is Event Person Display Name <ticket#@answertracker_domain>
+        Default is Event Person Display Name <question#@answertracker_domain>
         """
         return format_address(
             self.event.user.displayname,
-            'ticket%s@%s' % (
+            'question%s@%s' % (
                 self.question.id, config.answertracker.email_domain))
 
     def getSubject(self):
@@ -1096,17 +1096,23 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         if question.status != old_question.status:
             info_fields.append(indent + 'Status: %s => %s' % (
                 old_question.status.title, question.status.title))
-
+        if question.target != old_question.target:
+            info_fields.append(
+                indent + 'Project: %s => %s' % (
+                old_question.target.displayname, question.target.displayname))
+                
         old_bugs = set(old_question.bugs)
         bugs = set(question.bugs)
         for linked_bug in bugs.difference(old_bugs):
             info_fields.append(
                 indent + 'Linked to bug: #%s\n' % linked_bug.id +
-                indent + canonical_url(linked_bug))
+                indent + '%s\n' % canonical_url(linked_bug) +
+                indent + '"%s"' % linked_bug.title)
         for unlinked_bug in old_bugs.difference(bugs):
             info_fields.append(
                 indent + 'Removed link to bug: #%s\n' % unlinked_bug.id +
-                indent + canonical_url(unlinked_bug))
+                indent + '%s\n' % canonical_url(unlinked_bug) +
+                indent + '"%s"' % unlinked_bug.title)
 
         if question.title != old_question.title:
             info_fields.append('Summary changed to:\n%s' % question.title)
@@ -1331,6 +1337,7 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
             'question_url': canonical_url(self.question),
             'bugtask_url':canonical_url(self.bugtask),
             'bug_id': self.bugtask.bug.id,
+            'bugtask_title': self.bugtask.bug.title,
             'old_status': self.old_bugtask.status.title,
             'new_status': self.bugtask.status.title,
             'statusexplanation': statusexplanation}
