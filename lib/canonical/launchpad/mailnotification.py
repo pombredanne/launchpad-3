@@ -4,18 +4,21 @@
 
 __metaclass__ = type
 
+import datetime
 from difflib import unified_diff
 
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEMessage import MIMEMessage
 from email.Utils import formatdate
-import rfc822
+
+from operator import attrgetter
 import re
+import rfc822
 import textwrap
-import datetime
 
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
@@ -23,8 +26,9 @@ from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IBranch, IBugTask, IEmailAddressSet, ILanguageSet, ISpecification,
-    ITeamMembershipSet, IUpstreamBugTask)
+    IBranch, IBugTask, IEmailAddressSet, ILanguageSet,
+    INotificationRecipientSet, IPerson, ISpecification, ITeamMembershipSet,
+    IUpstreamBugTask)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -104,6 +108,74 @@ class MailWrapper:
         # We added one line too much, remove it.
         wrapped_lines = wrapped_lines[:-1]
         return '\n'.join(wrapped_lines)
+
+
+class NotificationRecipientSet:
+    """Set of recipients along the rationale for being in the set."""
+
+    implements(INotificationRecipientSet)
+
+    def __init__(self):
+        """Create a new empty set."""
+        self._email2person = {}
+        self._person2rationale = {}
+
+    def getEmails(self):
+        """See `INotificationRecipientSet`."""
+        return sorted(self._email2person.keys())
+
+    def getRecipients(self):
+        """See `INotificationRecipientSet`."""
+        return sorted(
+            self._person2rationale.keys(),  key=attrgetter('displayname'))
+
+    def __iter__(self):
+        """See `INotificationRecipientSet`."""
+        return iter(self.getRecipients())
+
+    def __contains__(self, person_or_email):
+        """See `INotificationRecipientSet`."""
+        if zope_isinstance(person_or_email, (str, unicode)):
+            return person_or_email in self._email2person
+        elif IPerson.providedBy(person_or_email):
+            return person_or_email in self._person2rationale
+        else:
+            return False
+
+    def getReason(self, person_or_email):
+        """See `INotificationRecipientSet`."""
+        if zope_isinstance(person_or_email, (str, unicode)):
+            person = self._email2person[person_or_email]
+        elif IPerson.providedBy(person_or_email):
+            person = person_or_email
+        else:
+            raise AssertionError(
+                'Not an IPerson or email address: %s' % person_or_email)
+        return self._person2rationale[person]
+
+    def add(self, persons, reason, header):
+        """See `INotificationRecipientSet`."""
+
+        if IPerson.providedBy(persons):
+            persons = [persons]
+
+        for person in persons:
+            assert IPerson.providedBy(person), (
+                'You can only add() IPerson: %s' % `person`)
+            if person in self._person2rationale:
+                continue
+            self._person2rationale[person] = reason, header
+            for email in contactEmailAddresses(person):
+                if email not in self._email2person:
+                    self._email2person[email] = person
+
+    def update(self, recipient_set):
+        """See `INotificationRecipientSet`."""
+        for person in recipient_set:
+            if person in self._person2rationale:
+                continue
+            reason, header = recipient_set.getReason(person)
+            self.add(person, reason, header)
 
 
 def construct_bug_notification(bug, from_address, address, body, subject,

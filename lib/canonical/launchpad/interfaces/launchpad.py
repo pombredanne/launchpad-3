@@ -431,18 +431,51 @@ class INotificationRecipientSet(Interface):
     def getEmails():
         """Return all email addresses registered, sorted alphabetically."""
 
-    def getReason(email):
+    def getRecipients():
+        """Return the set of person who will be notified.
+
+        :return: An iterator of `IPerson`, sorted by display name.
+        """
+
+    def __iter__():
+        """Return an iterator of the recipients."""
+
+    def __contains__(person_or_email):
+        """Return true if person or email is in the notification recipients list."""
+
+    def getReason(person_or_email):
         """Return a reason tuple containing (text, header) for an address.
 
         The text is meant to appear in the notification footer. The header
         should be a short code that will appear in an
         X-Launchpad-Message-Rationale header for automatic filtering.
+
+        :param person_or_email: An `IPerson` or email adress that is in the
+            recipients list.
+
+        :raises KeyError: if the person or email isn't in the recipients
+            list.
+        """
+
+    def add(person, reason, header):
+        """Add a person or sequence of person to the recipients list.
+
+        When the added person is a team without an email address, all its
+        members emails will be added. If the person is already in the
+        recipients list, the reson for contacting him is not changed.
+
+        :param person: The `IPerson` or a sequence of `IPerson`
+            that will be notified.
+        :param reason: The rationale message that should appear in the
+            notification footer.
+        :param header: The code that will appear in the
+        X-Launchpad-Message-Rationale header.
         """
 
     def update(recipient_set):
         """Updates this instance's reasons with reasons from another set.
 
+        The rationale for recipient in this set will not be updated.
+
         :param recipient_set: An `INotificationRecipientSet`.
         """
-
-
