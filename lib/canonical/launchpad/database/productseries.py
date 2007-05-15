@@ -392,7 +392,13 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def certifyForSync(self):
         """Enable the sync for processing."""
         self.dateprocessapproved = UTC_NOW
-        self.syncinterval = datetime.timedelta(1)
+        if self.rcstype == RevisionControlSystems.CVS:
+            self.syncinterval = datetime.timedelta(hours=12)
+        elif self.rcstype == RevisionControlSystems.SVN:
+            self.syncinterval = datetime.timedelta(hours=6)
+        else:
+            raise AssertionError('Unknown default sync interval for rcs type: %s'
+                                 % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
     def syncCertified(self):
