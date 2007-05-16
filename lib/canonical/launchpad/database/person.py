@@ -1274,6 +1274,16 @@ class Person(SQLBase, HasSpecificationsMixin):
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
+    @property
+    def open_membership_invitations(self):
+        """See IPerson."""
+        return TeamMembership.select("""
+            TeamMembership.person = %s AND status = %s
+            AND Person.id = TeamMembership.team
+            """ % sqlvalues(self.id, TeamMembershipStatus.INVITED),
+            clauseTables=['Person'],
+            orderBy=Person.sortingColumns)
+
     def getActiveMemberships(self):
         """See IPerson."""
         return self._getMembershipsByStatuses(
@@ -1295,6 +1305,8 @@ class Person(SQLBase, HasSpecificationsMixin):
     def _getMembershipsByStatuses(self, statuses):
         assert self.isTeam(), 'This method is only available for teams.'
         statuses = ",".join(str(status) for status in statuses)
+        # We don't want to escape 'statuses' so we can't easily use
+        # sqlvalues() on the query below.
         query = """
             TeamMembership.status IN (%s)
             AND Person.id = TeamMembership.person

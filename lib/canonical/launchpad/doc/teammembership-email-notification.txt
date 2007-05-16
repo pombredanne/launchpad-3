@@ -281,7 +281,7 @@ only be activated if they accept the invitation.
     <BLANKLINE>
     You can accept or decline this invitation on the following page:
     <BLANKLINE>
-        http://launchpad.dev/~ubuntu-mirror-admins/+membership-invitations
+        http://launchpad.dev/~ubuntu-mirror-admins/+invitation/ubuntu-team
     <BLANKLINE>
     Regards,
     The Launchpad team

@@ -1094,9 +1094,11 @@ team_edit = 'Edit team information'
 
 team_editemail = ContextDisplayName('%s contact e-mail address')
 
+team_editproposed = ContextBrowsername('Proposed members of %s')
+
 team_index = ContextBrowsername(smartquote('"%s" team in Launchpad'))
 
-team_editproposed = ContextBrowsername('Proposed members of %s')
+team_invitations = ContextBrowsername("Invitations sent to %s")
 
 team_join = ContextBrowsername('Join %s')
 

@@ -273,16 +273,17 @@ class TeamInvitationView(LaunchpadFormView):
     def accept_action(self, action, data):
         member = self.context.person
         member.acceptInvitationToBeMemberOf(self.context.team)
-        self.request.response.addInfoNotification(_(
-            "This team is now a member of %s", self.context.team.browsername))
+        self.request.response.addInfoNotification(
+            _("This team is now a member of %(team)s"),
+            team=self.context.team.browsername)
 
     @action(_("Decline"), name="decline")
     def decline_action(self, action, data):
         member = self.context.person
         member.declineInvitationToBeMemberOf(self.context.team)
-        self.request.response.addInfoNotification(_(
-            "Declined the invitation to join %s",
-            self.context.team.browsername))
+        self.request.response.addInfoNotification(
+            _("Declined the invitation to join %(team)s"),
+            team=self.context.team.browsername)
 
     @action(_("Cancel"), name="cancel")
     def cancel_action(self, action, data):
@@ -728,7 +729,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = ITeam
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'memberships', 'mugshots', 
+             'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'polls', 'add_poll',
              'joinleave', 'mentorships', 'reassign', 'common_packages',
              ]
@@ -757,6 +758,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+members'
         text = 'Show all members'
         return Link(target, text, icon='people')
+
+    @enabled_with_permission('launchpad.Edit')
+    def received_invitations(self):
+        target = '+invitations'
+        text = 'Show received invitations'
+        return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def add_member(self):

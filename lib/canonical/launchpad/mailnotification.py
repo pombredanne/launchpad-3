@@ -847,7 +847,7 @@ def notify_invitation_to_join_team(event):
         'member': '%s (%s)' % (member.browsername, member.name),
         'team': '%s (%s)' % (team.browsername, team.name),
         'membership_invitations_url': 
-            "%s/+membership-invitations" % canonical_url(member)}
+            "%s/+invitation/%s" % (canonical_url(member), team.name)}
     msg = MailWrapper().format(msg)
     simple_sendmail(from_addr, admin_addrs, subject, msg)
 
