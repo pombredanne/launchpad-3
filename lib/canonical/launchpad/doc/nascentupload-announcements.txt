@@ -80,6 +80,10 @@ unsigned changes):
   ...
   DEBUG: Sent a mail:
   ...
+  DEBUG: NEW: bar_1.0-1.dsc
+  DEBUG: NEW: bar_1.0.orig.tar.gz
+  DEBUG: NEW: bar_1.0-1.diff.gz
+  ...
   DEBUG: above if files already exist in other distroreleases.
 
   >>> transaction.commit()
@@ -121,7 +125,7 @@ override sync policy to allow binary uploads):
 
 We simply ignore messages generated at this step because they are not
 going to exist in production. We simply need this binary to be published
-in other test other features in post-release pockets.
+in order to test other features in post-release pockets.
 
    >>> transaction.commit()
    >>> ignore = pop_notifications()
@@ -254,6 +258,12 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   DEBUG: Skipping announcement, it is a BACKPORT.
   DEBUG: Sent a mail:
   ...
+  DEBUG: Accepted:
+  DEBUG: NEW: bar_1.0-4.dsc
+  DEBUG: NEW: bar_1.0-4.diff.gz
+  ...
+  DEBUG: Announcing to hoary-announce@lists.ubuntu.com
+  DEBUG:
   DEBUG: Thank you for your contribution to Ubuntu Linux.
 
   >>> transaction.commit()
@@ -291,7 +301,15 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   ...
   DEBUG: Sent a mail:
   ...
-  DEBUG: above if files already exist in other distroreleases.
+  DEBUG: Accepted:
+  DEBUG: NEW: bar_1.0-2.dsc
+  DEBUG: NEW: bar_1.0-2.diff.gz
+  ...
+  DEBUG: Announcing to hoary-announce@lists.ubuntu.com
+  ...
+  DEBUG: -----END PGP SIGNATURE-----
+  DEBUG:
+  DEBUG:
 
   >>> transaction.commit()
   >>> len(stub.test_emails)
@@ -331,6 +349,9 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
   ...
   DEBUG: Skipping announcement, it is a binary upload to SECURITY.
   DEBUG: Sent a mail:
+  ...
+  DEBUG: Accepted:
+  DEBUG: NEW: bar_1.0-2_i386.deb
   ...
   DEBUG: Thank you for your contribution to Ubuntu Linux.
 

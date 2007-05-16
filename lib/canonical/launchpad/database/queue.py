@@ -1,4 +1,4 @@
-# to avoid spamming the innocent. Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -379,25 +379,11 @@ class DistroReleaseQueue(SQLBase):
                     "Skipping acceptance and announcement, it is a "
                     "language-package upload.")
                 return
-# TODO: Clean this up!
-#            try:
-#                self.distrorelease.distribution.getFileByName(filename)
-            #import pdb; pdb.set_trace()
-            source_match = re_issource.match(filename)
-            binary_match = re_isadeb.match(filename)
-            package_name = ""
-            if source_match:
-                package_name = source_match.group(1)
-            if binary_match:
-                package_name = binary_match.group(1)
 
-            source_name = getUtility(
-                ISourcePackageNameSet).queryByName(package_name)
-
-#            except NotFoundError:
-            if not source_name:
+            try:
+                self.distrorelease.distribution.getFileByName(filename)
+            except NotFoundError:
                 summary.append("NEW: %s" % filename)
-                is_new = True
             else:
                 summary.append(" OK: %s" % filename)
                 if filename.endswith("dsc"):
@@ -476,6 +462,11 @@ class DistroReleaseQueue(SQLBase):
         # whether to send a 'new' message, an acceptance message and/or an
         # announce message.
 
+        if self.status == DistroReleaseQueueStatus.NEW:
+            # This is an unknown upload.
+            self._sendMail(new_template % interpolations, logger)
+            return
+
         # Auto-approved uploads to backports skips the announcement,
         # they are usually processed with the sync policy.
         if self.pocket == PackagePublishingPocket.BACKPORTS:
@@ -490,11 +481,6 @@ class DistroReleaseQueue(SQLBase):
             debug(logger,
                 "Skipping announcement, it is a binary upload to SECURITY.")
             self._sendMail(accepted_template % interpolations, logger)
-            return
-
-        if is_new:
-            # This is an unknown upload.
-            self._sendMail(new_template % interpolations, logger)
             return
 
         # Unapproved uploads coming from an insecure policy only sends
