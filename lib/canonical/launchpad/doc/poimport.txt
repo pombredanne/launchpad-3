@@ -534,8 +534,21 @@ And run the cronscript.
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
-    INFO    Removed 2 entries from the queue.
     <BLANKLINE>
+
+Now the auto-approval script runs.  This can happen anytime, since it's
+asynchronous to the po-import script.  Running at this point, it will find two
+entries it can remove.
+
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-approve-imports.py',
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO    creating lockfile
+    INFO    Removed 2 entries from the queue.
 
 It's time to test the import queue.
 
@@ -605,10 +618,10 @@ It's in the queue now.
     >>> translation_import_queue.entryCount()
     2
 
-Do the final import.
+The auto-approval script runs again.
 
     >>> process = subprocess.Popen([
-    ...     sys.executable, 'cronscripts/rosetta-poimport.py',
+    ...     sys.executable, 'cronscripts/rosetta-approve-imports.py',
     ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.STDOUT
     ...     )
@@ -616,10 +629,9 @@ Do the final import.
     >>> print output
     INFO    creating lockfile
     INFO    The automatic approval system approved some entries.
-    <BLANKLINE>
     >>> transaction.commit()
 
-We need to run again the script to get those approved entries imported.
+Do the final import.
 
     >>> process = subprocess.Popen([
     ...     sys.executable, 'cronscripts/rosetta-poimport.py',
