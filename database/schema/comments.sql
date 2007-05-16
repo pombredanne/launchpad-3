@@ -746,6 +746,8 @@ COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a p
 
 -- Person
 COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
+COMMENT ON COLUMN Person.subscriptionpolicy IS 'The policy for new members to join this team.';
+COMMENT ON COLUMN Person.renewal_policy IS 'The policy for membership renewal on this team.';
 COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
 COMMENT ON COLUMN Person.password IS 'SSHA digest encrypted password.';
 COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';

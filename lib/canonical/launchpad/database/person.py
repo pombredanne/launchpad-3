@@ -42,7 +42,8 @@ from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, SSHKeyType,
     EmailAddressStatus, TeamSubscriptionPolicy, TeamMembershipStatus,
     LoginTokenType, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale)
+    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale,
+    TeamMembershipRenewalPolicy)
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -127,6 +128,9 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
+    renewal_policy = EnumCol(
+        schema=TeamMembershipRenewalPolicy,
+        default=TeamMembershipRenewalPolicy.NONE)
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
         schema=TeamSubscriptionPolicy,
