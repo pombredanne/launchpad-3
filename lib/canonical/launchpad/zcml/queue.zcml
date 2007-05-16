@@ -26,7 +26,7 @@
           attributes="setNew setUnapproved setRejected setAccepted setDone
                       realiseUpload addSource addBuild addCustom syncUpdate
                       notify"
-          set_attributes="status distrorelease pocket changesfile"
+          set_attributes="status distrorelease pocket changesfile signing_key"
           />
     </content>
 

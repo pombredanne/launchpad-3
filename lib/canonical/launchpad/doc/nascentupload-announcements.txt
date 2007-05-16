@@ -62,19 +62,13 @@ unsigned changes):
   >>> netapplet_src.process()
 
   >>> netapplet_src.logger = mock_logger
-  >>> result, msgs = netapplet_src.do_accept()
+  >>> result = netapplet_src.do_accept()
   DEBUG: Building recipients list.
   ...
   DEBUG: Creating queue entry
+  DEBUG: Sent a mail:
   ...
-  DEBUG: Thank you for your contribution to Ubuntu Linux.
-
-  >>> len(msgs)
-  1
-
-  >>> import email
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>']
+  DEBUG: above if files already exist in other distroreleases.
 
 Let's ACCEPT bar sources in order to make the next uploads of this
 series *known* in hoary:
@@ -100,7 +94,7 @@ override sync policy to allow binary uploads):
   >>> netapplet_src.process()
 
   >>> netapplet_src.logger = mock_logger
-  >>> result, msgs = netapplet_src.do_accept()
+  >>> result = netapplet_src.do_accept()
   DEBUG: Building recipients list.
   ...
   DEBUG: Creating queue entry
@@ -129,7 +123,7 @@ NEW source uploads for 'translations' section via sync policy:
   >>> lang_pack.process()
 
   >>> lang_pack.logger = mock_logger
-  >>> result, msgs = lang_pack.do_accept()
+  >>> result = lang_pack.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Changes file is unsigned, adding changer as recipient
   DEBUG: Creating queue entry
@@ -137,12 +131,6 @@ NEW source uploads for 'translations' section via sync policy:
 
   >>> lang_pack.queue_root.status.name
   'NEW'
-
-No messages were generated since this upload is targeted for
-'translation' section:
-
-  >>> len(msgs)
-  0
 
 Accept and publish this series:
 
@@ -161,7 +149,7 @@ AUTO_APPROVED source uploads for 'translations' section:
   >>> lang_pack.process()
 
   >>> lang_pack.logger = mock_logger
-  >>> result, msgs = lang_pack.do_accept()
+  >>> result = lang_pack.do_accept()
   DEBUG: Building recipients list.
   DEBUG: Changes file is unsigned, adding changer as recipient
   DEBUG: Creating queue entry
@@ -170,13 +158,6 @@ AUTO_APPROVED source uploads for 'translations' section:
 
   >>> lang_pack.queue_root.status.name
   'ACCEPTED'
-
-Again, no messages were generated since this upload is targeted for
-'translation' section:
-
-  >>> len(msgs)
-  0
-
 
 Release hoary, enable uploads to post-release pockets:
 
@@ -205,7 +186,7 @@ UNAPPROVED source uploads for 'translations' section via insecure:
 
 
   >>> lang_pack.logger = mock_logger
-  >>> result, msgs = lang_pack.do_accept()
+  >>> result = lang_pack.do_accept()
   DEBUG: Building recipients list.
   ...
   DEBUG: Creating queue entry
@@ -214,13 +195,6 @@ UNAPPROVED source uploads for 'translations' section via insecure:
 
   >>> lang_pack.queue_root.status.name
   'UNAPPROVED'
-
-UNAPPROVED message was also skipped for an upload targeted to
-'translation' section:
-
-  >>> len(msgs)
-  0
-
 
 AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
 
@@ -234,17 +208,11 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   >>> netapplet_src.process()
 
   >>> netapplet_src.logger = mock_logger
-  >>> result, msgs = netapplet_src.do_accept()
+  >>> result = netapplet_src.do_accept()
   DEBUG: Building recipients list.
   ...
   DEBUG: Setting it to ACCEPTED
   DEBUG: Skipping announcement, it is a BACKPORT.
-
-  >>> len(msgs)
-  1
-
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Celso Providelo <celso.providelo@canonical.com>']
 
 Remove orig.tar.gz pumped from librarian to disk during the upload
 checks:
@@ -266,16 +234,10 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   >>> netapplet_src.process()
 
   >>> netapplet_src.logger = mock_logger
-  >>> result, msgs = netapplet_src.do_accept()
+  >>> result = netapplet_src.do_accept()
   DEBUG: Building recipients list.
   ...
   DEBUG: Setting it to ACCEPTED
-
-  >>> len(msgs)
-  2
-
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
 
 Let's publish security bar sources in order to allow its binaries to
 come:
@@ -300,14 +262,9 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
   >>> netapplet_bin.process()
 
   >>> netapplet_bin.logger = mock_logger
-  >>> result, msgs = netapplet_bin.do_accept()
+  >>> result = netapplet_bin.do_accept()
   DEBUG: Building recipients list.
   ...
   DEBUG: Setting it to ACCEPTED
   DEBUG: Skipping announcement, it is a binary upload to SECURITY.
 
-  >>> len(msgs)
-  1
-
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>']

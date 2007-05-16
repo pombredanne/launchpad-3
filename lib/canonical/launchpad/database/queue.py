@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# to avoid spamming the innocent. Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -16,10 +16,12 @@ import tempfile
 from email import message_from_string
 
 from zope.interface import implements
+from zope.component import getUtility
 from sqlobject import (
     ForeignKey, SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.launchpad.mail import sendmail
+from canonical.launchpad.mail import (
+    format_address, sendmail)
 from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.archiveuploader.nascentuploadfile import (
     splitComponentAndSection)
@@ -27,6 +29,7 @@ from canonical.archiveuploader.tagfiles import (
     parse_tagfile_lines, TagFileParseError)
 from canonical.archiveuploader.template_messages import (
     rejection_template, new_template, accepted_template, announce_template)
+from canonical.archiveuploader.utils import safe_fix_maintainer
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -38,7 +41,7 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError, IPackageUploadQueue,
-    QueueBuildAcceptError, IDistroReleaseQueueSet, pocketsuffix)
+    QueueBuildAcceptError, IDistroReleaseQueueSet, pocketsuffix, IPersonSet)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
@@ -327,8 +330,7 @@ class DistroReleaseQueue(SQLBase):
                                         libraryfilealias=library_file,
                                         customformat=custom_type)
 
-    def notify(self, sender, recipients, announcelist, changesfileobject=None,
-               maintainerfrom=None, logger=None):
+    def notify(self, announcelist, changesfileobject=None, logger=None):
         """See IDistroReleaseQueue."""
 
         # Get the changes file from the librarian and parse the tags to
@@ -340,14 +342,21 @@ class DistroReleaseQueue(SQLBase):
         # Requiring an open changesfile object is a bit ugly but it is required
         # because of several problems:
         # a) We don't know if the librarian has the file committed or not yet
-        # b) Passing a changesfile object instead means that we get an
+        # b) Passing a ChangesFile object instead means that we get an
         #    unordered dictionary which can't be translated back exactly.
         # For now, it's just easier to re-read the original file if the caller
         # requires us to do that instead of using the librarian's copy.
+        changeslines = None
         if changesfileobject is None:
             changesfileobject = self.changesfile
-        changeslines = changesfileobject.read().split("\n")
-        changes = parse_tagfile_lines(changeslines)
+            changeslines = self.changesfile.read().splitlines(True)
+        else:
+            changeslines = changesfileobject.readlines()
+
+        not_signed = True
+        if self.signing_key:
+            not_signed = False
+        changes = parse_tagfile_lines(changeslines, allow_unsigned=not_signed)
 
         summary = []
         is_new = False # Is set to True if any part of the upload is new.
@@ -360,38 +369,76 @@ class DistroReleaseQueue(SQLBase):
                 fileline.strip().split())
             try:
                 self.distrorelease.distribution.getFileByName(filename)
+            except NotFoundError:
                 summary.append("NEW: %s" % filename)
                 is_new = True
-            except NotFoundError:
+            else:
                 summary.append(" OK: %s" % filename)
                 if filename.endswith("dsc"):
                     component, section = splitComponentAndSection(
                         component_and_section)
                     if section == 'translations':
                         # Uploads targetted to translations should not
-                        # generate any emails
+                        # generate any emails.
                         debug(logger,
                             "Skipping acceptance and announcement, it is a "
                             "language-package upload.")
                         return
                     summary.append("     -> Component: %s Section: %s" % (
                         component, section))
+
         summarystring = "\n".join(summary)
 
+        # Figure out the list of recipients.
+        candidate_recipients = []
+        debug(logger, "Building recipients list.")
+        changer = changes['changed-by']
+
+        if self.signing_key:
+            # This is a signed upload.
+            maintainer = changes['maintainer']
+            person_signer = self.signing_key.owner
+            candidate_recipients.append(person_signer)
+
+            person_maintainer = self._email_to_person(maintainer)
+            if (person_maintainer and person_maintainer != person_signer and
+                    self._is_person_in_keyring(person_maintainer, logger)):
+                debug(logger, "Adding maintainer to recipients")
+                candidate_recipients.append(person_maintainer)
+
+            person_changer = self._email_to_person(changer)
+            if (person_changer and person_changer != person_signer and 
+                    self._is_person_in_keyring(person_changer, logger)):
+                debug(logger, "Adding changed-by to recipients")
+                candidate_recipients.append(person_changer)
+        else:
+            debug(logger,
+                "Changes file is unsigned, adding changer as recipient")
+            person_changer = self._email_to_person(changer)
+            candidate_recipients.append(person_changer)
+
+        # Now filter list of recipients for persons only registered in
+        # Launchpad to avoid spamming the innocent.
+        recipients = []
+        for person in candidate_recipients:
+            if person is None or person.preferredemail is None:
+                continue
+            recipient = format_address(person.displayname, 
+                person.preferredemail.email)
+            debug(logger, "Adding recipient: '%s'" % recipient)
+            recipients.append(recipient)
+
         interpolations = {
-            "MAINTAINERFROM": sender,
-            "SENDER": sender,
+            "SENDER": "%s <%s>" % (
+                config.uploader.default_sender_name,
+                config.uploader.default_sender_address),
             "CHANGES": self.changesfile.filename,
             "SUMMARY": summarystring,
             "CHANGESFILE": guess_encoding("\n".join(changeslines)),
             "DISTRO": self.distrorelease.distribution.title,
             "DISTRORELEASE": self.distrorelease.name,
             "ANNOUNCE": announcelist,
-# XXX needs a fix.  The following commented line works but I want to avoid 
-# a dependency on sourcepackagerelease here if possible so that the tests 
-# are easier.
-#"SOURCE": self.sourcepackagerelease.name,
-            "SOURCE": "FIXME",
+            "SOURCE": self.sourcepackagerelease.name,
             "VERSION": changes['version'],
             "ARCH": changes['architecture'],
             "RECIPIENT": ", ".join(recipients),
@@ -401,8 +448,12 @@ class DistroReleaseQueue(SQLBase):
 
         }
 
-        if maintainerfrom is not None:
-            interpolations['MAINTAINERFROM'] = maintainerfrom
+        if not_signed:
+            interpolations['MAINTAINERFROM'] =  " %s <%s>" % (
+                config.uploader.default_sender_name,
+                config.uploader.default_sender_address)
+        else:
+            interpolations['MAINTAINERFROM'] = changes['maintainer']
 
         # The template is ready.  The remainder of this function deals with
         # whether to send a 'new' message, an acceptance message and/or an
@@ -416,7 +467,7 @@ class DistroReleaseQueue(SQLBase):
         # Unapproved uploads coming from an insecure policy only sends
         # an acceptance message.
         if self.status != DistroReleaseQueueStatus.ACCEPTED:
-            # Only send an acceptance message
+            # Only send an acceptance message.
             interpolations["SUMMARY"] += (
                 "\nThis upload awaits approval by a distro manager\n")
             self._sendMail(accepted_template % interpolations, logger)
@@ -444,16 +495,34 @@ class DistroReleaseQueue(SQLBase):
         self._sendMail(announce_template % interpolations, logger)
         return
 
+    def _email_to_person(self, fullemail):
+        # The 2nd arg to s_f_m() doesn't matter is it won't fail since every-
+        # thing will have already parsed at this point.
+        (rfc822, rfc2047, name, email) = safe_fix_maintainer(
+            fullemail, "email")
+        person = getUtility(IPersonSet).getByEmail(email)
+        return person
+
+    def _is_person_in_keyring(self, person, logger):
+        debug(logger, "Attempting to decide if %s is in the keyring." % (
+            person.displayname))
+# XXX gah, this needs policy.  HELP.
+#        in_keyring = len(set(
+#            acl.component.name for acl in self.policy.distro.uploaders
+#            if person in acl)) > 0
+#        debug(logger, "Decision: %s" % in_keyring)
+#        return in_keyring
+        return True
+
     def _sendMail(self,mail_text,logger=None):
         mail_message = message_from_string(ascii_smash(mail_text))
-        sendmail(mail_message)
-
         debug(logger, "Sent a mail:")
         debug(logger, "    Subject: %s" % mail_message['Subject'])
         debug(logger, "    Recipients: %s" % mail_message['To'])
         debug(logger, "    Body:")
         for line in mail_message.get_payload().splitlines():
             debug(logger, line)
+        sendmail(mail_message)
 
 
 class DistroReleaseQueueBuild(SQLBase):
