@@ -1,7 +1,8 @@
 
 BugNotificationRecipients instances store email addresses mapped to the
 reason for which they are being notified in a certain bug. It implements
-the INotificationRecipientSet interface for bug notifications.
+the INotificationRecipientSet interface for bug notifications. (See
+notification-recipient-set.txt for the details.)
 
 == How it's used ==
 
@@ -57,8 +58,9 @@ IBug.getBugNotificationRecipients().
 
 Let's up some data for our test:
 
-  >>> from canonical.launchpad.interfaces import IPersonSet, BugNotificationRecipients
-  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from canonical.launchpad.mailnotification import (
+  ...     BugNotificationRecipients)
   >>> debian = Distribution.selectOneBy(name="debian")
   >>> pmount = debian.getSourcePackage("pmount")
   >>> alsa_utils = Product.selectOneBy(name="alsa-utils")
