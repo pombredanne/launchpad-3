@@ -59,13 +59,15 @@ class ProductRelease(SQLBase):
             thetitle += ' "' + self.codename + '"'
         return thetitle
 
-    def addFileAlias(self, alias, file_type=UpstreamFileType.CODETARBALL,
+    def addFileAlias(self, alias, uploader,
+                     file_type=UpstreamFileType.CODETARBALL,
                      description=None):
         """See IProductRelease."""
         return ProductReleaseFile(productrelease=self,
                                   libraryfile=alias,
                                   filetype=file_type,
-                                  description=description)
+                                  description=description,
+                                  uploader=uploader)
 
 
 class ProductReleaseFile(SQLBase):
@@ -84,9 +86,13 @@ class ProductReleaseFile(SQLBase):
 
     description = StringCol(notNull=False, default=None)
 
+    uploader = ForeignKey(dbName="uploader", foreignKey='Person',
+                          notNull=True)
+
+    date_uploaded = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
 class ProductReleaseSet(object):
-    """See IProductReleaseSet""" 
+    """See IProductReleaseSet"""
     implements(IProductReleaseSet)
 
     def new(self, version, productseries, owner, codename=None, summary=None,
@@ -109,4 +115,3 @@ class ProductReleaseSet(object):
         if productrelease is None:
             return default
         return productrelease
-

@@ -131,7 +131,7 @@ class ProductReleaseFinder:
 
             alias = getUtility(ILibraryFileAliasSet).create(
                 filename, size, file, content_type)
-            release.addFileAlias(alias)
+            release.addFileAlias(alias, uploader=product.owner)
 
             self.ztm.commit()
         except:
@@ -162,7 +162,7 @@ class ProductReleaseFinder:
         if not sane_version(version):
             self.log.error("Version number '%s' for '%s' is not sane",
                            version, url)
-            return 
+            return
 
         if self.hasReleaseTarball(product_name, series_name, version):
             self.log.debug("Already have a tarball for release %s", version)
