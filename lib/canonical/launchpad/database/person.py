@@ -5,6 +5,10 @@ __all__ = [
     'Person', 'PersonSet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet',
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
+# XXX: Yeah, you bastard, this is to make hundreds of tests to fail so that
+# you remember to put all the imports on this file in alphabetical order
+# before sending this off to pqm.
+#from foo import baz
 from datetime import datetime, timedelta
 import pytz
 import sha
@@ -99,6 +103,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     implements(IPerson, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot)
 
     sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
+    # When doing any sort of set operations (union, intersect, except_) with
+    # SQLObject we can't use sortingColumns because the table name Person is
+    # not available in that context, so we use this one.
+    _sortingColumnsForSetOperations = SQLConstant(
+        "person_sort_key(displayname, name)")
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
@@ -1137,18 +1146,15 @@ class Person(SQLBase, HasSpecificationsMixin):
             AND TeamParticipation.person = %(person)s
             ''' % sqlvalues(person=self, admin=TeamMembershipStatus.ADMIN),
             clauseTables=['TeamParticipation', 'TeamMembership'])
-        orderBy = SQLConstant("person_sort_key(displayname, name)")
-        return admin_of_teams.union(owner_of_teams, orderBy=orderBy)
+        return admin_of_teams.union(
+            owner_of_teams, orderBy=self._sortingColumnsForSetOperations)
 
     def getDirectAdministrators(self):
         """See IPerson."""
         assert self.isTeam(), 'Method should only be called on a team.'
         owner = Person.select("id = %s" % sqlvalues(self.teamowner))
-        # We can't use Person.sortingColumns with union() queries
-        # because the table name Person is not available in that
-        # context.
-        orderBy = SQLConstant("person_sort_key(displayname, name)")
-        return self.adminmembers.union(owner, orderBy=orderBy)
+        return self.adminmembers.union(
+            owner, orderBy=self._sortingColumnsForSetOperations)
 
     def getMembersByStatus(self, status, orderBy=None):
         """See IPerson."""
@@ -1200,7 +1206,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         return self.allmembers.count()
 
     @property
-    def invitedmembers(self):
+    def invited_members(self):
         """See IPerson."""
         return self.getMembersByStatus(TeamMembershipStatus.INVITED)
 
@@ -1232,11 +1238,8 @@ class Person(SQLBase, HasSpecificationsMixin):
     @property
     def activemembers(self):
         """See IPerson."""
-        # We can't use Person.sortingColumns with union() queries
-        # because the table name Person is not available in that
-        # context.
-        orderBy = SQLConstant("person_sort_key(displayname, name)")
-        return self.approvedmembers.union(self.adminmembers, orderBy=orderBy)
+        return self.approvedmembers.union(
+            self.adminmembers, orderBy=self._sortingColumnsForSetOperations)
 
     @property
     def active_member_count(self):
@@ -1246,18 +1249,15 @@ class Person(SQLBase, HasSpecificationsMixin):
     @property
     def inactivemembers(self):
         """See IPerson."""
-        # See comment in Person.activemembers
-        orderBy = SQLConstant("person_sort_key(displayname, name)")
-        return self.expiredmembers.union(self.deactivatedmembers,
-                                         orderBy=orderBy)
+        return self.expiredmembers.union(
+            self.deactivatedmembers,
+            orderBy=self._sortingColumnsForSetOperations)
 
     @property
     def pendingmembers(self):
         """See IPerson."""
-        # See comment in Person.activemembers
-        orderBy = SQLConstant("person_sort_key(displayname, name)")
         return self.proposedmembers.union(
-            self.invitedmembers, orderBy=orderBy)
+            self.invited_members, orderBy=self._sortingColumnsForSetOperations)
 
     # XXX: myactivememberships and getActiveMemberships are rather
     # confusingly named, and I just fixed bug 2871 as a consequence of
@@ -1708,8 +1708,7 @@ class PersonSet:
     def find(self, text, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            # See comment in Person.activemembers
-            orderBy = SQLConstant("person_sort_key(displayname, name)")
+            orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes
@@ -1725,8 +1724,7 @@ class PersonSet:
     def findPerson(self, text="", orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            # See comment in Person.activemembers
-            orderBy = SQLConstant("person_sort_key(displayname, name)")
+            orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
         base_query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
                       'EmailAddress.person = Person.id')
@@ -1750,8 +1748,7 @@ class PersonSet:
     def findTeam(self, text, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
-            # See comment in Person.activemembers
-            orderBy = SQLConstant("person_sort_key(displayname, name)")
+            orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
         # OUTER JOIN or do a UNION between two queries. Using a UNION makes

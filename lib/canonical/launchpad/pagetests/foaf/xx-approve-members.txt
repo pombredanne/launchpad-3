@@ -17,18 +17,32 @@ Let's have a look at the proposed members that we have.
     >>> for tag in table.findAll('a'):
     ...     print tag.span.renderContents()
     Andrew Bennetts
+    Sample Person
 
-Now we'll approve 'Andrew Bennetts'.
+Now we'll approve Andrew Bennetts' membership and decline Sample Person's.
 
+    >>> browser.getControl(name='action_12').value = ['decline']
     >>> browser.getControl(name='action_7').value = ['approve']
     >>> browser.getControl('Submit').click()
 
+As we can see, Andrew is now listed among the active members and Sample Person
+as an inactive one.
+
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+members'
-    >>> table = find_tag_by_id(browser.contents, 'activemembers')
-    >>> table_contents = table.renderContents()
-    >>> 'Andrew Bennetts' in table_contents
-    True
+    >>> print extract_text(find_tag_by_id(browser.contents, 'activemembers'))
+    Name Member since Expires Status
+    ...
+    Andrew Bennetts
+    ...
+
+    # Need to do this check manually because the declined members are not
+    # listed anywhere.
+    >>> from canonical.launchpad.database import Person, TeamMembershipSet
+    >>> membership = TeamMembershipSet().getByPersonAndTeam(
+    ...     Person.byName('name12'), Person.byName('ubuntu-team'))
+    >>> membership.status.title
+    'Declined'
 
 And now we see that there are no pending members left.
 
@@ -36,3 +50,4 @@ And now we see that there are no pending members left.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
+

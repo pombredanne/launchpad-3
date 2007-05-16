@@ -299,9 +299,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     inactivemembers = Attribute(
         "List of members with EXPIRED or DEACTIVATED status")
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
-    invitedmembers = Attribute("List of members with INVITED status")
+    invited_members = Attribute("List of members with INVITED status")
     pendingmembers = Attribute(
-        "List of members with INVITED or PROPOSEDstatus")
+        "List of members with INVITED or PROPOSED status")
     specifications = Attribute(
         "Any specifications related to this person, either because the are "
         "a subscriber, or an assignee, or a drafter, or the creator. "

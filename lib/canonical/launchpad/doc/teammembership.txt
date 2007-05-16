@@ -483,7 +483,8 @@ You can check a person's direct memberships by using myactivememberships:
 
     >>> [(membership.team.name, membership.status.title)
     ...  for membership in salgado.myactivememberships]
-    [(u'admins', 'Administrator'), (u't4', 'Approved')]
+    [(u'landscape-developers', 'Approved'),
+     (u'admins', 'Administrator'), (u't4', 'Approved')]
 
 And you can check which direct memberships a team has by using
 getActiveMemberships():
@@ -579,6 +580,7 @@ person is an active member of as well as teams those teams are an active
 member of.
 
     >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
+    landscape-developers
     admins
     t4
 
@@ -588,6 +590,7 @@ Adding admins as a member of t1 will make Salgado a member of t1 as well.
     >>> t1.addMember(admins, reviewer=t1.teamowner, force_team_add=True)
     >>> flush_database_updates()
     >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
+    landscape-developers
     admins
     t1
     t4
@@ -598,6 +601,7 @@ for Salgado.
     >>> admins.addMember(t2, reviewer=admins.teamowner, force_team_add=True)
     >>> flush_database_updates()
     >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
+    landscape-developers
     admins
     t1
     t4
