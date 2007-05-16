@@ -25,7 +25,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
     enabled_with_permission, GetitemNavigation, stepthrough,
-    LaunchpadFormView, action)
+    LaunchpadEditFormView, action)
 from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.launchpad.interfaces import (
@@ -377,14 +377,20 @@ class DistroReleaseDynMenu(DynMenu):
             yield self.makeBreadcrumbLink(architecture)
 
 
-class DistroReleaseTranslationsAdminView(LaunchpadFormView):
+class DistroReleaseTranslationsAdminView(LaunchpadEditFormView):
     schema = IDistroRelease
 
     field_names = ['hide_all_translations']
 
+    def initialize(self):
+        LaunchpadEditFormView.initialize(self)
+        self.label = 'Change translation options of %s' % self.context.title
+
     @action("Change")
     def change_action(self, action, data):
         self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
 
     @property
     def next_url(self):
