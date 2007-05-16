@@ -188,5 +188,5 @@ def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
     changes_in = open(filename, "r")
     lines = changes_in.readlines()
     changes_in.close()
-    return parse_tagfile_lines(lines)
+    return parse_tagfile_lines(lines, dsc_whitespace_rules, allow_unsigned)
 

@@ -29,7 +29,8 @@ from canonical.archiveuploader.tagfiles import (
     parse_tagfile_lines, TagFileParseError)
 from canonical.archiveuploader.template_messages import (
     rejection_template, new_template, accepted_template, announce_template)
-from canonical.archiveuploader.utils import safe_fix_maintainer
+from canonical.archiveuploader.utils import (
+    safe_fix_maintainer, re_issource, re_isadeb)
 from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -41,7 +42,8 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError, IPackageUploadQueue,
-    QueueBuildAcceptError, IDistroReleaseQueueSet, pocketsuffix, IPersonSet)
+    QueueBuildAcceptError, IDistroReleaseQueueSet, pocketsuffix, IPersonSet,
+    ISourcePackageNameSet)
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
@@ -367,23 +369,38 @@ class DistroReleaseQueue(SQLBase):
         for fileline in files:
             digest, size, component_and_section, priority, filename = (
                 fileline.strip().split())
-            try:
-                self.distrorelease.distribution.getFileByName(filename)
-            except NotFoundError:
+            component, section = splitComponentAndSection(
+                component_and_section)
+            if (section == 'translations' and 
+                    changes['architecture'].lower() == 'source'):
+                # NEW, Auto-APPROVED and UNAPPROVED source uploads targetted 
+                # to translations should not generate any emails.
+                debug(logger,
+                    "Skipping acceptance and announcement, it is a "
+                    "language-package upload.")
+                return
+# TODO: Clean this up!
+#            try:
+#                self.distrorelease.distribution.getFileByName(filename)
+            #import pdb; pdb.set_trace()
+            source_match = re_issource.match(filename)
+            binary_match = re_isadeb.match(filename)
+            package_name = ""
+            if source_match:
+                package_name = source_match.group(1)
+            if binary_match:
+                package_name = binary_match.group(1)
+
+            source_name = getUtility(
+                ISourcePackageNameSet).queryByName(package_name)
+
+#            except NotFoundError:
+            if not source_name:
                 summary.append("NEW: %s" % filename)
                 is_new = True
             else:
                 summary.append(" OK: %s" % filename)
                 if filename.endswith("dsc"):
-                    component, section = splitComponentAndSection(
-                        component_and_section)
-                    if section == 'translations':
-                        # Uploads targetted to translations should not
-                        # generate any emails.
-                        debug(logger,
-                            "Skipping acceptance and announcement, it is a "
-                            "language-package upload.")
-                        return
                     summary.append("     -> Component: %s Section: %s" % (
                         component, section))
 
@@ -459,20 +476,6 @@ class DistroReleaseQueue(SQLBase):
         # whether to send a 'new' message, an acceptance message and/or an
         # announce message.
 
-        if is_new:
-            # This is an unknown upload.
-            self._sendMail(new_template % interpolations, logger)
-            return
-
-        # Unapproved uploads coming from an insecure policy only sends
-        # an acceptance message.
-        if self.status != DistroReleaseQueueStatus.ACCEPTED:
-            # Only send an acceptance message.
-            interpolations["SUMMARY"] += (
-                "\nThis upload awaits approval by a distro manager\n")
-            self._sendMail(accepted_template % interpolations, logger)
-            return
-
         # Auto-approved uploads to backports skips the announcement,
         # they are usually processed with the sync policy.
         if self.pocket == PackagePublishingPocket.BACKPORTS:
@@ -486,6 +489,20 @@ class DistroReleaseQueue(SQLBase):
             and self.containsBuild):
             debug(logger,
                 "Skipping announcement, it is a binary upload to SECURITY.")
+            self._sendMail(accepted_template % interpolations, logger)
+            return
+
+        if is_new:
+            # This is an unknown upload.
+            self._sendMail(new_template % interpolations, logger)
+            return
+
+        # Unapproved uploads coming from an insecure policy only sends
+        # an acceptance message.
+        if self.status != DistroReleaseQueueStatus.ACCEPTED:
+            # Only send an acceptance message.
+            interpolations["SUMMARY"] += (
+                "\nThis upload awaits approval by a distro manager\n")
             self._sendMail(accepted_template % interpolations, logger)
             return
 

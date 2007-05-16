@@ -747,7 +747,6 @@ class NascentUpload:
             maintainerfrom = None
             if self.changes.signer:
                 maintainerfrom = self.changes.changed_by['rfc2047']
-            recipients = self.getRecipients()
 
             self.storeObjectsInDatabase()
 
@@ -757,9 +756,8 @@ class NascentUpload:
             # very small, and at some point the script infrastructure will
             # only send emails when the script exits successfully.
             changesfileobject = open(self.changes.filepath, "r")
-            self.queue_root.notify(self.sender, recipients, 
-                self.policy.announcelist, changesfileobject, maintainerfrom,
-                self.logger)
+            self.queue_root.notify(self.policy.announcelist, 
+                changesfileobject, self.logger)
             changesfileobject.close()
             return True
 
