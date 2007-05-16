@@ -409,7 +409,7 @@ Even for a dummy PO msgset
 Rosetta also has translation groups.
 
     >>> canonical_url(getUtility(ITranslationGroupSet))
-    u'http://launchpad.dev/translations/groups'
+    u'http://launchpad.dev/+translation-groups'
 
 == Specifications ==
 

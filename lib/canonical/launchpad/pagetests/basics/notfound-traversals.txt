@@ -68,6 +68,22 @@ status is returned.
 >>> check_not_found("/+languages/es/foos", host='translations.launchpad.dev')
 >>> check_not_found("/+languages/foos", host='translations.launchpad.dev')
 
+>>> check("/+translation-groups", host='translations.launchpad.dev')
+>>> check("/+translation-groups/+new", auth=True,
+...       host='translations.launchpad.dev')
+>>> check("/+translation-groups/testing-translation-team",
+...       host='translations.launchpad.dev')
+>>> check("/+translation-groups/testing-translation-team/+edit",
+...       auth=True, host='translations.launchpad.dev')
+>>> check("/+translation-groups/testing-translation-team/+appoint",
+...       auth=True, host='translations.launchpad.dev')
+>>> check("/+translation-groups/testing-translation-team/es",
+...       auth=True, host='translations.launchpad.dev')
+>>> check_not_found("/+translation-groups/testing-translation-team/pt_br",
+...                 host='translations.launchpad.dev')
+>>> check_not_found("/+translation-groups/foos",
+...                 host='translations.launchpad.dev')
+
 >>> check("robots.txt", host="shipit.ubuntu.dev")
 
 >>> check("/bounties")
@@ -404,7 +420,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("//@@")
 >>> check("/translations/@@")
 >>> check("//translations/@@")
->>> check_not_found("/translations/groups/testing-translation-team/pt_br")
+>>> check_redirect("/translations/groups/", status=301)
 
 >>> check_not_found("/@@/launchpad_brokenlink.png")
 >>> check_not_found("//@@/launchpad_brokenlink.png")
