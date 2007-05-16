@@ -76,11 +76,13 @@ def authorizations(_context, module):
 class ISecuredUtilityDirective(Interface):
     """Configure a utility with security directives."""
 
-    class_ = GlobalObject(title=u'class', required=True)
+    class_ = GlobalObject(title=u'class', required=False)
 
     provides = GlobalObject(
         title=u'interface this utility provides',
         required=True)
+
+    component = GlobalObject(title=u'component', required=False)
 
 
 class PermissionCollectingContext:
@@ -103,8 +105,14 @@ class PermissionCollectingContext:
 
 class SecuredUtilityDirective:
 
-    def __init__(self, _context, class_, provides):
-        self.component = class_()
+    def __init__(self, _context, provides, class_=None, component=None):
+        if class_ is not None:
+            assert component is None, "Both class and component specified"
+            self.component = class_()
+        else:
+            assert component is not None, \
+                    "Neither class nor component specified"
+            self.component = component
         self._context = _context
         self.provides = provides
         self.permission_collector = PermissionCollectingContext()

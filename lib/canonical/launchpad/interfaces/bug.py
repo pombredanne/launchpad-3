@@ -248,6 +248,14 @@ class IBug(IMessageTarget, ICanBeMentored):
     def addCommentNotification(message):
         """Add a bug comment notification."""
 
+    def expireNotifications():
+        """Expire any pending notifications that have not been emailed.
+
+        This will mark any notifications related to this bug as having
+        been emailed.  The intent is to prevent large quantities of
+        bug mail being generated during bulk imports or changes.
+        """
+
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.

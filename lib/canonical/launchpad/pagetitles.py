@@ -604,6 +604,14 @@ object_translations = ContextTitle('Translation templates for %s')
 
 oops = 'Oops!'
 
+def openid_decide(context, view):
+    return 'Authenticate to %s' % view.openid_request.trust_root
+
+openid_index = 'Launchpad OpenID Server'
+
+def openid_invalid_identity(context, view):
+    return 'Invalid OpenID identity %s' % view.openid_request.identity
+
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
 
@@ -625,7 +633,7 @@ people_requestmerge = 'Merge Launchpad accounts'
 people_requestmerge_multiple = 'Merge Launchpad accounts'
 
 person_answer_contact_for = ContextDisplayName(
-    'Projects for which %s is an answer contact')    
+    'Projects for which %s is an answer contact')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
@@ -667,7 +675,7 @@ def person_index(context, view):
     if context.is_valid_person_or_team:
         return '%s in Launchpad' % context.displayname
     else:
-        return "%s's contributions to Free Software" % context.displayname
+        return "%s does not use Launchpad" % context.displayname
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 

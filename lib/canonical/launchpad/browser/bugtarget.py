@@ -42,7 +42,7 @@ from canonical.launchpad.interfaces import (
     IProjectBugAddForm)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
-    urlappend)
+    safe_action, urlappend)
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
@@ -456,6 +456,7 @@ class FileBugGuidedView(FileBugViewBase):
 
     focused_element_id = 'field.title'
 
+    @safe_action
     @action("Continue", name="search", validator="validate_search")
     def search_action(self, action, data):
         """Search for similar bug reports."""
