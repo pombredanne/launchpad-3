@@ -686,7 +686,7 @@ class TeamMembershipStatus(DBSchema):
         actual member, you have to accept the invitation.
         """)
 
-    INVITATION_DECLINED = Item(7, """
+    INVITATION_DECLINED = Item(8, """
         Invitation declined
 
         You have been invited as a member of this team but the invitation has
