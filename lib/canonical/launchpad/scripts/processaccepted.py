@@ -7,7 +7,7 @@ __all__ = ['close_bugs']
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.tagfiles import parse_tagfile_lines
+from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.launchpad.interfaces import (
     IBugSet, IDistroReleaseQueueSet, NotFoundError)
 from canonical.lp.dbschema import BugTaskStatus
@@ -19,7 +19,7 @@ def get_bugs_from_changes_file(changes_file):
     separated by a space character. Nonexistent bug ids are ignored.
     """
     contents = changes_file.read()
-    changes_lines = ["%s\n" % line for line in contents.splitlines()]
+    changes_lines = contents.splitlines(True)
     tags = parse_tagfile_lines(changes_lines, allow_unsigned=True)
     bugs_fixed_line = tags.get('launchpad-bugs-fixed', '')
     bugs = []
