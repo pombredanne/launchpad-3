@@ -37,8 +37,8 @@ It returns the edited bugtask.
     >>> firefox_bugtask.status.name
     'CONFIRMED'
 
-It also emits an SQLObjectModifiedEvent so that a BugNotification record
-is created.
+It also emits an SQLObjectModifiedEvent so that BugNotification and
+BugActivity records are created.
 
     >>> from canonical.launchpad.database import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
@@ -47,6 +47,15 @@ is created.
     >>> print latest_notification.message.text_contents
     ** Changed in: firefox (upstream)
            Status: Unconfirmed => Confirmed
+
+    >>> from canonical.launchpad.database import BugActivity
+    >>> latest_activity = BugActivity.selectFirst(orderBy='-id')
+    >>> latest_activity.whatchanged
+    u'firefox: status'
+    >>> latest_activity.oldvalue
+    u'Unconfirmed'
+    >>> latest_activity.newvalue
+    u'Confirmed'
 
 === Product series ===
 
