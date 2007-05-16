@@ -416,6 +416,13 @@ class Bug(SQLBase):
         BugNotification(
             bug=self, is_comment=True, message=message, date_emailed=None)
 
+    def expireNotifications(self):
+        """See IBug."""
+        for notification in BugNotification.selectBy(
+                bug=self, date_emailed=None):
+            notification.date_emailed = UTC_NOW
+            notification.syncUpdate()
+
     def newMessage(self, owner=None, subject=None, content=None, parent=None):
         """Create a new Message and link it to this bug."""
         msg = Message(

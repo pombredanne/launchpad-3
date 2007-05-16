@@ -207,6 +207,7 @@ def setUpGlobs(test):
             browser.addHeader("Authorization", auth)
         return browser
 
+    test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
     test.globs['user_browser'] = setupBrowser(
