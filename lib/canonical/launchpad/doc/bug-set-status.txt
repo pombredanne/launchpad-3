@@ -4,11 +4,12 @@ If you have a bug and a target, there's method which makes it easier to
 change the bug's status for that specific target. It expects the user
 changing the status, the target, and the new status.
 
-    >>> login('no-priv@canonical.com')
-    >>> import transaction;
     >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> #LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-    >>> no_priv = getUtility(ILaunchBag).user
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, IProductSet)
     >>> from canonical.lp.dbschema import BugTaskStatus
@@ -16,10 +17,16 @@ changing the status, the target, and the new status.
     ...     owner=no_priv, title='Sample bug', comment='This is a sample bug.')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> bug = firefox.createBug(bug_params)
+    >>> bug_id = bug.id
 
-    >>> #transaction.commit()
-    >>> #LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug = getUtility(IBugSet).get(bug_id)
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_bugtask = bug.setStatus(
     ...     firefox, BugTaskStatus.CONFIRMED, no_priv)
 
@@ -60,11 +67,25 @@ If the bug is targeted to the product series, the product series bugtask
 is edited.
 
     >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bug = getUtility(IBugSet).get(bug_id)
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_trunk = firefox.getSeries('trunk')
     >>> getUtility(IBugTaskSet).createTask(
     ...     bug, productseries=firefox_trunk, owner=no_priv)
     <BugTask at ...>
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> bug = getUtility(IBugSet).get(bug_id)
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_trunk = firefox.getSeries('trunk')
     >>> firefox_trunk_bugtask = bug.setStatus(
     ...     firefox_trunk, BugTaskStatus.NEEDSINFO, no_priv)
+
     >>> firefox_trunk_bugtask.target.name
     u'trunk'
     >>> firefox_trunk_bugtask.status.name
@@ -74,6 +95,9 @@ If the target bugtask has a conjoined master bugtask, the conjoined
 master will be edited and returned. The conjoined slave is of course
 updated automatically.
 
+    >>> firefox_bugtask = firefox_trunk_bugtask.conjoined_slave
+    >>> firefox_bugtask.target.name
+    u'firefox'
     >>> firefox_bugtask.conjoined_master is not None
     True
     >>> firefox_bugtask.status.name
@@ -92,9 +116,18 @@ updated automatically.
 Setting the status of a distribution or package bugtask work the same as
 for product tasks.
 
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> bug = ubuntu.createBug(bug_params)
+    >>> bug_id = bug.id
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+    >>> bug = getUtility(IBugSet).get(bug_id)
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_bugtask = bug.setStatus(
     ...     ubuntu, BugTaskStatus.CONFIRMED, no_priv)
     >>> ubuntu_bugtask.target.name
@@ -151,22 +184,46 @@ targeted to the non-current release of course.
 
     # Need to be privileged user to target the bug to a release.
     >>> login('foo.bar@canonical.com')
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bug = getUtility(IBugSet).get(bug_id)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_hoary = ubuntu.getRelease('hoary')
     >>> nomination = bug.addNomination(
     ...     getUtility(ILaunchBag).user, ubuntu_hoary)
     >>> nomination.isApproved()
     True
     >>> login('no-priv@canonical.com')
 
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> bug = getUtility(IBugSet).get(bug_id)
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_warty = ubuntu.getRelease('warty')
+    >>> warty_firefox = ubuntu_warty.getSourcePackage('mozilla-firefox')
     >>> bug.setStatus(warty_firefox, BugTaskStatus.NEEDSINFO, no_priv) is None
     True
 
     >>> login('foo.bar@canonical.com')
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> bug = getUtility(IBugSet).get(bug_id)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_warty = ubuntu.getRelease('warty')
     >>> nomination = bug.addNomination(
     ...     getUtility(ILaunchBag).user, ubuntu_warty)
     >>> nomination.isApproved()
     True
     >>> login('no-priv@canonical.com')
 
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> bug = getUtility(IBugSet).get(bug_id)
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_warty = ubuntu.getRelease('warty')
+    >>> warty_firefox = ubuntu_warty.getSourcePackage('mozilla-firefox')
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     warty_firefox, BugTaskStatus.NEEDSINFO, no_priv)
     >>> ubuntu_firefox_task.target.displayname

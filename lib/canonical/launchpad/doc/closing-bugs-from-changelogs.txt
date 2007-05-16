@@ -12,9 +12,11 @@ The package uploads are associated with specific releases of the
 package, but the bugs they reference may be filed on the generic
 distribution package.
 
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, IDistributionSet)
     >>> login('no-priv@canonical.com')
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> pmount_ubuntu = ubuntu.getSourcePackage('pmount')
     >>> bug_params = CreateBugParams(
@@ -55,7 +57,8 @@ uploaded to.
     ...     DistroReleaseQueueSource, SourcePackageRelease)
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> pmount_release = SourcePackageRelease.get(20)
+    >>> pmount_release_id = 20
+    >>> pmount_release = SourcePackageRelease.get(pmount_release_id)
     >>> pmount_release.sourcepackagename.name
     u'pmount'
     >>> pmount_release.uploaddistrorelease.name
@@ -66,14 +69,15 @@ uploaded to.
 
     # Need to commit the transaction so that the changes file can be
     # downloaded from the Librarian.
-    >>> import transaction
-    >>> transaction.commit()
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
 
 Right after the queue items have been processed by the publishing
 scripts, close_bugs() is called with a list of queue item ids that have
 been published. Passing a queue item with a Launchpad-bugs-fixed header
 will close the specified bug.
 
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
     >>> [pmount_task] = pmount_bug.bugtasks
@@ -88,7 +92,11 @@ will close the specified bug.
 The changelog associated with the SourcePackageRelease is automatically
 added as a comment from the uploader.
 
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
     >>> last_comment = pmount_bug.messages[-1]
+    >>> pmount_release = SourcePackageRelease.get(pmount_release_id)
     >>> print pmount_release.creator.displayname
     Mark Shuttleworth
     >>> print last_comment.owner.displayname
@@ -161,8 +169,7 @@ specified, it's ignored.
 
     # Need to commit the transaction so that the changes file can be
     # downloaded from the Librarian.
-    >>> transaction.commit()
-    >>> flush_database_updates()
+    >>> commit()
 
     >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
     >>> [pmount_task] = pmount_bug.bugtasks
@@ -173,12 +180,17 @@ specified, it's ignored.
     >>> another_pmount_task.status.name
     'UNCONFIRMED'
 
-XXX: The tests below fail since it can't find the librarian file alias
-     inserted above. Need to resolve this before landing.
-
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     >>> close_bugs([queue_item_id])
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
+    >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
+    >>> [pmount_task] = pmount_bug.bugtasks
     >>> pmount_task.status.name
     'FIXRELEASED'
+    >>> another_pmount_bug = getUtility(IBugSet).get(another_pmount_bug_id)
+    >>> [another_pmount_task] = another_pmount_bug.bugtasks
     >>> another_pmount_task.status.name
     'FIXRELEASED'
