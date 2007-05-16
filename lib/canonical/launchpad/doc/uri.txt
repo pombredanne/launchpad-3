@@ -64,10 +64,9 @@ We also test the basic parsing functionality.
     >>> uri.path
     '/blee/blah'
 
-Query portions can also contain square braces, even though this
-*might* be in violation of RFC 3986, or they might be permitted. In
-any case we're seeing them on Launchpad so we must work with them. See
-bug-112315 for the initial motivation for this change.
+The grammar from RFC 3986 does not allow for square brackets in the
+query component, but Section 3.4 does say how such delimeter
+characters should be handled if found in the component.
 
     >>> uri = URI('http://www.apple.com/store?delivery=[slow]#horse+cart')
     >>> uri.scheme
