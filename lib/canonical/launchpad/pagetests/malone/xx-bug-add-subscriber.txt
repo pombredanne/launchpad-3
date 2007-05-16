@@ -27,7 +27,7 @@ Lets make sure our subscribee isn't already subscribed.
     >>> from canonical.launchpad.ftests.test_pages import find_portlet
     >>> user_browser.open(bug_url)
     >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
-    >>> subscribee_name not in subs.renderContents()
+    >>> subscribee_name not in subs('ul')[0].renderContents()
     True
 
 Now, we'll subscribe our subscribee to the bug.
@@ -44,6 +44,6 @@ Now, we should see our subscribee in the list of subscribers to this bug.
     >>> from canonical.launchpad.ftests.test_pages import find_portlet
     >>> user_browser.open(bug_url)
     >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
-    >>> subscribee_name in subs.renderContents()
+    >>> subscribee_name in subs('ul')[0].renderContents()
     True
 
