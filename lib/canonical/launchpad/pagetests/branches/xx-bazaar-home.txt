@@ -4,7 +4,7 @@ Check that the Bazaar home page works.
   >>> footer = find_tag_by_id(browser.contents, 'application-footer')
 
   >>> print extract_text(footer)
-  27 branches registered in
+  28 branches registered in
   5 projects
   3 imported branches
   2 branches associated with bug reports

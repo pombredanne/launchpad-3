@@ -11,3 +11,5 @@ Status
 Database patches can be landed at the moment. Beta code updates are
 blocked. If this is a problem, notify stub.
 
+Next DB freeze scheduled May 24th.
+
