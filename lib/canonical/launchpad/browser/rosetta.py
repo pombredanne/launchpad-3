@@ -16,11 +16,12 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IRequestPreferredLanguages, ICountry, ILaunchpadCelebrities,
-    IRosettaApplication, ITranslationGroupSet, IProjectSet, IProductSet,
-    ITranslationImportQueue)
+    IRosettaApplication, ILaunchpadRoot, ITranslationGroupSet, IProjectSet,
+    IProductSet, ITranslationImportQueue)
 from canonical.launchpad import helpers
 import canonical.launchpad.layers
-from canonical.launchpad.webapp import Navigation, redirection, stepto
+from canonical.launchpad.webapp import (
+    Navigation, redirection, stepto, canonical_url)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.cachedproperty import cachedproperty
@@ -90,8 +91,12 @@ class RosettaApplicationNavigation(Navigation):
     redirection('prefs', '/+editmylanguages', status=httplib.MOVED_PERMANENTLY)
 
     @stepto('groups')
-    def groups(self):
-        return getUtility(ITranslationGroupSet)
+    def redirect_groups(self):
+        """Redirect /translations/+groups to Translations root site."""
+        target_url= canonical_url(
+            getUtility(ILaunchpadRoot), rootsite='translations')
+        return self.redirectSubTree(
+            target_url + '+translation-groups', status=301)
 
     @stepto('imports')
     def imports(self):

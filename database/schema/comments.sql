@@ -3,8 +3,15 @@
   table.
 */
 
--- AnswerContact
+/* AnswerContact */
+
 COMMENT ON TABLE AnswerContact IS 'Defines the answer contact for a given question target. The answer contact will be automatically notified about changes to any questions filed on the question target.';
+COMMENT ON COLUMN AnswerContact.product IS 'The product that the answer contact supports.';
+COMMENT ON COLUMN AnswerContact.distribution IS 'The distribution that the answer contact supports.';
+COMMENT ON COLUMN AnswerContact.sourcepackagename IS 'The sourcepackagename that the answer contact supports.';
+COMMENT ON COLUMN AnswerContact.person IS 'The person or team associated with the question target.';
+COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was submitted.';
+COMMENT ON COLUMN AnswerContact.want_english IS 'Whether or not the answer contact supports questions in English.';
 
 /* Branch */
 
@@ -12,13 +19,6 @@ COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.whiteboard IS 'Notes on the current status of the branch';
 COMMENT ON COLUMN Branch.summary IS 'A single paragraph description of the branch';
 COMMENT ON COLUMN Branch.lifecycle_status IS 'Authors assesment of the branchs maturity';
-COMMENT ON COLUMN Branch.branch_home_page IS 'This column is unused';
-COMMENT ON COLUMN Branch.landing_target IS 'This column is unused, to be replaced with a BranchLandingTarget table';
-COMMENT ON COLUMN Branch.current_delta_url IS 'This column is unused';
-COMMENT ON COLUMN Branch.current_conflicts_url IS 'This column is unused';
-COMMENT ON COLUMN Branch.current_diff_adds IS 'This column is unused';
-COMMENT ON COLUMN Branch.current_diff_deletes IS 'This column is unused';
-COMMENT ON COLUMN Branch.stats_updated IS 'This column is unused';
 COMMENT ON COLUMN Branch.mirror_status_message IS 'The last message we got when mirroring this branch.';
 COMMENT ON COLUMN Branch.last_mirrored IS 'The time when the branch was last mirrored.';
 COMMENT ON COLUMN Branch.last_mirrored_id IS 'The revision ID of the branch when it was last mirrored.';
@@ -261,6 +261,16 @@ COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the
 COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
 COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
 
+-- ProductReleaseFile
+
+COMMENT ON TABLE ProductReleaseFile IS 'Links a ProductRelease to one or more files in the Librarian.';
+COMMENT ON COLUMN ProductReleaseFile.productrelease IS 'This is the product release this file is associated with';
+COMMENT ON COLUMN ProductReleaseFile.libraryfile IS 'This is the librarian entry';
+COMMENT ON COLUMN ProductReleaseFile.description IS 'A description of what the file contains';
+COMMENT ON COLUMN ProductReleaseFile.filetype IS 'An enum of what kind of file this is. Code tarballs are marked for special treatment (importing into bzr)';
+COMMENT ON COLUMN ProductReleaseFile.uploader IS 'The person who uploaded this file.';
+COMMENT ON COLUMN ProductReleaseFile.date_uploaded IS 'The date this file was uploaded.';
+COMMENT on COLUMN ProductReleaseFile.id IS '';
 
 -- ProductSeries
 COMMENT ON TABLE ProductSeries IS 'A ProductSeries is a set of product releases that are related to a specific version of the product. Typically, each major release of the product starts a new ProductSeries. These often map to a branch in the revision control system of the project, such as "2_0_STABLE". A few conventional Series names are "head" for releases of the HEAD branch, "1.0" for releases with version numbers like "1.0.0" and "1.0.1".  Each product has at least one ProductSeries';
@@ -746,6 +756,8 @@ COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a p
 
 -- Person
 COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
+COMMENT ON COLUMN Person.subscriptionpolicy IS 'The policy for new members to join this team.';
+COMMENT ON COLUMN Person.renewal_policy IS 'The policy for membership renewal on this team.';
 COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
 COMMENT ON COLUMN Person.password IS 'SSHA digest encrypted password.';
 COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';

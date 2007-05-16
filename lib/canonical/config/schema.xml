@@ -54,6 +54,7 @@
     <sectiontype name="translations" extends="virtual_host" />
     <sectiontype name="bugs" extends="virtual_host" />
     <sectiontype name="answers" extends="virtual_host" />
+    <sectiontype name="openid" extends="virtual_host" />
     <sectiontype name="shipitubuntu" extends="virtual_host" />
     <sectiontype name="shipitkubuntu" extends="virtual_host" />
     <sectiontype name="shipitedubuntu" extends="virtual_host" />
@@ -72,6 +73,7 @@
         <section name="*" type="translations" attribute="translations" required="yes" />
         <section name="*" type="bugs" attribute="bugs" required="yes" />
         <section name="*" type="answers" attribute="answers" required="yes" />
+        <section name="*" type="openid" attribute="openid" required="yes" />
         <section name="*" type="shipitubuntu" attribute="shipitubuntu" required="yes" />
         <section name="*" type="shipitkubuntu" attribute="shipitkubuntu" required="yes" />
         <section name="*" type="shipitedubuntu" attribute="shipitedubuntu" required="yes" />
@@ -245,6 +247,13 @@ k            </description>
                 If set, the host name to redirect beta testers to.
             </description>
             <example>beta.launchpad.net</example>
+        </key>
+        <key name="openid_users" datatype="string"
+            default="launchpad">
+            <description>
+                The team that can use Launchpad as an OpenID provider.
+                Set to 'all' for open access.
+            </description>
         </key>
         <key name="non_restricted_hostname" datatype="string"
              default="launchpad.net">
