@@ -47,6 +47,7 @@ from canonical.launchpad.database.questionsubscription import (
     QuestionSubscription)
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp.enum import Item
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -415,24 +416,69 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getSubscribers(self):
         """See IQuestion."""
-        direct = set(self.getDirectSubscribers())
-        indirect = set(self.getIndirectSubscribers())
-        return sorted(
-            direct.union(indirect), key=operator.attrgetter('displayname'))
+        subscribers = self.getDirectSubscribers()
+        subscribers.update(self.getIndirectSubscribers())
+        return subscribers
 
     def getDirectSubscribers(self):
         """See IQuestion."""
-        return sorted(
-            self.subscribers, key=operator.attrgetter('displayname'))
+        subscribers = NotificationRecipientSet()
+        reason = ("You received this question notification because you are "
+                  "a direct subscriber of the question.")
+        subscribers.add(self.subscribers, reason, 'Subscriber')
+        return subscribers
 
     def getIndirectSubscribers(self):
         """See IQuestion."""
-        subscribers = set(self.target.answer_contacts)
-
+        subscribers = NotificationRecipientSet()
+        # We need to add the source package answer contacts separately
+        # because some are contacts for the distro while others are only
+        # registered for the package.
+        self._addSourcePackageAnswerContactRecipients(subscribers)
+        self._addProjectAnswerContactRecipients(subscribers)
         if self.assignee:
-            subscribers.add(self.assignee)
+            reason = ('You received this question notification because you '
+                      'are the assignee for this question.')
+            subscribers.add(self.assignee, reason, 'Assignee')
+        return subscribers
 
-        return sorted(subscribers, key=operator.attrgetter('displayname'))
+    def _addSourcePackageAnswerContactRecipients(self, recipients):
+        """Add the source package answer contacts to the
+        INotificationRecipientSet."""
+        if self.sourcepackagename is None:
+            return
+        target_name = self.target.displayname
+        target = self.target
+        for person in self.target.direct_answer_contacts:
+            self._addAnswerContactRecipient(
+                recipients, person, target, target_name)
+
+    def _addProjectAnswerContactRecipients(self, recipients):
+        """Add the project answer contacts to the INotificationRecipientSet."""
+        if self.sourcepackagename:
+            target = self.distribution
+        else:
+            target = self.target
+        target_name = target.name
+        for person in target.answer_contacts:
+            self._addAnswerContactRecipient(
+                recipients, person, target, target_name)
+
+    def _addAnswerContactRecipient(self,
+            recipients, person, target, target_name):
+        """Add an answer contact recipient to the INotificationRecipientSet."""
+        reason_start = (
+            "You received this question notification because you are ")
+        if person.isTeam():
+            reason = reason_start + (
+                'a member of %s, which is an answer contact for %s.' % (
+                    person.displayname, target.displayname))
+            header = 'Answer Contact (%s) @%s' % (target_name, person.name)
+        else:
+            reason = reason_start + (
+                'an answer contact for %s.' % target.displayname)
+            header = 'Answer Contact (%s)' % target_name
+        recipients.add(person, reason, header)
 
     def _newMessage(self, owner, content, action, new_status, subject=None,
                     datecreated=None, update_question_dates=True):
