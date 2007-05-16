@@ -21,7 +21,7 @@ class TestPerson(LaunchpadFunctionalTestCase):
         # sample_person._getDirectMemberIParticipateIn(ubuntu_team) will fail
         # with an AssertionError.
         self.failUnless(sample_person in warty_team.activemembers)
-        self.failUnless(warty_team in ubuntu_team.invitedmembers)
+        self.failUnless(warty_team in ubuntu_team.invited_members)
         self.failUnlessRaises(
             AssertionError, sample_person._getDirectMemberIParticipateIn,
             ubuntu_team)

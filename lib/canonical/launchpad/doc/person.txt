@@ -96,7 +96,8 @@ And now with the same name of a existing account
 
 === Ubunteros ===
 
-To list all Ubunteros, use IPersonSet.getUbunteros():
+Anybody who signed the last version of Ubuntu's Code of Conduct is considered
+an Ubuntero.  To list all Ubunteros, use IPersonSet.getUbunteros():
 
     >>> [p.name for p in personset.getUbunteros()]
     [u'name16']
@@ -105,7 +106,6 @@ To check if a person is an Ubuntero, use IPerson.is_ubuntero:
 
     >>> foobar.is_ubuntero
     True
-
 
 == Teams ==
 
@@ -129,27 +129,49 @@ method of IPerson or check if the object provides the ITeam interface.
 
 === Team members ===
 
-The landscape_devs team has some active, inactive and pending members;
-let's have a look at them.
+The relationship between a person and a team is stored in TeamMemberships
+table. TeamMemberships have a status (which can be any item of
+TeamMembershipStatus) and represent the current state of the relationship
+between that person and that team. Only TeamMembershipStatus with an ADMIN
+or APPROVED status are considered active.
 
     >>> [member.displayname for member in landscape_devs.approvedmembers]
     [u'Guilherme Salgado']
     >>> [member.displayname for member in landscape_devs.adminmembers]
     [u'Sample Person']
+
+The IPerson.activemembers property will always include all approved and admin
+members of that team.
+
     >>> [member.displayname for member in landscape_devs.activemembers]
     [u'Guilherme Salgado', u'Sample Person']
 
+TeamMemberships with a PROPOSED or INVITED status represent a person/team
+which has proposed himself as a member or which has been invited to join
+the team.
+
     >>> [member.displayname for member in landscape_devs.proposedmembers]
     [u'Foo Bar']
-    >>> [member.displayname for member in landscape_devs.invitedmembers]
+    >>> [member.displayname for member in landscape_devs.invited_members]
     [u'Launchpad Developers']
+
+Similarly, we have IPerson.pendingmembers which includes both invited and
+proposed members.
+
     >>> [member.displayname for member in landscape_devs.pendingmembers]
     [u'Foo Bar', u'Launchpad Developers']
+
+Finally, we have EXPIRED and DEACTIVATED TeamMemberships, which represent
+former (inactive) members of a team.
 
     >>> [member.displayname for member in landscape_devs.expiredmembers]
     [u'Karl Tilbury']
     >>> [member.displayname for member in landscape_devs.deactivatedmembers]
     [u'No Privileges Person']
+
+We can get a list of all inactive members of a team with the
+IPerson.inactivemembers property.
+
     >>> [member.displayname for member in landscape_devs.inactivemembers]
     [u'Karl Tilbury', u'No Privileges Person']
 
@@ -213,8 +235,8 @@ If a team has a contact email address, all notifications we send to the
 team will go to that address.
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> ubuntu_team.preferredemail is None
-    False
+    >>> ubuntu_team.preferredemail.email
+    u'support@ubuntu.com'
     >>> contactEmailAddresses(ubuntu_team)
     set(['support@ubuntu.com'])
 
@@ -224,11 +246,13 @@ each direct member of that team.
 
     >>> vcs_imports.preferredemail is None
     True
-    >>> [member.name for member in vcs_imports.activemembers]
-    [u'ddaa', u'name16', u'lifeless']
-    >>> contactEmailAddresses(vcs_imports)
-    set(['david.allouche@canonical.com', 'robertc@robertcollins.net',
-         'foo.bar@canonical.com'])
+    >>> sorted(member.preferredemail.email
+    ...        for member in vcs_imports.activemembers)
+    [u'david.allouche@canonical.com', u'foo.bar@canonical.com',
+     u'robertc@robertcollins.net']
+    >>> sorted(contactEmailAddresses(vcs_imports))
+    ['david.allouche@canonical.com', 'foo.bar@canonical.com',
+     'robertc@robertcollins.net']
 
 
 == Renaming persons ==

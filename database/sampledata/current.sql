@@ -9098,6 +9098,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (65, 16, 64, 1, '2007-05-10 14:57:47.187522', NULL, 16, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (66, 29, 64, 2, '2007-05-10 17:21:17.877009', NULL, 16, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (67, 63, 64, 5, '2005-05-10 17:22:02.377319', '2006-05-10 17:22:02.377319', 16, '');
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (68, 12, 17, 1, '2007-05-16 15:03:47.748238', NULL, 12, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
