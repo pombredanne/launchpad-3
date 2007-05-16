@@ -167,10 +167,6 @@ specified, it's ignored.
     ...     distroreleasequeue=queue_item,
     ...     sourcepackagerelease=pmount_release)
 
-    # Need to commit the transaction so that the changes file can be
-    # downloaded from the Librarian.
-    >>> commit()
-
     >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
     >>> [pmount_task] = pmount_bug.bugtasks
     >>> pmount_task.status.name
@@ -185,6 +181,57 @@ specified, it's ignored.
     >>> close_bugs([queue_item_id])
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
+    >>> [pmount_task] = pmount_bug.bugtasks
+    >>> pmount_task.status.name
+    'FIXRELEASED'
+    >>> another_pmount_bug = getUtility(IBugSet).get(another_pmount_bug_id)
+    >>> [another_pmount_task] = another_pmount_bug.bugtasks
+    >>> another_pmount_task.status.name
+    'FIXRELEASED'
+
+== process-accepted.py ==
+
+The closing of bugs are done in process-accepted.py, right after the
+queue items have been processed.
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> queue_item = DistroReleaseQueue.get(queue_item_id)
+    >>> queue_item = DistroReleaseQueue(
+    ...     status=DistroReleaseQueueStatus.ACCEPTED,
+    ...     distrorelease=ubuntu_hoary,
+    ...     pocket=PackagePublishingPocket.RELEASE,
+    ...     changesfile=changes_file, signing_key=None)
+    >>> queue_item_id = queue_item.id
+    >>> source_queue = DistroReleaseQueueSource(
+    ...     distroreleasequeue=queue_item,
+    ...     sourcepackagerelease=pmount_release)
+
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
+    >>> [pmount_task] = pmount_bug.bugtasks
+    >>> pmount_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> another_pmount_bug = getUtility(IBugSet).get(another_pmount_bug_id)
+    >>> [another_pmount_task] = another_pmount_bug.bugtasks
+    >>> another_pmount_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+    >>> import os.path
+    >>> import subprocess
+    >>> import sys
+    >>> from canonical.config import config
+    >>> script = os.path.join(config.root, "scripts/process-accepted.py")
+    >>> process = subprocess.Popen(
+    ...     [sys.executable, script, "ubuntu"])
+    ...     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    >>> stdout, stderr = process.communicate()
+    >>> process.returncode
+    0
 
     >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
     >>> [pmount_task] = pmount_bug.bugtasks
