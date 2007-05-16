@@ -30,5 +30,5 @@ ALTER TABLE Branch DROP COLUMN current_diff_deletes;
 ALTER TABLE Branch DROP COLUMN stats_updated;
 ALTER TABLE Branch DROP COLUMN current_activity;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (79, 10, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 04, 0);
 
