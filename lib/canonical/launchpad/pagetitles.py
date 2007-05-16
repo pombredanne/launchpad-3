@@ -403,6 +403,8 @@ distrorelease_search = ContextDisplayName('Search packages in %s')
 
 distrorelease_translations = ContextTitle('Translations of %s in Launchpad')
 
+distrorelease_translationsadmin = ContextTitle('Change translation options of %s')
+
 distrorelease_builds = ContextTitle('Builds for %s')
 
 distrorelease_queue = ContextTitle('Queue for %s')

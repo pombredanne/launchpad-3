@@ -71,7 +71,8 @@
   <browser:menus
     module="canonical.launchpad.browser.distrorelease"
     classes="DistroReleaseFacets DistroReleaseOverviewMenu
-             DistroReleaseBugsMenu DistroReleaseSpecificationsMenu"
+             DistroReleaseBugsMenu DistroReleaseSpecificationsMenu
+             DistroReleaseTranslationsMenu"
     />
 
   <browser:defaultView
@@ -226,6 +227,16 @@
     facet="overview"
     fields="displayname title summary description"
     template="../templates/distrorelease-edit.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    permission="launchpad.TranslationsAdmin"
+    class="canonical.launchpad.browser.DistroReleaseTranslationsAdminView"
+    name="+admin"
+    facet="translations"
+    template="../templates/distrorelease-translationsadmin.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <!-- NB DO NOT CHANGE WITHOUT THINKING

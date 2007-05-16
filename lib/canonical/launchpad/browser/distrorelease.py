@@ -12,6 +12,7 @@ __all__ = [
     'DistroReleaseView',
     'DistroReleaseEditView',
     'DistroReleaseAddView',
+    'DistroReleaseTranslationsAdminView',
     ]
 
 from zope.component import getUtility
@@ -23,7 +24,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
-    enabled_with_permission, GetitemNavigation, stepthrough)
+    enabled_with_permission, GetitemNavigation, stepthrough,
+    LaunchpadFormView, action)
 from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.launchpad.interfaces import (
@@ -225,6 +227,17 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
         return Link('+roadmap', text, icon='info')
 
 
+class DistroReleaseTranslationsMenu(ApplicationMenu):
+
+    usedfor = IDistroRelease
+    facet = 'translations'
+    links = ['admin']
+
+    @enabled_with_permission('launchpad.TranslationsAdmin')
+    def admin(self):
+        return Link('+admin', 'Edit translation options', icon='edit')
+
+
 class DistroReleaseView(BuildRecordsView, QueueItemsView):
 
     def initialize(self):
@@ -363,3 +376,16 @@ class DistroReleaseDynMenu(DynMenu):
         for architecture in self.context.architectures:
             yield self.makeBreadcrumbLink(architecture)
 
+
+class DistroReleaseTranslationsAdminView(LaunchpadFormView):
+    schema = IDistroRelease
+
+    field_names = ['hide_all_translations']
+
+    @action("Change")
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
