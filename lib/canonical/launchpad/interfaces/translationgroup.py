@@ -16,7 +16,7 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 
 class ITranslationGroup(IHasOwner):
@@ -92,4 +92,7 @@ class ITranslationGroupSet(IAddFormCustomization):
 
     def getByPerson(person):
         """Return the translation groups which that person is a member of."""
+
+    def getGroupsCount():
+        """Return the amount of translation groups available."""
 
