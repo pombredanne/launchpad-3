@@ -37,7 +37,7 @@
       />
     <require
       permission="launchpad.Edit"
-      attributes="acceptInvitationToBeMemberOf"
+      attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf"
       />
   </content>
 
@@ -537,6 +537,13 @@
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
     template="../templates/team-members.pt"
+    />
+
+  <browser:page
+    name="+invitations"
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    template="../templates/team-invitations.pt"
     />
 
   <browser:page

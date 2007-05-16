@@ -126,38 +126,43 @@ was already an active/inactive member or has never been a member before.
     >>> marilize in t3.activemembers
     False
 
-Note that the ITeam.addMember() API works slightly different when the added
-member is a team. In that case the team will actually be invited to be a
-member and one of the team's admins will have to accpet the invitation before
-the team is made a member.
+Note that, by default, the ITeam.addMember() API works slightly different
+when the added member is a team. In that case the team will actually be
+invited to be a member and one of the team's admins will have to accpet the
+invitation before the team is made a member.
 
     >>> t1.addMember(t2, reviewer)
     >>> membership = membershipset.getByPersonAndTeam(t2, t1)
     >>> membership.status == TeamMembershipStatus.INVITED
     True
-
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
-    >>> def login_and_accept_invitation(member, team):
-    ...     """Login as the owner of the given member and approve the
-    ...     membership for this member on the given team.
-    ...     """
-    ...     login(member.teamowner.preferredemail.email)
-    ...     member.acceptInvitationToBeMemberOf(team)
-    ...     logout()
-    ...     login(ANONYMOUS)
+    >>> [m.displayname for m in t1.allmembers]
+    [u'Foo Bar']
 
 Once one of the t2 admins approve the membership, t2 is shown as a member
 of t1.
 
-    >>> login_and_accept_invitation(t2, t1)
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(t2.teamowner.preferredemail.email)
+    >>> t2.acceptInvitationToBeMemberOf(t1)
     >>> [m.displayname for m in t1.allmembers]
     [u'Foo Bar', u't2']
 
-Now we add t3 as a member of t2, so all of t3 members will also be considered
-members of t2.
+A team admin can also decline an invitation made to his team.
 
     >>> t2.addMember(t3, reviewer=sabdfl)
-    >>> login_and_accept_invitation(t3, t2)
+    >>> login(t3.teamowner.preferredemail.email)
+    >>> t3.declineInvitationToBeMemberOf(t2)
+    >>> membership = membershipset.getByPersonAndTeam(t3, t2)
+    >>> membership.status == TeamMembershipStatus.INVITATION_DECLINED
+    True
+
+In some cases it's necessary to bypass the invitation workflow and directly
+add teams as members of other teams. We can do that by passing an extra
+force_team_add=True to addMember(). We'll use that to add t3 as a member of
+t2, thus making all t3 members be considered members of t2 as well.
+
+    >>> login(ANONYMOUS)
+    >>> t2.addMember(t3, reviewer=sabdfl, force_team_add=True)
     >>> [m.displayname for m in t2.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't3']
 
@@ -178,18 +183,15 @@ loops.
 
 Adding t2 as a member of t5 will add all t2 members as t5 members too.
 
-    >>> t5.addMember(t2, reviewer)
-    >>> login_and_accept_invitation(t2, t5)
+    >>> t5.addMember(t2, reviewer, force_team_add=True)
     >>> [m.displayname for m in t5.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
 
 Adding t5 and t1 as members of t4 will add all t5 and t1 members as t4 
 members too.
 
-    >>> t4.addMember(t5, reviewer)
-    >>> login_and_accept_invitation(t5, t4)
-    >>> t4.addMember(t1, reviewer)
-    >>> login_and_accept_invitation(t1, t4)
+    >>> t4.addMember(t5, reviewer, force_team_add=True)
+    >>> t4.addMember(t1, reviewer, force_team_add=True)
     >>> [m.displayname for m in t4.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
 
@@ -583,8 +585,7 @@ member of.
 Adding admins as a member of t1 will make Salgado a member of t1 as well.
 
     >>> admins = getUtility(IPersonSet).getByName('admins')
-    >>> t1.addMember(admins, reviewer=t1.teamowner)
-    >>> login_and_accept_invitation(admins, t1)
+    >>> t1.addMember(admins, reviewer=t1.teamowner, force_team_add=True)
     >>> flush_database_updates()
     >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
     admins
@@ -594,8 +595,7 @@ Adding admins as a member of t1 will make Salgado a member of t1 as well.
 On the other hand, making t2 a member of admins won't change anything
 for Salgado.
 
-    >>> admins.addMember(t2, reviewer=admins.teamowner)
-    >>> login_and_accept_invitation(t2, admins)
+    >>> admins.addMember(t2, reviewer=admins.teamowner, force_team_add=True)
     >>> flush_database_updates()
     >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
     admins

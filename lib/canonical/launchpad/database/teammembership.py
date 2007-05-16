@@ -53,16 +53,6 @@ class TeamMembership(SQLBase):
         """See ITeamMembership"""
         return self.status.title
 
-    @property
-    def is_admin(self):
-        """See ITeamMembership"""
-        return self.status in [TeamMembershipStatus.ADMIN]
-
-    @property
-    def is_owner(self):
-        """See ITeamMembership"""
-        return self.person.id == self.team.teamowner.id
-
     def isExpired(self):
         """See ITeamMembership"""
         return self.status == TeamMembershipStatus.EXPIRED
@@ -131,6 +121,7 @@ class TeamMembership(SQLBase):
         deactivated = TeamMembershipStatus.DEACTIVATED
         proposed = TeamMembershipStatus.PROPOSED
         invited = TeamMembershipStatus.INVITED
+        invitation_declined = TeamMembershipStatus.INVITATION_DECLINED
 
         # Flush the cache used by the Person.inTeam method
         self.person._inTeam_cache = {}
@@ -144,7 +135,8 @@ class TeamMembership(SQLBase):
             expired: [proposed, approved, invited],
             proposed: [approved, admin, declined],
             declined: [proposed, approved],
-            invited: [approved]}
+            invited: [approved, invitation_declined],
+            invitation_declined: [invited, approved, admin]}
         assert self.status in state_transition, (
             "Unknown status: %s" % self.status.name)
         assert status in state_transition[self.status], (
@@ -164,7 +156,6 @@ class TeamMembership(SQLBase):
         if status in [admin, approved]:
             _fillTeamParticipation(self.person, self.team)
         else:
-            assert status in [proposed, declined, deactivated, expired]
             _cleanTeamParticipation(self.person, self.team)
 
         # When a member proposes himself, a more detailed notification is
@@ -225,6 +216,10 @@ class TeamMembership(SQLBase):
             subject = 'Launchpad: %s added to %s' % (member.name, team.name)
             if old_status == TeamMembershipStatus.INVITED:
                 template_name = 'membership-invitation-accepted'
+        elif new_status == TeamMembershipStatus.INVITATION_DECLINED:
+            subject = ('Launchpad: %s decline invitation to join %s'
+                       % (member.name, team.name))
+            template_name = 'membership-invitation-declined'
         else:
             # Use the default template and subject.
             pass

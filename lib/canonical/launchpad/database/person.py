@@ -1072,10 +1072,10 @@ class Person(SQLBase, HasSpecificationsMixin):
                 reviewercomment=comment)
             notify(event(person, self))
 
-    # This method is not in the IPerson interface because we want to protect
-    # it with a launchpad.Edit permission. We could do that by defining
-    # explicit permissions for all IPerson methods/attributes in the zcml but
-    # that's far from optimal given the size of IPerson.
+    # The two methods below are not in the IPerson interface because we want
+    # to protect them with a launchpad.Edit permission. We could do that by
+    # defining explicit permissions for all IPerson methods/attributes in
+    # the zcml but that's far from optimal given the size of IPerson.
     def acceptInvitationToBeMemberOf(self, team):
         """Accept an invitation to become a member of the given team.
         
@@ -1088,6 +1088,22 @@ class Person(SQLBase, HasSpecificationsMixin):
         assert tm.status == TeamMembershipStatus.INVITED
         tm.setStatus(
             TeamMembershipStatus.APPROVED, getUtility(ILaunchBag).user)
+
+    def declineInvitationToBeMemberOf(self, team):
+        """Decline an invitation to become a member of the given team.
+        
+        There must be a TeamMembership for this person and the given team with
+        the INVITED status. The status of this TeamMembership will be changed
+        to INVITATION_DECLINED.
+        """
+        # XXX: Is it worth refactoring these two methods to avoid the
+        # duplication of these checks?
+        tm = TeamMembership.selectOneBy(person=self, team=team)
+        assert tm is not None
+        assert tm.status == TeamMembershipStatus.INVITED
+        tm.setStatus(
+            TeamMembershipStatus.INVITATION_DECLINED,
+            getUtility(ILaunchBag).user)
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):

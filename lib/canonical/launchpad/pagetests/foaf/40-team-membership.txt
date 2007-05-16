@@ -51,8 +51,8 @@ Give up on change, nothing should have changed with Colin:
   >>> kamion = personset.getByName('kamion')
   >>> kamion_membership = teammembershipset.getByPersonAndTeam(
   ...     kamion, ubuntu_team)
-  >>> kamion_membership.is_admin
-  True
+  >>> kamion_membership.statusname
+  'Admin'
   >>> print kamion_membership.dateexpires
   None
   >>> logout()
@@ -80,8 +80,8 @@ We're redirected to the +members page
   >>> login(ANONYMOUS)
   >>> kamion_membership = teammembershipset.getByPersonAndTeam(
   ...     kamion, ubuntu_team)
-  >>> kamion_membership.is_admin
-  False 
+  >>> kamion_membership.statusname
+  'Admin'
   >>> expire_date = datetime(next_year, 11, 14)
   >>> kamion_membership.dateexpires.date() == expire_date.date()
   True
@@ -115,8 +115,8 @@ subscription never expires, but he can demote himself.
   >>> jdub = personset.getByName('jdub')
   >>> jdub_membership = teammembershipset.getByPersonAndTeam(
   ...     jdub, ubuntu_team)
-  >>> jdub_membership.is_admin
-  False
+  >>> jdub_membership.statusname
+  'Admin'
   >>> logout()
 
 Sample person had his membership declined to the guadamen group. Test

@@ -17,8 +17,8 @@
         <require 
             permission="zope.Public"
             attributes="team person reviewer status datejoined dateexpires
-                        reviewercomment statusname is_admin is_owner
-                        isExpired sendExpirationWarningEmail" />
+                        reviewercomment statusname isExpired
+                        sendExpirationWarningEmail" />
         <require 
             permission="launchpad.Edit"
             attributes="setStatus" />
@@ -60,5 +60,9 @@
         permission="zope.Public"
         template="../templates/teammembership-listing-simple.pt"
         />
+
+    <content class="canonical.launchpad.browser.person.TeamInvitationView">
+      <allow attributes="browserDefault __call__" />
+    </content>
 
 </configure>
