@@ -16,8 +16,8 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    StringCol, ForeignKey, SQLMultipleJoin, IntCol, SQLObjectNotFound,
-    SQLRelatedJoin)
+    BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
+    SQLObjectNotFound, SQLRelatedJoin)
 
 from canonical.cachedproperty import cachedproperty
 
@@ -110,6 +110,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
+    defer_imports = BoolCol(notNull=True, default=False)
 
     architectures = SQLMultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
@@ -1799,7 +1800,7 @@ class DistroReleaseSet:
     def new(self, distribution, name, displayname, title, summary, description,
             version, parentrelease, owner):
         """See IDistroReleaseSet."""
-        return DistroRelease(
+        d = DistroRelease(
             distribution=distribution,
             name=name,
             displayname=displayname,
@@ -1811,3 +1812,12 @@ class DistroReleaseSet:
             parentrelease=parentrelease,
             owner=owner)
 
+        # A new distrorelease still needs some work done to it in order to
+        # enable translation.  The _copy_active_translations() machinery
+        # assumes that nobody else is adding translation-related data to the
+        # new distrorelease.  To support that, we inhibit translation imports
+        # until translations have been copied in from the parent distrorelease
+        # and the new distrorelease is all set to be translated.
+        d.defer_imports = True
+
+        return d
