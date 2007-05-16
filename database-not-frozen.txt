@@ -1,0 +1,15 @@
+database-frozen.txt
+-------------------
+
+If a file called 'database-frozen.txt' exists in the root of the
+Launchpad tree, then merges containing database changes will be rejected
+by PQM. Check the top level Makefile for the current rules on what this
+means.
+
+Status
+------
+Database patches can be landed at the moment. Beta code updates are
+blocked. If this is a problem, notify stub.
+
+Next DB freeze scheduled May 24th.
+

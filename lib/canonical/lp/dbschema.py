@@ -1574,7 +1574,7 @@ class QuestionStatus(DBSchema):
     This enum tells us the current status of the question.
 
     The lifecycle of a question is documented in
-    https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    https://help.launchpad.net/QuestionLifeCycle, so remember
     to update that document for any pertinent changes.
     """
 
@@ -3465,6 +3465,18 @@ class ShipItDistroRelease(DBSchema):
         6.10 (Edgy Eft)
 
         The Edgy Eft release.
+        """)
+
+    FEISTY = Item(4, """
+        7.04 (Feisty Fawn)
+
+        The Feisty Fawn release.
+        """)
+
+    GUTSY = Item(5, """
+        7.10 (Gutsy Gibbon)
+
+        The Gutsy Gibbon release.
         """)
 
 

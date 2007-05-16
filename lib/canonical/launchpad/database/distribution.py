@@ -25,6 +25,7 @@ from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
     SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
@@ -106,22 +107,25 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     mirror_admin = ForeignKey(
         dbName='mirror_admin', foreignKey='Person', notNull=True)
-    translationgroup = ForeignKey(dbName='translationgroup',
-        foreignKey='TranslationGroup', notNull=False, default=None)
-    translationpermission = EnumCol(dbName='translationpermission',
-        notNull=True, schema=TranslationPermission,
-        default=TranslationPermission.OPEN)
-    lucilleconfig = StringCol(dbName='lucilleconfig', notNull=False,
-                              default=None)
-    upload_sender = StringCol(dbName='upload_sender', notNull=False,
-                              default=None)
-    upload_admin = ForeignKey(dbName='upload_admin', foreignKey='Person',
-                              default=None, notNull=False)
+    translationgroup = ForeignKey(
+        dbName='translationgroup', foreignKey='TranslationGroup', notNull=False,
+        default=None)
+    translationpermission = EnumCol(
+        dbName='translationpermission', notNull=True,
+        schema=TranslationPermission, default=TranslationPermission.OPEN)
+    lucilleconfig = StringCol(
+        dbName='lucilleconfig', notNull=False, default=None)
+    upload_sender = StringCol(
+        dbName='upload_sender', notNull=False, default=None)
+    upload_admin = ForeignKey(
+        dbName='upload_admin', foreignKey='Person', default=None, notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
     uploaders = SQLMultipleJoin('DistroComponentUploader',
         joinColumn='distribution', prejoins=["uploader", "component"])
+    official_answers = BoolCol(dbName='official_answers', notNull=True,
+        default=False)
     official_malone = BoolCol(dbName='official_malone', notNull=True,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
@@ -211,10 +215,32 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def releases(self):
+        """See IDistribution."""
         # This is used in a number of places and given it's already
         # listified, why not spare the trouble of regenerating?
         ret = DistroRelease.selectBy(distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
+
+    @property
+    def mentoring_offers(self):
+        """See IDistribution"""
+        via_specs = MentoringOffer.select("""
+            Specification.distribution = %s AND
+            Specification.id = MentoringOffer.specification
+            """ % sqlvalues(self.id) + """ AND NOT (
+            """ + Specification.completeness_clause + ")",
+            clauseTables=['Specification'],
+            distinct=True)
+        via_bugs = MentoringOffer.select("""
+            BugTask.distribution = %s AND
+            BugTask.bug = MentoringOffer.bug AND
+            BugTask.bug = Bug.id AND
+            Bug.private IS FALSE
+            """ % sqlvalues(self.id) + """ AND NOT (
+            """ + BugTask.completeness_clause +")",
+            clauseTables=['BugTask', 'Bug'],
+            distinct=True)
+        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     @property
     def bugtargetname(self):
@@ -285,6 +311,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def currentrelease(self):
+        """See IDistribution."""
         # XXX: this should be just a selectFirst with a case in its
         # order by clause -- kiko, 2006-03-18
 
@@ -316,6 +343,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def bugCounter(self):
+        """See IDistribution."""
         counts = []
 
         severities = [BugTaskStatus.UNCONFIRMED,
@@ -379,6 +407,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def all_specifications(self):
+        """See IHasSpecifications."""
         return self.specifications(filter=[SpecificationFilter.ALL])
 
     def specifications(self, sort=None, quantity=None, filter=None):
@@ -495,13 +524,19 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
-                        needs_attention_from=None):
-        """See IQuestionTarget."""
+                        needs_attention_from=None, unsupported=False):
+        """See IQuestionCollection."""
+        if unsupported:
+            unsupported_target = self
+        else:
+            unsupported_target = None
+            
         return QuestionTargetSearch(
             distribution=self,
             search_text=search_text, status=status,
             language=language, sort=sort, owner=owner,
-            needs_attention_from=needs_attention_from).getResults()
+            needs_attention_from=needs_attention_from,
+            unsupported_target=unsupported_target).getResults()
 
 
     def findSimilarQuestions(self, title):
@@ -521,10 +556,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IQuestionTarget."""
         if person not in self.answer_contacts:
             return False
-        answer_contact_entry = AnswerContact.selectOne(
+        answer_contact = AnswerContact.selectOne(
             "distribution = %d AND person = %d"
             " AND sourcepackagename IS NULL" % (self.id, person.id))
-        answer_contact_entry.destroySelf()
+        answer_contact.destroySelf()
         return True
 
     @property
@@ -545,9 +580,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            'Language.id = language AND distribution = %s AND '
-            'sourcepackagename IS NULL' % sqlvalues(self),
-            clauseTables=['Ticket'], distinct=True))
+            'Language.id = Question.language AND '
+            'Question.distribution = %s AND '
+            'Question.sourcepackagename IS NULL' % sqlvalues(self.id),
+            clauseTables=['Question'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""
@@ -852,6 +888,7 @@ class DistributionSet:
         return Distribution.get(distributionid)
 
     def count(self):
+        """See IDistributionSet."""
         return Distribution.select().count()
 
     def getDistros(self):
@@ -867,6 +904,7 @@ class DistributionSet:
 
     def new(self, name, displayname, title, description, summary, domainname,
             members, owner, mugshot=None, logo=None, icon=None):
+        """See IDistributionSet."""
         return Distribution(
             name=name,
             displayname=displayname,

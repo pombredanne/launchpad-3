@@ -1,0 +1,86 @@
+= Jabber IDs =
+
+Users can register in their Launchpad profile Jabber IDs that they
+can be reached with.
+
+== Adding and editing an ID ==
+
+To register a Jabber ID with his account, the user visits his
+profile page and use the 'Update Jabber IDs' action.
+
+    >>> user_browser.open('http://launchpad.dev/~no-priv')
+    >>> user_browser.getLink('Update Jabber IDs').click()
+    >>> print user_browser.title
+    No Privileges Person's Jabber IDs
+
+The user enter the Jabber ID in the text field and click on the
+'Save Changes' button.
+
+    >>> user_browser.getControl(name='newjabberid').value = 'jeff@jabber.org'
+    >>> user_browser.getControl('Save Changes').click()
+
+In this case, the user tried registering a jabber ID that was already
+registered by someone else. Since only one person can use a Jabber ID,
+an error is displayed and the user can enter another one:
+
+    >>> for error in find_tags_by_class(user_browser.contents, 'error'):
+    ...     print extract_text(error)
+    The Jabber ID jeff@jabber.org is already registered by Jeff Waugh.
+
+However,  if the user enters a Jabber ID which isn't already registered,
+it will be associated to his account.
+
+    >>> user_browser.getControl(name='newjabberid').value = 'nopriv@jabber.org'
+    >>> user_browser.getControl('Save Changes').click()
+
+The new ID can be edited by changing its value, and another ID can
+also be entered.
+
+    >>> user_browser.getControl(name='jabberid_nopriv@jabber.org').value = (
+    ...     'no-priv@jabber.org')
+    >>> user_browser.getControl(name='newjabberid').value = (
+    ...     'no-priv@gmail.org')
+    >>> user_browser.getControl('Save Changes').click()
+
+    >>> import re
+    >>> main_content = find_main_content(user_browser.contents)
+    >>> for input in main_content.findAll(
+    ...     'input', {'name': re.compile('jabberid_')}):
+    ...     print input['value']
+    no-priv@gmail.org
+    no-priv@jabber.org
+
+== IDs are obfuscated ==
+
+The registered Jabber IDs are displayed on the profile overview page.
+They are obfuscated a little to minizime the risk of problems
+with email harvester (since some Jabber accounts are also valid
+email account.)
+
+The Jabber ID is written using numerical HTML entities, so the user can
+still read them but the email harvester will need to resolve these to
+get at the email.
+
+    >>> anon_browser.open('http://launchpad.dev/~no-priv')
+    >>> main_content = find_main_content(anon_browser.contents)
+    >>> jabber_ids = extract_text(
+    ...     main_content.find('th', text='Jabber:').findNext('td'))
+    >>> 'no-priv@jabber.org' in jabber_ids
+    False
+    >>> import htmlentitydefs
+    >>> print re.sub('&#(\d+);', lambda m: chr(int(m.group(1))), jabber_ids)
+    no-priv@gmail.org,  no-priv@jabber.org
+
+== Removing an ID ==
+
+To remove an existing Jabber ID, the user simply check the 'Remove'
+checkbox besides the ID:
+
+    >>> user_browser.getControl('Remove', index=0).click()
+    >>> user_browser.getControl('Save Changes').click()
+
+    >>> main_content = find_main_content(user_browser.contents)
+    >>> for input in main_content.findAll(
+    ...     'input', {'name': re.compile('jabberid_')}):
+    ...     print input['value']
+    no-priv@jabber.org

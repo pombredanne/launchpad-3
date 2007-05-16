@@ -22,7 +22,7 @@ class IBugProductInfestation(Interface):
     'infestation' is given by the infestationstatus field, which takes on
     values documented in dbschema.BugInfestationStatus."""
 
-    id = Int(title=_("Bug Product Infestation ID"), required=True,
+    id = Int(title=_("Bug Project Infestation ID"), required=True,
         readonly=True)
     bug = Int(title=_('Bug ID'))
     explicit = Bool(title=_('Explicitly Created by a Human'))

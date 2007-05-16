@@ -21,11 +21,12 @@ from zope.schema import (
     Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
+from canonical.launchpad.fields import (
+    ContentNameField, Title, DuplicateBug, Tag)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
-from canonical.launchpad.interfaces.validation import non_duplicate_bug
+from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -109,7 +110,7 @@ class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
 
 
-class IBug(IMessageTarget):
+class IBug(IMessageTarget, ICanBeMentored):
     """The core bug entry."""
 
     id = Int(
@@ -133,8 +134,7 @@ class IBug(IMessageTarget):
         including the steps required to reproduce it."""))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
-    duplicateof = BugField(
-        title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
+    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
         description=_("Make this bug visible only to its subscribers"),
@@ -171,6 +171,10 @@ class IBug(IMessageTarget):
     tags = List(
         title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
+    is_complete = Attribute(
+        "True or False depending on whether this bug is considered "
+        "completely addressed. A bug is Launchpad is completely addressed "
+        "when there are no tasks that are still open for the bug.")
 
 
     def followup_subject():
@@ -244,6 +248,14 @@ class IBug(IMessageTarget):
     def addCommentNotification(message):
         """Add a bug comment notification."""
 
+    def expireNotifications():
+        """Expire any pending notifications that have not been emailed.
+
+        This will mark any notifications related to this bug as having
+        been emailed.  The intent is to prevent large quantities of
+        bug mail being generated during bulk imports or changes.
+        """
+
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
@@ -297,6 +309,9 @@ class IBug(IMessageTarget):
         :owner: An IPerson.
         :target: An IDistroRelease or IProductSeries.
 
+        The nomination will be automatically approved, if the user has
+        permission to approve it.
+
         This method creates and returns a BugNomination. (See
         canonical.launchpad.database.bugnomination.BugNomination.)
         """
@@ -331,6 +346,12 @@ class IBug(IMessageTarget):
         """Return the BugWatch that has the given bugtracker and remote bug.
 
         Return None if this bug doesn't have such a bug watch.
+        """
+
+    def getBugTask(target):
+        """Return the bugtask with the specified target.
+
+        Return None if no such bugtask is found.
         """
 
 
@@ -375,7 +396,7 @@ class IBugAddForm(IBug):
     """Information we need to create a bug"""
     id = Int(title=_("Bug #"), required=False)
     product = Choice(
-            title=_("Product"), required=False,
+            title=_("Project"), required=False,
             description=_("""The thing you found this bug in,
             which was installed by something other than apt-get, rpm,
             emerge or similar"""),
@@ -389,7 +410,7 @@ class IBugAddForm(IBug):
             title=_("Linux Distribution"), required=True,
             description=_(
                 "Ubuntu, Debian, Gentoo, etc. You can file bugs only on "
-                "distrubutions using Malone as their primary bug "
+                "distrubutions using Launchpad as their primary bug "
                 "tracker."),
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
@@ -402,7 +423,7 @@ class IBugAddForm(IBug):
 class IProjectBugAddForm(IBugAddForm):
     """Create a bug for an IProject."""
     product = Choice(
-        title=_("Product"), required=True,
+        title=_("Project"), required=True,
         vocabulary="ProjectProductsUsingMalone")
 
 
@@ -437,7 +458,7 @@ class IBugSet(Interface):
         """
 
     def queryByRemoteBug(bugtracker, remotebug):
-        """Find one or None bugs in Malone that have a BugWatch matching the
+        """Find one or None bugs in Launchpad that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
     def createBug(bug_params):

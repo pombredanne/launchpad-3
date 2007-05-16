@@ -36,11 +36,13 @@ from canonical.launchpad.fields import (
     StrippedTextLine,
     )
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.mentoringoffer import (
+    IHasMentoringOffers)
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
     IHasLogo, IHasMugshot, IHasIcon)
-from canonical.launchpad.interfaces.question import (
+from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
@@ -93,8 +95,8 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
-              IHasIcon):
+class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
+              IHasLogo, IHasMugshot, IHasIcon):
     """A Person."""
 
     id = Int(
@@ -236,6 +238,9 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         title=_("This is an active user and not a team."), readonly=True)
     is_valid_person_or_team = Bool(
         title=_("This is an active user or a team."), readonly=True)
+    is_openid_enabled = Bool(
+        title=_("This user can use Launchpad as an OpenID provider."),
+        readonly=True)
     is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -267,6 +272,9 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         "in this team.")
     teams_participated_in = Attribute(
         "Iterable of all Teams that this person is active in, recursive")
+    teams_indirectly_participated_in = Attribute(
+        "Iterable of all the teams in which this person is and indirect "
+        "member.")
     teams_with_icons = Attribute(
         "Iterable of all Teams that this person is active in that have "
         "icons")
@@ -316,6 +324,8 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         "feedback, sorted newest first.")
     subscribed_specs = Attribute(
         "Specifications this person has subscribed to, sorted newest first.")
+    team_mentorships = Attribute(
+        "All the offers of mentoring which are relevant to this team.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
@@ -388,6 +398,8 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
+    is_trusted_on_shipit = Bool(
+        title=_('Is this a trusted person on shipit?'))
     unique_displayname = TextLine(
         title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
@@ -434,12 +446,11 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         """Return the teams that cause this person to be a participant of the
         given team.
 
-        If there are more than one path leading this person to the given team,
+        If there is more than one path leading this person to the given team,
         only the one with the oldest teams is returned.
 
-        This method must not be called from a team object, because of
-        https://launchpad.net/bugs/30789. It also can't be called if this
-        person is not an indirect member of the given team.
+        This method must not be called if this person is not an indirect
+        member of the given team.
         """
 
     def isTeam():
@@ -620,9 +631,20 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         If no orderby is provided, Person.sortingColumns is used.
         """
 
-    def getEffectiveAdministrators():
-        """Return this team's administrators including the team owner
-        (regardless of whether he's a member or not).
+    def getAdministratedTeams():
+        """Return the teams that this person/team is an administrator of.
+
+        This includes teams for which the person is the owner, a direct
+        member with admin privilege, or member of a team with such
+        privileges.
+        """
+
+    def getDirectAdministrators():
+        """Return this team's administrators.
+         
+         This includes all direct members with admin rights and also
+         the team owner. Note that some other persons/teams might have admin
+         privilege by virtue of being a member of a team with admin rights.
         """
 
     def getTeamAdminsEmailAddresses():
@@ -662,6 +684,9 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
         'Rosetta Translators', because we are member of both of them.
         """
 
+    def getLatestApprovedMembershipsForPerson(limit=5):
+        """Return the <limit> latest approved membrships for this person."""
+
     def addLanguage(language):
         """Add a language to this person's preferences.
 
@@ -690,18 +715,18 @@ class IPerson(IHasSpecifications, IQuestionCollection, IHasLogo, IHasMugshot,
 
     def getDirectAnswerQuestionTargets():
         """Return a list of IQuestionTargets that a person is subscribed to.
-        
-        This will return IQuestionTargets that the person is registered as an 
+
+        This will return IQuestionTargets that the person is registered as an
         answer contact because he subscribed himself.
         """
 
     def getTeamAnswerQuestionTargets():
         """Return a list of IQuestionTargets that are indirectly subscribed to.
-        
-        This will return IQuestionTargets that the person or is registered as an 
-        answer contact because of his membership in a team.
+
+        This will return IQuestionTargets that the person or is registered
+        as an answer contact because of his membership in a team.
         """
-            
+
     def searchQuestions(search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, participation=None,
@@ -928,6 +953,14 @@ class IPersonSet(Interface):
     def merge(from_person, to_person):
         """Merge a person into another."""
 
+    def getTranslatorsByLanguage(language):
+        """Return the list of translators for the given language.
+
+        :arg language: ILanguage object for which we want to get the
+            translators.
+
+        Return None if there is no translator.
+        """
 
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""

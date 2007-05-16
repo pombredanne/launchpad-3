@@ -917,11 +917,11 @@ class QuestionNotification:
         """Return a formatted email address suitable for user in the From
         header of the question notification.
 
-        Default is Event Person Display Name <ticket#@answertracker_domain>
+        Default is Event Person Display Name <question#@answertracker_domain>
         """
         return format_address(
             self.event.user.displayname,
-            'ticket%s@%s' % (
+            'question%s@%s' % (
                 self.question.id, config.answertracker.email_domain))
 
     def getSubject(self):
@@ -989,7 +989,7 @@ class QuestionNotification:
             if person == self.question.owner:
                 recipients.add(person)
             elif question_language not in person.getSupportedLanguages():
-               skipped.add(person)
+                skipped.add(person)
             elif not person.preferredemail and not list(person.languages):
                 # For teams without an email address nor a set of supported
                 # languages, only notify the members that actually speak the
@@ -1096,17 +1096,23 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         if question.status != old_question.status:
             info_fields.append(indent + 'Status: %s => %s' % (
                 old_question.status.title, question.status.title))
-
+        if question.target != old_question.target:
+            info_fields.append(
+                indent + 'Project: %s => %s' % (
+                old_question.target.displayname, question.target.displayname))
+                
         old_bugs = set(old_question.bugs)
         bugs = set(question.bugs)
         for linked_bug in bugs.difference(old_bugs):
             info_fields.append(
                 indent + 'Linked to bug: #%s\n' % linked_bug.id +
-                indent + canonical_url(linked_bug))
+                indent + '%s\n' % canonical_url(linked_bug) +
+                indent + '"%s"' % linked_bug.title)
         for unlinked_bug in old_bugs.difference(bugs):
             info_fields.append(
                 indent + 'Removed link to bug: #%s\n' % unlinked_bug.id +
-                indent + canonical_url(unlinked_bug))
+                indent + '%s\n' % canonical_url(unlinked_bug) +
+                indent + '"%s"' % unlinked_bug.title)
 
         if question.title != old_question.title:
             info_fields.append('Summary changed to:\n%s' % question.title)
@@ -1244,7 +1250,7 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
     }
 
     def initialize(self):
-        """Set the template that will be used based on the new comment action."""
+        """Set the template based on the new comment action."""
         QuestionModifiedDefaultNotification.initialize(self)
         if self.new_message:
             self.body_template = self.body_template_by_action.get(
@@ -1275,6 +1281,7 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
             self.question.title)
 
     def shouldNotify(self):
+        """Return True when the question is in an unsupported language."""
         return self.unsupported_language
 
     def getRecipients(self):
@@ -1284,7 +1291,8 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
     def getBody(self):
         """See QuestionNotification."""
         question = self.question
-        return get_email_template('question-unsupported-languages-added.txt') % {
+        return get_email_template(
+                'question-unsupported-languages-added.txt') % {
             'target_name': question.target.displayname,
             'question_id': question.id,
             'question_url': canonical_url(question),
@@ -1296,6 +1304,7 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
     """Notification sent when a linked bug status is changed."""
 
     def initialize(self):
+        """Create a notifcation for a linked bug status change."""
         assert ISQLObjectModifiedEvent.providedBy(self.event), (
             "Should only be subscribed for ISQLObjectModifiedEvent.")
         assert IBugTask.providedBy(self.event.object), (
@@ -1331,6 +1340,7 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
             'question_url': canonical_url(self.question),
             'bugtask_url':canonical_url(self.bugtask),
             'bug_id': self.bugtask.bug.id,
+            'bugtask_title': self.bugtask.bug.title,
             'old_status': self.old_bugtask.status.title,
             'new_status': self.bugtask.status.title,
             'statusexplanation': statusexplanation}

@@ -3,6 +3,8 @@
 Several views are used to handle the various operations on a question.
 
     >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
+    >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IProductSet)
@@ -51,7 +53,7 @@ view page.
     ...     print notice.message
     You have subscribed to this question.
     >>> request.response.getHeader('Location')
-    '.../+ticket/3'
+    '.../+question/3'
 
 Unsubscription works in a similar manner.
 
@@ -65,7 +67,7 @@ Unsubscription works in a similar manner.
     ...     print notice.message
     You have unsubscribed from this question.
     >>> request.response.getHeader('Location')
-    '.../+ticket/3'
+    '.../+question/3'
 
 These two actions didn't generate any notification mails:
 
@@ -130,7 +132,7 @@ redirected back to the question page.
     >>> print firefox_question.status.name
     NEEDSINFO
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 Workflow actions like these will send out notifications to subscribers.
 (Complete notifications testing will be found in
@@ -165,7 +167,7 @@ to the OPEN state.
     >>> print firefox_question.status.name
     OPEN
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 The other user can come back and gives an answer:
 
@@ -181,7 +183,7 @@ The other user can come back and gives an answer:
     >>> print firefox_question.status.name
     ANSWERED
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 Once the question is answered, the set of possible actions for the question
 owner changes. He can now either confirm the answer, answer the problem
@@ -205,7 +207,7 @@ enter a confirmation message at that stage.
     >>> print firefox_question.status.name
     SOLVED
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 Since no confirmation message was given, a default one was used.
 
@@ -228,7 +230,7 @@ Adding a comment doesn't change the status:
     ...     print notification.message
     Thanks for your comment.
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
     >>> print firefox_question.status.name
     SOLVED
 
@@ -255,7 +257,7 @@ If the question owner reopens the question, its status is changed back to
     >>> print firefox_question.status.name
     OPEN
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
 When the question owner answers his own question, it is moved straight to
 the SOLVED state.
@@ -270,7 +272,7 @@ the SOLVED state.
     >>> print firefox_question.status.name
     SOLVED
     >>> workflow_harness.redirectionTarget()
-    '.../+ticket/2'
+    '.../+question/2'
 
     # Clear all notifications.
     >>> notifications = pop_notifications()
@@ -281,30 +283,17 @@ The QuestionMakeBugView is used to handle the creation of a bug from a
 question. In addition to creating a bug, this operation will also link
 the bug to the question.
 
-If the user cancels a bug creation request, the user is redirected back
-the question page.
-
-    >>> login('foo.bar@canonical.com')
-    >>> request = LaunchpadTestRequest(form={'cancel': 'cancel'})
-    >>> request.method = 'POST'
-    >>> makebug = getView(question_three, '+makebug', request)
-    >>> makebug.initialize()
-    >>> makebug.process_form()
-    ''
-    >>> list(question_three.bugs)
-    []
-
 If the user creates a bug, a "Linked to bug" notification is sent and
 the user is subscribed to the bug.
 
+    >>> login('foo.bar@canonical.com')
     >>> request = LaunchpadTestRequest(
-    ...     form={'create': 'create',
+    ...     form={'field.actions.create': 'Create',
     ...           'field.title': 'Bug title',
     ...           'field.description': 'Bug description.'})
     >>> request.method = 'POST'
-    >>> makebug = getView(question_three, '+makebug', request)
+    >>> makebug = getMultiAdapter((question_three, request), name='+makebug')
     >>> makebug.initialize()
-    >>> makebug.process_form()
     >>> sorted(bug.id for bug in question_three.bugs)
     [13L]
     >>> print question_three.bugs[0].title
@@ -330,9 +319,10 @@ the user is subscribed to the bug.
 
 If the question already has bugs linked to it, no new bug can be created.
 
-    >>> request = LaunchpadTestRequest(form={'create': 'create'})
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.actions.create': 'create'})
     >>> request.method = 'POST'
-    >>> makebug = getView(question_three, '+makebug', request)
+    >>> makebug = getMultiAdapter((question_three, request), name='+makebug')
     >>> makebug.initialize()
     >>> for n in request.notifications:
     ...     print n.message
@@ -387,19 +377,20 @@ outside of the comment workflow.
 
 == QuestionEditView ==
 
-QuestionEditView available through '+edit' is used to edit most question
-fields. It can be used to edit the question title and description and also
-its metadata like language, priority, assignee, source package and
-whiteboard.
+QuestionEditView available through '+edit' is used to edit most 
+question fields. It can be used to edit the question title and 
+description and also its metadata like language, priority, assignee, 
+distribution, source package, product and whiteboard.
 
     >>> login('test@canonical.com')
-    >>> question_three.sourcepackagename = None
     >>> request = LaunchpadTestRequest(form={
     ...     'field.actions.change': 'Continue',
     ...     'field.title': 'Better Title',
     ...     'field.language': 'en',
     ...     'field.description': 'A better description.',
-    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.target': 'package',
+    ...     'field.target.distribution': 'ubuntu',
+    ...     'field.target.package': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
     ...     'field.whiteboard': 'Some note',
     ...     'field.priority': 'Wishlist'})
@@ -411,8 +402,12 @@ whiteboard.
     u'Better Title'
     >>> question_three.description
     u'A better description.'
+    >>> print question_three.distribution.name
+    ubuntu
     >>> print question_three.sourcepackagename.name
     mozilla-firefox
+    >>> print question_three.product
+    None
 
 Since only a user with launchpad.Admin privilege can change the
 priority, assignee and status whiteboard, the values won't have been
@@ -450,7 +445,9 @@ priority fields will be updated:
     ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
-    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.target': 'package',
+    ...     'field.target.distribution': 'ubuntu',
+    ...     'field.target.package': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
     ...     'field.whiteboard': 'Some note',
     ...     'field.priority': 'Wishlist'})
@@ -472,17 +469,26 @@ a distribution question:
     ...     'field.language': 'en',
     ...     'field.title': 'Better Title',
     ...     'field.description': 'A better description.',
-    ...     'field.sourcepackagename': 'mozilla-firefox',
+    ...     'field.target': 'product',
+    ...     'field.target.distribution': '',
+    ...     'field.target.package': 'mozilla-firefox',
+    ...     'field.target.product': 'firefox',
     ...     'field.assignee': '',
     ...     'field.whiteboard': '',
     ...     'field.priority': 'Normal'})
     >>> request.method = 'POST'
-    >>> view = getView(firefox_question, '+edit', request)
+    >>> view = getView(question_three, '+edit', request)
     >>> view.initialize()
     >>> view.errors
     []
-    >>> firefox_question.sourcepackagename is None
+    >>> question_three.sourcepackagename is None
     True
+    >>> print question_three.distribution
+    None
+    >>> print question_three.sourcepackagename
+    None
+    >>> print question_three.product.name
+    firefox
 
     # Clear out the pending notifications.
     >>> notifications = pop_notifications()
@@ -508,7 +514,8 @@ address is mapped to South Africa in the tests).
     ...     HTTP_ACCEPT_LANGUAGE='pt_BR')
     >>> from canonical.launchpad.browser.question import (
     ...     QuestionLanguageVocabularyFactory)
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> view = getMultiAdapter((firefox, request), name='+addticket')
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
     >>> languages[0].code
     u'en'
@@ -523,7 +530,7 @@ same logic is used to find the languages:
     >>> user.languages.count()
     0
 
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
     >>> languages[0].code
     u'en'
@@ -538,7 +545,7 @@ are used (plus English):
     >>> sorted(lang.code for lang in user.languages)
     [u'ca', u'es']
 
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
     >>> languages[0].code
     u'en'
@@ -554,7 +561,7 @@ English options).
     >>> sorted(lang.code for lang in user.languages)
     [u'cy', u'en_GB', u'ja']
 
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
     >>> languages[0].code
     u'en'
@@ -568,7 +575,7 @@ by the previous rules.
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> afar = getUtility(ILanguageSet)['aa_DJ']
     >>> question_three.language = afar
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(question_three)
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(question_three)
     >>> afar in vocab
     True
 
@@ -663,6 +670,8 @@ By default, that class provides widgets to search by text and by status.
     >>> search_view = search_view_harness.view
     >>> search_view.widgets.get('search_text') is not None
     True
+    >>> search_view.widgets.get('languages') is not None
+    True
     >>> search_view.widgets.get('status') is not None
     True
 
@@ -690,19 +699,21 @@ can tweak the search and filter the results:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Solved', 'Open'],
     ...     'field.search_text': 'firefox',
+    ...     'field.languages': 'Preferred',
     ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
     >>> for question in questions.batch:
     ...     print question.title, question.status.title
-    mailto: problem in webpage  Solved
+    mailto: problem in webpage Solved
 
 Specific views can provide a default filter by returning the default
 search parameters to use in the getDefaultFilter() method:
 
     >>> from canonical.lp.dbschema import QuestionStatus
     >>> MyCustomSearchQuestionsView.default_filter = {
-    ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID]}
+    ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID],
+    ...     'languages':'Preferred'}
     >>> search_view_harness.submit('', {})
 
 In this example, only the solved and invalid questions are listed by
@@ -728,6 +739,7 @@ criteria.
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Solved'],
     ...     'field.search_text': 'firefox',
+    ...     'field.languages': 'Preferred',
     ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
@@ -761,6 +773,7 @@ It works also with user submitted values:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Expired'],
     ...     'field.search_text': '',
+    ...     'field.languages': 'Preferred',
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
     Expired questions for Ubuntu
@@ -770,6 +783,7 @@ It works also with user submitted values:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Open', 'Answered'],
     ...     'field.search_text': 'evolution',
+    ...     'field.languages': 'Preferred',
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
     Questions matching "evolution" for Ubuntu
@@ -787,3 +801,26 @@ states on that target.
     ...     firefox, '+open_questions_count', LaunchpadTestRequest())
     >>> view()
     u'4'
+
+== QuestionSOP ==
+
+There is an IStructuralObjectPresentation adapter available for
+IQuestion. This adapter is used to render the title appearing in
+in the structuralheader area.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IStructuralObjectPresentation)
+    >>> from zope.interface.verify import verifyObject
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> firefox_question_sop = IStructuralObjectPresentation(firefox_question)
+    >>> verifyObject(
+    ...     IStructuralObjectPresentation,
+    ...     removeSecurityProxy(firefox_question_sop))
+    True
+
+    # The returned string is an instance of zope.i18n.Message.
+    >>> import zope.i18n
+    >>> print zope.i18n.translate(
+    ...     firefox_question_sop.getMainHeading())
+    Question #2 in Mozilla Firefox

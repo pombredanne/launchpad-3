@@ -18,6 +18,7 @@ from sqlobject import (
     SQLRelatedJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
+from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -58,14 +59,16 @@ from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import (
-    get_bug_privacy_filter, search_value_to_where_condition)
+    BugTask, get_bug_privacy_filter, search_value_to_where_condition)
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
-from canonical.launchpad.database.shipit import ShippingRequest
+from canonical.launchpad.database.shipit import (
+    MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT, ShippingRequest)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.specification import (
@@ -226,6 +229,53 @@ class Person(SQLBase, HasSpecificationsMixin):
                 SpecificationSubscription.q.personID == self.id),
             clauseTables=['SpecificationSubscription'],
             orderBy=['-datecreated']))
+
+    # mentorship
+    @property
+    def mentoring_offers(self):
+        """See IPerson"""
+        return MentoringOffer.select("""MentoringOffer.id IN
+        (SELECT MentoringOffer.id
+            FROM MentoringOffer
+            LEFT OUTER JOIN BugTask ON
+                MentoringOffer.bug = BugTask.bug
+            LEFT OUTER JOIN Bug ON
+                BugTask.bug = Bug.id
+            LEFT OUTER JOIN Specification ON
+                MentoringOffer.specification = Specification.id
+            WHERE
+                MentoringOffer.owner = %s
+                """ % sqlvalues(self.id) + """ AND (
+                BugTask.id IS NULL OR NOT
+                (Bug.private IS TRUE OR
+                  (""" + BugTask.completeness_clause +"""))) AND (
+                Specification.id IS NULL OR NOT
+                (""" + Specification.completeness_clause +")))",
+            )
+
+    @property
+    def team_mentorships(self):
+        """See IPerson"""
+        return MentoringOffer.select("""MentoringOffer.id IN
+        (SELECT MentoringOffer.id
+            FROM MentoringOffer
+            JOIN TeamParticipation ON
+                MentoringOffer.team = TeamParticipation.person
+            LEFT OUTER JOIN BugTask ON
+                MentoringOffer.bug = BugTask.bug
+            LEFT OUTER JOIN Bug ON
+                BugTask.bug = Bug.id
+            LEFT OUTER JOIN Specification ON
+                MentoringOffer.specification = Specification.id
+            WHERE
+                TeamParticipation.team = %s
+                """ % sqlvalues(self.id) + """ AND (
+                BugTask.id IS NULL OR NOT
+                (Bug.private IS TRUE OR
+                  (""" + BugTask.completeness_clause +"""))) AND (
+                Specification.id IS NULL OR NOT
+                (""" + Specification.completeness_clause +")))",
+            )
 
     @property
     def unique_displayname(self):
@@ -415,37 +465,37 @@ class Person(SQLBase, HasSpecificationsMixin):
     def getQuestionLanguages(self):
         """See IQuestionTarget."""
         return set(Language.select(
-            '''Language.id = language AND Ticket.id IN (
-            SELECT id FROM Ticket
+            '''Language.id = language AND Question.id IN (
+            SELECT id FROM Question
                      WHERE owner = %(personID)s OR answerer = %(personID)s OR
                            assignee = %(personID)s
-            UNION SELECT ticket FROM TicketSubscription
+            UNION SELECT question FROM QuestionSubscription
                   WHERE person = %(personID)s
-            UNION SELECT ticket
-                    FROM TicketMessage JOIN Message ON (message = Message.id)
+            UNION SELECT question
+                    FROM QuestionMessage JOIN Message ON (message = Message.id)
                    WHERE owner = %(personID)s
             )''' % sqlvalues(personID=self.id),
-            clauseTables=['Ticket'], distinct=True))
+            clauseTables=['Question'], distinct=True))
 
     def getDirectAnswerQuestionTargets(self):
         """See IPerson."""
         answer_contacts = AnswerContact.select(
-            '''SupportContact.person = %s''' % sqlvalues(self.id))
-        return self._assembleAnswerContacts(answer_contacts)
-        
+            'person = %s' % sqlvalues(self))
+        return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
+
     def getTeamAnswerQuestionTargets(self):
         """See IPerson."""
         answer_contacts = AnswerContact.select(
-            '''SupportContact.person = TeamParticipation.team
+            '''AnswerContact.person = TeamParticipation.team
             AND TeamParticipation.person = %(personID)s
-            AND SupportContact.person != %(personID)s''' % sqlvalues(
+            AND AnswerContact.person != %(personID)s''' % sqlvalues(
                 personID=self.id),
             clauseTables=['TeamParticipation'], distinct=True)
-        return self._assembleAnswerContacts(answer_contacts)
-    
-    def _assembleAnswerContacts(self, answer_contacts):
+        return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
+
+    def _getQuestionTargetsFromAnswerContacts(self, answer_contacts):
         """Return a list of valid IQuestionTargets.
-        
+
         Provided AnswerContact query results, a distinct list of Products,
         Distributions, and SourcePackages is returned.
         """
@@ -463,12 +513,12 @@ class Person(SQLBase, HasSpecificationsMixin):
                 target = answer_contact.distribution
             else:
                 raise AssertionError('Unknown IQuestionTarget.')
-            
+
             if not target in targets:
                 targets.append(target)
-            
-        return targets      
-    
+
+        return targets
+
     @property
     def branches(self):
         """See IPerson."""
@@ -605,17 +655,14 @@ class Person(SQLBase, HasSpecificationsMixin):
         # This is our guarantee that _getDirectMemberIParticipateIn() will
         # never return None
         assert self.hasParticipationEntryFor(team), (
-            "Only call this method when you're sure the person is an indirect"
-            " member of the team.")
-        assert not self.isTeam()
-        assert team.isTeam()
+            "%s doesn't seem to be a member/participant in %s"
+            % (self.name, team.name))
+        assert team.isTeam(), "You can't pass a person to this method."
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
-        assert team is not None
         while team != self:
             path.insert(0, team)
             team = self._getDirectMemberIParticipateIn(team)
-            assert team is not None
         return path
 
     def _getDirectMemberIParticipateIn(self, team):
@@ -634,12 +681,23 @@ class Person(SQLBase, HasSpecificationsMixin):
             TeamParticipation.q.teamID == Person.q.id,
             TeamParticipation.q.personID == self.id)
         clauseTables = ['TeamMembership', 'TeamParticipation']
-        return Person.selectFirst(
+        member = Person.selectFirst(
             query, clauseTables=clauseTables, orderBy='datecreated')
-
+        assert member is not None, (
+            "%(person)s is an indirect member of %(team)s but %(person)s "
+            "is not a participant in any direct member of %(team)s"
+            % dict(person=self.name, team=team.name))
+        return member
+            
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
+
+    @cachedproperty
+    def is_trusted_on_shipit(self):
+        """See IPerson."""
+        min_entries = MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT
+        return Karma.selectBy(person=self).count() >= min_entries
 
     def shippedShipItRequestsOfCurrentRelease(self):
         """See IPerson."""
@@ -711,12 +769,12 @@ class Person(SQLBase, HasSpecificationsMixin):
         the given limit.
         """
         # We want this person's total karma on a given context (that is,
-        # across all different categories) here; that's why we use a 
+        # across all different categories) here; that's why we use a
         # "KarmaCache.category IS NULL" clause here.
         query = """
             SELECT PillarName.name, KarmaCache.karmavalue
             FROM KarmaCache
-            JOIN PillarName ON 
+            JOIN PillarName ON
                 COALESCE(KarmaCache.distribution, -1) =
                 COALESCE(PillarName.distribution, -1)
                 AND
@@ -805,6 +863,28 @@ class Person(SQLBase, HasSpecificationsMixin):
         if self.isTeam():
             return False
         return self.is_valid_person_or_team
+
+    @property
+    def is_openid_enabled(self):
+        """See IPerson."""
+        if self.isTeam():
+            return False
+
+        if not self.is_valid_person:
+            return False
+
+        if config.launchpad.openid_users == 'all':
+            return True
+
+        openid_users = getUtility(IPersonSet).getByName(
+                config.launchpad.openid_users
+                )
+        assert openid_users is not None, \
+                'No Person %s found' % config.launchpad.openid_users
+        if self.inTeam(openid_users):
+            return True
+
+        return False
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
@@ -928,22 +1008,28 @@ class Person(SQLBase, HasSpecificationsMixin):
     #
     def getSuperTeams(self):
         """See IPerson."""
-        query = ('Person.id = TeamParticipation.team AND '
-                 'TeamParticipation.person = %d' % self.id)
+        query = """
+            Person.id = TeamParticipation.team AND
+            TeamParticipation.person = %s AND
+            TeamParticipation.team != %s
+            """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
     def getSubTeams(self):
         """See IPerson."""
-        query = ('Person.id = TeamParticipation.person AND '
-                 'TeamParticipation.team = %d AND '
-                 'Person.teamowner IS NOT NULL' % self.id)
+        query = """
+            Person.id = TeamParticipation.person AND
+            TeamParticipation.team = %s AND
+            TeamParticipation.person != %s AND
+            Person.teamowner IS NOT NULL
+            """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
     def getTeamAdminsEmailAddresses(self):
         """See IPerson."""
         assert self.isTeam()
         to_addrs = set()
-        for person in self.getEffectiveAdministrators():
+        for person in self.getDirectAdministrators():
             to_addrs.update(contactEmailAddresses(person))
         return sorted(to_addrs)
 
@@ -997,9 +1083,26 @@ class Person(SQLBase, HasSpecificationsMixin):
 
         tm.syncUpdate()
 
-    def getEffectiveAdministrators(self):
+    def getAdministratedTeams(self):
         """See IPerson."""
-        assert self.isTeam()
+        owner_of_teams = Person.select('''
+            Person.teamowner = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            ''' % sqlvalues(self),
+            clauseTables=['TeamParticipation'])
+        admin_of_teams = Person.select('''
+            Person.id = TeamMembership.team
+            AND TeamMembership.status = %(admin)s
+            AND TeamMembership.person = TeamParticipation.team
+            AND TeamParticipation.person = %(person)s
+            ''' % sqlvalues(person=self, admin=TeamMembershipStatus.ADMIN),
+            clauseTables=['TeamParticipation', 'TeamMembership'])
+        orderBy = SQLConstant("person_sort_key(displayname, name)")
+        return admin_of_teams.union(owner_of_teams, orderBy=orderBy)
+
+    def getDirectAdministrators(self):
+        """See IPerson."""
+        assert self.isTeam(), 'Method should only be called on a team.'
         owner = Person.select("id = %s" % sqlvalues(self.teamowner))
         # We can't use Person.sortingColumns with union() queries
         # because the table name Person is not available in that
@@ -1044,8 +1147,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     @property
     def allmembers(self):
         """See IPerson."""
-        query = ('Person.id = TeamParticipation.person AND '
-                 'TeamParticipation.team = %d' % self.id)
+        query = """
+            Person.id = TeamParticipation.person AND
+            TeamParticipation.team = %s AND
+            TeamParticipation.person != %s
+            """ % sqlvalues(self.id, self.id)
         return Person.select(query, clauseTables=['TeamParticipation'])
 
     @property
@@ -1131,6 +1237,12 @@ class Person(SQLBase, HasSpecificationsMixin):
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
+    def getLatestApprovedMembershipsForPerson(self, limit=5):
+        """See IPerson."""
+        result = self.myactivememberships
+        result.orderBy(['-datejoined'])
+        return result[:limit]
+
     @property
     def teams_participated_in(self):
         """See IPerson."""
@@ -1143,6 +1255,31 @@ class Person(SQLBase, HasSpecificationsMixin):
             orderBy=Person.sortingColumns)
 
     @property
+    def teams_indirectly_participated_in(self):
+        """See IPerson."""
+        return Person.select("""
+              -- we are looking for teams, so we want "people" that are on the
+              -- teamparticipation.team side of teamparticipation
+            Person.id = TeamParticipation.team AND
+              -- where this person participates in the team
+            TeamParticipation.person = %s AND
+              -- but not the teamparticipation for "this person in himself"
+              -- which exists for every person
+            TeamParticipation.team != %s AND
+              -- nor do we want teams in which the person is a direct
+              -- participant, so we exclude the teams in which there is
+              -- a teammembership for this person
+            TeamParticipation.team NOT IN
+              (SELECT TeamMembership.team FROM TeamMembership WHERE
+                      TeamMembership.person = %s AND
+                      TeamMembership.status IN (%s, %s))
+            """ % sqlvalues(self.id, self.id, self.id,
+                            TeamMembershipStatus.APPROVED,
+                            TeamMembershipStatus.ADMIN),
+            clauseTables=['TeamParticipation'],
+            orderBy=Person.sortingColumns)
+
+    @property
     def teams_with_icons(self):
         """See IPerson."""
         return Person.select("""
@@ -1150,7 +1287,8 @@ class Person(SQLBase, HasSpecificationsMixin):
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
             AND Person.emblem IS NOT NULL
-            """ % sqlvalues(self.id),
+            AND TeamParticipation.team != %s
+            """ % sqlvalues(self.id, self.id),
             clauseTables=['TeamParticipation'],
             orderBy=Person.sortingColumns)
 
@@ -1718,6 +1856,14 @@ class PersonSet:
                     % vars())
         skip.append(('gpgkey','owner'))
 
+        # Update OpenID. Just trash the authorizations for from_id - don't
+        # risk opening up auth wider than the user actually wants.
+        cur.execute("""
+                DELETE FROM OpenIdAuthorization WHERE person=%(from_id)d
+                """ % vars()
+                )
+        skip.append(('openidauthorization', 'person'))
+
         # Update WikiName. Delete the from entry for our internal wikis
         # so it can be reused. Migrate the non-internal wikinames.
         # Note we only allow one wikiname per person for the UBUNTU_WIKI_URL
@@ -1820,49 +1966,49 @@ class PersonSet:
 
         # Update only the AnswerContacts that will not conflict
         cur.execute('''
-            UPDATE SupportContact
+            UPDATE AnswerContact
             SET person=%(to_id)d
             WHERE person=%(from_id)d
                 AND distribution IS NULL
                 AND product NOT IN (
                     SELECT product
-                    FROM SupportContact
+                    FROM AnswerContact
                     WHERE person = %(to_id)d
                     )
             ''' % vars())
         cur.execute('''
-            UPDATE SupportContact
+            UPDATE AnswerContact
             SET person=%(to_id)d
             WHERE person=%(from_id)d
                 AND distribution IS NOT NULL
                 AND (distribution, sourcepackagename) NOT IN (
                     SELECT distribution,sourcepackagename
-                    FROM SupportContact
+                    FROM AnswerContact
                     WHERE person = %(to_id)d
                     )
             ''' % vars())
         # and delete those left over
         cur.execute('''
-            DELETE FROM SupportContact WHERE person=%(from_id)d
+            DELETE FROM AnswerContact WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('supportcontact', 'person'))
+        skip.append(('answercontact', 'person'))
 
         # Update only the QuestionSubscriptions that will not conflict
         cur.execute('''
-            UPDATE TicketSubscription
+            UPDATE QuestionSubscription
             SET person=%(to_id)d
-            WHERE person=%(from_id)d AND ticket NOT IN
+            WHERE person=%(from_id)d AND question NOT IN
                 (
-                SELECT ticket
-                FROM TicketSubscription
+                SELECT question
+                FROM QuestionSubscription
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
         # and delete those left over
         cur.execute('''
-            DELETE FROM TicketSubscription WHERE person=%(from_id)d
+            DELETE FROM QuestionSubscription WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('ticketsubscription', 'person'))
+        skip.append(('questionsubscription', 'person'))
 
         # Update only the MentoringOffers that will not conflict
         cur.execute('''
@@ -2134,6 +2280,26 @@ class PersonSet:
         # flush its caches.
         flush_database_caches()
 
+    def getTranslatorsByLanguage(self, language):
+        """See IPersonSet."""
+        # XXX CarlosPerelloMarin 20070331: The KarmaCache table doesn't have a
+        # field to store karma per language, so we are actually returning the
+        # people with the most translation karma that have this language
+        # selected in their preferences.  See bug #102257 for more info.
+        return Person.select('''
+            PersonLanguage.person = Person.id AND
+            PersonLanguage.language = %s AND
+            KarmaCache.person = Person.id AND
+            KarmaCache.product IS NULL AND
+            KarmaCache.project IS NULL AND
+            KarmaCache.sourcepackagename IS NULL AND
+            KarmaCache.distribution IS NULL AND
+            KarmaCache.category = KarmaCategory.id AND
+            KarmaCategory.name = 'translations'
+            ''' % sqlvalues(language), orderBy=['-KarmaCache.karmavalue'],
+            clauseTables=[
+                'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
+
 
 class PersonLanguage(SQLBase):
     _table = 'PersonLanguage'
@@ -2222,6 +2388,7 @@ class JabberID(SQLBase):
     implements(IJabberID)
 
     _table = 'JabberID'
+    _defaultOrder = ['jabberid']
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     jabberid = StringCol(dbName='jabberid', notNull=True)

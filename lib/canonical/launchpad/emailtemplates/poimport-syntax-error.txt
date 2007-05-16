@@ -1,18 +1,13 @@
 Hello %(importer)s,
 
-On %(dateimport)s (%(elapsedtime)s), you uploaded a file with
-%(import_title)s in Rosetta.
+On %(dateimport)s (%(elapsedtime)s), you uploaded a file with %(import_title)s to Launchpad.
 
-We didn't import it because we found errors in the file format.
+We were unable to import the file because of errors in its format.
 
-You can check this file with the 'msgfmt' command. Please fix any
-error raised by that tool and upload the file again. If you check
-the file and you don't find any error in it, please, contact us to
-help you with this problem.
+You can check your file for correct formatting with the 'msgfmt' command. Please fix any errors raised by msgfmt and upload the file again. If you check the file and you don't find any error in it, please look for an answer or file a question at https://answers.launchpad.net/rosetta/
 
-For your convenience, you can get the file you uploaded at:
-%(file_link)s
+For your convenience, you can get the file you uploaded at: %(file_link)s
 
-Thanks for using Rosetta.
+Thank you,
 
-The Rosetta SWAT Team
+The Launchpad team
