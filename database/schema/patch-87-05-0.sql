@@ -8,4 +8,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE AnswerContact
     ADD COLUMN want_english BOOLEAN DEFAULT True NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (79, 97, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 05, 0);
