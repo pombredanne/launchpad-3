@@ -120,8 +120,9 @@ added as a comment from the uploader.
     <BLANKLINE>
      -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300
 
-A bug notification is sent for both the status change, and for the
-comment addition.
+A bug notification is created for both the status change, and for the
+comment addition. The both notifications will be batched together into a
+single e-mail later.
 
     >>> from canonical.launchpad.database import BugNotification
     >>> notifications = BugNotification.select(orderBy='id')
