@@ -11,4 +11,4 @@ UPDATE DistroRelease
 ALTER TABLE SpokenIn
   ADD CONSTRAINT spokenin__country__language__key UNIQUE (language, country);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (79, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 01, 0);
