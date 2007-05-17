@@ -869,6 +869,14 @@ class UpstreamFileType(DBSchema):
         summary of major new features and fixes.
         """)
 
+    INSTALLER = Item(5, """
+        Installer file
+
+        This file contains an installer for a product.  It may
+        be a Debian package, an RPM file, an OS X disk image, a
+        Windows installer, or some other type of installer.
+        """)
+
 
 class SourcePackageFormat(DBSchema):
     """Source Package Format
@@ -2533,25 +2541,25 @@ class BranchSubscriptionDiffSize(DBSchema):
 
         Don't send generated diffs with the revision notifications.
         """, sortkey=0)
-    
+
     HALFKLINES = Item(500, """
         500 lines
 
         Limit the generated diff to 500 lines.
         """, sortkey=500)
-    
+
     ONEKLINES  = Item(1000, """
         1000 lines
 
         Limit the generated diff to 1000 lines.
         """, sortkey=1000)
-    
+
     FIVEKLINES = Item(5000, """
         5000 lines
 
         Limit the generated diff to 5000 lines.
         """, sortkey=5000)
-    
+
     WHOLEDIFF  = Item(-1, """
         Send entire diff
 
@@ -3617,4 +3625,3 @@ class PersonCreationRationale(DBSchema):
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
         """)
-

@@ -8009,7 +8009,6 @@ ALTER TABLE productreleasefile DISABLE TRIGGER ALL;
 INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti) VALUES (5, 3, 1, 2, NULL, 16, '2005-06-06 08:59:51.926792', NULL);
 INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, description, uploader, date_uploaded, fti) VALUES (7, 1, 1, 1, NULL, 12, '2005-06-06 08:59:51.925908', NULL);
 
-
 ALTER TABLE productreleasefile ENABLE TRIGGER ALL;
 
 

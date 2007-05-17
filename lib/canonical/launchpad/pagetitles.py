@@ -780,6 +780,8 @@ product_new = 'Register a project in Launchpad'
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
+product_files = ContextDisplayName('%s project files')
+
 product_series = ContextDisplayName('%s timeline')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
@@ -787,6 +789,8 @@ product_translations = ContextTitle('Translations of %s in Launchpad')
 product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
+
+productrelease_file_add = ContextDisplayName('Add a file to %s')
 
 productrelease_admin = ContextTitle('Administer %s in Launchpad')
 
