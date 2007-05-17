@@ -85,6 +85,7 @@ from canonical.launchpad.interfaces.manifest import *
 from canonical.launchpad.interfaces.mentoringoffer import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
+from canonical.launchpad.interfaces.openidserver import *
 from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.packaging import *
