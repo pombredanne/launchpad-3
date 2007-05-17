@@ -281,12 +281,12 @@ To get all milestones of a given product we have the .all_milestones property.
 
 We can also find all the products that have branches.
 
- >>> productset.getProductsWithBranches().count()
- 5
- >>> for product in productset.getProductsWithBranches():
- ...     print product.name
- evolution
- firefox
- gnome-terminal
- iso-codes
- thunderbird
+    >>> productset.getProductsWithBranches().count()
+    5
+    >>> for product in productset.getProductsWithBranches():
+    ...     print product.name
+    evolution
+    firefox
+    gnome-terminal
+    iso-codes
+    thunderbird

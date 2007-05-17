@@ -3,8 +3,15 @@
   table.
 */
 
--- AnswerContact
+/* AnswerContact */
+
 COMMENT ON TABLE AnswerContact IS 'Defines the answer contact for a given question target. The answer contact will be automatically notified about changes to any questions filed on the question target.';
+COMMENT ON COLUMN AnswerContact.product IS 'The product that the answer contact supports.';
+COMMENT ON COLUMN AnswerContact.distribution IS 'The distribution that the answer contact supports.';
+COMMENT ON COLUMN AnswerContact.sourcepackagename IS 'The sourcepackagename that the answer contact supports.';
+COMMENT ON COLUMN AnswerContact.person IS 'The person or team associated with the question target.';
+COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was submitted.';
+COMMENT ON COLUMN AnswerContact.want_english IS 'Whether or not the answer contact supports questions in English.';
 
 /* Branch */
 
@@ -19,6 +26,7 @@ COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scan
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
 COMMENT ON COLUMN Branch.mirror_request_time IS 'The time when a user requested that we mirror this branch (NULL if not requested). This will be set automatically by pushing to a hosted branch. Once mirrored, it will be set back to NULL.';
+COMMENT ON COLUMN Branch.visibility_team IS 'If NULL then the branch is visible to all, otherwise only members of the team specified can see the branch. If the specified Person is actually a person and not a team, then the branch is only visible to that person.';
 
 /* BranchSubscription*/
 
@@ -27,6 +35,15 @@ COMMENT ON COLUMN BranchSubscription.person IS 'The person or team associated wi
 COMMENT ON COLUMN BranchSubscription.branch IS 'The branch associated with the person or team.';
 COMMENT ON COLUMN BranchSubscription.notification_level IS 'The level of email the person wants to receive from branch updates.';
 COMMENT ON COLUMN BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.';
+
+/* BranchVisibilityPolicy */
+
+COMMENT ON TABLE BranchVisibilityPolicy IS 'Defines the policy for the initial visibility of branches.';
+COMMENT ON COLUMN BranchVisibilityPolicy.project IS 'Even though projects don\'t directly have branches themselves, if a product of the project does not specify its own branch visibility policies, those of the project are used.';
+COMMENT ON COLUMN BranchVisibilityPolicy.product IS 'The product that the visibility policies apply to.';
+COMMENT ON COLUMN BranchVisibilityPolicy.team IS 'Refers to the team that the policy applies to.  NULL is used to indicate ALL people, as there is no team defined for *everybody*.';
+COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of PUBLIC or PRIVATE.  PUBLIC is the default value.';
+
 
 /* Bug */
 
@@ -242,9 +259,9 @@ COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. T
 /*COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it\'s different from the project bug tracker.'; */
 COMMENT ON COLUMN Product.development_focus IS 'The product series that is the current focus of development.';
 COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in the Launchpad.';
-COMMENT ON COLUMN Product.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a product.';
-COMMENT ON COLUMN Product.gotchi IS 'The library file alias of a gotchi image to display as the icon of a product, on its home page.';
-COMMENT ON COLUMN Product.gotchi_heading IS 'The library file alias of a smaller version of this product\'s gotchi.';
+COMMENT ON COLUMN Product.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon whenever we are referring to a product.';
+COMMENT ON COLUMN Product.mugshot IS 'The library file alias of a mugshot image to display as the icon of a product, on its home page.';
+COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
 
 -- ProductRelease
 
@@ -254,6 +271,16 @@ COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the
 COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
 COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
 
+-- ProductReleaseFile
+
+COMMENT ON TABLE ProductReleaseFile IS 'Links a ProductRelease to one or more files in the Librarian.';
+COMMENT ON COLUMN ProductReleaseFile.productrelease IS 'This is the product release this file is associated with';
+COMMENT ON COLUMN ProductReleaseFile.libraryfile IS 'This is the librarian entry';
+COMMENT ON COLUMN ProductReleaseFile.description IS 'A description of what the file contains';
+COMMENT ON COLUMN ProductReleaseFile.filetype IS 'An enum of what kind of file this is. Code tarballs are marked for special treatment (importing into bzr)';
+COMMENT ON COLUMN ProductReleaseFile.uploader IS 'The person who uploaded this file.';
+COMMENT ON COLUMN ProductReleaseFile.date_uploaded IS 'The date this file was uploaded.';
+COMMENT on COLUMN ProductReleaseFile.id IS '';
 
 -- ProductSeries
 COMMENT ON TABLE ProductSeries IS 'A ProductSeries is a set of product releases that are related to a specific version of the product. Typically, each major release of the product starts a new ProductSeries. These often map to a branch in the revision control system of the project, such as "2_0_STABLE". A few conventional Series names are "head" for releases of the HEAD branch, "1.0" for releases with version numbers like "1.0.0" and "1.0.1".  Each product has at least one ProductSeries';
@@ -352,9 +379,9 @@ changes at all).';
 COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
 /* COMMENT ON COLUMN Project.bugtracker IS 'The external bug tracker that is used to track bugs primarily for products within this project.'; */
 COMMENT ON COLUMN Project.homepage_content IS 'A home page for this project in the Launchpad.';
-COMMENT ON COLUMN Project.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a project.';
-COMMENT ON COLUMN Project.gotchi IS 'The library file alias of a gotchi image to display as the icon of a project, on its home page.';
-COMMENT ON COLUMN Project.gotchi_heading IS 'The library file alias of a smaller version of this product\'s gotchi.';
+COMMENT ON COLUMN Project.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon whenever we are referring to a project.';
+COMMENT ON COLUMN Project.mugshot IS 'The library file alias of a mugshot image to display as the icon of a project, on its home page.';
+COMMENT ON COLUMN Project.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
 
 
 -- ProjectRelationship
@@ -451,9 +478,9 @@ COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenien
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
 COMMENT ON COLUMN Sprint.time_zone IS 'The timezone of the sprint, stored in text format from the Olsen database names, like "US/Eastern".';
 COMMENT ON COLUMN Sprint.homepage_content IS 'A home page for this sprint in the Launchpad.';
-COMMENT ON COLUMN Sprint.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a sprint.';
-COMMENT ON COLUMN Sprint.gotchi IS 'The library file alias of a gotchi image to display as the icon of a sprint, on its home page.';
-COMMENT ON COLUMN Sprint.gotchi_heading IS 'The library file alias of a smaller version of this sprint\'s gotchi.';
+COMMENT ON COLUMN Sprint.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon whenever we are referring to a sprint.';
+COMMENT ON COLUMN Sprint.mugshot IS 'The library file alias of a mugshot image to display as the icon of a sprint, on its home page.';
+COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of this sprint\'s mugshot.';
 
 
 /* SprintAttendance */
@@ -740,6 +767,8 @@ COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a p
 
 -- Person
 COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
+COMMENT ON COLUMN Person.subscriptionpolicy IS 'The policy for new members to join this team.';
+COMMENT ON COLUMN Person.renewal_policy IS 'The policy for membership renewal on this team.';
 COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
 COMMENT ON COLUMN Person.password IS 'SSHA digest encrypted password.';
 COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';
@@ -749,9 +778,9 @@ COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset 
 COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.';
 COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
 COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the Launchpad. In short, this is like a personal wiki page. The person will get to edit their own page, and it will be published on /people/foo/. Note that this is in text format, and will migrate to being in Moin format as a sort of mini-wiki-homepage.';
-COMMENT ON COLUMN Person.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem or icon whenever we are referring to that person.';
-COMMENT ON COLUMN Person.gotchi IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
-COMMENT ON COLUMN Person.gotchi_heading IS 'The library file alias of a smaller version of this person\'s gotchi.';
+COMMENT ON COLUMN Person.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon or icon whenever we are referring to that person.';
+COMMENT ON COLUMN Person.mugshot IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
+COMMENT ON COLUMN Person.logo IS 'The library file alias of a smaller version of this person\'s mugshot.';
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this person -- a dbschema value.';
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
 COMMENT ON COLUMN Person.registrant IS 'The user who created this profile.';
@@ -961,9 +990,9 @@ COMMENT ON COLUMN Distribution.owner IS 'The person in launchpad who is in ultim
 COMMENT ON COLUMN Distribution.upload_sender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
 COMMENT ON COLUMN Distribution.upload_admin IS 'Person foreign key which have access to modify the queue ui. If NULL, we fall back to launchpad admin members';
 COMMENT ON COLUMN Distribution.homepage_content IS 'A home page for this distribution in the Launchpad.';
-COMMENT ON COLUMN Distribution.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a distribution.';
-COMMENT ON COLUMN Distribution.gotchi IS 'The library file alias of a gotchi image to display as the icon of a distribution, on its home page.';
-COMMENT ON COLUMN Distribution.gotchi_heading IS 'The library file alias of a smaller version of this distributions\'s gotchi.';
+COMMENT ON COLUMN Distribution.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon whenever we are referring to a distribution.';
+COMMENT ON COLUMN Distribution.mugshot IS 'The library file alias of a mugshot image to display as the icon of a distribution, on its home page.';
+COMMENT ON COLUMN Distribution.logo IS 'The library file alias of a smaller version of this distributions\'s mugshot.';
 
 -- DistroRelease
 
