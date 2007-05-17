@@ -616,6 +616,7 @@ COMMENT ON COLUMN DistroRelease.datelastlangpack IS
 'The date we last generated a base language pack for this release. Language
 update packs for this release will only include translations added after that
 date.';
+COMMENT ON COLUMN DistroRelease.hide_all_translations IS 'Whether we should hide all available translations for this distro release to non admin users.';
 COMMENT ON COLUMN DistroRelease.messagecount IS 'This is a cached value and may be a few hours out of sync with reality. It should, however, be in sync with the values in DistroReleaseLanguage, and should never be updated separately. The total number of translation messages in this distro release, as per IRosettaStats.';
 COMMENT ON COLUMN DistroRelease.nominatedarchindep IS 'This is the DistroArchRelease nominated to build architecture independent packages within this DistroRelase, it is mandatory for buildable distroreleases, i.e., Auto Build System will avoid to create build jobs for a DistroRelease with no nominatedarchindep, but the database model allow us to do it (for non-buildable DistroReleases). See further info in NominatedArchIndep specification.';
 COMMENT ON COLUMN DistroRelease.binarycount IS 'A cache of the number of distinct binary package names published in this distro release.';
