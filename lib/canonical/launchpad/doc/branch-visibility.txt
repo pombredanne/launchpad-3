@@ -5,7 +5,7 @@ visible to everybody, even people not logged in.
 
 Some branches are also considered "private".  These are branches that
 are only visible to a specific team of people.  This team is specified
-on the branch in the attribute visibility_team.  
+on the branch in the attribute visibility_team.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBranchSet
@@ -14,7 +14,7 @@ on the branch in the attribute visibility_team.
 == Public Visibility ==
 
 If the visibility_team is None then the branch is "public".
-  
+
     >>> login(ANONYMOUS)
     >>> print branch.visibility_team
     None
@@ -47,7 +47,7 @@ can see the branch.
     >>> check_permission('launchpad.View', branch)
     True
 
-No Privledges person though isn't a member of any team.
+No Privileges person though isn't a member of any team.
 
     >>> login('no-priv@canonical.com')
     >>> check_permission('launchpad.View', branch)
@@ -108,4 +108,3 @@ Non-logged in users cannot see it.
     >>> login(ANONYMOUS)
     >>> check_permission('launchpad.View', branch)
     False
-    
