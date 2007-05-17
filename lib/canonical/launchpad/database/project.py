@@ -10,8 +10,7 @@ __all__ = [
 from zope.interface import implements
 
 from sqlobject import (
-        ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
-        SQLMultipleJoin, SQLRelatedJoin)
+    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol

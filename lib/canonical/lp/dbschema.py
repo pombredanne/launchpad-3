@@ -92,6 +92,7 @@ __all__ = (
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
+'TeamMembershipRenewalPolicy',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
 'TranslationPriority',
@@ -632,6 +633,35 @@ class EmailAddressStatus(DBSchema):
 
         The email address was validated and is the person's choice for
         receiving notifications from Launchpad.
+        """)
+
+
+class TeamMembershipRenewalPolicy(DBSchema):
+    """TeamMembership Renewal Policy.
+
+    How Team Memberships can be renewed on a given team.
+    """
+
+    NONE = Item(10, """
+        None
+
+        Memberships can be renewed only by team administrators or by going
+        through the normal workflow for joining the team.
+        """)
+
+    ONDEMAND = Item(20, """
+        On demand
+
+        Memberships can be renewed by the members themselves a few days before
+        it expires. After it expires the member has to go through the normal
+        workflow for joining the team.
+        """)
+
+    AUTOMATIC = Item(30, """
+        Automatic
+
+        Memberships are automatically renewed when they expire and a note is
+        sent to the member and to team admins.
         """)
 
 

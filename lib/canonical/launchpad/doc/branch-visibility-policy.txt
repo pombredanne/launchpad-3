@@ -1,31 +1,27 @@
 = Branch Visibility Policy =
 
-The branch visibility policy is used to define the default visibility 
+The branch visibility policy is used to define the default visibility
 of branches when they are created.
 
-Both projects and products can define a branch visibility policy.  If a 
+Both projects and products can define a branch visibility policy.  If a
 policy does not exist for a product, it uses the policy defined by its
-project if it exists.
+project (if it exists).
 
 The information is saved in the database table BranchVisibilityPolicy.
-This table effectively creates tuples of (PillarName, Team, Policy).
-The PillarName table is used as it allows linking to Projects, Products, 
-and Distributions in a simple way.  Since there is no team that is used
-to define everyone, the non-specifying of a team means *everyone*.
+This table effectively creates tuples of (Project or Product, Team,
+Policy).  Since there is no team that is used to define everyone, the
+non-specifying of a team means *everyone*.
 
 The Policy is defined by the enumerated type BranchVisibilityPolicy.
-XXX: Is it too confusing to have both a content type and an enumerated type
-called the same thing?
 
     >>> from canonical.lp.dbschema import BranchVisibilityPolicy
 
 There are currently two visibility policies: public and private.  It is
-concievable that we could also implement a security policy to allow the
-creation of security branches by particular teams, or to define an
-unauthorised policy that will not allow particular teams to create
-branches at all.  The security and unauthorised policies are not
-currently implemented and are documented here so we don't loose the
-idea.
+conceivable that we could also implement a "security policy" to allow
+the creation of security branches by particular teams, or to define an
+"forbidden policy" that will not allow particular teams to create
+branches at all.  The security and forbidden policies are not currently
+implemented and are documented here so we don't lose the idea.
 
     >>> for item in BranchVisibilityPolicy.items:
     ...     print repr(item)
@@ -36,8 +32,9 @@ idea.
 == IHasBranchVisibilityPolicy ==
 
 The interface IHasBranchVisibilityPolicy is used to define the attribute
-`branch_visibility_policy`.  Both IProject and IProduct inherit from this
-interface.
+`branch_visibility_policy`.  Both IProject and IProduct inherit from
+this interface as both projects and products can set branch visibility
+policies.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
@@ -55,24 +52,24 @@ interface.
 
 == The policy object ==
 
-The object that is accessed through the branch_visibility_policy attribute
-shall implement IBranchVisibilityPolicy.
+The object that is accessed through the branch_visibility_policy
+attribute implements IBranchVisibilityPolicy.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import IBranchVisibilityPolicy
     >>> policy = firefox.branch_visibility_policy
-    >>> verifyObject(IBranchVisibilityPolicy, policy)    
+    >>> verifyObject(IBranchVisibilityPolicy, policy)
     True
 
-The policy object has a context that refers to the object that the policy
-applies to.
+The policy object has a context that refers to the object that the
+policy applies to.
 
     >>> print policy.context.name
     firefox
 
     >>> print mozilla.branch_visibility_policy.context.name
     mozilla
-    
+
 == Teams and people to work with ==
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -86,8 +83,8 @@ applies to.
     >>> launchpad = getUtility(IProductSet).getByName('launchpad')
     >>> policy = launchpad.branch_visibility_policy
 
-foo_bar is a member of both the launchpad team and the ubuntu gnome team.
-sample_person is an indirect member of the ubuntu_gnome_team.
+foo_bar is a member of both the launchpad team and the ubuntu gnome
+team.  sample_person is an indirect member of the ubuntu_gnome_team.
 no_priv is not a member of any team.
 
     >>> def teamname(team):
@@ -102,9 +99,9 @@ no_priv is not a member of any team.
 
 == Default policy ==
 
-There is an implicit policy defined for all contexts.  The implicit policy
-is that everyone can create public branches.  The implicit policy is not
-returned with the items attribute.  In order to override this
+There is an implicit policy defined for all contexts.  The implicit
+policy is that everyone can create public branches.  The implicit policy
+is not returned with the items attribute.  In order to override this
 implicit policy you need to explicitly define a policy for everyone, and
 this is done by specifying None for the team.
 
@@ -136,7 +133,7 @@ Setting the policy for *everyone* is done by passing None for the team.
     >>> print_policy_items(policy)
     *everyone*: Private
     Launchpad Developers: Private
-    
+
     >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.PUBLIC)
 
 == Removing teams from the policy object ==
@@ -152,8 +149,8 @@ change the state of the policy object.
     >>> print_policy_items(policy)
     *everyone*: Public
 
-In order to remove a policy assigned to everyone you pass None in for the
-team name.
+In order to remove a policy assigned to everyone you pass None in for
+the team name.
 
     >>> policy.removeTeam(None)
     >>> print_policy_items(policy)
@@ -179,13 +176,24 @@ with the policy for *everybody* being first.
 
 == Checking the visibility team for a user ==
 
-If the user is a member of a team that has private branches, then the
-visibility_team for that user will be the team.
+When the branch is created, the visibility team of the owner of the
+branch is used to determine the visibility team of the branch.
 
-If the user is a member of multiple teams that have private branches
-set then the default visibibility_team is the user themselves.  It is
-then up to the user to set the appropriate team for the branch at a
-later date.
+The visibility team of a branch is used to determine who can see that
+branch.  If the visibility team is None, then the branch is visible to
+everyone, otherwise the branch is just visible to members of the
+visibility team.
+
+The visibility team of the owner of the branch is determined by the
+policy object of the project that the branch is associated with.
+
+If the user is a member of a team that has private branches, then the
+visibility team for that user will be the team.
+
+If the user is a member of multiple teams that have private branches set
+then the default visibibility team is the user themselves.  It is then
+up to the user to set the appropriate team for the branch at a later
+date.
 
 
     >>> print teamname(policy.branchVisibilityTeamForUser(no_priv))
@@ -213,14 +221,14 @@ visibility team is the user themselves.
     >>> print teamname(policy.branchVisibilityTeamForUser(foo_bar))
     Foo Bar
 
-        
+
 == Inherited policies ==
 
 When a branch visibility policy is created, it has an optional parameter
 of another branch visibility policy that it inherits behaviour from.
 
-The inherited behaviour only becomes apparent if there are no explicit
-policy items set for BranchVisibilityPolicy object.
+The inherited behaviour only used if there are no explicit policy items
+set for BranchVisibilityPolicy object.
 
 Branch visibility policies for projects are not created with inherited
 policies.
@@ -231,7 +239,7 @@ policies.
     >>> print mozilla_policy.isUsingInheritedPolicy()
     False
 
-Branch visibility policies for products are created with in inherited
+Branch visibility policies for products are created with an inherited
 policy of their project if the project exists.
 
     >>> thunderbird_policy = thunderbird.branch_visibility_policy
@@ -240,7 +248,7 @@ policy of their project if the project exists.
     >>> print thunderbird_policy.isUsingInheritedPolicy()
     True
 
-Since the launcpad product doesn't have a project associated with it,
+Since the Launchpad product doesn't have a project associated with it,
 there is no inherited policy.
 
     >>> from canonical.launchpad.interfaces import IProductSet
@@ -252,8 +260,9 @@ there is no inherited policy.
     False
 
 
-Adding a team to the mozilla project will also affect products associated
-with the mozilla project that are inheriting the project's branch policy.
+Adding a team to the mozilla project will also affect products
+associated with the mozilla project that are inheriting the project's
+branch policy.
 
     >>> mozilla_policy.setTeamPolicy(
     ...     ubuntu_gnome_team, BranchVisibilityPolicy.PRIVATE)

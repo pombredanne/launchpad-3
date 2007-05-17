@@ -19,7 +19,6 @@ from canonical.database.sqlbase import SQLBase
 from canonical.lp.dbschema import BranchVisibilityPolicy
 
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.database import PillarName
 from canonical.launchpad.interfaces import (
     IBranchVisibilityPolicyItem, IBranchVisibilityPolicy)
 

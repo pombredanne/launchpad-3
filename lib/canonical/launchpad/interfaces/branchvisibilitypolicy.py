@@ -30,7 +30,7 @@ class IBranchVisibilityPolicyItem(Interface):
 
     The team may be null, in which case the policy applies to everyone.
     """
-    
+
     team = Choice(
         title=_('Team'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("Specifies the team that the policy applies to. "
@@ -60,13 +60,13 @@ class IBranchVisibilityPolicy(Interface):
         """Return True if using policy from the inherited context."""
 
     def setTeamPolicy(team, policy):
-        """Sets the policy for the team.
-        
+        """Set the policy for the team.
+
         Each team can only have one policy.
         """
-        
+
     def removeTeam(team):
-        """Removes the team from the policy list.
+        """Remove the team from the policy list.
 
         If the team exists in the items list it is removed.  If the team
         isn't in the items list, the method returns and the state of the
@@ -75,5 +75,5 @@ class IBranchVisibilityPolicy(Interface):
         """
 
     def branchVisibilityTeamForUser(user):
-        """Returns the initial branch visibility for the specified user."""
-        
+        """Return the initial branch visibility for the specified user."""
+
