@@ -12,14 +12,14 @@ You have to be logged in to subscribe someone else.
     
     >>> anon_browser.handleErrors = True
     >>> anon_browser.open(bug_url)
-	>>> link = anon_browser.getLink('Subscribe someone else')
-	>>> link.click()
+    >>> link = anon_browser.getLink('Subscribe someone else')
+    >>> link.click()
     >>> anon_browser.url == test_url
     False
     
     >>> user_browser.open(bug_url)
-	>>> link = user_browser.getLink('Subscribe someone else')
-	>>> link.click()
+    >>> link = user_browser.getLink('Subscribe someone else')
+    >>> link.click()
     >>> user_browser.url == test_url
     True
 
