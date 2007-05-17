@@ -56,8 +56,7 @@ from canonical.launchpad.interfaces import (
     ICountry, IProductSet, IProductSeries, IProject, ISourcePackage,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
-    IPillarNameSet, IDistribution, IHasIcon, UnexpectedFormData,
-    UnsafeFormGetSubmissionError)
+    IPillarNameSet, IDistribution, IHasIcon, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
@@ -571,7 +570,6 @@ class ProductDownloadFilesView(LaunchpadView):
     def initialize(self):
         self.form = self.request.form
         self.product = self.context
-        self.__determine_milestones()
         del_count = None
         if 'delete_files' in self.form:
             if self.request.method == 'POST':
@@ -611,17 +609,20 @@ class ProductDownloadFilesView(LaunchpadView):
         return "%s/+download/%s" % (canonical_url(release),
                                     file_.libraryfile.filename)
 
-    def __determine_milestones(self):
+    @cachedproperty
+    def milestones(self):
         """Compute a mapping between series and releases that are milestones."""
-        self.milestones = dict()
+        result = dict()
         for series in self.product.serieslist:
-            self.milestones[series] = dict()
+            result[series] = dict()
             milestone_list = [m.name for m in series.milestones]
             for release in series.releases:
                 if release.version in milestone_list:
-                    self.milestones[series][release] = True
+                    result[series][release] = True
+        return result
 
     def is_milestone(self, series, release):
+        """Determine whether a release is milestone for the series."""
         return (series in self.milestones and
                 release in self.milestones[series])
 

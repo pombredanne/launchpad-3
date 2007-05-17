@@ -63,13 +63,13 @@
                          name string:checkbox_${cbnum}">
                 </td>
                 <td>
-                  <img alt="" src="/@@/download" />
+                  <img alt="download icon" src="/@@/download" />
                   <a tal:attributes="href python:view.file_url(series,release,file)"
                        tal:content="file/libraryfile/filename">filename</a></td>
                 <td>
                    <tal:version content="release/version">version</tal:version>
                    <img tal:condition="python: view.is_milestone(series,release)"
-                        alt=""
+                        alt="milestone icon"
                         src="/@@/milestone" />
                 </td>
                 <td tal:content="file/description">Installer for i386</td>
