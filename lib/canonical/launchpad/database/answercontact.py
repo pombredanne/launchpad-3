@@ -29,5 +29,5 @@ class AnswerContact(SQLBase):
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', notNull=False,
         foreignKey='SourcePackageName')
-    limited_languages = BoolCol(
-        dbName='limited_languages', notNull=True, default=False)
+    want_english = BoolCol(
+        dbName='want_english', notNull=True, default=True)

@@ -846,8 +846,9 @@ languages is either the list of languages associated to the team or
 the list of the languages spoken by the team members.
 
 For example, the rosetta admins team doesn't have any languages
-configured. But among its members, Carlos speaks Spanish. So, the team
-will be notified if a Spanish question is created.
+configured, and they have a preferred email address. Carlos speaks 
+Spanish, and he is an answer contact for Ubuntu. The team wont receive
+emails because of his membership when they become answer contacts too.
 
     >>> rosetta_admins = getUtility(IPersonSet).getByName('rosetta-admins')
     >>> [lang.code for lang in rosetta_admins.languages]
@@ -859,6 +860,8 @@ will be notified if a Spanish question is created.
     >>> spanish in carlos.languages
     True
 
+    >>> ubuntu.addAnswerContact(carlos)
+    True
     >>> ubuntu.addAnswerContact(rosetta_admins)
     True
     >>> spanish_question = ubuntu.newQuestion(
@@ -868,11 +871,14 @@ will be notified if a Spanish question is created.
     >>> notify(SQLObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
-    ['rosetta@launchpad.net', 'test@canonical.com']
+    ['carlos@canonical.com', 'test@canonical.com']
+    
+    >>> ubuntu.removeAnswerContact(carlos)
+    True
 
 But if the team languages attribute is set, this set of languages will
 be used. So, if the team only officially speaks French, it will only
-receives notifications about French (and English) questions.
+receive notifications about French (and English) questions.
 
     >>> rosetta_admins.addLanguage(french)
     >>> notify(SQLObjectCreatedEvent(french_question))
@@ -901,16 +907,14 @@ if the team supported languages includes the question language:
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'test@canonical.com']
 
-Teams my choose to restrict the notifications they receive to a few
-limited languages (in conjunction with setting their preferred 
-languages). Teams will not be notified of English questions if English
-is not one of their their supported languages. For example, when
-rosetta_admins remove English from their preferred languages, French
+By default, answer contacts choose to receive notification about
+English questions. Teams my choose to restrict the notifications to
+their preferred languages. For example, when rosetta_admins changes
+chooses for preferred languages only (want_english=False), French
 becomes the only language they will receive email for.
 
     >>> english = getUtility(ILanguageSet)['en']
-    >>> rosetta_admins.removeLanguage(english)
-    >>> ubuntu.addAnswerContact(rosetta_admins, limited_languages=True)
+    >>> ubuntu.addAnswerContact(rosetta_admins, want_english=False)
     True
   
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -933,12 +937,12 @@ becomes the only language they will receive email for.
     >>> 'rosetta@launchpad.net' in addresses
     False
     
-The limited languages condition is also true for teams without
+The preferred languages condition is also true for teams without
 a contact email address. From above, Foo Bar is the only member of 
 launchpad_devs, and the team's preferred languages only contains
 Spanish.
 
-    >>> ubuntu.addAnswerContact(launchpad_devs, limited_languages=True)
+    >>> ubuntu.addAnswerContact(launchpad_devs, want_english=False)
     True
 
     >>> flush_database_updates()

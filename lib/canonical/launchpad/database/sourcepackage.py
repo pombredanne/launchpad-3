@@ -35,7 +35,8 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
+    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
+    QuestionTargetMixin)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
@@ -44,10 +45,8 @@ from canonical.launchpad.database.distroreleasesourcepackagerelease import (
     DistroReleaseSourcePackageRelease)
 from canonical.launchpad.database.build import Build
 
-from canonical.launchpad.helpers import shortlist
 
-
-class SourcePackageQuestionTargetMixin:
+class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     """Implementation of IQuestionTarget for SourcePackage."""
 
     def newQuestion(self, owner, title, description, language=None,
@@ -95,29 +94,6 @@ class SourcePackageQuestionTargetMixin:
             title, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename).getResults()
 
-    def addAnswerContact(self, person, limited_languages=False):
-        """See IQuestionTarget."""
-        if limited_languages == True:
-            assert len(shortlist(person.languages)) != 0, (
-                "%s has no supported languages to limit." % person.name)
-        answer_contact = AnswerContact.selectOneBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            person=person)
-        if (answer_contact and 
-                answer_contact.limited_languages == limited_languages):
-            return False
-        
-        if answer_contact:
-            answer_contact.limited_languages = limited_languages
-        else:
-            AnswerContact(
-                product=None, person=person,
-                sourcepackagename=self.sourcepackagename,
-                distribution=self.distribution,
-                limited_languages=limited_languages)
-        return True
-
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
         answer_contact = AnswerContact.selectOneBy(
@@ -130,30 +106,6 @@ class SourcePackageQuestionTargetMixin:
         answer_contact.destroySelf()
         return True
 
-    def getAnswerContactsForLanguage(self, language):
-        """See IQuestionTarget."""
-        answer_contacts = set()
-        answer_contacts.update(self.get_answer_contacts_for_language(language))
-        answer_contacts.update(
-            self.distribution.getAnswerContactsForLanguage(language))
-        return sorted(answer_contacts, key=attrgetter('displayname'))
-            
-    def get_answer_contacts_for_language(self, language):
-        """See IQuestionTarget."""
-        answer_contacts = AnswerContact.select(
-            'AnswerContact.distribution = %d AND '
-            'AnswerContact.sourcepackagename = %d AND '
-            '(AnswerContact.limited_languages = FALSE '
-            'OR '
-            '(AnswerContact.limited_languages = TRUE AND '
-            'AnswerContact.person = PersonLanguage.person AND '
-            'PersonLanguage.language = %d))' % (
-                self.distribution.id, self.sourcepackagename.id, language.id),
-            clauseTables=['PersonLanguage'], distinct=True)
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=attrgetter('displayname'))
-            
     @property
     def answer_contacts(self):
         """See IQuestionTarget."""
@@ -172,25 +124,6 @@ class SourcePackageQuestionTargetMixin:
             [contact.person for contact in answer_contacts],
             key=attrgetter('displayname'))
 
-    @property
-    def limited_answer_contacts(self):
-        """See IQuestionTarget."""
-        answer_contacts = set()
-        answer_contacts.update(self.limited_direct_answer_contacts)
-        answer_contacts.update(self.distribution.limited_answer_contacts)
-        return sorted(answer_contacts, key=attrgetter('displayname'))
-
-    @property
-    def limited_direct_answer_contacts(self):
-        """See IQuestionTarget."""
-        answer_contacts = AnswerContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            limited_languages=True)
-        return sorted(
-            [contact.person for contact in answer_contacts],
-            key=attrgetter('displayname'))
-            
     def getSupportedLanguages(self):
         """See IQuestionTarget."""
         return get_supported_languages(self)

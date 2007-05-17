@@ -384,16 +384,16 @@ is only available to registered users.
     Unauthorized...
     >>> login('no-priv@canonical.com')
 
-You cannot add an answer contact with the limited_languages=True
+You cannot add an answer contact with the want_english=False
 parameter when the Person has not configured his preferred languages.
 
     >>> from canonical.launchpad.helpers import shortlist
     >>> shortlist(name18.languages)
     []
-    >>> target.addAnswerContact(name18, limited_languages=True)
+    >>> target.addAnswerContact(name18, want_english=False)
     Traceback (most recent call last):
      ...
-    AssertionError: name18 has no supported languages to limit... 
+    AssertionError: name18 has no languages to support... 
     
 This method will return True when the contact was added the list and
 False when it was already on the list:
@@ -428,9 +428,6 @@ Only registered users can remove an answer contact:
     Traceback (most recent call last):
       ...
     Unauthorized...
-    
-Note see Limited Answer Contacts and getAnswerContactsForLanguage()
-below for
 
 == Supported Languages ==
 
@@ -470,26 +467,28 @@ because we ignore all English variants.
     ...                               key=operator.attrgetter('code'))]
     [u'ca', u'cy', u'en', u'es', u'ja']
 
-== Limited Answer Contacts ==
+== Answer Contacts that want English ==
 
-Answer contacts may choose to receive notifications for a limited set
-of languages; refusing English, the default support language. The
-limited_answer_contacts property returns the subset of answer_contacts
-that indicated they limit their support to their preferred languages.
+Answer contacts may exclude themselves from receiving notification
+about questions wirtten in English. The 
+answer_contacts_that_want_english property returns the subset of 
+answer_contacts that indicated they want question in English.
 
     >>> sorted([person.name for person in target.answer_contacts])
     [u'carlos', u'daf']
     
-    >>> list(target.limited_answer_contacts)
-    []
+    >>> sorted([person.name 
+    ...         for person in target.answer_contacts_that_want_english])
+    [u'carlos', u'daf']
     
-    >>> target.addAnswerContact(carlos, limited_languages=True)
+    >>> target.addAnswerContact(carlos, want_english=False)
     True
     
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> sorted([person.name for person in target.limited_answer_contacts])
-    [u'carlos']
+    >>> sorted([person.name 
+    ...         for person in target.answer_contacts_that_want_english])
+    [u'daf']
 
 Carlos is still in the set of answer contacts.
 

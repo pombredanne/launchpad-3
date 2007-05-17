@@ -73,13 +73,13 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :title: A phrase
         """
 
-    def addAnswerContact(person, limited_languages=False):
+    def addAnswerContact(person, want_english=True):
         """Add a new answer contact.
 
         :person: An IPerson.
-        :limited_languages: A boolean flag indicating whether the person
-                supports questions on his preferred languages only. When the
-                parameter is omitted, the person will recieve English language
+        :want_english: A boolean flag indicating whether the person
+                supports questions written in English. When the
+                parameter is omitted, the person will receive English language
                 questions too.
 
         Returns True if the person was added or preferred_languages was 
@@ -126,13 +126,11 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             "inherited from other context.)"),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
         
-    limited_answer_contacts = List(
-        title=_("Limited Answer Contacts"),
+    answer_contacts_that_want_english = List(
+        title=_("Answer Contacts that want questions in English."),
         description=_(
-            "IPersons that are willing to provide support limited to their "
-            "preferred languages for this target. They receive email "
-            "notifications like Answer Contact, but only for questions that "
-            "are written in their preferred languages."),
+            "IPersons that are willing to provide support for questions "
+            "written in English for this target."),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
 

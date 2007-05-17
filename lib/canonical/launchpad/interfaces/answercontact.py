@@ -44,7 +44,6 @@ class IAnswerContact(Interface):
             "sourcepackage's questions."),
         vocabulary='SourcePackageName')
         
-    limited_languages = Bool(title=_("Preferred Languages Only"),
-        required=False, default=False, 
-        description=_("The person wants to be notified of questions in his "
-            "preferred languages only."))
+    want_english = Bool(title=_("Want questions in English"),
+        required=False, default=True, 
+        description=_("The person will answer questions in English."))

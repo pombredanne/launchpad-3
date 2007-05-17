@@ -23,9 +23,10 @@
 
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
-        answer_contacts direct_answer_contacts limited_answer_contacts 
-        getSupportedLanguages getQuestionLanguages getAnswerContactsForLanguage"
-	/>
+      answer_contacts direct_answer_contacts 
+      answer_contacts_that_want_english 
+      getSupportedLanguages getQuestionLanguages getAnswerContactsForLanguage"
+      />
     <require permission="launchpad.AnyPerson"
       attributes="newQuestion addAnswerContact removeAnswerContact" />
   </content>

@@ -8,7 +8,9 @@ __all__ = [
     'Question',
     'QuestionTargetSearch',
     'QuestionPersonSearch',
-    'QuestionSet']
+    'QuestionSet',
+    'QuestionTargetMixin',
+    ]
 
 import operator
 from email.Utils import make_msgid
@@ -38,6 +40,7 @@ from canonical.lp.dbschema import (
     QuestionAction, QuestionSort, QuestionStatus,
     QuestionParticipation, QuestionPriority)
 
+from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
@@ -890,3 +893,95 @@ class QuestionPersonSearch(QuestionSearch):
             constraints.append('(' + ' OR '.join(participations_filter) + ')')
 
         return constraints
+
+
+class QuestionTargetMixin:
+    """Mixin class for IQuestionTarget."""
+    
+    def _getTargetTypes(self):
+        """Return a Touple of types set to the QuestionTarget or None.
+        
+        :Return: Tuple(product, distribution, sourcepackagename)
+        """
+        product = distribution = sourcepackagename = None
+        if (ISourcePackage.providedBy(self) or
+                IDistributionSourcePackage.providedBy(self)):
+            distribution = self.distribution
+            sourcepackagename = self.sourcepackagename
+        elif IDistribution.providedBy(self):
+            distribution = self
+        elif IProduct.providedBy(self):
+            product = self
+        else:
+            raise AssertionError("Unknown IQuestionTarget type of %s" % self)
+        return (product, distribution, sourcepackagename)
+    
+    def addAnswerContact(self, person, want_english=True):
+        """See IQuestionTarget."""
+        if not want_english:
+            assert person.languages.count() != 0, (
+                "%s has no languages to support." % person.name)
+        
+        product, distribution, sourcepackagename = self._getTargetTypes()
+        answer_contact = AnswerContact.selectOneBy(
+            person=person, product=product, distribution=distribution, 
+            sourcepackagename=sourcepackagename)
+        if (answer_contact is not None and
+                answer_contact.want_english == want_english):
+            return False
+        
+        if answer_contact is not None:
+            answer_contact.want_english = want_english
+        else:
+            AnswerContact(
+                person=person, want_english=want_english,
+                product=product, distribution=distribution,
+                sourcepackagename=sourcepackagename)
+        return True
+    
+    def getAnswerContactsForLanguage(self, language):
+        """See IQuestionTarget."""
+        constraints = []
+        columns = ('product', 'distribution', 'sourcepackagename')
+        target_types = self._getTargetTypes()
+        for column, target in zip(columns, target_types):
+            if target is None:
+                constraint = "AnswerContact." + column + " IS NULL"
+            else:
+                constraint = "AnswerContact." + column + " = %s" % sqlvalues(
+                    target)
+            constraints.append(constraint)
+        constraints.append("""
+            (AnswerContact.want_english = TRUE
+            OR
+            (AnswerContact.want_english = FALSE AND
+            AnswerContact.person = PersonLanguage.person AND
+            PersonLanguage.language = %s))""" % sqlvalues(language))
+        answer_contacts = AnswerContact.select(" AND ".join(constraints),
+            clauseTables=['PersonLanguage'], distinct=True)
+        persons = sorted(
+            [answer_contact.person for answer_contact in answer_contacts],
+            key=operator.attrgetter('displayname'))
+            
+        # Sourcepackages are also supported by their distribtions too.
+        product, distribution, sourcepackagename = target_types
+        if sourcepackagename is not None:
+            persons = set(persons)
+            persons.update(
+                distribution.getAnswerContactsForLanguage(language))
+            persons = sorted(
+                [person for person in persons],
+                key=operator.attrgetter('displayname'))
+                
+        return persons 
+    
+    @property
+    def answer_contacts_that_want_english(self):
+        """See IQuestionTarget."""
+        product, distribution, sourcepackagename = self._getTargetTypes()
+        answer_contacts = AnswerContact.selectBy(
+            product=product, distribution=distribution, 
+            sourcepackagename=sourcepackagename, want_english=True)
+        return sorted(
+            [answer_contact.person for answer_contact in answer_contacts],
+            key=operator.attrgetter('displayname'))  

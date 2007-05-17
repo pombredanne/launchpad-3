@@ -28,7 +28,8 @@ from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
+    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
+    QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
@@ -74,7 +75,7 @@ from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 
 class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasSprintsMixin, KarmaContextMixin):
+                   HasSprintsMixin, KarmaContextMixin, QuestionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IHasBuildRecords, IQuestionTarget,
@@ -543,28 +544,6 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IQuestionTarget."""
         return SimilarQuestionsSearch(title, distribution=self).getResults()
 
-    def addAnswerContact(self, person, limited_languages=False):
-        """See IQuestionTarget."""
-        if limited_languages == True:
-            assert len(shortlist(person.languages)) != 0, (
-                "%s has no supported languages to limit." % person.name)
-        answer_contact = AnswerContact.selectOneBy(
-            distribution=self,
-            sourcepackagename=None,
-            person=person)
-        if (answer_contact and 
-                answer_contact.limited_languages == limited_languages):
-            return False
-        
-        if answer_contact:
-            answer_contact.limited_languages = limited_languages
-        else:
-            AnswerContact(
-                product=None, person=person,
-                sourcepackagename=None, distribution=self, 
-                limited_languages=limited_languages)
-        return True
-
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
         if person not in self.answer_contacts:
@@ -574,21 +553,6 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             " AND sourcepackagename IS NULL" % (self.id, person.id))
         answer_contact.destroySelf()
         return True
-        
-    def getAnswerContactsForLanguage(self, language):
-        """See IQuestionTarget."""
-        answer_contacts = AnswerContact.select(
-            'AnswerContact.distribution = %d AND '
-            'AnswerContact.sourcepackagename IS NULL AND '
-            '(AnswerContact.limited_languages = FALSE '
-            'OR '
-            '(AnswerContact.limited_languages = TRUE AND '
-            'AnswerContact.person = PersonLanguage.person AND '
-            'PersonLanguage.language = %d))' % (self.id, language.id),
-            clauseTables=['PersonLanguage'], distinct=True)
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=attrgetter('displayname'))
 
     @property
     def answer_contacts(self):
@@ -604,17 +568,6 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def direct_answer_contacts(self):
         """See IQuestionTarget."""
         return self.answer_contacts
-
-    @property
-    def limited_answer_contacts(self):
-        """See IQuestionTarget."""
-        answer_contacts = AnswerContact.selectBy(
-            distribution=self,
-            sourcepackagename=None,
-            limited_languages=True)
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=attrgetter('displayname'))  
 
     def getQuestionLanguages(self):
         """See IQuestionTarget."""

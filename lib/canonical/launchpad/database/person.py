@@ -460,7 +460,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                 # is supported
                 if not is_english_variant(lang):
                     languages.add(lang)
-        elif ITeam.providedBy(self):
+        elif ITeam.providedBy(self) and self.preferredemail is None:
             for member in self.activemembers:
                 languages |= member.getSupportedLanguages()
         languages.add(getUtility(ILanguageSet)['en'])
