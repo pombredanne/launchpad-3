@@ -234,8 +234,10 @@ For team with a list of known languages set, the same rule applies:
     >>> language_codes(ubuntu_team.getSupportedLanguages())
     ['en', 'eo']
 
-But when the list of known languages is not set, the list of supported
-languages will be the union of all the members supported languages.
+When the list of known languages is not set, and the team's
+preferred email address is set, the list of supported languages
+will be the default list of English; the languages spoken by the
+team members are not included in the team's languages.
 
     >>> rosetta_admins = getUtility(IPersonSet).getByName(
     ...     'rosetta-admins')
@@ -248,19 +250,15 @@ languages will be the union of all the members supported languages.
     >>> language_codes(rosetta_admins.languages)
     []
     >>> language_codes(rosetta_admins.getSupportedLanguages())
-    ['ca', 'cy', 'en', 'es', 'ja']
+    ['en']
 
+But when both the list of known languages is not set, and the
+team's preferred email address is not set, the list of supported
+languages will be the union of all the members supported languages.
 These rules are applied recursively when teams are nested one inside
 the other. For example, the 'Guadamen' team includes the Ubuntu Team
 and doesn't have its list of known languages set, so it will be the
 languages of the Ubuntu Team that will be used.
-
-    >>> celso = getUtility(IPersonSet).getByName('cprov')
-    >>> celso.inTeam(ubuntu_team)
-    True
-    >>> celso.addLanguage(getUtility(ILanguageSet)['es'])
-    >>> language_codes(celso.languages)
-    ['es']
 
     >>> guadamen_team = getUtility(IPersonSet).getByName('guadamen')
     >>> ubuntu_team.inTeam(guadamen_team)
@@ -271,11 +269,6 @@ languages of the Ubuntu Team that will be used.
     >>> language_codes(guadamen_team.getSupportedLanguages())
     ['en', 'eo']
 
-    # Empty the list of known languages to use the list of the
-    # Ubuntu team members.
-    >>> ubuntu_team.removeLanguage(esperanto)
-    >>> language_codes(guadamen_team.getSupportedLanguages())
-    ['en', 'es']
 
 == getQuestionLanguages() ==
 
