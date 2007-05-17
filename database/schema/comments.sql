@@ -259,9 +259,9 @@ COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. T
 /*COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it\'s different from the project bug tracker.'; */
 COMMENT ON COLUMN Product.development_focus IS 'The product series that is the current focus of development.';
 COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in the Launchpad.';
-COMMENT ON COLUMN Product.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a product.';
-COMMENT ON COLUMN Product.gotchi IS 'The library file alias of a gotchi image to display as the icon of a product, on its home page.';
-COMMENT ON COLUMN Product.gotchi_heading IS 'The library file alias of a smaller version of this product\'s gotchi.';
+COMMENT ON COLUMN Product.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon whenever we are referring to a product.';
+COMMENT ON COLUMN Product.mugshot IS 'The library file alias of a mugshot image to display as the icon of a product, on its home page.';
+COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
 
 -- ProductRelease
 
@@ -379,9 +379,9 @@ changes at all).';
 COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
 /* COMMENT ON COLUMN Project.bugtracker IS 'The external bug tracker that is used to track bugs primarily for products within this project.'; */
 COMMENT ON COLUMN Project.homepage_content IS 'A home page for this project in the Launchpad.';
-COMMENT ON COLUMN Project.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a project.';
-COMMENT ON COLUMN Project.gotchi IS 'The library file alias of a gotchi image to display as the icon of a project, on its home page.';
-COMMENT ON COLUMN Project.gotchi_heading IS 'The library file alias of a smaller version of this product\'s gotchi.';
+COMMENT ON COLUMN Project.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon whenever we are referring to a project.';
+COMMENT ON COLUMN Project.mugshot IS 'The library file alias of a mugshot image to display as the icon of a project, on its home page.';
+COMMENT ON COLUMN Project.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
 
 
 -- ProjectRelationship
@@ -478,9 +478,9 @@ COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenien
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
 COMMENT ON COLUMN Sprint.time_zone IS 'The timezone of the sprint, stored in text format from the Olsen database names, like "US/Eastern".';
 COMMENT ON COLUMN Sprint.homepage_content IS 'A home page for this sprint in the Launchpad.';
-COMMENT ON COLUMN Sprint.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a sprint.';
-COMMENT ON COLUMN Sprint.gotchi IS 'The library file alias of a gotchi image to display as the icon of a sprint, on its home page.';
-COMMENT ON COLUMN Sprint.gotchi_heading IS 'The library file alias of a smaller version of this sprint\'s gotchi.';
+COMMENT ON COLUMN Sprint.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon whenever we are referring to a sprint.';
+COMMENT ON COLUMN Sprint.mugshot IS 'The library file alias of a mugshot image to display as the icon of a sprint, on its home page.';
+COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of this sprint\'s mugshot.';
 
 
 /* SprintAttendance */
@@ -778,9 +778,9 @@ COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset 
 COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.';
 COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
 COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the Launchpad. In short, this is like a personal wiki page. The person will get to edit their own page, and it will be published on /people/foo/. Note that this is in text format, and will migrate to being in Moin format as a sort of mini-wiki-homepage.';
-COMMENT ON COLUMN Person.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem or icon whenever we are referring to that person.';
-COMMENT ON COLUMN Person.gotchi IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
-COMMENT ON COLUMN Person.gotchi_heading IS 'The library file alias of a smaller version of this person\'s gotchi.';
+COMMENT ON COLUMN Person.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon or icon whenever we are referring to that person.';
+COMMENT ON COLUMN Person.mugshot IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
+COMMENT ON COLUMN Person.logo IS 'The library file alias of a smaller version of this person\'s mugshot.';
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this person -- a dbschema value.';
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
 COMMENT ON COLUMN Person.registrant IS 'The user who created this profile.';
@@ -990,9 +990,9 @@ COMMENT ON COLUMN Distribution.owner IS 'The person in launchpad who is in ultim
 COMMENT ON COLUMN Distribution.upload_sender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
 COMMENT ON COLUMN Distribution.upload_admin IS 'Person foreign key which have access to modify the queue ui. If NULL, we fall back to launchpad admin members';
 COMMENT ON COLUMN Distribution.homepage_content IS 'A home page for this distribution in the Launchpad.';
-COMMENT ON COLUMN Distribution.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem whenever we are referring to a distribution.';
-COMMENT ON COLUMN Distribution.gotchi IS 'The library file alias of a gotchi image to display as the icon of a distribution, on its home page.';
-COMMENT ON COLUMN Distribution.gotchi_heading IS 'The library file alias of a smaller version of this distributions\'s gotchi.';
+COMMENT ON COLUMN Distribution.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon whenever we are referring to a distribution.';
+COMMENT ON COLUMN Distribution.mugshot IS 'The library file alias of a mugshot image to display as the icon of a distribution, on its home page.';
+COMMENT ON COLUMN Distribution.logo IS 'The library file alias of a smaller version of this distributions\'s mugshot.';
 
 -- DistroRelease
 
