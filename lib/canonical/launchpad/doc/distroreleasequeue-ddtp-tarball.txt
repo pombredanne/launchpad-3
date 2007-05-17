@@ -39,6 +39,10 @@ we need to access and modify DistroReleaseQueue records and other tables.
 
   >>> login('foo.bar@canonical.com')
 
+Set the email address for announcements:
+
+  >>> breezy_autotest.changeslist = 'test@example.com'
+
 First, test the rejection of a missapplied changesfile name, which
 doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
 
@@ -75,11 +79,21 @@ It was not rejected.
   >>> upload.is_rejected
   False
 
-  >>> success, msgs = upload.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  >>> success = upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: Thank you for your contribution to Ubuntu Test.
+  DEBUG: Sent a mail:
+  DEBUG:     Subject: Accepted ddtp-tarball 20060728 (all)
+  DEBUG:     Recipients: test@example.com
+  ...
+  <BLANKLINE>
+
+  
 
   >>> print upload.rejection_message
 
@@ -208,7 +222,7 @@ language indexes or adding new ones:
   >>> upload.process()
   >>> upload.is_rejected
   False
-  >>> success, msgs = upload.do_accept()
+  >>> success = upload.do_accept()
   >>> success
   True
 

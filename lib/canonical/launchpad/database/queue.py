@@ -368,7 +368,6 @@ class DistroReleaseQueue(SQLBase):
         changes, changeslines = self._get_changes_dict(changesfileobject)
 
         summary = []
-        is_new = False # Is set to True if any part of the upload is new.
         files = changes['files'].strip().split("\n")
 
         # Build a summary string and bail out early if this is an upload
@@ -434,7 +433,7 @@ class DistroReleaseQueue(SQLBase):
             "DISTRO": self.distrorelease.distribution.title,
             "DISTRORELEASE": self.distrorelease.name,
             "ANNOUNCE": announcelist,
-            "SOURCE": self.sourcepackagerelease.name,
+            "SOURCE": changes['source'],
             "VERSION": changes['version'],
             "ARCH": changes['architecture'],
             "RECIPIENT": ", ".join(recipients),
@@ -487,7 +486,8 @@ class DistroReleaseQueue(SQLBase):
         # Fallback, all the rest coming from insecure, secure and sync
         # policies should send an acceptance and an announcement message.
         self._sendMail(accepted_template % interpolations, logger)
-        self._sendMail(announce_template % interpolations, logger)
+        if announcelist: 
+            self._sendMail(announce_template % interpolations, logger)
         return
 
     def _get_recipients(self, changes, logger=None):

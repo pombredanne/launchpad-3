@@ -55,11 +55,14 @@ It was not rejected.
   >>> upload.is_rejected
   False
 
-  >>> success, msgs = upload.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  >>> success = upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: Thank you for your contribution to Ubuntu Test.
 
 And all things worked.
 
@@ -240,11 +243,14 @@ manual intervention.
   DEBUG: Foo Bar (16) is an uploader for main.
   DEBUG: Finished checking upload.
 
-  >>> success, msgs = upload.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  >>> success = upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: Thank you for your contribution to Ubuntu Test.
 
 Make the just-uploaded librarian file visible:
 
