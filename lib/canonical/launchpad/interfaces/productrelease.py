@@ -23,14 +23,14 @@ from canonical.launchpad.fields import ContentNameField
 
 
 class ProductReleaseVersionField(ContentNameField):
-   
+
     errormessage = _(
         "%s is already in use by another version in this release series.")
 
     @property
     def _content_iface(self):
         return IProductRelease
-    
+
     def _getByName(self, version):
         if IProductSeries.providedBy(self.context):
             productseries = self.context
@@ -77,7 +77,9 @@ class IProductRelease(Interface):
     product = Attribute(_('The upstream project of this release.'))
     files = Attribute(_('Iterable of product release files.'))
 
-    def addFileAlias(alias, file_type=UpstreamFileType.CODETARBALL):
+    def addFileAlias(alias, uploader,
+                     file_type=UpstreamFileType.CODETARBALL,
+                     description=None):
         """Add a link between this product and a library file alias."""
 
 
@@ -92,6 +94,9 @@ class IProductReleaseFile(Interface):
                       vocabulary='UpstreamFileType',
                       default=UpstreamFileType.CODETARBALL)
 
+    description = Text(title=_("Description"), required=False,
+        description=_('A detailed description of the file contents'))
+
 
 class IProductReleaseSet(Interface):
     """Auxiliary class for ProductRelease handling."""
@@ -99,10 +104,9 @@ class IProductReleaseSet(Interface):
     def new(version, owner, productseries, codename=None, shortdesc=None,
             description=None, changelog=None):
         """Create a new ProductRelease"""
-        
+
     def getBySeriesAndVersion(productseries, version, default=None):
         """Get a release by its version and productseries.
 
-        If no release is found, default will be returned. 
+        If no release is found, default will be returned.
         """
-

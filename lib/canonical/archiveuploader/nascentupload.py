@@ -843,10 +843,12 @@ class NascentUpload:
         """Return a list of recipients including every address we trust."""
         recipients = []
         self.logger.debug("Building recipients list.")
-        maintainer = self.changes.maintainer['person']
         changer = self.changes.changed_by['person']
 
         if self.changes.signer:
+            # Note that self.changes.maintainer is only available for
+            # signed uploads.
+            maintainer = self.changes.maintainer['person']
             recipients.append(self.changes.signer_address['person'])
 
             if (maintainer != self.changes.signer and

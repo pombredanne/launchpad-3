@@ -43,6 +43,10 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://launchpad.dev/
     althosts: localhost
     ----
+    openid @ openid.launchpad.dev
+    rooturl: http://openid.launchpad.dev/
+    althosts:
+    ----
     shipitedubuntu @ shipit.edubuntu.dev
     rooturl: http://shipit.edubuntu.dev/
     althosts:
@@ -77,6 +81,7 @@ hostname is handled by this Launchpad instance:
     code.launchpad.dev
     launchpad.dev
     localhost
+    openid.launchpad.dev
     shipit.edubuntu.dev
     shipit.kubuntu.dev
     shipit.ubuntu.dev
