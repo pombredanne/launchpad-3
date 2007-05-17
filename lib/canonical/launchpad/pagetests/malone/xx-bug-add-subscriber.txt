@@ -11,11 +11,15 @@ You have to be logged in to subscribe someone else.
     >>> bug_url = 'http://bugs.launchpad.dev/firefox/+bug/1'
     
     >>> anon_browser.handleErrors = True
-    >>> anon_browser.open(test_url)
+    >>> anon_browser.open(bug_url)
+	>>> link = anon_browser.getLink('Subscribe someone else')
+	>>> link.click()
     >>> anon_browser.url == test_url
     False
     
-    >>> user_browser.open(test_url)
+    >>> user_browser.open(bug_url)
+	>>> link = user_browser.getLink('Subscribe someone else')
+	>>> link.click()
     >>> user_browser.url == test_url
     True
 
@@ -37,13 +41,9 @@ Now, we'll subscribe our subscribee to the bug.
     >>> user_browser.getControl("Add").click()
     >>> user_browser.url == bug_url
     True
-    
 
-Now, we should see our subscribee in the list of subscribers to this bug.
+We should see our subscribee in the list of subscribers to this bug.
 
-    >>> from canonical.launchpad.ftests.test_pages import find_portlet
-    >>> user_browser.open(bug_url)
     >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
     >>> subscribee_name in subs('ul')[0].renderContents()
     True
-
