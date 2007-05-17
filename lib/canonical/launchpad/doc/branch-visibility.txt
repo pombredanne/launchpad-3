@@ -86,7 +86,7 @@ Sample Person can see the branch.
     >>> check_permission('launchpad.View', branch)
     True
 
-No Privledges person can't.
+No Privileges person can't.
 
     >>> login('no-priv@canonical.com')
     >>> check_permission('launchpad.View', branch)
