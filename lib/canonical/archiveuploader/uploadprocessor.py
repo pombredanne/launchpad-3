@@ -264,9 +264,8 @@ class UploadProcessor:
 
             if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
-                mails = upload.do_reject()
+                upload.do_reject()
                 self.ztm.abort()
-                # XXX self.sendMails(mails)
             else:
                 successful = upload.do_accept()
                 if not successful:
@@ -274,7 +273,6 @@ class UploadProcessor:
                     self.log.info("Rejection during accept. "
                                   "Aborting partial accept.")
                     self.ztm.abort()
-                # XXX self.sendMails(mails)
 
             if self.options.dryrun:
                 self.log.info("Dry run, aborting transaction.")

@@ -756,8 +756,8 @@ class NascentUpload:
             # very small, and at some point the script infrastructure will
             # only send emails when the script exits successfully.
             changesfileobject = open(self.changes.filepath, "r")
-            self.queue_root.notify(self.policy.announcelist, 
-                changesfileobject, self.logger)
+            self.queue_root.notify(announcelist=self.policy.announcelist, 
+                changesfileobject=changesfileobject, logger=self.logger)
             changesfileobject.close()
             return True
 
@@ -777,18 +777,10 @@ class NascentUpload:
         """Reject the current upload given the reason provided."""
         assert self.is_rejected, "The upload is not rejected."
 
-        interpolations = {
-            "SENDER": self.sender,
-            "CHANGES": self.changes.filename,
-            "SUMMARY": self.rejection_message,
-            "CHANGESFILE": guess_encoding(self.changes.filecontents)
-            }
-        recipients = self.getRecipients()
-        interpolations['RECIPIENT'] = ", ".join(recipients)
-        interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
-        outgoing_msg = template % interpolations
-
-        return [outgoing_msg]
+        changesfileobject = open(self.changes.filepath, "r")
+        self.queue_root.notify(rejection_message=self.rejection_message,
+            changesfileobject=changesfileobject, logger=self.logger)
+        changesfileobject.close()
 
     def getRecipients(self):
         """Return a list of recipients including every address we trust."""

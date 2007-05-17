@@ -19,7 +19,8 @@ The notify() method generates one email here on this unsigned package:
   ...     'suite/netapplet_1.0-1/netapplet_1.0-1_source.changes')
   >>> changesfile = open(changesfilepath,'r')
   >>> drq.notify(
-  ...     "announcelist@canonical.com", changesfile, logger=mock_logger)
+  ...     announcelist="announcelist@canonical.com", 
+  ...     changesfileobject=changesfile, logger=mock_logger)
   DEBUG: Building recipients list.
   DEBUG: Changes file is unsigned, adding changer as recipient
   ...
@@ -84,7 +85,8 @@ Now request the email:
   ...     'suite/netapplet_1.0-1-signed/netapplet_1.0-1_source.changes')
   >>> changesfile = open(changesfilepath,'r')
   >>> drq.notify(
-  ...     "announcelist@canonical.com", changesfile, logger=mock_logger)
+  ...     announcelist="announcelist@canonical.com", 
+  ...     changesfileobject=changesfile, logger=mock_logger)
   DEBUG: Building recipients list.
   ...
   DEBUG: Sent a mail:
@@ -128,7 +130,7 @@ the case when nascent upload runs).  This example demonstrates this usage:
   >>> changesfile = open(changesfilepath,"r")
   >>> fillLibrarianFile(1, content=changesfile.read())
   >>> changesfile.close()
-  >>> drq.notify("announcelist@canonical.com", logger=mock_logger)
+  >>> drq.notify(announcelist="announcelist@canonical.com", logger=mock_logger)
   DEBUG: Building recipients list.
   ...
   DEBUG: Sent a mail:
@@ -162,4 +164,29 @@ The mail body contains the same list of files again:
   You may have gotten the distrorelease wrong.  If so, you may get warnings
   above if files already exist in other distroreleases.
   <BLANKLINE>
+
+
+notify() will also generate rejection notices if the upload failed:
+
+  >>> drq.setRejected()
+  >>> drq.notify(rejection_message="Testing rejection message", 
+  ...            logger=mock_logger)
+  DEBUG: Building recipients list.
+  ...
+  DEBUG: Sending rejection email.
+  ...
+  DEBUG:     Subject: netapplet-1.0.0.tar.gz Rejected
+  DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG:     Body:
+  DEBUG: Rejected:
+  DEBUG: Testing rejection message
+  ...
+  DEBUG: If you don't understand why your files were rejected, or if the
+  DEBUG: override file requires editing, reply to this email.
+
+Only one email is generated:
+
+  >>> transaction.commit()
+  >>> len(stub.test_emails)
+  1
 

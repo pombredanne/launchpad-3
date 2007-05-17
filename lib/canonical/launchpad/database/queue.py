@@ -332,7 +332,23 @@ class DistroReleaseQueue(SQLBase):
                                         libraryfilealias=library_file,
                                         customformat=custom_type)
 
-    def notify(self, announcelist, changesfileobject=None, logger=None):
+    def _get_changes_dict(self, changesfileobject=None):
+        """Return a dictionary with changes file tags in it."""
+        changeslines = None
+        if changesfileobject is None:
+            changesfileobject = self.changesfile
+            changeslines = self.changesfile.read().splitlines(True)
+        else:
+            changeslines = changesfileobject.readlines()
+
+        not_signed = True
+        if self.signing_key:
+            not_signed = False
+        changes = parse_tagfile_lines(changeslines, allow_unsigned=not_signed)
+        return changes, changeslines
+
+    def notify(self, announcelist=None, rejection_message=None,
+               changesfileobject=None, logger=None):
         """See IDistroReleaseQueue."""
 
         # Get the changes file from the librarian and parse the tags to
@@ -345,20 +361,11 @@ class DistroReleaseQueue(SQLBase):
         # because of several problems:
         # a) We don't know if the librarian has the file committed or not yet
         # b) Passing a ChangesFile object instead means that we get an
-        #    unordered dictionary which can't be translated back exactly.
+        #    unordered dictionary which can't be translated back exactly for
+        #    the email's summary section.
         # For now, it's just easier to re-read the original file if the caller
         # requires us to do that instead of using the librarian's copy.
-        changeslines = None
-        if changesfileobject is None:
-            changesfileobject = self.changesfile
-            changeslines = self.changesfile.read().splitlines(True)
-        else:
-            changeslines = changesfileobject.readlines()
-
-        not_signed = True
-        if self.signing_key:
-            not_signed = False
-        changes = parse_tagfile_lines(changeslines, allow_unsigned=not_signed)
+        changes, changeslines = self._get_changes_dict(changesfileobject)
 
         summary = []
         is_new = False # Is set to True if any part of the upload is new.
@@ -391,45 +398,31 @@ class DistroReleaseQueue(SQLBase):
                         component, section))
 
         summarystring = "\n".join(summary)
+        recipients = self._get_recipients(changes, logger)
 
-        # Figure out the list of recipients.
-        candidate_recipients = []
-        debug(logger, "Building recipients list.")
-        changer = changes['changed-by']
+        # There can be no recipients if none of the emails are registered
+        # in LP.
+        if not recipients:
+            debug(logger,"No recipients on email, not sending.")
+            return
 
-        if self.signing_key:
-            # This is a signed upload.
-            maintainer = changes['maintainer']
-            person_signer = self.signing_key.owner
-            candidate_recipients.append(person_signer)
-
-            person_maintainer = self._email_to_person(maintainer)
-            if (person_maintainer and person_maintainer != person_signer and
-                    self._is_person_in_keyring(person_maintainer, logger)):
-                debug(logger, "Adding maintainer to recipients")
-                candidate_recipients.append(person_maintainer)
-
-            person_changer = self._email_to_person(changer)
-            if (person_changer and person_changer != person_signer and 
-                    self._is_person_in_keyring(person_changer, logger)):
-                debug(logger, "Adding changed-by to recipients")
-                candidate_recipients.append(person_changer)
-        else:
-            debug(logger,
-                "Changes file is unsigned, adding changer as recipient")
-            person_changer = self._email_to_person(changer)
-            candidate_recipients.append(person_changer)
-
-        # Now filter list of recipients for persons only registered in
-        # Launchpad to avoid spamming the innocent.
-        recipients = []
-        for person in candidate_recipients:
-            if person is None or person.preferredemail is None:
-                continue
-            recipient = format_address(person.displayname, 
-                person.preferredemail.email)
-            debug(logger, "Adding recipient: '%s'" % recipient)
-            recipients.append(recipient)
+        # If we need to send a rejection, do it now and return early.
+        if self.status == DistroReleaseQueueStatus.REJECTED:
+            interpolations = {
+                "SENDER": "%s <%s>" % (
+                    config.uploader.default_sender_name,
+                    config.uploader.default_sender_address),
+                "CHANGES": self.changesfile.filename,
+                "SUMMARY": rejection_message,
+                "CHANGESFILE": guess_encoding("".join(changeslines)),
+                "RECIPIENT": ", ".join(recipients),
+                "DEFAULT_RECIPIENT": "%s <%s>" % (
+                    config.uploader.default_recipient_name,
+                    config.uploader.default_recipient_address)
+            }
+            debug(logger, "Sending rejection email.")
+            self._sendMail(rejection_template % interpolations, logger)
+            return
 
         interpolations = {
             "SENDER": "%s <%s>" % (
@@ -437,7 +430,7 @@ class DistroReleaseQueue(SQLBase):
                 config.uploader.default_sender_address),
             "CHANGES": self.changesfile.filename,
             "SUMMARY": summarystring,
-            "CHANGESFILE": guess_encoding("\n".join(changeslines)),
+            "CHANGESFILE": guess_encoding("".join(changeslines)),
             "DISTRO": self.distrorelease.distribution.title,
             "DISTRORELEASE": self.distrorelease.name,
             "ANNOUNCE": announcelist,
@@ -448,10 +441,9 @@ class DistroReleaseQueue(SQLBase):
             "DEFAULT_RECIPIENT": "%s <%s>" % (
                 config.uploader.default_recipient_name,
                 config.uploader.default_recipient_address),
-
         }
 
-        if not_signed:
+        if not self.signing_key:
             interpolations['MAINTAINERFROM'] =  " %s <%s>" % (
                 config.uploader.default_sender_name,
                 config.uploader.default_sender_address)
@@ -498,6 +490,48 @@ class DistroReleaseQueue(SQLBase):
         self._sendMail(announce_template % interpolations, logger)
         return
 
+    def _get_recipients(self, changes, logger=None):
+        """Return a list of recipients for notification emails."""
+        candidate_recipients = []
+        debug(logger, "Building recipients list.")
+        changer = changes['changed-by']
+
+        if self.signing_key:
+            # This is a signed upload.
+            maintainer = changes['maintainer']
+            person_signer = self.signing_key.owner
+            candidate_recipients.append(person_signer)
+
+            person_maintainer = self._email_to_person(maintainer)
+            if (person_maintainer and person_maintainer != person_signer and
+                    self._is_person_uploader(person_maintainer, logger)):
+                debug(logger, "Adding maintainer to recipients")
+                candidate_recipients.append(person_maintainer)
+
+            person_changer = self._email_to_person(changer)
+            if (person_changer and person_changer != person_signer and 
+                    self._is_person_uploader(person_changer, logger)):
+                debug(logger, "Adding changed-by to recipients")
+                candidate_recipients.append(person_changer)
+        else:
+            debug(logger,
+                "Changes file is unsigned, adding changer as recipient")
+            person_changer = self._email_to_person(changer)
+            candidate_recipients.append(person_changer)
+
+        # Now filter list of recipients for persons only registered in
+        # Launchpad to avoid spamming the innocent.
+        recipients = []
+        for person in candidate_recipients:
+            if person is None or person.preferredemail is None:
+                continue
+            recipient = format_address(person.displayname, 
+                person.preferredemail.email)
+            debug(logger, "Adding recipient: '%s'" % recipient)
+            recipients.append(recipient)
+
+        return recipients
+
     def _email_to_person(self, fullemail):
         # The 2nd arg to s_f_m() doesn't matter is it won't fail since every-
         # thing will have already parsed at this point.
@@ -506,16 +540,15 @@ class DistroReleaseQueue(SQLBase):
         person = getUtility(IPersonSet).getByEmail(email)
         return person
 
-    def _is_person_in_keyring(self, person, logger):
-        debug(logger, "Attempting to decide if %s is in the keyring." % (
+    def _is_person_uploader(self, person, logger):
+        debug(logger, "Attempting to decide if %s is an uploader." % (
             person.displayname))
-# XXX gah, this needs policy.  HELP.
-#        in_keyring = len(set(
-#            acl.component.name for acl in self.policy.distro.uploaders
-#            if person in acl)) > 0
-#        debug(logger, "Decision: %s" % in_keyring)
-#        return in_keyring
-        return True
+        uploader = len(set(
+            acl.component.name for acl 
+            in self.distrorelease.distribution.uploaders
+            if person in acl)) > 0
+        debug(logger, "Decision: %s" % uploader)
+        return uploader
 
     def _sendMail(self,mail_text,logger=None):
         mail_message = message_from_string(ascii_smash(mail_text))
