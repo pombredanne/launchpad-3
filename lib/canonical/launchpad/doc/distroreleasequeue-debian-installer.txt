@@ -42,8 +42,8 @@ happen in production:
   >>> import_public_test_keys()
   >>> login('foo.bar@canonical.com')
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.tests import (
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
   ...     datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> anything_policy = getPolicy(
@@ -97,6 +97,19 @@ Let's remove the conflicted directory from disk and expect it to work
 next time:
 
   >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
+
+The upload task requires that the umask be 022, otherwise things will end up
+with the wrong permission.
+
+  >>> old_mask = os.umask(002)
+  >>> upload.queue_root.realiseUpload(mock_logger_quiet)
+  ERROR: Queue item ignored: Bad umask; expected 022, got 002
+
+Reset the umask, remove any residual directories, and try again.
+
+  >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
+  >>> print '%03o' % os.umask(old_mask)
+  002
 
 Process (publish) the custom upload:
 

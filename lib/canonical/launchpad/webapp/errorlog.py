@@ -73,6 +73,20 @@ def _safestr(obj):
                    lambda match: '\\x%02x' % ord(match.group(0)), value)
     return value
 
+def _is_sensitive(name):
+    """Return True if the given request variable name is sensitive.
+
+    Sensitive request variables should not be recorded in OOPS
+    reports.  Currently we consider the following to be sensitive:
+     * any name containing 'password' or 'passwd'
+     * session cookies of the various Launchpad instances
+     * the HTTP_COOKIE header.
+    """
+    return (name in ['HTTP_COOKIE', 'launchpad', 'launchpad_dev',
+                     'launchpad_tests', 'launchpad_demo', 'edge', 'beta',
+                     'staging'] or
+            'password' in name.lower() or 'passwd' in name.lower())
+
 
 class ErrorReport:
     implements(IErrorReport)
@@ -90,7 +104,7 @@ class ErrorReport:
         self.req_vars = []
         # hide passwords that might be present in the request variables
         for (name, value) in req_vars:
-            if ('password' in name.lower() or 'passwd' in name.lower()):
+            if _is_sensitive(name):
                 self.req_vars.append((name, '<hidden>'))
             else:
                 self.req_vars.append((name, value))

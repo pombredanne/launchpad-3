@@ -18,6 +18,10 @@ class NotFoundError(KeyError):
     """Launchpad object not found."""
 
 
+class UnexpectedFormData(AssertionError):
+    """Got form data that is not what is expected by a form handler."""
+
+
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 
@@ -51,6 +55,10 @@ class IAuthorization(Interface):
 
 class OffsiteFormPostError(Exception):
     """An attempt was made to post a form from a remote site."""
+
+
+class UnsafeFormGetSubmissionError(Exception):
+    """An attempt was made to submit an unsafe form action with GET."""
 
 
 #
@@ -358,12 +366,45 @@ class IBasicLaunchpadRequest(Interface):
         """
 
 
+class IBrowserFormNG(Interface):
+    """Interface to manipulate submitted form data."""
+
+    def __contains__(name):
+        """Return True if a field named name was submitted."""
+
+    def __iter__():
+        """Return an iterator over the submitted field names."""
+
+    def getOne(name, default=None):
+        """Return the value of the field name.
+
+        If the field wasn't submitted return the default value.
+        If more than one value was submitted, raises UnexpectedFormData.
+        """
+
+    def getAll(name, default=None):
+        """Return the the list of values submitted under field name.
+
+        If the field wasn't submitted return the default value. (If default
+        is None, an empty list will be returned. It is an error to use
+        something else than None or a list as default value.
+        
+        This method should always return a list, if only one value was
+        submitted, it will be returned in a list.
+        """
+
+
 class ILaunchpadBrowserApplicationRequest(
     IBasicLaunchpadRequest,
     zope.publisher.interfaces.browser.IBrowserApplicationRequest):
     """The request interface to the application for launchpad browser requests.
     """
 
+    form_ng = Object(
+        title=u'IBrowserFormNG object containing the submitted form data',
+        schema=IBrowserFormNG)
+
+     
 # XXX: These need making into a launchpad version rather than the zope versions
 #      for the publisher simplification work.  SteveAlexander 2005-09-14
 # class IEndRequestEvent(Interface):
