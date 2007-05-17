@@ -556,15 +556,14 @@ class BuilderGroup:
         # The famous 'flush_updates + clear_cache' will make visible the
         # DB changes done in process-upload, considering that the
         # transaction was set with READ_COMMITED_ISOLATION isolation level.
-
-        #from canonical.database.sqlbase import (
-        #    cursor, READ_COMMITTED_ISOLATION)
-        #cur = cursor()
-        #cur.execute('SHOW transaction_isolation')
-        #isolation_str = cur.fetchone()[0]
-        #assert isolation_str == READ_COMMITTED_ISOLATION, (
-        #    'BuildMaster/BuilderGroup transaction isolation should be '
-        #    'READ_COMMITTED_ISOLATION')
+        from canonical.database.sqlbase import (
+            cursor, READ_COMMITTED_ISOLATION)
+        cur = cursor()
+        cur.execute('SHOW transaction_isolation')
+        isolation_str = cur.fetchone()[0]
+        assert isolation_str == 'read committed', (
+            'BuildMaster/BuilderGroup transaction isolation should be '
+            'READ_COMMITTED_ISOLATION (not "%s")' % isolation_str)
 
         flush_database_updates()
         clear_current_connection_cache()
@@ -580,7 +579,7 @@ class BuilderGroup:
         # buildlog, builder) in LP. A build-failure-notification will be
         # sent to the lp-build-admin celebrity and to the sourcepackagerelease
         # uploader about this occurrence. The failure notification will
-        # also content the information required to manually reprocess the
+        # also contain the information required to manually reprocess the
         # binary upload when it was the case.
         build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
         if (build.buildstate != dbschema.BuildStatus.FULLYBUILT or

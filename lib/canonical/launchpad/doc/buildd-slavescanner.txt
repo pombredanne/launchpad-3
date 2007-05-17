@@ -12,7 +12,8 @@ The Master side of Buildd requires access to Launchpad Database, the
 user designed for this kind of access is 'fiera', as in all test the
 transaction should be retrieved.
 
-  >>> import transaction
+  >>> from canonical.database.sqlbase import ZopelessTransactionManager
+  >>> local_transaction = ZopelessTransactionManager._installed
 
 The master also requires an 'logging' instance to not compromise the
 standard output with noisely output.
@@ -28,7 +29,8 @@ BuildersGroup() class, by creating an empty BuilderGroup object
 
   >>> from canonical.buildmaster.buildergroup import BuilderGroup
 
-  >>> buildergroup = BuilderGroup(logging.getLogger(), transaction)
+  >>> buildergroup = BuilderGroup(
+  ...     logging.getLogger(), local_transaction)
 
 Mock Builder, a class to emulate the Builder behaviour:
 
@@ -557,7 +559,7 @@ let's see how this method works:
 
   Force Librarian to write down the stuff
   XXX cprov 20051010: is this a bug on librarian_client API ?
-  >>> transaction.commit()
+  >>> local_transaction.commit()
 
 Since LibrarianFileAlias does not implement required attributes for
 gzip.open() (like tell() or seek()) we are obligated to read it again
@@ -617,7 +619,7 @@ Remove build upload results root
     BuilddMaster class
     ===================
 
-  >>> bm = BuilddMaster(logging.getLogger(), transaction)
+  >>> bm = BuilddMaster(logging.getLogger(), local_transaction)
 
 Retrive a known DistroArchrelease
 
