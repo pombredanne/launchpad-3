@@ -1,0 +1,34 @@
+If someone is asked for authorization for an irregular and possibly
+hostile trust_root, a warning message is displayed to the user.
+
+>>> from urllib import urlencode
+>>> args = urlencode({
+...     'openid.mode': 'checkid_setup',
+...     'openid.identity': 'http://launchpad.dev/~sabdfl',
+...     'openid.return_to': 'http://launchpad.dev/',
+...     'openid.trust_root': 'http://*.dev',
+...     })
+>>> anon_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print '\n' + anon_browser.contents
+<BLANKLINE>
+...
+<p class="warning message">
+    <strong>Warning:</strong>
+    <em>http://*.dev</em> does not look
+    like a trustworthy URL.
+</p>
+...
+<BLANKLINE>
+
+If the trust_root looks fine, no warning is displayed.
+
+>>> args = urlencode({
+...     'openid.mode': 'checkid_setup',
+...     'openid.identity': 'http://launchpad.dev/~sabdfl',
+...     'openid.return_to': 'http://example.com/whatever',
+...     'openid.trust_root': 'http://example.com',
+...     })
+>>> anon_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> 'warning' not in anon_browser.contents
+True
+
