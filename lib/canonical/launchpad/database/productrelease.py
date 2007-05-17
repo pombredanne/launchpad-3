@@ -105,7 +105,6 @@ class ProductReleaseFile(SQLBase):
 
     date_uploaded = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
-
 class ProductReleaseSet(object):
     """See IProductReleaseSet"""
     implements(IProductReleaseSet)

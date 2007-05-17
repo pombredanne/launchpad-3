@@ -81,9 +81,11 @@ class IProductRelease(Interface):
     product = Attribute(_('The upstream project of this release.'))
     files = Attribute(_('Iterable of product release files.'))
 
-    def addFileAlias(alias, file_type=UpstreamFileType.CODETARBALL,
+    def addFileAlias(alias, uploader,
+                     file_type=UpstreamFileType.CODETARBALL,
                      description=None):
         """Add a link between this product and a library file alias."""
+
     def deleteFileAlias(alias):
         """Delete the link between this product and a library file alias."""
 

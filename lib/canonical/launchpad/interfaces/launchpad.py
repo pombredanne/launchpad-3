@@ -146,7 +146,10 @@ class IMaloneApplication(ILaunchpadApplication):
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
-    statsdate = Attribute("""The date stats were last updated.""")
+    language_count = Attribute(
+        'Number of languages Launchpad can translate into.')
+    statsdate = Attribute('The date stats were last updated.')
+    translation_groups = Attribute('ITranslationGroupSet object.')
 
     def translatable_products():
         """Return a list of the translatable products."""
@@ -159,9 +162,6 @@ class IRosettaApplication(ILaunchpadApplication):
         translations can be done.
         """
 
-    def translation_groups():
-        """Return a list of the translation groups in the system."""
-
     def potemplate_count():
         """Return the number of potemplates in the system."""
 
@@ -173,9 +173,6 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translator_count():
         """Return the number of people who have given translations."""
-
-    def language_count():
-        """Return the number of languages Rosetta can translate into."""
 
 
 class IRegistryApplication(ILaunchpadApplication):

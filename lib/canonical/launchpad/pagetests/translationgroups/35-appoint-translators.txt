@@ -11,17 +11,18 @@ translator.
 
   >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
   >>> browser.open(
-  ...   'http://translations.launchpad.dev/translations/groups/polyglot/')
-  >>> for tag in find_tags_by_class(browser.contents, 'message'):
-  ...     print tag.renderContents()
+  ...   'http://translations.launchpad.dev/+translation-groups/polyglot/')
+  >>> print find_portlet(browser.contents, 'Translation Teams')
+  <...
   There are no translators appointed in this group yet.
+  ...
 
 Verify that the appointments form displays, and offers the option to appoint
 a translator.
 
   >>> browser.getLink('Appoint').click()
   >>> browser.url
-  'http://translations.launchpad.dev/translations/groups/polyglot/+appoint'
+  'http://translations.launchpad.dev/+translation-groups/polyglot/+appoint'
 
 Appoint a translator. Hoary Gnome Team will translate into Abkhazian.
 
@@ -32,11 +33,11 @@ Appoint a translator. Hoary Gnome Team will translate into Abkhazian.
 We should get redirected back to the group page.
 
   >>> browser.url
-  'http://translations.launchpad.dev/translations/groups/polyglot'
+  'http://translations.launchpad.dev/+translation-groups/polyglot'
 
   >>> browser.getLink('Appoint').click()
   >>> browser.url
-  'http://translations.launchpad.dev/translations/groups/polyglot/+appoint'
+  'http://translations.launchpad.dev/+translation-groups/polyglot/+appoint'
 
 And let's appoint No Privileges user for Afrikaans too.
 
@@ -51,7 +52,7 @@ Now we should see both of those appointments on the polyglot page:
   ...Afrikaans...No Privileges Person...
 
   >>> browser.url
-  'http://translations.launchpad.dev/translations/groups/polyglot'
+  'http://translations.launchpad.dev/+translation-groups/polyglot'
 
 Appointing a new Abkhazian translator must fail gracefully, not crash as
 it used to do (Bug #52991).
@@ -64,31 +65,45 @@ it used to do (Bug #52991).
 The error means we stay on the appoint page:
 
   >>> browser.url
-  'http://translations.launchpad.dev/translations/groups/polyglot/+appoint'
+  'http://translations.launchpad.dev/+translation-groups/polyglot/+appoint'
 
   >>> for message in find_tags_by_class(browser.contents, 'message'):
   ...     print message.renderContents()
   There is 1 error.
   There is already a translator for this language
 
-Launchpad administrators, too, are allowed to manage translation group
+Launchpad administrators, are allowed too to manage translation group
 membership.
 
   >>> admin_browser.open(
-  ...   'http://translations.launchpad.dev/translations/groups/polyglot/')
+  ...   'http://translations.launchpad.dev/+translation-groups/polyglot/')
   >>> admin_browser.getLink('Appoint').click()
   >>> admin_browser.url
-  'http://translations.launchpad.dev/translations/groups/polyglot/+appoint'
+  'http://translations.launchpad.dev/+translation-groups/polyglot/+appoint'
+
+Even to edit details of the translation group.
+
+  >>> admin_browser.open(
+  ...   'http://translations.launchpad.dev/+translation-groups/polyglot/')
+  >>> admin_browser.getLink('Edit translation group details').click()
+  >>> admin_browser.url
+  'http://translations.launchpad.dev/+translation-groups/polyglot/+edit'
 
 Normal users, however, are not.
 
   >>> user_browser.open(
-  ...   'http://translations.launchpad.dev/translations/groups/polyglot/')
-  >>> user_browser.getLink('Appoint')
+  ...   'http://translations.launchpad.dev/+translation-groups/polyglot/')
+  >>> user_browser.url
+  'http://translations.launchpad.dev/+translation-groups/polyglot/'
+  >>> user_browser.getLink('Appoint').click()
   Traceback (most recent call last):
   ...
-  LinkNotFoundError
-
+  Unauthorized:...
+  >>> user_browser.open(
+  ...   'http://translations.launchpad.dev/+translation-groups/polyglot/')
   >>> user_browser.url
-  'http://translations.launchpad.dev/translations/groups/polyglot/'
-
+  'http://translations.launchpad.dev/+translation-groups/polyglot/'
+  >>> user_browser.getLink('Edit translation group details').click()
+  Traceback (most recent call last):
+  ...
+  Unauthorized:...
