@@ -437,7 +437,7 @@ class ProductView(LaunchpadView):
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-	LaunchpadView.__init__(self, context, request)
+        LaunchpadView.__init__(self, context, request)
         self.form = request.form_ng
 
     def initialize(self):
@@ -571,6 +571,7 @@ class ProductDownloadFilesView(LaunchpadView):
     def initialize(self):
         self.form = self.request.form
         self.product = self.context
+        self.__determine_milestones()
         del_count = None
         if 'delete_files' in self.form:
             if self.request.method == 'POST':
@@ -605,17 +606,24 @@ class ProductDownloadFilesView(LaunchpadView):
                         del_count += 1
         return del_count
 
-    def series_has_release_files(self, series):
-        for release in series.releases:
-            if release.files:
-                return True
-        return False
-
     def file_url(self, series, release, file_):
-        return "%s/%s/%s/+download/%s" % (canonical_url(self.context),
-                                          series.name,
-                                          release.version,
-                                          file_.libraryfile.filename)
+        """Create a download URL for the file."""
+        return "%s/+download/%s" % (canonical_url(release),
+                                    file_.libraryfile.filename)
+
+    def __determine_milestones(self):
+        """Compute a mapping between series and releases that are milestones."""
+        self.milestones = dict()
+        for series in self.product.serieslist:
+            self.milestones[series] = dict()
+            milestone_list = [m.name for m in series.milestones]
+            for release in series.releases:
+                if release.version in milestone_list:
+                    self.milestones[series][release] = True
+
+    def is_milestone(self, series, release):
+        return (series in self.milestones and
+                release in self.milestones[series])
 
 class ProductBrandingView(BrandingChangeView):
 

@@ -97,18 +97,29 @@ Try to delete the same alias again and see that an error is raised.
     ...
     NotFoundError: u'foo.txt'
 
-== Product download files ==
-
 Attempting to delete files via a GET method are not allowed.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> request = LaunchpadTestRequest(
     ...     environ={'REQUEST_METHOD': 'GET'},
     ...     form={'delete_files': 'Delete Files'})
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> view = getView(firefox, '+download', request)
+    >>> view = getMultiAdapter((firefox,request), name='+download')
     >>> view.initialize()
     Traceback (most recent call last):
      ...
     UnsafeFormGetSubmissionError: Delete Files
+
+Determine which (series,release) pairs are associated with milestones.
+
+    >>> trunk = firefox.getSeries('trunk')
+    >>> ms = trunk.newMilestone('0.9.2')
+    >>> release = trunk.getRelease('0.9.2')
+    >>> request = LaunchpadTestRequest(
+    ...     environ={'REQUEST_METHOD': 'GET'},
+    ...     form=dict())
+    >>> view = getMultiAdapter((firefox,request), name='+download')
+    >>> view.initialize()
+    >>> print view.is_milestone(trunk, release)
+    True

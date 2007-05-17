@@ -27,7 +27,7 @@
 
       <h2>
         Release series &#8220;<tal:name
-                               tal:replace="series/name">main</tal:name>&#8221;
+                               replace="series/name">main</tal:name>&#8221;
       </h2>
 
       <p tal:condition="has_edit">
@@ -63,10 +63,15 @@
                          name string:checkbox_${cbnum}">
                 </td>
                 <td>
-                  <img src="/@@/download" />
+                  <img alt="" src="/@@/download" />
                   <a tal:attributes="href python:view.file_url(series,release,file)"
                        tal:content="file/libraryfile/filename">filename</a></td>
-                <td tal:content="release/version">version</td>
+                <td>
+                   <tal:version content="release/version">version</tal:version>
+                   <img tal:condition="python: view.is_milestone(series,release)"
+                        alt=""
+                        src="/@@/milestone" />
+                </td>
                 <td tal:content="file/description">Installer for i386</td>
               </tr>
             </tal:seriesfiles>
