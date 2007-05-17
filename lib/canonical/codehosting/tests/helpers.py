@@ -36,12 +36,8 @@ class AvatarTestCase(TwistedTestCase):
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
-        
+
         # Remove test droppings in the current working directory from using
         # twisted.trial.unittest.TestCase.mktemp outside the trial test runner.
         tmpdir_root = self.tmpdir.split(os.sep, 1)[0]
         shutil.rmtree(tmpdir_root)
-
-
-
-
