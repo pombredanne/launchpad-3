@@ -117,8 +117,13 @@ class NotificationRecipientSet:
 
     def __init__(self):
         """Create a new empty set."""
-        self._email2person = {}
+        # We maintain a mapping of person to rationale, as well as a
+        # a mapping of all the emails to the person that hold the rationale
+        # for that email. That way, adding a person and a team containing
+        # that person will preserve the rationale associated when the email
+        # was first added.
         self._person2rationale = {}
+        self._email2person = {}
 
     def getEmails(self):
         """See `INotificationRecipientSet`."""

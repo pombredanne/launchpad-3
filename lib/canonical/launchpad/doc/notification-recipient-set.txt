@@ -206,7 +206,7 @@ Same thing if the user's address is added from a team:
 
 == Merging recipients set ==
 
-You can merge two recipients set by using the merge() method. It will
+You can merge two recipients set by using the update() method. It will
 add all the recipients in the second set along their rationale. If the
 recipient is already part of the first set, the reason won't be updated.
 

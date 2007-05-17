@@ -422,11 +422,8 @@ class INotificationRecipientSet(Interface):
     detailing subscription types, membership in teams and/or other
     possible reasons.
 
-    You are meant to implement an API that defines how emails and
-    rationales are added to an INotificationRecipientSet; this is
-    to be kept private between your INotificationRecipientSet
-    implementation and the content class which defines the
-    subscriptions..
+    The set maintains the list of `IPerson` that will be contacted as well
+    as the email address to use to contact them. 
     """
     def getEmails():
         """Return all email addresses registered, sorted alphabetically."""
@@ -475,7 +472,7 @@ class INotificationRecipientSet(Interface):
     def update(recipient_set):
         """Updates this instance's reasons with reasons from another set.
 
-        The rationale for recipient in this set will not be updated.
+        The rationale for recipient already in this set will not be updated.
 
         :param recipient_set: An `INotificationRecipientSet`.
         """
