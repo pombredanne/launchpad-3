@@ -4,10 +4,6 @@ zope.interfaces.NotFound. This means they generate a System Error page
 instead of a correct 404 page. So we test them to ensure the correct HTTP
 status is returned.
 
-XXX: This test may be better done using a tweaked LinkChecker or other
-spider -- StuartBishop 20050822
-
-
 >>> def check_url(valid_url, auth=False, host='launchpad.dev'):
 ...     get_cmd = """
 ... GET %s HTTP/1.1
