@@ -1,3 +1,10 @@
+launchpad-buildd (34) unstable; urgency=low
+
+  * add suport for overriding the chroot /etc/apt/sources.list with the
+  content of builddmaster build arguments 'archives'.
+
+ -- Celso Providelo <cprov@canonical.com>  Thu, 17 May 2007 15:12:26 -0300
+
 launchpad-buildd (31) unstable; urgency=low
 
   * Cherry-pick patch from Ryan's sbuild that outputs dpkg --purge output
