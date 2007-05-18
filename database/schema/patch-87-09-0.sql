@@ -15,7 +15,7 @@ CREATE UNIQUE INDEX specificationmessage__specification__message__idx
 
 
 -- New column: "don't accept PO imports for this release just now"
-ALTER TABLE DistroRelease ADD COLUMN defer_imports boolean
+ALTER TABLE DistroRelease ADD COLUMN defer_translation_imports boolean
     NOT NULL DEFAULT FALSE;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 9, 0);

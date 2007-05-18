@@ -1009,7 +1009,7 @@ COMMENT ON COLUMN DistroRelease.parentrelease IS 'The parent release on which th
 COMMENT ON COLUMN DistroRelease.owner IS 'The ultimate owner of this distrorelease.';
 COMMENT ON COLUMN DistroRelease.driver IS 'This is a person or team who can act as a driver for this specific release - note that the distribution drivers can also set goals for any release.';
 COMMENT ON COLUMN DistroRelease.changeslist IS 'The email address (name name) of the changes announcement list for this distrorelease. If NULL, no announcement mail will be sent.';
-COMMENT ON COLUMN DistroRelease.defer_imports IS 'Don''t accept PO imports for this release just now.';
+COMMENT ON COLUMN DistroRelease.defer_translation_imports IS 'Don''t accept PO imports for this release just now.';
 
 
 -- DistroArchRelease
