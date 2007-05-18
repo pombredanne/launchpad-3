@@ -7,4 +7,4 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE Archive ADD COLUMN description TEXT;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (79, 99, 1);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 1);

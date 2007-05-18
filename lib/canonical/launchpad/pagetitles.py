@@ -42,7 +42,6 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMaloneApplication, IPerson)
 from canonical.launchpad.webapp import smartquote
-from canonical.launchpad.webapp.authorization import check_permission
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
@@ -604,6 +603,14 @@ object_translations = ContextTitle('Translation templates for %s')
 
 oops = 'Oops!'
 
+def openid_decide(context, view):
+    return 'Authenticate to %s' % view.openid_request.trust_root
+
+openid_index = 'Launchpad OpenID Server'
+
+def openid_invalid_identity(context, view):
+    return 'Invalid OpenID identity %s' % view.openid_request.identity
+
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
 
@@ -625,7 +632,7 @@ people_requestmerge = 'Merge Launchpad accounts'
 people_requestmerge_multiple = 'Merge Launchpad accounts'
 
 person_answer_contact_for = ContextDisplayName(
-    'Projects for which %s is an answer contact')    
+    'Projects for which %s is an answer contact')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
@@ -775,6 +782,8 @@ product_new = 'Register a project in Launchpad'
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
+product_files = ContextDisplayName('%s project files')
+
 product_series = ContextDisplayName('%s timeline')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
@@ -782,6 +791,8 @@ product_translations = ContextTitle('Translations of %s in Launchpad')
 product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
+
+productrelease_file_add = ContextDisplayName('Add a file to %s')
 
 productrelease_admin = ContextTitle('Administer %s in Launchpad')
 
@@ -1125,8 +1136,16 @@ temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 translationgroup_index = ContextTitle(smartquote('"%s" Launchpad translation group'))
 
+translationgroup_add = 'Add a new translation group to Launchpad'
+
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))
+
+translationgroup_edit = ContextTitle(smartquote(
+    'Edit "%s" translation group details'))
+
+translationgroup_reassignment = ContextTitle(smartquote(
+    'Change the owner of "%s" translation group'))
 
 translationgroups_index = 'Launchpad translation groups'
 
@@ -1135,5 +1154,14 @@ translationimportqueueentry_index = 'Translation import queue entry'
 translationimportqueue_index = 'Translation import queue'
 
 translationimportqueue_blocked = 'Translation import queue - Blocked'
+
+def translator_edit(context, view):
+    return "Edit %s translator for %s" % (
+        context.language.englishname, context.translationgroup.title)
+
+def translator_remove(context, view):
+    return "Remove %s as the %s translator for %s" % (
+        context.translator.displayname, context.language.englishname,
+        context.translationgroup.title)
 
 unauthorized = 'Error: Not authorized'

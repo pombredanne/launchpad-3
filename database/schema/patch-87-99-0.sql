@@ -400,4 +400,4 @@ ALTER TABLE Build
     ADD CONSTRAINT build_archive_fk
        FOREIGN KEY (archive) REFERENCES Archive(id);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (79, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
