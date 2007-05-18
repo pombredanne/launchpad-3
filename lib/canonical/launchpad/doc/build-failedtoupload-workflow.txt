@@ -58,9 +58,10 @@ source creator (mark) as specified in the test configuration:
   3
 
   >>> from operator import itemgetter
-  >>> for from_addr, to_addrs, raw_msg in sorted(
-  ...     stub.test_emails, key=itemgetter(1), reverse=True):
-  ...             print to_addrs
+  >>> stub.test_emails.sort(key=itemgetter(1), reverse=True)
+
+  >>> for from_addr, to_addrs, raw_msg in stub.test_emails:
+  ...      print to_addrs
   ['mark@hbd.com']
   ['foo.bar@canonical.com']
   ['celso.providelo@canonical.com']
