@@ -778,7 +778,7 @@ class NascentUpload:
         assert self.is_rejected, "The upload is not rejected."
 
         changesfileobject = open(self.changes.filepath, "r")
-        self.queue_root.notify(rejection_message=self.rejection_message,
+        self.queue_root.notify(summary_text=self.rejection_message,
             changesfileobject=changesfileobject, logger=self.logger)
         changesfileobject.close()
 

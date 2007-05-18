@@ -347,7 +347,7 @@ class DistroReleaseQueue(SQLBase):
         changes = parse_tagfile_lines(changeslines, allow_unsigned=not_signed)
         return changes, changeslines
 
-    def notify(self, announcelist=None, rejection_message=None,
+    def notify(self, announcelist=None, summary_text=None,
                changesfileobject=None, logger=None):
         """See IDistroReleaseQueue."""
 
@@ -396,6 +396,8 @@ class DistroReleaseQueue(SQLBase):
                     summary.append("     -> Component: %s Section: %s" % (
                         component, section))
 
+        if summary_text:
+            summary.append(summary_text)
         summarystring = "\n".join(summary)
         recipients = self._get_recipients(changes, logger)
 
@@ -412,7 +414,7 @@ class DistroReleaseQueue(SQLBase):
                     config.uploader.default_sender_name,
                     config.uploader.default_sender_address),
                 "CHANGES": self.changesfile.filename,
-                "SUMMARY": rejection_message,
+                "SUMMARY": summary_text,
                 "CHANGESFILE": guess_encoding("".join(changeslines)),
                 "RECIPIENT": ", ".join(recipients),
                 "DEFAULT_RECIPIENT": "%s <%s>" % (

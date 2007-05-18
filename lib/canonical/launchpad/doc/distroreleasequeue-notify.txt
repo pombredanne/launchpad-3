@@ -169,7 +169,7 @@ The mail body contains the same list of files again:
 notify() will also generate rejection notices if the upload failed:
 
   >>> drq.setRejected()
-  >>> drq.notify(rejection_message="Testing rejection message", 
+  >>> drq.notify(summary_text="Testing rejection message", 
   ...            logger=mock_logger)
   DEBUG: Building recipients list.
   ...
