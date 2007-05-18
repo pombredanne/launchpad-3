@@ -91,6 +91,7 @@ __all__ = (
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
+'TeamMembershipRenewalPolicy',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
 'TranslationPriority',
@@ -634,6 +635,35 @@ class EmailAddressStatus(DBSchema):
         """)
 
 
+class TeamMembershipRenewalPolicy(DBSchema):
+    """TeamMembership Renewal Policy.
+
+    How Team Memberships can be renewed on a given team.
+    """
+
+    NONE = Item(10, """
+        None
+
+        Memberships can be renewed only by team administrators or by going
+        through the normal workflow for joining the team.
+        """)
+
+    ONDEMAND = Item(20, """
+        On demand
+
+        Memberships can be renewed by the members themselves a few days before
+        it expires. After it expires the member has to go through the normal
+        workflow for joining the team.
+        """)
+
+    AUTOMATIC = Item(30, """
+        Automatic
+
+        Memberships are automatically renewed when they expire and a note is
+        sent to the member and to team admins.
+        """)
+
+
 class TeamMembershipStatus(DBSchema):
     """TeamMembership Status
 
@@ -837,6 +867,14 @@ class UpstreamFileType(DBSchema):
         release from the previous release in the series. This
         is usually not a detailed changelog, but a high-level
         summary of major new features and fixes.
+        """)
+
+    INSTALLER = Item(5, """
+        Installer file
+
+        This file contains an installer for a product.  It may
+        be a Debian package, an RPM file, an OS X disk image, a
+        Windows installer, or some other type of installer.
         """)
 
 
@@ -2503,25 +2541,25 @@ class BranchSubscriptionDiffSize(DBSchema):
 
         Don't send generated diffs with the revision notifications.
         """, sortkey=0)
-    
+
     HALFKLINES = Item(500, """
         500 lines
 
         Limit the generated diff to 500 lines.
         """, sortkey=500)
-    
+
     ONEKLINES  = Item(1000, """
         1000 lines
 
         Limit the generated diff to 1000 lines.
         """, sortkey=1000)
-    
+
     FIVEKLINES = Item(5000, """
         5000 lines
 
         Limit the generated diff to 5000 lines.
         """, sortkey=5000)
-    
+
     WHOLEDIFF  = Item(-1, """
         Send entire diff
 
@@ -3599,4 +3637,3 @@ class PersonCreationRationale(DBSchema):
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
         """)
-

@@ -29,6 +29,11 @@
             set_schema="canonical.launchpad.interfaces.IProductRelease" />
     </content>
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ProductReleaseNavigation"
+        />
+
     <browser:menus
         module="canonical.launchpad.browser"
         classes="ProductReleaseContextMenu"
@@ -69,6 +74,15 @@
         permission="zope.Public"
         name="+rdf"
         attribute="__call__"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductRelease"
+        name="+adddownloadfile"
+        class="canonical.launchpad.browser.productrelease.ProductReleaseAddDownloadFileView"
+        permission="launchpad.Edit"
+        facet="overview"
+        template="../templates/productrelease-file-add.pt"
         />
 
     <browser:editform

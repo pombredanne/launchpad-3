@@ -113,6 +113,15 @@
     template="../templates/bugtarget-bugs.pt"
     />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProduct"
+        name="+download"
+        class="canonical.launchpad.browser.ProductDownloadFilesView"
+        permission="zope.Public"
+        facet="overview"
+        template="../templates/product-files.pt"
+        />
+
   <browser:pages
     for="canonical.launchpad.interfaces.IProduct"
     permission="zope.Public"
