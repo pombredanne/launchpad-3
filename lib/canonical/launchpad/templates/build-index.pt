@@ -90,7 +90,6 @@
 
           </tal:not_built>
 
-          <tal:built condition="context/was_built">
             <tr>
               <th>Started:</th>
               <td tal:condition="context/buildduration">
@@ -139,7 +138,6 @@
                 <i>not available</i>
               </td>
             </tr>
-          </tal:built>
 
         </tbody>
       </table>

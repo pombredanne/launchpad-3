@@ -148,7 +148,6 @@ class Build(SQLBase):
     @property
     def calculated_buildstart(self):
         """See IBuild."""
-        assert self.was_built, "value is not suitable for pending builds."
         assert self.datebuilt and self.buildduration, (
             "value is not suitable for this build record (%d)"
             % self.id)

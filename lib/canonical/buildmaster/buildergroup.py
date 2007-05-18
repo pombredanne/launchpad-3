@@ -62,26 +62,19 @@ class BuilderGroup:
 
         for builder in self.builders:
             try:
-                # Verify if *trusted* builders has been disabled.
-                # Untrusted builders will be always probed.
-                if not builder.builderok and builder.trusted:
+                if not builder.builderok:
                     continue
-
                 # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
                 slave = removeSecurityProxy(builder.slave)
-
                 # verify the echo method
                 if slave.echo("Test")[0] != "Test":
                     raise BuildDaemonError("Failed to echo OK")
-
                 # ask builder information
                 # XXX: mechanisms is ignored? -- kiko
                 builder_vers, builder_arch, mechanisms = slave.info()
-
                 # attempt to wrong builder version
                 if builder_vers != '1.0':
                     raise ProtocolVersionMismatch("Protocol version mismatch")
-
                 # attempt to wrong builder architecture
                 if builder_arch != arch.architecturetag:
                     raise BuildDaemonError(
@@ -162,13 +155,22 @@ class BuilderGroup:
             self.logger.warn("No builders are available")
 
     def resumeBuilder(self, builder):
-        """XXX cprov 20070510: Please FIX ME ASAP !"""
+        """Resume Builder via SSH trigger account."""
+        # XXX cprov 20070510: Please FIX ME ASAP !
+        # The ssh command line should be in the respective configuration
+        # file. The builder XEN-host should be stored in DB (Builder.vmhost)
+        # and not be calculated on the fly (this is gross).
+
+        # Skipping 'resumming' for trusted builders
+        if builder.trusted:
+            return
+
         self.logger.debug("Resuming %s" % builder.url)
         hostname = builder.url.split(':')[1][2:].split('.')[0]
         host_url = '%s-host.ppa' % hostname
-        ssh_cmd = "ssh -v -i ~/.ssh/ppa-reset-builder ppa@%s" % host_url
+        ssh_cmd = "ssh -i ~/.ssh/ppa-reset-builder ppa@%s" % host_url
         self.logger.debug('Running: %s' % ssh_cmd)
-        #os.system(ssh_cmd)
+        os.system(ssh_cmd)
 
     def failBuilder(self, builder, reason):
         """Mark builder as failed.
@@ -256,10 +258,12 @@ class BuilderGroup:
         status, info = slave.build(buildid, buildtype, chroot, filemap, args)
         message = """%s (%s):
         ***** RESULT *****
+        %s
+        %s
         %s: %s
         ******************
-        """ % (builder.name, builder.url, status, info)
-        self.logger.debug(message)
+        """ % (builder.name, builder.url, filemap, args, status, info)
+        self.logger.info(message)
 
     def getLogFromSlave(self, slave, queueItem, librarian):
         """Get last buildlog from slave.
@@ -629,6 +633,7 @@ class BuilderGroup:
                           "for its status"))
         # simply reset job
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
+        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
         queueItem.builder = None
         queueItem.buildstart = None
 
@@ -643,14 +648,16 @@ class BuilderGroup:
         self.logger.warning("***** %s is GIVENBACK by %s *****"
                             % (buildid, queueItem.builder.name))
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
-        queueItem.builder = None
-        queueItem.buildstart = None
-        slave.clean()
+        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
         # XXX cprov 20060530: Currently this information is not
         # properly presented in the Web UI. We will discuss it in
         # the next Paris Summit, infinity has some ideas about how
         # to use this content. For now we just ensure it's stored.
+        queueItem.builder = None
+        queueItem.buildstart = None
+        queueItem.logtail = None
         queueItem.lastscore = 0
+        slave.clean()
 
     def firstAvailable(self, is_trusted=False):
         """Return the first available builder slave.
@@ -662,22 +669,27 @@ class BuilderGroup:
         Return None if there is none available.
         """
         for builder in self.builders:
-            #self.logger.debug('probing %s' % builder.url)
-            if builder.builderok:
-                if builder.manual:
-                    #self.logger.warn('builder in MANUAL')
-                    continue
-                if builder.trusted != is_trusted:
-                    #self.logger.warn('builder incompatible')
-                    continue
-                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-                slave = removeSecurityProxy(builder.slave)
-                try:
-                    slavestatus = slave.status()
-                except (xmlrpclib.Fault, socket.error), info:
-                    continue
-                if slavestatus[0] == BuilderStatus.IDLE:
-                    return builder
+            #self.logger.debug('Probing: %s' % builder.url)
+            if not builder.builderok:
+                #self.logger.debug('builder not OK')
+                continue
+            if builder.manual:
+                #self.logger.debug('builder in MANUAL')
+                continue
+            if builder.trusted != is_trusted:
+                #self.logger.debug('builder INCOMPATIBLE')
+                continue
+            # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+            slave = removeSecurityProxy(builder.slave)
+            try:
+                slavestatus = slave.status()
+            except (xmlrpclib.Fault, socket.error), info:
+                #self.logger.debug('builder DEAD')
+                continue
+            if slavestatus[0] != BuilderStatus.IDLE:
+                #self.logger.debug('builder not IDLE')
+                continue
+            return builder
 
         return None
 
