@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
-    flush_database_updates, clear_current_connection_cache)
+    flush_database_updates, clear_current_connection_cache, cursor)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.buildd.slave import BuilderStatus
 
@@ -556,8 +556,6 @@ class BuilderGroup:
         # The famous 'flush_updates + clear_cache' will make visible the
         # DB changes done in process-upload, considering that the
         # transaction was set with READ_COMMITED_ISOLATION isolation level.
-        from canonical.database.sqlbase import (
-            cursor, READ_COMMITTED_ISOLATION)
         cur = cursor()
         cur.execute('SHOW transaction_isolation')
         isolation_str = cur.fetchone()[0]

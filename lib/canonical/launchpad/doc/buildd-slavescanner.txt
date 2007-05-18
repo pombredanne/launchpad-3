@@ -557,8 +557,9 @@ let's see how this method works:
   >>> logfile.filename, logfile.mimetype
   (u'buildlog_ubuntu-hoary-i386.pmount_0.1-1_FULLYBUILT.txt.gz', u'text/plain')
 
-  Force Librarian to write down the stuff
-  XXX cprov 20051010: is this a bug on librarian_client API ?
+
+Needed so that the Librarian can serve the new file.
+
   >>> local_transaction.commit()
 
 Since LibrarianFileAlias does not implement required attributes for

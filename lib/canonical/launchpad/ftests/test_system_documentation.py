@@ -81,7 +81,6 @@ def builddmasterSetUp(test):
         dbuser=config.builddmaster.dbuser,
         isolation=READ_COMMITTED_ISOLATION)
     setGlobs(test)
-    login(ANONYMOUS)
 
 def importdSetUp(test):
     sqlos.connection.connCache = {}
