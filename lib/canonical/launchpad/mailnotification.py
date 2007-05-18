@@ -26,9 +26,9 @@ from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IBranch, IBugTask, IEmailAddressSet, ILanguageSet,
-    INotificationRecipientSet, IPerson, ISpecification, ITeamMembershipSet,
-    IUpstreamBugTask)
+    IBranch, IBugTask, IDistributionSourcePackage, IEmailAddressSet,
+    ILanguageSet, INotificationRecipientSet, IPerson, ISourcePackage,
+    ISpecification, ITeamMembershipSet, IUpstreamBugTask)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -1093,11 +1093,55 @@ def notify_team_join(event):
 
 
 def dispatch_linked_question_notifications(bugtask, event):
-    """Send notifications to linked questitn subscribers when the bugtask
+    """Send notifications to linked question subscribers when the bugtask
     status change.
     """
     for question in bugtask.bug.questions:
         QuestionLinkedBugStatusChangeNotification(question, event)
+
+class QuestionNotificationRecipientSet(NotificationRecipientSet):
+    """`NotificationRecipientSet` that knows how to add answer contact."""
+
+    # XXX flacoste 20070521 This should probably better live as a method
+    # on IQuestionTarget that returns an INotificationRecipientSet. Once
+    # curtis' branch that add getAnswerContactsForLanguage lands. Move that
+    # in that method.
+    def addAnswerContacts(self, target):
+        """Add the answer_contacts for a target as recipients."""
+        # We need to special case the source package case because some are
+        # contacts for the distro while others are only registered for the
+        # package. And we also want the name of the package in context in
+        # the header.
+        if (ISourcePackage.providedBy(target)
+            or IDistributionSourcePackage.providedBy(target)):
+            self._addAnswerContacts(
+                target.direct_answer_contacts, target.displayname,
+                target.displayname)
+            distribution = target.distribution
+            self._addAnswerContacts(
+                distribution.answer_contacts, distribution.name,
+                distribution.displayname)
+        else:
+            self._addAnswerContacts(
+                target.answer_contacts, target.name, target.displayname)
+
+    def _addAnswerContacts(self, answer_contacts, target_name,
+                           target_display_name):
+        # Take care of adding the contacts with the correct rationale.
+        for person in answer_contacts:
+            reason_start = (
+            "You received this question notification because you are ")
+            if person.isTeam():
+                reason = reason_start + (
+                    'a member of %s, which is an answer contact for %s.' % (
+                        person.displayname, target_display_name))
+                header = 'Answer Contact (%s) @%s' % (
+                    target_name, person.name)
+            else:
+                reason = reason_start + (
+                    'an answer contact for %s.' % target_display_name)
+                header = 'Answer Contact (%s)' % target_name
+            self.add(person, reason, header)
 
 
 class QuestionNotification:
@@ -1181,6 +1225,9 @@ class QuestionNotification:
         language. When a subscriber is a team and it doesn't have an email
         set nor supported languages, only contacts the members that speaks
         the supported language.
+
+        :return: A `INotificationRecipientSet` containing the recipients and
+            rationale.
         """
         # Optimize the English case.
         english = getUtility(ILanguageSet)['en']
@@ -1188,22 +1235,27 @@ class QuestionNotification:
         if question_language == english:
             return self.question.getSubscribers()
 
-        recipients = set()
+        recipients = NotificationRecipientSet()
         skipped = set()
-        subscribers = set(self.question.getSubscribers())
+        original_recipients = self.question.getSubscribers()
+        subscribers = dict((person, original_recipients.getReason(person))
+                           for person in original_recipients)
         while subscribers:
-            person = subscribers.pop()
+            person, rationale = subscribers.popitem()
             if person == self.question.owner:
-                recipients.add(person)
+                recipients.add(person, *rationale)
             elif question_language not in person.getSupportedLanguages():
                skipped.add(person)
             elif not person.preferredemail and not list(person.languages):
                 # For teams without an email address nor a set of supported
                 # languages, only notify the members that actually speak the
                 # language.
-                subscribers |= set(person.activemembers) - recipients - skipped
+                for member in person.activemembers:
+                    if member in recipients or member in skipped:
+                        continue
+                    subscribers[member] = rationale
             else:
-                recipients.add(person)
+                recipients.add(person, *rationale)
         return recipients
 
     def initialize(self):
@@ -1225,18 +1277,26 @@ class QuestionNotification:
         return True
 
     def send(self):
-        """Sends the notification to all the notification recipients."""
-        sent_addrs = set()
+        """Sends the notification to all the notification recipients.
+
+        This method takes care of adding the rationale for contacting each
+        recipient and also sets the X-Launchpad-Message-Rationale header on
+        each message.
+        """
         from_address = self.getFromAddress()
         subject = self.getSubject()
         body = self.getBody()
         headers = self.getHeaders()
-        for notified_person in self.getRecipients():
-            for address in contactEmailAddresses(notified_person):
-                if address not in sent_addrs:
-                    simple_sendmail(
-                        from_address, address, subject, body, headers)
-                    sent_addrs.add(address)
+        recipients = self.getRecipients()
+        wrapper = MailWrapper()
+        for email in recipients.getEmails():
+            rationale, header = recipients.getReason(email)
+            headers['X-Launchpad-Message-Rationale'] = header
+            body_parts = [body, wrapper.format(rationale)]
+            if '-- ' not in body:
+                body_parts.insert(1, '-- ')
+            simple_sendmail(
+                from_address, email, subject, '\n'.join(body_parts), headers)
 
     @property
     def unsupported_language(self):
@@ -1390,11 +1450,17 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         return get_email_template(self.body_template) % replacements
 
     def getRecipients(self):
-        """The default notification goes to all question susbcribers that
-        speaks the request language, except the owner.
+        """The default notification goes to all question subscribers that
+        speak the request language, except the owner.
         """
-        return [person for person in QuestionNotification.getRecipients(self)
-                if person != self.question.owner]
+        original_recipients = QuestionNotification.getRecipients(self)
+        recipients = NotificationRecipientSet()
+        owner = self.question.owner
+        for person in original_recipients:
+            if person != self.question.owner:
+                rationale, header = original_recipients.getReason(person)
+                recipients.add(person, rationale, header)
+        return recipients
 
     # Header template used when a new message is added to the question.
     action_header_template = {
@@ -1465,10 +1531,13 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
 
     def getRecipients(self):
         """Return the owner of the question if he's still subscribed."""
-        if self.question.isSubscribed(self.question.owner):
-            return [self.question.owner]
-        else:
-            return []
+        recipients = NotificationRecipientSet()
+        owner = self.question.owner
+        if self.question.isSubscribed(owner):
+            original_recipients = self.question.getDirectSubscribers()
+            rationale, header = original_recipients.getReason(owner)
+            recipients.add(owner, rationale, header)
+        return recipients
 
     def getBody(self):
         """See QuestionNotification."""
@@ -1479,7 +1548,7 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
 
 
 class QuestionUnsupportedLanguageNotification(QuestionNotification):
-    """Notification sent to support contacts for unsupported languages."""
+    """Notification sent to answer contacts for unsupported languages."""
 
     def getSubject(self):
         """See QuestionNotification."""
@@ -1491,8 +1560,10 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
         return self.unsupported_language
 
     def getRecipients(self):
-        """Notify all the support contacts."""
-        return self.question.target.answer_contacts
+        """Notify only the answer contacts."""
+        recipients = QuestionNotificationRecipientSet()
+        recipients.addAnswerContacts(self.question.target)
+        return recipients
 
     def getBody(self):
         """See QuestionNotification."""
