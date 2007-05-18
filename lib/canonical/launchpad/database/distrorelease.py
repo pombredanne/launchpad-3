@@ -110,7 +110,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
-    defer_translation_imports = BoolCol(notNull=True, default=False)
+    defer_translation_imports = BoolCol(notNull=True, default=True)
 
     architectures = SQLMultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
@@ -1800,7 +1800,7 @@ class DistroReleaseSet:
     def new(self, distribution, name, displayname, title, summary, description,
             version, parentrelease, owner):
         """See IDistroReleaseSet."""
-        d = DistroRelease(
+        return DistroRelease(
             distribution=distribution,
             name=name,
             displayname=displayname,
@@ -1811,13 +1811,3 @@ class DistroReleaseSet:
             releasestatus=DistributionReleaseStatus.EXPERIMENTAL,
             parentrelease=parentrelease,
             owner=owner)
-
-        # A new distrorelease still needs some work done to it in order to
-        # enable translation.  The _copy_active_translations() machinery
-        # assumes that nobody else is adding translation-related data to the
-        # new distrorelease.  To support that, we inhibit translation imports
-        # until translations have been copied in from the parent distrorelease
-        # and the new distrorelease is all set to be translated.
-        d.defer_translation_imports = True
-
-        return d
