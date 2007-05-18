@@ -175,6 +175,9 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
         # a non-standard database user, and because there doesn't seem
         # any point running this test under both environments.
 
+        # XXX: Disabled due to Bug #4613
+        return
+
         # Add a file.
         client = LibrarianClient()
         filename = 'sample.txt'

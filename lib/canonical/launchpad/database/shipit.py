@@ -10,6 +10,7 @@ __all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
 from StringIO import StringIO
 import csv
 from datetime import datetime, timedelta
+import itertools
 import random
 import re
 
@@ -361,20 +362,26 @@ class ShippingRequest(SQLBase):
 
     def addressIsDuplicated(self):
         """See IShippingRequest"""
-        return self.getRequestsWithSameAddressFromOtherUsers().count() > 1
+        return self.getRequestsWithSameAddressFromOtherUsers().count() > 0
 
     def getRequestsWithSameAddressFromOtherUsers(self, limit=5):
         """See IShippingRequest"""
         query = """
-            normalized_address = %(address)s
-            AND country = %(country)s
-            AND recipient != %(recipient)s
-            AND status NOT IN (%(cancelled)s, %(denied)s)
+            SELECT ShippingRequest.id
+            FROM ShippingRequest
+            JOIN RequestedCDs ON ShippingRequest.id = RequestedCDs.request
+            WHERE normalized_address = %(address)s
+                AND country = %(country)s
+                AND recipient != %(recipient)s
+                AND status NOT IN (%(cancelled)s, %(denied)s)
+                AND RequestedCDs.distrorelease = %(release)s
             """ % sqlvalues(
                 address=self.normalized_address, recipient=self.recipient,
                 denied=ShippingRequestStatus.DENIED, country=self.country,
-                cancelled=ShippingRequestStatus.CANCELLED)
-        return ShippingRequest.select(query, limit=limit)
+                cancelled=ShippingRequestStatus.CANCELLED,
+                release=self.distrorelease)
+        return ShippingRequest.select(
+            "id IN (%s)" % query, limit=limit, orderBy='-daterequested')
 
 
 class ShippingRequestSet:
@@ -389,21 +396,19 @@ class ShippingRequestSet:
         except (SQLObjectNotFound, ValueError):
             return default
 
-    def processRequestsPendingSpecial(
-            self, status=ShippingRequestStatus.DENIED):
+    def processRequests(self, status, new_status):
         """See IShippingRequestSet"""
-        if status == ShippingRequestStatus.APPROVED:
+        if new_status == ShippingRequestStatus.APPROVED:
             action = 'approved'
             method_name = 'approve'
-        elif status == ShippingRequestStatus.DENIED:
+        elif new_status == ShippingRequestStatus.DENIED:
             action = 'denied'
             method_name = 'deny'
         else:
             raise AssertionError(
-                'status must be either APPROVED or DENIED: %r' % status)
+                'new_status must be APPROVED or DENIED: %r' % new_status)
 
-        requests = ShippingRequest.selectBy(
-            status=ShippingRequestStatus.PENDINGSPECIAL)
+        requests = ShippingRequest.selectBy(status=status)
         request_messages = []
         for request in requests:
             info = ("Request #%d, made by '%s' containing %d CDs\n(%s)"
@@ -413,8 +418,8 @@ class ShippingRequestSet:
             getattr(request, method_name)()
         template = get_email_template('shipit-mass-process-notification.txt')
         body = template % {
-            'requests_info': "\n".join(request_messages), 'action': action,
-            'pending_special': ShippingRequestStatus.PENDINGSPECIAL}
+            'requests_info': "\n".join(request_messages),
+            'action': action, 'status': status}
         to_addr = shipit_admins = config.shipit.admins_email_address
         from_addr = config.shipit.ubuntu_from_email_address
         subject = "Report of auto-%s requests" % action
@@ -870,6 +875,312 @@ class ShippingRequestSet:
 
         csv_file.seek(0)
         return csv_file
+
+    def generateRequestDistributionReport(self):
+        """See IShippingRequestSet"""
+        # First we get the distribution of requests/shipments for the current
+        # release only.
+        shipit_admins = getUtility(ILaunchpadCelebrities).shipit_admin
+        cur = cursor()
+        query = """
+            SELECT requests, requesters,
+                cds_requested / (requests * requesters) AS avg_requested_cds
+            FROM (
+                SELECT requests, COUNT(recipient) AS requesters,
+                    SUM(requested_cds_per_user) AS cds_requested
+                FROM (
+                    SELECT recipient,
+                        COUNT(DISTINCT request) AS requests,
+                        SUM(quantity) AS requested_cds_per_user
+                    FROM RequestedCDs
+                        JOIN ShippingRequest ON 
+                            ShippingRequest.id = RequestedCDs.request
+                    WHERE distrorelease = %(current_release)s
+                        AND status != %(cancelled)s
+                        AND recipient != %(shipit_admins)s
+                    GROUP BY recipient
+                    ) AS REQUEST_DISTRIBUTION
+                GROUP BY requests
+                ) AS REQUEST_DISTRIBUTION_AND_TOTALS
+            """ % sqlvalues(
+                    current_release=ShipItConstants.current_distrorelease,
+                    shipit_admins=shipit_admins,
+                    cancelled=ShippingRequestStatus.CANCELLED)
+        cur.execute(query)
+        current_release_request_distribution = cur.fetchall()
+
+        query = """
+            SELECT approved_requests, recipients,
+                cds_approved / (approved_requests * recipients)
+                    AS avg_shipment_size    
+            FROM (
+                SELECT COUNT(recipient) AS recipients, approved_requests,
+                    SUM(approved_cds_per_user) AS cds_approved
+                FROM (
+                    SELECT recipient,
+                        COUNT(DISTINCT request) AS approved_requests,
+                        SUM(quantityapproved) AS approved_cds_per_user
+                    FROM RequestedCDs
+                        JOIN ShippingRequest ON 
+                            ShippingRequest.id = RequestedCDs.request
+                    WHERE distrorelease = %(current_release)s
+                        AND status IN (%(approved)s, %(shipped)s)
+                        AND recipient != %(shipit_admins)s
+                    GROUP BY recipient
+                    ) AS SHIPMENT_DISTRIBUTION
+                GROUP BY approved_requests
+                ) AS SHIPMENT_DISTRIBUTION_AND_TOTALS
+            """ % sqlvalues(
+                    current_release=ShipItConstants.current_distrorelease,
+                    shipit_admins=shipit_admins,
+                    approved=ShippingRequestStatus.APPROVED,
+                    shipped=ShippingRequestStatus.SHIPPED)
+        cur.execute(query)
+        current_release_shipment_distribution = cur.fetchall()
+
+        # We need to create some temporary tables to make the next queries run
+        # in non-geological time.
+        create_tables = """
+            -- People with non-cancelled requests for the current release.
+            CREATE TEMPORARY TABLE current_release_requester
+                (recipient integer);
+            INSERT INTO current_release_requester (
+                SELECT DISTINCT recipient
+                FROM ShippingRequest
+                    JOIN RequestedCDs
+                        ON RequestedCDs.request = ShippingRequest.id
+                WHERE distrorelease = %(current_release)s
+                    AND recipient != %(shipit_admins)s
+                    AND status != %(cancelled)s);
+            CREATE UNIQUE INDEX current_release_requester__unq 
+                ON current_release_requester(recipient);
+
+            -- People with with non-cancelled requests for any release other
+            -- than the current one.
+            CREATE TEMPORARY TABLE previous_release_requester
+                (recipient integer);
+            INSERT INTO previous_release_requester (
+                SELECT DISTINCT recipient
+                FROM ShippingRequest
+                    JOIN RequestedCDs
+                        ON RequestedCDs.request = ShippingRequest.id
+                WHERE distrorelease < %(current_release)s
+                    AND recipient != %(shipit_admins)s
+                    AND status != %(cancelled)s);
+            CREATE UNIQUE INDEX previous_release_requester__unq 
+                ON previous_release_requester(recipient);
+
+            -- People which made requests for any release other than the 
+            -- current one, but none of the requests were ever shipped.
+            CREATE TEMPORARY TABLE previous_release_non_recipient
+                (recipient integer);
+            INSERT INTO previous_release_non_recipient (
+                SELECT DISTINCT recipient
+                FROM ShippingRequest
+                    JOIN RequestedCDs
+                        ON RequestedCDs.request = ShippingRequest.id
+                WHERE distrorelease < %(current_release)s
+                    AND recipient != %(shipit_admins)s
+                    AND status NOT IN (%(shipped)s, %(cancelled)s)
+                EXCEPT
+                SELECT DISTINCT recipient
+                FROM ShippingRequest
+                    JOIN RequestedCDs
+                        ON RequestedCDs.request = ShippingRequest.id
+                WHERE distrorelease < %(current_release)s
+                    AND recipient != %(shipit_admins)s
+                    AND status = %(shipped)s);
+            CREATE UNIQUE INDEX previous_release_non_recipient__unq 
+                ON previous_release_non_recipient(recipient);
+            """ % sqlvalues(
+                    current_release=ShipItConstants.current_distrorelease,
+                    shipit_admins=shipit_admins,
+                    shipped=ShippingRequestStatus.SHIPPED,
+                    cancelled=ShippingRequestStatus.CANCELLED)
+        cur.execute(create_tables)
+
+        # Now we get the distribution of other-than-current-release
+        # requests/shipments for the people which made requests of the current
+        # release.
+        query = """
+            SELECT requests, requesters,
+                CASE WHEN requests > 0
+                        THEN cds_requested / (requests * requesters) 
+                     ELSE 0
+                END AS avg_requested_cds
+            FROM (
+                SELECT requests, SUM(requested_cds_per_user) AS cds_requested,
+                    COUNT(recipient) AS requesters
+                FROM (
+                    -- This select will give us the people which made feisty
+                    -- requests and which also made requests for other releases.
+                    SELECT recipient, SUM(quantity) AS requested_cds_per_user,
+                        COUNT(DISTINCT request) AS requests
+                    FROM RequestedCDs, ShippingRequest
+                    WHERE distrorelease < %(current_release)s
+                        AND status != %(cancelled)s
+                        AND ShippingRequest.id = RequestedCDs.request
+                        AND recipient IN (
+                            SELECT recipient FROM current_release_requester)
+                        AND recipient != %(shipit_admins)s
+                    GROUP BY recipient
+                    UNION
+                    -- This one gives us the people which made feisty requests
+                    -- but haven't made requests for any other releases.
+                    SELECT recipient, 0 AS requested_cds_per_user,
+                        0 AS requests
+                    FROM (SELECT recipient FROM current_release_requester
+                          EXCEPT
+                          SELECT recipient FROM previous_release_requester
+                         ) AS FIRST_TIME_REQUESTERS
+                    WHERE recipient != %(shipit_admins)s
+                    ) AS RECIPIENTS_AND_COUNTS
+                GROUP BY requests
+                ) AS REQUEST_DISTRIBUTION_AND_TOTALS
+            WHERE requesters > 0
+            """ % sqlvalues(
+                    current_release=ShipItConstants.current_distrorelease,
+                    shipit_admins=shipit_admins,
+                    cancelled=ShippingRequestStatus.CANCELLED)
+        cur.execute(query)
+        other_releases_request_distribution = cur.fetchall()
+
+        query = """
+            SELECT requests, requesters,
+                CASE WHEN requests > 0
+                        THEN cds_approved / (requests * requesters) 
+                     ELSE 0
+                END AS avg_approved_cds
+            FROM (
+                SELECT requests, SUM(approved_cds_per_user) AS cds_approved,
+                    COUNT(recipient) AS requesters
+                FROM (
+                    -- This select will give us the people which made feisty
+                    -- requests and which also had shipped requests for other
+                    -- releases.
+                    SELECT recipient,
+                        SUM(quantityapproved) AS approved_cds_per_user,
+                        COUNT(DISTINCT request) AS requests
+                    FROM RequestedCDs, ShippingRequest
+                    WHERE distrorelease < %(current_release)s
+                        AND status = %(shipped)s
+                        AND ShippingRequest.id = RequestedCDs.request
+                        AND recipient IN (
+                            SELECT recipient FROM current_release_requester)
+                    GROUP BY recipient
+                    UNION
+                    -- This one gives us the people which made feisty requests
+                    -- but haven't had any shipped request of previous
+                    -- releases.
+                    SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
+                    FROM RequestedCDs, ShippingRequest
+                    WHERE distrorelease < %(current_release)s
+                        AND status != %(shipped)s
+                        AND ShippingRequest.id = RequestedCDs.request
+                        AND recipient IN (
+                            SELECT recipient FROM current_release_requester)
+                        AND recipient IN (
+                            SELECT recipient 
+                            FROM previous_release_non_recipient)
+                    UNION
+                    -- This one gives us the people which made feisty requests
+                    -- but haven't made requests for any other releases.
+                    SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
+                    FROM (SELECT recipient FROM current_release_requester
+                          EXCEPT
+                          SELECT recipient FROM previous_release_requester
+                         ) AS FIRST_TIME_RECIPIENTS
+                    ) AS RECIPIENTS_AND_COUNTS
+                GROUP BY requests
+                ) AS SHIPMENT_DISTRIBUTION_AND_TOTALS
+            WHERE requesters > 0
+            """ % sqlvalues(
+                    current_release=ShipItConstants.current_distrorelease,
+                    shipit_admins=shipit_admins,
+                    approved=ShippingRequestStatus.APPROVED,
+                    shipped=ShippingRequestStatus.SHIPPED)
+        cur.execute(query)
+        other_releases_shipment_distribution = cur.fetchall()
+
+        # Get the numbers of the rows we want to display.
+        all_results = itertools.chain(
+            current_release_shipment_distribution,
+            current_release_request_distribution,
+            other_releases_shipment_distribution,
+            other_releases_request_distribution)
+        row_numbers = set()
+        for requests, requesters, avg_size in all_results:
+            row_numbers.add(requests)
+
+        csv_file = StringIO()
+        csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
+        header1 = ['', '', 'Current Release Only', '', '',
+                  '', '', 'Previous Releases Only', '']
+        header2 = ['', 'requests', '', 'shipped', '', 'requests', '',
+                   'shipped', '']
+        header3 = ['# of requests', '# of people', 'avg CDs per request',
+                   '# of people', 'avg CDs per shipment', '# of people',
+                   'avg CDs per request', '# of people',
+                   'avg CDs per shipment']
+        csv_writer.writerow(header1)
+        csv_writer.writerow(header2)
+        csv_writer.writerow(header3)
+
+        # XXX: I admit these names couldn't be worse, but they're only used
+        # a few lines below and I can't think of anything better.
+        # -- Guilherme Salgado, 2007-04-25
+        cr = self._convert_results_to_dict_and_fill_gaps(
+            current_release_request_distribution, row_numbers)
+        cr = self._add_percentage_to_number_of_people(cr)
+        cs = self._convert_results_to_dict_and_fill_gaps(
+            current_release_shipment_distribution, row_numbers)
+        cs = self._add_percentage_to_number_of_people(cs)
+        or_ = self._convert_results_to_dict_and_fill_gaps(
+            other_releases_request_distribution, row_numbers)
+        or_ = self._add_percentage_to_number_of_people(or_)
+        os = self._convert_results_to_dict_and_fill_gaps(
+            other_releases_shipment_distribution, row_numbers)
+        os = self._add_percentage_to_number_of_people(os)
+
+        for number in sorted(row_numbers):
+            row = [number]
+            for dictionary in cr, cs, or_, os:
+                row.extend(dictionary[number])
+            csv_writer.writerow(row)
+        csv_file.seek(0)
+        return csv_file
+
+    def _add_percentage_to_number_of_people(self, results_dict):
+        """For each element of the given dict change the number of people to
+        store the absolute number as well as the percentage relative to the
+        total of people from all items.
+
+        The given dict must be of the form:
+            {number_of_requests: (number_of_people, average_size)}
+        """
+        total = sum(people for people, size in results_dict.values())
+        total = float(total) / 100
+        d = {}
+        for key, value in results_dict.items():
+            people, size = value
+            people = "%s (%s%%)" % (people, float(people) / total)
+            d[key] = (people, size)
+        return d
+
+    def _convert_results_to_dict_and_fill_gaps(self, results, row_numbers):
+        """Convert results to a dict, also filling any missing keys.
+
+        Results must be a sequence of 3-tuples in which the first element of
+        each 3-tuple is the dict's key and the other two are its value. If any
+        of the items in row_numbers are not in the dict's keys, they're added
+        with a value of (0,0).
+        """
+        d = {}
+        for requests, requesters, avg_size in results:
+            d[requests] = (requesters, avg_size)
+        for number in set(row_numbers) - set(d.keys()):
+            d[number] = (0, 0)
+        return d
 
 
 class RequestedCDs(SQLBase):

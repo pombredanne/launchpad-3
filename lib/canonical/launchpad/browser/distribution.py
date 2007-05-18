@@ -185,7 +185,7 @@ class DistributionOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
              'mirror_admin', 'reassign', 'addrelease', 'top_contributors',
-             'builds', 'release_mirrors', 'archive_mirrors',
+             'mentorship', 'builds', 'release_mirrors', 'archive_mirrors',
              'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
              'launchpad_usage', 'upload_admin']
 
@@ -218,6 +218,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     def top_contributors(self):
         text = 'List top contributors'
         return Link('+topcontributors', text, icon='info')
+
+    def mentorship(self):
+        text = 'Mentoring available'
+        return Link('+mentoring', text, icon='info')
 
     def release_mirrors(self):
         text = 'Show CD mirrors'
@@ -563,6 +567,8 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
 
 class DistributionMirrorsView(LaunchpadView):
 
+    show_status = True
+
     def _groupMirrorsByCountry(self, mirrors):
         """Given a list of mirrors, create and return list of dictionaries
         containing the country names and the list of mirrors on that country.
@@ -588,6 +594,7 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 class DistributionReleaseMirrorsView(DistributionMirrorsView):
 
     heading = 'Official CD Mirrors'
+    show_status = False
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.release_mirrors)

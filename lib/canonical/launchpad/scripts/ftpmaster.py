@@ -15,6 +15,11 @@ __all__ = [
     'ChrootManagerError',
     'SyncSource',
     'SyncSourceError',
+    'PackageLocationError',
+    'PackageLocation',
+    'PackageCopyError',
+    'PackageCopier',
+    'LpQueryDistro'
     ]
 
 import apt_pkg
@@ -26,27 +31,22 @@ import stat
 import sys
 import tempfile
 
-from sqlobject import SQLObjectMoreThanOneResultError
 from zope.component import getUtility
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.archiveuploader.utils import re_extract_src_version
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, IBinaryPackageReleaseSet,
-    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet,
-    IDistributionSet)
+    ILaunchpadCelebrities, NotFoundError, ILibraryFileAliasSet)
+from canonical.launchpad.scripts.base import (
+    LaunchpadScript, LaunchpadScriptFailure)
+from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingPriority)
-
+    PackagePublishingPocket, PackagePublishingPriority,
+    DistributionReleaseStatus)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
-
-# XXX cprov 20060502: Redefining same regexp code from dak_utils,
-# we do not expose it via imports of this module. As soon as we
-# finish the redesign/cleanup of all scripts, all those expressions
-# will be defined here and dak_utils won't be necessary anymore.
-re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
 
 
 class ArchiveOverriderError(Exception):
@@ -1079,3 +1079,500 @@ class SyncSource:
                 raise SyncSourceError(
                     "%s: size mismatch (%s [actual] vs. %s [expected])."
                     % (filename, actual_size, expected_size))
+
+
+class PackageLocationError(Exception):
+    """Raised when something went wrong when building PackageLocation."""
+
+
+class PackageLocation:
+    """Object used to model locations when copying publications.
+
+    It groups distribution + distrorelease + pocket in a way they
+    can be easily manipulated and compared.
+    """
+    distribution = None
+    distrorelease = None
+    pocket = None
+
+    def __init__(self, distribution_name, suite_name):
+        """Store given parameters.
+
+        Build LP objects and expand suite_name into distrorelease + pocket.
+        """
+        try:
+            self.distribution = getUtility(IDistributionSet)[distribution_name]
+        except NotFoundError, err:
+            raise PackageLocationError(
+                "Could not find distribution %s" % err)
+
+        if suite_name is not None:
+            try:
+                suite = self.distribution.getDistroReleaseAndPocket(suite_name)
+            except NotFoundError, err:
+                raise PackageLocationError(
+                    "Could not find suite %s" % err)
+            else:
+                self.distrorelease, self.pocket = suite
+        else:
+            self.distrorelease = self.distribution.currentrelease
+            self.pocket = PackagePublishingPocket.RELEASE
+
+    def __eq__(self, other):
+        if (self.distribution.id == other.distribution.id and
+            self.distrorelease.id == other.distrorelease.id and
+            self.pocket.value == other.pocket.value):
+            return True
+        return False
+
+    def __str__(self):
+        return '%s/%s/%s' % (self.distribution.name, self.distrorelease.name,
+                             self.pocket.name)
+
+
+class PackageCopyError(Exception):
+    """Raised when a package copy operation failed.  The textual content
+    should explain the error.
+    """
+
+
+class PackageCopier(LaunchpadScript):
+    """LaunchpadScript that copies published packages between distro suites.
+
+    Possible exceptions raised are:
+    * PackageLocationError: specified package or distro does not exist
+    * PackageCopyError: the copy operation itself has failed
+    * LaunchpadScriptError: only raised if entering via main(), ie this
+        code is running as a genuine script.  In this case, this is
+        also the _only_ exception to be raised.
+
+    The test harness doesn't enter via main(), it calls doCopy(), so
+    it only sees the first two exceptions.
+    """
+
+    usage = '%prog -s warty mozilla-firefox --to-suite hoary'
+    description = 'MOVE or COPY a published package to another suite.'
+
+    def add_my_options(self):
+
+        self.parser.add_option(
+            '-n', '--dry-run', dest='dryrun', default=False,
+            action='store_true', help='Do not commit changes.')
+
+        self.parser.add_option(
+            '-y', '--confirm-all', dest='confirm_all',
+            default=False, action='store_true',
+            help='Do not prompt the user for confirmation.')
+
+        self.parser.add_option(
+            '-b', '--include-binaries', dest='include_binaries',
+            default=False, action='store_true',
+            help='Whether to copy related binaries or not.')
+
+        self.parser.add_option(
+            '-d', '--from-distribution', dest='from_distribution_name',
+            default='ubuntu', action='store',
+            help='Source distribution.')
+
+        self.parser.add_option(
+            '-s', '--from-suite', dest='from_suite', default=None,
+            action='store', help='Source suite.')
+
+        self.parser.add_option(
+            '--to-suite', dest='to_suite', default=None,
+            action='store', help='Destination suite.')
+
+        self.parser.add_option(
+            '-e', '--sourceversion', dest='sourceversion', default=None,
+            action='store',
+            help='Optional Source Version, defaults to the current version.')
+
+    def main(self):
+        """LaunchpadScript entry point.
+
+        Can only raise LaunchpadScriptFailure - other exceptions are
+        absorbed into that.
+        """
+
+        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+
+        if len(self.args) != 1:
+            raise LaunchpadScriptFailure(
+                "At least one non-option argument must be given, "
+                "the sourcename.")
+
+        try:
+            self.doCopy()
+        except (PackageCopyError, PackageLocationError), err:
+            raise LaunchpadScriptFailure(err)
+
+        if not self.options.dryrun:
+            self.txn.commit()
+            self.logger.info(
+                "Changes committed.  The archive will be updated"
+                " in the next publishing cycle")
+            self.logger.info('Be patient.')
+        else:
+            self.logger.info('Dry run, so nothing to commit.')
+            self.txn.abort()
+
+        self.logger.info('Done.')
+
+    def doCopy(self):
+        """Execute package copy procedure.
+
+        Build location and target objects.
+        Check whether user feedback is needed or is suppressed by
+        given parameters.
+        Copy source publication and optionally related binary publications
+        according to the given parameters.
+
+        Modules using this class outside of its normal usage in the
+        copy-package.py script can call this method to start the copy.
+
+        In this case the caller can override test_args on __init__
+        to set the command line arguments.
+
+        Can raise PackageLocationError or PackageCopyError.
+        """
+        sourcename = self.args[0]
+        from_source = None
+        from_binaries = []
+        copied_source = None
+        copied_binaries = []
+
+        # This can raise PackageCopyError:
+        from_location, to_location = self._findLocations()
+        from_source = self._findSource(
+            from_location,
+            sourcename,
+            self.options.sourceversion)
+
+        self.logger.info("Syncing %r to %r" % (from_source.title,
+                                               str(to_location)))
+        self.logger.info("Include Binaries: %s" % self.options.include_binaries)
+
+        if not self.options.confirm_all and not self._getUserConfirmation():
+            self.logger.info("Ok, see you later")
+            return
+
+        copied_source = self.copySource(from_source, to_location)
+
+        if self.options.include_binaries:
+            self.logger.info("Performing binary copy.")
+            from_binaries = self._findBinaries(from_source, from_location)
+            for binary in from_binaries:
+                binary_copied = self.copyBinary(binary, to_location)
+                copied_binaries.append(binary_copied)
+            self.logger.info(
+                "%d binaries copied." % len(copied_binaries))
+
+        # Information returned mainly for the benefit of the test harness.
+        return (from_location, to_location, from_source, from_binaries,
+                copied_source, copied_binaries)
+
+    def _findLocations(self):
+        """Build PackageLocation for context FROM and TO.
+
+        Returns result as a tuple.
+        """
+        # These can raise PackageLocationError, but we're happy to pass
+        # it upwards.
+        from_location = PackageLocation(
+            self.options.from_distribution_name, self.options.from_suite)
+        # from_distribution_name intentionally used here as we currently
+        # only support moving within the same distro:
+        to_location = PackageLocation(
+            self.options.from_distribution_name, self.options.to_suite)
+
+        if from_location == to_location:
+            raise PackageCopyError(
+                "Can not sync between the same locations: '%s' to '%s'" % (
+                from_location, to_location))
+        return (from_location, to_location)
+
+    def _findSource(self, from_location, sourcename, sourceversion):
+        """Build a DistroReleaseSourcePackageRelease for the given parameters
+
+        Result is returned.
+        """
+        sourcepackage = from_location.distrorelease.getSourcePackage(
+            sourcename)
+
+        if sourcepackage is None:
+            raise PackageCopyError(
+                "Could not find any version of '%s' in %s" % (
+                sourcename, from_location))
+
+        if sourceversion is None:
+            target_source = sourcepackage.currentrelease
+        else:
+            target_source = sourcepackage[sourceversion]
+
+        if target_source is None:
+            raise PackageCopyError(
+                "Could not find '%s/%s' in %s" % (
+                sourcename, self.options.sourceversion,
+                from_location))
+        return target_source
+
+    def _findBinaries(self, from_source, from_location):
+        """Build a set of DistroArchReleaseBinaryPackage for the context source.
+
+        Result is returned.
+        """
+        target_binaries = []
+        # Obtain names of all distinct binary packages names
+        # produced by the target_source.
+        binary_name_set = set(
+            [binary.name for binary in from_source.binaries])
+
+        # Get the binary packages in each distroarchrelease and store them
+        # in target_binaries for returning.
+        for binary_name in binary_name_set:
+            all_archs = from_location.distrorelease.architectures
+            for distroarchrelease in all_archs:
+                darbp = distroarchrelease.getBinaryPackage(binary_name)
+                # Only include objects with published binaries.
+                try:
+                    current = darbp.current_published
+                except NotFoundError:
+                    pass
+                else:
+                    target_binaries.append(darbp)
+        return target_binaries
+
+    def _getUserConfirmation(self):
+        """Command-line helper.
+
+        It uses raw_input to collect user feedback.
+
+        Return True if the user typed 'yes' or False for 'no'.
+        """
+        answer = None
+        valid_answers = ['yes', 'no']
+        display_answers = '[%s]' % (', '.join(valid_answers))
+        full_question = 'Are you sure? %s ' % display_answers
+        while answer not in valid_answers:
+            answer = raw_input(full_question)
+        return answer == 'yes'
+
+    def copySource(self, from_source, to_location):
+        """Copy context source and store correspondent reference.
+
+        Reference to the destination copy will be returned.
+        """
+        self.logger.info("Performing source copy.")
+
+        source_copy = from_source.copyTo(
+            distrorelease=to_location.distrorelease,
+            pocket=to_location.pocket)
+
+        # Retrieve and store the IDRSPR for the target location
+        to_distrorelease = to_location.distrorelease
+        copied_source = to_distrorelease.getSourcePackageRelease(
+            source_copy.sourcepackagerelease)
+
+        self.logger.info("Copied: %s" % copied_source.title)
+
+        return copied_source
+
+    def copyBinary(self, binary, to_location):
+        """Copy given binary to target location if possible.
+
+        Return reference to the copied binary.
+        """
+        # copyTo will raise NotFoundError if the architecture in
+        # question is not present in destination or if the binary
+        # is not published it source location. Both situations are
+        # safe, so that's why we swallow this error.
+        try:
+            binary_copy = binary.copyTo(
+                distrorelease=to_location.distrorelease,
+                pocket=to_location.pocket)
+        except NotFoundError:
+            pass
+        else:
+            # Retrieve and store the IDARBPR for the target location.
+            darbp = binary_copy.distroarchrelease.getBinaryPackage(
+                binary_copy.binarypackagerelease.name)
+            bin_version = binary_copy.binarypackagerelease.version
+            binary_copied = darbp[bin_version]
+
+            self.logger.info("Copied: %s" % binary_copied.title)
+            return binary_copied
+
+
+class LpQueryDistro(LaunchpadScript):
+    """Main class for scripts/ftpmaster-tools/lp-query-distro.py."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialise dynamic 'usage' message and LaunchpadScript parent.
+
+        Also initialise the list 'allowed_arguments'.
+        """
+        self.allowed_actions = [
+            'current', 'development', 'archs', 'official_archs',
+            'nominated_arch_indep']
+        self.usage = '%%prog <%s>' % ' | '.join(self.allowed_actions)
+        LaunchpadScript.__init__(self, *args, **kwargs)
+
+    def add_my_options(self):
+        """Add 'distribution' and 'suite' context options."""
+        self.parser.add_option(
+            '-d', '--distribution', dest='distribution_name',
+            default='ubuntu', help='Context distribution name.')
+        self.parser.add_option(
+            '-s', '--suite', dest='suite_name', default=None,
+            help='Context suite name.')
+
+    def main(self):
+        """Main procedure, basically a runAction wrapper.
+
+        Execute the given and allowed action using the default presenter
+        (see self.runAction for further information).
+        """
+        self.runAction()
+
+    def _buildLocation(self):
+        """Build a PackageLocation object
+
+        The location will correspond to the given 'distribution' and 'suite',
+        Any PackageLocationError occurring at this point will be masked into
+        LaunchpadScriptFailure.
+        """
+        try:
+            self.location = PackageLocation(
+                distribution_name=self.options.distribution_name,
+                suite_name=self.options.suite_name)
+        except PackageLocationError, err:
+            raise LaunchpadScriptFailure(err)
+
+    def defaultPresenter(self, result):
+        """Default result presenter.
+
+        Directly prints result in the standard output (print).
+        """
+        print result
+
+    def runAction(self, presenter=None):
+        """Run a given initialised action (self.action_name).
+
+        It accepts an optional 'presenter' which will be used to
+        store/present the action result.
+
+        Ensure at least one argument was passed, known as 'action'.
+        Verify if the given 'action' is listed as an 'allowed_action'.
+        Raise LaunchpadScriptFailure if those requirements were not
+        accomplished.
+
+        It builds context 'location' object (see self._buildLocation).
+
+        It may raise LaunchpadScriptFailure is the 'action' is not properly
+        supported by the current code (missing corresponding property).
+        """
+        if presenter is None:
+            presenter = self.defaultPresenter
+
+        if len(self.args) != 1:
+            raise LaunchpadScriptFailure('<action> is required')
+
+        [self.action_name] = self.args
+
+        if self.action_name not in self.allowed_actions:
+            raise LaunchpadScriptFailure(
+                'Action "%s" is not supported' % self.action_name)
+
+        self._buildLocation()
+
+        try:
+            action_result = getattr(self, 'get_' + self.action_name)
+        except AttributeError:
+            raise AssertionError(
+                "No handler found for action '%s'" % self.action_name)
+
+        presenter(action_result)
+
+    def checkNoSuiteDefined(self):
+        """Raises LaunchpadScriptError if a suite location was passed.
+
+        It is re-used in action properties to avoid conflicting contexts,
+        i.e, passing an arbitrary 'suite' and asking for the CURRENT suite
+        in the context distribution.
+        """
+        if self.options.suite_name is not None:
+            raise LaunchpadScriptFailure(
+                "Action does not accept defined suite_name.")
+
+    # XXX cprov 20070420: should be implemented in IDistribution.
+    # raising NotFoundError instead. Bug #113563.
+    def getReleaseByStatus(self, releasestatus):
+        """Query context distribution for a distrorelese in a given status.
+
+        I may raise LaunchpadScriptError if no suitable distrorelease in a
+        given status was found.
+        """
+        for release in self.location.distribution.releases:
+            if release.releasestatus == releasestatus:
+                return release
+        raise LaunchpadScriptFailure(
+                "Could not find a %s distrorelease in %s"
+                % (status.name, self.location.distribution.name))
+
+    @property
+    def get_current(self):
+        """Return the name of the CURRENT distrorelease.
+
+        It is restricted for the context distribution.
+        It may raise LaunchpadScriptFailure if a suite was passed in the
+        command-line.
+        See self.getReleaseByStatus for further information
+        """
+        self.checkNoSuiteDefined()
+        release = self.getReleaseByStatus(
+            DistributionReleaseStatus.CURRENT)
+        return release.name
+
+    @property
+    def get_development(self):
+        """Return the name of the DEVELOPMENT distrorelease.
+
+        It is restricted for the context distribution.
+        It may raise LaunchpadScriptFailure if a suite was passed in the
+        command-line.
+        See self.getReleaseByStatus for further information
+        """
+        self.checkNoSuiteDefined()
+        release = self.getReleaseByStatus(
+            DistributionReleaseStatus.DEVELOPMENT)
+        return release.name
+
+    @property
+    def get_archs(self):
+        """Return a space-separated list of architecture tags.
+
+        It is restricted for the context distribution and suite.
+        """
+        architectures = self.location.distrorelease.architectures
+        return " ".join(arch.architecturetag for arch in architectures)
+
+    @property
+    def get_official_archs(self):
+        """Return a space-separated list of official architecture tags.
+
+        It is restricted to the context distribution and suite.
+        """
+        architectures = self.location.distrorelease.architectures
+        return " ".join(arch.architecturetag
+                        for arch in architectures
+                        if arch.official)
+
+    @property
+    def get_nominated_arch_indep(self):
+        """Return the nominated arch indep architecture tag.
+
+        It is restricted to the context distribution and suite.
+        """
+        release = self.location.distrorelease
+        return release.nominatedarchindep.architecturetag
+

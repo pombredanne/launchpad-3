@@ -36,7 +36,9 @@ class CanonicalConfig(object):
     simple configuration).
 
     >>> from canonical.config import config
-    >>> config.dbhost is None
+    >>> config.dbhost
+    'localhost'
+    >>> config.launchpad.db_statement_timeout is None
     True
     >>> config.launchpad.dbuser
     'launchpad'

@@ -13,7 +13,7 @@ from zope.interface import Interface, Attribute, implements
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
-from canonical.lp.dbschema import ShipItDistroRelease, ShippingRequestStatus
+from canonical.lp.dbschema import ShipItDistroRelease
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
@@ -331,13 +331,13 @@ class IShippingRequest(Interface):
         """
 
     def addressIsDuplicated():
-        """Return True if there is more than one request made from another
-        user using the same address as this one.
+        """Return True if there is one or more requests made from another
+        user using the same address and distrorelease as this one.
         """
 
     def getRequestsWithSameAddressFromOtherUsers():
         """Return all non-cancelled non-denied requests with the same address
-        as this one but with a different recipient.
+        and distrorelease as this one but with a different recipient.
         """
 
 
@@ -355,10 +355,8 @@ class IShippingRequestSet(Interface):
         information about what is a current request.
         """
 
-    def processRequestsPendingSpecial(status=ShippingRequestStatus.DENIED):
-        """Change the status of all PENDINGSPECIAL requests to :status.
-        
-        :status:  Must be either DENIED or APPROVED.
+    def processRequests(status, new_status):
+        """Change the status of requests with the given status to the new one.
 
         Also sends an email to the shipit admins listing all requests that
         were processed.
@@ -433,6 +431,16 @@ class IShippingRequestSet(Interface):
 
         Only the orders placed between the first monday prior to start_date
         and the first sunday prior to end_date are considered.
+        """
+
+    def generateRequestDistributionReport():
+        """Generate a csv file with the distribution of requests and shipments.
+
+        For the current release, there will be 4 columns displaying the number
+        of requests/shipments and the number of users which had that exact
+        number of requests/shipments. The previous releases we do the same but
+        for requests/shipments across all releases and only include people
+        which requested the current release.
         """
 
 

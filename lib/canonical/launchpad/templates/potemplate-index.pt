@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="rosetta">
 
 <body>
@@ -14,7 +14,10 @@
 
 <metal:heading fill-slot="pageheading">
   <h1>
-    Translation status of "<span tal:replace="context/name">foo-dev</span>"
+    Translation status for
+    <tal:title replace="context/title">
+      foo-dev in Evolution trunk
+    </tal:title>
   </h1>
 </metal:heading>
 
@@ -33,7 +36,8 @@
 
     <div tal:replace="structure context/@@+chart" />
 
-    <div tal:replace="structure context/@@+rosetta-status-legend" />
+    <div tal:condition="view/has_pofiles"
+         tal:replace="structure context/@@+rosetta-status-legend" />
 
 </div>
 
