@@ -921,7 +921,7 @@ becomes the only language they will receive email for.
     >>> flush_database_updates()
     >>> contacts = ubuntu.getAnswerContactsForLanguage(french)
     >>> [contact.name for contact in contacts]
-    [u'salgado', u'launchpad', u'rosetta-admins', u'ubuntu-team']
+    [u'rosetta-admins']
     
     >>> contacts = ubuntu.getAnswerContactsForLanguage(english)
     >>> [contact.name for contact in contacts]

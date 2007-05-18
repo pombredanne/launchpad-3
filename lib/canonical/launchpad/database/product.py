@@ -351,6 +351,10 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IQuestionTarget."""
         return SimilarQuestionsSearch(title, product=self).getResults()
 
+    def _getTargetTypes(self):
+        """See QuestionTargetMixin."""
+        return {'product': self}
+                
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
         if person not in self.answer_contacts:

@@ -500,7 +500,7 @@ Carlos is still in the set of answer contacts.
 
 Continuing from the previous section with Carlos and Daf, the 
 getAnswerContactsForLanguage() method returns a list of answer contacts
-who support the specified language.  Support is determined in two ways:
+who support the specified language. Support is determined in two ways:
 One, the person is a regular answer contact and the language is the 
 default support language of English (Dafydd in this example). Or two, 
 the language is among the contacts preferred languages (both Dafydd and
@@ -509,7 +509,7 @@ Carlos).
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> answer_contacts = target.getAnswerContactsForLanguage(spanish)
     >>> sorted([person.name for person in answer_contacts])
-    [u'carlos', u'daf']
+    [u'carlos']
     
     >>> answer_contacts = target.getAnswerContactsForLanguage(english)
     >>> sorted([person.name for person in answer_contacts])

@@ -544,6 +544,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IQuestionTarget."""
         return SimilarQuestionsSearch(title, distribution=self).getResults()
 
+    def _getTargetTypes(self):
+        """See QuestionTargetMixin."""
+        return {'distribution': self, 
+                'sourcepackagename': None}
+                
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
         if person not in self.answer_contacts:

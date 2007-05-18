@@ -199,20 +199,19 @@ answer questions.
     >>> def language_codes(languages):
     ...     return sorted(str(language.code) for language in languages)
 
-For a person, it is the same list than its list of known languages,
-with the addition that English is always assumed to be supported:
+For a person, it is the same list than its list of known languages:
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> language_codes(sample_person.languages)
     []
     >>> language_codes(sample_person.getSupportedLanguages())
-    ['en']
+    []
 
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> language_codes(carlos.languages)
     ['ca', 'es']
     >>> language_codes(carlos.getSupportedLanguages())
-    ['ca', 'en', 'es']
+    ['ca', 'es']
 
 Also, note that all English variants will be excluded.
 
@@ -220,7 +219,7 @@ Also, note that all English variants will be excluded.
     >>> language_codes(daf.languages)
     ['cy', 'en_GB', 'ja']
     >>> language_codes(daf.getSupportedLanguages())
-    ['cy', 'en', 'ja']
+    ['cy', 'ja']
 
 For team with a list of known languages set, the same rule applies:
 
@@ -232,12 +231,12 @@ For team with a list of known languages set, the same rule applies:
     >>> language_codes(ubuntu_team.languages)
     ['eo']
     >>> language_codes(ubuntu_team.getSupportedLanguages())
-    ['en', 'eo']
+    ['eo']
 
 When the list of known languages is not set, and the team's
 preferred email address is set, the list of supported languages
-will be the default list of English; the languages spoken by the
-team members are not included in the team's languages.
+is empty; the languages spoken by the team members are not 
+included in the team's languages.
 
     >>> rosetta_admins = getUtility(IPersonSet).getByName(
     ...     'rosetta-admins')
@@ -250,7 +249,7 @@ team members are not included in the team's languages.
     >>> language_codes(rosetta_admins.languages)
     []
     >>> language_codes(rosetta_admins.getSupportedLanguages())
-    ['en']
+    []
 
 But when both the list of known languages is not set, and the
 team's preferred email address is not set, the list of supported
@@ -267,7 +266,7 @@ languages of the Ubuntu Team that will be used.
     >>> language_codes(guadamen_team.languages)
     []
     >>> language_codes(guadamen_team.getSupportedLanguages())
-    ['en', 'eo']
+    ['eo']
 
 
 == getQuestionLanguages() ==

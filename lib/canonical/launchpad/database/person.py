@@ -454,7 +454,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         languages = set()
         known_languages = shortlist(self.languages)
-        if len(known_languages):
+        if len(known_languages) != 0:
             for lang in known_languages:
                 # Ignore English and all its variants since we assume English
                 # is supported
@@ -463,7 +463,11 @@ class Person(SQLBase, HasSpecificationsMixin):
         elif ITeam.providedBy(self) and self.preferredemail is None:
             for member in self.activemembers:
                 languages |= member.getSupportedLanguages()
-        languages.add(getUtility(ILanguageSet)['en'])
+        else:
+            # People with no preferred languages, or teams with a contact
+            # address and no preferred languages, will get notifications
+            # about questions in English only.
+            pass
         return languages
 
     def getQuestionLanguages(self):

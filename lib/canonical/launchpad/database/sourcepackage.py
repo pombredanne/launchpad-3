@@ -94,6 +94,21 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             title, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename).getResults()
 
+    def _getTargetTypes(self):
+        """See QuestionTargetMixin."""
+        return {'distribution': self.distribution, 
+                'sourcepackagename': self.sourcepackagename}
+
+    def getAnswerContactsForLanguage(self, language):
+        """See IQuestionTarget."""
+        # Sourcepackages are supported by their distribtions too.
+        persons = set(QuestionTargetMixin.getAnswerContactsForLanguage(
+            self, language))
+        persons.update(
+            self.distribution.getAnswerContactsForLanguage(language))
+        return sorted(
+            [person for person in persons], key=attrgetter('displayname'))
+    
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
         answer_contact = AnswerContact.selectOneBy(

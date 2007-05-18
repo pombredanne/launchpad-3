@@ -969,9 +969,8 @@ class QuestionNotification:
     def getRecipients(self):
         """Return the recipient of the notification.
 
-        Default to the question's subscribers that speaks the request languages.
-        If the question owner is subscribed, he's always consider to speak the
-        language. When a subscriber is a team and it doesn't have an email
+        Default to the question's subscribers that speaks the request 
+        languages. When a subscriber is a team and it doesn't have an email
         set nor supported languages, only contacts the members that speaks
         the supported language.
         """
@@ -982,19 +981,17 @@ class QuestionNotification:
             return self.question.getSubscribers()
 
         recipients = set()
-        skipped = set()
         subscribers = set(self.question.getSubscribers())
         while subscribers:
             person = subscribers.pop()
-            if person == self.question.owner:
-                recipients.add(person)
-            elif question_language not in person.getSupportedLanguages():
-                skipped.add(person)
-            elif not person.preferredemail and not list(person.languages):
+            if not person.preferredemail and not list(person.languages):
                 # For teams without an email address nor a set of supported
                 # languages, only notify the members that actually speak the
                 # language.
-                subscribers |= set(person.activemembers) - recipients - skipped
+                members = set(
+                    [member for member in person.activemembers
+                     if question_language in member.getSupportedLanguages()]) 
+                subscribers |= members - recipients
             else:
                 recipients.add(person)
         return recipients
