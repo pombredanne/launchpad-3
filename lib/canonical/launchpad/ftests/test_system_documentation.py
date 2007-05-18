@@ -218,7 +218,8 @@ special = {
     'poexport.txt': LayeredDocFileSuite(
             '../doc/poexport.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown,
-            optionflags=default_optionflags, layer=ZopelessLayer
+            optionflags=default_optionflags, layer=ZopelessLayer,
+            stdout_logging=False
             ),
     'poexport-template-tarball.txt': LayeredDocFileSuite(
             '../doc/poexport-template-tarball.txt',
@@ -264,7 +265,8 @@ special = {
     'answer-tracker-emailinterface.txt': LayeredDocFileSuite(
             '../doc/answer-tracker-emailinterface.txt',
             setUp=answerTrackerSetUp, tearDown=answerTrackerTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            stdout_logging=False
             ),
     'person-karma.txt': FunctionalDocFileSuite(
             '../doc/person-karma.txt',
