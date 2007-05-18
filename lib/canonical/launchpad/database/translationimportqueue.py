@@ -674,7 +674,7 @@ class TranslationImportQueue:
         """See ITranslationImportQueue."""
 
         # Get oldest entry that either is not attached to a distrorelease, or
-        # is attached to one whose defer_imports flag is not set.
+        # is attached to one whose defer_translation_imports flag is not set.
         oldest_wo_dr = TranslationImportQueueEntry.selectFirst('''
             status = %d AND
             distrorelease is null''' % RosettaImportStatus.APPROVED.value,
@@ -683,7 +683,7 @@ class TranslationImportQueue:
         oldest_w_dr = TranslationImportQueueEntry.selectFirst('''
             status = %d AND
             translationimportqueueentry.distrorelease = distrorelease.id AND
-            not distrorelease.defer_imports
+            not distrorelease.defer_translation_imports
             ''' % RosettaImportStatus.APPROVED.value,
             clauseTables=['distrorelease'],
             orderBy=['dateimported'])

@@ -110,7 +110,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
-    defer_imports = BoolCol(notNull=True, default=False)
+    defer_translation_imports = BoolCol(notNull=True, default=False)
 
     architectures = SQLMultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
@@ -1818,6 +1818,6 @@ class DistroReleaseSet:
         # new distrorelease.  To support that, we inhibit translation imports
         # until translations have been copied in from the parent distrorelease
         # and the new distrorelease is all set to be translated.
-        d.defer_imports = True
+        d.defer_translation_imports = True
 
         return d
