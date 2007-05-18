@@ -2,9 +2,9 @@
 Hash: SHA1
 
 Format: 1.0
-Source: bar
+Source: netapplet
 Version: 1.0-1
-Binary: bar
+Binary: netapplet
 Maintainer: Launchpad team <launchpad@lists.canonical.com>
 Architecture: any
 Standards-Version: 3.6.2
@@ -14,7 +14,7 @@ Files:
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.6 (GNU/Linux)
 
-iD8DBQFGSZAAjn63CGxkqMURAoolAJ49+LqlA2fGZtRGvcEZTubVmvE8kwCfVmXQ
-cSqnKh+pu/VW5Z3oM55Kbo4=
-=kY34
+iD8DBQFGTc9jjn63CGxkqMURAviTAJ9uZO9OYonS4bvNc2PpMwQ2t/daYwCaAw7Q
+AxAIF9UXHGPic5+wTVT47dk=
+=48GN
 -----END PGP SIGNATURE-----

@@ -18,13 +18,13 @@ Changes:
  .
    * Initial version
 Files: 
- 7989aa8dc217ab686df9d3b5b3e92953 523 devel optional netapplet_1.0-1.dsc
+ 99ac6746af3cbad220089129472ab269 535 devel optional netapplet_1.0-1.dsc
  fb1856fe3444f969c277ba6c6781d688 173 devel optional netapplet_1.0.orig.tar.gz
  6a6da5e6d83b59e74189aa07c4e6a960 564 devel optional netapplet_1.0-1.diff.gz
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.6 (GNU/Linux)
 
-iD8DBQFGSZCCjn63CGxkqMURApkkAKCW9RpsFDTz0kAeICnFryMIQlSo5ACfS8oI
-A4bE/25y0bdNarhJGrSf1xU=
-=PLkb
+iD8DBQFGTc+sjn63CGxkqMURArq6AJsEe/h/wLzYHLVrOuW5AmuvVWWUEACfeMfv
+ebF9Q1yL/X23QGFE438remw=
+=dZ8a
 -----END PGP SIGNATURE-----
