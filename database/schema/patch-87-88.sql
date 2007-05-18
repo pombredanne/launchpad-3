@@ -2,14 +2,17 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE CodeImport (
     id SERIAL PRIMARY KEY,
-    date_created TIMESTAMP WITHOUT TIME ZONE DEFAULT timezone('UTC', now()) NOT NULL,
+    date_created TIMESTAMP WITHOUT TIME ZONE
+        DEFAULT timezone('UTC', now()) NOT NULL,
     name text NOT NULL UNIQUE,
+    product integer REFERENCES Product NOT NULL,
+    series integer REFERENCES ProductSeries NOT NULL,
+    branch integer REFERENCES Branch,
+
     rcs_type integer NOT NULL,
     svn_branch_url text UNIQUE,
     cvs_root text,
     cvs_module text,
-    branch integer REFERENCES Branch,
-    product integer REFERENCES Product NOT NULL,
 
     UNIQUE (cvs_root, cvs_module),
 
@@ -24,6 +27,7 @@ CREATE TABLE CodeImport (
     CONSTRAINT null_svn CHECK ((rcs_type == 2) OR (svn_branch_url IS NULL)),
 
     FOREIGN KEY (branch, product) REFERENCES Branch (id, product)
+    FOREIGN KEY (series, product) REFERENCES ProductSeries (id, product)
 );
 
 -- XXX: This should be fixed once we get a real patch number:

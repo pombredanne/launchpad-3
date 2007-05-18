@@ -1,0 +1,44 @@
+= Code Imports =
+
+The CodeImport objects model the process surrounding the code import service
+of Launchpad. A CodeImport object is created by a user requesting an import,
+the import source is then reviewed by privileged users. Then importd, the
+code import daemon, performs the initial import and updates it regularly.
+
+We can import code from CVS or Subversion.
+
+== Code import set ==
+
+CodeImports are created and found using the ICodeImport interface, which is
+registered as a utility.
+
+  >>> from canonical.launchpad.database import CodeImportSet
+  >>> verifyObject(ICodeImportSet, CodeImportSet())
+  True
+
+  >>> from canonical.launchpad.interfaces import ICodeImportSet
+  >>> from zope.component import getUtility
+  >>> code_import_set = getUtility(ICodeImportSet)
+
+== Supported source systems ==
+
+The rcs_type field, which indicates whether the import is from CVS or
+Subversion, takes values from the 'RevisionControlSystems' vocabulary.
+
+  >>> from canonical.lp.dbschema import RevisionControlSystems
+
+== Code import from CVS ==
+
+DONTMERGE: unfinished
+
+  >>> cvs = RevisionControlSystems.CVS
+  >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
+  >>> cvs_module = 'hello'
+  >>> cvs_import = code_import_set.new(
+  ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
+
+== Code import from Subversion ==
+
+  >>> svn = RevisionControlSystems.SVN
+  >>> svn_url = 'http://svn.example.com/hello/trunk'
+  >>> svn_import = code_import_set

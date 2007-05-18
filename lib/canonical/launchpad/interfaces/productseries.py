@@ -205,8 +205,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     rcstype = Choice(title=_("Type of RCS"),
         required=False, vocabulary='RevisionControlSystems',
         description=_("The type of revision control used for "
-        "the upstream branch of this series. Can be CVS, SVN, BK or "
-        "Arch."))
+        "the upstream branch of this series. Can be CVS, or Subversion."))
     cvsroot = TextLine(title=_("Repository"), required=False,
         constraint=validate_cvs_root,
         description=_('The CVSROOT. '
