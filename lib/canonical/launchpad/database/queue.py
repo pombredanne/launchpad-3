@@ -332,7 +332,7 @@ class DistroReleaseQueue(SQLBase):
                                         libraryfilealias=library_file,
                                         customformat=custom_type)
 
-    def _get_changes_dict(self, changesfileobject=None):
+    def _getChangesDict(self, changesfileobject=None):
         """Return a dictionary with changes file tags in it."""
         changeslines = None
         if changesfileobject is None:
@@ -365,7 +365,7 @@ class DistroReleaseQueue(SQLBase):
         #    the email's summary section.
         # For now, it's just easier to re-read the original file if the caller
         # requires us to do that instead of using the librarian's copy.
-        changes, changeslines = self._get_changes_dict(changesfileobject)
+        changes, changeslines = self._getChangesDict(changesfileobject)
 
         summary = []
         files = changes['files'].strip().split("\n")
@@ -399,7 +399,7 @@ class DistroReleaseQueue(SQLBase):
         if summary_text:
             summary.append(summary_text)
         summarystring = "\n".join(summary)
-        recipients = self._get_recipients(changes, logger)
+        recipients = self._getRecipients(changes, logger)
 
         # There can be no recipients if none of the emails are registered
         # in LP.
@@ -492,7 +492,7 @@ class DistroReleaseQueue(SQLBase):
             self._sendMail(announce_template % interpolations, logger)
         return
 
-    def _get_recipients(self, changes, logger=None):
+    def _getRecipients(self, changes, logger=None):
         """Return a list of recipients for notification emails."""
         candidate_recipients = []
         debug(logger, "Building recipients list.")
@@ -504,21 +504,21 @@ class DistroReleaseQueue(SQLBase):
             person_signer = self.signing_key.owner
             candidate_recipients.append(person_signer)
 
-            person_maintainer = self._email_to_person(maintainer)
+            person_maintainer = self._emailToPerson(maintainer)
             if (person_maintainer and person_maintainer != person_signer and
-                    self._is_person_uploader(person_maintainer, logger)):
+                    self._isPersonUploader(person_maintainer, logger)):
                 debug(logger, "Adding maintainer to recipients")
                 candidate_recipients.append(person_maintainer)
 
-            person_changer = self._email_to_person(changer)
+            person_changer = self._emailToPerson(changer)
             if (person_changer and person_changer != person_signer and 
-                    self._is_person_uploader(person_changer, logger)):
+                    self._isPersonUploader(person_changer, logger)):
                 debug(logger, "Adding changed-by to recipients")
                 candidate_recipients.append(person_changer)
         else:
             debug(logger,
                 "Changes file is unsigned, adding changer as recipient")
-            person_changer = self._email_to_person(changer)
+            person_changer = self._emailToPerson(changer)
             candidate_recipients.append(person_changer)
 
         # Now filter list of recipients for persons only registered in
@@ -534,7 +534,7 @@ class DistroReleaseQueue(SQLBase):
 
         return recipients
 
-    def _email_to_person(self, fullemail):
+    def _emailToPerson(self, fullemail):
         # The 2nd arg to s_f_m() doesn't matter is it won't fail since every-
         # thing will have already parsed at this point.
         (rfc822, rfc2047, name, email) = safe_fix_maintainer(
@@ -542,7 +542,7 @@ class DistroReleaseQueue(SQLBase):
         person = getUtility(IPersonSet).getByEmail(email)
         return person
 
-    def _is_person_uploader(self, person, logger):
+    def _isPersonUploader(self, person, logger):
         debug(logger, "Attempting to decide if %s is an uploader." % (
             person.displayname))
         uploader = len(set(
