@@ -80,9 +80,16 @@ is not mentioned in anything else that is indexed.
   >>> browser.contents
   '...2 results...'
 
-Can't be sure of the order of the returned results, so this takes care of that:
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> results = soup.findAll(attrs={'id': 'packagetitle'})
+  >>> len(results)
+  2
 
-  >>> 'Source Package "libstdc++" in' in browser.contents
-  True
-  >>> 'Source Package "pmount" in' in browser.contents
-  True
+  >>> texts = [extract_text(html) for html in results]
+  >>> texts.sort()
+  >>> for text in texts:
+  ...    print text
+  Source Package "libstdc++" in The Test Distribution
+  Source Package "pmount" in The Test Distribution
+

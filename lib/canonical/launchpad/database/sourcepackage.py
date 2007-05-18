@@ -300,9 +300,21 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         """Return a distinct list of sourcepackagereleases for this source
            package.
         """
-        sprlist = [spph.sourcepackagerelease
-                   for spph in self._getPublishingHistory()]
-        return [item for item,group in groupby(sprlist)]
+        order_const = "debversion_sort_key(SourcePackageRelease.version)"
+        releases = SourcePackageRelease.select('''
+            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackagePublishingHistory.distrorelease =
+                DistroRelease.id AND
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.status != %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackageRelease.id
+            ''' % sqlvalues(self.sourcepackagename, self.distribution,
+                            PackagePublishingStatus.REMOVED),
+            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
+            selectAlso="%s" % (SQLConstant(order_const)),
+            orderBy=[SQLConstant(order_const+" DESC")])
+        return releases.distinct()
 
     @property
     def name(self):
