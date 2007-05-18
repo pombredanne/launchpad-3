@@ -916,6 +916,7 @@ COMMENT ON COLUMN Specification.completer IS 'The person who changed the state o
 COMMENT ON COLUMN Specification.date_completed IS 'The date this specification was completed or marked obsolete. This lets us chart the progress of a project (or a release) over time in terms of features implemented.';
 COMMENT ON CONSTRAINT specification_completion_recorded_chk ON Specification IS 'A constraint to ensure that we have recorded the date of completion if the specification is in fact considered completed. The SQL behind the completion test is repeated at a code level in database/specification.py: as Specification.completeness, please ensure that the constraint is kept in sync with the code.';
 COMMENT ON CONSTRAINT specification_completion_fully_recorded_chk ON Specification IS 'A constraint that ensures, where we have a date_completed, that we also have a completer. This means that the resolution was fully recorded.';
+COMMENT ON COLUMN Specification.private IS 'Specification is private.';
 
 -- SpecificationFeedback
 COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
@@ -939,6 +940,9 @@ COMMENT ON COLUMN SpecificationSubscription.essential IS 'A field that indicates
 COMMENT ON TABLE SpecificationDependency IS 'A table that stores information about which specification needs to be implemented before another specification can be implemented. We can create a chain of dependencies, and use that information for scheduling and prioritisation of work.';
 COMMENT ON COLUMN SpecificationDependency.specification IS 'The spec for which we are creating a dependency.';
 COMMENT ON COLUMN SpecificationDependency.dependency IS 'The spec on which it is dependant.';
+
+-- SpecificationMessage
+COMMENT ON TABLE SpecificationMessage IS 'Comments and discussion on a Specification.';
 
 -- BinaryPackageRelease
 
@@ -1005,6 +1009,7 @@ COMMENT ON COLUMN DistroRelease.parentrelease IS 'The parent release on which th
 COMMENT ON COLUMN DistroRelease.owner IS 'The ultimate owner of this distrorelease.';
 COMMENT ON COLUMN DistroRelease.driver IS 'This is a person or team who can act as a driver for this specific release - note that the distribution drivers can also set goals for any release.';
 COMMENT ON COLUMN DistroRelease.changeslist IS 'The email address (name name) of the changes announcement list for this distrorelease. If NULL, no announcement mail will be sent.';
+COMMENT ON COLUMN DistroRelease.defer_imports IS 'Don''t accept PO imports for this release just now.';
 
 
 -- DistroArchRelease
