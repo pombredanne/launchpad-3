@@ -26,7 +26,7 @@ class ImportProcess:
         # Get the queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        # Execute all imports we can
+        # Execute all imports we can.
         entry_to_import = translation_import_queue.getFirstEntryToImport()
         while entry_to_import is not None:
 
@@ -82,8 +82,7 @@ class ImportProcess:
 
 
 class AutoApproveProcess:
-    """Attempt to approve some PO/POT imports without human intervention.
-    """
+    """Attempt to approve some PO/POT imports without human intervention."""
     def __init__(self, ztm, logger):
         self.ztm = ztm
         self.logger = logger
@@ -95,7 +94,8 @@ class AutoApproveProcess:
         be approved automatically.
 
         Also, detect requests that should be blocked, and block them in their
-        entirety (with all their .pot and .po files).
+        entirety (with all their .pot and .po files); and purges completed or
+        removed entries from the queue.
         """
 
         translation_import_queue = getUtility(ITranslationImportQueue)

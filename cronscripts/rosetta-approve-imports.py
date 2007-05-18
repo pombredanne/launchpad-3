@@ -1,6 +1,8 @@
 #! /usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+"""Perform auto-approvals and auto-blocks on translation import queue"""
+
 import _pythonpath
 
 from canonical.config import config
