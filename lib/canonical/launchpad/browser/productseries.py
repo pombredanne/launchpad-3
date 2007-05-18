@@ -16,6 +16,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesSourceSetView',
            'ProductSeriesReviewView',
            'ProductSeriesShortLink',
+           'ProductSeriesFileBugRedirect',
            'get_series_branch_error']
 
 import cgi
@@ -756,3 +757,10 @@ class ProductSeriesDynMenu(DynMenu):
         for release in self.context.releases:
             yield self.makeLink(release.title, context=release)
 
+
+class ProductSeriesFileBugRedirect(LaunchpadView):
+    """Redirect to the product's +filebug page."""
+
+    def initialize(self):
+        filebug_url = "%s/+filebug" % canonical_url(self.context.product)
+        self.request.response.redirect(filebug_url)
