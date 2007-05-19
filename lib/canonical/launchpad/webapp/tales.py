@@ -617,6 +617,7 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             dbschema.BuildStatus.SUPERSEDED: "/@@/build-superseded",
             dbschema.BuildStatus.BUILDING: "/@@/build-building",
+            dbschema.BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
             }
 
         alt = '[%s]' % self._context.buildstate.name
