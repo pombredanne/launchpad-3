@@ -373,7 +373,7 @@ class DistroReleaseQueue(SQLBase):
             [source] = self.sources
             spr = source.sourcepackagerelease
             # Bail out early if this is an upload for the translations section.
-            if spr.section == 'translations':
+            if spr.section.name == 'translations':
                 debug(logger,
                     "Skipping acceptance and announcement, it is a "
                     "language-package upload.")
