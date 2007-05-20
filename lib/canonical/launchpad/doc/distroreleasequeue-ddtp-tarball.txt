@@ -88,7 +88,7 @@ It was not rejected.
   ...
   DEBUG: Thank you for your contribution to Ubuntu Test.
   DEBUG: Sent a mail:
-  DEBUG:     Subject: Accepted ddtp-tarball 20060728 (all)
+  DEBUG:     Subject: Accepted translations_main_20060728.tar.gz - (raw-ddtp-tarball)
   DEBUG:     Recipients: test@example.com
   ...
   <BLANKLINE>

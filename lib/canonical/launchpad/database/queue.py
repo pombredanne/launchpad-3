@@ -367,25 +367,40 @@ class DistroReleaseQueue(SQLBase):
         # requires us to do that instead of using the librarian's copy.
         changes, changeslines = self._getChangesDict(changesfileobject)
 
-        summary = []
-        files = changes['files'].strip().split("\n")
-
-        # Build a summary string and bail out early if this is an upload
-        # for the translations section.
-        for fileline in files:
-            digest, size, component_and_section, priority, filename = (
-                fileline.strip().split())
-            component, section = splitComponentAndSection(
-                component_and_section)
-            if (section == 'translations' and 
-                    changes['architecture'].lower() == 'source'):
-                # NEW, Auto-APPROVED and UNAPPROVED source uploads targetted 
-                # to translations should not generate any emails.
+        # "files" will contain a list of tuples of filename,component,section.
+        files = []
+        if self.containsSource:
+            [source] = self.sources
+            spr = source.sourcepackagerelease
+            # Bail out early if this is an upload for the translations section.
+            if spr.section == 'translations':
                 debug(logger,
                     "Skipping acceptance and announcement, it is a "
                     "language-package upload.")
                 return
+            else:
+                for sprfile in spr.files:
+                    files.append(
+                        (sprfile.libraryfile.filename, spr.component.name,
+                         spr.section.name))
 
+        # Component and section empty here as we don't need to know 
+        # for non-source:
+        if self.containsBuild:
+            [build] = self.builds
+            bprs = build.build.binarypackages
+            for bpr in bprs:
+                files.extend(
+                    [(bpf.libraryfile.filename,'','') for bpf in bpr.files])
+        if self.customfiles:
+            files.extend(
+                [(file.libraryfilealias.filename,'','') 
+                for file in self.customfiles])
+
+        summary = []
+
+        # Build a summary string:
+        for filename, component, section in files:
             try:
                 self.distrorelease.distribution.getFileByName(filename)
             except NotFoundError:
@@ -435,9 +450,9 @@ class DistroReleaseQueue(SQLBase):
             "DISTRO": self.distrorelease.distribution.title,
             "DISTRORELEASE": self.distrorelease.name,
             "ANNOUNCE": announcelist,
-            "SOURCE": changes['source'],
-            "VERSION": changes['version'],
-            "ARCH": changes['architecture'],
+            "SOURCE": self.displayname,
+            "VERSION": self.displayversion,
+            "ARCH": self.displayarchs,
             "RECIPIENT": ", ".join(recipients),
             "DEFAULT_RECIPIENT": "%s <%s>" % (
                 config.uploader.default_recipient_name,

@@ -12,9 +12,26 @@ Get a distroreleasequeue:
   >>> print drq.displayname
   netapplet
 
+Set up some library files for the netapplet source package.
+
+  >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+  >>> from canonical.archiveuploader.tests import (datadir, mock_logger)
+  >>> [drqs] = drq.sources
+  >>> spr = drqs.sourcepackagerelease
+  >>> librarian = getUtility(ILibraryFileAliasSet)
+  >>> def addSPRF(name, size):
+  ...     filepath = datadir('suite/netapplet_1.0-1/%s' % name)
+  ...     fileobj = open(filepath, 'rb')
+  ...     lfa = librarian.create(name, size, fileobj, 'dummytype')
+  ...     sprf = spr.addFile(lfa)
+  ...     fileobj.close()
+
+  >>> addSPRF('netapplet_1.0-1.dsc', 287)
+  >>> addSPRF('netapplet_1.0.orig.tar.gz', 173)
+  >>> addSPRF('netapplet_1.0-1.diff.gz', 564)
+
 The notify() method generates one email here on this unsigned package:
 
-  >>> from canonical.archiveuploader.tests import (datadir, mock_logger)
   >>> changesfilepath = datadir(
   ...     'suite/netapplet_1.0-1/netapplet_1.0-1_source.changes')
   >>> changesfile = open(changesfilepath,'r')
