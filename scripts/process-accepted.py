@@ -99,6 +99,9 @@ def main():
         log.debug("Closing bugs.")
         close_bugs(processed_queue_ids)
 
+        if not options.dryrun:
+            ztm.commit()
+
     finally:
         log.debug("Rolling back any remaining transactions.")
         ztm.abort()
