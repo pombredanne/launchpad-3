@@ -68,6 +68,11 @@ for the ubuntutest distribution.
   >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
   >>> breezy.initialiseFromParent()
 
+Add disk content for file inherited from ubuntu/breezy-autotest:
+
+  >>> from canonical.librarian.ftests.harness import fillLibrarianFile
+  >>> fillLibrarianFile(54)
+
 Commit all that so that the scripts can see it.
 
   >>> import transaction
@@ -678,9 +683,8 @@ First a couple helpers.
   ...     script = os.path.join(config.root, "scripts", "publish-distro.py")
   ...     args = [sys.executable, script, "-vv", "-d", "ubuntutest"]
   ...     args.extend(extra_args)
-  ...     process = subprocess.Popen(args,
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE)
+  ...     process = subprocess.Popen(
+  ...          args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   ...     stdout, stderr = process.communicate()
   ...     return (process.returncode, stdout, stderr)
 

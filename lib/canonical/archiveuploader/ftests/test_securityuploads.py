@@ -262,7 +262,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         self.assertRaises(AssertionError, self._uploadBinary, 'i386')
 
         self.assertLogContains(
-            "Attempt to upload binaries specifying build 22, "
+            "Attempt to upload binaries specifying build 23, "
             "where they don't fit.")
 
 

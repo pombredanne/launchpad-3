@@ -327,7 +327,7 @@ For sourcepackage:
 For a given distribution as well:
 
   >>> ubuntu.getBuildRecords().count()
-  15
+  16
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
@@ -388,7 +388,7 @@ Check IHasBuildRecords when implemented by Builder:
 
   >>> bob_builds = bob.getBuildRecords()
   >>> bob_builds.count()
-  10
+  11
 
   >>> bob_failed_builds = bob.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
   >>> bob_failed_builds.count()

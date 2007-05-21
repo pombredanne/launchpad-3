@@ -22,8 +22,11 @@ from canonical.launchpad.interfaces import (
     IBuildQueueSet, IBuildSet, IBuilderSet, pocketsuffix
     )
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import (
+    flush_database_updates, clear_current_connection_cache, cursor)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.buildd.slave import BuilderStatus
+
 
 class BuildDaemonError(Exception):
     """The class of errors raised by the buildd classes"""
@@ -62,6 +65,7 @@ class BuilderGroup:
 
         for builder in self.builders:
             try:
+                self.logger.info('Checking %s' % builder.name)
                 if not builder.builderok:
                     continue
                 # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
@@ -164,13 +168,13 @@ class BuilderGroup:
         # Skipping 'resumming' for trusted builders
         if builder.trusted:
             return
-
+        
         self.logger.debug("Resuming %s" % builder.url)
         hostname = builder.url.split(':')[1][2:].split('.')[0]
         host_url = '%s-host.ppa' % hostname
         ssh_cmd = "ssh -i ~/.ssh/ppa-reset-builder ppa@%s" % host_url
         self.logger.debug('Running: %s' % ssh_cmd)
-        os.system(ssh_cmd)
+        #os.system(ssh_cmd)
 
     def failBuilder(self, builder, reason):
         """Mark builder as failed.
@@ -178,6 +182,11 @@ class BuilderGroup:
         Set builderok as False, store the reason in failnotes and update
         the list of working builders (self.okslaves).
         """
+        # XXX cprov 20070417: ideally we should be able to notify the
+        # the buildd-admins about FAILED builders. One alternative is to
+        # make the buildd_cronscript (slave-scanner, in this case) to exit
+        # with error, for those cases buildd-sequencer automatically sends
+        # an email to admins with the script output.
         builder.failbuilder(reason)
         self.updateOkSlaves()
 
@@ -233,16 +242,14 @@ class BuilderGroup:
     def startBuild(self, builder, queueItem, filemap, buildtype, pocket, args):
         """Request a build procedure according given parameters."""
         buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
-        self.logger.debug("Initiating build %s on %s"
-                          % (buildid, builder.url))
+        self.logger.debug("Initiating build %s on %s" % (buildid, builder.url))
 
-        # explodes before start building a denied build in distrorelease/pocket
+        # PPA builds are not submitted to the main distribution policies.
         build = queueItem.build
-        if build.archive == build.distrorelease.main_archive:
+        if build.is_trusted:
             assert build.distrorelease.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
-                % (build.title, build.id,
-                   build.pocket.name))
+                % (build.title, build.id, build.pocket.name))
 
         # refuse builds for missing CHROOTs
         chroot = self.findChrootFor(queueItem, pocket)
@@ -543,34 +550,74 @@ class BuilderGroup:
 
         self.logger.debug("Invoking uploader on %s" % root)
         self.logger.debug("%s" % uploader_argv)
+
         uploader_process = subprocess.Popen(
-            uploader_argv, stdout=subprocess.PIPE)
+            uploader_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        # nothing would be written to the stdout/stderr, but it's safe
-        stdout, stderr = uploader_process.communicate()
-        result_code = uploader_process.returncode
+        # Nothing should be written to the stdout/stderr.
+        upload_stdout, upload_stderr = uploader_process.communicate()
 
+        # XXX cprov 20070417: we do not check uploader_result_code
+        # anywhere. We need to find out what will be best strategy
+        # when it failed HARD (there is a huge effort in process-upload
+        # to not return error, it only happen when the code is broken).
+        uploader_result_code = uploader_process.returncode
+        self.logger.debug("Uploader returned %d" % uploader_result_code)
+
+        # Quick and dirty hack to carry on on process-upload failures
         if os.path.exists(upload_dir):
             self.logger.debug("The upload directory did not get moved.")
             failed_dir = os.path.join(root, "failed-to-move")
-            os.makedirs(failed_dir)
-            os.rename(
-                upload_dir, os.path.join(failed_dir, upload_leaf))
+            if not os.path.exists(failed_dir):
+                os.mkdir(failed_dir)
+            os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
 
-        self.logger.debug("Uploader returned %d" % result_code)
+        # Store build information, build record was already updated during
+        # the binary upload.
+        self.storeBuildInfo(
+            queueItem, slave, librarian, buildid, dependencies)
 
-        self.logger.debug("Gathered build of %s completely"
-                          % queueItem.name)
-        # store build info
-        queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
-        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
+        # The famous 'flush_updates + clear_cache' will make visible the
+        # DB changes done in process-upload, considering that the
+        # transaction was set with READ_COMMITED_ISOLATION isolation level.
+        cur = cursor()
+        cur.execute('SHOW transaction_isolation')
+        isolation_str = cur.fetchone()[0]
+        assert isolation_str == 'read committed', (
+            'BuildMaster/BuilderGroup transaction isolation should be '
+            'READ_COMMITTED_ISOLATION (not "%s")' % isolation_str)
+
+        flush_database_updates()
+        clear_current_connection_cache()
+
+        # Retrive the up-to-date build record and perform consistency
+        # checks. The build record should be updated during the binary
+        # upload processing, if it wasn't something is broken and needs
+        # admins attention. Even when we have a FULLYBUILT build record,
+        # if it is not related with at least one binary, there is also
+        # a problem.
+        # For both situations we will mark the builder as FAILEDTOUPLOAD
+        # and the and update the build details (datebuilt, duration,
+        # buildlog, builder) in LP. A build-failure-notification will be
+        # sent to the lp-build-admin celebrity and to the sourcepackagerelease
+        # uploader about this occurrence. The failure notification will
+        # also contain the information required to manually reprocess the
+        # binary upload when it was the case.
+        build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
+        if (build.buildstate != dbschema.BuildStatus.FULLYBUILT or
+            len(build.binarypackages) == 0):
+            self.logger.debug("Build %s upload failed." % build.id)
+            queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOUPLOAD
+            queueItem.build.notify(extra_info=upload_stderr)
+        else:
+            self.logger.debug("Gathered build %s completely" % queueItem.name)
+
+        # Remove BuildQueue record.
         queueItem.destroySelf()
-
-        # release the builder
+        # Release the builder for another job.
         slave.clean()
-
         # Commit the transaction so that the uploader can see the updated
-        # build record
+        # build record.
         self.commit()
 
     def buildStatus_PACKAGEFAIL(self, queueItem, slave, librarian, buildid,

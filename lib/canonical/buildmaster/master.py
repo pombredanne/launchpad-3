@@ -673,7 +673,7 @@ class BuilddMaster:
             args['arch_indep'] = (queueItem.archhintlist == 'all' or
                                   queueItem.archrelease.isNominatedArchIndep)
 
-            if not builder.trusted:
+            if not queueItem.is_trusted:
                 components_map = {
                     'main': 'main',
                     'restricted': 'main restricted',

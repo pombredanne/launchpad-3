@@ -318,7 +318,7 @@ The first one, approves the import.
 
     >>> import subprocess, sys
     >>> process = subprocess.Popen([
-    ...     sys.executable, 'cronscripts/rosetta-poimport.py'
+    ...     sys.executable, 'cronscripts/rosetta-approve-imports.py'
     ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.STDOUT
     ...     )

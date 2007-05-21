@@ -92,10 +92,7 @@ builds.
 
   >>> for dr in distroreleases:
   ...      bm.createMissingBuilds(dr)
-  WARNING:root:Chroots missing for breezy-autotest, skipping
-  WARNING:root:No nominatedarchindep for hoary-test, skipping
-  WARNING:root:Chroots missing for warty, skipping
-  WARNING:root:No nominatedarchindep for woody, skipping
+
   >>> flush_database_updates()
 
 Add the missing build queue entres, but don't run
@@ -303,10 +300,7 @@ the absence of nominatedarchindep field for Woody:
 
   >>> for dr in distroreleases:
   ...      bm.createMissingBuilds(dr)
-  WARNING:root:Chroots missing for breezy-autotest, skipping
-  WARNING:root:No nominatedarchindep for hoary-test, skipping
-  WARNING:root:Chroots missing for warty, skipping
-  WARNING:root:No nominatedarchindep for woody, skipping
+
   >>> flush_database_updates()
 
 Check that we only created new Build entries for the new hoary releases:
@@ -416,10 +410,6 @@ Now we create builds and buildqueues and check their contents:
 
   >>> for dr in distroreleases:
   ...      bm.createMissingBuilds(dr)
-  WARNING:root:Chroots missing for breezy-autotest, skipping
-  WARNING:root:No nominatedarchindep for hoary-test, skipping
-  WARNING:root:Chroots missing for warty, skipping
-  WARNING:root:No nominatedarchindep for woody, skipping
   >>> flush_database_updates()
 
 Check that we only created new Build entry for ppa publication:
