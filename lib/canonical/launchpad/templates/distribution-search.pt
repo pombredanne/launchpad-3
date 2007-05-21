@@ -43,7 +43,7 @@
         <li tal:repeat="dsp batch">
           <a tal:attributes="href dsp/fmt:url;
                              title dsp/title"
-             id="packagetitle"
+             class="packagetitle"
              tal:content="dsp/title"/>
           <ul tal:condition="view/detailed">
             <li tal:repeat="pubrec dsp/current_publishing_records">

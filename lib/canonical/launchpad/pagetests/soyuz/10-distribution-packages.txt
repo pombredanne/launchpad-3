@@ -80,9 +80,8 @@ is not mentioned in anything else that is indexed.
   >>> browser.contents
   '...2 results...'
 
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> results = soup.findAll(attrs={'id': 'packagetitle'})
+  >>> soup = find_main_content(browser.contents)
+  >>> results = soup.findAll(attrs={'class': 'packagetitle'})
   >>> len(results)
   2
 
