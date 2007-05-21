@@ -168,13 +168,16 @@ class BuilderGroup:
         # Skipping 'resumming' for trusted builders
         if builder.trusted:
             return
-        
+
         self.logger.debug("Resuming %s" % builder.url)
         hostname = builder.url.split(':')[1][2:].split('.')[0]
         host_url = '%s-host.ppa' % hostname
-        ssh_cmd = "ssh -i ~/.ssh/ppa-reset-builder ppa@%s" % host_url
-        self.logger.debug('Running: %s' % ssh_cmd)
-        #os.system(ssh_cmd)
+        resume_argv = [
+            'ssh', '-i' , '~/.ssh/ppa-reset-builder', 'ppa@%s' % host_url]
+        self.logger.debug('Running: %s' % resume_argv)
+        resume_process = subprocess.Popen(
+            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        resume_process.communicate()
 
     def failBuilder(self, builder, reason):
         """Mark builder as failed.
