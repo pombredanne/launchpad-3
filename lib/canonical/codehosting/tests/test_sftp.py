@@ -18,6 +18,7 @@ from twisted.cred.credentials import SSHPrivateKey
 from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.portal import IRealm, Portal
 
+from twisted.conch.error import ConchError
 from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.ssh.transport import SSHServerTransport
 from twisted.conch.ssh import keys, userauth
@@ -196,6 +197,26 @@ class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
         [(messageType, payload)] = self.transport.packets
         bytes, language, empty = getNS(payload, 2)
         self.assertEqual(bytes.decode('UTF8'), u"test\r\nmessage\r\n")
+
+    def test_requestRaisesConchError(self):
+        # ssh_USERAUTH_REQUEST should raise a ConchError if tryAuth returns
+        # None. Added to catch a bug noticed by pyflakes.
+        # Whitebox test.
+        def mock_try_auth(kind, user, data):
+            return None
+        def mock_eb_bad_auth(reason):
+            reason.trap(ConchError)
+        tryAuth, self.user_auth.tryAuth = self.user_auth.tryAuth, mock_try_auth
+        _ebBadAuth, self.user_auth._ebBadAuth = (self.user_auth._ebBadAuth,
+                                                 mock_eb_bad_auth)
+        self.user_auth.serviceStarted()
+        try:
+            packet = NS('jml') + NS('foo') + NS('public_key') + NS('data')
+            self.user_auth.ssh_USERAUTH_REQUEST(packet)
+        finally:
+            self.user_auth.serviceStopped()
+            self.user_auth.tryAuth = tryAuth
+            self.user_auth._ebBadAuth = _ebBadAuth
 
 
 class MockChecker(SSHPublicKeyDatabase):
