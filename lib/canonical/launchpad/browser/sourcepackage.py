@@ -250,10 +250,6 @@ class SourcePackageView(BuildRecordsView):
             return True
         return False
 
-    def linkified_changelog(self):
-        return linkify_changelog(
-            self.context.changelog, self.context.sourcepackagename.name)
-
     def requestCountry(self):
         return ICountry(self.request, None)
 

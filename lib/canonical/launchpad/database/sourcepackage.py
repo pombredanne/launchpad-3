@@ -8,7 +8,6 @@ __all__ = [
 
 from operator import attrgetter
 from warnings import warn
-from itertools import groupby
 
 from zope.interface import implements
 
