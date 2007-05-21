@@ -1244,6 +1244,14 @@ class FormattersAPI:
     # Some allowed URI punctuation characters will be trimmed if they
     # appear at the end of the URI since they may be incidental in the
     # flow of the text.
+    #
+    # apport has at one time produced query strings containing sqaure
+    # braces (that are not percent-encoded). In RFC 2986 they seem to be
+    # allowed by section 2.2 "Reserved Characters", yet section 3.4
+    # "Query" appears to provide a strict definition of the query string
+    # that would forbid square braces. Either way, links with
+    # non-percent-encoded square braces are being used on Launchpad so
+    # it's probably best to accomodate them.
 
     # Match urls or bugs or oopses.
     _re_linkify = re.compile(r'''
@@ -1281,7 +1289,7 @@ class FormattersAPI:
         )
         (?: # query
           \?
-          [%(unreserved)s:@/\?]*
+          [%(unreserved)s:@/\?\[\]]*
         )?
         (?: # fragment
           \#

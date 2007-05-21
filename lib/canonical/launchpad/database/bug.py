@@ -12,7 +12,7 @@ from email.Utils import make_msgid
 from zope.app.content_types import guess_content_type
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implements, providedBy
 
 from sqlobject import ForeignKey, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
@@ -24,7 +24,8 @@ from canonical.launchpad.interfaces import (
     IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroRelease,
     IProductSeries, IProductSeriesBugTask, NominationError,
     NominationReleaseObsoleteError, IProduct, IDistribution,
-    UNRESOLVED_BUGTASK_STATUSES, BugNotificationRecipients)
+    UNRESOLVED_BUGTASK_STATUSES, BugNotificationRecipients,
+    ISourcePackage)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -49,7 +50,7 @@ from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.event.sqlobjectevent import (
-    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+    SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import (
     BugAttachmentType, DistributionReleaseStatus, BugTaskStatus)
@@ -701,6 +702,41 @@ class Bug(SQLBase):
         return BugWatch.selectFirstBy(
             bug=self, bugtracker=bugtracker, remotebug=remote_bug,
             orderBy='id')
+
+    def setStatus(self, target, status, user):
+        """See IBug."""
+        bugtask = self.getBugTask(target)
+        if bugtask is None:
+            if IProductSeries.providedBy(target):
+                bugtask = self.getBugTask(target.product)
+            elif ISourcePackage.providedBy(target):
+                current_distro_release = target.distribution.currentrelease
+                current_package = current_distro_release.getSourcePackage(
+                    target.sourcepackagename.name)
+                if self.getBugTask(current_package) is not None:
+                    # The bug is targeted to the current release, don't
+                    # fall back on the general distribution task.
+                    return None
+                distro_package = target.distribution.getSourcePackage(
+                    target.sourcepackagename.name)
+                bugtask = self.getBugTask(distro_package)
+            else:
+                return None
+
+        if bugtask is None:
+            return None
+
+        if bugtask.conjoined_master is not None:
+            bugtask = bugtask.conjoined_master
+
+        bugtask_before_modification = Snapshot(
+            bugtask, providing=providedBy(bugtask))
+        bugtask.transitionToStatus(status)
+        if bugtask_before_modification.status != bugtask.status:
+            notify(SQLObjectModifiedEvent(
+                bugtask, bugtask_before_modification, ['status'], user=user))
+
+        return bugtask
 
     def getBugTask(self, target):
         """See IBug."""

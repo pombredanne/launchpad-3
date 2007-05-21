@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces import (
     IDistributionSet, IArchiveSet)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
+from canonical.launchpad.scripts.processaccepted import close_bugs
 from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 
@@ -58,6 +59,7 @@ def main():
         dbuser=config.uploadqueue.dbuser, isolation=READ_COMMITTED_ISOLATION)
     execute_zcml_for_scripts()
 
+    processed_queue_ids = []
     try:
         log.debug("Finding distribution %s." % distro_name)
         distribution = getUtility(IDistributionSet).getByName(distro_name)
@@ -86,11 +88,16 @@ def main():
                         log.error("Failure processing queue_item %d"
                                   % (queue_item.id), exc_info=True)
                         raise
+                    else:
+                        processed_queue_ids.append(queue_item.id)
 
         if not options.dryrun:
             ztm.commit()
         else:
             log.debug("Dry Run mode.")
+
+        log.debug("Closing bugs.")
+        close_bugs(processed_queue_ids)
 
     finally:
         log.debug("Rolling back any remaining transactions.")
