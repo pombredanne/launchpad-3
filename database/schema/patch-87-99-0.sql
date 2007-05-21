@@ -13,6 +13,7 @@ DROP TABLE PersonalPackageArchive;
 CREATE TABLE Archive (
 	id SERIAL NOT NULL PRIMARY KEY,
 	owner integer,
+	description text,
 	CONSTRAINT archive__owner__fk
 	  FOREIGN KEY (owner) REFERENCES Person(id)
 	);
