@@ -1569,10 +1569,20 @@ INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename,
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (2, 1, 1, 'mozilla-firefox', 'mozilla-firefox', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', NULL);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (3, 1, 9, 'evolution', '', '', '', NULL);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (4, 1, 10, 'netapplet', '', '', '', NULL);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (5, 1, 14, 'pmount', 'pmount', 'pmount shortdesc', 'pmount description', NULL);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (5, 1, 14, 'pmount', 'pmount', 'pmount shortdesc', 'pmount description', NULL, 'This is a placeholder changelog for pmount 0.1-2 pmount (0.1-1) hoary; urgency=low
+
+ * Fix description (Malone #1)
+ * Fix debian (Debian #2000)
+ * Fix warty (Warty Ubuntu #1)
+
+ -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300');
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (6, 1, 19, 'alsa-utils', '', '', '', NULL);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (7, 1, 20, 'cnews', '', '', '', NULL);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (8, 1, 21, 'libstdc++', '', '', '', NULL);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (8, 1, 21, 'libstdc++', '', '', '', NULL, 'libstdc++ (9.9-1) hoary; urgency=high
+
+ * Placeholder
+
+ -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300');
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (9, 1, 22, 'linux-source-2.6.15', '', '', '', NULL);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (10, 1, 23, 'foobar', '', '', '', NULL);
 
