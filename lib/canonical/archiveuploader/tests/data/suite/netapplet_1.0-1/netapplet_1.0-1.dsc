@@ -1,7 +1,7 @@
 Format: 1.0
-Source: bar
+Source: netapplet
 Version: 1.0-1
-Binary: bar
+Binary: netapplet
 Maintainer: Launchpad team <launchpad@lists.canonical.com>
 Architecture: any
 Standards-Version: 3.6.2

@@ -16,19 +16,19 @@ Set up some library files for the netapplet source package.
 
   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
   >>> from canonical.archiveuploader.tests import (datadir, mock_logger)
+  >>> import os
   >>> [drqs] = drq.sources
   >>> spr = drqs.sourcepackagerelease
   >>> librarian = getUtility(ILibraryFileAliasSet)
-  >>> def addSPRF(name, size):
-  ...     filepath = datadir('suite/netapplet_1.0-1/%s' % name)
+  >>> files = ['netapplet_1.0-1.dsc', 'netapplet_1.0.orig.tar.gz',
+  ...     'netapplet_1.0-1.diff.gz']
+  >>> for file in files:
+  ...     filepath = datadir('suite/netapplet_1.0-1/%s' % file)
   ...     fileobj = open(filepath, 'rb')
-  ...     lfa = librarian.create(name, size, fileobj, 'dummytype')
+  ...     filesize = os.stat(filepath).st_size
+  ...     lfa = librarian.create(file, filesize, fileobj, 'dummytype')
   ...     sprf = spr.addFile(lfa)
   ...     fileobj.close()
-
-  >>> addSPRF('netapplet_1.0-1.dsc', 287)
-  >>> addSPRF('netapplet_1.0.orig.tar.gz', 173)
-  >>> addSPRF('netapplet_1.0-1.diff.gz', 564)
 
 The notify() method generates one email here on this unsigned package:
 

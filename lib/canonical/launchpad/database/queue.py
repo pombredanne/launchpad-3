@@ -549,6 +549,10 @@ class DistroReleaseQueue(SQLBase):
 
         return recipients
 
+    # XXX 2007-05-21 julian
+    # This method should really be IPersonSet.getByUploader but requires
+    # some extra work to port safe_fix_maintainer to emailaddress.py and
+    # then get nascent upload to use that.
     def _emailToPerson(self, fullemail):
         # The 2nd arg to s_f_m() doesn't matter is it won't fail since every-
         # thing will have already parsed at this point.
@@ -560,10 +564,7 @@ class DistroReleaseQueue(SQLBase):
     def _isPersonUploader(self, person, logger):
         debug(logger, "Attempting to decide if %s is an uploader." % (
             person.displayname))
-        uploader = len(set(
-            acl.component.name for acl 
-            in self.distrorelease.distribution.uploaders
-            if person in acl)) > 0
+        uploader = person.isUploader(self.distrorelease.distribution)
         debug(logger, "Decision: %s" % uploader)
         return uploader
 
