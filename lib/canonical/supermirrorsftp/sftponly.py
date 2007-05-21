@@ -2,7 +2,6 @@
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
-from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
 from twisted.conch.ssh.common import getNS, NS
@@ -16,7 +15,6 @@ from twisted.vfs.pathutils import FileSystem
 from twisted.vfs.adapters import sftp
 
 from canonical.supermirrorsftp.bazaarfs import SFTPServerRoot
-from canonical.supermirrorsftp.smartserver import RestrictedExecOnlySession
 
 from zope.interface import implements
 import binascii

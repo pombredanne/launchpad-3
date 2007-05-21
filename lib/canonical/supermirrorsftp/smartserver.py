@@ -32,6 +32,7 @@ class ExecOnlySession:
         return lambda avatar: klass(avatar, reactor)
 
     def closed(self):
+        """See ISession."""
         if self._transport is not None:
             try:
                 self._transport.signalProcess('HUP')
@@ -40,11 +41,14 @@ class ExecOnlySession:
             self._transport.loseConnection()
 
     def eofReceived(self):
+        """See ISession."""
         if self._transport is not None:
             self._transport.closeStdin()
 
     def execCommand(self, protocol, command):
         """Executes `command` using `protocol` as the ProcessProtocol.
+
+        See ISession.
 
         :param protocol: a ProcessProtocol, usually SSHSessionProcessProtocol.
         :param command: A whitespace-separated command line. The first token is
@@ -58,7 +62,6 @@ class ExecOnlySession:
         """Return the command that will actually be run given `command`.
 
         :param command: A command line to run.
-        :raise ForbiddenCommand: when `command` is forbidden.
         :return: `(executable, arguments)` where `executable` is the name of an
             executable and arguments is a sequence of command-line arguments
             with the name of the executable as the first value.
@@ -67,12 +70,15 @@ class ExecOnlySession:
         return args[0], args
 
     def getPty(self, term, windowSize, modes):
+        """See ISession."""
         raise NotImplementedError()
 
     def openShell(self, protocol):
+        """See ISession."""
         raise NotImplementedError()
 
     def windowChanged(self, newWindowSize):
+        """See ISession."""
         raise NotImplementedError()
 
 
@@ -101,6 +107,10 @@ class RestrictedExecOnlySession(ExecOnlySession):
                                     executed_command_template)
 
     def getCommandToRun(self, command):
+        """As in ExecOnlySession, but only allow a particular command.
+
+        :raise ForbiddenCommand: when `command` is not the allowed command.
+        """
         if command != self.allowed_command:
             raise ForbiddenCommand("Not allowed to execute %r" % (command,))
         return ExecOnlySession.getCommandToRun(

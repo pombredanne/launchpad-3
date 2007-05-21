@@ -95,7 +95,9 @@ class TestExecOnlySession(AvatarTestCase):
 
     def test_closedDoesNothingWhenNoCommand(self):
         # When no process has been created, 'closed' is a no-op.
+        self.assertEqual(None, self.session._transport)
         self.session.closed()
+        self.assertEqual(None, self.session._transport)
 
     def test_closedTerminatesProcessAndDisconnects(self):
         # ExecOnlySession provides a 'closed' method that is generally
@@ -152,7 +154,9 @@ class TestExecOnlySession(AvatarTestCase):
 
     def test_eofReceivedDoesNothingWhenNoCommand(self):
         # When no process has been created, 'eofReceived' is a no-op.
+        self.assertEqual(None, self.session._transport)
         self.session.eofReceived()
+        self.assertEqual(None, self.session._transport)
 
     def test_eofReceivedClosesStdin(self):
         # 'eofReceived' closes standard input when called while a command is
@@ -264,6 +268,8 @@ class TestSessionIntegration(AvatarTestCase):
         #     RestrictedExecOnlySession.getAvatarAdapter(
         #         'bzr serve --inet /', 'bzr launchpad-serve %(avatarId)s'),
         #         SFTPOnlyAvatar, ISession)
+        #
+        # Jonathan Lange, 2007-05-21
         return
 
         # When Conch tries to adapt the supermirror avatar to ISession, it
