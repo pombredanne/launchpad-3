@@ -25,8 +25,10 @@ from canonical.lp.dbschema import RosettaImportStatus
 
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, IPOFileSet,
-    IPOTemplateSet, ILanguageSet, NotFoundError)
+    IPOTemplateSet, ILanguageSet, NotFoundError, IHasTranslationImports)
 from canonical.librarian.interfaces import ILibrarianClient
+
+from canonical.launchpad.database.pillar import pillar_sort_key
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
 # queue.
@@ -689,6 +691,36 @@ class TranslationImportQueue:
             queries.append('productseries = %s' % sqlvalues(productseries.id))
 
         return TranslationImportQueueEntry.select(" AND ".join(queries))
+
+    def getPillarObjectsWithApprovedImports(self):
+        """See ITranslationImportQueue."""
+        from canonical.launchpad.database.distrorelease import DistroRelease
+        from canonical.launchpad.database.product import Product
+
+        products = Product.select(
+            """ProductSeries.product=Product.id AND
+            TranslationImportQueueEntry.productseries=ProductSeries.id AND
+            TranslationImportQueueEntry.status=%s""" % sqlvalues(
+            RosettaImportStatus.APPROVED),
+            clauseTables=['ProductSeries', 'TranslationImportQueueEntry'],
+            distinct=True)
+
+        distroreleases = DistroRelease.select(
+            """TranslationImportQueueEntry.distrorelease IS NOT NULL AND
+            TranslationImportQueueEntry.distrorelease=DistroRelease.id AND
+            TranslationImportQueueEntry.status=%s""" % sqlvalues(
+            RosettaImportStatus.APPROVED),
+            clauseTables=['TranslationImportQueueEntry'],
+            distinct=True)
+
+        results = set()
+        for product in products:
+            if IHasTranslationImports.providedBy(product):
+                results.add(product)
+        for distrorelease in distroreleases:
+            if IHasTranslationImports.providedBy(distrorelease):
+                results.add(distrorelease)
+        return sorted(results, key=pillar_sort_key)
 
     def executeOptimisticApprovals(self, ztm):
         """See ITranslationImportQueue."""

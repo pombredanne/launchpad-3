@@ -912,3 +912,74 @@ no sense at all.
     >>> entries = entry5.getTemplatesOnSameDirectory()
     >>> entries.count()
     0
+
+
+== getPillarObjectsWithApprovedImports ==
+
+This method returns all objects which have entries in the translation
+import queue waiting to be imported.  Object can be a Product or
+a DistroRelease.
+
+To test it, we need to add a few items to the queue first, so lets
+start with adding a single item to a source package inside Hoary
+distrorelease:
+
+    >>> hoary_distrorelease = DistroRelease.get(3)
+    >>> evolution_sourcepackagename = SourcePackageName.get(9)
+    >>> entry1 = translationimportqueue.addOrUpdateEntry(
+    ...     u'po/sr.po', 'foo', True, rosetta_expert,
+    ...      distrorelease=hoary_distrorelease,
+    ...      sourcepackagename=evolution_sourcepackagename)
+
+Next, lets add one item to a ProductSeries as well:
+
+    >>> productseries = ProductSeries.get(1)
+    >>> entry2 = translationimportqueue.addOrUpdateEntry(
+    ...     'foo/bar.pot', 'foo content', True,
+    ...     rosetta_expert, productseries=productseries)
+    >>> transaction.commit()
+
+The list of objects with approved entries should still be empty, since
+we haven't approved any.
+
+    >>> importqueues = (
+    ...     translationimportqueue.getPillarObjectsWithApprovedImports() )
+    >>> len(importqueues) == 0
+    True
+
+Now we approve these entries (we need to be Rosetta administrator to do this).
+
+    >>> login('carlos@canonical.com')
+    >>> entry1.status = RosettaImportStatus.APPROVED
+    >>> entry2.status = RosettaImportStatus.APPROVED
+
+    >>> flush_database_updates()
+    >>> translationimportqueue = getUtility(ITranslationImportQueue)
+
+If we re-get the list of objects which have approved entries, we'll
+get these recently approved ones.
+
+    >>> importqueues = (
+    ...     translationimportqueue.getPillarObjectsWithApprovedImports() )
+    >>> len(importqueues) == 2
+    True
+
+Lets check that the returned entries are actually the same ones we submitted.
+Each of the objects returned provides a getFirstEntryToImport method
+which returns the TranslationImportQueueEntry which is next up for import.
+
+    >>> sortedqueues = sorted(importqueues,
+    ...                       cmp=lambda x,y: cmp(y.title, x.title))
+    >>> queue1 = sortedqueues[0]
+    >>> queue1.title
+    u'The Hoary Hedgehog Release'
+    >>> entry = queue1.getFirstEntryToImport()
+    >>> entry == entry1
+    True
+
+    >>> queue2 = sortedqueues[1]
+    >>> queue2.title
+    u'Mozilla Firefox'
+    >>> entry = queue2.getFirstEntryToImport()
+    >>> entry == entry2
+    True
