@@ -68,20 +68,20 @@ status is returned.
 >>> check_not_found("/+languages/es/foos", host='translations.launchpad.dev')
 >>> check_not_found("/+languages/foos", host='translations.launchpad.dev')
 
->>> check("/+translation-groups", host='translations.launchpad.dev')
->>> check("/+translation-groups/+new", auth=True,
+>>> check("/+groups", host='translations.launchpad.dev')
+>>> check("/+groups/+new", auth=True,
 ...       host='translations.launchpad.dev')
->>> check("/+translation-groups/testing-translation-team",
+>>> check("/+groups/testing-translation-team",
 ...       host='translations.launchpad.dev')
->>> check("/+translation-groups/testing-translation-team/+edit",
+>>> check("/+groups/testing-translation-team/+edit",
 ...       auth=True, host='translations.launchpad.dev')
->>> check("/+translation-groups/testing-translation-team/+appoint",
+>>> check("/+groups/testing-translation-team/+appoint",
 ...       auth=True, host='translations.launchpad.dev')
->>> check("/+translation-groups/testing-translation-team/es",
+>>> check("/+groups/testing-translation-team/es",
 ...       auth=True, host='translations.launchpad.dev')
->>> check_not_found("/+translation-groups/testing-translation-team/pt_br",
+>>> check_not_found("/+groups/testing-translation-team/pt_br",
 ...                 host='translations.launchpad.dev')
->>> check_not_found("/+translation-groups/foos",
+>>> check_not_found("/+groups/foos",
 ...                 host='translations.launchpad.dev')
 
 >>> check("robots.txt", host="shipit.ubuntu.dev")
