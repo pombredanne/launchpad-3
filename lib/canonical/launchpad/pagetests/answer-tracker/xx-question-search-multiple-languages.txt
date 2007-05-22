@@ -61,8 +61,8 @@ whatever the language they are written in are displayed:
     'Installation failed'
 
 But if the user configures his browser to accept Spanish, then all
-languages will be displayed and the 'All Languages' control
-will not appear:
+languages will be displayed and the 'All Languages' control will
+not appear:
 
     >>> anon_browser.addHeader('Accept-Language', 'es')
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
@@ -109,7 +109,11 @@ their preferred languages and English (the site's language).
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> browser.getControl('All Languages').selected
     False
-    >>> for label in browser.getControl(name='field.languages').displayOptions:
+    >>> language_control = browser.getControl(name='field.languages')
+    >>> for label in language_control.displayOptions:
+    ...     # \xa0 appears regardless of creating the labels as 
+    ...     # unicode or ascii, and changine the encoding during
+    ...     # print or assignment operations.
     ...     label
     '\xa0All Languages'
     '\xa0English (en), Spanish (es), Catalan (ca)'
