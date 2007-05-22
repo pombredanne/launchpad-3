@@ -2211,10 +2211,13 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def getFirstEntryToImport(self):
         """See IHasTranslationImports."""
-        return TranslationImportQueueEntry.selectFirstBy(
-            status=RosettaImportStatus.APPROVED,
-            distrorelease=self,
-            orderBy=['dateimported'])
+        if self.defer_translation_imports:
+            return None
+        else:
+            return TranslationImportQueueEntry.selectFirstBy(
+                status=RosettaImportStatus.APPROVED,
+                distrorelease=self,
+                orderBy=['dateimported'])
 
 
 

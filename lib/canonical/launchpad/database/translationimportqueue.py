@@ -734,6 +734,7 @@ class TranslationImportQueue:
         distroreleases = DistroRelease.select(
             """TranslationImportQueueEntry.distrorelease IS NOT NULL AND
             TranslationImportQueueEntry.distrorelease=DistroRelease.id AND
+            DistroRelease.defer_translation_imports IS FALSE AND
             TranslationImportQueueEntry.status=%s""" % sqlvalues(
             RosettaImportStatus.APPROVED),
             clauseTables=['TranslationImportQueueEntry'],
