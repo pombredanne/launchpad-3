@@ -68,6 +68,7 @@ member of that team --somebody has to approve his membership first:
     >>> [m.displayname for m in t3.allmembers]
     [u'Foo Bar']
     >>> t3.setMembershipData(salgado, TeamMembershipStatus.APPROVED, reviewer)
+    >>> flush_database_updates()
     >>> [m.displayname for m in t3.allmembers]
     [u'Foo Bar', u'Guilherme Salgado']
 
@@ -105,8 +106,6 @@ person has a membership entry for that team, regardless of whether the person
 was already an active/inactive member or has never been a member before.
 
     >>> sabdfl = personset.getByName('sabdfl')
-    >>> t2.addMember(t3, reviewer=sabdfl)
-
     >>> t3.addMember(
     ...     salgado, reviewer=sabdfl, status=TeamMembershipStatus.ADMIN)
     >>> from canonical.launchpad.interfaces import ITeamMembershipSet
@@ -127,11 +126,50 @@ was already an active/inactive member or has never been a member before.
     >>> marilize in t3.activemembers
     False
 
-By making t3 a member of t2, it means that all members of t3 will also be
-added as members of t2.
+Note that, by default, the ITeam.addMember() API works slightly different
+when the added member is a team. In that case the team will actually be
+invited to be a member and one of the team's admins will have to accpet the
+invitation before the team is made a member.
 
+    >>> t1.addMember(t2, reviewer)
+    >>> membership = membershipset.getByPersonAndTeam(t2, t1)
+    >>> membership.status == TeamMembershipStatus.INVITED
+    True
+    >>> [m.displayname for m in t1.allmembers]
+    [u'Foo Bar']
+
+Once one of the t2 admins approve the membership, t2 is shown as a member
+of t1.
+
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(t2.teamowner.preferredemail.email)
+    >>> t2.acceptInvitationToBeMemberOf(t1)
+    >>> [m.displayname for m in t1.allmembers]
+    [u'Foo Bar', u't2']
+
+A team admin can also decline an invitation made to his team.
+
+    >>> t2.addMember(t3, reviewer=sabdfl)
+    >>> login(t3.teamowner.preferredemail.email)
+    >>> t3.declineInvitationToBeMemberOf(t2)
+    >>> membership = membershipset.getByPersonAndTeam(t3, t2)
+    >>> membership.status == TeamMembershipStatus.INVITATION_DECLINED
+    True
+
+In some cases it's necessary to bypass the invitation workflow and directly
+add teams as members of other teams. We can do that by passing an extra
+force_team_add=True to addMember(). We'll use that to add t3 as a member of
+t2, thus making all t3 members be considered members of t2 as well.
+
+    >>> login(ANONYMOUS)
+    >>> t2.addMember(t3, reviewer=sabdfl, force_team_add=True)
     >>> [m.displayname for m in t2.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't3']
+
+And members of t1 as well, since t2 is a member of t1.
+
+    >>> [m.displayname for m in t1.allmembers]
+    [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
 
 Can we add t2 as a member of t3? No, we prevent this kind of loop, and users
 can't do this because our vocabularies won't allow members that would cause
@@ -140,25 +178,20 @@ loops.
     >>> t3.addMember(t2, reviewer)
     Traceback (most recent call last):
     ...
-    AssertionError: Team 't3' is a member of 't2'. As a consequence, 't2' can't be added as a member of 't3'
-
-Adding t2 as a member of t1 will add all t2 members as t1 members too.
-
-    >>> t1.addMember(t2, reviewer)
-    >>> [m.displayname for m in t1.allmembers]
-    [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
+    AssertionError: Team 't3' is a member of 't2'. As a consequence, 't2'
+    can't be added as a member of 't3'
 
 Adding t2 as a member of t5 will add all t2 members as t5 members too.
 
-    >>> t5.addMember(t2, reviewer)
+    >>> t5.addMember(t2, reviewer, force_team_add=True)
     >>> [m.displayname for m in t5.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
 
 Adding t5 and t1 as members of t4 will add all t5 and t1 members as t4 
 members too.
 
-    >>> t4.addMember(t5, reviewer)
-    >>> t4.addMember(t1, reviewer)
+    >>> t4.addMember(t5, reviewer, force_team_add=True)
+    >>> t4.addMember(t1, reviewer, force_team_add=True)
     >>> [m.displayname for m in t4.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
 
@@ -210,15 +243,18 @@ member anymore, it doesn't have any members apart from its owner.
 
 Removing t2 from t5 won't remove it from t4, because t2 is also a member of
 t1, which is a member of t4.
+
     >>> [m.displayname for m in t4.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
 
 Nothing changes in t1, because t5 wasn't one of its members.
+
     >>> [m.displayname for m in t1.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
 
 If 'Guilherme Salgado' decides to leave t3, he'll also be removed from t1
 and t2, but not from t4, because he's a direct member of t4.
+
     >>> salgado.leave(t3)
     >>> salgado in t1.allmembers
     False
@@ -280,7 +316,6 @@ made using the setStatus() method.
 
     # Foo Bar is a launchpad admin, but even so he can't change a membership's
     # status by hand.
-    >>> from canonical.launchpad.ftests import login
     >>> login('foo.bar@canonical.com')
     >>> membership = foobar.myactivememberships[0]
     >>> membership.status = None
@@ -448,12 +483,14 @@ You can check a person's direct memberships by using myactivememberships:
 
     >>> [(membership.team.name, membership.status.title)
     ...  for membership in salgado.myactivememberships]
-    [(u'admins', 'Administrator'), (u't4', 'Approved')]
+    [(u'landscape-developers', 'Approved'),
+     (u'admins', 'Administrator'), (u't4', 'Approved')]
 
-And you can check which direct memberships a team has by using activememberships:
+And you can check which direct memberships a team has by using
+getActiveMemberships():
 
     >>> [(membership.person.name, membership.status.title)
-    ...  for membership in t3.activememberships]
+    ...  for membership in t3.getActiveMemberships()]
     [(u'cprov', 'Approved'), (u'name16', 'Administrator')]
 
 A team has a number of other methods that return the people which are members
@@ -543,15 +580,17 @@ person is an active member of as well as teams those teams are an active
 member of.
 
     >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
+    landscape-developers
     admins
     t4
 
 Adding admins as a member of t1 will make Salgado a member of t1 as well.
 
     >>> admins = getUtility(IPersonSet).getByName('admins')
-    >>> t1.addMember(admins, reviewer=t1.teamowner)
+    >>> t1.addMember(admins, reviewer=t1.teamowner, force_team_add=True)
     >>> flush_database_updates()
     >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
+    landscape-developers
     admins
     t1
     t4
@@ -559,9 +598,10 @@ Adding admins as a member of t1 will make Salgado a member of t1 as well.
 On the other hand, making t2 a member of admins won't change anything
 for Salgado.
 
-    >>> admins.addMember(t2, reviewer=admins.teamowner)
+    >>> admins.addMember(t2, reviewer=admins.teamowner, force_team_add=True)
     >>> flush_database_updates()
     >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
+    landscape-developers
     admins
     t1
     t4

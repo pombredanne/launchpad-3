@@ -42,7 +42,6 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMaloneApplication, IPerson)
 from canonical.launchpad.webapp import smartquote
-from canonical.launchpad.webapp.authorization import check_permission
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
@@ -1095,9 +1094,11 @@ team_edit = 'Edit team information'
 
 team_editemail = ContextDisplayName('%s contact e-mail address')
 
+team_editproposed = ContextBrowsername('Proposed members of %s')
+
 team_index = ContextBrowsername(smartquote('"%s" team in Launchpad'))
 
-team_editproposed = ContextBrowsername('Proposed members of %s')
+team_invitations = ContextBrowsername("Invitations sent to %s")
 
 team_join = ContextBrowsername('Join %s')
 
@@ -1109,6 +1110,10 @@ team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
 
 def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (
+        context.person.browsername, context.team.browsername)
+
+def teammembership_invitation(context, view):
+    return "Make %s a member of %s" % (
         context.person.browsername, context.team.browsername)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
@@ -1131,8 +1136,16 @@ temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
 translationgroup_index = ContextTitle(smartquote('"%s" Launchpad translation group'))
 
+translationgroup_add = 'Add a new translation group to Launchpad'
+
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))
+
+translationgroup_edit = ContextTitle(smartquote(
+    'Edit "%s" translation group details'))
+
+translationgroup_reassignment = ContextTitle(smartquote(
+    'Change the owner of "%s" translation group'))
 
 translationgroups_index = 'Launchpad translation groups'
 
@@ -1141,5 +1154,14 @@ translationimportqueueentry_index = 'Translation import queue entry'
 translationimportqueue_index = 'Translation import queue'
 
 translationimportqueue_blocked = 'Translation import queue - Blocked'
+
+def translator_edit(context, view):
+    return "Edit %s translator for %s" % (
+        context.language.englishname, context.translationgroup.title)
+
+def translator_remove(context, view):
+    return "Remove %s as the %s translator for %s" % (
+        context.translator.displayname, context.language.englishname,
+        context.translationgroup.title)
 
 unauthorized = 'Error: Not authorized'
