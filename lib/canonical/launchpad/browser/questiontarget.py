@@ -161,30 +161,38 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         If the user is anonymous, the languages submited in the browser's
         request will be used.
         """    
-        languages = set()
-        for lang in request_languages(self.request):
-            if not is_english_variant(lang):
-                languages.add(lang.displayname)
-        if (self.context is not None and IQuestion.providedBy(self.context) and
-            self.context.language.code != 'en'):
-            languages.add(self.context.language.displayname)
-        languages = list(languages)
-        languages.insert(0, getUtility(ILanguageSet)['en'].displayname)
-        preferred_term = SimpleTerm(
-            'Preferred', 'Preferred', ', '.join(languages))
-        all_term = SimpleTerm('All', 'All', _('All Languages'))
-        
+        languages = self._getLanguages()
+        labels = [lang.displayname for lang in languages]
+        terms = [SimpleTerm('All', 'All', _('All Languages'))]
+        terms.append(
+            SimpleTerm('Preferred', 'Preferred', ', '.join(labels)))
+        if len(languages) > 1:
+            terms.append(
+                SimpleTerm('User', 'User', ', '.join(labels[1:])))
         return form.Fields(
                 Choice(
                     __name__='languages',
                     title=_('View Languages'),
-                    vocabulary=SimpleVocabulary([all_term, preferred_term]),
+                    vocabulary=SimpleVocabulary(terms),
                     required=True,
                     description=_(
                         'The languages to filter the search results by.')),
                 custom_widget=self.custom_widgets['languages'],
                 render_context=self.render_context)
-        
+
+    def _getLanguages(self):
+        languages = set()
+        for lang in request_languages(self.request):
+            if not is_english_variant(lang):
+                languages.add(lang)
+        if (self.context is not None and 
+                IQuestion.providedBy(self.context) and
+                self.context.language.code != 'en'):
+            languages.add(self.context.language)
+        languages = list(languages)
+        languages.insert(0, getUtility(ILanguageSet)['en'])
+        return languages
+
     @cachedproperty
     def status_title_map(self):
         """Return a dictionary mapping set of statuses to their title.
@@ -287,6 +295,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     @property
     def show_languages_radio(self):
         """Whether to show the 'View Languages' radio buttons or not."""
+        if (self.user is not None and 
+                len(self.user.getSupportedLanguages()) > 1):
+            return True
         return not self.context_question_languages.issubset(
             self.user_support_languages)
 
@@ -310,11 +321,13 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             # Search button wasn't clicked, use the default filter.
             # Copy it so that it doesn't get mutated accidently.
             self.search_params = dict(self.getDefaultFilter())
-
-        if (self.search_params.get('languages', 'Preferred') == 'Preferred'):
-            self.search_params['language'] = self.user_support_languages 
-        else:
+        languages = self.search_params.get('languages', 'Preferred')
+        if languages == 'All':
             self.search_params['language'] = None
+        elif languages == 'User':
+            self.search_params['language'] = self._getLanguages()[1:]
+        else:
+            self.search_params['language'] = self.user_support_languages
         
         # Remove the 'languages' param since it is only used by the view.
         self.search_params.pop('languages', None)

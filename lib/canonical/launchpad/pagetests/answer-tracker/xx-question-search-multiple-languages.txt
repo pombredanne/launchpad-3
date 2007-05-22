@@ -3,6 +3,8 @@
 By default, only questions written in English or one of the user
 preferred languages are listed and searched.
 
+== Anonymous searching ==
+
 For example, a user who isn't logged in will only see questions written
 in English, in one of the language configured in his browser,
 or inferred from GeoIP information. In this example, only English
@@ -58,17 +60,9 @@ whatever the language they are written in are displayed:
     'Slow system'
     'Installation failed'
 
-When that option is selected, no warning message will appear:
-
-    >>> anon_browser.getControl('All Languages').selected
-    True
-
-    >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
-    ...     print message.renderContents()
-
 But if the user configures his browser to accept Spanish, then all
-languages will be displayed and no warning nor 'All Languages' control
-will appear:
+languages will be displayed and the 'All Languages' control
+will not appear:
 
     >>> anon_browser.addHeader('Accept-Language', 'es')
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
@@ -77,9 +71,6 @@ will appear:
     Traceback (most recent call last):
       ...
     LookupError...
-
-    >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
-    ...     print message.renderContents()
 
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> for question in soup.fetch('td', 'question'):
@@ -97,6 +88,44 @@ will appear:
     ...     question.first('a').renderContents()
     'Slow system'
     'Installation failed'
+
+
+== Authenticated searching ==
+
+Authenticated users without preferred languages will see a search
+form with the same language search options as the anonymous user.
+
+    >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
+    >>> user_browser.getControl('All Languages').selected
+    False
+    >>> user_browser.getControl('English (en)').selected
+    True
+    
+Users that have configured their preferred languages may choose to
+see questions for all languages, their preferred languages, or
+their preferred languages and English (the site's language).
+
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
+    >>> browser.getControl('All Languages').selected
+    False
+    >>> for label in browser.getControl(name='field.languages').displayOptions:
+    ...     label
+    '\xa0All Languages'
+    '\xa0English (en), Spanish (es), Catalan (ca)'
+    '\xa0Spanish (es), Catalan (ca)'
+    >>> browser.getControl(name='field.languages').options
+    ['All', 'Preferred', 'User']
+    
+By choosing the preferred languages option, the user can exclude 
+all other languages including English from the questions displayed.
+
+    >>> browser.getControl(name='field.languages').value = ['User']
+    >>> browser.getControl('Search').click()
+    >>> content = find_main_content(browser.contents)
+    >>> for question in content.fetch('td', 'question'):
+    ...     question.first('a').renderContents()
+    'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
 
 = Multiple Request Languages in Latest Questions =
 
