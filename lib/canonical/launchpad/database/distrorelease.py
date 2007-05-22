@@ -32,14 +32,14 @@ from canonical.database.enumcol import EnumCol
 from canonical.lp.dbschema import (
     PackagePublishingStatus, DistributionReleaseStatus,
     DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
-    SpecificationGoalStatus, SpecificationFilter)
+    SpecificationGoalStatus, SpecificationFilter, RosettaImportStatus)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
     ISourcePackage, ISourcePackageNameSet,
-    IHasQueueItems, IPublishing)
+    IHasQueueItems, IPublishing, IHasTranslationImports)
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -75,13 +75,16 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.queue import (
     DistroReleaseQueue, PackageUploadQueue)
+from canonical.launchpad.database.translationimportqueue import (
+    TranslationImportQueueEntry)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
 
 
 class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     """A particular release of a distribution."""
-    implements(IDistroRelease, IHasBuildRecords, IHasQueueItems, IPublishing)
+    implements(IDistroRelease, IHasBuildRecords, IHasQueueItems, IPublishing,
+               IHasTranslationImports)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -2204,6 +2207,15 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                        self.displayname))
             return True
         return False
+
+
+    def getFirstEntryToImport(self):
+        """See IHasTranslationImports."""
+        return TranslationImportQueueEntry.selectFirstBy(
+            status=RosettaImportStatus.APPROVED,
+            distrorelease=self,
+            orderBy=['dateimported'])
+
 
 
 class DistroReleaseSet:
