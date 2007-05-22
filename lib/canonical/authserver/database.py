@@ -557,7 +557,7 @@ class DatabaseBranchDetailsStorage:
             else:
                 # This is a push branch, hosted on the supermirror
                 # (pushed there by users via SFTP).
-                prefix = config.supermirrorsftp.branches_root
+                prefix = config.codehosting.branches_root
                 pull_url = os.path.join(prefix, split_branch_id(branch_id))
             result.append((branch_id, pull_url, unique_name))
         return result
