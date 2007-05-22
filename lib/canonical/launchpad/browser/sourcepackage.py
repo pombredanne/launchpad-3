@@ -25,18 +25,19 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
-    PackageRelationship, relationship_builder)
+    relationship_builder)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    structured, GetitemNavigation, stepto, redirection)
+    GetitemNavigation, stepto, redirection)
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -49,9 +50,17 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepto('+pots')
     def pots(self):
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(
-                   distrorelease=self.context.distrorelease,
-                   sourcepackagename=self.context.sourcepackagename)
+        sourcepackage_pots = potemplateset.getSubset(
+            distrorelease=self.context.distrorelease,
+            sourcepackagename=self.context.sourcepackagename)
+
+        if (self.context.distrorelease.hide_all_translations and
+            not check_permission('launchpad.Admin', sourcepackage_pots)):
+            raise TranslationUnavailableError(
+                'Translation updates in progress.  Only admins may view'
+                ' translations for this sourcepackage.')
+
+        return sourcepackage_pots
 
     @stepto('+filebug')
     def filebug(self):

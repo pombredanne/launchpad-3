@@ -109,6 +109,12 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "release.")
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this release.")
+    hide_all_translations = Bool(
+        title=u'Hide all translations', required=True,
+        description=(
+            u"Hide all this distro releases's translations from the UI."
+            "Admins will still be able to see them."),
+        default=True)
 
     # related joins
     packagings = Attribute("All of the Packaging entries for this "
@@ -388,11 +394,15 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
           in the initialisation of a derivative.
         """
 
-    def copyMissingTranslationsFromParent():
+    def copyMissingTranslationsFromParent(ztm=None):
         """Copy any translation done in parent that we lack.
 
         If there is another translation already added to this one, we ignore
         the one from parent.
+
+        If a transaction manager ztm is passed, it may be used for
+        intermediate commits to break up large copying jobs into palatable
+        smaller chunks.
         """
 
 class IDistroReleaseSet(Interface):
