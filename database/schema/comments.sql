@@ -197,6 +197,7 @@ COMMENT ON COLUMN DistributionSourcePackageCache.name IS 'The source package nam
 COMMENT ON COLUMN DistributionSourcePackageCache.binpkgnames IS 'The binary package names of binary packages generated from these source packages across all architectures.';
 COMMENT ON COLUMN DistributionSourcePackageCache.binpkgsummaries IS 'The aggregated summaries of all the binary packages generated from these source packages in this distribution.';
 COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggregated description of all the binary packages generated from these source packages in this distribution.';
+COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
 
 
 /* DistroReleasePackageCache */
@@ -232,7 +233,6 @@ COMMENT ON TABLE LaunchpadStatistic IS 'A store of system-wide statistics or oth
 COMMENT ON TABLE MentoringOffer IS 'An offer to provide mentoring if someone wa nts to help get a specific bug fixed or blueprint implemented. These offers are specifically associated with a team in which the offeror is a member, so it beco mes possible to encourage people who want to join a team to start by working on things that existing team members are willing to mentor.';
 COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer of mentoring is associated. We associate each offer of mentoring with a team, de signated as "the team which will most benefit from the bug fix or spec implement ation", and this then allows us to provide a list of work for which mentoring is available for prospective members of those teams. This is really the "onramp" i dea - the list is the "onramp" to membership in the relevant team.';
 
-
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
 COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who createed this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product. Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
@@ -259,8 +259,8 @@ COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. T
 /*COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it\'s different from the project bug tracker.'; */
 COMMENT ON COLUMN Product.development_focus IS 'The product series that is the current focus of development.';
 COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in the Launchpad.';
-COMMENT ON COLUMN Product.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon whenever we are referring to a product.';
-COMMENT ON COLUMN Product.mugshot IS 'The library file alias of a mugshot image to display as the icon of a product, on its home page.';
+COMMENT ON COLUMN Product.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a product.';
+COMMENT ON COLUMN Product.mugshot IS 'The library file alias of a mugshot image to display as the branding of a product, on its home page.';
 COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
 
 -- ProductRelease
@@ -379,8 +379,8 @@ changes at all).';
 COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
 /* COMMENT ON COLUMN Project.bugtracker IS 'The external bug tracker that is used to track bugs primarily for products within this project.'; */
 COMMENT ON COLUMN Project.homepage_content IS 'A home page for this project in the Launchpad.';
-COMMENT ON COLUMN Project.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon whenever we are referring to a project.';
-COMMENT ON COLUMN Project.mugshot IS 'The library file alias of a mugshot image to display as the icon of a project, on its home page.';
+COMMENT ON COLUMN Project.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a project.';
+COMMENT ON COLUMN Project.mugshot IS 'The library file alias of a mugshot image to display as the branding of a project, on its home page.';
 COMMENT ON COLUMN Project.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
 
 
@@ -478,8 +478,8 @@ COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenien
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
 COMMENT ON COLUMN Sprint.time_zone IS 'The timezone of the sprint, stored in text format from the Olsen database names, like "US/Eastern".';
 COMMENT ON COLUMN Sprint.homepage_content IS 'A home page for this sprint in the Launchpad.';
-COMMENT ON COLUMN Sprint.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon whenever we are referring to a sprint.';
-COMMENT ON COLUMN Sprint.mugshot IS 'The library file alias of a mugshot image to display as the icon of a sprint, on its home page.';
+COMMENT ON COLUMN Sprint.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a sprint.';
+COMMENT ON COLUMN Sprint.mugshot IS 'The library file alias of a mugshot image to display as the branding of a sprint, on its home page.';
 COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of this sprint\'s mugshot.';
 
 
@@ -612,11 +612,9 @@ information which lucille will use when processing uploads and
 generating archives for this distro release';
 COMMENT ON COLUMN DistroRelease.summary IS 'A brief summary of the distro release. This will be displayed in bold at the top of the distrorelease page, above the distrorelease description. It should include any high points that are particularly important to draw to the attention of users.';
 COMMENT ON COLUMN DistroRelease.description IS 'An extensive list of the features in this release of the distribution. This will be displayed on the main distro release page, below the summary.';
-COMMENT ON COLUMN DistroRelease.datelastlangpack IS
-'The date we last generated a base language pack for this release. Language
-update packs for this release will only include translations added after that
-date.';
-COMMENT ON COLUMN DistroRelease.hide_all_translations IS 'Whether we should hide all available translations for this distro release to non admin users.';
+COMMENT ON COLUMN DistroRelease.datelastlangpack IS 'The date we last generated a base language pack for this release. Language update packs for this release will only include translations added after that date.';
+COMMENT ON COLUMN DistroRelease.hide_all_translations IS 'Whether we should hid
+e all available translations for this distro release to non admin users.';
 COMMENT ON COLUMN DistroRelease.messagecount IS 'This is a cached value and may be a few hours out of sync with reality. It should, however, be in sync with the values in DistroReleaseLanguage, and should never be updated separately. The total number of translation messages in this distro release, as per IRosettaStats.';
 COMMENT ON COLUMN DistroRelease.nominatedarchindep IS 'This is the DistroArchRelease nominated to build architecture independent packages within this DistroRelase, it is mandatory for buildable distroreleases, i.e., Auto Build System will avoid to create build jobs for a DistroRelease with no nominatedarchindep, but the database model allow us to do it (for non-buildable DistroReleases). See further info in NominatedArchIndep specification.';
 COMMENT ON COLUMN DistroRelease.binarycount IS 'A cache of the number of distinct binary package names published in this distro release.';
@@ -778,8 +776,8 @@ COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset 
 COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.';
 COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
 COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the Launchpad. In short, this is like a personal wiki page. The person will get to edit their own page, and it will be published on /people/foo/. Note that this is in text format, and will migrate to being in Moin format as a sort of mini-wiki-homepage.';
-COMMENT ON COLUMN Person.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon or icon whenever we are referring to that person.';
-COMMENT ON COLUMN Person.mugshot IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
+COMMENT ON COLUMN Person.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to that person.';
+COMMENT ON COLUMN Person.mugshot IS 'The library file alias of a hackermugshot image to display as the "face" of a person, on their home page.';
 COMMENT ON COLUMN Person.logo IS 'The library file alias of a smaller version of this person\'s mugshot.';
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this person -- a dbschema value.';
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
@@ -919,6 +917,7 @@ COMMENT ON COLUMN Specification.completer IS 'The person who changed the state o
 COMMENT ON COLUMN Specification.date_completed IS 'The date this specification was completed or marked obsolete. This lets us chart the progress of a project (or a release) over time in terms of features implemented.';
 COMMENT ON CONSTRAINT specification_completion_recorded_chk ON Specification IS 'A constraint to ensure that we have recorded the date of completion if the specification is in fact considered completed. The SQL behind the completion test is repeated at a code level in database/specification.py: as Specification.completeness, please ensure that the constraint is kept in sync with the code.';
 COMMENT ON CONSTRAINT specification_completion_fully_recorded_chk ON Specification IS 'A constraint that ensures, where we have a date_completed, that we also have a completer. This means that the resolution was fully recorded.';
+COMMENT ON COLUMN Specification.private IS 'Specification is private.';
 
 -- SpecificationFeedback
 COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
@@ -942,6 +941,9 @@ COMMENT ON COLUMN SpecificationSubscription.essential IS 'A field that indicates
 COMMENT ON TABLE SpecificationDependency IS 'A table that stores information about which specification needs to be implemented before another specification can be implemented. We can create a chain of dependencies, and use that information for scheduling and prioritisation of work.';
 COMMENT ON COLUMN SpecificationDependency.specification IS 'The spec for which we are creating a dependency.';
 COMMENT ON COLUMN SpecificationDependency.dependency IS 'The spec on which it is dependant.';
+
+-- SpecificationMessage
+COMMENT ON TABLE SpecificationMessage IS 'Comments and discussion on a Specification.';
 
 -- BinaryPackageRelease
 
@@ -990,8 +992,8 @@ COMMENT ON COLUMN Distribution.owner IS 'The person in launchpad who is in ultim
 COMMENT ON COLUMN Distribution.upload_sender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
 COMMENT ON COLUMN Distribution.upload_admin IS 'Person foreign key which have access to modify the queue ui. If NULL, we fall back to launchpad admin members';
 COMMENT ON COLUMN Distribution.homepage_content IS 'A home page for this distribution in the Launchpad.';
-COMMENT ON COLUMN Distribution.icon IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an icon whenever we are referring to a distribution.';
-COMMENT ON COLUMN Distribution.mugshot IS 'The library file alias of a mugshot image to display as the icon of a distribution, on its home page.';
+COMMENT ON COLUMN Distribution.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a distribution.';
+COMMENT ON COLUMN Distribution.mugshot IS 'The library file alias of a mugshot image to display as the branding of a distribution, on its home page.';
 COMMENT ON COLUMN Distribution.logo IS 'The library file alias of a smaller version of this distributions\'s mugshot.';
 
 -- DistroRelease
@@ -1008,6 +1010,7 @@ COMMENT ON COLUMN DistroRelease.parentrelease IS 'The parent release on which th
 COMMENT ON COLUMN DistroRelease.owner IS 'The ultimate owner of this distrorelease.';
 COMMENT ON COLUMN DistroRelease.driver IS 'This is a person or team who can act as a driver for this specific release - note that the distribution drivers can also set goals for any release.';
 COMMENT ON COLUMN DistroRelease.changeslist IS 'The email address (name name) of the changes announcement list for this distrorelease. If NULL, no announcement mail will be sent.';
+COMMENT ON COLUMN DistroRelease.defer_translation_imports IS 'Don''t accept PO imports for this release just now.';
 
 
 -- DistroArchRelease

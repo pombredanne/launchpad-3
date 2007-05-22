@@ -7,6 +7,7 @@ __all__ = [
     'SourcePackageSOP',
     'SourcePackageFacets',
     'SourcePackageView',
+    'linkify_changelog'
     ]
 
 # Python standard library imports
@@ -258,10 +259,6 @@ class SourcePackageView(BuildRecordsView):
         if depends or depends_indep:
             return True
         return False
-
-    def linkified_changelog(self):
-        return linkify_changelog(
-            self.context.changelog, self.context.sourcepackagename.name)
 
     def requestCountry(self):
         return ICountry(self.request, None)
