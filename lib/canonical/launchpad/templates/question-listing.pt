@@ -45,8 +45,9 @@
       <input tal:replace="structure view/search_action/render" />
 
       <span tal:condition="view/show_languages_radio">
+        <br /><label>Languages</label>
         <br /><tal:languages replace="structure view/widgets/languages" />
-        (<a href="/+editmylanguages">change your preferred languages</a>)
+        <br />(<a href="/+editmylanguages">change your preferred languages</a>)
       </span>
       
       <tal:status define="widget nocall:view/widgets/status|nothing"
