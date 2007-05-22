@@ -11,14 +11,16 @@ from canonical.launchpad.interfaces import IBranchSet
 
 def write_map(outfile):
     """Write a file mapping each branch user/product/name to branch id.
-    
+
     The file will be written in a format suitable for use with Apache's
-    RewriteMap directive.
+    RewriteMap directive.  Only publicly visible branchs have rewrite
+    entries.
     """
     branches = getUtility(IBranchSet)
     for branch in branches:
-        line = generate_mapping_for_branch(branch)
-        outfile.write(line)
+        if branch.visibility_team is None:
+            line = generate_mapping_for_branch(branch)
+            outfile.write(line)
 
 
 def generate_mapping_for_branch(branch):
@@ -30,10 +32,10 @@ def generate_mapping_for_branch(branch):
     else:
         product_name = branch.product_name
     branch_name = branch.name
-    
+
     branch_location = split_branch_id(branch.id)
-    
-    return ('~%s/%s/%s\t%s\n' % 
+
+    return ('~%s/%s/%s\t%s\n' %
         (person_name, product_name, branch_name, branch_location))
 
 
@@ -41,7 +43,7 @@ def split_branch_id(branch_id):
     """Split a branch ID over multiple directories.
 
     e.g.:
-    
+
         >>> split_branch_id(0xabcdef12)
         'ab/cd/ef/12'
     """
