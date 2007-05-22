@@ -161,7 +161,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         If the user is anonymous, the languages submited in the browser's
         request will be used.
         """    
-        languages = self._getLanguages()
+        languages = self.en_user_Languages
         labels = [lang.displayname for lang in languages]
         terms = [SimpleTerm('All', 'All', _('All Languages'))]
         terms.append(
@@ -180,18 +180,15 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                 custom_widget=self.custom_widgets['languages'],
                 render_context=self.render_context)
 
-    def _getLanguages(self):
-        languages = set()
-        for lang in request_languages(self.request):
-            if not is_english_variant(lang):
-                languages.add(lang)
-        if (self.context is not None and 
-                IQuestion.providedBy(self.context) and
-                self.context.language.code != 'en'):
-            languages.add(self.context.language)
-        languages = list(languages)
-        languages.insert(0, getUtility(ILanguageSet)['en'])
+    @cachedproperty
+    def en_user_Languages(self):
+        """Return a list of user_support_languages with en as index 0."""
+        languages = list(self.user_support_languages)
+        en = getUtility(ILanguageSet)['en']
+        languages.remove(en)
+        languages.insert(0, en)
         return languages
+
 
     @cachedproperty
     def status_title_map(self):
@@ -325,9 +322,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         if languages == 'All':
             self.search_params['language'] = None
         elif languages == 'User':
-            self.search_params['language'] = self._getLanguages()[1:]
+            self.search_params['language'] = self.en_user_Languages[1:]
         else:
-            self.search_params['language'] = self.user_support_languages
+            self.search_params['language'] = self.en_user_Languages
         
         # Remove the 'languages' param since it is only used by the view.
         self.search_params.pop('languages', None)
