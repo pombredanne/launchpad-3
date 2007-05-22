@@ -45,7 +45,7 @@ Now, we'll subscribe our subscribee to the bug.
 We should be notified that our subscribee was subscribed, and we should be
 able to see them in the list of subscribers to this bug.
 
-    >>> for tags in find_tags_by_class(user_browser.contents, "informational message"):
+    >>> for tag in find_tags_by_class(user_browser.contents, "informational message"):
     ...     print tag.renderContents()
     'No Privileges Person' has been subscribed to this bug.
 
