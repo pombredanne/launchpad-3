@@ -694,6 +694,8 @@ class TranslationImportQueue:
 
     def getPillarObjectsWithApprovedImports(self):
         """See ITranslationImportQueue."""
+        # XXX 20070522 DaniloSegan: When imported on the module level,
+        # it errs out with: "ImportError: cannot import name Person"
         from canonical.launchpad.database.distrorelease import DistroRelease
         from canonical.launchpad.database.product import Product
 
