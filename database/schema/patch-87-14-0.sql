@@ -260,14 +260,10 @@ UPDATE SecureBinaryPackagePublishingHistory
              securebinarypackagepublishinghistory.distroarchrelease;
 
 -- Render the archive columns NOT NULL in the publishing tables
--- Also setting default archive to the ubuntu main_archive record,
--- It will be useful for migration.
 ALTER TABLE SecureSourcePackagePublishingHistory
-    ALTER COLUMN archive SET NOT NULL,
-    ALTER COLUMN archive SET DEFAULT 1;
+    ALTER COLUMN archive SET NOT NULL;
 ALTER TABLE SecureBinaryPackagePublishingHistory
-    ALTER COLUMN archive SET NOT NULL,
-    ALTER COLUMN archive SET DEFAULT 1;
+    ALTER COLUMN archive SET NOT NULL;
 ALTER TABLE Distribution
     ALTER COLUMN main_archive SET NOT NULL;
 
@@ -407,4 +403,4 @@ ALTER TABLE Build
     ADD CONSTRAINT build_archive_fk
        FOREIGN KEY (archive) REFERENCES Archive(id);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 14, 0);
