@@ -150,7 +150,7 @@ class RequestExpiredView(SystemErrorView):
         request.response.setHeader('Retry-After', 900)
 
 
-class AccessDisabledView(SystemErrorView):
+class TranslationUnavailableView(SystemErrorView):
 
     response_code = 403
 

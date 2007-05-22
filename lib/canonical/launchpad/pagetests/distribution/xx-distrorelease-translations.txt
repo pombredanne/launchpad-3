@@ -30,7 +30,7 @@ In this case, we're asking for the translation overview for Hoary.
   >>> anon_browser.url
   'http://translations.launchpad.dev/ubuntu/hoary'
 
-The system is not showing disabled languages:
+The system is not showing non visible languages:
 
   >>> anon_browser.getLink('Spanish (Spain)')
   Traceback (most recent call last):
@@ -68,7 +68,7 @@ But it's for admins:
   http://translations.launchpad.dev/ubuntu/hoary
 
 Once the system knows that we want to hide all translations, there are no
-language listed anymore.
+languages listed anymore.
 
   >>> admin_browser.getLink('Spanish')
   Traceback (most recent call last):
@@ -79,23 +79,23 @@ language listed anymore.
   >>> 'hoary/+lang/' in main_content
   False
 
-And the user is notified about having translations disabled.
+And the page tells the user that the translations are not available.
 
   >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
   >>> main_content = find_main_content(user_browser.contents)
   >>> print main_content.findNext('p').renderContents()
-  The translations for Hoary are disabled, while we are doing
-  some admin tasks on Launchpad. Once we are done with such tasks you
-  will be able to see this information.
+  Translations for Hoary is not available due to automatic translation
+  updates. You will be able to reach it once the process finish. Try again
+  in a few hours.
 
-Also, if the user tries to navigate directly to language pages, the system
-notifies the fact that he's not allowed to reach those pages.
+Also, if the user tries to navigate directly to launchpad pages,
+the system tells him that he's not allowed to see those pages.
 
   >>> user_browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
   Traceback (most recent call last):
   ...
-  AccessDisabledError
+  TranslationUnavailableError: ...
 
 Non existing languages are still notified.
 
@@ -105,25 +105,23 @@ Non existing languages are still notified.
   ...
   NotFound: ...
 
-Though, if and admin visits the same page, they still have rights to see
-the information:
+Although, an admin can see the same page.
 
   >>> admin_browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
   >>> print admin_browser.url
   http://translations.launchpad.dev/ubuntu/hoary/+lang/es
 
-The other part of the system disabled are the translation pages for source
-packages:
+Translation pages for source packages is also unavailable.
 
   >>> user_browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+sources/evolution/'
   ...     '+pots/evolution-2.2')
   Traceback (most recent call last):
   ...
-  AccessDisabledError
+  TranslationUnavailableError: ...
 
-Which are also available to administrators:
+... which are also available to administrators:
 
   >>> admin_browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+sources/evolution')

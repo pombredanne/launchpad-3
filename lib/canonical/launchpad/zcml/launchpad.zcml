@@ -79,13 +79,13 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
-  <!-- AccessDisabledError -->
+  <!-- TranslationUnavailableError -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.AccessDisabledError"
+      for="canonical.launchpad.webapp.interfaces.TranslationUnavailableError"
       name="index.html"
       permission="zope.Public"
-      template="../templates/launchpad-accessdisabled.pt"
-      class="canonical.launchpad.webapp.error.AccessDisabledView"
+      template="../templates/launchpad-translationunavailable.pt"
+      class="canonical.launchpad.webapp.error.TranslationUnavailableView"
       />
 
   <!-- LibrarianFailure -->

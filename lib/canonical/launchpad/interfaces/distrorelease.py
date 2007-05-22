@@ -105,9 +105,9 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "The date of the last base language pack export for this release.")
     hide_all_translations = Bool(
         title=u'Hide all translations', required=True,
-        description=(u'Check this if you want to hide all translations for'
-                     u' this IDistroRelease, from the user interface, so'
-                     u' only system admins are able to see them.'),
+        description=(
+            u"Hide all this distro releases's translations from the UI."
+            "Admins will still be able to see them."),
         default=True)
 
     # related joins

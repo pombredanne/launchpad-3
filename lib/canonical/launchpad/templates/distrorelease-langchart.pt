@@ -1,12 +1,11 @@
 <tal:hide-translations condition="context/hide_all_translations">
   <p>
-    The translations for <tal:distrorelease replace="context/displayname">
-    Feisty</tal:distrorelease> are disabled, while we are doing
-    some admin tasks on Launchpad. Once we are done with such tasks you
-    will be able to see this information.
+    Translations for <tal:distrorelease replace="context/displayname" />
+    is not available due to automatic translation updates. You will be able
+    to reach it once the process finish. Try again in a few hours.
   </p>
   <p>
-    Thanks for your patience.
+    We apologise for the inconvenience.
   </p>
 </tal:hide-translations>
 <tal:no-hide-translations condition="not:context/hide_all_translations">

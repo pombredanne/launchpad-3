@@ -39,7 +39,7 @@ from canonical.launchpad.browser.queue import QueueItemsView
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import AccessDisabledError
+from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
 
 
 class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -57,19 +57,23 @@ class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
         except IndexError:
             # Unknown language code.
             raise NotFoundError
-        drlang = self.context.getDistroReleaseLanguage(lang)
+        distroreleaselang = self.context.getDistroReleaseLanguage(lang)
 
-        if drlang is None:
-            drlangset = getUtility(IDistroReleaseLanguageSet)
-            drlang = drlangset.getDummy(self.context, lang)
+        if distroreleaselang is None:
+            # There is no IDistroReleaseLanguage yet for this IDistroRelease,
+            # but we still need to list it as an available language, so we
+            # generate a dummy one so users have a chance to get it in the
+            # navigation and start adding translations for it.
+            distroreleaselangset = getUtility(IDistroReleaseLanguageSet)
+            distroreleaselang = distroreleaselangset.getDummy(self.context, lang)
 
         if (self.context.hide_all_translations and
-            not check_permission('launchpad.Admin', drlang)):
-            # Prevent to traverse to non admin users while we hide all
-            # translations.
-            raise AccessDisabledError
+            not check_permission('launchpad.Admin', distroreleaselang)):
+            raise TranslationUnavailableError(
+                'Translation updates in progress.  Only admins may view'
+                ' translations for this distrorelease.')
 
-        return drlang
+        return distroreleaselang
 
     @stepthrough('+source')
     def source(self, name):
@@ -274,11 +278,11 @@ class DistroReleaseView(BuildRecordsView, QueueItemsView):
         currently is interested in (or which the users location and browser
         language prefs indicate might be interesting.
         """
-        drlangs = []
+        distroreleaselangs = []
         for language in self.languages:
-            drlang = self.context.getDistroReleaseLanguageOrDummy(language)
-            drlangs.append(drlang)
-        return drlangs
+            distroreleaselang = self.context.getDistroReleaseLanguageOrDummy(language)
+            distroreleaselangs.append(distroreleaselang)
+        return distroreleaselangs
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -295,21 +299,21 @@ class DistroReleaseView(BuildRecordsView, QueueItemsView):
         """
 
         # find the existing DRLanguages
-        drlangs = list(self.context.distroreleaselanguages)
+        distroreleaselangs = list(self.context.distroreleaselanguages)
 
         # make a set of the existing languages
-        existing_languages = set([drl.language for drl in drlangs])
+        existing_languages = set([drl.language for drl in distroreleaselangs])
 
         # find all the preferred languages which are not in the set of
         # existing languages, and add a dummydistroreleaselanguage for each
         # of them
-        drlangset = getUtility(IDistroReleaseLanguageSet)
+        distroreleaselangset = getUtility(IDistroReleaseLanguageSet)
         for lang in self.languages:
             if lang not in existing_languages:
-                drl = drlangset.getDummy(self.context, lang)
-                drlangs.append(drl)
+                distroreleaselang = distroreleaselangset.getDummy(self.context, lang)
+                distroreleaselangs.append(distroreleaselang)
 
-        return sorted(drlangs, key=lambda a: a.language.englishname)
+        return sorted(distroreleaselangs, key=lambda a: a.language.englishname)
 
     @cachedproperty
     def unlinked_translatables(self):

@@ -402,7 +402,7 @@ distrorelease_search = ContextDisplayName('Search packages in %s')
 
 distrorelease_translations = ContextTitle('Translations of %s in Launchpad')
 
-distrorelease_translationsadmin = ContextTitle('Change translation options of %s')
+distrorelease_translationsadmin = ContextTitle('Admin translation options of %s')
 
 distrorelease_builds = ContextTitle('Builds for %s')
 
@@ -460,8 +460,6 @@ languageset_index = 'Languages in Launchpad'
 
 # launchpad_debug doesn't need a title.
 
-launchpad_accessdisabled = 'Access disabled'
-
 def launchpad_addform(context, view):
     # Returning None results in the default Launchpad page title being used.
     return getattr(view, 'page_title', None)
@@ -500,6 +498,8 @@ launchpad_onezerostatus = 'One-Zero Page Template Status'
 launchpad_requestexpired = 'Error: Timeout'
 
 launchpad_search = 'Search projects in Launchpad'
+
+launchpad_translationunavailable= 'The translations are not available'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
