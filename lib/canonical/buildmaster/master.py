@@ -116,22 +116,11 @@ def determineArchitecturesToBuild(pubrec, legal_archreleases,
 class BuilddMaster:
     """Canonical autobuilder master, toolkit and algorithms.
 
-    Attempt to '_archreleases'  attribute, a dictionary which contains a
-    chain of verified DistroArchReleases (by addDistroArchRelease) followed
-    by another dictionary containing the available builder-slaver for this
-    DistroArchRelease, like :
-
-    # associate  specific processor family to a group of available
-    # builder-slaves
-    notes[archrelease.processorfamily]['builders'] = builderGroup
-
-    # just to consolidate we have a collapsed information
-    buildersByProcessor = notes[archrelease.processorfamily]['builders']
-
-    # associate the extended builderGroup reference to a given
-    # DistroArchRelease
-    self._archreleases[DAR]['builders'] = buildersByProcessor
+    This class is in the process of being deprecated in favour of the regular
+    content classes. Please do not extend it except as required to move more
+    logic into the content classes.
     """
+
     def __init__(self, logger, tm):
         self._logger = logger
         self._tm = tm
