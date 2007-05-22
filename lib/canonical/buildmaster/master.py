@@ -179,12 +179,6 @@ class BuilddMaster:
                    archrelease.architecturetag))
             return
 
-        builders = self._archreleases[archrelease].get("builders")
-
-        # if annotation for builders was already done, return
-        if builders:
-            return
-
         # query the global annotation registry and verify if
         # we have already done the builder checks for the
         # processor family in question. if it's already done
@@ -206,8 +200,8 @@ class BuilddMaster:
 
         # consolidate the annotation for the architecture release
         # in the private attribute _archreleases
-        builders = notes[archrelease.processorfamily]["builders"]
-        self._archreleases[archrelease]["builders"] = builders
+        self._archreleases[archrelease]["builders"] = \
+            notes[archrelease.processorfamily]["builders"]
 
     def createMissingBuilds(self, distrorelease):
         """Ensure that each published package is completly built."""
