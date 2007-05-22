@@ -35,5 +35,7 @@ upon.
  >>> ff_drspr = ff_sp['0.9']
  >>> len(ff_drspr.meta_binaries)
  1
+
+ >>> from canonical.launchpad.interfaces import IDistroReleaseBinaryPackage
  >>> verifyObject(IDistroReleaseBinaryPackage, ff_drspr.meta_binaries[0])
  True

@@ -576,7 +576,7 @@ class SourcePackageHandler:
                                    dsc_maintainer_rfc822=maintainer_line,
                                    dsc_standards_version=src.standards_version,
                                    dsc_binaries=" ".join(src.binaries),
-                                   uploadarchive=distrorelease.main_archive)
+                                   upload_archive=distrorelease.main_archive)
         log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))
 

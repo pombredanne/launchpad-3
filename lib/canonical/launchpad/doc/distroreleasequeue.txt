@@ -242,7 +242,7 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
   >>> custom_item.sourcepackagerelease
   Traceback (most recent call last):
   ...
-  AssertionError
+  AssertionError: No source available.
 
 
 == Upload Signing Key ==
