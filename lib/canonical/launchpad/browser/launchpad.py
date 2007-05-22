@@ -454,7 +454,7 @@ class LaunchpadRootNavigation(Navigation):
         'sprints': ISprintSet,
         '+statistics': ILaunchpadStatisticSet,
         'token': ILoginTokenSet,
-        '+translation-groups': ITranslationGroupSet,
+        '+groups': ITranslationGroupSet,
         'translations': IRosettaApplication,
         'questions': IQuestionSet,
         # These three have been renamed, and no redirects done, as the old
