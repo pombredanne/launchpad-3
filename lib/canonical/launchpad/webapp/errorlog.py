@@ -88,6 +88,28 @@ def _is_sensitive(name):
             'password' in name.lower() or 'passwd' in name.lower())
 
 
+def _request_blacklisted(name):
+    """Return True if the given request variable should not be logged for
+    security or privacy reasons.
+    """
+    name = name.lower()
+    if 'password' in name:
+        return True
+    if 'passwd' in name:
+        return True
+    return False
+
+def _request_whitelisted(name):
+    """Return True if the given request variable should be logged.
+    """
+    if name == 'HTTP_COOKIE':
+        return False
+    # All other UPPER CASE keys are whitelisted.
+    if name.upper() == name:
+        return True
+    return False
+
+
 class ErrorReport:
     implements(IErrorReport)
 
@@ -101,13 +123,7 @@ class ErrorReport:
         self.username = username
         self.url = url
         self.duration = duration
-        self.req_vars = []
-        # hide passwords that might be present in the request variables
-        for (name, value) in req_vars:
-            if _is_sensitive(name):
-                self.req_vars.append((name, '<hidden>'))
-            else:
-                self.req_vars.append((name, value))
+        self.req_vars = req_vars
         self.db_statements = db_statements
 
     def __repr__(self):
@@ -315,8 +331,16 @@ class ErrorReportingUtility:
                 except AttributeError:
                     pass
 
-                req_vars = sorted((_safestr(key), _safestr(value))
-                                  for (key, value) in request.items())
+                req_vars = []
+                for key, value in request.items():
+                    if not _request_blacklisted(key) and (
+                            _request_whitelisted(key)
+                            or key in request.form.keys()
+                            ):
+                        req_vars.append((_safestr(key), _safestr(value)))
+                    else:
+                        req_vars.append((_safestr(key), '<hidden>'))
+                req_vars.sort()
             strv = _safestr(info[1])
 
             strurl = _safestr(url)
@@ -399,6 +423,10 @@ class ScriptRequest(ErrorReportRequest):
 
     def items(self):
         return self._data
+
+    @property
+    def form(self):
+        return dict(self.items())
 
 
 class SoftRequestTimeout(RequestExpired):

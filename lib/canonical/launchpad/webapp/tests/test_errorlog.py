@@ -10,6 +10,8 @@ import unittest
 import shutil
 import StringIO
 from textwrap import dedent
+
+from zope.publisher.browser import TestRequest
 from zope.testing.loggingsupport import InstalledHandler
 
 from canonical.config import config
@@ -56,16 +58,11 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.req_vars[0], ('name1', 'value1'))
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
         self.assertEqual(entry.req_vars[2], ('name1', 'value3'))
-        self.assertEqual(entry.req_vars[3], ('field.password', '<hidden>'))
-        self.assertEqual(entry.req_vars[4], ('PassWd2', '<hidden>'))
-        self.assertEqual(entry.req_vars[5], ('HTTP_COOKIE', '<hidden>'))
-        self.assertEqual(entry.req_vars[6], ('launchpad', '<hidden>'))
-        self.assertEqual(entry.req_vars[7], ('launchpad_dev', '<hidden>'))
-        self.assertEqual(entry.req_vars[8], ('launchpad_tests', '<hidden>'))
-        self.assertEqual(entry.req_vars[9], ('launchpad_demo', '<hidden>'))
-        self.assertEqual(entry.req_vars[10], ('beta', '<hidden>'))
-        self.assertEqual(entry.req_vars[11], ('edge', '<hidden>'))
-        self.assertEqual(entry.req_vars[12], ('staging', '<hidden>'))
+        # Note: Blacklisting is done at a higher level, so password visible
+        # here.
+        self.assertEqual(entry.req_vars[3], ('field.password', 'secret1'))
+        self.assertEqual(entry.req_vars[4], ('PassWd2', 'secret2'))
+        self.assertEqual(entry.req_vars[5], ('HTTP_COOKIE', 'sensitive'))
         self.assertEqual(len(entry.db_statements), 2)
         self.assertEqual(entry.db_statements[0], (1, 5, 'SELECT 1'))
         self.assertEqual(entry.db_statements[1], (5, 10, 'SELECT 2'))
@@ -248,8 +245,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
-        class FakeRequest:
-            URL = 'http://localhost:9000/foo'
+        class TestRequestWithPrincipal(TestRequest):
             class principal:
                 id = 42
                 title = u'title'
@@ -260,14 +256,18 @@ class TestErrorReportingUtility(unittest.TestCase):
                 def getLogin():
                     return u'Login'
 
-            oopsid = None
-
-            def items(self):
-                return [('name2', 'value2'), ('name1', 'value1'),
-                        ('name1', 'value3 \xa7'),
-                        (u'\N{BLACK SQUARE}', u'value4')]
-
-        request = FakeRequest()
+        request = TestRequestWithPrincipal(
+                environ={
+                    'SERVER_URL': 'http://localhost:9000/foo',
+                    'HTTP_COOKIE': 'lp=cookies_hidden_for_security_reasons',
+                    'name1': 'value1',
+                    },
+                form={
+                    'name1': 'value3 \xa7',
+                    'name2': 'value2',
+                    u'\N{BLACK SQUARE}': u'value4',
+                    }
+                )
 
         try:
             raise Exception('xyz\nabc')
@@ -279,30 +279,41 @@ class TestErrorReportingUtility(unittest.TestCase):
         lines = open(errorfile, 'r').readlines()
 
         # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
-        self.assertEqual(lines[1], 'Exception-Type: Exception\n')
-        self.assertEqual(lines[2], 'Exception-Value: xyz abc\n')
-        self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
-        self.assertEqual(lines[4], 'User: Login, 42, title, description |\\u25a0|\n')
-        self.assertEqual(lines[5], 'URL: http://localhost:9000/foo\n')
-        self.assertEqual(lines[6], 'Duration: -1\n')
-        self.assertEqual(lines[7], '\n')
+        self.assertEqual(lines.pop(0), 'Oops-Id: OOPS-91T1\n')
+        self.assertEqual(lines.pop(0), 'Exception-Type: Exception\n')
+        self.assertEqual(lines.pop(0), 'Exception-Value: xyz abc\n')
+        self.assertEqual(lines.pop(0), 'Date: 2006-04-01T00:30:00+00:00\n')
+        self.assertEqual(lines.pop(0), 'User: Login, 42, title, description |\\u25a0|\n')
+        self.assertEqual(lines.pop(0), 'URL: http://localhost:9000/foo\n')
+        self.assertEqual(lines.pop(0), 'Duration: -1\n')
+        self.assertEqual(lines.pop(0), '\n')
 
         # request vars
-        self.assertEqual(lines[8], '\\u25a0=value4\n')    # non-ASCII request var
-        self.assertEqual(lines[9], 'name1=value1\n')
-        self.assertEqual(lines[10], 'name1=value3 \\xa7\n')
-        self.assertEqual(lines[11], 'name2=value2\n')
-        self.assertEqual(lines[12], '\n')
+        self.assertEqual(lines.pop(0), 'CONTENT_LENGTH=0\n')
+        self.assertEqual(
+                lines.pop(0), 'GATEWAY_INTERFACE=TestFooInterface/1.0\n'
+                )
+        self.assertEqual(lines.pop(0), 'HTTP_COOKIE=%3Chidden%3E\n')
+        self.assertEqual(lines.pop(0), 'HTTP_HOST=127.0.0.1\n')
+        self.assertEqual(lines.pop(0), 'SERVER_URL=http://localhost:9000/foo\n')
+
+        # non-ASCII request var
+        self.assertEqual(lines.pop(0), '\\u25a0=value4\n')
+        self.assertEqual(lines.pop(0), 'lp=%3Chidden%3E\n')
+        self.assertEqual(lines.pop(0), 'name1=value3 \\xa7\n')
+        self.assertEqual(lines.pop(0), 'name2=value2\n')
+        self.assertEqual(lines.pop(0), '\n')
 
         # no database statements
-        self.assertEqual(lines[13], '\n')
+        self.assertEqual(lines.pop(0), '\n')
 
         # traceback
-        self.assertEqual(lines[14], 'Traceback (innermost last):\n')
+        self.assertEqual(lines.pop(0), 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise Exception(\'xyz\')
-        self.assertEqual(lines[17], 'Exception: xyz\n')
+        lines.pop(0)
+        lines.pop(0)
+        self.assertEqual(lines.pop(0), 'Exception: xyz\n')
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
