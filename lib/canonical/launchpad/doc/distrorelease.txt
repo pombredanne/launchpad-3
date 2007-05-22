@@ -433,12 +433,26 @@ public:
    >>> humpy.hide_all_translations = False
    >>> humpy.copyMissingTranslationsFromParent()
    Traceback (most recent call last):
-     ...
-   AssertionError
+   ...
+   AssertionError:
+   _copyActiveTranslationsToNewRelease: hide_all_translations not set!
+   ...
 
-   >>> humpy.hide_all_translations = False
+Also, the script requires that translation imports are blocked:
+
+   >>> humpy.hide_all_translations = True
+   >>> humpy.defer_translation_imports = False
    >>> humpy.copyMissingTranslationsFromParent()
+   Traceback (most recent call last):
+   ...
+   AssertionError:
+   _copyActiveTranslationsToNewRelease: defer_translation_imports not set!
+   ...
 
+When both fields are set, the script doesn't complain.
+
+   >>> humpy.defer_translation_imports = True
+   >>> humpy.copyMissingTranslationsFromParent()
 
 Note that only current PO templates are copied from the distribution parent:
 
