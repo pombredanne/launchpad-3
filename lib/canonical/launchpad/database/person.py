@@ -5,10 +5,6 @@ __all__ = [
     'Person', 'PersonSet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet',
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
-# XXX: Yeah, you bastard, this is to make hundreds of tests to fail so that
-# you remember to put all the imports on this file in alphabetical order
-# before sending this off to pqm.
-#from foo import baz
 from datetime import datetime, timedelta
 import pytz
 import sha
