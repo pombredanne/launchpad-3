@@ -1241,10 +1241,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def _getHoldingTableName(self, tablename, suffix=''):
         """Name for a holding table to hold data being copied in tablename.
 
-        This is used to copy translation data from the parent distrorelease to
-        self.  To reduce locking on the database, applicable data is first
-        copied to these holding tables, then modified there, and finally moved
-        back into the original table "tablename."
+        This name is used in copying translation data from the parent
+        distrorelease to self.  To reduce locking on the database, applicable
+        data is first copied to these holding tables, then modified there, and
+        finally moved back into the original table "tablename."
 
         Return value is properly quoted for use as an SQL identifier.
         """
@@ -1571,13 +1571,48 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 # sequential scans.  A quick "ANALYZE" run should fix that.
                 # Doesn't take long, either, so we try to do it before the
                 # problem occurs.
-                # Re-analyze periodically just in case; plus when performance
-                # drops and forces batch_size down to its minimum value; and
-                # whenever we've deleted about a fifth of our remaining rows
-                # since our last run.  Disaster seems to strike around
-                # one-third, even when there are only a hundred thousand or so
-                # rows left.  Don't analyze too often if something else is
-                # forcing performance down, though.
+                #
+                # * batches_since_analyze > 3 is a "common sense" limit.  It
+                # kicks in when the various reasons to analyze coincide too
+                # closely to be separately useful, or when performance is bad
+                # but analyzing just isn't helping, or at the very end when
+                # the batch_size gets close to 20% of table size (see below).
+                # It turns out that re-analyzing still has an effect there,
+                # but at that point alternating analyze runs and processing of
+                # of batches no longer beats the performance of doing a few
+                # last batches without the benefit of an up-to-date index.
+                #
+                # * batch_size < min_batch_size is the "bottom line" detection
+                # of the symptom that made me add the analyze logic in the
+                # first place: performance is so bad for so long that
+                # batch_size sinks unacceptably low.  But we don't want to
+                # rely on just this condition since by that time we've already
+                # lost a considerable amount of time.
+                #
+                # * deletions_since_analyze > 1000000 is a simple periodic
+                # run, very intuitive though it did not really match
+                # performance observations.  It provides a safeguard against
+                # unexpected index degradation at negligible amortized cost,
+                # whereas waiting for a gradual slowdown to trigger the 
+                # previous rule is much more costly.  The cost of slowdown is
+                # also less easily amortized, since it affects responsiveness.
+                # Another reason to have this periodic run is that the
+                # ultimate trigger for an analyze run is based on observation
+                # of the PostgreSQL query planner's behaviour.  That may
+                # change in future database versions.
+                #
+                # * (highest-lowest)/5 < deletions_since_analyze) is based
+                # purely on experimental observation.  When perhaps a third or
+                # a quarter of rows have been deleted from the holding table
+                # without an analyze run, the database planner no longer sees
+                # the index as useful and reverts to a much more costly table
+                # scan.  Batch cost acquires a large constant-like component,
+                # often larger than our time goal all by itself.  Because
+                # pre-emptive analyze runs are so much cheaper than reactive
+                # ones, I picked a very conservative estimate.  The effect
+                # keeps happening even when there are only a few more batches
+                # left to do.
+
                 if batches_since_analyze > 3 and (
                         batch_size < min_batch_size or
                         deletions_since_analyze > 1000000 or

@@ -1,6 +1,16 @@
 #!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
+"""Furnish distrorelease with lacking translations that its parent does have.
+
+This can be used either to update a distrorelease's translations, or to
+provide a new distrorelease in a series with its initial translation data.
+Only current translations are copied.
+
+Make sure no more than one instance of this script is running at a time on the
+same distrorelease.
+"""
+
 import _pythonpath
 import sys
 from optparse import OptionParser
