@@ -26,60 +26,69 @@ class ImportProcess:
         # Get the queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        # Execute all imports we can.
-        entry_to_import = translation_import_queue.getFirstEntryToImport()
-        while entry_to_import is not None:
+        # Get the list of each product or distrorelease with pending imports
+        importqueues = (
+            translation_import_queue.getPillarObjectsWithApprovedImports() )
+        queues_empty = (len(importqueues) == 0)
 
-            assert entry_to_import.import_into is not None, (
-                "Broken entry, it's Approved but lacks the place where it"
-                " should be imported! Look at the top of the import queue")
+        while not queues_empty:
+            queues_empty = True
+            for queue in importqueues:
+                entry_to_import = queue.getFirstEntryToImport()
+                if entry_to_import is None:
+                    continue
+                elif queues_empty:
+                    queues_empty = False
 
-            title = '[Unknown Title]'
-            try:
-                title = entry_to_import.import_into.title
-                self.logger.info('Importing: %s' % title)
-                entry_to_import.import_into.importFromQueue(self.logger)
-            except KeyboardInterrupt:
-                self.ztm.abort()
-                raise
-            except:
-                # If we have any exception, log it, abort the transaction and
-                # set the status to FAILED.
-                self.logger.error('Got an unexpected exception while'
-                                  ' importing %s' % title, exc_info=1)
-                # We are going to abort the transaction, need to save the id
-                # of this entry to update its status.
-                failed_entry_id = entry_to_import.id
-                self.ztm.abort()
-                # Get the needed objects to set the failed entry status as
-                # FAILED.
-                self.ztm.begin()
-                translation_import_queue = getUtility(ITranslationImportQueue)
-                entry_to_import = translation_import_queue[failed_entry_id]
-                entry_to_import.status = RosettaImportStatus.FAILED
-                self.ztm.commit()
-                self.ztm.begin()
-                # Go to process next entry.
-                continue
+                assert entry_to_import.import_into is not None, (
+                    "Broken entry, it's Approved but lacks the place where it"
+                    " should be imported! Look at the top of the import queue")
 
-            # As soon as the import is done, we commit the transaction
-            # so it's not lost.
-            try:
-                self.ztm.commit()
-                self.ztm.begin()
-            except KeyboardInterrupt:
-                self.ztm.abort()
-                raise
-            except:
-                # If we have any exception, we log it and abort the
-                # transaction.
-                self.logger.error('We got an unexpected exception while'
-                                  ' committing the transaction', exc_info=1)
-                self.ztm.abort()
-                self.ztm.begin()
+                # Do the import.
+                title = '[Unknown Title]'
+                try:
+                    title = entry_to_import.import_into.title
+                    self.logger.info('Importing: %s' % title)
+                    entry_to_import.import_into.importFromQueue(self.logger)
+                except KeyboardInterrupt:
+                    self.ztm.abort()
+                    raise
+                except:
+                    # If we have any exception, log it, abort the transaction and
+                    # set the status to FAILED.
+                    self.logger.error('Got an unexpected exception while'
+                                      ' importing %s' % title, exc_info=1)
+                    # We are going to abort the transaction, need to save the id
+                    # of this entry to update its status.
+                    failed_entry_id = entry_to_import.id
+                    self.ztm.abort()
+                    # Get the needed objects to set the failed entry status as
+                    # FAILED.
+                    self.ztm.begin()
+                    translation_import_queue = getUtility(
+                        ITranslationImportQueue)
+                    entry_to_import = translation_import_queue[failed_entry_id]
+                    entry_to_import.status = RosettaImportStatus.FAILED
+                    self.ztm.commit()
+                    self.ztm.begin()
+                    # Go to process next entry.
+                    continue
 
-            entry_to_import = translation_import_queue.getFirstEntryToImport()
-
+                # As soon as the import is done, we commit the transaction
+                # so it's not lost.
+                try:
+                    self.ztm.commit()
+                    self.ztm.begin()
+                except KeyboardInterrupt:
+                    self.ztm.abort()
+                    raise
+                except:
+                    # If we have any exception, we log it and abort the
+                    # transaction.
+                    self.logger.error('We got an unexpected exception while'
+                                      ' committing the transaction', exc_info=1)
+                    self.ztm.abort()
+                    self.ztm.begin()
 
 class AutoApproveProcess:
     """Attempt to approve some PO/POT imports without human intervention."""

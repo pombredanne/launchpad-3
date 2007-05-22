@@ -13,7 +13,7 @@ __all__ = [
     'ITranslationImportQueueEntry',
     'ITranslationImportQueue',
     'IEditTranslationImportQueueEntry',
-    'ITranslationImportQueueTarget',
+    'IHasTranslationImports',
     ]
 
 class ITranslationImportQueueEntry(Interface):
@@ -216,6 +216,11 @@ class ITranslationImportQueue(Interface):
         filtering purposes.
         """
 
+    def getPillarObjectsWithApprovedImports():
+        """Return list of Product's and DistroRelease's with pending imports.
+
+        All returned items must implement IHasTranslationImports."""
+
     def executeOptimisticApprovals(ztm):
         """Try to move entries from the Needs Review status to Approved one.
 
@@ -284,19 +289,22 @@ class IEditTranslationImportQueueEntry(Interface):
         required=False)
 
 
-class ITranslationImportQueueTarget(Interface):
+class IHasTranslationImports(Interface):
     """An entity on which a translation import queue entry is attached.
 
     Examples include an IProductSeries, ISourcePackage, IDistroRelease and
     IPerson.
     """
 
+    def getFirstEntryToImport():
+        """Return the first entry of the queue ready to be imported."""
+
     def getTranslationImportQueueEntries(status=None, file_extension=None):
         """Return entries in the translation import queue for this entity.
 
         :arg status: RosettaImportStatus DB Schema entry.
         :arg file_extension: String with the file type extension, usually 'po'
-            or 'pot'. FIXME: po or pot
+            or 'pot'.
 
         If either status or file_extension are given, the returned entries are
         filtered based on those values.
