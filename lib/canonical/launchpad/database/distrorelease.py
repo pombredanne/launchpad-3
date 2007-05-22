@@ -18,7 +18,7 @@ from zope.component import getUtility
 
 from sqlobject import (
     StringCol, ForeignKey, SQLMultipleJoin, IntCol, SQLObjectNotFound,
-    SQLRelatedJoin)
+    SQLRelatedJoin, BoolCol)
 
 from canonical.cachedproperty import cachedproperty
 
@@ -113,6 +113,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
+    hide_all_translations = BoolCol(notNull=True, default=True)
 
     architectures = SQLMultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
