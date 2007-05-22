@@ -672,32 +672,16 @@ class TranslationImportQueue:
 
     def getFirstEntryToImport(self):
         """See ITranslationImportQueue."""
-
         # Get oldest entry that either is not attached to a distrorelease, or
         # is attached to one whose defer_translation_imports flag is not set.
-        oldest_wo_dr = TranslationImportQueueEntry.selectFirst('''
-            status = %d AND
-            distrorelease is null''' % RosettaImportStatus.APPROVED.value,
-            orderBy=['dateimported'])
-
-        oldest_w_dr = TranslationImportQueueEntry.selectFirst('''
-            status = %d AND
-            translationimportqueueentry.distrorelease = distrorelease.id AND
-            not distrorelease.defer_translation_imports
-            ''' % RosettaImportStatus.APPROVED.value,
+        return TranslationImportQueueEntry.selectFirst('''
+            status = %s AND
+            (distrorelease is null OR
+            (distrorelease.id=distrorelease AND
+            NOT distrorelease.defer_translation_imports))
+            ''' % sqlvalues(RosettaImportStatus.APPROVED),
             clauseTables=['distrorelease'],
             orderBy=['dateimported'])
-
-        if oldest_w_dr is None:
-            return oldest_wo_dr
-
-        if oldest_wo_dr is None:
-            return oldest_w_dr
-
-        if oldest_w_dr.dateimported < oldest_wo_dr.dateimported:
-            return oldest_w_dr
-
-        return oldest_wo_dr
 
 
     def getEntriesWithPOTExtension(self, distrorelease=None,
