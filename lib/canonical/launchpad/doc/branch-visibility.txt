@@ -9,7 +9,8 @@ on the branch in the attribute visibility_team.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBranchSet
-    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/gnome-terminal/scanned')
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/gnome-terminal/scanned')
 
 == Public Visibility ==
 
@@ -30,10 +31,9 @@ Public branches are viewable to all, even those not logged in.
 Now if we set the visibility_team to something like the Ubuntu Gnome team.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> person_set = getUtility(IPersonSet)
     >>> ubuntu_gnome_team = person_set.getByName('name18')
-    >>> removeSecurityProxy(branch).visibility_team = ubuntu_gnome_team
+    >>> branch.visibility_team = ubuntu_gnome_team
 
 The branch will not be publicly viewable any more.
 
@@ -79,7 +79,7 @@ Sample Person isn't a member of the launchpad team.
 
 Set the visibility_team of the branch to the launchpad team.
 
-    >>> removeSecurityProxy(branch).visibility_team = launchpad_team
+    >>> branch.visibility_team = launchpad_team
 
 Sample Person can see the branch.
 
