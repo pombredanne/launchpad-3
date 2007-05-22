@@ -131,6 +131,7 @@ all other languages including English from the questions displayed.
     ...     question.first('a').renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
 
+
 = Multiple Request Languages in Latest Questions =
 
 The portlet that lists the latest questions involving a person displays
