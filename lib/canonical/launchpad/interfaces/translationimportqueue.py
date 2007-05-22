@@ -13,6 +13,7 @@ __all__ = [
     'ITranslationImportQueueEntry',
     'ITranslationImportQueue',
     'IEditTranslationImportQueueEntry',
+    'ITranslationImportQueueTarget',
     ]
 
 class ITranslationImportQueueEntry(Interface):
@@ -281,3 +282,22 @@ class IEditTranslationImportQueueEntry(Interface):
             "The path to this file inside the source tree. If it's empty, we"
             " use the one from the queue entry."),
         required=False)
+
+
+class ITranslationImportQueueTarget(Interface):
+    """An entity on which a translation import queue entry is attached.
+
+    Examples include an IProductSeries, ISourcePackage, IDistroRelease and
+    IPerson.
+    """
+
+    def getTranslationImportQueueEntries(status=None, file_extension=None):
+        """Return entries in the translation import queue for this entity.
+
+        :arg status: RosettaImportStatus DB Schema entry.
+        :arg file_extension: String with the file type extension, usually 'po'
+            or 'pot'. FIXME: po or pot
+
+        If either status or file_extension are given, the returned entries are
+        filtered based on those values.
+        """

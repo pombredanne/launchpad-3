@@ -1155,6 +1155,9 @@ translationimportqueueentry_index = 'Translation import queue entry'
 
 translationimportqueue_index = 'Translation import queue'
 
+translationimportqueuetarget_index = ContextTitle(
+    'Translation import queue for %s')
+
 translationimportqueue_blocked = 'Translation import queue - Blocked'
 
 def translator_edit(context, view):
