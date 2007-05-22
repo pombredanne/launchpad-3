@@ -17,6 +17,13 @@ def shut_up_deprecation_warning():
     # formats -- DavidAllouche 2006-01-29
     bzrlib.repository._deprecation_warning_done = True
 
+def force_bzr_to_use_urllib():
+    from bzrlib.transport import register_lazy_transport
+    register_lazy_transport('http://', 'bzrlib.transport.http._urllib',
+                            'HttpTransport_urllib')
+    register_lazy_transport('https://', 'bzrlib.transport.http._urllib',
+                            'HttpTransport_urllib')
+
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -47,5 +54,6 @@ if __name__ == '__main__':
     log = logger(options, 'branch-puller')
 
     shut_up_deprecation_warning()
+    force_bzr_to_use_urllib()
     mirror(log, manager_class)
 
