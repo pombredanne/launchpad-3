@@ -42,7 +42,12 @@ Now, we'll subscribe our subscribee to the bug.
     >>> user_browser.url == bug_url
     True
 
-We should see our subscribee in the list of subscribers to this bug.
+We should be notified that our subscribee was subscribed, and we should be
+able to see them in the list of subscribers to this bug.
+
+    >>> for tags in find_tags_by_class(user_browser.contents, "informational message"):
+    ...     print tag.renderContents()
+    'No Privileges Person' has been subscribed to this bug.
 
     >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
     >>> subscribee_name in subs('ul')[0].renderContents()
