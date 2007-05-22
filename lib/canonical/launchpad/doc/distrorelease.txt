@@ -426,9 +426,19 @@ DistroRelease Translations migration
 
 We have several ways to copy translations between distro releases.
 
-The main one is to clone what we have in its parent distribution:
+The main one is to clone what we have in its parent distribution.  This will
+only work if we keep the new distrorelease's translations hidden from the
+public:
 
+   >>> humpy.hide_all_translations = False
    >>> humpy.copyMissingTranslationsFromParent()
+   Traceback (most recent call last):
+     ...
+   AssertionError
+
+   >>> humpy.hide_all_translations = False
+   >>> humpy.copyMissingTranslationsFromParent()
+
 
 Note that only current PO templates are copied from the distribution parent:
 
