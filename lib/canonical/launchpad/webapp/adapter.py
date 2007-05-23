@@ -21,7 +21,7 @@ import psycopg
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.sqlbase import AUTOCOMMIT_ISOLATION, cursor
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
@@ -361,12 +361,12 @@ def _check_expired(timeout):
 
 def hard_timeout_expired():
     """Returns True if the hard request timeout been reached."""
-    return _check_expired(config.launchpad.db_statement_timeout)
+    return _check_expired(dbconfig.db_statement_timeout)
 
 
 def soft_timeout_expired():
     """Returns True if the soft request timeout been reached."""
-    return _check_expired(config.launchpad.soft_request_timeout)
+    return _check_expired(dbconfig.soft_request_timeout)
 
 
 class RequestExpired(RuntimeError):
@@ -477,19 +477,19 @@ class LaunchpadDatabaseAdapter(ReconnectingDatabaseAdapter):
         """
         dbuser = getattr(self._local, 'dbuser', None)
         self.setDSN('dbi://%s@%s/%s' % (
-            dbuser or config.launchpad.dbuser,
-            config.dbhost or '',
-            config.dbname
+            dbuser or dbconfig.dbuser,
+            dbconfig.dbhost or '',
+            dbconfig.dbname
             ))
 
         flags = _get_dirty_commit_flags()
         connection = super(LaunchpadDatabaseAdapter,
                            self)._connection_factory()
 
-        if config.launchpad.db_statement_timeout is not None:
+        if dbconfig.db_statement_timeout is not None:
             cursor = connection.cursor()
             cursor.execute('SET statement_timeout TO %d' %
-                           config.launchpad.db_statement_timeout)
+                           dbconfig.db_statement_timeout)
             connection.commit()
 
         _reset_dirty_commit_flags(*flags)

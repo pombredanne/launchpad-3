@@ -238,3 +238,39 @@ def loglevel(value):
                 "Should be DEBUG, CRITICAL, ERROR, FATAL, INFO, WARNING "
                 "as per logging module." % value
                 )
+
+
+class DatabaseConfig:
+    """A class to provide the Launchpad database configuration
+    """
+    _config_section = None
+    _db_config_attrs = set([
+        'dbuser', 'dbhost', 'dbname', 'db_statement_timeout',
+        'soft_request_timeout', 'randomise_select_results'
+        ])
+
+    def setConfigSection(self, section_name):
+        self._config_section = section_name
+
+    def _getConfigSections(self):
+        if self._config_section is None:
+            return [config.database]
+        overlay = config
+        for part in self._config_section.split('.'):
+            overlay = getattr(overlay, part)
+        return [overlay, config]
+
+    def __getattr__(self, name):
+        sections = self._getConfigSections()
+        if name not in self._db_config_attrs:
+            raise AttributeError(name)
+        value = None
+        for section in sections:
+            value = getattr(section, name, None)
+            if value is not None:
+                break
+        return value
+
+
+dbconfig = DatabaseConfig()
+dbconfig.setConfigSection('launchpad')
