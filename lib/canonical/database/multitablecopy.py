@@ -7,11 +7,11 @@ from canonical.database.sqlbase import (cursor, quoteIdentifier)
 class MultiTableCopy:
     """Copy interlinked data spanning multiple tables in a coherent fashion.
 
-    This allows data from a combination of tables, with foreign-key references
-    between them, to be copied to a set of corresponding "holding tables;"
-    processed and modfied there; and then be inserted back to the original
-    tables.  The holding tables are created on demand and dropped upon
-    completion.
+    This allows data from a combination of tables, possibly with foreign-key
+    references between them, to be copied to a set of corresponding "holding
+    tables;" processed and modfied there; and then be inserted back to the
+    original tables.  The holding tables are created on demand and dropped
+    upon completion.
 
     This is a two-stage process:
 
@@ -78,6 +78,7 @@ class MultiTableCopy:
         self.last_extracted_table = None
 
     def dropHoldingTables(self):
+        """Drop any holding tables that may exist for this MultiTableCopy."""
         postgresql.drop_tables(cursor(),
             [self.getHoldingTableName(t) for t in self.tables])
 
@@ -90,11 +91,6 @@ class MultiTableCopy:
 
     def getHoldingTableName(self, tablename, suffix=''):
         """Name for a holding table to hold data being copied in tablename.
-
-        This name is used in copying translation data from the parent
-        distrorelease to self.  To reduce locking on the database, applicable
-        data is first copied to these holding tables, then modified there, and
-        finally moved back into the original table "tablename."
 
         Return value is properly quoted for use as an SQL identifier.
         """
@@ -109,21 +105,9 @@ class MultiTableCopy:
             id_sequence=None):
         """Extract (selected) rows from source_table into a holding table.
 
-        This method is used to copy a distrorelease's current translation
-        elements to a new distrorelease.  The idea is that all translation
-        data can be copied into holding tables first (without starving other
-        users of database service through excessive locking), and provided
-        with new row ids so they can be directly re-inserted into the original
-        tables.
-
-        A new table is created and filled with any records from source_table
-        that match filtering criteria passed in where_clause.  The new table's
-        name is constructed as self.getHoldingTableName(source_table).  If a
-        table of that name already existed, it is dropped first.
-
-        The new table gets an additional new_id column with identifiers in the
-        seqid sequence; the name seqid defaults to the original table name in
-        lower case, with "_seq_id" appended.  Apart from this extra column,
+        The holding table gets an additional new_id column with identifiers in
+        the seqid sequence; the name seqid defaults to the original table name
+        in lower case, with "_seq_id" appended.  Apart from this extra column,
         indexes, and constraints, the holding table is schematically identical
         to source_table.  A unique index is created for the original id
         column.
@@ -225,8 +209,11 @@ class MultiTableCopy:
         self._log_info('...Extracted in %.3f seconds' %
             (time.time()-starttime))
 
+
     def hasRecoverableHoldingTables(self):
         """Do we have holding tables with recoverable data from previous run?
+
+        Returns Boolean answer.
         """
 
         cur = cursor()
