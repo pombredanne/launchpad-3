@@ -106,6 +106,15 @@ class IBuilder(IHasOwner):
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
 
+    def checkSlaveAlive():
+        """Check that the buildd slave is alive.
+    
+        This pings the slave over the network via the echo method and looks
+        for the sent message as the reply.
+
+        :raises BuildDaemonError: When the slave is down.
+        """
+
     def failbuilder(reason):
         """Mark builder as failed for a given reason."""
 

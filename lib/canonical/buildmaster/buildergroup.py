@@ -70,7 +70,7 @@ class BuilderGroup:
         """
         self.logger.info('Checking %s' % builder.name)
         try:
-            self.checkBuilderAlive(builder)
+            builder.checkSlaveAlive()
             self.checkBuilderArchitecture(builder, arch)
         # catch only known exceptions
         except (ValueError, TypeError, xmlrpclib.Fault,
@@ -112,22 +112,6 @@ class BuilderGroup:
             raise BuildDaemonError(
                 "Architecture tag mismatch: %s != %s"
                 % (arch, arch.architecturetag))
-
-    def checkBuilderAlive(self, builder):
-        """Check that the builder is alive.
-    
-        This pings the builder over the network via the echo method and looks
-        for the sent message as the reply.
-
-        :param builder: A builder object.
-        :raises BuildDaemonError: When the builder is down or of the wrong
-            architecture.
-        """
-        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-        slave = removeSecurityProxy(builder.slave)
-        # verify the echo method
-        if slave.echo("Test")[0] != "Test":
-            raise BuildDaemonError("Failed to echo OK")
 
     def rescueBuilderIfLost(self, builder):
         """Reset Builder slave if job information mismatch.

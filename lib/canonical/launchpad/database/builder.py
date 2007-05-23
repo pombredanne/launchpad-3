@@ -83,6 +83,11 @@ class Builder(SQLBase):
     speedindex = IntCol(dbName='speedindex', default=0)
     manual = BoolCol(dbName='manual', default=False)
 
+    def checkSlaveAlive(self):
+        """See IBuilder."""
+        if self.slave.echo("Test")[0] != "Test":
+            raise BuildDaemonError("Failed to echo OK")
+
     @property
     def currentjob(self):
         """See IBuilder"""
