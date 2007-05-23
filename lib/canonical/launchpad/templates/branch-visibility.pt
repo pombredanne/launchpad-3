@@ -18,17 +18,17 @@
 
   <h1>Branch visibility policy</h1>
 
-  <tal:using-inhertied-policy condition="view/policy/isUsingInheritedPolicy">
-    <p>
-      Using inherted policy from
-      <strong>
+  <p tal:condition="view/policy/isUsingInheritedPolicy" 
+     id="inherited">
+    Using inherted policy from
+    <strong>
       <a tal:attributes="href view/policy/inherited_policy/context/fmt:url"
          tal:content="view/policy/inherited_policy/context/displayname">
         Project</a></strong>.
-    </p>
-  </tal:using-inhertied-policy>
+  </p>
 
-  <p>
+  <div id="policy-items">
+  <p id="default-policy">
     Default branch visibility for all branches in
     <strong tal:content="context/displayname">Project</strong>
     is <strong tal:content="view/default_policy/title">Public</strong>.
@@ -37,7 +37,7 @@
   <tal:has-policies condition="view/team_policies">
     <p>Except for the following teams:
     </p>
-    <ul>
+    <ul id="team-policies">
       <li tal:repeat="item view/team_policies">
         <tal:team replace="item/team/displayname"
                   condition="item/team">Team Name</tal:team>:
@@ -47,10 +47,10 @@
     </ul>
 
   </tal:has-policies>
+  </div>
 
-
+  <div style="padding-left: 1em" id="policy-actions">
   <tal:using-inhertied-policy condition="view/policy/isUsingInheritedPolicy">
-    <div style="padding-left: 1em">
       <p>
         <img src="/@@/edit" alt="edit" />
         <a tal:define="inherited_url view/policy/inherited_policy/context/fmt:url"
@@ -65,11 +65,9 @@
           </tal:displayname>
         </a>
       </p>
-    </div>
   </tal:using-inhertied-policy>
 
   <tal:no-inhertied-policy condition="not: view/policy/isUsingInheritedPolicy">
-    <div style="padding-left: 1em">
       <p>
         <img src="/@@/add" alt="add" />
         <a href="+addbranchvisibilitypolicy">Set policy for a team</a>
@@ -83,6 +81,7 @@
       </tal:can-remove>
 
   </tal:no-inhertied-policy>
+  </div>
 
   <p>NOTE: Changing the branch visibility policies for teams does not change
   the visibility of any existing branches.</p>
