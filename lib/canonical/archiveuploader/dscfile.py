@@ -311,7 +311,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
             try:
                 library_file = self.policy.distro.getFileByName(
-                    sub_dsc_file.filename, source=True, binary=False)
+                    sub_dsc_file.filename, source=True, binary=False,
+                    archive=self.policy.archive)
             except NotFoundError, error:
                 library_file = None
             else:
@@ -450,6 +451,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             component=self.component,
             changelog=guess_encoding(self.changes.simulated_changelog),
             section=self.section,
+            archive=self.policy.archive,
             # dateuploaded by default is UTC:now in the database
             )
 

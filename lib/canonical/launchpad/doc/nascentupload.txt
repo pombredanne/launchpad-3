@@ -178,6 +178,8 @@ ed_binary contains only one 'architecture dependent binary':
   True
   >>> ed_binary_upload.archindep
   False
+  >>> ed_binary_upload.is_ppa
+  False
 
 As expected 'native' and 'hasorig' doesn't make any sense for binary
 uploads, so they are alway False:
@@ -206,7 +208,6 @@ changesfiles and binary, source and mixed uploads ...
   ...     name='buildd', distro='ubuntu', distrorelease='hoary', buildid=1)
   >>> modified_buildd_policy.can_upload_source = True
   >>> modified_buildd_policy.can_upload_mixed = True
-
 
   >>> ed_mismatched_upload = NascentUpload(
   ...     datadir("ed_0.2-20_i386.changes.mismatched-arch-unsigned"),
@@ -315,8 +316,8 @@ Roll back everything related with ed_mixed_upload:
 
 == Acceptance Work-flow ==
 
-The NascentUpload.do_accept method is the code with effectively adds
-information to the database. Respective DistroReleaseQueue,
+The NascentUpload.do_accept method is the code which effectivelly adds
+information to the database. Respective PackageUploadQueue,
 SourcePackageRelease, Build and BinaryPackageRelease will only exist
 after calling this method.
 
@@ -403,12 +404,12 @@ automatically promote the queue entry to ACCEPTED.
   ...     upload_file.new = False
 
 The we invoke do_accept() normally, since the upload is consistent.
-but since the uniqueness check in IDRQ.setAccepted() has detected
+but since the uniqueness check in IUpload.setAccepted() has detected
 another accepted candidate that conflicts with the proposed one.
 The upload will be rejected.
 
   >>> success, msgs = ed_src_dup.do_accept()
-  ERROR: BOOM:
+  ERROR: Exception while accepting:
   <BLANKLINE>
   >>> success
   False
@@ -416,13 +417,13 @@ The upload will be rejected.
   True
 
   >>> print ed_src_dup.rejection_message
-  Exception while accepting: This sourcepackagerelease is already accepted in hoary.
+  This sourcepackagerelease is already accepted in hoary.
 
 We rely on process-upload transaction rollback to not store bogus
 queue entry in the database.
 
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
-  >>> hoary.getQueueItems(DistroReleaseQueueStatus.NEW).count()
+  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> hoary.getQueueItems(PackageUploadStatus.NEW).count()
   1
 
 
@@ -532,7 +533,8 @@ Build creation is done based on the SourcePackageRelease object, step 5:
 
   >>> from canonical.lp.dbschema import PackagePublishingPocket
   >>> multibar_build = multibar_spr.createBuild(
-  ...     hoary['i386'], PackagePublishingPocket.RELEASE)
+  ...     hoary['i386'], PackagePublishingPocket.RELEASE,
+  ...     multibar_src_queue.archive)
 
   >>> multibar_build.buildstate.name
   'NEEDSBUILD'
@@ -642,7 +644,7 @@ And pop it back to development now that we're done
   >>> hoary.releasestatus = DistributionReleaseStatus.DEVELOPMENT
 
 Check the uploader behaviour against a missing orig.tar.gz file,
-bug # 30741.
+      bug # 30741.
 
   >>> ed21_src = NascentUpload(
   ...     datadir('ed-0.2-21/ed_0.2-21_source.changes'),
@@ -677,7 +679,7 @@ Look for the respective SourcePackageRelease entry and inspect its
 content, it should have all the required fields except the
 'dsc_standards_version':
 
-  >>> inst_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> inst_queue = hoary.getQueueItems(PackageUploadStatus.NEW,
   ...                                  name='test75874', exact_match=True)[0]
   >>> inst_spr = inst_queue.sources[0].sourcepackagerelease
 

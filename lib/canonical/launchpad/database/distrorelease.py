@@ -30,9 +30,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, DistributionReleaseStatus,
-    DistroReleaseQueueStatus, PackagePublishingPocket, RosettaImportStatus,
-    SpecificationSort, SpecificationGoalStatus, SpecificationFilter)
+    DistributionReleaseStatus, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus, RosettaImportStatus,
+    SpecificationFilter, SpecificationGoalStatus, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
     IBinaryPackageName, IBuildSet, IDistroRelease, IDistroReleaseSet,
@@ -73,7 +73,7 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.queue import (
-    DistroReleaseQueue, PackageUploadQueue)
+    PackageUpload, PackageUploadQueue)
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.database.pofile import POFile
@@ -243,13 +243,14 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # first update the source package count
         query = """
             SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status = %s AND
             SourcePackagePublishingHistory.pocket = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self.id,
+            """ % sqlvalues(self, self.main_archive,
                             PackagePublishingStatus.PUBLISHED,
                             PackagePublishingPocket.RELEASE)
         self.sourcecount = SourcePackageName.select(
@@ -270,11 +271,12 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             BinaryPackagePublishingHistory.pocket = %s AND
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %s
+            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s
             """ % sqlvalues(
                 PackagePublishingStatus.PUBLISHED,
                 PackagePublishingPocket.RELEASE,
-                self.id)
+                self, self.main_archive)
         ret = BinaryPackageName.select(
             query, distinct=True, clauseTables=clauseTables).count()
         self.binarycount = ret
@@ -563,7 +565,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             spn in result]
 
     def getPublishedReleases(self, sourcepackage_or_name, version=None,
-            pocket=None, include_pending=False, exclude_pocket=None):
+                             pocket=None, include_pending=False,
+                             exclude_pocket=None, archive=None):
         """See IDistroRelease."""
         # XXX cprov 20060213: we need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
@@ -602,6 +605,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
+        if archive is None:
+            archive = self.main_archive
+        queries.append("archive=%s" % sqlvalues(archive))
+
         published = SourcePackagePublishingHistory.select(
             " AND ".join(queries),
             clauseTables = ['SourcePackageRelease'])
@@ -616,23 +623,31 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             DistributionReleaseStatus.EXPERIMENTAL,
         ]
 
-    def getAllReleasesByStatus(self, status):
+    def getSourcesPublishedForAllArchives(self):
         """See IDistroRelease."""
-        queries = ['distrorelease=%s AND status=%s'
-                   % sqlvalues(self.id, status)]
-
+        queries = ['distrorelease=%s AND status=%s AND archive=%s' %
+                   sqlvalues(self, PackagePublishingStatus.PUBLISHED,
+                             self.main_archive)]
         if not self.isUnstable():
             queries.append(
                 'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
-        return SourcePackagePublishingHistory.select(
+        main_sources = SourcePackagePublishingHistory.select(
             " AND ".join(queries), orderBy="id")
 
-    def getSourcePackagePublishing(self, status, pocket, component=None):
-        """See IDistroRelease."""
-        orderBy = ['SourcePackageName.name']
+        query = """
+        distrorelease=%s AND status=%s AND archive <> %s
+        """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED,
+                        self.main_archive)
+        ppa_sources = SourcePackagePublishingHistory.select(query, orderBy="id")
 
-        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
+        return main_sources.union(ppa_sources)
+
+    def getSourcePackagePublishing(self, status, pocket, component=None,
+                                   archive=None):
+        """See IDistroRelease."""
+        if archive is None:
+            archive = self.main_archive
 
         clause = """
             SourcePackagePublishingHistory.sourcepackagerelease=
@@ -640,9 +655,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             SourcePackageRelease.sourcepackagename=
                 SourcePackageName.id AND
             SourcePackagePublishingHistory.distrorelease=%s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status=%s AND
             SourcePackagePublishingHistory.pocket=%s
-            """ %  sqlvalues(self.id, status, pocket)
+            """ %  sqlvalues(self, archive, status, pocket)
 
         if component:
             clause += (
@@ -650,18 +666,18 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 sqlvalues(component)
                 )
 
+        orderBy = ['SourcePackageName.name']
+        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
+
         return SourcePackagePublishingHistory.select(
             clause, orderBy=orderBy, clauseTables=clauseTables)
 
-    def getBinaryPackagePublishing(self, name=None, version=None,
-                                   archtag=None, sourcename=None,
-                                   orderBy=None, pocket=None,
-                                   component=None):
+    def getBinaryPackagePublishing(
+        self, name=None, version=None, archtag=None, sourcename=None,
+        orderBy=None, pocket=None, component=None, archive=None):
         """See IDistroRelease."""
-
-        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
-                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
-                        'SourcePackageRelease', 'SourcePackageName' ]
+        if archive is None:
+            archive = self.main_archive
 
         query = ["""
         BinaryPackagePublishingHistory.binarypackagerelease =
@@ -677,8 +693,9 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         SourcePackageRelease.sourcepackagename =
             SourcePackageName.id AND
         DistroArchRelease.distrorelease = %s AND
+        BinaryPackagePublishingHistory.archive = %s AND
         BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(self.id, PackagePublishingStatus.PUBLISHED)]
+        """ % sqlvalues(self, archive, PackagePublishingStatus.PUBLISHED)]
 
         if name:
             query.append('BinaryPackageName.name = %s' % sqlvalues(name))
@@ -705,6 +722,10 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 % sqlvalues(component))
 
         query = " AND ".join(query)
+
+        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
+                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
+                        'SourcePackageRelease', 'SourcePackageName' ]
 
         result = BinaryPackagePublishingHistory.select(
             query, distinct=False, clauseTables=clauseTables, orderBy=orderBy)
@@ -733,7 +754,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         builddependsindep, architecturehintlist, component, creator,
         urgency, changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries, dateuploaded=DEFAULT):
+        dsc_binaries, archive, dateuploaded=DEFAULT):
         """See IDistroRelease."""
         return SourcePackageRelease(
             uploaddistrorelease=self, sourcepackagename=sourcepackagename,
@@ -744,7 +765,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             dscsigningkey=dscsigningkey, section=section, manifest=manifest,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822, dsc_format=dsc_format,
             dsc_standards_version=dsc_standards_version,
-            dsc_binaries=dsc_binaries)
+            dsc_binaries=dsc_binaries, upload_archive=archive)
 
     def getComponentByName(self, name):
         """See IDistroRelease."""
@@ -774,12 +795,14 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(self, PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(self, self.main_archive,
+                            PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -801,12 +824,14 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(self, PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(self, self.main_archive,
+                            PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -837,8 +862,9 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(binarypackagename, self,
+            """ % sqlvalues(binarypackagename, self, self.main_archive,
                             PackagePublishingStatus.REMOVED),
             orderBy='-datecreated',
             clauseTables=['BinaryPackagePublishingHistory',
@@ -908,18 +934,18 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def getLastUploads(self):
         """See IDistroRelease."""
         query = """
-        sourcepackagerelease.id=distroreleasequeuesource.sourcepackagerelease
+        sourcepackagerelease.id=packageuploadsource.sourcepackagerelease
         AND sourcepackagerelease.sourcepackagename=sourcepackagename.id
-        AND distroreleasequeuesource.distroreleasequeue=distroreleasequeue.id
-        AND distroreleasequeue.status=%s
-        AND distroreleasequeue.distrorelease=%s
-        """ % sqlvalues(DistroReleaseQueueStatus.DONE, self)
+        AND packageuploadsource.packageupload=packageupload.id
+        AND packageupload.status=%s
+        AND packageupload.distrorelease=%s
+        """ % sqlvalues(PackageUploadStatus.DONE, self)
 
         last_uploads = SourcePackageRelease.select(
             query, limit=5, prejoins=['sourcepackagename'],
-            clauseTables=['SourcePackageName', 'DistroReleaseQueue',
-                          'DistroReleaseQueueSource'],
-            orderBy=['-distroreleasequeue.id'])
+            clauseTables=['SourcePackageName', 'PackageUpload',
+                          'PackageUploadSource'],
+            orderBy=['-packageupload.id'])
 
         distro_sprs = [
             self.getSourcePackageRelease(spr) for spr in last_uploads]
@@ -927,7 +953,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return distro_sprs
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
-                         signing_key=None):
+                         archive, signing_key=None):
         """See IDistroRelease."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
@@ -937,40 +963,46 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # the content in the changes file (as doing so would be guessing
         # at best, causing unpredictable corruption), and simply pass it
         # off to the librarian.
-        file_alias_set = getUtility(ILibraryFileAliasSet)
-        changes_file = file_alias_set.create(changesfilename,
-            len(changesfilecontent), StringIO(changesfilecontent),
-            'text/plain')
+        changes_file = getUtility(ILibraryFileAliasSet).create(
+            changesfilename, len(changesfilecontent),
+            StringIO(changesfilecontent), 'text/plain')
 
-        return DistroReleaseQueue(
-            distrorelease=self, status=DistroReleaseQueueStatus.NEW,
-            pocket=pocket, changesfile=changes_file,
-            signing_key=signing_key)
+        return PackageUpload(
+            distrorelease=self, status=PackageUploadStatus.NEW,
+            pocket=pocket, archive=archive,
+            changesfile=changes_file, signing_key=signing_key)
 
     def getPackageUploadQueue(self, state):
         """See IDistroRelease."""
         return PackageUploadQueue(self, state)
 
     def getQueueItems(self, status=None, name=None, version=None,
-                      exact_match=False, pocket=None):
+                      exact_match=False, pocket=None, archive=None):
         """See IDistroRelease."""
 
         default_clauses = ["""
-            distroreleasequeue.distrorelease = %s""" % sqlvalues(self.id)]
+            packageupload.distrorelease = %s""" % sqlvalues(self)]
+
+        # restrict result to a given archive
+        if archive is None:
+            archive = self.main_archive
+
+        default_clauses.append("""
+        packageupload.archive = %s""" % sqlvalues(archive))
 
         # restrict result to a given pocket
         if pocket is not None:
             if not isinstance(pocket, list):
                 pocket = [pocket]
             default_clauses.append("""
-            distroreleasequeue.pocket IN %s""" % sqlvalues(pocket))
+            packageupload.pocket IN %s""" % sqlvalues(pocket))
 
         # XXX cprov 20060606: We may reorganise this code, creating
-        # some new methods provided by IDistroReleaseQueueSet, as:
+        # some new methods provided by IPackageUploadSet, as:
         # getByStatus and getByName.
         if not status:
             assert not version and not exact_match
-            return DistroReleaseQueue.select(
+            return PackageUpload.select(
                 " AND ".join(default_clauses),
                 orderBy=['-id'])
 
@@ -978,42 +1010,42 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             status = [status]
 
         default_clauses.append("""
-        distroreleasequeue.status IN %s""" % sqlvalues(status))
+        packageupload.status IN %s""" % sqlvalues(status))
 
         if not name:
             assert not version and not exact_match
-            return DistroReleaseQueue.select(
+            return PackageUpload.select(
                 " AND ".join(default_clauses),
                 orderBy=['-id'])
 
         source_where_clauses = default_clauses + ["""
-            distroreleasequeue.id = distroreleasequeuesource.distroreleasequeue
+            packageupload.id = packageuploadsource.packageupload
             """]
 
         build_where_clauses = default_clauses + ["""
-            distroreleasequeue.id = distroreleasequeuebuild.distroreleasequeue
+            packageupload.id = packageuploadbuild.packageupload
             """]
 
         custom_where_clauses = default_clauses + ["""
-            distroreleasequeue.id = distroreleasequeuecustom.distroreleasequeue
+            packageupload.id = packageuploadcustom.packageupload
             """]
 
         # modify source clause to lookup on sourcepackagerelease
         source_where_clauses.append("""
-            distroreleasequeuesource.sourcepackagerelease =
+            packageuploadsource.sourcepackagerelease =
             sourcepackagerelease.id""")
         source_where_clauses.append(
             "sourcepackagerelease.sourcepackagename = sourcepackagename.id")
 
         # modify build clause to lookup on binarypackagerelease
         build_where_clauses.append(
-            "distroreleasequeuebuild.build = binarypackagerelease.build")
+            "packageuploadbuild.build = binarypackagerelease.build")
         build_where_clauses.append(
             "binarypackagerelease.binarypackagename = binarypackagename.id")
 
         # modify custom clause to lookup on libraryfilealias
         custom_where_clauses.append(
-            "distroreleasequeuecustom.libraryfilealias = "
+            "packageuploadcustom.libraryfilealias = "
             "libraryfilealias.id")
 
         # attempt to exact or similar names in builds, sources and custom
@@ -1052,37 +1084,37 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                     % quote_like(version))
 
         source_clauseTables = [
-            'DistroReleaseQueueSource',
+            'PackageUploadSource',
             'SourcePackageRelease',
             'SourcePackageName',
             ]
         source_orderBy = ['-sourcepackagerelease.dateuploaded']
 
         build_clauseTables = [
-            'DistroReleaseQueueBuild',
+            'PackageUploadBuild',
             'BinaryPackageRelease',
             'BinaryPackageName',
             ]
         build_orderBy = ['-binarypackagerelease.datecreated']
 
         custom_clauseTables = [
-            'DistroReleaseQueueCustom',
+            'PackageUploadCustom',
             'LibraryFileAlias',
             ]
         custom_orderBy = ['-LibraryFileAlias.id']
 
         source_where_clause = " AND ".join(source_where_clauses)
-        source_results = DistroReleaseQueue.select(
+        source_results = PackageUpload.select(
             source_where_clause, clauseTables=source_clauseTables,
             orderBy=source_orderBy)
 
         build_where_clause = " AND ".join(build_where_clauses)
-        build_results = DistroReleaseQueue.select(
+        build_results = PackageUpload.select(
             build_where_clause, clauseTables=build_clauseTables,
             orderBy=build_orderBy)
 
         custom_where_clause = " AND ".join(custom_where_clauses)
-        custom_results = DistroReleaseQueue.select(
+        custom_results = PackageUpload.select(
             custom_where_clause, clauseTables=custom_clauseTables,
             orderBy=custom_orderBy)
 
@@ -1108,13 +1140,14 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def initialiseFromParent(self):
         """See IDistroRelease."""
+        archive = self.main_archive
         assert self.parentrelease is not None, "Parent release must be present"
         assert SourcePackagePublishingHistory.selectBy(
-            distrorelease=self).count() == 0, \
+            distrorelease=self, archive=archive).count() == 0, \
             "Source Publishing must be empty"
         for arch in self.architectures:
             assert BinaryPackagePublishingHistory.selectBy(
-                distroarchrelease=arch).count() == 0, \
+                distroarchrelease=arch, archive=archive).count() == 0, \
                 "Binary Publishing must be empty"
             try:
                 parent_arch = self.parentrelease[arch.architecturetag]
@@ -1175,21 +1208,22 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         cur.execute('''
             INSERT INTO SecureBinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchrelease, status,
-                component, section, priority, datecreated, datepublished,
-                pocket, embargo)
+                component, section, priority, archive, datecreated,
+                datepublished, pocket, embargo)
             SELECT bpph.binarypackagerelease, %s as distroarchrelease,
                    bpph.status, bpph.component, bpph.section, bpph.priority,
-                   %s as datecreated, %s as datepublished, %s as pocket,
-                   false as embargo
+                   %s as archive, %s as datecreated, %s as datepublished,
+                   %s as pocket, false as embargo
             FROM BinaryPackagePublishingHistory AS bpph
             WHERE bpph.distroarchrelease = %s AND bpph.status in (%s, %s) AND
-                  bpph.pocket = %s
-            ''' % sqlvalues(arch.id, UTC_NOW, UTC_NOW,
+                  bpph.pocket = %s and bpph.archive = %s
+            ''' % sqlvalues(arch.id, self.main_archive, UTC_NOW, UTC_NOW,
                             PackagePublishingPocket.RELEASE,
                             parent_arch.id,
                             PackagePublishingStatus.PENDING,
                             PackagePublishingStatus.PUBLISHED,
-                            PackagePublishingPocket.RELEASE))
+                            PackagePublishingPocket.RELEASE,
+                            self.parentrelease.main_archive))
 
     def _copy_source_publishing_records(self, cur):
         """Copy the source publishing records from our parent distro release.
@@ -1202,20 +1236,21 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         cur.execute('''
             INSERT INTO SecureSourcePackagePublishingHistory (
                 sourcepackagerelease, distrorelease, status, component,
-                section, datecreated, datepublished, pocket, embargo)
+                section, archive, datecreated, datepublished, pocket, embargo)
             SELECT spph.sourcepackagerelease, %s as distrorelease,
-                   spph.status, spph.component, spph.section,
+                   spph.status, spph.component, spph.section, %s as archive,
                    %s as datecreated, %s as datepublished,
                    %s as pocket, false as embargo
             FROM SourcePackagePublishingHistory AS spph
             WHERE spph.distrorelease = %s AND spph.status in (%s, %s) AND
-                  spph.pocket = %s
-            ''' % sqlvalues(self.id, UTC_NOW, UTC_NOW,
+                  spph.pocket = %s and spph.archive = %s
+            ''' % sqlvalues(self.id, self.main_archive, UTC_NOW, UTC_NOW,
                             PackagePublishingPocket.RELEASE,
                             self.parentrelease.id,
                             PackagePublishingStatus.PENDING,
                             PackagePublishingStatus.PUBLISHED,
-                            PackagePublishingPocket.RELEASE))
+                            PackagePublishingPocket.RELEASE,
+                            self.parentrelease.main_archive))
 
     def _copy_component_and_section_selections(self, cur):
         """Copy the section and component selections from the parent distro
@@ -1241,14 +1276,26 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         This method uses MultiTableCopy to copy data.
 
         Translation data for the new release (self) is first copied into
+<<<<<<< TREE
         holding tables called e.g. "temp_POTemplate_holding_ubuntu_feisty"
         and processed there.  Then, at the end of the procedure, these tables
         are all copied back to their originals.
+=======
+        "holding tables" with names like "temp_POTemplate_holding_feisty" and
+        processed there.  Then, at the end of the procedure, these tables are
+        all copied back to their originals.
+>>>>>>> MERGE-SOURCE
 
         If this procedure fails, it may leave holding tables behind.  This was
         done deliberately to leave some forensics information for failures,
         and also to allow admins to see what data has and has not been copied.
 
+<<<<<<< TREE
+=======
+        The holding tables have names like "temp_POTemplate_holding_feisty"
+        (for source table POTemplate and release feisty, in this case).
+
+>>>>>>> MERGE-SOURCE
         If a holding table left behind by an abortive run has a column called
         new_id at the end, it contains unfinished data and may as well be
         dropped.  If it does not have that column, the holding table was
@@ -1283,6 +1330,26 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # a time, then performing an intermediate commit.  This avoids holding
         # too many locks for too long and disrupting regular database service.
 
+<<<<<<< TREE
+=======
+        if not self.hide_all_translations:
+            raise AssertionError("""
+_copyActiveTranslationsToNewRelease: hide_all_translations not set!
+
+Attempted to populate translations for new distrorelease while its
+translations are visible.  That would allow users to see and modify incomplete
+translation state.
+""")
+
+        if not self.defer_translation_imports:
+            raise AssertionError("""
+_copyActiveTranslationsToNewRelease: defer_translation_imports not set!
+
+Attempted to populate translations for new distrorelease while translation
+import queue is enabled. That would corrupt our translation data mixing
+new imports with the information being copied.
+""")
+>>>>>>> MERGE-SOURCE
 
         # Clean up any remains from a previous run.  If we got here, that
         # means those remains are not salvagable.
@@ -1726,22 +1793,27 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Request the translation copy.
         self._copy_active_translations(ztm)
 
-    def getPendingPublications(self, pocket, is_careful):
+    def getPendingPublications(self, archive, pocket, is_careful):
         """See IPublishing."""
         queries = ['distrorelease = %s' % sqlvalues(self)]
-        # careful publishing should include all PUBLISHED rows, normal run
+
+        # Query main archive for this distrorelease
+        queries.append('archive=%s' % sqlvalues(archive))
+
+        # Careful publishing should include all PUBLISHED rows, normal run
         # only includes PENDING ones.
         statuses = [PackagePublishingStatus.PENDING]
         if is_careful:
             statuses.append(PackagePublishingStatus.PUBLISHED)
         queries.append('status IN %s' % sqlvalues(statuses))
 
-        # restrict to a specific pocket.
+        # Restrict to a specific pocket.
         queries.append('pocket = %s' % sqlvalues(pocket))
 
-        # exclude RELEASE pocket if the distrorelease was already released,
-        # since it should not change.
-        if not self.isUnstable():
+        # Exclude RELEASE pocket if the distrorelease was already released,
+        # since it should not change for main archive.
+        # We allow RELEASE uploads for PPAs.
+        if not self.isUnstable() and self.main_archive == archive:
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
@@ -1750,26 +1822,33 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         return publications
 
-    def publish(self, diskpool, log, pocket, is_careful=False):
+    def publish(self, diskpool, log, archive, pocket, is_careful=False):
         """See IPublishing."""
         log.debug("Publishing %s-%s" % (self.title, pocket.name))
         log.debug("Attempting to publish pending sources.")
 
         dirty_pockets = set()
-        for spph in self.getPendingPublications(pocket, is_careful):
-            if not is_careful and self.checkLegalPocket(spph, log):
+        for spph in self.getPendingPublications(archive, pocket, is_careful):
+            if not self.checkLegalPocket(spph, is_careful, log):
                 continue
             spph.publish(diskpool, log)
             dirty_pockets.add((self.name, spph.pocket))
 
         # propagate publication request to each distroarchrelease.
         for dar in self.architectures:
-            more_dirt = dar.publish(diskpool, log, pocket, is_careful)
+            more_dirt = dar.publish(diskpool, log, archive, pocket, is_careful)
             dirty_pockets.update(more_dirt)
 
         return dirty_pockets
 
-    def checkLegalPocket(self, publication, log):
+    def checkLegalPocket(self, publication, is_careful, log):
+        """Check if the publication can happen in the archive."""
+        # careful re-publishes everything:
+        if is_careful:
+            return True
+        # PPA allows everything (aka Hotel California).
+        if publication.archive != self.main_archive:
+            return True
         # If we're not republishing, we want to make sure that
         # we're not publishing packages into the wrong pocket.
         # Unfortunately for careful mode that can't hold true
@@ -1778,17 +1857,22 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             publication.pocket != PackagePublishingPocket.RELEASE):
             log.error("Tried to publish %s (%s) into a non-release "
                       "pocket on unstable release %s, skipping" %
-                      (publication.displayname, publication.id, 
+                      (publication.displayname, publication.id,
                        self.displayname))
-            return True
+            return False
         if (not self.isUnstable() and
             publication.pocket == PackagePublishingPocket.RELEASE):
             log.error("Tried to publish %s (%s) into release pocket "
                       "on stable release %s, skipping" %
                       (publication.displayname, publication.id,
                        self.displayname))
-            return True
-        return False
+            return False
+
+        return True
+
+    @property
+    def main_archive(self):
+        return self.distribution.main_archive
 
 
     def getFirstEntryToImport(self):

@@ -78,7 +78,7 @@ class SourcePackageQuestionTargetMixin:
             unsupported_target = self
         else:
             unsupported_target = None
-            
+
         return QuestionTargetSearch(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
@@ -179,11 +179,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         from canonical.launchpad.database.distribution import Distribution
         return Distribution.byName("ubuntu")
 
-    def _getPublishingHistory(self, version=None, include_status=None, 
+    def _getPublishingHistory(self, version=None, include_status=None,
                               exclude_status=None, order_by=None):
         """Build a query and return a list of SourcePackagePublishingHistory.
-        
-        This is mainly a helper function for this class so that code is 
+
+        This is mainly a helper function for this class so that code is
         not duplicated. include_status and exclude_status must be a sequence.
         """
         clauses = []
@@ -191,8 +191,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
                 """SourcePackagePublishingHistory.sourcepackagerelease =
                    SourcePackageRelease.id AND
                    SourcePackageRelease.sourcepackagename = %s AND
-                   SourcePackagePublishingHistory.distrorelease = %s
-                """ % sqlvalues(self.sourcepackagename, self.distrorelease))
+                   SourcePackagePublishingHistory.distrorelease = %s AND
+                   SourcePackagePublishingHistory.archive = %s
+                """ % sqlvalues(self.sourcepackagename, self.distrorelease,
+                                self.distrorelease.main_archive))
         if version:
             clauses.append(
                 "SourcePackageRelease.version = %s" % sqlvalues(version))
@@ -297,7 +299,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
                        "SourcePackagePublishingHistory.datepublished"])
         return [DistributionSourcePackageRelease(
                 distribution=self.distribution,
-                sourcepackagerelease=package.sourcepackagerelease) 
+                sourcepackagerelease=package.sourcepackagerelease)
                    for package in packages]
 
     @property
@@ -311,10 +313,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
-            ''' % sqlvalues(self.sourcepackagename, self.distribution,
+            ''' % sqlvalues(self.sourcepackagename,
+                            self.distribution,
+                            self.distribution.main_archive,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
             selectAlso="%s" % (SQLConstant(order_const)),
@@ -504,10 +509,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         Build.sourcepackagerelease = SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.archive = %s AND
         SourcePackagePublishingHistory.status = %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
         SourcePackageRelease.id
-        """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id,
+        """ % sqlvalues(self.sourcepackagename,
+                        self.distrorelease,
+                        self.distrorelease.main_archive,
                         PackagePublishingStatus.PUBLISHED)]
 
         # XXX cprov 20060925: It would be nice if we could encapsulate

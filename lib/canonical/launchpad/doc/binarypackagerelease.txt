@@ -88,7 +88,7 @@ BinaryPackageReleaseSet utility:
    >>> verifyObject(IBinaryPackageReleaseSet, binset)
    True
 
-   >>> ret = binset.findByNameInDistroRelease(warty.id, 'fire')
+   >>> ret = binset.findByNameInDistroRelease(warty, 'fire')
    >>> for item in ret:
    ...     print item.name
    mozilla-firefox
@@ -96,27 +96,27 @@ BinaryPackageReleaseSet utility:
 Note that two pmounts are returned because they are published in
 different architectures:
 
-   >>> ret = binset.getByNameInDistroRelease(hoary.id, 'pmount')
+   >>> ret = binset.getByNameInDistroRelease(hoary, 'pmount')
    >>> for item in ret:
    ...     print item.name
    pmount
    pmount
 
-   >>> result = binset.findByNameInDistroRelease(warty.id, 'moz')
+   >>> result = binset.findByNameInDistroRelease(warty, 'moz')
    >>> print len(list(result))
    1
-   >>> result = binset.findByNameInDistroRelease(warty.id, 'nosuchpackage')
+   >>> result = binset.findByNameInDistroRelease(warty, 'nosuchpackage')
    >>> print len(list(result))
    0
-   >>> result = binset.findByNameInDistroRelease(warty.id, 'Web Browser',
+   >>> result = binset.findByNameInDistroRelease(warty, 'Web Browser',
    ...                                           fti=True)
    >>> print len(list(result))
    1
-   >>> result = binset.findByNameInDistroRelease(warty.id, 'X50keBLvzk',
+   >>> result = binset.findByNameInDistroRelease(warty, 'X50keBLvzk',
    ...                                           fti=True)
    >>> print len(list(result))
    0
-   >>> result = binset.findByNameInDistroRelease(warty.id, 'moz',
+   >>> result = binset.findByNameInDistroRelease(warty, 'moz',
    ...                                           archtag="nosucharch")
    >>> print len(list(result))
    0
@@ -125,28 +125,28 @@ different architectures:
 getByNameInDistroRelease
 ------------------------
 
-   >>> result = binset.getByNameInDistroRelease(warty.id)
+   >>> result = binset.getByNameInDistroRelease(warty)
    >>> print len(list(result))
    6
-   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox')
+   >>> result = binset.getByNameInDistroRelease(warty, 'mozilla-firefox')
    >>> print len(list(result))
    1
-   >>> result = binset.getByNameInDistroRelease(warty.id, 'nosuchpackage')
+   >>> result = binset.getByNameInDistroRelease(warty, 'nosuchpackage')
    >>> print len(list(result))
    0
-   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
+   >>> result = binset.getByNameInDistroRelease(warty, 'mozilla-firefox',
    ...                                          version='0.9')
    >>> print len(list(result))
    1
-   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
+   >>> result = binset.getByNameInDistroRelease(warty, 'mozilla-firefox',
    ...                                          version='nosuchversion')
    >>> print len(list(result))
    0
-   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
+   >>> result = binset.getByNameInDistroRelease(warty, 'mozilla-firefox',
    ...                                          archtag='i386')
    >>> print len(list(result))
    1
-   >>> result = binset.getByNameInDistroRelease(warty.id, 'mozilla-firefox',
+   >>> result = binset.getByNameInDistroRelease(warty, 'mozilla-firefox',
    ...                                          archtag='nosucharch')
    >>> print len(list(result))
    0

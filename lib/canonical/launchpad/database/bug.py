@@ -141,6 +141,9 @@ class Bug(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     private = BoolCol(notNull=True, default=False)
+    date_made_private = UtcDateTimeCol(notNull=False, default=None)
+    who_made_private = ForeignKey(
+        dbName='who_made_private', foreignKey='Person', default=None)
     security_related = BoolCol(notNull=True, default=False)
 
     # useful Joins

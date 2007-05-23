@@ -11,7 +11,7 @@ from canonical.archiveuploader.ftests.test_securityuploads import (
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus, DistroReleaseQueueStatus)
+    PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.ftests import import_public_test_keys
 
 class TestBuilddUploads(TestStagedBinaryUploadBase):
