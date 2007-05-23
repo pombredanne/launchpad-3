@@ -131,6 +131,14 @@ class IBuilder(IHasOwner):
     def failbuilder(reason):
         """Mark builder as failed for a given reason."""
 
+    def slaveStatusSentence():
+        """Get the slave status sentence for this builder.
+
+        :return: A tuple with the first element containing the slave status,
+            build_id-queue-id and then optionally more elements depending on
+            the status.
+        """
+
 
 class IBuilderSet(Interface):
     """Collections of builders.

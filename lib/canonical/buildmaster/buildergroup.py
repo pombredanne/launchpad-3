@@ -92,11 +92,7 @@ class BuilderGroup:
         If builder is BUILDING or WAITING an unknown job clean it.
         Assuming the XMLRPC is working properly at this point.
         """
-        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-        slave = removeSecurityProxy(builder.slave)
-
-        # request slave status sentence
-        sentence = slave.status()
+        status_sentence = builder.slaveStatusSentence()
 
         # ident_position dict relates the position of the job identifier
         # token in the sentence received from status(), according the
@@ -109,14 +105,14 @@ class BuilderGroup:
 
         # isolate the BuilderStatus string, always the first token in
         # status returned sentence, see lib/canonical/buildd/slave.py
-        status = sentence[0]
+        status = status_sentence[0]
 
         # if slave is not building nor waiting, it's not in need of rescuing.
         if status not in ident_position.keys():
             return
 
         # extract information from the identifier
-        build_id, queue_item_id = sentence[ident_position[status]].split('-')
+        build_id, queue_item_id = status_sentence[ident_position[status]].split('-')
 
         # check if build_id and queue_item_id exist
         try:
@@ -127,7 +123,9 @@ class BuilderGroup:
                 raise BuildJobMismatch('Job build entry mismatch')
 
         except (SQLObjectNotFound, BuildJobMismatch), reason:
-            if status = 'BuilderStatus.WAITING':
+            # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+            slave = removeSecurityProxy(builder.slave)
+            if status == 'BuilderStatus.WAITING':
                 slave.clean()
             else:
                 # ask for an abort; it will become visible as ABORTED at a

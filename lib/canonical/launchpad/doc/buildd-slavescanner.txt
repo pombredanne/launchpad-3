@@ -46,6 +46,8 @@ Mock Builder, a class to emulate the Builder behaviour:
   ...     def failbuilder(self, reason):
   ...         self.builderok = False
   ...         self.failnotes = reason
+  ...     def slaveStatusSentence(self):
+  ...         return self.slave.status()
 
 Let's play with a BuilderGroup method designed to rescue build slaves
 that are processing unknown jobs. In real conditions, this situation

@@ -150,6 +150,10 @@ class Builder(SQLBase):
         """See IHasBuildRecords."""
         return getUtility(IBuildSet).getBuildsForBuilder(self.id, status, name)
 
+    def slaveStatusSentence(self):
+        """See IBuilder."""
+        return self.slave.status()
+
 
 class BuilderSet(object):
     """See IBuilderSet"""
