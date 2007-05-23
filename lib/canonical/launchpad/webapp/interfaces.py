@@ -10,8 +10,13 @@ from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.schema import Int, Text, Object, Datetime, TextLine, Bool
+from zope.security.interfaces import Forbidden
 
 from canonical.launchpad import _
+
+
+class TranslationUnavailableError(Forbidden):
+    """Translation objects are unavailable."""
 
 
 class NotFoundError(KeyError):
