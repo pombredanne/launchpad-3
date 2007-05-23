@@ -16,7 +16,7 @@ from canonical.config import config
 from canonical.lp import AUTOCOMMIT_ISOLATION
 from canonical.lp.dbschema import MirrorContent
 from canonical.launchpad.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet)
 from canonical.launchpad.webapp import canonical_url
@@ -24,7 +24,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     get_expected_cdimage_paths, probe_archive_mirror, probe_release_mirror)
 
 
-class DistroMirrorProber(LaunchpadScript):
+class DistroMirrorProber(LaunchpadCronScript):
     usage = ('%prog --content-type=(archive|release) [--force] '
              '[--no-owner-notification]')
 
@@ -155,7 +155,7 @@ class DistroMirrorProber(LaunchpadScript):
             self.logger.info(
                 'Re-enabling %s mirror(s): %s'
                 % (len(reenabled_mirrors), ", ".join(reenabled_mirrors)))
-        # XXX: This should be done in LaunchpadScript.lock_and_run() when the
+        # XXX: This should be done in LaunchpadCronScript.lock_and_run() when the
         # isolation used is AUTOCOMMIT_ISOLATION. Also note that replacing
         # this with a flush_database_updates() doesn't have the same effect,
         # it seems.

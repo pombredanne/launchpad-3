@@ -15,13 +15,13 @@ from canonical.config import config
 from canonical.buildmaster.master import (
     BuilddMaster, builddmaster_lockfilename)
 
-from canonical.launchpad.scripts.base import (LaunchpadScript,
+from canonical.launchpad.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import IDistroArchReleaseSet
 from canonical.lp import READ_COMMITTED_ISOLATION
 
 
-class SlaveScanner(LaunchpadScript):
+class SlaveScanner(LaunchpadCronScript):
 
     def main(self):
         self.logger.info("Slave Scan Process Initiated.")

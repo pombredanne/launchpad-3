@@ -14,11 +14,11 @@ __metaclass__ = type
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.questionexpiration import QuestionJanitor
 
 
-class ExpireQuestions(LaunchpadScript):
+class ExpireQuestions(LaunchpadCronScript):
     usage = "usage: %prog [options]"
     description =  """
     This script expires questions in the OPEN and NEEDSINFO states that

@@ -1,5 +1,11 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+__all__ = [
+    'LaunchpadCronScript',
+    'LaunchpadScript',
+    'LaunchpadScriptFailure',
+    ]
+
 import datetime
 import logging
 from optparse import OptionParser
@@ -214,15 +220,7 @@ class LaunchpadScript:
 
 
     def record_activity(self, date_started, date_completed):
-        """Record the successful completion of the script."""
-        self.txn.begin()
-        from canonical.launchpad.ftests import ANONYMOUS, login
-        login(ANONYMOUS)
-        getUtility(IScriptActivitySet).recordSuccess(
-            name=self.name,
-            date_started=date_started,
-            date_completed=date_completed)
-        self.txn.commit()
+        """Hook to record script activity."""
 
     #
     # Make things happen
@@ -240,4 +238,18 @@ class LaunchpadScript:
                      implicit_begin=implicit_begin)
         finally:
             self.unlock(skip_delete=skip_delete)
+
+
+class LaunchpadCronScript(LaunchpadScript):
+
+    def record_activity(self, date_started, date_completed):
+        """Record the successful completion of the script."""
+        self.txn.begin()
+        from canonical.launchpad.ftests import ANONYMOUS, login
+        login(ANONYMOUS)
+        getUtility(IScriptActivitySet).recordSuccess(
+            name=self.name,
+            date_started=date_started,
+            date_completed=date_completed)
+        self.txn.commit()
 
