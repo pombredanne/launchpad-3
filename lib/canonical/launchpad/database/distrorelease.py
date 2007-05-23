@@ -22,7 +22,7 @@ from sqlobject import (
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database import postgresql
+from canonical.database.multitablecopy import MultiTableCopy
 from canonical.database.sqlbase import (cursor, flush_database_caches,
     flush_database_updates, quote_like, quote, quoteIdentifier, SQLBase,
     sqlvalues)
@@ -31,15 +31,14 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
     PackagePublishingStatus, DistributionReleaseStatus,
-    DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
-    SpecificationGoalStatus, SpecificationFilter, RosettaImportStatus)
+    DistroReleaseQueueStatus, PackagePublishingPocket, RosettaImportStatus,
+    SpecificationSort, SpecificationGoalStatus, SpecificationFilter)
 
 from canonical.launchpad.interfaces import (
-    IDistroRelease, IDistroReleaseSet, ISourcePackageName,
-    IPublishedPackageSet, IHasBuildRecords, NotFoundError,
-    IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
-    ISourcePackage, ISourcePackageNameSet,
-    IHasQueueItems, IPublishing, IHasTranslationImports)
+    IBinaryPackageName, IBuildSet, IDistroRelease, IDistroReleaseSet,
+    IHasBuildRecords, IHasQueueItems, IHasTranslationImports,
+    ILibraryFileAliasSet, IPublishedPackageSet, IPublishing, ISourcePackage,
+    ISourcePackageName, ISourcePackageNameSet, NotFoundError)
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -1092,16 +1091,16 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug on an IDistroRelease,
-        # because internally bugs are reported against IDistroRelease only when
-        # targetted to be fixed in that release, which is rarely the case for a
-        # brand new bug report.
+        # because internally bugs are reported against IDistroRelease only
+        # when targetted to be fixed in that release, which is rarely the
+        # case for a brand new bug report.
         raise NotImplementedError(
             "A new bug cannot be filed directly on a distribution release, "
-            "because releases are meant for \"targeting\" a fix to a specific "
-            "release. It's possible that we may change this behaviour to "
-            "allow filing a bug on a distribution release in the "
-            "not-too-distant future. For now, you probably meant to file "
-            "the bug on the distribution instead.")
+            "because releases are meant for \"targeting\" a fix to a "
+            "specific release. It's possible that we may change this "
+            "behaviour to allow filing a bug on a distribution release in "
+            "the not-too-distant future. For now, you probably meant to "
+            "file the bug on the distribution instead.")
 
     def _getBugTaskContextClause(self):
         """See BugTargetBase."""
@@ -1236,426 +1235,19 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             ''' % sqlvalues(self.id, self.parentrelease.id))
 
 
-    def _getRawHoldingTableName(self, tablename, suffix=''):
-        """Name for a holding table, but without quotes.  Use with care."""
-        if suffix:
-            suffix = '_%s' % suffix
-        return "temp_%s_holding_%s%s" % (
-            str(tablename), str(self.name), suffix)
-
-    def _getHoldingTableName(self, tablename, suffix=''):
-        """Name for a holding table to hold data being copied in tablename.
-
-        This name is used in copying translation data from the parent
-        distrorelease to self.  To reduce locking on the database, applicable
-        data is first copied to these holding tables, then modified there, and
-        finally moved back into the original table "tablename."
-
-        Return value is properly quoted for use as an SQL identifier.
-        """
-        return str(
-            quoteIdentifier(self._getRawHoldingTableName(tablename, suffix)))
-
-
-    def _extractToHoldingTable(self,
-            ztm,
-            logger,
-            source_table,
-            joins=None,
-            where_clause=None,
-            id_sequence=None):
-        """Extract (selected) rows from source_table into a holding table.
-
-        This method is used to copy a distrorelease's current translation
-        elements to a new distrorelease.  The idea is that all translation
-        data can be copied into holding tables first (without starving other
-        users of database service through excessive locking), and provided
-        with new row ids so they can be directly re-inserted into the original
-        tables.
-
-        A new table is created and filled with any records from source_table
-        that match filtering criteria passed in where_clause.  The new table's
-        name is constructed as self._getHoldingTableName(source_table).  If a
-        table of that name already existed, it is dropped first.
-
-        The new table gets an additional new_id column with identifiers in the
-        seqid sequence; the name seqid defaults to the original table name in
-        lower case, with "_seq_id" appended.  Apart from this extra column,
-        indexes, and constraints, the holding table is schematically identical
-        to source_table.  A unique index is created for the original id
-        column.
-
-        There is a special facility for redirecting foreign keys to other
-        tables copied in the same way.  If the joins argument is a nonempty
-        list, the selection used in creating the new table  will be joined
-        with each of the tables named in joins, on foreign keys in the current
-        table.  The foreign keys in the holding table will point to the
-        new_ids of the copied rows, rather than the original ids.  Rows in
-        source_table will only be copied to their holding table if all rows
-        they are joined with in those other tables were also copied to holding
-        tables of their own.
-
-        The foreign keys are assumed to have the same names as the tables
-        they refer to, but written in lower-case letters.
-
-        When joining, the added tables' columns are not included in the
-        holding table, but where_clause may select on them.
-        """
-        if id_sequence is None:
-            id_sequence = "%s_id_seq" % source_table.lower()
-
-        if joins is None:
-            joins = []
-
-        holding_table = self._getHoldingTableName(source_table)
-
-        logger.info('Extracting from %s into %s...' % (
-            source_table,holding_table))
-
-        starttime = time.time()
-
-        # Selection clauses for our foreign keys
-        new_fks = [
-            "%s.new_id AS new_%s" % (self._getHoldingTableName(j), j.lower())
-            for j in joins
-        ]
-
-        # Combined "where" clauses
-        where = [
-            "%s = %s.id" % (j.lower(), self._getHoldingTableName(j))
-            for j in joins
-        ]
-        if where_clause is not None:
-            where.append('(%s)' % where_clause)
-
-        cur = cursor()
-
-        # We use a regular, persistent table rather than a temp table for
-        # this so that we get a chance to resume interrupted copies, and
-        # analyse failures.  If we used temp tables, they'd be gone by the
-        # time we knew something went wrong.
-        # For each row we append at the end any new foreign key values, and
-        # finally a "new_id" holding its future id field.  This new_id value
-        # is allocated from the original table's id sequence, so it will be
-        # unique in the original table.
-        fk_list = ', '.join(['%s.*' % source_table] + new_fks)
-        from_list = ', '.join([source_table] +
-                              ['%s' % self._getHoldingTableName(j)
-                               for j in joins])
-        cur.execute('''
-            CREATE TABLE %s AS
-            SELECT %s, nextval('%s'::regclass) AS new_id
-            FROM %s
-            WHERE %s ''' % (holding_table,
-                            fk_list,
-                            id_sequence,
-                            from_list,
-                            ' AND '.join(where)))
-
-        if len(joins) > 0:
-            # Replace foreign keys with their "new_" variants, then drop those
-            # "new_" columns we added.
-            fkupdates = [
-                "%s = new_%s" % (j.lower(),j.lower()) for j in joins
-            ]
-            updatestr = ', '.join(fkupdates)
-            logger.info("Redirecting foreign keys: %s" % updatestr)
-            cur.execute('''
-                UPDATE %s
-                SET %s
-            ''' % (holding_table, updatestr))
-            for j in joins:
-                column = j.lower()
-                logger.info("Dropping foreign-key column %s" % column)
-                cur.execute('''
-                    ALTER TABLE %s DROP COLUMN new_%s''' % (holding_table,
-                                                            column))
-
-        # Now that our new holding table is in a stable state, index its id
-        logger.info("Indexing %s" % holding_table)
-        cur.execute('''
-            CREATE UNIQUE INDEX %s
-            ON %s (id)
-        ''' % (self._getHoldingTableName(source_table, 'id'), holding_table))
-        logger.info('...Extracted in %.3f seconds' % (time.time()-starttime))
-
-
-    # These are the tables that need data to be copied when a new
-    # distrorelease is opened for translation.  The order matters to several
-    # methods.
-    # Ordering of this list is significant for two reasons:
-    # 1. To maintain referential integrity while pouring--we can't insert
-    #    a row into a source table if it has a foreign key matched up with
-    #    another row in another table that hasn't been poured yet.
-    # 2. The _hasRecoverableHoldingTables() method must know what the first
-    #    and last tables in this list are, so it can correctly detect the
-    #    state of any previous pouring run that may have been interrupted.
-    _translation_tables = [
-        'POTemplate', 'POTMsgSet', 'POMsgIDSighting', 'POFile',
-        'POMsgSet', 'POSubmission'
-        ]
-
-    def _hasRecoverableHoldingTables(self, logger):
-        """Do we have holding tables with recoverable data from previous run?
-        """
-        # The tables named here are the first and last tables in the list that
-        # _pourHoldingTables() goes through.  Keep it that way, or this will
-        # return incorrect information!
-
-        cur = cursor()
-
-        # If there are any holding tables to be poured into their source
-        # tables, there must at least be one for the last table that
-        # _pourHoldingTables() processes.
-        if not postgresql.have_table(cur,
-                self._getRawHoldingTableName(self._translation_tables[-1])):
-            return False
-
-        # If the first table in our list also still exists, and it still has
-        # its new_id column, then the pouring process had not begun yet.
-        # Assume the data was not ready for pouring.
-        if postgresql.table_has_column(cur,
-                self._getRawHoldingTableName(self._translation_tables[0]),
-                'new_id'):
-            logger.info(
-                "Previous run aborted too early for recovery; redo all")
-            return False
-
-        logger.info("Recoverable data found")
-        return True
-
-
-    def _pourHoldingTables(self, logger, ztm):
-        """Attempt to pour translation holding tables back into source tables.
-
-        ztm is committed and re-opened at the beginning of each run.  This is
-        done so the caller still has a chance to play atomically with the
-        holding table's data.
-        """
-        if ztm is not None:
-            commitstart = time.time()
-            ztm.commit()
-            logger.info("Committed in %.3f seconds" % (
-                time.time()-commitstart))
-            ztm.begin()
-
-        cur = cursor()
-
-        # Main loop: for each of the source tables involved in copying
-        # translations from our parent distrorelease, see if there's a
-        # matching holding table; prepare it, pour it back into the source
-        # table, and drop.
-        for table in self._translation_tables:
-            holding_table = self._getHoldingTableName(table)
-            holding_table_unquoted = self._getRawHoldingTableName(table)
-
-            if not postgresql.have_table(cur, holding_table_unquoted):
-                # We know we're in a suitable state for pouring.  If this
-                # table does not exist, it must be because it's been poured
-                # out completely and dropped in an earlier instance of this
-                # loop, before the failure we're apparently recovering from.
-                continue
-
-            # XXX: JeroenVermeulen 2007-05-02, Lock holding table maybe, to
-            # protect against accidental concurrent runs?  Insouciant as it
-            # may seem not to do that, all but one run would fail anyway
-            # because of the unique index on id.  But a lock would give us a
-            # more helpful error message.
-            logger.info("Pouring %s back into %s..." % (holding_table,table))
-
-            tablestarttime = time.time()
-
-            if postgresql.table_has_column(cur, holding_table_unquoted,
-                                           'new_id'):
-                # Update ids in holding table from originals to copies.
-                # (If this is where we got interrupted by a failure in a
-                # previous run, no harm in doing it again)
-                cur.execute("UPDATE %s SET id=new_id" % holding_table)
-                # Restore table to original schema
-                cur.execute("ALTER TABLE %s DROP COLUMN new_id" %
-                    holding_table)
-                logger.info("...rearranged ids in %.3f seconds..." %
-                    (time.time()-tablestarttime))
-
-            # Now pour holding table's data into its source table.  This is
-            # where we start writing to tables that other clients will be
-            # reading, so row locks are a concern.  Break the writes up in
-            # batches of a few thousand rows.  The goal is to have these
-            # transactions running no longer than five seconds or so each.
-
-            # We batch simply by breaking the range of ids in our table down
-            # into fixed-size intervals.  Some of those fixed-size intervals
-            # may not have any rows in them, or very few.  That's not likely
-            # to be a problem though since we allocated all these ids in one
-            # single SQL statement.  No time for gaps to form.
-            cur.execute("SELECT min(id), max(id) FROM %s" % holding_table)
-            lowest_id, highest_id = cur.fetchall()[0]
-            total_rows = highest_id + 1 - lowest_id
-            logger.info("Up to %d rows in holding table" % total_rows)
-
-            if ztm is not None:
-                precommitstart = time.time()
-                ztm.commit()
-                logger.info("...pre-commit in %.3f seconds..." % (
-                    time.time() - precommitstart))
-                ztm.begin()
-                cur = cursor()
-
-            # Minimum batch size.  We never process fewer rows than this in
-            # one batch because at that level, we expect to be running into
-            # more or less constant transaction costs.  Reducing batch size
-            # any further is not likely to help much, but will make the
-            # overall procedure take much longer.
-            min_batch_size = 1000
-
-            # The number of seconds we want each transaction to take.  The
-            # batching algorithm tries to approximate this batch time by
-            # varying actual batch_size.
-            time_goal = 4
-
-            # When's the last time we re-generated statistics on our id
-            # column?  When that information stales, performance degrades very
-            # suddenly and very dramatically.
-            deletions_since_analyze = 0
-            batches_since_analyze = 0
-
-            batch_size = min_batch_size
-            while lowest_id <= highest_id:
-                # Step through ids backwards.  This appears to be faster,
-                # possibly because we're removing records from the end of the
-                # table instead of from the beginning, or perhaps it makes
-                # rebalancing the index a bit easier.
-                next = highest_id - batch_size
-                logger.info("Moving %d ids: %d-%d..." % (
-                    highest_id - next, next, highest_id))
-                batchstarttime = time.time()
-
-                cur.execute('''
-                    INSERT INTO %s (
-                        SELECT *
-                        FROM %s
-                        WHERE id >= %d
-                    )''' % (table, holding_table, next))
-                cur.execute('''
-                    DELETE FROM %s
-                    WHERE id >= %d
-                ''' % (holding_table, next))
-
-                deletions_since_analyze = deletions_since_analyze + batch_size
-
-                if ztm is not None:
-                    ztm.commit()
-                    ztm.begin()
-                    cur = cursor()
-
-                highest_id = next
-
-                time_taken = time.time() - batchstarttime
-                logger.info("...batch done in %.3f seconds (%d%%)." % (
-                    time_taken,
-                    100*(total_rows + lowest_id - highest_id)/total_rows))
-
-
-                # Adjust batch_size to approximate time_goal.  The new
-                # batch_size is the average of two values: the previous value
-                # for batch_size, and an estimate of how many rows would take
-                # us to exactly time_goal seconds.  The estimate is very
-                # simple: rows per second on the last commit.
-                # The weight in this estimate of any given historic datum
-                # decays exponentially with an exponent of 1/2.  This softens
-                # the blows from spikes and dips in processing time.
-                # Set a reasonable minimum for time_taken, just in case we get
-                # weird values for whatever reason and destabilize the
-                # algorithm.
-                time_taken = max(time_goal/10, time_taken)
-                batch_size = batch_size*(1 + time_goal/time_taken)/2
-
-                # When the server's statistics on our id column stale,
-                # performance drops suddenly and dramatically as postgres
-                # stops using our primary key index and starts doing
-                # sequential scans.  A quick "ANALYZE" run should fix that.
-                # Doesn't take long, either, so we try to do it before the
-                # problem occurs.
-                #
-                # * batches_since_analyze > 3 is a "common sense" limit.  It
-                # kicks in when the various reasons to analyze coincide too
-                # closely to be separately useful, or when performance is bad
-                # but analyzing just isn't helping, or at the very end when
-                # the batch_size gets close to 20% of table size (see below).
-                # It turns out that re-analyzing still has an effect there,
-                # but at that point alternating analyze runs and processing of
-                # of batches no longer beats the performance of doing a few
-                # last batches without the benefit of an up-to-date index.
-                #
-                # * batch_size < min_batch_size is the "bottom line" detection
-                # of the symptom that made me add the analyze logic in the
-                # first place: performance is so bad for so long that
-                # batch_size sinks unacceptably low.  But we don't want to
-                # rely on just this condition since by that time we've already
-                # lost a considerable amount of time.
-                #
-                # * deletions_since_analyze > 1000000 is a simple periodic
-                # run, very intuitive though it did not really match
-                # performance observations.  It provides a safeguard against
-                # unexpected index degradation at negligible amortized cost,
-                # whereas waiting for a gradual slowdown to trigger the 
-                # previous rule is much more costly.  The cost of slowdown is
-                # also less easily amortized, since it affects responsiveness.
-                # Another reason to have this periodic run is that the
-                # ultimate trigger for an analyze run is based on observation
-                # of the PostgreSQL query planner's behaviour.  That may
-                # change in future database versions.
-                #
-                # * (highest-lowest)/5 < deletions_since_analyze) is based
-                # purely on experimental observation.  When perhaps a third or
-                # a quarter of rows have been deleted from the holding table
-                # without an analyze run, the database planner no longer sees
-                # the index as useful and reverts to a much more costly table
-                # scan.  Batch cost acquires a large constant-like component,
-                # often larger than our time goal all by itself.  Because
-                # pre-emptive analyze runs are so much cheaper than reactive
-                # ones, I picked a very conservative estimate.  The effect
-                # keeps happening even when there are only a few more batches
-                # left to do.
-
-                if batches_since_analyze > 3 and (
-                        batch_size < min_batch_size or
-                        deletions_since_analyze > 1000000 or
-                        (highest_id - lowest_id)/5 < deletions_since_analyze):
-                    analyzestarttime = time.time()
-                    cur.execute("ANALYZE %s (id)" % holding_table)
-                    logger.info("Analyzed in %.3f seconds" % (
-                        time.time() - analyzestarttime))
-                    deletions_since_analyze = 0
-                    batches_since_analyze = 0
-
-                batch_size = max(batch_size, min_batch_size)
-                batches_since_analyze = batches_since_analyze + 1
-
-            logger.info(
-                "Pouring %s took %.3f seconds." %
-                    (holding_table, time.time()-tablestarttime))
-
-            dropstart = time.time()
-            cur.execute("DROP TABLE %s" % holding_table)
-            logger.info("Dropped %s in %.3f seconds" % (
-                holding_table, time.time() - dropstart))
-
-
-    def _copyActiveTranslationsToNewRelease(self, logger, ztm):
+    def _copyActiveTranslationsToNewRelease(self, logger, ztm, copier):
         """We're a new release; inherit translations from parent.
 
+        This method uses MultiTableCopy to copy data.
+
         Translation data for the new release (self) is first copied into
-        "holding tables" with names like "POTemplate_tmp_feisty_271" and
-        processed there.  Then, at the end of the procedure, these tables are
-        all copied back to their originals.
+        holding tables called e.g. "temp_POTemplate_holding_ubuntu_feisty"
+        and processed there.  Then, at the end of the procedure, these tables
+        are all copied back to their originals.
 
         If this procedure fails, it may leave holding tables behind.  This was
         done deliberately to leave some forensics information for failures,
         and also to allow admins to see what data has and has not been copied.
-
-        The holding tables have names like "POTemplate_holding_feisty" (for
-        source table POTemplate and release feisty, in this case).
 
         If a holding table left behind by an abortive run has a column called
         new_id at the end, it contains unfinished data and may as well be
@@ -1691,22 +1283,14 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # a time, then performing an intermediate commit.  This avoids holding
         # too many locks for too long and disrupting regular database service.
 
-        # A unique suffix we will use for names of holding tables.  We don't
-        # use proper SQL holding tables because those will have disappeared
-        # whenever admins want to analyze a failure, figure out how far this
-        # function got in copying data, or resume after failure.
 
         # Clean up any remains from a previous run.  If we got here, that
         # means those remains are not salvagable.
-
-        postgresql.drop_tables(cursor(),
-            [self._getHoldingTableName(t) for t in self._translation_tables])
+        copier.dropHoldingTables()
 
         # Copy relevant POTemplates from existing release into a holding
         # table, complete with their original id fields.
-        self._extractToHoldingTable(ztm,
-            logger,
-            'POTemplate',
+        copier.extractToHoldingTable('POTemplate',
             [],
             'distrorelease=%s AND iscurrent' % quote(self.parentrelease))
 
@@ -1722,47 +1306,37 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 datecreated =
                     timezone('UTC'::text,
                         ('now'::text)::timestamp(6) with time zone)
-        ''' % (self._getHoldingTableName('POTemplate'), quote(self)))
+        ''' % (copier.getHoldingTableName('POTemplate'), quote(self)))
 
 
         # Copy each POTMsgSet whose template we copied, and replace each
         # potemplate reference with a reference to our copy of the original
         # POTMsgSet's potemplate.
-        self._extractToHoldingTable(ztm,
-            logger,
-            'POTMsgSet',
+        copier.extractToHoldingTable('POTMsgSet',
             ['POTemplate'],
             'POTMsgSet.sequence > 0')
 
         # Copy POMsgIDSightings, substituting their potmsgset foreign
         # keys with references to our own, copied POTMsgSets
-        self._extractToHoldingTable(ztm,
-            logger,
-            'POMsgIDSighting',
+        copier.extractToHoldingTable('POMsgIDSighting',
             ['POTMsgSet'])
 
         # Copy POFiles, making them refer to our copied POTemplates
-        self._extractToHoldingTable(ztm,
-            logger,
-            'POFile',
+        copier.extractToHoldingTable('POFile',
             ['POTemplate'])
 
         # Same for POMsgSet, but a bit more complicated since it refers to
         # both POFile and POTMsgSet.
-        self._extractToHoldingTable(ztm,
-            logger,
-            'POMsgSet',
+        copier.extractToHoldingTable('POMsgSet',
             ['POFile', 'POTMsgSet'])
 
         # And for POSubmission
-        self._extractToHoldingTable(ztm,
-            logger,
-            'POSubmission',
+        copier.extractToHoldingTable('POSubmission',
             ['POMsgSet'],
             'active OR published')
 
         # Now pour the holding tables back into the originals
-        self._pourHoldingTables(logger, ztm)
+        copier.pourHoldingTables()
 
 
     def _copyActiveTranslationsAsUpdate(self, logger):
@@ -2126,12 +1700,20 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         logger = logging.getLogger('initialise')
 
+        translation_tables = [
+            'POTemplate', 'POTMsgSet', 'POMsgIDSighting', 'POFile',
+            'POMsgSet', 'POSubmission'
+            ]
+
+        full_name = "%s_%s" % (self.distribution.name, self.name)
+        copier = MultiTableCopy(full_name, translation_tables, logger, ztm)
+
         if len(self.potemplates) == 0:
             # We're a new distrorelease; copy from scratch
-            self._copyActiveTranslationsToNewRelease(logger, ztm)
-        elif self._hasRecoverableHoldingTables(logger):
+            self._copyActiveTranslationsToNewRelease(logger, ztm, copier)
+        elif copier.hasRecoverableHoldingTables():
             # Recover data from previous, abortive run
-            self._pourHoldingTables(logger, ztm)
+            copier.pourHoldingTables()
         else:
             # Incremental copy of updates from parent distrorelease
             self._copyActiveTranslationsAsUpdate(logger)
@@ -2284,3 +1866,4 @@ class DistroReleaseSet:
             releasestatus=DistributionReleaseStatus.EXPERIMENTAL,
             parentrelease=parentrelease,
             owner=owner)
+
