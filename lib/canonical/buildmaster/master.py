@@ -634,7 +634,7 @@ class BuilddMaster:
             # Resume build XEN-images
             builders.resumeBuilder(builder)
             # Send chroot.
-            builders.giveToBuilder(builder, chroot, self.librarian)
+            builder.cacheFileOnSlave(self._logger, chroot)
 
             # Build filemap structure with the files required in this build
             # and send them to the builder.
@@ -642,7 +642,7 @@ class BuilddMaster:
             for f in queueItem.files:
                 fname = f.libraryfile.filename
                 filemap[fname] = f.libraryfile.content.sha1
-                builders.giveToBuilder(builder, f.libraryfile, self.librarian)
+                builder.cacheFileOnSlave(self._logger, f.libraryfile)
 
             # Build extra arguments
             args = {}

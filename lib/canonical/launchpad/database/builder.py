@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces import (
     IBuilder, IBuilderSet, IDistroArchReleaseSet, NotFoundError,
     IHasBuildRecords, IBuildSet, IBuildQueueSet)
 from canonical.launchpad.webapp import urlappend
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import BuildStatus
 
 
@@ -82,6 +83,28 @@ class Builder(SQLBase):
     trusted = BoolCol(dbName='trusted', default=False, notNull=True)
     speedindex = IntCol(dbName='speedindex', default=0)
     manual = BoolCol(dbName='manual', default=False)
+
+    def cacheFileOnSlave(self, logger, libraryfilealias):
+        """See IBuilder."""
+        librarian = getUtility(ILibrarianClient)
+        url = librarian.getURLForAlias(libraryfilealias.id, is_buildd=True)
+        logger.debug("Asking builder on %s to ensure it has file %s "
+                     "(%s, %s)" % (self.url, libraryfilealias.filename,
+                                   url, libraryfilealias.content.sha1))
+        if not self.builderok:
+            raise BuildDaemonError("Attempted to give a file to a known-bad"
+                                   " builder")
+        present, info = self.slave.ensurepresent(
+            libraryfilealias.content.sha1, url)
+        if not present:
+            message = """Slave '%s' (%s) was unable to fetch file.
+            ****** URL ********
+            %s
+            ****** INFO *******
+            %s
+            *******************
+            """ % (self.name, self.url, url, info)
+            raise BuildDaemonError(message)
 
     def checkCanBuildForDistroArchRelease(self, distro_arch_release):
         """See IBuilder."""

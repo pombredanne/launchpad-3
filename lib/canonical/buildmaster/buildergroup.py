@@ -182,44 +182,6 @@ class BuilderGroup:
         builder.failbuilder(reason)
         self.updateOkSlaves()
 
-    def giveToBuilder(self, builder, libraryfilealias, librarian):
-        """Request Slave to download a given file from Librarian.
-
-        Check if builder is working properly, build the librarian URL
-        for the given file and use the slave XMLRPC 'doyouhave' method
-        to request the download of the file directly by the slave.
-        if the slave returns False, which means it wasn't able to
-        download or recover from filecache, it tries to download
-        the file locally and push it through the XMLRPC interface.
-        This last algorithm is bogus and fails most of the time, that's
-        why we consider it deprecated and it'll be kept only til the next
-        protocol redesign.
-        """
-        if not builder.builderok:
-            raise BuildDaemonError("Attempted to give a file to a known-bad"
-                                   " builder")
-
-        url = librarian.getURLForAlias(libraryfilealias.id, is_buildd=True)
-
-        self.logger.debug("Asking builder on %s to ensure it has file %s "
-                          "(%s, %s)" % (builder.url, libraryfilealias.filename,
-                                        url, libraryfilealias.content.sha1))
-
-        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-        slave = removeSecurityProxy(builder.slave)
-        present, info = slave.ensurepresent(
-            libraryfilealias.content.sha1, url)
-
-        if not present:
-            message = """Slave '%s' (%s) was unable to fetch file.
-            ****** URL ********
-            %s
-            ****** INFO *******
-            %s
-            *******************
-            """ % (builder.name, builder.url, url, info)
-            raise BuildDaemonError(message)
-
     def findChrootFor(self, build_candidate, pocket):
         """Return the CHROOT librarian identifier for (buildCandidate, pocket).
 

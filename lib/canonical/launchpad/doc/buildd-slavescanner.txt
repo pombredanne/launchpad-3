@@ -43,6 +43,8 @@ Mock Builder, a class to emulate the Builder behaviour:
   ...         slave.urlbase = self.url
   ...         self.name = name
   ...         self.trusted = False
+  ...     def cacheFileOnSlave(self, logger, filealias):
+  ...         print "cacheFile called"
   ...     def failbuilder(self, reason):
   ...         self.builderok = False
   ...         self.failnotes = reason
@@ -161,10 +163,6 @@ slave has the requested file in cache.
   >>> class OkSlave:
   ...     def status(self):
   ...         return ('BuilderStatus.IDLE',)
-  ...     def ensurepresent(self, sha1, url):
-  ...         info = 'OkSlave has everything'
-  ...         print info
-  ...         return (True, info)
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
   ...         info = 'OkSlave BUILDING'
   ...         print info
@@ -748,7 +746,7 @@ Request a Mock slave build process, see OkSlave() class implementation
 for further details:
 
   >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
-  OkSlave has everything
+  cacheFile called
   OkSlave BUILDING
 
 When there is no chroot it should not alter the buildstate:

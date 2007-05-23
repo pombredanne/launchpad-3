@@ -106,6 +106,16 @@ class IBuilder(IHasOwner):
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
 
+    def cacheFileOnSlave(logger, libraryfilealias):
+        """Ask the slave to cache a librarian file to its local disk.
+
+        This is used in preparation for a build.
+
+        :param logger: A logger used for providing debug information.
+        :param libraryfilealias: A library file alias representing the needed
+            file.
+        """
+
     def checkCanBuildForDistroArchRelease(distro_arch_release):
         """Check that the slave is able to compile for the supplied distro_arch_release.
 
