@@ -931,6 +931,17 @@ distrorelease:
     ...      distrorelease=hoary_distrorelease,
     ...      sourcepackagename=evolution_sourcepackagename)
 
+Now, lets add another which will be ignored since we are setting this
+distrorelease with defer_translation_imports = True.
+
+    >>> warty_distrorelease = DistroRelease.get(1)
+    >>> evolution_sourcepackagename = SourcePackageName.get(9)
+    >>> entry3 = translationimportqueue.addOrUpdateEntry(
+    ...     u'po/sr.po', 'foo', True, rosetta_expert,
+    ...      distrorelease=warty_distrorelease,
+    ...      sourcepackagename=evolution_sourcepackagename)
+    >>> warty_distrorelease.defer_translation_imports = True
+
 Next, lets add one item to a ProductSeries as well:
 
     >>> productseries = ProductSeries.get(1)

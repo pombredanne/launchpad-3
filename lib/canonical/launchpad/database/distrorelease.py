@@ -17,8 +17,8 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    StringCol, ForeignKey, SQLMultipleJoin, IntCol, SQLObjectNotFound,
-    SQLRelatedJoin, BoolCol)
+    BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
+    SQLObjectNotFound, SQLRelatedJoin)
 
 from canonical.cachedproperty import cachedproperty
 
@@ -116,6 +116,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
+    defer_translation_imports = BoolCol(notNull=True, default=True)
     hide_all_translations = BoolCol(notNull=True, default=True)
 
     architectures = SQLMultipleJoin(
@@ -1645,7 +1646,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         """We're a new release; inherit translations from parent.
 
         Translation data for the new release (self) is first copied into
-        "holding tables" with names like "POTemplate_tmp_feisty_271" and
+        "holding tables" with names like "temp_POTemplate_holding_feisty" and
         processed there.  Then, at the end of the procedure, these tables are
         all copied back to their originals.
 
@@ -1653,8 +1654,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         done deliberately to leave some forensics information for failures,
         and also to allow admins to see what data has and has not been copied.
 
-        The holding tables have names like "POTemplate_holding_feisty" (for
-        source table POTemplate and release feisty, in this case).
+        The holding tables have names like "temp_POTemplate_holding_feisty"
+        (for source table POTemplate and release feisty, in this case).
 
         If a holding table left behind by an abortive run has a column called
         new_id at the end, it contains unfinished data and may as well be
@@ -1690,10 +1691,23 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # a time, then performing an intermediate commit.  This avoids holding
         # too many locks for too long and disrupting regular database service.
 
-        # A unique suffix we will use for names of holding tables.  We don't
-        # use proper SQL holding tables because those will have disappeared
-        # whenever admins want to analyze a failure, figure out how far this
-        # function got in copying data, or resume after failure.
+        if not self.hide_all_translations:
+            raise AssertionError("""
+_copyActiveTranslationsToNewRelease: hide_all_translations not set!
+
+Attempted to populate translations for new distrorelease while its
+translations are visible.  That would allow users to see and modify incomplete
+translation state.
+""")
+
+        if not self.defer_translation_imports:
+            raise AssertionError("""
+_copyActiveTranslationsToNewRelease: defer_translation_imports not set!
+
+Attempted to populate translations for new distrorelease while translation
+import queue is enabled. That would corrupt our translation data mixing
+new imports with the information being copied.
+""")
 
         # Clean up any remains from a previous run.  If we got here, that
         # means those remains are not salvagable.
@@ -2210,10 +2224,13 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def getFirstEntryToImport(self):
         """See IHasTranslationImports."""
-        return TranslationImportQueueEntry.selectFirstBy(
-            status=RosettaImportStatus.APPROVED,
-            distrorelease=self,
-            orderBy=['dateimported'])
+        if self.defer_translation_imports:
+            return None
+        else:
+            return TranslationImportQueueEntry.selectFirstBy(
+                status=RosettaImportStatus.APPROVED,
+                distrorelease=self,
+                orderBy=['dateimported'])
 
 
 
@@ -2280,4 +2297,3 @@ class DistroReleaseSet:
             releasestatus=DistributionReleaseStatus.EXPERIMENTAL,
             parentrelease=parentrelease,
             owner=owner)
-

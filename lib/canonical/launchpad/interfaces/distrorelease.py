@@ -77,6 +77,12 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
+    defer_translation_imports = Bool(
+        title = _("Defer translation imports"),
+        description = _("Suspends any translation imports for this release"),
+        default = True,
+        required = True
+        )
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the release")
     currentpotemplates = Attribute("The set of potemplates in the release "

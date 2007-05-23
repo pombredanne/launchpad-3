@@ -384,7 +384,7 @@ class DistroReleaseDynMenu(DynMenu):
 class DistroReleaseTranslationsAdminView(LaunchpadEditFormView):
     schema = IDistroRelease
 
-    field_names = ['hide_all_translations']
+    field_names = ['hide_all_translations', 'defer_translation_imports']
 
     def initialize(self):
         LaunchpadEditFormView.initialize(self)
