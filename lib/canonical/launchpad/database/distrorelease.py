@@ -17,8 +17,8 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    StringCol, ForeignKey, SQLMultipleJoin, IntCol, SQLObjectNotFound,
-    SQLRelatedJoin, BoolCol)
+    BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
+    SQLObjectNotFound, SQLRelatedJoin)
 
 from canonical.cachedproperty import cachedproperty
 
@@ -32,14 +32,14 @@ from canonical.database.enumcol import EnumCol
 from canonical.lp.dbschema import (
     PackagePublishingStatus, DistributionReleaseStatus,
     DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort,
-    SpecificationGoalStatus, SpecificationFilter)
+    SpecificationGoalStatus, SpecificationFilter, RosettaImportStatus)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
     ISourcePackage, ISourcePackageNameSet,
-    IHasQueueItems, IPublishing)
+    IHasQueueItems, IPublishing, IHasTranslationImports)
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -75,13 +75,16 @@ from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.queue import (
     DistroReleaseQueue, PackageUploadQueue)
+from canonical.launchpad.database.translationimportqueue import (
+    TranslationImportQueueEntry)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
 
 
 class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     """A particular release of a distribution."""
-    implements(IDistroRelease, IHasBuildRecords, IHasQueueItems, IPublishing)
+    implements(IDistroRelease, IHasBuildRecords, IHasQueueItems, IPublishing,
+               IHasTranslationImports)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -113,6 +116,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
+    defer_translation_imports = BoolCol(notNull=True, default=True)
     hide_all_translations = BoolCol(notNull=True, default=True)
 
     architectures = SQLMultipleJoin(
@@ -2218,6 +2222,18 @@ new imports with the information being copied.
         return False
 
 
+    def getFirstEntryToImport(self):
+        """See IHasTranslationImports."""
+        if self.defer_translation_imports:
+            return None
+        else:
+            return TranslationImportQueueEntry.selectFirstBy(
+                status=RosettaImportStatus.APPROVED,
+                distrorelease=self,
+                orderBy=['dateimported'])
+
+
+
 class DistroReleaseSet:
     implements(IDistroReleaseSet)
 
@@ -2281,4 +2297,3 @@ class DistroReleaseSet:
             releasestatus=DistributionReleaseStatus.EXPERIMENTAL,
             parentrelease=parentrelease,
             owner=owner)
-

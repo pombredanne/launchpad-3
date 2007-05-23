@@ -8,6 +8,7 @@
     <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IPublishing"/>
     <require
         permission="launchpad.TranslationsAdmin"
@@ -27,7 +28,7 @@
     <require
         permission="launchpad.Admin"
         set_attributes="version name releasestatus owner nominatedarchindep
-                        changeslist"
+                        changeslist defer_translation_imports"
         />
   </content>
 
