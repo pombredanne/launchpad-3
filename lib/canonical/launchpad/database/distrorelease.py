@@ -1276,26 +1276,14 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         This method uses MultiTableCopy to copy data.
 
         Translation data for the new release (self) is first copied into
-<<<<<<< TREE
         holding tables called e.g. "temp_POTemplate_holding_ubuntu_feisty"
         and processed there.  Then, at the end of the procedure, these tables
         are all copied back to their originals.
-=======
-        "holding tables" with names like "temp_POTemplate_holding_feisty" and
-        processed there.  Then, at the end of the procedure, these tables are
-        all copied back to their originals.
->>>>>>> MERGE-SOURCE
 
         If this procedure fails, it may leave holding tables behind.  This was
         done deliberately to leave some forensics information for failures,
         and also to allow admins to see what data has and has not been copied.
 
-<<<<<<< TREE
-=======
-        The holding tables have names like "temp_POTemplate_holding_feisty"
-        (for source table POTemplate and release feisty, in this case).
-
->>>>>>> MERGE-SOURCE
         If a holding table left behind by an abortive run has a column called
         new_id at the end, it contains unfinished data and may as well be
         dropped.  If it does not have that column, the holding table was
