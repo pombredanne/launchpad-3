@@ -28,7 +28,7 @@
     <require
         permission="launchpad.Admin"
         set_attributes="version name releasestatus owner nominatedarchindep
-                        changeslist defer_translation_imports"
+                        changeslist"
         />
   </content>
 
