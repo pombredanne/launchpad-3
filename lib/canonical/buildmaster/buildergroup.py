@@ -127,7 +127,13 @@ class BuilderGroup:
                 raise BuildJobMismatch('Job build entry mismatch')
 
         except (SQLObjectNotFound, BuildJobMismatch), reason:
-            slave.clean()
+            if status = 'BuilderStatus.WAITING':
+                slave.clean()
+            else:
+                # ask for an abort; it will become visible as ABORTED at a
+                # later point and a future run of the slave scanner will
+                # cleanup the slave.
+                slave.abort()
             self.logger.warn("Builder '%s' rescued from '%s-%s: %s'" % (
                 builder.name, build_id, queue_item_id, reason))
 
