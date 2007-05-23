@@ -618,16 +618,30 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard)
 
+    # From IHasTranslationImports.
     def getFirstEntryToImport(self):
         """See IHasTranslationImports."""
         return TranslationImportQueueEntry.selectFirst(
             '''status=%s AND
             productseries=ProductSeries.id AND
             ProductSeries.product=%s''' % sqlvalues(
-            RosettaImportStatus.APPROVED,
-            self.id),
+                RosettaImportStatus.APPROVED, self),
             clauseTables=['ProductSeries'],
             orderBy='TranslationImportQueueEntry.dateimported')
+
+    def getTranslationImportQueueEntries(self, status=None, file_extension=None):
+        """See IHasTranslationImports."""
+        queries = [
+            'productseries = ProductSeries.id',
+            'ProductSeries.product = %s' % sqlvalues(self)
+            ]
+        if status is not None:
+            queries.append('status = %s' % sqlvalues(status.value))
+        if file_extension is not None:
+            queries.append("path LIKE '%%' || %s" % quote_like(file_extension))
+        return TranslationImportQueueEntry.select(" AND ".join(queries),
+            clauseTables=['ProductSeries'],
+            orderBy=['status', 'dateimported', 'id'])
 
 
 class ProductSet:
