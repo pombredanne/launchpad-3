@@ -9,7 +9,7 @@ from zope.component import getUtility
 
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.launchpad.interfaces import (
-    IBugSet, IDistroReleaseQueueSet, NotFoundError)
+    IBugSet, IPackageUploadSet, NotFoundError)
 from canonical.lp.dbschema import BugTaskStatus
 
 def get_bugs_from_changes_file(changes_file):
@@ -43,7 +43,7 @@ def close_bugs(queue_ids):
     the changelog is added as a comment.
     """
     for queue_id in queue_ids:
-        queue_item = getUtility(IDistroReleaseQueueSet).get(queue_id)
+        queue_item = getUtility(IPackageUploadSet).get(queue_id)
         bugs_to_close = get_bugs_from_changes_file(queue_item.changesfile)
         if not bugs_to_close:
             # No bugs to be closed by this upload, move on to the next

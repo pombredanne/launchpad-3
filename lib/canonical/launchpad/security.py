@@ -18,14 +18,14 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
     IShippingRun, ISpecification, IQuestion, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IPackageUploadQueue,
+    IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
     IDistroReleaseLanguage)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import PackageUploadStatus
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -783,6 +783,7 @@ class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueue
 
+
 class EditPackageUploadQueue(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
     usedfor = IPackageUploadQueue
@@ -807,20 +808,20 @@ class ViewPackageUploadQueue(EditPackageUploadQueue):
         if EditPackageUploadQueue.checkAuthenticated(self, user):
             return True
         # deny access to non-admin on unapproved records
-        if self.obj.status == DistroReleaseQueueStatus.UNAPPROVED:
+        if self.obj.status == PackageUploadStatus.UNAPPROVED:
             return False
 
         return True
 
 
-class EditDistroReleaseQueue(EditPackageUploadQueue):
+class EditPackageUpload(EditPackageUploadQueue):
     permission = 'launchpad.Edit'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUpload
 
 
-class ViewDistroReleaseQueue(ViewPackageUploadQueue):
+class ViewPackageUpload(ViewPackageUploadQueue):
     permission = 'launchpad.View'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUpload
 
 
 class AdminByBuilddAdmin(AuthorizationBase):

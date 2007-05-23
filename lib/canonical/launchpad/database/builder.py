@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces import (
     IBuilder, IBuilderSet, NotFoundError, IHasBuildRecords, IBuildSet,
     IBuildQueueSet)
 from canonical.launchpad.webapp import urlappend
+from canonical.lp.dbschema import BuildStatus
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):
@@ -103,8 +104,12 @@ class Builder(SQLBase):
             return 'NOT OK : %s (%s)' % (self.failnotes, mode)
 
         if self.currentjob:
-            return 'BUILDING %s (%s)' % (self.currentjob.build.title,
-                                         mode)
+            current_build = self.currentjob.build
+            msg = 'BUILDING %s' % current_build.title
+            if not current_build.is_trusted:
+                archive_name = current_build.archive.owner.name
+                return '%s [%s] (%s)' % (msg, archive_name, mode)
+            return '%s (%s)' % (msg, mode)
 
         return 'IDLE (%s)' % mode
 
@@ -159,4 +164,3 @@ class BuilderSet(object):
                               'AND processor.family = %d'
                               % arch.processorfamily.id,
                               clauseTables=("Processor",))
-

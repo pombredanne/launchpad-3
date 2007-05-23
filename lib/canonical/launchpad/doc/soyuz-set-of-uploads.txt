@@ -84,11 +84,8 @@ Firstly, we need a way to copy a test upload into the queue
 
   >>> from canonical.archiveuploader.tests import datadir
   >>> def punt_upload_into_queue(leaf, distro):
-  ...     inc_dir = os.path.join(incoming_dir, leaf)
-  ...     os.mkdir(inc_dir)
-  ...     f = open(inc_dir + ".distro", "w")
-  ...     f.write(distro)
-  ...     f.close()
+  ...     inc_dir = os.path.join(incoming_dir, leaf, distro)
+  ...     os.makedirs(inc_dir)
   ...     for file_leaf in os.listdir(datadir(os.path.join("suite", leaf))):
   ...         os.system("cp %s %s" %
   ...             (datadir(os.path.join("suite", leaf, file_leaf)), inc_dir))
@@ -120,7 +117,7 @@ And then we need a way to process the uploads from the queue
 And we need a way to process the accepted queue
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.ftests import syncUpdate
@@ -131,7 +128,7 @@ And we need a way to process the accepted queue
   ...     distribution = getUtility(IDistributionSet)[distro]
   ...     for release in distribution:
   ...         items = release.getQueueItems(
-  ...            status=DistroReleaseQueueStatus.ACCEPTED)
+  ...            status=PackageUploadStatus.ACCEPTED)
   ...         for item in items:
   ...             item.realiseUpload()
   ...             syncUpdate(item)
@@ -145,11 +142,11 @@ it into the accepted queue
   ...     if release is None:
   ...         release = "breezy"
   ...     dr, pocket = distribution.getDistroReleaseAndPocket(release)
-  ...     items = dr.getQueueItems(status=DistroReleaseQueueStatus.NEW)
+  ...     items = dr.getQueueItems(status=PackageUploadStatus.NEW)
   ...     for item in items:
   ...         item.setAccepted()
   ...         syncUpdate(item)
-  ...     items = dr.getQueueItems(status=DistroReleaseQueueStatus.UNAPPROVED)
+  ...     items = dr.getQueueItems(status=PackageUploadStatus.UNAPPROVED)
   ...     for item in items:
   ...         item.setAccepted()
   ...         syncUpdate(item)
@@ -247,7 +244,6 @@ Remove that failed upload.
 
   >>> import shutil
   >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-2_binary'))
-  >>> os.remove(os.path.join(rejected_dir, 'bar_1.0-2_binary.distro'))
 
 ...and try it again without the bogus build id.
 
@@ -280,7 +276,6 @@ Remove rejected uploads.
 
   >>> import shutil
   >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-3'))
-  >>> os.remove(os.path.join(rejected_dir, 'bar_1.0-3.distro'))
 
 Check the rejection (instead of failure) of an upload to a release or
 pocket which does not exist. We use the security upload policy for easier
@@ -307,7 +302,6 @@ Remove rejected uploads.
 
   >>> import shutil
   >>> shutil.rmtree(os.path.join(rejected_dir, 'unstable_1.0-1'))
-  >>> os.remove(os.path.join(rejected_dir, 'unstable_1.0-1.distro'))
 
 Force weird behavior with rfc2047 sentences containing '.' on
 bar_1.0-4, which caused bug # 41102.
@@ -573,7 +567,7 @@ published inside the target pocket should be rejected:
   >>> expect_okays('foo_1.0-3', upload_policy='sync')
   Traceback (most recent call last):
   ...
-  AssertionError: Rejected should be empty: ['foo_1.0-3', 'foo_1.0-3.distro']
+  AssertionError: Rejected should be empty: ['foo_1.0-3']
 
   >>> print open(uploader_log).read()
   INFO    creating lockfile
@@ -591,7 +585,6 @@ we expect.
 Remove rejected upload:
 
   >>> shutil.rmtree(os.path.join(rejected_dir, 'foo_1.0-3'))
-  >>> os.remove(os.path.join(rejected_dir, 'foo_1.0-3.distro'))
 
 
 Set ubuntutest/breezy to 'experimental' state again to not affect the
@@ -637,8 +630,9 @@ can see it. This simulates the buildd-queuebuilder having run inbetween
 the source and binary uploads.
 
   >>> warty_i386 = ubuntu['warty']['i386']
+  >>> main_archive = ubuntu.main_archive
   >>> build = spr.createBuild(warty_i386, PackagePublishingPocket.SECURITY,
-  ...                         status=BuildStatus.NEEDSBUILD)
+  ...                         main_archive, status=BuildStatus.NEEDSBUILD)
   >>> transaction.commit()
 
 Check build created

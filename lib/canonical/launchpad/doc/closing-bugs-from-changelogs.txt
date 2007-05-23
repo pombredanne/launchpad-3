@@ -30,18 +30,19 @@ file. The only thing in the changes file that is used to close the bug
 is the Launchpad-bugs-fixed header.
 
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.database import DistroReleaseQueue
+    >>> from canonical.launchpad.database import PackageUpload
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> from canonical.lp.dbschema import (
-    ...     DistroReleaseQueueStatus, PackagePublishingPocket)
+    ...     PackageUploadStatus, PackagePublishingPocket)
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_hoary = ubuntu.getRelease('hoary')
     >>> changes = changes_template % pmount_bug_id
     >>> changes_file = getUtility(ILibrarianClient).addFile(
     ...     'pmount.changes', len(changes), StringIO(changes), 'text/plain')
-    >>> queue_item = DistroReleaseQueue(
-    ...     status=DistroReleaseQueueStatus.DONE,
+    >>> queue_item = PackageUpload(
+    ...     status=PackageUploadStatus.DONE,
+    ...     archive=ubuntu_hoary.main_archive,
     ...     distrorelease=ubuntu_hoary,
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     changesfile=changes_file, signing_key=None)
@@ -54,7 +55,7 @@ uploaded to.
 
 
     >>> from canonical.launchpad.database import (
-    ...     DistroReleaseQueueSource, SourcePackageRelease)
+    ...     PackageUploadSource, SourcePackageRelease)
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> pmount_release_id = 20
@@ -63,8 +64,8 @@ uploaded to.
     u'pmount'
     >>> pmount_release.uploaddistrorelease.name
     u'hoary'
-    >>> source_queue = DistroReleaseQueueSource(
-    ...     distroreleasequeue=queue_item,
+    >>> source_queue = PackageUploadSource(
+    ...     packageupload=queue_item,
     ...     sourcepackagerelease=pmount_release)
 
     # Need to commit the transaction so that the changes file can be
@@ -158,14 +159,15 @@ specified, it's ignored.
     ...     pmount_bug_id, another_pmount_bug_id)
     >>> changes_file = getUtility(ILibrarianClient).addFile(
     ...     'pmount.changes', len(changes), StringIO(changes), 'text/plain')
-    >>> queue_item = DistroReleaseQueue(
-    ...     status=DistroReleaseQueueStatus.DONE,
+    >>> queue_item = PackageUpload(
+    ...     status=PackageUploadStatus.DONE,
     ...     distrorelease=ubuntu_hoary,
+    ...     archive=ubuntu_hoary.main_archive,
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     changesfile=changes_file, signing_key=None)
     >>> queue_item_id = queue_item.id
-    >>> source_queue = DistroReleaseQueueSource(
-    ...     distroreleasequeue=queue_item,
+    >>> source_queue = PackageUploadSource(
+    ...     packageupload=queue_item,
     ...     sourcepackagerelease=pmount_release)
 
     >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
@@ -199,15 +201,16 @@ queue items have been processed.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> queue_item = DistroReleaseQueue.get(queue_item_id)
-    >>> queue_item = DistroReleaseQueue(
-    ...     status=DistroReleaseQueueStatus.ACCEPTED,
+    >>> queue_item = PackageUpload.get(queue_item_id)
+    >>> queue_item = PackageUpload(
+    ...     status=PackageUploadStatus.ACCEPTED,
     ...     distrorelease=ubuntu_hoary,
+    ...     archive=ubuntu_hoary.main_archive,
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     changesfile=changes_file, signing_key=None)
     >>> queue_item_id = queue_item.id
-    >>> source_queue = DistroReleaseQueueSource(
-    ...     distroreleasequeue=queue_item,
+    >>> source_queue = PackageUploadSource(
+    ...     packageupload=queue_item,
     ...     sourcepackagerelease=pmount_release)
 
     >>> from canonical.lp.dbschema import BugTaskStatus
