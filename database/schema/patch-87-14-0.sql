@@ -390,6 +390,7 @@ ALTER TABLE SourcePackageRelease
     ADD CONSTRAINT sourcepackagerelease_upload_archive_fk
        FOREIGN KEY (upload_archive) REFERENCES Archive(id);
 
+
 ALTER TABLE Build ADD COLUMN archive INTEGER;
 
 UPDATE Build
@@ -399,8 +400,10 @@ UPDATE Build
           AND DistroRelease.id = DistroArchRelease.DistroRelease
 	  AND DistroArchRelease.id = Build.distroarchrelease;
 
+ALTER TABLE Build ALTER COLUMN archive SET NOT NULL;
 ALTER TABLE Build
     ADD CONSTRAINT build_archive_fk
        FOREIGN KEY (archive) REFERENCES Archive(id);
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 14, 0);
