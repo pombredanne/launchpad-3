@@ -6,66 +6,62 @@
 This can be used either to update a distrorelease's translations, or to
 provide a new distrorelease in a series with its initial translation data.
 Only current translations are copied.
-
-Make sure no more than one instance of this script is running at a time on the
-same distrorelease.
 """
 
 import _pythonpath
-import sys
-from optparse import OptionParser
 from zope.component import getUtility
 from canonical.config import config
-from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.scripts import logger, logger_options
+from canonical.launchpad.scripts.base import LaunchpadScript
 
-def parse_options(args):
-    """Parse a set of command line options.
+class TranslationsCopier(LaunchpadScript):
+    """A LaunchpadScript for copying distrorelease translations from parent.
 
-    Return an optparse.Values object.
+    Core job is to invoke distrorelease.copyMissingTranslationsFromParent().
     """
-    parser = OptionParser()
-    parser.add_option("-d", "--distribution", dest="distro",
-        default='ubuntu',
-        help="The distribution we want to work with.")
-    parser.add_option("-r", "--release", dest="release",
-        help="The distrorelease where we want to migrate translations.")
 
-    logger_options(parser)
+    def add_my_options(self):
+        self.parser.add_option('-d', '--distribution', dest='distro',
+            default='ubuntu',
+            help='Name of distribution to copy translations in.')
+        self.parser.add_option('-r', '--release', dest='release',
+            help='Name of distrorelease whose translations should be updated')
 
-    (options, args) = parser.parse_args(args)
+    def main(self):
+        distribution = getUtility(IDistributionSet)[self.options.distro]
+        release = distribution[self.options.release]
 
-    return options
+        self.logger.info('Starting...')
+        release.copyMissingTranslationsFromParent(self.txn)
 
-def main(argv):
-    options = parse_options(argv[1:])
+        # We would like to update the DistroRelase statistics, but it takes
+        # too long so this should be done after.
+        #
+        # Finally, we changed many things related with cached statistics, so
+        # we may want to update those.
+        # self.logger.info('Updating DistroRelease statistics...')
+        # release.updateStatistics(self.txn)
+        self.logger.info('Done...')
 
-    logger_object = logger(options, 'initialise')
+        # Commit our transaction.
+        self.txn.commit()
 
-    # Setup zcml machinery to be able to use getUtility
-    execute_zcml_for_scripts()
-    ztm = initZopeless(dbuser=config.rosetta.rosettaadmin.dbuser)
+    @property
+    def lockfilename(self):
+        """Return lock file name for this script on this distrorelease.
 
-    distribution = getUtility(IDistributionSet)[options.distro]
-    release = distribution[options.release]
+        No global lock is needed, only one for the distrorelease we operate
+        on.  This does mean that our options must have been parsed before this
+        property is ever accessed.  Luckily that is what LaunchpadScript does!
+        """
+        return "launchpad-%s-%s-%s.lock" % (self.name, self.options.distro,
+            self.options.release)
 
-    logger_object.info('Starting...')
-    release.copyMissingTranslationsFromParent(ztm)
-
-    # We would like to update the DistroRelase statistics, but it takes
-    # too long so this should be done after.
-    #
-    # Finally, we changed many things related with cached statistics,
-    # let's update it.
-    # logger_object.info('Updating DistroRelease statistics...')
-    # release.updateStatistics(ztm)
-    logger_object.info('Done...')
-
-    # Commit the transaction.
-    ztm.commit()
 
 if __name__ == '__main__':
-    main(sys.argv)
+
+    script = TranslationsCopier('copy-missing-translations',
+        dbuser=config.rosetta.poimport.dbuser)
+
+    script.lock_and_run()
 
