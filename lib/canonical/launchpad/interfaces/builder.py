@@ -5,8 +5,11 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildDaemonError',
+    'BuildJobMismatch',
     'IBuilder',
     'IBuilderSet',
+    'ProtocolVersionMismatch',
     ]
 
 from zope.interface import Interface, Attribute
@@ -17,6 +20,18 @@ from canonical.launchpad.fields import Title, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
+
+
+class BuildDaemonError(Exception):
+    """The class of errors raised by the buildd classes"""
+
+
+class ProtocolVersionMismatch(BuildDaemonError):
+    """The build slave had a protocol version. This is a serious error."""
+
+
+class BuildJobMismatch(BuildDaemonError):
+    """The build slave is working with mismatched information, needs rescue."""
 
 
 class IBuilder(IHasOwner):

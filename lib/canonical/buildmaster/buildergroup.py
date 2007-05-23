@@ -19,25 +19,14 @@ from canonical.config import config
 from canonical.lp import dbschema
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.interfaces import (
-    IBuildQueueSet, IBuildSet, IBuilderSet, pocketsuffix
+    BuildDaemonError, IBuildQueueSet, BuildJobMismatch, IBuildSet, IBuilderSet,
+    ProtocolVersionMismatch, pocketsuffix
     )
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache, cursor)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.buildd.slave import BuilderStatus
-
-
-class BuildDaemonError(Exception):
-    """The class of errors raised by the buildd classes"""
-
-
-class ProtocolVersionMismatch(BuildDaemonError):
-    """The build slave had a protocol version. This is a serious error."""
-
-
-class BuildJobMismatch(BuildDaemonError):
-    """The build slave is working with mismatched information, needs rescue."""
 
 
 class BuilderGroup:
