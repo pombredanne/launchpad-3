@@ -12,7 +12,7 @@
     <allow interface="canonical.launchpad.interfaces.IPublishing"/>
     <require
         permission="launchpad.TranslationsAdmin"
-        set_attributes="hide_all_translations"
+        set_attributes="hide_all_translations defer_translation_imports"
         />
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish
@@ -28,7 +28,7 @@
     <require
         permission="launchpad.Admin"
         set_attributes="version name releasestatus owner nominatedarchindep
-                        changeslist defer_translation_imports"
+                        changeslist"
         />
   </content>
 
