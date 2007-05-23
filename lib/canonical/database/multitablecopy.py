@@ -312,6 +312,12 @@ class MultiTableCopy:
             # single SQL statement.  No time for gaps to form.
             cur.execute("SELECT min(id), max(id) FROM %s" % holding_table)
             lowest_id, highest_id = cur.fetchall()[0]
+
+            if lowest_id is None:
+                # Table is empty.  Drop it and move on.
+                postgresql.drop_tables(holding_table)
+                continue
+
             total_rows = highest_id + 1 - lowest_id
             self._log_info("Up to %d rows in holding table" % total_rows)
 
@@ -446,10 +452,7 @@ class MultiTableCopy:
                 "Pouring %s took %.3f seconds." %
                     (holding_table, time.time()-tablestarttime))
 
-            dropstart = time.time()
-            cur.execute("DROP TABLE %s" % holding_table)
-            self._log_info("Dropped %s in %.3f seconds" % (
-                holding_table, time.time() - dropstart))
+            postgresql.drop_table(holding_table)
 
     def _checkExtractionOrder(self, source_table):
         """Verify order in which tables are extracted against tables list.
