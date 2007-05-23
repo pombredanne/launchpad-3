@@ -119,7 +119,7 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
   >>> class LostBuildingSlave:
   ...     def status(self):
   ...         return ('BuilderStatus.BUILDING', '1000-10000')
-  ...     def clean(self):
+  ...     def abort(self):
   ...         pass
 
   >>> lostbuilding_builder = MockBuilder('Lost Building Slave',
