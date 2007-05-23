@@ -350,11 +350,8 @@ class BuilderGroup:
         """Verify the current build job status and perform the required
         actions for each state.
         """
-        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-        slave = removeSecurityProxy(queueItem.builder.slave)
-
         try:
-            res = slave.status()
+            res = queueItem.builder.slaveStatusSentence()
         except (xmlrpclib.Fault, socket.error), info:
             # XXX cprov 20050629
             # Hmm, a problem with the xmlrpc interface,
@@ -387,6 +384,8 @@ class BuilderGroup:
             return
 
         try:
+            # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+            slave = removeSecurityProxy(queueItem.builder.slave)
             method(queueItem, slave, librarian, *res[1:])
         except TypeError, e:
             self.logger.critical("Received wrong number of args in response.")
@@ -718,10 +717,8 @@ class BuilderGroup:
             if builder.trusted != is_trusted:
                 #self.logger.debug('builder INCOMPATIBLE')
                 continue
-            # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-            slave = removeSecurityProxy(builder.slave)
             try:
-                slavestatus = slave.status()
+                slavestatus = builder.slaveStatusSentence()
             except (xmlrpclib.Fault, socket.error), info:
                 #self.logger.debug('builder DEAD')
                 continue
