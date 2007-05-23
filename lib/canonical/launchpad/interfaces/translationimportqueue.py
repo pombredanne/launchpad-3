@@ -13,6 +13,7 @@ __all__ = [
     'ITranslationImportQueueEntry',
     'ITranslationImportQueue',
     'IEditTranslationImportQueueEntry',
+    'IHasTranslationImports',
     ]
 
 class ITranslationImportQueueEntry(Interface):
@@ -215,6 +216,11 @@ class ITranslationImportQueue(Interface):
         filtering purposes.
         """
 
+    def getPillarObjectsWithApprovedImports():
+        """Return list of Product's and DistroRelease's with pending imports.
+
+        All returned items must implement IHasTranslationImports."""
+
     def executeOptimisticApprovals(ztm):
         """Try to move entries from the Needs Review status to Approved one.
 
@@ -281,3 +287,15 @@ class IEditTranslationImportQueueEntry(Interface):
             "The path to this file inside the source tree. If it's empty, we"
             " use the one from the queue entry."),
         required=False)
+
+
+class IHasTranslationImports(Interface):
+    """A set of files to be imported into Rosetta.
+
+    Implemented separately for a distrorelease or product, allowing a single
+    queue per each.
+    """
+
+    def getFirstEntryToImport():
+        """Return the first entry of the queue ready to be imported."""
+

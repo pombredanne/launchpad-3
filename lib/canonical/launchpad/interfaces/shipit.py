@@ -13,7 +13,7 @@ from zope.interface import Interface, Attribute, implements
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
-from canonical.lp.dbschema import ShipItDistroRelease, ShippingRequestStatus
+from canonical.lp.dbschema import ShipItDistroRelease
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
@@ -431,6 +431,16 @@ class IShippingRequestSet(Interface):
 
         Only the orders placed between the first monday prior to start_date
         and the first sunday prior to end_date are considered.
+        """
+
+    def generateRequestDistributionReport():
+        """Generate a csv file with the distribution of requests and shipments.
+
+        For the current release, there will be 4 columns displaying the number
+        of requests/shipments and the number of users which had that exact
+        number of requests/shipments. The previous releases we do the same but
+        for requests/shipments across all releases and only include people
+        which requested the current release.
         """
 
 
