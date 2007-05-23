@@ -64,42 +64,81 @@ class BuilderGroup:
         self.logger.debug("Finding XMLRPC clients for the builders")
 
         for builder in self.builders:
-            try:
-                self.logger.info('Checking %s' % builder.name)
-                if not builder.builderok:
-                    continue
-                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-                slave = removeSecurityProxy(builder.slave)
-                # verify the echo method
-                if slave.echo("Test")[0] != "Test":
-                    raise BuildDaemonError("Failed to echo OK")
-                # ask builder information
-                # XXX: mechanisms is ignored? -- kiko
-                builder_vers, builder_arch, mechanisms = slave.info()
-                # attempt to wrong builder version
-                if builder_vers != '1.0':
-                    raise ProtocolVersionMismatch("Protocol version mismatch")
-                # attempt to wrong builder architecture
-                if builder_arch != arch.architecturetag:
-                    raise BuildDaemonError(
-                        "Architecture tag mismatch: %s != %s"
-                        % (arch, arch.architecturetag))
-            # catch only known exceptions
-            except (ValueError, TypeError, xmlrpclib.Fault,
-                    socket.error, BuildDaemonError), reason:
-                # repr() is required for socket.error
-                builder.failbuilder(repr(reason))
-                self.logger.debug("Builder on %s marked as failed due to: %r",
-                                  builder.url, reason, exc_info=True)
-            else:
-                # Update the successfully probed builder to OK state.
-                builder.builderok = True
-                builder.failnotes = None
-                # verify if the builder slave is working with sane information
-                self.rescueBuilderIfLost(builder)
-
+            # builders that are not 'ok' are not worth rechecking here for some
+            # currently undocumented reason - RBC 20070523.
+            if builder.builderok:
+                self.updateBuilderStatus(builder, arch)
+        
+        # commit the updates made to the builders.
         self.commit()
         self.updateOkSlaves()
+
+    def updateBuilderStatus(self, builder, arch):
+        """Update the status for a builder by probing it.
+
+        :param builder: A builder object.
+        :param arch: The expected architecture family of the builder.
+        """
+        self.logger.info('Checking %s' % builder.name)
+        try:
+            self.checkBuilderAlive(builder)
+            self.checkBuilderArchitecture(builder, arch)
+        # catch only known exceptions
+        except (ValueError, TypeError, xmlrpclib.Fault,
+                socket.error, BuildDaemonError), reason:
+            # repr() is required for socket.error
+            builder.failbuilder(repr(reason))
+            self.logger.debug("Builder on %s marked as failed due to: %r",
+                              builder.url, reason, exc_info=True)
+        else:
+            # Update the successfully probed builder to OK state.
+            builder.builderok = True
+            builder.failnotes = None
+            # verify if the builder slave is working with sane information
+            self.rescueBuilderIfLost(builder)
+
+    def checkBuilderArchitecture(self, builder, arch):
+        """Check that the builder reports the architecture arch.
+
+        This will query the builder to determine its actual architecture (as
+        opposed to what we expect it to be).
+
+        :param builder: A builder object.
+        :param arch: The expected architecture family of the builder.
+        :raises BuildDaemonError: When the builder is down or of the wrong
+            architecture.
+        :raises ProtocolVersionMismatch: When the builder returns an
+            unsupported protocol version.
+        """
+        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+        slave = removeSecurityProxy(builder.slave)
+        # ask builder information
+        # XXX: mechanisms is ignored? -- kiko
+        builder_vers, builder_arch, mechanisms = slave.info()
+        # attempt to wrong builder version
+        if builder_vers != '1.0':
+            raise ProtocolVersionMismatch("Protocol version mismatch")
+        # attempt to wrong builder architecture
+        if builder_arch != arch.architecturetag:
+            raise BuildDaemonError(
+                "Architecture tag mismatch: %s != %s"
+                % (arch, arch.architecturetag))
+
+    def checkBuilderAlive(self, builder):
+        """Check that the builder is alive.
+    
+        This pings the builder over the network via the echo method and looks
+        for the sent message as the reply.
+
+        :param builder: A builder object.
+        :raises BuildDaemonError: When the builder is down or of the wrong
+            architecture.
+        """
+        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+        slave = removeSecurityProxy(builder.slave)
+        # verify the echo method
+        if slave.echo("Test")[0] != "Test":
+            raise BuildDaemonError("Failed to echo OK")
 
     def rescueBuilderIfLost(self, builder):
         """Reset Builder slave if job information mismatch.
