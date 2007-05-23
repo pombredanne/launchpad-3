@@ -241,6 +241,7 @@ class LaunchpadScript:
 
 
 class LaunchpadCronScript(LaunchpadScript):
+    """A LaunchpadScript subclass that logs successful runs in the Database."""
 
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""
