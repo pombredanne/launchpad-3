@@ -1,3 +1,9 @@
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+__all__ = [ 'MultiTableCopy' ]
+
 import time
 
 from canonical.database import postgresql
