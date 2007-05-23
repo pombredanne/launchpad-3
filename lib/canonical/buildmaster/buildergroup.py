@@ -71,7 +71,7 @@ class BuilderGroup:
         self.logger.info('Checking %s' % builder.name)
         try:
             builder.checkSlaveAlive()
-            self.checkBuilderArchitecture(builder, arch)
+            builder.checkCanBuildForDistroArchRelease(arch)
         # catch only known exceptions
         except (ValueError, TypeError, xmlrpclib.Fault,
                 socket.error, BuildDaemonError), reason:
@@ -85,33 +85,6 @@ class BuilderGroup:
             builder.failnotes = None
             # verify if the builder slave is working with sane information
             self.rescueBuilderIfLost(builder)
-
-    def checkBuilderArchitecture(self, builder, arch):
-        """Check that the builder reports the architecture arch.
-
-        This will query the builder to determine its actual architecture (as
-        opposed to what we expect it to be).
-
-        :param builder: A builder object.
-        :param arch: The expected architecture family of the builder.
-        :raises BuildDaemonError: When the builder is down or of the wrong
-            architecture.
-        :raises ProtocolVersionMismatch: When the builder returns an
-            unsupported protocol version.
-        """
-        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-        slave = removeSecurityProxy(builder.slave)
-        # ask builder information
-        # XXX: mechanisms is ignored? -- kiko
-        builder_vers, builder_arch, mechanisms = slave.info()
-        # attempt to wrong builder version
-        if builder_vers != '1.0':
-            raise ProtocolVersionMismatch("Protocol version mismatch")
-        # attempt to wrong builder architecture
-        if builder_arch != arch.architecturetag:
-            raise BuildDaemonError(
-                "Architecture tag mismatch: %s != %s"
-                % (arch, arch.architecturetag))
 
     def rescueBuilderIfLost(self, builder):
         """Reset Builder slave if job information mismatch.

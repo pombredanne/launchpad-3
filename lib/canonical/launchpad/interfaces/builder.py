@@ -106,6 +106,19 @@ class IBuilder(IHasOwner):
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
 
+    def checkCanBuildForDistroArchRelease(distro_arch_release):
+        """Check that the slave is able to compile for the supplied distro_arch_release.
+
+        This will query the builder to determine its actual architecture (as
+        opposed to what we expect it to be).
+
+        :param distro_arch_release: The distro_arch_release to check against.
+        :raises BuildDaemonError: When the builder is down or of the wrong
+            architecture.
+        :raises ProtocolVersionMismatch: When the builder returns an
+            unsupported protocol version.
+        """
+
     def checkSlaveAlive():
         """Check that the buildd slave is alive.
     

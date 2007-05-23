@@ -83,6 +83,28 @@ class Builder(SQLBase):
     speedindex = IntCol(dbName='speedindex', default=0)
     manual = BoolCol(dbName='manual', default=False)
 
+    def checkCanBuildForDistroArchRelease(self, distro_arch_release):
+        """See IBuilder."""
+        # XXX: This function currently depends on the operating system specific
+        # details of the build slave to return a processor-family-name (the
+        # architecturetag) which matches the distro_arch_release. In reality,
+        # we should be checking the processor itself (e.g. amd64) as that is
+        # what the distro policy is set from, the architecture tag is both
+        # distro specific and potentially different for radically different
+        # distributions - its not the right thing to be comparing.
+
+        # query the slave for its active details.
+        # XXX: mechanisms is ignored? -- kiko
+        builder_vers, builder_arch, mechanisms = self.slave.info()
+        # we can only understand one version of slave today:
+        if builder_vers != '1.0':
+            raise ProtocolVersionMismatch("Protocol version mismatch")
+        # check the slave arch-tag against the distro_arch_release.
+        if builder_arch != distro_arch_release.architecturetag:
+            raise BuildDaemonError(
+                "Architecture tag mismatch: %s != %s"
+                % (builder_arch, distro_arch_release.architecturetag))
+
     def checkSlaveAlive(self):
         """See IBuilder."""
         if self.slave.echo("Test")[0] != "Test":
