@@ -81,10 +81,6 @@ It was not rejected.
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
 
-  >>> print upload.rejection_message
-
-
-
 And all things worked.
 
   >>> success

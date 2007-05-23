@@ -154,6 +154,13 @@ k            </description>
                 no limit.
             </description>
         </key>
+        <key name="max_productrelease_file_size" datatype="integer" required="no"
+            default="0">
+            <description>
+                Maximum size of product release download files in bytes. A value
+                of 0 means no limit.
+            </description>
+        </key>
         <key name="db_statement_timeout" datatype="integer" required="no">
             <description>
                 SQL statement timeout in milliseconds. If a statement
@@ -883,7 +890,7 @@ k            </description>
             required="no" />
     </sectiontype>
 
-    <sectiontype name="supermirrorsftp">
+    <sectiontype name="codehosting">
         <key name="authserver" datatype="string" />
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
@@ -980,7 +987,7 @@ k            </description>
         <section name="*" type="supermirror" attribute="supermirror" />
         <section name="*" type="branchscanner" attribute="branchscanner" />
         <section name="*" type="builddmaster" attribute="builddmaster" />
-        <section name="*" type="supermirrorsftp" attribute="supermirrorsftp" />
+        <section name="*" type="codehosting" attribute="codehosting" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
         <section name="*" type="mailman" attribute="mailman" />

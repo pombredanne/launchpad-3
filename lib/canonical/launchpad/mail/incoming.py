@@ -177,7 +177,7 @@ def handleMail(trans=transaction):
                     continue
                 if mail.get_content_type() == 'multipart/report':
                     # Mails with a content type of multipart/report are
-                    # generall DSN messages and should be ignored.
+                    # generally DSN messages and should be ignored.
                     _handle_error(
                         "Got a multipart/report message.",
                         file_alias_url, notify=False)

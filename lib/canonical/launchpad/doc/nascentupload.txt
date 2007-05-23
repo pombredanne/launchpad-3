@@ -19,7 +19,7 @@ distrorelease so that we can upload to it.
   >>> hoary.releasestatus = DistributionReleaseStatus.DEVELOPMENT
 
 A NascentUpload is a collection of files in a directory. They
-represent what may turn out to be an acceptible upload to a launchpad
+represent what may turn out to be an acceptable upload to a launchpad
 managed archive.
 
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
@@ -41,7 +41,7 @@ managed archive.
 == Constructing a NascentUpload object ==
 
 Constructing a NascentUpload instance verifies that the changes file
-specified exists and tries to build a ChangeFile (see
+specified exists and tries to build a ChangesFile (see
 doc/nascentuploadfile.txt) object based on that. If anything goes
 wrong during this process FatalUploadError is raised:
 
@@ -50,7 +50,7 @@ wrong during this process FatalUploadError is raised:
   ...
   FatalUploadError:...
 
-Otherwise a NascentFile containing a ChangesFile is ready to use.
+Otherwise a ChangesFile object is ready to use.
 
   >>> quodlibet = NascentUpload(
   ...     datadir("quodlibet_0.13.1-1_i386.changes"),
@@ -195,9 +195,9 @@ parse the maintainer for them either:
   >>> print ed_binary_upload.changes.maintainer
   None
 
-Other Changesfile information are also checked across the uploads
+Other ChangesFile information are also checked across the uploads
 files specified. For instance, the changesfile Architecture list line
-should match the the files target architectures:
+should match the files target architectures:
 
 XXX cprov 20070404: we need to a policy that accepts unsigned
 changesfiles and binary, source and mixed uploads ...
@@ -261,7 +261,7 @@ The NascentUpload can tell us if it is sourceful or not, (ditto binaryful)
   >>> ed_mixed_upload.binaryful
   True
 
-Also provide architeture dependent status:
+Also provide architecture dependent status:
 
   >>> ed_mixed_upload.archindep
   False
@@ -315,7 +315,7 @@ Roll back everything related with ed_mixed_upload:
 
 == Acceptance Work-flow ==
 
-The NascentUpload.do_accept method is the code with effectivelly adds
+The NascentUpload.do_accept method is the code with effectively adds
 information to the database. Respective DistroReleaseQueue,
 SourcePackageRelease, Build and BinaryPackageRelease will only exist
 after calling this method.
@@ -355,7 +355,7 @@ The 'Maintainer:' identity in RFC-822 format, as it was in DSC:
   >>> ed_spr.dsc_maintainer_rfc822
   u'James Troup <james@nocrew.org>'
 
-Version of debian policy/standards used to build this sourcepackage:
+Version of debian policy/standards used to build this source package:
 
   >>> ed_spr.dsc_standards_version
   u'3.5.8.0'
@@ -385,8 +385,8 @@ The uploaded source will be considered okay, since it still passing
 all the consistency checks.
 
 However there is another candidate, submitted before and not yet
-published in the archive, which provides the same sourcepackagename
-and sourcepackageversion for the distrorelease in question.
+published in the archive, which provides the same source package name
+and source package version for the distrorelease in question.
 
   >>> ed_src_dup = NascentUpload(
   ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
@@ -434,7 +434,7 @@ case, see further info in bug #55774.
 
 Next we send in the binaries, since the source should be in ACCEPTED the
 binary should go straight there too. Note that we are not specifying
-any build, so it should be created apropriately, it is what happens
+any build, so it should be created appropriately, it is what happens
 with staged security uploads:
 
 XXX cprov 20070404: we are using a modified sync policy because we
@@ -480,19 +480,21 @@ A build was created to represent the relationship between ed_src
 As we could see both, sources and binaries, get into Launchpad via
 nascent-upload infrastructure, i.e., both are processed as 'uploads'.
 
-However in Launchpad the the package lifecyle can be described in 4
+However in Launchpad the package life-cycle can be described in 10
 different stages:
 
- 1. Source upload                     DRQ->DRQS->SPR
- 2. Source queue acceptation          pending SSPPH
- 3. Source publication                published SSPPH
- 4. Build creation                    needsbuild Build
- 5. Build dispatching                 building Build
- 6. Build gathering & Binary upload   fullybuilt Build + DRQ->DRQB->BPR
- 7. Binary queue acceptation          pending SBPPH
- 8. Binary publication                published SBPPH
+  1. Source upload                     DRQ->DRQS->SPR
+  2  Queue review (approval/rejection) DRQ ACCEPTED or REJECTED
+  3. Source queue acceptance           pending SSPPH
+  4. Source publication                published SSPPH
+  5. Build creation                    needsbuild Build
+  6. Build dispatching                 building Build
+  7. Build gathering & Binary upload   fullybuilt Build + DRQ->DRQB->BPR
+  8  Queue review (approval/rejection) DRQ ACCEPTED or REJECTED
+  9. Binary queue acceptance          pending SBPPH
+ 10. Binary publication               published SBPPH
 
-We will try to simulate this this procedure for a source upload that
+We will try to simulate this procedure for a source upload that
 produces multiple binaries using sync policy:
 
   >>> sync_policy = getPolicy(
@@ -523,10 +525,10 @@ Once we have a new queue entry we are able to accept it, step 2:
   'ACCEPTED'
 
 
-We can just just assume the source was published by step 3 for
+We can just assume the source was published by step 3 and 4 for
 simplicity and claim 'build from ACCEPTED' feature.
 
-Build creation is done based on the SourcePackageRelease object, step 4:
+Build creation is done based on the SourcePackageRelease object, step 5:
 
   >>> from canonical.lp.dbschema import PackagePublishingPocket
   >>> multibar_build = multibar_spr.createBuild(
@@ -538,14 +540,14 @@ Build creation is done based on the SourcePackageRelease object, step 4:
 We have just created a pending build record for hoary/i386.
 
 Now we also assume that the build was dispatched by the slave-scanner
-script, step 5.
+script, step 6.
 
-On step 6, the slave-scanner collect the files generated on builders
-and organise them as an ordinary binary upload having a changesfile
-and the collection of deb produced.
+On step 7, the slave-scanner collects the files generated on builders
+and organises them as an ordinary binary upload having a changesfile
+and the collection of DEB files produced.
 
-At this point slave-scanner move the upload to the appropriate path
-(/srv/launchpad.net/builddmaster) and invoke process-upload.py with
+At this point slave-scanner moves the upload to the appropriate path
+(/srv/launchpad.net/builddmaster) and invokes process-upload.py with
 the 'buildd' upload policy and the build record id.
 
   >>> buildd_policy = getPolicy(
@@ -558,9 +560,8 @@ the 'buildd' upload policy and the build record id.
   >>> multibar_bin_upload.process()
   >>> success, msgs = multibar_bin_upload.do_accept()
 
-
 Now that we have successfully processed the binaries coming from a
-builder, step 6, we can check the status of the database entities
+builder, step 8, we can check the status of the database entities
 related to it.
 
 We have a NEW queue entry, containing the Build results:
@@ -572,7 +573,7 @@ We have a NEW queue entry, containing the Build results:
   1
 
 The build considered as 'producer' of the upload binaries is the same
-that we have created in step 3:
+that we have created in step 5:
 
   >>> build = multibar_bin_queue.builds[0].build
   >>> build.id == multibar_build.id
@@ -591,8 +592,8 @@ If the build record was not marked as FULLYBUILT during the
 upload-time, it means that the slave should be hold with the builds
 results for later processing.
 
-Updating the build record in upload-domain avoids possible
-inconsistence when a binary upload was not processed correctly, then
+Updating the build record as part of the upload processing avoids possible
+inconsistencies when a binary upload was not processed correctly, then
 was not stored in Launchpad database. The slave-scanner has no way to
 recognise such situations easily, since process-upload exits with
 success even when the upload is rejected. See bug #32261 for further info.
@@ -612,7 +613,7 @@ to upload to -UPDATES in a DEVELOPMENT release.
   >>> hoary.releasestatus = DistributionReleaseStatus.CURRENT
 
 Note that the policy do not have fixed distrorelease, it will be
-overriden by the changesfile:
+overridden by the changesfile:
 
   >>> norelease_sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu')
@@ -739,7 +740,7 @@ Both, DSC and changesfile were signed:
   True
 
 Let's modify the current ACL rules for ubuntu, moving the upload
-rights to all commponents from 'ubuntu-team' to 'sabdfl':
+rights to all components from 'ubuntu-team' to 'sabdfl':
 
   >>> new_uploader = getUtility(IPersonSet).getByName('sabdfl')
   >>> for distro_component in ubuntu.uploaders:

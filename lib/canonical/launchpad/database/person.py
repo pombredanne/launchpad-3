@@ -42,7 +42,8 @@ from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, SSHKeyType,
     EmailAddressStatus, TeamSubscriptionPolicy, TeamMembershipStatus,
     LoginTokenType, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale)
+    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale,
+    TeamMembershipRenewalPolicy)
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -107,11 +108,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
-        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    mugshot = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+        dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
-        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
+        dbName='logo', foreignKey='LibraryFileAlias', default=None)
+    mugshot = ForeignKey(
+        dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -127,6 +128,9 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
+    renewal_policy = EnumCol(
+        schema=TeamMembershipRenewalPolicy,
+        default=TeamMembershipRenewalPolicy.NONE)
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
         schema=TeamSubscriptionPolicy,
@@ -1286,7 +1290,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             Person.id = TeamParticipation.team
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
-            AND Person.emblem IS NOT NULL
+            AND Person.icon IS NOT NULL
             AND TeamParticipation.team != %s
             """ % sqlvalues(self.id, self.id),
             clauseTables=['TeamParticipation'],
