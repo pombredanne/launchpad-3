@@ -315,7 +315,7 @@ class MultiTableCopy:
 
             if lowest_id is None:
                 # Table is empty.  Drop it and move on.
-                postgresql.drop_tables(holding_table)
+                postgresql.drop_tables(cur, holding_table)
                 continue
 
             total_rows = highest_id + 1 - lowest_id
@@ -452,7 +452,7 @@ class MultiTableCopy:
                 "Pouring %s took %.3f seconds." %
                     (holding_table, time.time()-tablestarttime))
 
-            postgresql.drop_table(holding_table)
+            postgresql.drop_tables(cur, holding_table)
 
     def _checkExtractionOrder(self, source_table):
         """Verify order in which tables are extracted against tables list.
