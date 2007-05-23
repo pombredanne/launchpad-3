@@ -1,3 +1,9 @@
+launchpad-buildd (35) unstable; urgency=low
+
+  * including previous code changes (32 & 33).
+
+ -- Celso Providelo <cprov@canonical.com>  Thu, 23 May 2007 17:40:26 -0300
+
 launchpad-buildd (34) unstable; urgency=low
 
   * add suport for overriding the chroot /etc/apt/sources.list with the

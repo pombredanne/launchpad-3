@@ -289,6 +289,7 @@ class BuildDSlave(object):
             os.remove(self.cachePath("buildlog"))
             self._log = None
         self.waitingfiles = {}
+        self.builddependencies = ""
         self.manager = None
         self.buildstatus = BuildStatus.OK
 

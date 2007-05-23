@@ -26,7 +26,7 @@ d_start() {
     CONF=$1
     PIDFILE="$PIDROOT"/"$CONF".pid
     LOGFILE="$LOGROOT"/"$CONF".log
-    su - buildd -c "BUILDD_SLAVE_CONFIG=$CONFROOT/$CONF PYTHONPATH=/usr/share/launchpad-buildd twistd --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE"
+    su - buildd -c "BUILDD_SLAVE_CONFIG=$CONFROOT/$CONF PYTHONPATH=/usr/share/launchpad-buildd twistd --no_save --pidfile $PIDFILE --python $TACFILE --logfile $LOGFILE"
 }
 
 #
@@ -35,7 +35,7 @@ d_start() {
 d_stop() {
     CONF=$1
     PIDFILE="$PIDROOT"/"$CONF".pid
-    test -r $PIDFILE && kill -TERM $(cat $PIDFILE)
+    test -r $PIDFILE && kill -TERM $(cat $PIDFILE) || true
 }
 
 CONFS=$(cd $CONFROOT; ls|grep -v "^-"|grep -v "~$")
@@ -43,6 +43,7 @@ CONFS=$(cd $CONFROOT; ls|grep -v "^-"|grep -v "~$")
 case "$1" in
   start)
         echo -n "Starting $DESC:"
+        install -m 755 -o buildd -g buildd -d $PIDROOT
 	for conf in $CONFS; do
 	    echo -n " $conf"
 	    d_start $conf
