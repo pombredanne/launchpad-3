@@ -13,7 +13,7 @@ __all__ = [
     'ITranslationImportQueueEntry',
     'ITranslationImportQueue',
     'IEditTranslationImportQueueEntry',
-    'IHasTranslationImports',
+    'ITranslationImportQueueLink',
     ]
 
 class ITranslationImportQueueEntry(Interface):
@@ -219,7 +219,7 @@ class ITranslationImportQueue(Interface):
     def getPillarObjectsWithApprovedImports():
         """Return list of Product's and DistroRelease's with pending imports.
 
-        All returned items must implement IHasTranslationImports."""
+        All returned items must implement ITranslationImportQueueLink."""
 
     def executeOptimisticApprovals(ztm):
         """Try to move entries from the Needs Review status to Approved one.
@@ -289,7 +289,7 @@ class IEditTranslationImportQueueEntry(Interface):
         required=False)
 
 
-class IHasTranslationImports(Interface):
+class ITranslationImportQueueLink(Interface):
     """An entity on which a translation import queue entry is attached.
 
     Examples include an IProductSeries, ISourcePackage, IDistroRelease and

@@ -25,7 +25,7 @@ from canonical.lp.dbschema import RosettaImportStatus
 
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, IPOFileSet,
-    IPOTemplateSet, ILanguageSet, NotFoundError, IHasTranslationImports)
+    IPOTemplateSet, ILanguageSet, NotFoundError, ITranslationImportQueueLink)
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.database.pillar import pillar_sort_key
@@ -742,10 +742,10 @@ class TranslationImportQueue:
 
         results = set()
         for product in products:
-            if IHasTranslationImports.providedBy(product):
+            if ITranslationImportQueueLink.providedBy(product):
                 results.add(product)
         for distrorelease in distroreleases:
-            if IHasTranslationImports.providedBy(distrorelease):
+            if ITranslationImportQueueLink.providedBy(distrorelease):
                 results.add(distrorelease)
         return sorted(results, key=pillar_sort_key)
 

@@ -59,13 +59,13 @@ from canonical.launchpad.interfaces import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    IHasTranslationImports,
     ILaunchpadCelebrities,
     ILaunchpadStatisticSet,
     IPersonSet,
     IProduct,
     IProductSet,
     IQuestionTarget,
+    ITranslationImportQueueLink,
     NotFoundError,
     QUESTION_STATUS_DEFAULT_SEARCH,
     )
@@ -76,7 +76,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     """A Product."""
 
     implements(IProduct, ICalendarOwner, IQuestionTarget,
-               IHasLogo, IHasMugshot, IHasIcon, IHasTranslationImports)
+               IHasLogo, IHasMugshot, IHasIcon, ITranslationImportQueueLink)
 
     _table = 'Product'
 
@@ -618,9 +618,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard)
 
-    # From IHasTranslationImports.
+    # From ITranslationImportQueueLink.
     def getFirstEntryToImport(self):
-        """See IHasTranslationImports."""
+        """See ITranslationImportQueueLink."""
         return TranslationImportQueueEntry.selectFirst(
             '''status=%s AND
             productseries=ProductSeries.id AND
@@ -630,7 +630,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             orderBy='TranslationImportQueueEntry.dateimported')
 
     def getTranslationImportQueueEntries(self, status=None, file_extension=None):
-        """See IHasTranslationImports."""
+        """See ITranslationImportQueueLink."""
         queries = [
             'productseries = ProductSeries.id',
             'ProductSeries.product = %s' % sqlvalues(self)

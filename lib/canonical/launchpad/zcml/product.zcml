@@ -9,7 +9,7 @@
   <content class="canonical.launchpad.database.Product">
     <allow interface="canonical.launchpad.interfaces.IProduct" />
     <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
-    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <allow interface="canonical.launchpad.interfaces.TranslationImportQueueLink"/>
     <require
       permission="launchpad.Edit"
       set_attributes="displayname title summary description driver
