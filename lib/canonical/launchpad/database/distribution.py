@@ -844,10 +844,12 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     distrorelease=self.currentrelease,
                     orderBy=['-id'])
                 if publishedpackage is None:
-                    # Try any release next. XXX could we just do this
-                    # first? I'm just following the pattern that was
-                    # here before (e.g. see the search for a binary
-                    # package below).
+                    # Try any release next.
+                    # XXX could we just do this first? I'm just
+                    # following the pattern that was here before
+                    # (e.g. see the search for a binary package
+                    # below).
+                    #   -- Gavin Panella, 2007-04-18
                     publishedpackage = PublishedPackage.selectFirstBy(
                         sourcepackagename=sourcepackagename.name,
                         binarypackagename=sourcepackagename.name,
