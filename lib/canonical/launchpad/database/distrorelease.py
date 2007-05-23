@@ -1330,8 +1330,6 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # a time, then performing an intermediate commit.  This avoids holding
         # too many locks for too long and disrupting regular database service.
 
-<<<<<<< TREE
-=======
         if not self.hide_all_translations:
             raise AssertionError("""
 _copyActiveTranslationsToNewRelease: hide_all_translations not set!
@@ -1349,7 +1347,6 @@ Attempted to populate translations for new distrorelease while translation
 import queue is enabled. That would corrupt our translation data mixing
 new imports with the information being copied.
 """)
->>>>>>> MERGE-SOURCE
 
         # Clean up any remains from a previous run.  If we got here, that
         # means those remains are not salvagable.
