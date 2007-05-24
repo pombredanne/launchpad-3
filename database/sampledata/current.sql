@@ -544,10 +544,10 @@ SET search_path = public, pg_catalog;
 
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
-INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created, want_english) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772', true);
-INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created, want_english) VALUES (2, 13, NULL, NULL, 16, '2007-03-14 20:11:44.591006', true);
-INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created, want_english) VALUES (3, 13, NULL, NULL, 18, '2007-03-14 20:11:44.591006', true);
-INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created, want_english) VALUES (4, 9, NULL, NULL, 18, '2007-03-14 20:12:07.145528', true);
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (2, 13, NULL, NULL, 16, '2007-03-14 20:11:44.591006');
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (3, 13, NULL, NULL, 18, '2007-03-14 20:11:44.591006');
+INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (4, 9, NULL, NULL, 18, '2007-03-14 20:12:07.145528');
 
 
 ALTER TABLE answercontact ENABLE TRIGGER ALL;
