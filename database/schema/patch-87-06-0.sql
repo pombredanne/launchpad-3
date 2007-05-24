@@ -21,11 +21,9 @@ CREATE INDEX branchvisibilitypolicy__project__idx
 CREATE INDEX branchvisibilitypolicy__product__idx
     ON BranchVisibilityPolicy(product) WHERE product IS NOT NULL;
 
-ALTER TABLE Branch ADD COLUMN private BOOLEAN
-    DEFAULT False;
+ALTER TABLE Branch ADD COLUMN private BOOLEAN DEFAULT False NOT NULL;
 
 CREATE INDEX branch__private__idx
     ON Branch(private);
-
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 06, 0);
