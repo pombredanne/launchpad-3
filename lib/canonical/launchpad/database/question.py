@@ -37,7 +37,7 @@ from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    QuestionAction, QuestionSort, QuestionStatus,
+    EmailAddressStatus, QuestionAction, QuestionSort, QuestionStatus,
     QuestionParticipation, QuestionPriority)
 
 from canonical.launchpad.database.answercontact import AnswerContact
@@ -910,7 +910,7 @@ class QuestionTargetMixin:
     def addAnswerContact(self, person, want_english=True):
         """See IQuestionTarget."""
         if not want_english:
-            assert person.languages.count() != 0, (
+            assert len(person.getSupportedLanguages()) != 0, (
                 "%s has no languages to support." % person.name)
         
         answer_contact = AnswerContact.selectOneBy(
@@ -960,18 +960,27 @@ class QuestionTargetMixin:
         # their members speaks.
         constraints.append("""
             AnswerContact.person = PersonLanguage.person AND
-            PersonLanguage.language = %s""" % sqlvalues(language))
+            PersonLanguage.language = %s AND
+            AnswerContact.person = EmailAddress.person AND
+            EmailAddress.status = %s""" % sqlvalues(
+                language, EmailAddressStatus.PREFERRED))
         speakers = set(self._selectPersonFromAnswerContacts(
-                constraints, ['PersonLanguage']))
+                constraints, ['PersonLanguage', 'EmailAddress']))
         constraints[-1] = ("""
             AnswerContact.person = Person.id AND
             Person.teamowner IS NOT NULL AND
+            AnswerContact.person = TeamParticipation.team AND
+            TeamParticipation.person = PersonLanguage.person AND
+            PersonLanguage.language = %s AND
             NOT EXISTS (
                 SELECT TRUE 
-                FROM PersonLanguage 
-                WHERE PersonLanguage.person = AnswerContact.person)""")
+                FROM EmailAddress 
+                WHERE EmailAddress.person = AnswerContact.person AND
+                EmailAddress.status = %s)""" % sqlvalues(
+                    language, EmailAddressStatus.PREFERRED))
         teams = set(self._selectPersonFromAnswerContacts(
-                constraints, ['Person']))
+                constraints, 
+                ['Person', 'PersonLanguage', 'TeamParticipation']))
         teams -= speakers
         for member in teams:
             if language in member.getSupportedLanguages():
