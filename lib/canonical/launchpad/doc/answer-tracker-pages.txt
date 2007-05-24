@@ -435,6 +435,9 @@ This View send the event appropriate to send out a notification:
     Description changed to:
     A better description.
     <BLANKLINE>
+    -- 
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 If the user has the required permission, the assignee, whiteboard and
 priority fields will be updated:
