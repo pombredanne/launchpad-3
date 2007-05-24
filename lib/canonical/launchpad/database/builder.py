@@ -133,6 +133,10 @@ class Builder(SQLBase):
         if self.slave.echo("Test")[0] != "Test":
             raise BuildDaemonError("Failed to echo OK")
 
+    def cleanSlave(self):
+        """Clean any temporary files from the slave."""
+        return self.slave.clean()
+
     @property
     def currentjob(self):
         """See IBuilder"""

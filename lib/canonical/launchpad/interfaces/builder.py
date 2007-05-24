@@ -138,6 +138,9 @@ class IBuilder(IHasOwner):
         :raises BuildDaemonError: When the slave is down.
         """
 
+    def cleanSlave():
+        """Clean any temporary files from the slave."""
+
     def failbuilder(reason):
         """Mark builder as failed for a given reason."""
 

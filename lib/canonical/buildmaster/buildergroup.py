@@ -123,15 +123,14 @@ class BuilderGroup:
                 raise BuildJobMismatch('Job build entry mismatch')
 
         except (SQLObjectNotFound, BuildJobMismatch), reason:
-            # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-            slave = removeSecurityProxy(builder.slave)
             if status == 'BuilderStatus.WAITING':
-                slave.clean()
+                builder.cleanSlave()
             else:
                 # ask for an abort; it will become visible as ABORTED at a
                 # later point and a future run of the slave scanner will
                 # cleanup the slave.
-                slave.abort()
+                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+                removeSecurityProxy(builder.slave).abort()
             self.logger.warn("Builder '%s' rescued from '%s-%s: %s'" % (
                 builder.name, build_id, queue_item_id, reason))
 
@@ -387,10 +386,10 @@ class BuilderGroup:
         Clean the builder for another jobs.
         """
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
+        queueItem.builder.cleanSlave()
         queueItem.builder = None
         queueItem.buildstart = None
         queueItem.build.buildstate = dbschema.BuildStatus.BUILDING
-        slave.clean()
 
     def updateBuild_WAITING(self, queueItem, slave, librarian, buildstatus,
                             buildid, filemap=None, dependencies=None):
@@ -565,10 +564,10 @@ class BuilderGroup:
         else:
             self.logger.debug("Gathered build %s completely" % queueItem.name)
 
+        # Release the builder for another job.
+        queueItem.builder.cleanSlave()
         # Remove BuildQueue record.
         queueItem.destroySelf()
-        # Release the builder for another job.
-        slave.clean()
         # Commit the transaction so that the uploader can see the updated
         # build record.
         self.commit()
@@ -583,7 +582,7 @@ class BuilderGroup:
         """
         queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOBUILD
         self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
-        slave.clean()
+        queueItem.builder.cleanSlave()
         queueItem.build.notify()
         queueItem.destroySelf()
 
@@ -599,7 +598,7 @@ class BuilderGroup:
         self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
         self.logger.critical("***** %s is MANUALDEPWAIT *****"
                              % queueItem.builder.name)
-        slave.clean()
+        queueItem.builder.cleanSlave()
         queueItem.destroySelf()
 
     def buildStatus_CHROOTFAIL(self, queueItem, slave, librarian, buildid,
@@ -614,7 +613,7 @@ class BuilderGroup:
         self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
         self.logger.critical("***** %s is CHROOTWAIT *****" %
                              queueItem.builder.name)
-        slave.clean()
+        queueItem.builder.cleanSlave()
         queueItem.build.notify()
         queueItem.destroySelf()
 
@@ -653,11 +652,11 @@ class BuilderGroup:
         # properly presented in the Web UI. We will discuss it in
         # the next Paris Summit, infinity has some ideas about how
         # to use this content. For now we just ensure it's stored.
+        queueItem.builder.cleanSlave()
         queueItem.builder = None
         queueItem.buildstart = None
         queueItem.logtail = None
         queueItem.lastscore = 0
-        slave.clean()
 
     def firstAvailable(self, is_trusted=False):
         """Return the first available builder slave.
