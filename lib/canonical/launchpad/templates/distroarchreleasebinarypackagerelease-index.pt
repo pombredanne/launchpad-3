@@ -30,6 +30,9 @@
   <div
     tal:condition="context/binarypackagerelease/suggests"
     tal:replace="structure context/binarypackagerelease/@@+portlet-suggests" />
+  <div
+    tal:condition="context/binarypackagerelease/conflicts"
+    tal:replace="structure context/binarypackagerelease/@@+portlet-conflicts" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

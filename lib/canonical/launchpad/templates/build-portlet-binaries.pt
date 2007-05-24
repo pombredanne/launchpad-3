@@ -5,8 +5,8 @@
   <div class="portletBody portletContent">
 
     <ul>
-      <li tal:repeat="binpkg context/binarypackages">
-        <a tal:attributes="href binpkg/name">
+      <li tal:repeat="binpkg context/distroarchreleasebinarypackages">
+        <a tal:attributes="href binpkg/fmt:url">
            <span tal:replace="binpkg/name">foopkg</span>
            <span tal:replace="binpkg/version">1.2-3</span>
         </a>

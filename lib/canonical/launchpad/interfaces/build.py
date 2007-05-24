@@ -44,6 +44,9 @@ class IBuild(Interface):
     binarypackages = Attribute(
         "A list of binary packages that resulted from this build, "
         "not limitted and ordered by name.")
+    distroarchreleasebinarypackages = Attribute(
+        "A list of distroarchreleasebinarypackages that resulted from this"
+        "build, ordered by name.")
 
     can_be_rescored = Attribute(
         "Whether or not this build record can be rescored manually.")

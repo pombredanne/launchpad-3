@@ -120,6 +120,16 @@ class Build(SQLBase):
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
     @property
+    def distroarchreleasebinarypackages(self):
+        """See IBuild."""
+        # Avoid circular import by importing locally.
+        from canonical.launchpad.database.distroarchreleasebinarypackagerelease\
+            import (DistroArchReleaseBinaryPackageRelease)
+        return [DistroArchReleaseBinaryPackageRelease(
+            self.distroarchrelease, bp) 
+            for bp in self.binarypackages]
+
+    @property
     def can_be_retried(self):
         """See IBuild."""
         # check if the build would be properly collected if it was
