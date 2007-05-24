@@ -46,17 +46,6 @@ class BuilderSetNavigation(GetitemNavigation):
     def breadcrumb(self):
         return 'Build Farm'
 
-    @stepthrough('+build')
-    def traverse_build(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            return getUtility(IBuildSet).getByBuildID(build_id)
-        except SQLObjectNotFound:
-            return None
-
 
 class BuilderNavigation(Navigation):
     """Navigation methods for IBuilder."""
