@@ -9,16 +9,19 @@ __all__ = [
     'DistributionSourcePackageReleaseView',
     ]
 
+from sqlobject import SQLObjectNotFound
+
 from zope.component import getUtility
 
 from canonical.launchpad.browser.launchpad import DefaultShortLink
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackageRelease, ILaunchBag)
+    IDistributionSourcePackageRelease, ILaunchBag, IBuildSet)
 
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation)
+    StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu, Navigation,
+    GetitemNavigation, stepthrough)
 
 
 class DistributionSourcePackageReleaseFacets(StandardLaunchpadFacets):
@@ -36,11 +39,23 @@ class DistributionSourcePackageReleaseOverviewMenu(ApplicationMenu):
     links = []
 
 
-class DistributionSourcePackageReleaseNavigation(Navigation):
+class DistributionSourcePackageReleaseNavigation(GetitemNavigation):
     usedfor = IDistributionSourcePackageRelease
 
     def breadcrumb(self):
         return self.context.version
+
+    @stepthrough('+build')
+    def traverse_build(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            return getUtility(IBuildSet).getByBuildID(build_id)
+        except SQLObjectNotFound:
+            return None
+
 
 class DistributionSourcePackageReleaseView:
 
