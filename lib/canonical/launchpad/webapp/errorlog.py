@@ -73,41 +73,30 @@ def _safestr(obj):
                    lambda match: '\\x%02x' % ord(match.group(0)), value)
     return value
 
-def _is_sensitive(name):
+def _is_sensitive(request, name):
     """Return True if the given request variable name is sensitive.
 
     Sensitive request variables should not be recorded in OOPS
     reports.  Currently we consider the following to be sensitive:
      * any name containing 'password' or 'passwd'
-     * session cookies of the various Launchpad instances
+     * cookies
      * the HTTP_COOKIE header.
     """
-    return (name in ['HTTP_COOKIE', 'launchpad', 'launchpad_dev',
-                     'launchpad_tests', 'launchpad_demo', 'edge', 'beta',
-                     'staging'] or
-            'password' in name.lower() or 'passwd' in name.lower())
-
-
-def _request_blacklisted(name):
-    """Return True if the given request variable should not be logged for
-    security or privacy reasons.
-    """
-    name = name.lower()
-    if 'password' in name:
+    upper_name = name.upper()
+    # Block passwords
+    if ('PASSWORD' in upper_name or 'PASSWD' in upper_name):
         return True
-    if 'passwd' in name:
-        return True
-    return False
 
-def _request_whitelisted(name):
-    """Return True if the given request variable should be logged.
-    """
+    # Block HTTP_COOKIE
     if name == 'HTTP_COOKIE':
-        return False
-    # All other UPPER CASE keys are whitelisted.
-    if name.upper() == name:
         return True
-    return False
+
+    # Allow remaining UPPERCASE names and remaining form variables
+    if name == upper_name or name in request.form:
+        return False
+
+    # Block everything else
+    return True
 
 
 class ErrorReport:
@@ -333,13 +322,10 @@ class ErrorReportingUtility:
 
                 req_vars = []
                 for key, value in request.items():
-                    if not _request_blacklisted(key) and (
-                            _request_whitelisted(key)
-                            or key in request.form.keys()
-                            ):
-                        req_vars.append((_safestr(key), _safestr(value)))
-                    else:
+                    if _is_sensitive(request, key):
                         req_vars.append((_safestr(key), '<hidden>'))
+                    else:
+                        req_vars.append((_safestr(key), _safestr(value)))
                 req_vars.sort()
             strv = _safestr(info[1])
 
