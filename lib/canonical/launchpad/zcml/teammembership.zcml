@@ -62,7 +62,9 @@
         />
 
     <content class="canonical.launchpad.browser.person.TeamInvitationView">
-      <allow attributes="browserDefault __call__" />
+        <allow 
+            interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+        <allow attributes="__call__" />
     </content>
 
 </configure>

@@ -96,6 +96,8 @@ team, not even if they manually craft the URL.
     Launchpad Developers (launchpad) has been invited to join this team, but
     hasn't responded to the invitation yet.
 
+    >>> landscape_admin_browser = browser
+
 === Accepting/Declining invitations ===
 
 Any admin of the team which receives an invitation can either accept or deny
@@ -111,7 +113,17 @@ listing all open invitation sent to a given team.
     >>> browser.url
     'http://launchpad.dev/~launchpad/+invitations'
 
-First, let's approve the invitation sent on behalf of Landscape Developers to
+As said above, only admins of the invited team can accept/decline the
+invitation. Not even an admin of the landscape team (which as so has the
+rights to edit the membership in question) can do it.
+
+    >>> landscape_admin_browser.open(
+    ...     'http://launchpad.dev/~launchpad/+invitation/landscape-developers')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+First, let's accept the invitation sent on behalf of Landscape Developers to
 the Launchpad Developers.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'invitations'))
@@ -123,6 +135,8 @@ the Launchpad Developers.
     >>> browser.url
     'http://launchpad.dev/~launchpad/+invitation/landscape-developers'
 
+    >>> browser.getControl(name='field.reviewercomment').value = (
+    ...     'This is just a test')
     >>> browser.getControl('Accept').click()
 
     >>> browser.url
