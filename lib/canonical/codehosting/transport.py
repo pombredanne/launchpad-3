@@ -25,17 +25,18 @@ class LaunchpadServer(Server):
     def __init__(self, authserver, user_id):
         self.authserver = authserver
         self.user_id = user_id
+        self._branches = dict(self._iter_branches())
+
+    def _iter_branches(self):
+        for team_dict in self.authserver.getUser(self.user_id)['teams']:
+            products = self.authserver.getBranchesForUser(team_dict['id'])
+            for product_id, product_name, branches in products:
+                for branch_id, branch_name in branches:
+                    yield (team_dict['name'], product_name, branch_name), branch_id
 
     def translate_relpath(self, relpath):
         user, product, branch, path = split(relpath, '/', 4)
         assert user[0] == '~', "Temporary assertion"
         user = user[1:]
-        for team_dict in self.authserver.getUser(self.user_id)['teams']:
-            if user == team_dict['name']:
-                products = self.authserver.getBranchesForUser(team_dict['id'])
-                for product_id, product_name, branches in products:
-                    if product_name == product:
-                        for branch_id, branch_name in branches:
-                            if branch_name == branch:
-                                return '/'.join([branch_id_to_path(branch_id), path])
-
+        branch_id = self._branches[(user, product, branch)]
+        return '/'.join([branch_id_to_path(branch_id), path])
