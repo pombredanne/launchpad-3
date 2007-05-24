@@ -3,6 +3,7 @@
 By default, only questions written in English or one of the user
 preferred languages are listed and searched.
 
+
 == Anonymous searching ==
 
 For example, a user who isn't logged in will only see questions written
