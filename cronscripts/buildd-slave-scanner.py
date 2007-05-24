@@ -10,6 +10,8 @@ __metaclass__ = type
 import _pythonpath
 
 from zope.component import getUtility
+#XXX: Only needed until the soyuz buildmaster class is fully deleted.
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.buildmaster.master import (
@@ -30,7 +32,8 @@ class SlaveScanner(LaunchpadScript):
 
         builder_set = getUtility(IBuilderSet)
         buildMaster = builder_set.pollBuilders(self.logger, self.txn)
-        builder_set.dispatchBuilds(self.logger, buildMaster)
+        #XXX: Only needed until the soyuz buildmaster class is fully deleted.
+        builder_set.dispatchBuilds(self.logger, removeSecurityProxy(buildMaster))
 
     @property
     def lockfilename(self):
