@@ -439,6 +439,9 @@ class INotificationRecipientSet(Interface):
     def __contains__(person_or_email):
         """Return true if person or email is in the notification recipients list."""
 
+    def __nonzero__():
+        """Return False when the set is empty, True when it's not."""
+
     def getReason(person_or_email):
         """Return a reason tuple containing (text, header) for an address.
 

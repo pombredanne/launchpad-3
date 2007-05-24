@@ -147,6 +147,10 @@ class NotificationRecipientSet:
         else:
             return False
 
+    def __nonzero__(self):
+        """See `INotificationRecipientSet`."""
+        return bool(self._person2rationale)
+
     def getReason(self, person_or_email):
         """See `INotificationRecipientSet`."""
         if zope_isinstance(person_or_email, (str, unicode)):

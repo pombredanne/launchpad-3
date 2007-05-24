@@ -70,6 +70,16 @@ standard `in` operator:
     >>> no_priv in recipients
     False
 
+An recipient set containing recipients evaluates to True:
+
+    >>> bool(recipients)
+    True
+
+An empty recipient set, evaluates to False:
+
+    >>> bool(NotificationRecipientSet())
+    False
+
 == Obtaining the rationale ==
 
 You can obtain the rationale, header tuple by using the getReason() method:
