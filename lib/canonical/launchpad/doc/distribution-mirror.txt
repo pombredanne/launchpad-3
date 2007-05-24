@@ -646,6 +646,7 @@ First, let's check the source and arch releases of one archive mirror.
     ...            mirror_source_release.status.title)
     (u'Warty', 'Up to date')
     (u'Hoary', 'Up to date')
+    (u'Breezy Badger Autotest', 'Up to date')
 
 Because all MirrorDistroArchReleases and MirrorDistroReleaseSources of this
 mirror have 'Up to date' as status, this mirror's overall status will also be

@@ -5,22 +5,25 @@
 # related to the domination of old source and binary releases inside
 # the publishing tables.
 
-from canonical.lp.dbschema import PackagePublishingStatus
+__metaclass__ = type
+
+
+import apt_pkg
+from datetime import timedelta
+import gc
 
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import (
+    sqlvalues, flush_database_updates, cursor,
+    clear_current_connection_cache)
 
 # Importing from canonical.launchpad.database will cause a circular import
 # because we import from this file into database/distributionmirror.py
 from canonical.launchpad.database.publishing import (
      BinaryPackagePublishingHistory, SecureSourcePackagePublishingHistory,
      SecureBinaryPackagePublishingHistory)
+from canonical.lp.dbschema import PackagePublishingStatus
 
-from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates, cursor,
-    clear_current_connection_cache)
-
-import gc
-import apt_pkg
 
 def clear_cache():
     """Flush SQLObject updates and clear the cache."""
@@ -35,27 +38,24 @@ PUBLISHED = PackagePublishingStatus.PUBLISHED
 SUPERSEDED = PackagePublishingStatus.SUPERSEDED
 PENDINGREMOVAL = PackagePublishingStatus.PENDINGREMOVAL
 
-# For stayofexecution processing in judgeSuperseded
-from datetime import timedelta
-
 # Ugly, but works
 apt_pkg.InitSystem()
 
 def _compare_source_packages_by_version_and_date(p1, p2):
     """Compare packages p1 and p2 by their version; using Debian rules.
-    
+
     If the comparison is the same sourcepackagerelease, compare by datecreated
     instead. So later records beat earlier ones.
     """
     if p1.sourcepackagerelease.id == p2.sourcepackagerelease.id:
         return cmp(p1.datecreated, p2.datecreated)
-    
+
     return apt_pkg.VersionCompare(p1.sourcepackagerelease.version,
                                   p2.sourcepackagerelease.version)
 
 def _compare_binary_packages_by_version_and_date(p1, p2):
     """Compare packages p1 and p2 by their version; using Debian rules
-    
+
     If the comparison is the same binarypackagerelease, compare by datecreated
     instead. So later records beat earlier ones.
     """
@@ -65,20 +65,21 @@ def _compare_binary_packages_by_version_and_date(p1, p2):
     return apt_pkg.VersionCompare(p1.binarypackagerelease.version,
                                   p2.binarypackagerelease.version)
 
-class Dominator(object):
-    """
-    Manage the process of marking packages as superseded in the publishing
-    tables as and when they become obsolete.
+class Dominator:
+    """ Manage the process of marking packages as superseded.
+
+    Packages are marked as superseded when they become obsolete.
     """
 
-    def __init__(self, logger):
+    def __init__(self, logger, archive):
+        """Initialise the dominator.
+
+        This process should be run after the publisher has published
+        new stuff into the distribution but before the publisher
+        creates the file lists for apt-ftparchive.
         """
-        Initialise the dominator. This process should be run after the
-        publisher has published new stuff into the distribution but before
-        the publisher creates the file lists for apt-ftparchive
-        """
-        object.__init__(self)
         self._logger = logger
+        self.archive = archive
         self.debug = self._logger.debug
 
     def _dominateSource(self, sourceinput):
@@ -163,7 +164,6 @@ class Dominator(object):
             self.debug("Sorting sources...")
         else:
             self.debug("Sorting binaries...")
-        
 
         for inpkg in pkglist:
             if isSource:
@@ -180,10 +180,12 @@ class Dominator(object):
         for pkgname in outpkgs:
             if len(outpkgs[pkgname]) > 1:
                 if isSource:
-                    outpkgs[pkgname].sort(_compare_source_packages_by_version_and_date)
+                    outpkgs[pkgname].sort(
+                        _compare_source_packages_by_version_and_date)
                 else:
-                    outpkgs[pkgname].sort(_compare_binary_packages_by_version_and_date)
-                    
+                    outpkgs[pkgname].sort(
+                        _compare_binary_packages_by_version_and_date)
+
                 outpkgs[pkgname].reverse()
 
         return outpkgs
@@ -221,7 +223,7 @@ class Dominator(object):
         # Foo is now uninstallable on any architectures which don't yet
         # have a build of foo-1.1, as the foo-common for foo-1.0 is gone.
         # See bug 55030.
-        
+
         # Essentially we ideally don't want to lose superseded binaries
         # unless the entire group is ready to be made pending removal.
         # In this instance a group is defined as all the binaries from a
@@ -241,8 +243,8 @@ class Dominator(object):
                             binpkg_release.version,
                             pub_record.distroarchrelease.architecturetag))
                 pub_record.status = PENDINGREMOVAL
-                pub_record.scheduleddeletiondate = UTC_NOW + \
-                                          timedelta(days=conf.stayofexecution)
+                pub_record.scheduleddeletiondate = (
+                    UTC_NOW + timedelta(days=conf.stayofexecution))
                 pub_record.datemadepending = UTC_NOW
 
         for pub_record in source_records:
@@ -257,6 +259,7 @@ class Dominator(object):
                      binarypackagepublishinghistory.status = %s) AND
                     binarypackagepublishinghistory.distroarchrelease =
                         distroarchrelease.id AND
+                    binarypackagepublishinghistory.archive = %s AND
                     distroarchrelease.distrorelease = %s AND
                     binarypackagepublishinghistory.binarypackagerelease =
                         binarypackagerelease.id AND
@@ -264,7 +267,7 @@ class Dominator(object):
                     build.sourcepackagerelease = %s AND
                     binarypackagepublishinghistory.pocket = %s''' % sqlvalues(
                     PENDING, PUBLISHED, SUPERSEDED,
-                    pub_record.distrorelease.id, srcpkg_release.id,
+                    self.archive, pub_record.distrorelease, srcpkg_release,
                     pub_record.pocket),
                     clauseTables=['DistroArchRelease', 'BinaryPackageRelease',
                                   'Build'])
@@ -283,9 +286,10 @@ class Dominator(object):
                     # at least one other PUBLISHED for the spr. This happens
                     # when a package is moved between components.
                     if SecureSourcePackagePublishingHistory.selectBy(
-                        distroreleaseID=pub_record.distrorelease.id,
+                        distrorelease=pub_record.distrorelease,
                         pocket=pub_record.pocket,
                         status=PackagePublishingStatus.PUBLISHED,
+                        archive=self.archive,
                         sourcepackagereleaseID=srcpkg_release.id).count() == 0:
                         # Zero PUBLISHED for this spr, so nothing to take over
                         # for us, so leave it for consideration next time.
@@ -314,7 +318,7 @@ class Dominator(object):
         # should be false.
 
         sources = SecureSourcePackagePublishingHistory.selectBy(
-            distroreleaseID=dr.id, pocket=pocket,
+            distrorelease=dr, archive=self.archive, pocket=pocket,
             status=PackagePublishingStatus.PUBLISHED)
 
         self._dominateSource(self._sortPackages(sources))
@@ -341,25 +345,26 @@ class Dominator(object):
                 BinaryPackageName bpn, SecureBinaryPackagePublishingHistory
                 sbpph WHERE bpr.binarypackagename = bpn.id AND
                 sbpph.binarypackagerelease = bpr.id AND
-                sbpph.distroarchrelease = %s AND sbpph.status = %s
-                AND sbpph.pocket = %s
+                sbpph.distroarchrelease = %s AND sbpph.archive = %s AND
+                sbpph.status = %s AND sbpph.pocket = %s
                 GROUP BY bpn.id""" % sqlvalues(
-                distroarchrelease.id, PackagePublishingStatus.PUBLISHED,
-                pocket))
+                distroarchrelease, self.archive,
+                PackagePublishingStatus.PUBLISHED, pocket))
 
             binaries = SecureBinaryPackagePublishingHistory.select(
                 """
                 securebinarypackagepublishinghistory.distroarchrelease = %s
+                AND securebinarypackagepublishinghistory.archive = %s
                 AND securebinarypackagepublishinghistory.pocket = %s
                 AND securebinarypackagepublishinghistory.status = %s AND
                 securebinarypackagepublishinghistory.binarypackagerelease =
                     binarypackagerelease.id
                 AND binarypackagerelease.binarypackagename IN (
                     SELECT name FROM PubDomHelper WHERE count > 1)"""
-                % sqlvalues (distroarchrelease.id, pocket,
-                             PackagePublishingStatus.PUBLISHED),
+                % sqlvalues (distroarchrelease, self.archive,
+                             pocket, PackagePublishingStatus.PUBLISHED),
                 clauseTables=['BinaryPackageRelease'])
-            
+
             self._dominateBinary(self._sortPackages(binaries, False))
             if do_clear_cache:
                 self.debug("Flushing SQLObject cache.")
@@ -369,20 +374,22 @@ class Dominator(object):
             cur.execute("DROP TABLE PubDomHelper")
 
         sources = SecureSourcePackagePublishingHistory.selectBy(
-            distroreleaseID=dr.id, pocket=pocket,
+            distrorelease=dr, archive=self.archive, pocket=pocket,
             status=PackagePublishingStatus.SUPERSEDED)
-        
+
         binaries = SecureBinaryPackagePublishingHistory.select("""
             securebinarypackagepublishinghistory.distroarchrelease =
                 distroarchrelease.id AND
             distroarchrelease.distrorelease = %s AND
+            securebinarypackagepublishinghistory.archive = %s AND
             securebinarypackagepublishinghistory.status = %s AND
             securebinarypackagepublishinghistory.pocket = %s""" %
-            sqlvalues(dr.id, PackagePublishingStatus.SUPERSEDED, pocket),
+            sqlvalues(dr, self.archive,
+                      PackagePublishingStatus.SUPERSEDED, pocket),
             clauseTables=['DistroArchRelease'])
 
         self._judgeSuperseded(sources, binaries, config)
-        
+
         self.debug("Domination for %s/%s finished" %
                    (dr.name, pocket.title))
 

@@ -7,7 +7,9 @@ from zope.testing.doctestunit import DocTestSuite
 
 def test_sorting():
     """
-    dbschema items sort themselves based on the order they are defined in the class.
+    DBSchema items sort themselves based on the order they are defined in the
+    class.  That order can be changed by using the sortkey parameter.
+
 
     >>> from canonical.launchpad.webapp.enum import Item, DBSchema
     >>> class SortingTest(DBSchema):
@@ -201,6 +203,4 @@ def _test():
 
 if __name__ == "__main__":
     _test()
-
-if __name__ == '__main__':
     unittest.main()

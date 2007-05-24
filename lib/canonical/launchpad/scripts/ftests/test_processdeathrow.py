@@ -30,7 +30,7 @@ class TestProcessDeathRow(TestCase):
     """Test the process-death-row.py script works properly."""
 
     layer = LaunchpadZopelessLayer
-    
+
     def runDeathRow(self, extra_args, distribution="ubuntutest"):
         """Run process-death-row.py, returning the result and output."""
         script = os.path.join(config.root, "scripts", "process-death-row.py")
@@ -68,7 +68,7 @@ class TestProcessDeathRow(TestCase):
         # We remember which records we put into pending removal, so
         # we can later check whether or not they were changed.
         self.pubrec_ids = []
-        
+
         for pubrec in pubrecs:
             # These are spph (view) records, we need to grab the matching
             # sspphs (actual table) records in order to update them.
@@ -94,7 +94,7 @@ class TestProcessDeathRow(TestCase):
             sspph = SecureSourcePackagePublishingHistory.get(pubrec_id)
             self.assertEqual(
                 sspph.status, PackagePublishingStatus.PENDINGREMOVAL)
-        
+
     def testWetRun(self):
         """Test we do delete the file and change the db in wet run mode."""
         self.runDeathRow([])

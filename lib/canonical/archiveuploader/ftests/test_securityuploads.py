@@ -18,11 +18,10 @@ from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, PackagePublishingStatus, PackagePublishingPocket)
+    PackageUploadStatus, PackagePublishingStatus, PackagePublishingPocket)
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):
-    """ """
     name = 'baz'
     version = '1.0-1'
     distribution_name = None
@@ -104,8 +103,8 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
             queue_item is not None,
             "Source Upload Failed\nGot: %s" % "\n".join(self.log.lines))
         acceptable_statuses = [
-            DistroReleaseQueueStatus.NEW,
-            DistroReleaseQueueStatus.UNAPPROVED,
+            PackageUploadStatus.NEW,
+            PackageUploadStatus.UNAPPROVED,
             ]
         if queue_item.status in acceptable_statuses:
             queue_item.setAccepted()
@@ -134,7 +133,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         spr = self.source_queue.sources[0].sourcepackagerelease
         build = spr.createBuild(
             distroarchrelease=self.distrorelease[archtag],
-            pocket=self.pocket)
+            pocket=self.pocket, archive=self.distrorelease.main_archive)
         self.layer.txn.commit()
         return build
 
@@ -153,8 +152,8 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
     This class will start to tests all known/possible cases using a test
     (empty) upload and its binary.
 
-     * 'lib/canonical/archiveuploader/tests/data/suite/baz_1.0-1/'
-     * 'lib/canonical/archiveuploader/tests/data/suite/baz_1.0-1_binary/'
+     * 'lib/canonical/archivepublisher/tests/data/suite/baz_1.0-1/'
+     * 'lib/canonical/archivepublisher/tests/data/suite/baz_1.0-1_binary/'
     """
     name = 'baz'
     version = '1.0-1'
@@ -263,8 +262,8 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         self.assertRaises(AssertionError, self._uploadBinary, 'i386')
 
         self.assertLogContains(
-            "Exception while accepting: Attempt to upload binaries "
-            "specifying build 22, where they don't fit.")
+            "Attempt to upload binaries specifying build 23, "
+            "where they don't fit.")
 
 
 def test_suite():
