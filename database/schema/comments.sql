@@ -26,7 +26,7 @@ COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scan
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
 COMMENT ON COLUMN Branch.mirror_request_time IS 'The time when a user requested that we mirror this branch (NULL if not requested). This will be set automatically by pushing to a hosted branch. Once mirrored, it will be set back to NULL.';
-COMMENT ON COLUMN Branch.visibility_team IS 'If NULL then the branch is visible to all, otherwise only members of the team specified can see the branch. If the specified Person is actually a person and not a team, then the branch is only visible to that person.';
+COMMENT ON COLUMN Branch.private IS 'If the branch is private, then only the owner and subscribers of the branch can see it.';
 
 /* BranchSubscription*/
 

@@ -21,11 +21,11 @@ CREATE INDEX branchvisibilitypolicy__project__idx
 CREATE INDEX branchvisibilitypolicy__product__idx
     ON BranchVisibilityPolicy(product) WHERE product IS NOT NULL;
 
-ALTER TABLE Branch ADD COLUMN visibility_team INTEGER
-    REFERENCES Person;
+ALTER TABLE Branch ADD COLUMN private BOOLEAN
+    DEFAULT False;
 
-CREATE INDEX branch__visibility_team__idx
-    ON Branch(visibility_team) WHERE visibility_team IS NOT NULL;
+CREATE INDEX branch__private__idx
+    ON Branch(private);
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 06, 0);
