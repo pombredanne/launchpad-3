@@ -65,9 +65,11 @@ class DistributionSourcePackageRelease:
             DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease = %s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagerelease.id),
+            """ % sqlvalues(self.distribution,
+                            self.distribution.main_archive,
+                            self.sourcepackagerelease),
             clauseTables=['DistroRelease'],
             orderBy='-datecreated')
 
@@ -105,12 +107,14 @@ class DistributionSourcePackageRelease:
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagerelease.id),
+            """ % sqlvalues(self.distribution,
+                            self.distribution.main_archive,
+                            self.sourcepackagerelease),
             distinct=True,
             orderBy=['-datecreated'],
             clauseTables=['DistroArchRelease', 'DistroRelease',

@@ -8,7 +8,7 @@ __metaclass__ = type
 
 import re
 
-from sqlbase import quote, quoteIdentifier, cursor
+from sqlbase import quote, quoteIdentifier, sqlvalues
 
 def listReferences(cur, table, column, _state=None):
     """Return a list of all foreign key references to the given table column
@@ -291,6 +291,83 @@ def estimateRowCount(cur, query):
     return int(match.group(1))
 
 
+def have_table(cur, table):
+    """Is there a table of the given name?
+
+    Returns boolean answer.
+
+    >>> have_table(cur, 'thistabledoesnotexist_i_hope')
+    False
+    >>> cur.execute("CREATE TEMP TABLE atesttable (x integer)")
+    >>> have_table(cur, 'atesttable')
+    True
+    >>> drop_tables(cur, 'atesttable')
+    >>> have_table(cur, 'atesttable')
+    False
+    """
+    cur.execute('''
+        SELECT count(*) > 0
+        FROM pg_tables
+        WHERE tablename=%s
+    ''' % str(quote(table)))
+    return (cur.fetchall()[0][0] != 0)
+
+
+def table_has_column(cur, table, column):
+    """Does a table of the given name exist and have the given column?
+
+    Returns boolean answer.
+
+    >>> cur.execute("CREATE TEMP TABLE atesttable (x integer)")
+    >>> table_has_column(cur, 'atesttable', 'x')
+    True
+    >>> table_has_column(cur, 'atesttable', 'z')
+    False
+    >>> table_has_column(cur, 'thistabledoesnotexist_i_hope', 'pphwt')
+    False
+    >>> drop_tables(cur, 'atesttable')
+    >>> table_has_column(cur, 'atesttable', 'x')
+    False
+    """
+    cur.execute('''
+        SELECT count(*) > 0
+        FROM pg_attribute
+        JOIN pg_class ON pg_class.oid = attrelid
+        WHERE relname=%s
+            AND attname=%s
+    ''' % sqlvalues(table, column))
+    return (cur.fetchall()[0][0] != 0)
+
+
+def drop_tables(cur, tables):
+    """Drop given tables (a list, one name, or None), if they exist.
+
+    >>> cur.execute("CREATE TEMP TABLE foo (a integer)")
+    >>> have_table(cur, 'foo')
+    True
+    >>> table_has_column(cur, 'foo', 'a')
+    True
+    >>> cur.execute("CREATE TEMP TABLE bar (b varchar)")
+    >>> have_table(cur, 'bar')
+    True
+    >>> cur.execute("INSERT INTO foo values (1)")
+    >>> cur.execute("INSERT INTO bar values ('hi mom')")
+    >>> drop_tables(cur, ['thistabledoesnotexist_i_hope', 'foo', 'bar'])
+    >>> have_table(cur, 'foo')
+    False
+    >>> have_table(cur, 'bar')
+    False
+    >>> drop_tables(cur, [])    # No explosion
+    >>> drop_tables(cur, None)  # No wailing sirens
+    """
+    if tables is None or len(tables) == 0:
+        return
+    if isinstance(tables, basestring):
+        tables = [tables]
+
+    # This syntax requires postgres 8.2 or better
+    cur.execute("DROP TABLE IF EXISTS %s" % ','.join(tables))
+
 
 if __name__ == '__main__':
     import psycopg
@@ -299,3 +376,4 @@ if __name__ == '__main__':
     
     for table, column in listReferences(cur, 'person', 'id'):
         print '%32s %32s' % (table, column)
+

@@ -15,7 +15,7 @@ from zope.event import notify
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
-    SQLRelatedJoin, SQLObjectNotFound)
+    SQLRelatedJoin, SQLObjectNotFound, SingleJoin)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
@@ -56,6 +56,7 @@ from canonical.launchpad.interfaces import (
     IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasLogo, IHasMugshot,
     IHasIcon, JoinNotAllowed)
 
+from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
@@ -108,11 +109,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
-        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    mugshot = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+        dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
-        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
+        dbName='logo', foreignKey='LibraryFileAlias', default=None)
+    mugshot = ForeignKey(
+        dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -178,6 +179,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
+
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -1294,7 +1296,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             Person.id = TeamParticipation.team
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
-            AND Person.emblem IS NOT NULL
+            AND Person.icon IS NOT NULL
             AND TeamParticipation.team != %s
             """ % sqlvalues(self.id, self.id),
             clauseTables=['TeamParticipation'],
@@ -1506,6 +1508,10 @@ class Person(SQLBase, HasSpecificationsMixin):
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
 
+    @property
+    def archive(self):
+        """See IPerson."""
+        return Archive.selectOneBy(owner=self)
 
 class PersonSet:
     """The set of persons."""
@@ -2190,6 +2196,13 @@ class PersonSet:
             DELETE FROM TranslationImportQueueEntry WHERE importer=%(from_id)d
             ''' % vars())
         skip.append(('translationimportqueueentry', 'importer'))
+
+        # XXX cprov 20070222: Since we only allow one PPA for each user,
+        # we can't reassign the old user archive to the new user.
+        # It need to be done manually, probably by reasinning all publications
+        # to the old PPA to the new one, performing a careful_publishing on it
+        # and removing the old one from disk. See bug #87098
+        skip.append(('archive', 'owner'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.

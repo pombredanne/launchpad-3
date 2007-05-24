@@ -91,11 +91,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     description = StringCol(notNull=True)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
-        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    mugshot = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+        dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
-        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
+        dbName='logo', foreignKey='LibraryFileAlias', default=None)
+    mugshot = ForeignKey(
+        dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     bugcontact = ForeignKey(
@@ -138,6 +138,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    main_archive = ForeignKey(dbName='main_archive',
+        foreignKey='Archive', notNull=True)
 
     @property
     def all_milestones(self):
@@ -610,20 +612,23 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         raise NotFoundError(distrorelease_name)
 
-    def getFileByName(self, filename, source=True, binary=True):
+    def getFileByName(self, filename, archive=None, source=True, binary=True):
         """See IDistribution."""
         assert (source or binary), "searching in an explicitly empty " \
                "space is pointless"
+        if archive is None:
+            archive = self.main_archive
+
         if source:
             candidate = SourcePackageFilePublishing.selectFirstBy(
                 distribution=self, libraryfilealiasfilename=filename,
-                orderBy=['id'])
+                archive=archive, orderBy=['id'])
 
         if binary:
             candidate = BinaryPackageFilePublishing.selectFirstBy(
                 distribution=self,
                 libraryfilealiasfilename=filename,
-                orderBy=["-id"])
+                archive=archive, orderBy=["-id"])
 
         if candidate is not None:
             return candidate.libraryfilealias
@@ -650,12 +655,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self.id, PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(self, self.main_archive,
+                            PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
@@ -675,12 +682,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self.id, PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(self, self.main_archive,
+                            PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
@@ -707,8 +716,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status != %s
-            """ % sqlvalues(sourcepackagename, self,
+            """ % sqlvalues(sourcepackagename, self, self.main_archive,
                             PackagePublishingStatus.REMOVED),
             orderBy='id',
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
@@ -733,11 +743,21 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         cache.name = sourcepackagename.name
 
         # Get the sets of binary package names, summaries, descriptions.
+
+        # XXX This bit of code needs fixing up, it is doing stuff that
+        # really needs to be done in SQL, such as sorting and uniqueness.
+        # This would also improve the performance.
+        # Julian 2007-04-03
         binpkgnames = set()
         binpkgsummaries = set()
         binpkgdescriptions = set()
+        sprchangelog = set()
         for spr in sprs:
             log.debug("Considering source version %s" % spr.version)
+            # changelog may be empty, in which case we don't want to add it
+            # to the set as the join would fail below.
+            if spr.changelog is not None:
+                sprchangelog.add(spr.changelog)
             binpkgs = BinaryPackageRelease.select("""
                 BinaryPackageRelease.build = Build.id AND
                 Build.sourcepackagerelease = %s
@@ -753,6 +773,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         cache.binpkgnames = ' '.join(sorted(binpkgnames))
         cache.binpkgsummaries = ' '.join(sorted(binpkgsummaries))
         cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
+        cache.changelog = ' '.join(sorted(sprchangelog))
 
     def searchSourcePackages(self, text):
         """See IDistribution."""
@@ -837,11 +858,12 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.status = %s
-            ''' % sqlvalues(self, sourcepackagename,
+            ''' % sqlvalues(self, self.main_archive, sourcepackagename,
                             PackagePublishingStatus.PUBLISHED),
             clauseTables=['SourcePackageRelease', 'DistroRelease'],
             distinct=True,
@@ -900,7 +922,7 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, mugshot=None, logo=None, icon=None):
+            members, owner, main_archive, mugshot=None, logo=None, icon=None):
         """See IDistributionSet."""
         return Distribution(
             name=name,
@@ -912,7 +934,7 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
+            main_archive=main_archive,
             mugshot=mugshot,
             logo=logo,
             icon=icon)
-
