@@ -39,7 +39,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, stepto, stepthrough, urlappend,
-    ApplicationMenu, LaunchpadFormView, Link)
+    ApplicationMenu, LaunchpadFormView, Link, safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -290,6 +290,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         return not self.context_question_languages.issubset(
             self.user_support_languages)
 
+    @safe_action
     @action(_('Search'))
     def search_action(self, action, data):
         """Action executed when the user clicked the search button.
@@ -299,6 +300,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """
         self.search_params = dict(self.getDefaultFilter())
         self.search_params.update(**data)
+        if self.search_params.get('search_text', None) is not None:
+            self.search_params['search_text'] = (
+                self.search_params['search_text'].strip())
 
     def searchResults(self):
         """Return the questions corresponding to the search."""

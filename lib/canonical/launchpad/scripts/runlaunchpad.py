@@ -108,7 +108,7 @@ class TacFile(Service):
 class MailmanService(Service):
     @property
     def should_launch(self):
-        return config.mailman.launch
+        return config.mailman is not None and config.mailman.launch
 
     def launch(self):
         # Don't run the server if it wasn't asked for.
@@ -153,7 +153,7 @@ SERVICES = {
                               config.buildsequencer),
     'authserver': TacFile('authserver', 'daemons/authserver.tac',
                           config.authserver),
-    'sftp': TacFile('sftp', 'daemons/sftp.tac', config.supermirrorsftp),
+    'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
     'mailman': MailmanService(),
     }
 
