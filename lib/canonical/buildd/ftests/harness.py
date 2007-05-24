@@ -25,12 +25,12 @@ class BuilddSlaveTestSetup(TacTestSetup):
     >>> BuilddSlaveTestSetup().tearDown()
 
     Again for luck !
-    
+
     >>> BuilddSlaveTestSetup().setUp()
     >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
     >>> s.echo('Hello World')
     ['Hello World']
-    >>> BuilddSlaveTestSetup().tearDown()    
+    >>> BuilddSlaveTestSetup().tearDown()
     """
     def setUpRoot(self):
         """Recreate empty root directory to avoid problems."""
@@ -39,11 +39,17 @@ class BuilddSlaveTestSetup(TacTestSetup):
         os.mkdir(self.root)
         filecache = os.path.join(self.root, 'filecache')
         os.mkdir(filecache)
+        os.environ['HOME'] = self.root
         os.environ['BUILDD_SLAVE_CONFIG'] = conffile
         # XXX cprov 200505630
         # When we are about running it seriously we need :
         # * install sbuild package
         # * to copy the scripts for sbuild
+
+    def tearDown(self):
+        """Tear down the system normally and additionaly remove the root."""
+        TacTestSetup.tearDown(self)
+        shutil.rmtree(self.root)
 
     @property
     def root(self):

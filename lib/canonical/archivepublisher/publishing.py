@@ -1,19 +1,29 @@
 # (C) Canonical Software Ltd. 2004-2006, all rights reserved.
 
-__all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
+__all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
 
-import os
-from md5 import md5
-from sha import sha
-from Crypto.Hash.SHA256 import new as sha256
+
 from datetime import datetime
+import gzip
+import logging
+from md5 import md5
+import os
+from sha import sha
+import stat
+import tempfile
 
+from Crypto.Hash.SHA256 import new as sha256
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
+from canonical.archivepublisher.diskpool import DiskPool
+from canonical.archivepublisher.config import Config, LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
 from canonical.launchpad.interfaces import pocketsuffix
 from canonical.librarian.client import LibrarianClient
-from canonical.lp.dbschema import PackagePublishingPocket
-from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
+from canonical.lp.dbschema import (
+    PackagePublishingPocket, PackagePublishingStatus)
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
@@ -51,6 +61,55 @@ def reorder_components(components):
     ret.extend(components)
     return ret
 
+def _getDiskPool(pubconf, log):
+    """Return a DiskPool instance for a given PubConf.
+
+    It ensures the given archive location matches the minimal structure
+    required.
+    """
+    log.debug("Making directories as needed.")
+    pubconf.setupArchiveDirs()
+
+    log.debug("Preparing on-disk pool representation.")
+    dp = DiskPool(pubconf.poolroot, logging.getLogger("DiskPool"))
+    # Set the diskpool's log level to INFO to suppress debug output
+    dp.logger.setLevel(logging.INFO)
+
+    return dp
+
+def getPublisher(archive, distribution, allowed_suites, log, distsroot=None):
+    """Return an initialised Publisher instance according given context.
+
+    Optionally the user override the resulting indexes location via 'distroot'
+    option.
+    """
+    if distribution.main_archive.id == archive.id:
+        log.debug("Finding configuration for %s main_archive."
+                  % distribution.name)
+    else:
+        log.debug("Finding configuration for '%s' PPA."
+                  % archive.owner.name)
+    try:
+        pubconf = archive.getPubConfig(distribution)
+    except LucilleConfigError, info:
+        log.error(info)
+        raise
+
+    # XXX cprov 20070103: remove security proxy of the Config instance
+    # returned by IArchive. This is kinda of a hack because Config doesn't
+    # have any interface yet.
+    pubconf = removeSecurityProxy(pubconf)
+    disk_pool = _getDiskPool(pubconf, log)
+
+    if distsroot is not None:
+        log.debug("Overriding dists root with %s." % distsroot)
+        pubconf.distsroot = distsroot
+
+    log.debug("Preparing publisher.")
+
+    return Publisher(log, pubconf, disk_pool, distribution, archive,
+                     allowed_suites)
+
 
 class Publisher(object):
     """Publisher is the class used to provide the facility to publish
@@ -59,7 +118,7 @@ class Publisher(object):
     the processing of each DistroRelease and DistroArchRelease in question
     """
 
-    def __init__(self, log, config, diskpool, distribution,
+    def __init__(self, log, config, diskpool, distribution, archive,
                  allowed_suites=None, library=None):
         """Initialise a publisher.
 
@@ -72,6 +131,7 @@ class Publisher(object):
         self.log = log
         self._config = config
         self.distro = distribution
+        self.archive = archive
         self.allowed_suites = allowed_suites
 
         if not os.path.isdir(config.poolroot):
@@ -114,7 +174,7 @@ class Publisher(object):
                     continue
 
                 more_dirt = distrorelease.publish(
-                    self._diskpool, self.log, pocket,
+                    self._diskpool, self.log, self.archive, pocket,
                     is_careful=force_publishing)
 
                 self.dirty_pockets.update(more_dirt)
@@ -122,7 +182,7 @@ class Publisher(object):
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""
         self.log.debug("* Step B: dominating packages")
-        judgejudy = Dominator(self.log)
+        judgejudy = Dominator(self.log, self.archive)
         for distrorelease in self.distro:
             for pocket in PackagePublishingPocket.items:
                 if not force_domination:
@@ -130,18 +190,42 @@ class Publisher(object):
                         self.log.debug("Skipping domination for %s/%s" %
                                    (distrorelease.name, pocket.name))
                         continue
-                    if not distrorelease.isUnstable():
+                    if (not distrorelease.isUnstable() and
+                        distrorelease.main_archive.id == self.archive.id):
                         # We're not doing a full run and the
                         # distrorelease is now 'stable': if we try to
                         # write a release file for it, we're doing
                         # something wrong.
-                        assert pocket != PackagePublishingPocket.RELEASE
+                        assert pocket != PackagePublishingPocket.RELEASE,(
+                            "Oops, dominating stable distrorelease.")
                 judgejudy.judgeAndDominate(distrorelease, pocket, self._config)
 
     def C_doFTPArchive(self, is_careful):
         """Does the ftp-archive step: generates Sources and Packages."""
         self.log.debug("* Step C: Set apt-ftparchive up and run it")
         self.apt_handler.run(is_careful)
+
+    def C_writeIndexes(self, is_careful):
+        """Write Index files (Packages & Sources) using LP information.
+
+        Iterates over all distroreleases and its pockets and components.
+        """
+        self.log.debug("* Step C': write indexes directly from DB")
+        for distrorelease in self.distro:
+            for pocket, suffix in pocketsuffix.items():
+                if not is_careful:
+                    if not self.isDirty(distrorelease, pocket):
+                        self.log.debug("Skipping index generation for %s/%s" %
+                                       (distrorelease.name, pocket.name))
+                        continue
+                    if (not distrorelease.isUnstable() and
+                        distrorelease.main_archive.id == self.archive.id):
+                        # See comment in B_dominate
+                        assert pocket != PackagePublishingPocket.RELEASE, (
+                            "Oops, indexing stable distrorelease.")
+                for component in distrorelease.components:
+                    self._writeComponentIndexes(
+                        distrorelease, pocket, component)
 
     def D_writeReleaseFiles(self, is_careful):
         """Write out the Release files for the provided distribution.
@@ -159,10 +243,11 @@ class Publisher(object):
                         self.log.debug("Skipping release files for %s/%s" %
                                        (distrorelease.name, pocket.name))
                         continue
-                    if not distrorelease.isUnstable():
+                    if (not distrorelease.isUnstable() and
+                        distrorelease.main_archive == self.archive):
                         # See comment in B_dominate
-                        assert pocket != PackagePublishingPocket.RELEASE
-
+                        assert pocket != PackagePublishingPocket.RELEASE, (
+                            "Oops, indexing stable distrorelease.")
                 self._writeDistroRelease(distrorelease, pocket)
 
     def isDirty(self, distrorelease, pocket):
@@ -170,6 +255,72 @@ class Publisher(object):
         if not (distrorelease.name, pocket) in self.dirty_pockets:
             return False
         return True
+
+    def _writeComponentIndexes(self, distrorelease, pocket, component):
+        """Write Index files for single distrorelease + pocket + component.
+
+        Iterates over all supported architectures and 'sources', no
+        support for installer-* yet.
+        Write contents using LP info to an extra plain file (Packages.lp
+        and Sources.lp .
+        """
+        full_name = distrorelease.name + pocketsuffix[pocket]
+        self.log.debug("Generate Indexes for %s/%s"
+                       % (full_name, component.name))
+
+        self.log.debug("Generating Sources")
+        temp_index = tempfile.mktemp(prefix='source-index_')
+        source_index = gzip.GzipFile(fileobj=open(temp_index, 'wb'))
+
+        for spp in distrorelease.getSourcePackagePublishing(
+            PackagePublishingStatus.PUBLISHED, pocket=pocket,
+            component=component, archive=self.archive):
+            source_index.write(spp.getIndexStanza().encode('utf8'))
+            source_index.write('\n\n')
+        source_index.close()
+
+        source_index_basepath = os.path.join(
+            self._config.distsroot, full_name, component.name, 'source')
+        if not os.path.exists(source_index_basepath):
+            os.makedirs(source_index_basepath)
+        source_index_path = os.path.join(source_index_basepath, "Sources.gz")
+
+        # move the the archive index file to the right place.
+        os.rename(temp_index, source_index_path)
+
+        # make the files group writable
+        mode = stat.S_IMODE(os.stat(source_index_path).st_mode)
+        os.chmod(source_index_path, mode | stat.S_IWGRP)
+
+
+        for arch in distrorelease.architectures:
+            arch_path = 'binary-%s' % arch.architecturetag
+            self.log.debug("Generating Packages for %s" % arch_path)
+
+            temp_prefix = '%s-index_' % arch_path
+            temp_index = tempfile.mktemp(prefix=temp_prefix)
+            package_index = gzip.GzipFile(fileobj=open(temp_index, "wb"))
+
+            for bpp in distrorelease.getBinaryPackagePublishing(
+                archtag=arch.architecturetag, pocket=pocket,
+                component=component, archive=self.archive):
+                package_index.write(bpp.getIndexStanza().encode('utf-8'))
+                package_index.write('\n\n')
+            package_index.close()
+
+            package_index_basepath = os.path.join(
+                self._config.distsroot, full_name, component.name, arch_path)
+            if not os.path.exists(package_index_basepath):
+                os.makedirs(package_index_basepath)
+            package_index_path = os.path.join(
+                package_index_basepath, "Packages.gz")
+
+            # move the the archive index file to the right place.
+            os.rename(temp_index, package_index_path)
+
+            # make the files group writable
+            mode = stat.S_IMODE(os.stat(package_index_path).st_mode)
+            os.chmod(package_index_path, mode | stat.S_IWGRP)
 
     def isAllowed(self, distrorelease, pocket):
         """Whether or not the given suite should be considered.
