@@ -12,7 +12,6 @@ import stat
 from zope.interface import implements
 
 from bzrlib.errors import NoSuchFile, PermissionDenied
-from bzrlib.transport import get_transport
 
 from twisted.cred.credentials import SSHPrivateKey
 from twisted.cred.error import UnauthorizedLogin
