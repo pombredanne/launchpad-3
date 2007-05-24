@@ -140,8 +140,16 @@ class Builder(SQLBase):
 
     @property
     def slave(self):
-        """See IBuilder"""
-        return BuilderSlave(self.url)
+        """See IBuilder.
+        
+        A cached attribute _slave is used to allow tests to replace the _slave
+        object, which is usually an XMLRPC client, with a stub object that
+        removes the need to actually create a buildd slave in various states -
+        which can be hard to create.
+        """
+        if getattr(self, '_slave', None) is None:
+            self._slave = BuilderSlave(self.url)
+        return self._slave
 
     @property
     def status(self):
