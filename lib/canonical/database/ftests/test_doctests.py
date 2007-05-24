@@ -24,6 +24,10 @@ def test_suite():
                 optionflags=optionflags
                 ),
             LayeredDocFileSuite(
+                'test_multitablecopy.txt', layer=DatabaseLayer,
+                optionflags=optionflags
+                ),
+            LayeredDocFileSuite(
                 'test_reconnector.txt', layer=DatabaseLayer,
                 optionflags=optionflags
                 ),

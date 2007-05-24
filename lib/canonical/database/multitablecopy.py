@@ -57,7 +57,24 @@ class MultiTableCopy:
     Holding tables will have names like "temp_POMsgSet_holding_ubuntu_feisty",
     in this case for one holding data extracted from source table POMsgSet by
     a MultiTableCopy called "ubuntu_feisty".
+
+    The tables to be copied must meet a number of conventions:
+
+     * First column must be an integer primary key called "id."
+
+     * id values must be assigned by a sequence, with a name that can be used
+       in SQL without quoting.
+
+     * Every foreign-key column that refers to a table that is also being
+       copied, must have the same name as the table it refers to.
+
+     * Foreign-key column names and the tables they refer to can be used in
+       SQL without quoting.
+
+     * For any foreign key column "x" referring to another table that is also
+       being copied, there must not be a column called "new_x"
     """
+    # XXX: JeroenVermeulen 2007-05-24, More quoting, fewer assumptions!
 
     def __init__(self, name, tables, logger=None, ztm=None, time_goal=4):
         """Define a MultiTableCopy, including an in-order list of tables.
@@ -133,6 +150,11 @@ class MultiTableCopy:
 
         When joining, the added tables' columns are not included in the
         holding table, but where_clause may select on them.
+
+        The id_sequence argument gives the name of the database sequence that
+        assigns values for the id column.  It must be a simple identifier (no
+        quoting required) and it defaults to the name of the source table,
+        converted to all lower-case, with "_id_seq" appended.
         """
         if id_sequence is None:
             id_sequence = "%s_id_seq" % source_table.lower()
@@ -177,15 +199,20 @@ class MultiTableCopy:
         from_list = ', '.join([source_table] +
                               ['%s' % self.getHoldingTableName(j)
                                for j in joins])
+
+        where_list = ''
+        if len(where) > 0:
+            where_list = 'WHERE %s' % ' AND '.join(where)
+
         cur.execute('''
             CREATE TABLE %s AS
             SELECT %s, nextval('%s'::regclass) AS new_id
             FROM %s
-            WHERE %s ''' % (holding_table,
-                            fk_list,
-                            id_sequence,
-                            from_list,
-                            ' AND '.join(where)))
+            %s''' % (holding_table,
+                      fk_list,
+                      id_sequence,
+                      from_list,
+                      where_list))
 
         if len(joins) > 0:
             # Replace foreign keys with their "new_" variants, then drop those
@@ -258,7 +285,7 @@ class MultiTableCopy:
                 self.last_extracted_table != len(self.tables)-1):
             raise AssertionError(
                 "Not safe to pour: last table '%s' was not extracted" %
-                    self.tables[self.last_extracted_table])
+                    self.tables[-1])
 
         cur = self._commit()
 
@@ -457,9 +484,8 @@ class MultiTableCopy:
     def _checkExtractionOrder(self, source_table):
         """Verify order in which tables are extracted against tables list.
 
-        Check that the caller more or less follows the stated plan, extracting
-        from tables in an order consistent with the one in self.tables.
-        Repeated extraction from the same table is allowed.
+        Check that the caller follows the stated plan, extracting from tables
+        in the same order as in self.tables.
         """
         try:
             table_number = self.tables.index(source_table)
@@ -480,6 +506,9 @@ class MultiTableCopy:
             if table_number > self.last_extracted_table+1:
                 raise AssertionError(
                     "Table '%s' extracted before its turn" % source_table)
+            if table_number == self.last_extracted_table:
+                raise AssertionError(
+                    "Table '%s' extracted again" % source_table)
 
         self.last_extracted_table = table_number
 
