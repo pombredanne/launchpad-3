@@ -13,18 +13,18 @@ Let get the IArchiveSet utility:
 
 A new Archive can be created by passing a name and an owner
 
-  >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-  >>> sandbox_archive = archive_set.new(owner=sabdfl)
+  >>> name16 = getUtility(IPersonSet).getByName('name16')
+  >>> sandbox_archive = archive_set.new(owner=name16)
 
   >>> verifyObject(IArchive, sandbox_archive)
   True
 
-  >>> sandbox_archive.owner == sabdfl
+  >>> sandbox_archive.owner == name16
   True
 
 An Archive can be retrieved via IPerson.archive SingleJoin:
 
-  >>> sabdfl.archive == sandbox_archive
+  >>> name16.archive == sandbox_archive
   True
 
 
@@ -36,7 +36,7 @@ publication according to the given distribution:
 
   >>> proxied_pubconfig = sandbox_archive.getPubConfig(ubuntutest)
 
-XXX cprov 20061127: Publisher Config miss interface
+XXX cprov 20061127: Publisher Config is missing interface.
 
   >>> from zope.security.proxy import removeSecurityProxy
   >>> pubconfig = removeSecurityProxy(proxied_pubconfig)
@@ -50,16 +50,16 @@ configuration file:
 
 Then, the archive topology will follow:
 
-<PPA>/<PERSONNAME>/<DISTRIBUTION>
+<PPA_BASE_DIR>/<PERSONNAME>/<DISTRIBUTION>
 
   >>> pubconfig.archiveroot
-  u'/var/tmp/ppa.test/sabdfl/ubuntutest'
+  u'/var/tmp/ppa.test/name16/ubuntutest'
 
   >>> pubconfig.poolroot
-  u'/var/tmp/ppa.test/sabdfl/ubuntutest/pool'
+  u'/var/tmp/ppa.test/name16/ubuntutest/pool'
 
   >>> pubconfig.distsroot
-  u'/var/tmp/ppa.test/sabdfl/ubuntutest/dists'
+  u'/var/tmp/ppa.test/name16/ubuntutest/dists'
 
 Path not used in *personal* archives publication workflow are set to
 None, so they won't get created:
@@ -86,7 +86,7 @@ Usual methods from Publisher Configuration are preserved:
 IArchiveSet.getAllPPAs provides all present *personal* archive:
 
   >>> [archive.owner.name for archive in archive_set.getAllPPAs()]
-  [u'cprov', u'sabdfl']
+  [u'cprov', u'sabdfl', u'name16']
 
 
 Iteration over the own utility is performed against all archives,
@@ -100,4 +100,4 @@ including the *main_archives*:
   ...     else:
   ...          ppas += 1
   >>> main_archives, ppas
-  (8, 2)
+  (7, 3)

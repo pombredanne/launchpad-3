@@ -245,6 +245,7 @@ class DistroReleaseSourcePackageRelease:
         copy = SecureSourcePackagePublishingHistory(
             distrorelease=distrorelease,
             pocket=pocket,
+            archive=current.archive,
             sourcepackagerelease=current.sourcepackagerelease,
             component=current.component,
             section=current.section,

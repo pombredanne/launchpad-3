@@ -55,7 +55,7 @@ For DistroArchRelease, same as Distribution:
 
 For Builder, same as Distribution:
 
-;5A;5A  >>> browser.open("http://launchpad.dev/+builds/bob")
+  >>> browser.open("http://launchpad.dev/+builds/bob")
   >>> browser.getLink("Show build history").click()
   >>> print check_builds_options(browser.contents)
   State and Name present

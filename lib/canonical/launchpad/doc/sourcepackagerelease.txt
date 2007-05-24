@@ -161,7 +161,7 @@ ISourcePackageRelease, it will automatically set the
 'uploaddistrorelease' to the API entry point, in this case Hoary.
 
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
-  ...     arg_name, version, arg_maintainer, 
+  ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
   ...     arg_urgency, changelog, dsc, arg_key, arg_sect, arg_manifest,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
@@ -171,29 +171,19 @@ ISourcePackageRelease, it will automatically set the
   u'hoary'
   >>> new_spr.version
   u'0.0.99'
-  >>> new_spr.upload_archive.name
-  u'ubuntu'
+  >>> new_spr.upload_archive.id == hoary.main_archive.id
+  True
 
 Throw away the DB changes:
 
   >>> transaction.abort()
 
-
-Verify the 'meta_binary' attribute:
+Let's get a sample SourcePackageRelease:
 
    >>> spr_test = SourcePackageRelease.get(20)
    >>> spr_test.name
    u'pmount'
 
-   >>> from canonical.launchpad.interfaces import (
-   ...    IDistroReleaseBinaryPackage)
-
-   >>> pmount_drbp = spr_test.meta_binaries[0]
-   >>> IDistroReleaseBinaryPackage.providedBy(pmount_drbp)
-   True
-
-   >>> len(pmount_drbp.current_publishings)
-   3
 
 == Creating Build records ==
 
@@ -228,17 +218,16 @@ Optionally you can pass also status & archive:
 
    >>> from canonical.launchpad.interfaces import IPersonSet
    >>> cprov = getUtility(IPersonSet).getByName('cprov')
-   >>> cprov_ppa = cprov.getArchive('ubuntu-fun')
 
    >>> from canonical.lp.dbschema import BuildStatus
    >>> ppa_build = spr_test.createBuild(
-   ...    dar, pocket, cprov_ppa, status=BuildStatus.SUPERSEDED)
+   ...    dar, pocket, cprov.archive, status=BuildStatus.SUPERSEDED)
 
    >>> ppa_build.buildstate.name
    'SUPERSEDED'
 
-   >>> ppa_build.archive.name
-   u'ubuntu-fun'
+   >>> ppa_build.archive.id == cprov.archive.id
+   True
 
 
 Counting bugs

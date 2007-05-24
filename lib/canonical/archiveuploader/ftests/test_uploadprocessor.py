@@ -249,9 +249,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
             queue_item.status, PackageUploadStatus.UNAPPROVED,
             "Expected queue item to be in UNAPPROVED status.")
 
-        # XXX cprov 20070522: REMOVE ME!
-        self.assertTrue(False)
-
 
 class TestUploadProcessorPPA(TestUploadProcessorBase):
     """Functional tests for uploadprocessor.py in PPA operation."""

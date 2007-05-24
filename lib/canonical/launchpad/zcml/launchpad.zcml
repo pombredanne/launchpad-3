@@ -79,6 +79,15 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
+  <!-- TranslationUnavailableError -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.TranslationUnavailableError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-translationunavailable.pt"
+      class="canonical.launchpad.webapp.error.TranslationUnavailableView"
+      />
+
   <!-- LibrarianFailure -->
   <browser:page
       for="canonical.librarian.interfaces.LibrarianFailure"
