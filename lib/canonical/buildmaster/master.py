@@ -672,19 +672,25 @@ class BuilddMaster:
             # isNominatedArchIndep. -- kiko, 2006-08-31
             args['arch_indep'] = (queueItem.archhintlist == 'all' or
                                   queueItem.archrelease.isNominatedArchIndep)
-
+            # XXX cprov 20070523: Ogre should not be modelled here ...
             if not queueItem.is_trusted:
-                components_map = {
+                ogre_map = {
                     'main': 'main',
                     'restricted': 'main restricted',
                     'universe': 'main restricted universe',
                     'multiverse': 'main restricted universe multiverse',
                     }
-                allowed_components = components_map[queueItem.component_name]
+                ogre_components = ogre_map[queueItem.component_name]
+                # XXX cprov 20070523: it should be suite name, but it
+                # is just fine for PPAs since they are only built in
+                # RELEASE pocket.
+                dist_name = queueItem.archrelease.distrorelease.name
                 ppa_archive_url = queueItem.build.archive.archive_url
                 args['archives'] = [
-                    'http://archive.ubuntu.com/ubuntu %s' % allowed_components,
-                    '%s/ubuntu %s' % (ppa_archive_url, allowed_components)
+                    'deb http://archive.ubuntu.com/ubuntu %s %s'
+                    % (dist_name, ogre_components),
+                    'deb %s/ubuntu %s %s'
+                    % (ppa_archive_url, dist_name, ogre_components)
                     ]
             else:
                 args['archives'] = []
