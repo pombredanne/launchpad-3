@@ -35,5 +35,10 @@
         class="canonical.launchpad.browser.openidserver.ProtocolErrorView"
         />
 
+    <content class="canonical.launchpad.browser.openidserver.MinimalOpenIdIdentityView">
+      <allow attributes="browserDefault __call__" />
+    </content>
+
+
 </configure>
 

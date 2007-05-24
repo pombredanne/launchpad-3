@@ -8,6 +8,7 @@ __all__ = []
 from datetime import datetime, timedelta
 import re
 from tempfile import mkdtemp
+import textwrap
 import threading
 from time import time
 
@@ -16,7 +17,9 @@ import pytz
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
-from zope.interface import Interface, Attribute, implements
+from zope.interface import implements
+from zope.publisher.interfaces import IPublishTraverse
+from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zisinstance
 
@@ -30,10 +33,11 @@ from openid.server.trustroot import TrustRoot
 from openid import oidutil
 
 from canonical.launchpad.interfaces import (
-        ILaunchBag, IOpenIdAuthorizationSet, UnexpectedFormData,
-        ILaunchpadOpenIdStoreFactory, IPersonSet,
+        IEmailAddressSet, ILaunchBag, IOpenIdAuthorizationSet,
+        ILaunchpadOpenIdStoreFactory, IPersonSet, UnexpectedFormData,
         )
-from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp import LaunchpadView, canonical_url
+from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 
@@ -47,6 +51,8 @@ oidutil.log = null_log
 
 
 class OpenIdView(LaunchpadView):
+    implements(IPublishTraverse)
+
     openid_request = None
 
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")
@@ -341,6 +347,28 @@ class OpenIdView(LaunchpadView):
     def getSession(self):
         return ISession(self.request)[SESSION_PKG_KEY]
 
+    def publishTraverse(self, request, name):
+        # Provide a permanent OpenID identity for use by the Ubuntu shop
+        # or other services that cannot cope with name changes.
+        try:
+            person_id = int(name)
+        except ValueError:
+            pass
+        else:
+            person = getUtility(IPersonSet).get(person_id)
+            if person is not None:
+                return MinimalOpenIdIdentityView(request, person)
+
+        # Allow traversal to email addresses, redirecting to the
+        # user's permanent OpenID URL.
+        email = getUtility(IEmailAddressSet).getByEmail(name)
+        if email is not None:
+            target = '%s+openid/%d' % (
+                    allvhosts.configs['openid'].rooturl, email.personID
+                    )
+            return RedirectionView(target, request, 303)
+        return None
+
 
 class ProtocolErrorView(LaunchpadView):
     """Render a ProtocolError raised by the openid library."""
@@ -353,4 +381,32 @@ class ProtocolErrorView(LaunchpadView):
             response.setStatus(200)
         response.setHeader('Content-Type', 'text/plain;charset=utf-8')
         return self.context.encodeToKVForm()
+
+
+class MinimalOpenIdIdentityView:
+    """Render a minimal OpenID idenntity page."""
+    implements(IBrowserPublisher)
+
+    def __init__(self, request, context):
+        self.request = request
+        self.context = context
+
+    def __call__(self):
+        server_url = allvhosts.configs['openid'].rooturl
+        person_id = self.context.id
+        person_url = canonical_url(self.context, rootsite='mainsite')
+        return textwrap.dedent("""\
+                <html>
+                <head>
+                <link rel="openid.server" href="%(server_url)s">
+                <link rel="openid.delegate" href="%(person_url)s">
+                </head>
+                <body>
+                <h1>OpenID Identity URL #%(person_id)d</h1>
+                </body>
+                </html>
+                """ % vars())
+
+    def browserDefault(self, request):
+        return self, ()
 
