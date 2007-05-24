@@ -28,7 +28,9 @@ from canonical.database.sqlbase import quote
 from canonical.database.constants import UTC_NOW
 
 from canonical.archivepublisher.diskpool import poolify
-from canonical.archivepublisher.tagfiles import parse_tagfile
+from canonical.archiveuploader.tagfiles import parse_tagfile
+
+from canonical.database.sqlbase import sqlvalues
 
 from canonical.lp.dbschema import (
     PackagePublishingStatus, BuildStatus, SourcePackageFormat,
@@ -512,9 +514,11 @@ class SourcePackageHandler:
                     sourcepackagerelease.id AND
                 sourcepackagepublishinghistory.distrorelease = 
                     distrorelease.id AND
+                sourcepackagepublishinghistory.archive = %s AND
                 distrorelease.distribution = %s
-                """ % (sourcepackagename.id, quote(version),
-                       distrorelease.distribution.id)
+                """ % sqlvalues(sourcepackagename, version,
+                                distrorelease.main_archive,
+                                distrorelease.distribution)
         ret = SourcePackageRelease.select(query,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=["-SourcePackagePublishingHistory.datecreated"])
@@ -571,7 +575,8 @@ class SourcePackageHandler:
                                    dsc_format=src.format,
                                    dsc_maintainer_rfc822=maintainer_line,
                                    dsc_standards_version=src.standards_version,
-                                   dsc_binaries=" ".join(src.binaries))
+                                   dsc_binaries=" ".join(src.binaries),
+                                   upload_archive=distrorelease.main_archive)
         log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))
 
@@ -626,7 +631,8 @@ class SourcePackagePublisher:
             section=section.id,
             datecreated=UTC_NOW,
             datepublished=UTC_NOW,
-            pocket=self.pocket
+            pocket=self.pocket,
+            archive=self.distrorelease.main_archive
             )
         log.info('Source package %s (%s) published' % (
             entry.sourcepackagerelease.sourcepackagename.name,
@@ -637,10 +643,12 @@ class SourcePackagePublisher:
         ret = SecureSourcePackagePublishingHistory.select(
                 """sourcepackagerelease = %s
                    AND distrorelease = %s
+                   AND archive = %s
                    AND status in (%s, %s)""" %
-                (sourcepackagerelease.id, self.distrorelease.id,
-                 PackagePublishingStatus.PUBLISHED,
-                 PackagePublishingStatus.PENDING),
+                sqlvalues(sourcepackagerelease, self.distrorelease,
+                          self.distrorelease.main_archive,
+                          PackagePublishingStatus.PUBLISHED,
+                          PackagePublishingStatus.PENDING),
                 orderBy=["-datecreated"])
         ret = list(ret)
         if ret:
@@ -847,7 +855,8 @@ class BinaryPackageHandler:
                           buildlog=None,
                           builder=None,
                           datebuilt=None,
-                          pocket=self.pocket)
+                          pocket=self.pocket,
+                          archive=distroarchrelease.main_archive)
         return build
 
 
@@ -899,6 +908,7 @@ class BinaryPackagePublisher:
             supersededby = None,
             datemadepending = None,
             dateremoved = None,
+            archive=self.distroarchrelease.main_archive
             )
 
         log.info('BinaryPackage %s-%s published into %s.' % (
@@ -910,10 +920,12 @@ class BinaryPackagePublisher:
         ret = SecureBinaryPackagePublishingHistory.select(
                 """binarypackagerelease = %s
                    AND distroarchrelease = %s
+                   AND archive = %s
                    AND status in (%s, %s)""" %
-                (binarypackage.id, self.distroarchrelease.id,
-                 PackagePublishingStatus.PUBLISHED,
-                 PackagePublishingStatus.PENDING),
+                sqlvalues(binarypackage, self.distroarchrelease,
+                          self.distroarchrelease.main_archive,
+                          PackagePublishingStatus.PUBLISHED,
+                          PackagePublishingStatus.PENDING),
                 orderBy=["-datecreated"])
         ret = list(ret)
         if ret:

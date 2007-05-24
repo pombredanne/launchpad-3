@@ -33,7 +33,15 @@ class TestErrorReport(unittest.TestCase):
                             [('name1', 'value1'), ('name2', 'value2'),
                              ('name1', 'value3'),
                              ('field.password', 'secret1'),
-                             ('PassWd2', 'secret2')],
+                             ('PassWd2', 'secret2'),
+                             ('HTTP_COOKIE', 'sensitive'),
+                             ('launchpad', 'sensitive'),
+                             ('launchpad_dev', 'sensitive'),
+                             ('launchpad_tests', 'sensitive'),
+                             ('launchpad_demo', 'sensitive'),
+                             ('beta', 'sensitive'),
+                             ('edge', 'sensitive'),
+                             ('staging', 'sensitive')],
                             [(1, 5, 'SELECT 1'),
                              (5, 10, 'SELECT 2')])
         self.assertEqual(entry.id, 'id')
@@ -44,12 +52,20 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.username, 'username')
         self.assertEqual(entry.url, 'url')
         self.assertEqual(entry.duration, 42)
-        self.assertEqual(len(entry.req_vars), 5)
+        self.assertEqual(len(entry.req_vars), 13)
         self.assertEqual(entry.req_vars[0], ('name1', 'value1'))
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
         self.assertEqual(entry.req_vars[2], ('name1', 'value3'))
         self.assertEqual(entry.req_vars[3], ('field.password', '<hidden>'))
         self.assertEqual(entry.req_vars[4], ('PassWd2', '<hidden>'))
+        self.assertEqual(entry.req_vars[5], ('HTTP_COOKIE', '<hidden>'))
+        self.assertEqual(entry.req_vars[6], ('launchpad', '<hidden>'))
+        self.assertEqual(entry.req_vars[7], ('launchpad_dev', '<hidden>'))
+        self.assertEqual(entry.req_vars[8], ('launchpad_tests', '<hidden>'))
+        self.assertEqual(entry.req_vars[9], ('launchpad_demo', '<hidden>'))
+        self.assertEqual(entry.req_vars[10], ('beta', '<hidden>'))
+        self.assertEqual(entry.req_vars[11], ('edge', '<hidden>'))
+        self.assertEqual(entry.req_vars[12], ('staging', '<hidden>'))
         self.assertEqual(len(entry.db_statements), 2)
         self.assertEqual(entry.db_statements[0], (1, 5, 'SELECT 1'))
         self.assertEqual(entry.db_statements[1], (5, 10, 'SELECT 2'))

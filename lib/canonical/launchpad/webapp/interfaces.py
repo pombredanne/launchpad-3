@@ -10,12 +10,21 @@ from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.schema import Int, Text, Object, Datetime, TextLine, Bool
+from zope.security.interfaces import Forbidden
 
 from canonical.launchpad import _
 
 
+class TranslationUnavailableError(Forbidden):
+    """Translation objects are unavailable."""
+
+
 class NotFoundError(KeyError):
     """Launchpad object not found."""
+
+
+class UnexpectedFormData(AssertionError):
+    """Got form data that is not what is expected by a form handler."""
 
 
 class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
@@ -47,6 +56,15 @@ class IAuthorization(Interface):
 
         The argument `user` is the person who is authenticated.
         """
+
+
+class OffsiteFormPostError(Exception):
+    """An attempt was made to post a form from a remote site."""
+
+
+class UnsafeFormGetSubmissionError(Exception):
+    """An attempt was made to submit an unsafe form action with GET."""
+
 
 #
 # Menus and Facets
@@ -353,12 +371,45 @@ class IBasicLaunchpadRequest(Interface):
         """
 
 
+class IBrowserFormNG(Interface):
+    """Interface to manipulate submitted form data."""
+
+    def __contains__(name):
+        """Return True if a field named name was submitted."""
+
+    def __iter__():
+        """Return an iterator over the submitted field names."""
+
+    def getOne(name, default=None):
+        """Return the value of the field name.
+
+        If the field wasn't submitted return the default value.
+        If more than one value was submitted, raises UnexpectedFormData.
+        """
+
+    def getAll(name, default=None):
+        """Return the the list of values submitted under field name.
+
+        If the field wasn't submitted return the default value. (If default
+        is None, an empty list will be returned. It is an error to use
+        something else than None or a list as default value.
+        
+        This method should always return a list, if only one value was
+        submitted, it will be returned in a list.
+        """
+
+
 class ILaunchpadBrowserApplicationRequest(
     IBasicLaunchpadRequest,
     zope.publisher.interfaces.browser.IBrowserApplicationRequest):
     """The request interface to the application for launchpad browser requests.
     """
 
+    form_ng = Object(
+        title=u'IBrowserFormNG object containing the submitted form data',
+        schema=IBrowserFormNG)
+
+     
 # XXX: These need making into a launchpad version rather than the zope versions
 #      for the publisher simplification work.  SteveAlexander 2005-09-14
 # class IEndRequestEvent(Interface):

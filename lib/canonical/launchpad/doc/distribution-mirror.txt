@@ -537,8 +537,10 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    creating lockfile
     INFO    Probing Archive Mirrors
     INFO    Probed 4 mirrors.
-    INFO    Disabled http://launchpad.dev/.../archive-404-mirror
-    INFO    Enabled http://launchpad.dev/.../archive-mirror
+    INFO    Disabling 1 mirror(s):
+            http://launchpad.dev/ubuntu/+mirror/archive-404-mirror
+    INFO    Re-enabling 1 mirror(s):
+            http://launchpad.dev/ubuntu/+mirror/archive-mirror
     INFO    Done.
     <BLANKLINE>
 
@@ -549,7 +551,8 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     INFO    creating lockfile
     INFO    Probing Release Mirrors
     INFO    Probed 4 mirrors.
-    INFO    Disabled http://launchpad.dev/ubuntu/+mirror/unreachable-mirror
+    INFO    Disabling 1 mirror(s):
+            http://launchpad.dev/ubuntu/+mirror/unreachable-mirror
     INFO    Done.
     <BLANKLINE>
 
@@ -597,7 +600,8 @@ official mirrors independently if they were probed recently or not.
     INFO    creating lockfile
     INFO    Probing Release Mirrors
     INFO    Probed 4 mirrors.
-    INFO    Enabled http://launchpad.dev/ubuntu/+mirror/releases-mirror
+    INFO    Re-enabling 1 mirror(s):
+            http://launchpad.dev/ubuntu/+mirror/releases-mirror
     INFO    Done.
     <BLANKLINE>
 
@@ -642,6 +646,7 @@ First, let's check the source and arch releases of one archive mirror.
     ...            mirror_source_release.status.title)
     (u'Warty', 'Up to date')
     (u'Hoary', 'Up to date')
+    (u'Breezy Badger Autotest', 'Up to date')
 
 Because all MirrorDistroArchReleases and MirrorDistroReleaseSources of this
 mirror have 'Up to date' as status, this mirror's overall status will also be

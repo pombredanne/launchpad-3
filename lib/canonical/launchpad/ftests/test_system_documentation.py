@@ -18,8 +18,9 @@ import sqlos.connection
 
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
-from canonical.functional import FunctionalDocFileSuite
+from canonical.database.sqlbase import (
+    flush_database_updates, READ_COMMITTED_ISOLATION)
+from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.ftests.harness import (
         LaunchpadTestSetup, LaunchpadZopelessTestSetup,
@@ -76,13 +77,10 @@ def uploaderTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
 
 def builddmasterSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(dbuser=config.builddmaster.dbuser).setUp()
+    LaunchpadZopelessLayer.alterConnection(
+        dbuser=config.builddmaster.dbuser,
+        isolation=READ_COMMITTED_ISOLATION)
     setGlobs(test)
-    login(ANONYMOUS)
-
-def builddmasterTearDown(test):
-    LaunchpadZopelessTestSetup().tearDown()
 
 def importdSetUp(test):
     sqlos.connection.connCache = {}
@@ -141,8 +139,59 @@ def statisticianTearDown(test):
     logout()
     LaunchpadZopelessTestSetup().tearDown()
 
+def distroreleasequeueSetUp(test):
+    setUp(test)
+    # The test requires that the umask be set to 022, and in fact this comment
+    # was made in irc on 13-Apr-2007:
+    #
+    # (04:29:18 PM) kiko: barry, cprov says that the local umask is controlled
+    # enough for us to rely on it
+    #
+    # Setting it here reproduces the environment that the doctest expects.
+    # Save the old umask so we can reset it in the tearDown().
+    test.old_umask = os.umask(022)
+
+def distroreleasequeueTearDown(test):
+    os.umask(test.old_umask)
+    tearDown(test)
+
+def uploadQueueSetUp(test):
+    test_dbuser = config.uploadqueue.dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    setUp(test)
+    test.globs['test_dbuser'] = test_dbuser
+
+def uploadQueueTearDown(test):
+    logout()
+
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
+    # Set stdout_logging keyword argument to True to make
+    # logging output be sent to stdout, forcing doctests to deal with it.
+    stdout_logging = kw.pop('stdout_logging', True)
+    stdout_logging_level = kw.pop('stdout_logging_level', logging.INFO)
+
+    kw_setUp = kw.get('setUp')
+    def setUp(test):
+        if kw_setUp is not None:
+            kw_setUp(test)
+        if stdout_logging:
+            log = StdoutHandler('')
+            log.setLoggerLevel(stdout_logging_level)
+            log.install()
+            test.globs['log'] = log
+            # Store as instance attribute so we can uninstall it.
+            test._stdout_logger = log
+    kw['setUp'] = setUp
+
+    kw_tearDown = kw.get('tearDown')
+    def tearDown(test):
+        if kw_tearDown is not None:
+            kw_tearDown(test)
+        if stdout_logging:
+            test._stdout_logger.uninstall()
+    kw['tearDown'] = tearDown
+
     layer = kw.pop('layer')
     suite = DocFileSuite(*args, **kw)
     suite.layer = layer
@@ -178,7 +227,8 @@ special = {
     'poexport.txt': LayeredDocFileSuite(
             '../doc/poexport.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown,
-            optionflags=default_optionflags, layer=ZopelessLayer
+            optionflags=default_optionflags, layer=ZopelessLayer,
+            stdout_logging=False
             ),
     'poexport-template-tarball.txt': LayeredDocFileSuite(
             '../doc/poexport-template-tarball.txt',
@@ -207,8 +257,14 @@ special = {
             ),
     'build-notification.txt': LayeredDocFileSuite(
             '../doc/build-notification.txt',
-            setUp=builddmasterSetUp, tearDown=builddmasterTearDown,
-            layer=ZopelessLayer, optionflags=default_optionflags
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
+    'buildd-slavescanner.txt': LayeredDocFileSuite(
+            '../doc/buildd-slavescanner.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
+            stdout_logging_level=logging.WARNING
             ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
@@ -218,7 +274,8 @@ special = {
     'answer-tracker-emailinterface.txt': LayeredDocFileSuite(
             '../doc/answer-tracker-emailinterface.txt',
             setUp=answerTrackerSetUp, tearDown=answerTrackerTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            stdout_logging=False
             ),
     'person-karma.txt': FunctionalDocFileSuite(
             '../doc/person-karma.txt',
@@ -288,6 +345,24 @@ special = {
             '../doc/script-monitoring.txt',
             setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
             layer=LaunchpadZopelessLayer
+            ),
+    'distroreleasequeue-debian-installer.txt': FunctionalDocFileSuite(
+            '../doc/distroreleasequeue-debian-installer.txt',
+            setUp=distroreleasequeueSetUp, tearDown=distroreleasequeueTearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'bug-set-status.txt': LayeredDocFileSuite(
+            '../doc/bug-set-status.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'closing-bugs-from-changelogs.txt': LayeredDocFileSuite(
+            '../doc/closing-bugs-from-changelogs.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     }
 

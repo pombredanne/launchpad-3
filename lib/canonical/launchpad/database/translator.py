@@ -33,10 +33,7 @@ class Translator(SQLBase):
 
 
 class TranslatorSet:
-
     implements(ITranslatorSet)
-
-    title = 'Rosetta Translators'
 
     def new(self, translationgroup, language, translator):
         return Translator(

@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces import (
     PillarNameField, IHasLogo, IHasMugshot, IHasIcon)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload)
 
@@ -35,7 +36,8 @@ class ProductNameField(PillarNameField):
 
 class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-               IHasSprints, IHasLogo, IHasMugshot, IHasIcon):
+               IHasSprints, IHasMentoringOffers, IHasLogo, IHasMugshot,
+               IHasIcon):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -47,7 +49,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
     # in SQLObject soon. 12/10/04
-    id = Int(title=_('The Product ID'))
+    id = Int(title=_('The Project ID'))
 
     project = Choice(
         title=_('Part of'),
@@ -66,7 +68,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         title=_('Owner'),
         required=True,
         vocabulary='ValidOwner',
-        description=_("""Product owner, it can either a valid Person or Team
+        description=_("""Project owner, it can either a valid Person or Team
             inside Launchpad context."""))
 
     bugcontact = Choice(
@@ -231,7 +233,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getExternalBugTracker():
         """Return the external bug tracker used by this bug tracker.
 
-        If the product uses Malone, return None.
+        If the product uses Launchpad, return None.
         If the product doesn't have a bug tracker specified, return the
         project bug tracker instead.
         """
@@ -244,18 +246,18 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             
     official_answers = Bool(title=_('Uses Answers Officially'), 
         required=True, description=_('Check this box to indicate that this '
-            'project officially uses Answers for community support.'))
+            'project officially uses Launchpad for community support.'))
             
-    official_malone = Bool(title=_('Uses Malone Officially'),
+    official_malone = Bool(title=_('Uses Bugs Officially'),
         required=True, description=_('Check this box to indicate that '
-        'this application officially uses Malone for bug tracking '
+        'this application officially uses Launchpad for bug tracking '
         'upstream. This will remove the caution presented when people '
         'file bugs on the project here in Launchpad.'
         ))
 
-    official_rosetta = Bool(title=_('Uses Rosetta Officially'),
+    official_rosetta = Bool(title=_('Uses Translations Officially'),
         required=True, description=_('Check this box to indicate that '
-        'this application officially uses Rosetta for upstream '
+        'this application officially uses Launchpad for upstream '
         'translation. This will remove the caution presented when '
         'people contribute translations for the project in Launchpad.'))
 
@@ -354,7 +356,7 @@ class IProductSet(Interface):
 
     people = Attribute(
         "The PersonSet, placed here so we can easily render "
-        "the list of latest teams to register on the /products/ page.")
+        "the list of latest teams to register on the /projects/ page.")
 
     all_active = Attribute(
         "All the active products, sorted newest first.")
@@ -431,20 +433,30 @@ class IProductSet(Interface):
 
     def count_buggy():
         """Return the number of products that have bugs associated with them
-        in Malone."""
+        in Launchpad."""
 
     def count_featureful():
         """Return the number of products that have specs associated with
         them in Blueprint."""
 
     def count_reviewed():
-        """return a count of the number of products in the Launchpad that
+        """Return a count of the number of products in the Launchpad that
         are both active and reviewed."""
+
+    def count_answered():
+        """Return the number of projects that have questions and answers
+        associated with them.
+        """
+
+    def count_codified():
+        """Return the number of projects that have branches associated with
+        them.
+        """
 
 
 
 class IProductLaunchpadUsageForm(Interface):
-    """Form for indicating whether Rosetta, Answers, or Malone is used."""
+    """Form for indicating whether Rosetta, Answers, or Bugs is used."""
 
     official_rosetta = IProduct['official_rosetta']
     official_answers = IProduct['official_answers']

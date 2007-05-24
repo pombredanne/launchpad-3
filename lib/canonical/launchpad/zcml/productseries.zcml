@@ -125,7 +125,7 @@
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/productseries-translations.pt"
+            template="../templates/object-translations.pt"
             />
         <browser:page
             name="+potlist"
@@ -245,6 +245,13 @@
             template="../templates/productseries-translations-upload.pt"
             />
     </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+filebug"
+        class="canonical.launchpad.browser.ProductSeriesFileBugRedirect"
+        permission="zope.Public"
+        />
 
   <!-- ProductSeriesSet -->
   <content class="canonical.launchpad.database.ProductSeriesSet">

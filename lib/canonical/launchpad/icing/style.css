@@ -31,7 +31,10 @@ kbd {
   min-width: 1em;
   outline: 1px #666;
 }
-label {white-space: nowrap;}
+label {
+  white-space: nowrap;
+  font-weight: bold;
+}
 legend {font-weight: bold;}
 legend legend {font-weight: normal;}
 .listbox { /* a scrolling list of checkboxes or radio buttons */
@@ -277,7 +280,6 @@ hr {
 }
 /* Next is a location bar. */
 #locationbar {
-  float: left;
   width: 100%;
   height: 26px;
   margin: 0;
@@ -559,8 +561,9 @@ So it's hidden initially, and then revealed if JavaScript is available.
 #help {visibility: hidden;}
 
 /* The rest of the page keeps clear of the collapsed help panel. */
-#nonhelp {margin: 0 20px 0 38px;}
-
+/* test: http://launchpad.dev/+logout */
+#nonhelp {margin: 10px 20px 0 38px;}
+ 
 /*- App home pages and pillar indexes both have a heading and app buttons, -*/
 table#applications {margin-bottom: -0.5em;}
 table#applications th, table#applications td {vertical-align: baseline;}
@@ -570,7 +573,7 @@ table#applications td {text-align: right;}
 body.pillarindex table#applications th {padding-left: 0;}
 
 /* Other page types have a global search field. */
-#globalsearch {float: right; margin-top: 15px; width: 220px;}
+#globalsearch {float: right; margin-top: 5px; width: 220px;}
 #globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
 #globalsearch #searchbutton {
   position: relative;
@@ -820,7 +823,6 @@ ul#applicationchooser li#applicationchooser_selected {
   background: none;
   color: black;
   float: left;
-  margin: 10px 0 0;
   width: 70%;
 }
 #structuralobjectheading img {
@@ -855,11 +857,11 @@ ul#applicationchooser li#applicationchooser_selected {
   background-repeat: repeat-x;
   background-position: bottom left;
   position: relative;
-  top: -15px; /*- reduces pillargotchi~tab gap -*/
+  top: -15px; /*- reduces logo~tab gap -*/
 }
 body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
-body.freeform #mainarea {top: 20px;} /*- no pillargotchi on freeform pages -*/
+body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
 #mainarea div.t {
   width: 100%;
   background-image: url(mainarea_left.gif);
@@ -1000,6 +1002,11 @@ body.tab-overview #actions, body.tab-overview .results {
 }
 body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
+}
+
+.tab-overview #application-footer strong {
+  background: none;
+  color: #83ad23;
 }
 
 .product.series, .project {margin-bottom: 1em;}
@@ -1352,12 +1359,11 @@ body.applicationhome #container {padding-left: 20px;}
   padding: 0 20px;
   right: 240px;
 }
-* html #portlets { /* Works around Internet Explorer bug */
-  left: 20px;
-}
-#portlets .portlet {
-  width: 200px;
-}
+/* IE6 and lower ignore the left padding, so we add extra positioning. */
+* html #portlets {left: 20px;}
+/* IE7 gets the padding right but overcalculates the left margin, so we use
+a conditional comment in main-template.pt to work around the above rule. */
+#portlets .portlet {width: 200px;}
 #singlecolumn {margin: 20px 20px 0 0;} /* test: front page, FAQ page */
 #mainarea #singlecolumn {margin-right: 0;}
 

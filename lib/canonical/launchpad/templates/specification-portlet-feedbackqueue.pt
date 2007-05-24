@@ -2,7 +2,7 @@
   <div tal:condition="fbreqs" class="portlet">
     <h2>Feedback requests</h2>
 
-    <div class="portletBody portletContent">
+    <div class="portletBody">
 
       <ul class="info">
         <li tal:repeat="fbreq fbreqs">

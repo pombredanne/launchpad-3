@@ -12,7 +12,7 @@ from email.Utils import make_msgid
 from zope.app.content_types import guess_content_type
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implements, providedBy
 
 from sqlobject import ForeignKey, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
@@ -24,7 +24,8 @@ from canonical.launchpad.interfaces import (
     IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroRelease,
     IProductSeries, IProductSeriesBugTask, NominationError,
     NominationReleaseObsoleteError, IProduct, IDistribution,
-    UNRESOLVED_BUGTASK_STATUSES, BugNotificationRecipients)
+    UNRESOLVED_BUGTASK_STATUSES, BugNotificationRecipients,
+    ISourcePackage)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -45,13 +46,14 @@ from canonical.launchpad.database.bugtask import (
     )
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.event.sqlobjectevent import (
-    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+    SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import (
-    BugAttachmentType, DistributionReleaseStatus)
+    BugAttachmentType, DistributionReleaseStatus, BugTaskStatus)
 
 _bug_tag_query_template = """
         SELECT %(columns)s FROM %(tables)s WHERE
@@ -139,6 +141,9 @@ class Bug(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_last_updated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     private = BoolCol(notNull=True, default=False)
+    date_made_private = UtcDateTimeCol(notNull=False, default=None)
+    who_made_private = ForeignKey(
+        dbName='who_made_private', foreignKey='Person', default=None)
     security_related = BoolCol(notNull=True, default=False)
 
     # useful Joins
@@ -159,6 +164,8 @@ class Bug(SQLBase):
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
         orderBy='sequence', joinColumn='bug', otherColumn='cve')
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
+    mentoring_offers = SQLMultipleJoin(
+            'MentoringOffer', joinColumn='bug', orderBy='id')
     # XXX: why is subscriptions ordered by ID? -- kiko, 2006-09-23
     subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id',
@@ -188,6 +195,14 @@ class Bug(SQLBase):
         result = BugTask.selectBy(bug=self)
         result.prejoin(["assignee"])
         return sorted(result, key=bugtask_sort_key)
+
+    @property
+    def is_complete(self):
+        """See IBug."""
+        for task in self.bugtasks:
+            if not task.is_complete:
+                return False
+        return True
 
     @property
     def affected_pillars(self):
@@ -405,6 +420,13 @@ class Bug(SQLBase):
         BugNotification(
             bug=self, is_comment=True, message=message, date_emailed=None)
 
+    def expireNotifications(self):
+        """See IBug."""
+        for notification in BugNotification.selectBy(
+                bug=self, date_emailed=None):
+            notification.date_emailed = UTC_NOW
+            notification.syncUpdate()
+
     def newMessage(self, owner=None, subject=None, content=None, parent=None):
         """Create a new Message and link it to this bug."""
         msg = Message(
@@ -508,6 +530,45 @@ class Bug(SQLBase):
         cves = getUtility(ICveSet).inText(text)
         for cve in cves:
             self.linkCVE(cve)
+
+    # Several other classes need to generate lists of bugs, and
+    # one thing they often have to filter for is completeness. We maintain
+    # this single canonical query string here so that it does not have to be
+    # cargo culted into Product, Distribution, ProductSeries etc
+    completeness_clause =  """
+        BugTask.bug = Bug.id AND """ + BugTask.completeness_clause
+
+    def canMentor(self, user):
+        """See ICanBeMentored."""
+        return not (not user or
+                    self.is_complete or
+                    self.duplicateof is not None or
+                    self.isMentor(user) or
+                    not user.teams_participated_in)
+
+    def isMentor(self, user):
+        """See ICanBeMentored."""
+        return MentoringOffer.selectOneBy(bug=self, owner=user) is not None
+
+    def offerMentoring(self, user, team):
+        """See ICanBeMentored."""
+        # if an offer exists, then update the team
+        mentoringoffer = MentoringOffer.selectOneBy(bug=self, owner=user)
+        if mentoringoffer is not None:
+                mentoringoffer.team = team
+                return mentoringoffer
+        # if no offer exists, create one from scratch
+        mentoringoffer = MentoringOffer(owner=user, team=team,
+            bug=self)
+        notify(SQLObjectCreatedEvent(mentoringoffer, user=user))
+        return mentoringoffer
+
+    def retractMentoring(self, user):
+        """See ICanBeMentored."""
+        mentoringoffer = MentoringOffer.selectOneBy(bug=self, owner=user)
+        if mentoringoffer is not None:
+            notify(SQLObjectDeletedEvent(mentoringoffer, user=user))
+            MentoringOffer.delete(mentoringoffer.id)
 
     def getMessageChunks(self):
         """See IBug."""
@@ -644,6 +705,49 @@ class Bug(SQLBase):
         return BugWatch.selectFirstBy(
             bug=self, bugtracker=bugtracker, remotebug=remote_bug,
             orderBy='id')
+
+    def setStatus(self, target, status, user):
+        """See IBug."""
+        bugtask = self.getBugTask(target)
+        if bugtask is None:
+            if IProductSeries.providedBy(target):
+                bugtask = self.getBugTask(target.product)
+            elif ISourcePackage.providedBy(target):
+                current_distro_release = target.distribution.currentrelease
+                current_package = current_distro_release.getSourcePackage(
+                    target.sourcepackagename.name)
+                if self.getBugTask(current_package) is not None:
+                    # The bug is targeted to the current release, don't
+                    # fall back on the general distribution task.
+                    return None
+                distro_package = target.distribution.getSourcePackage(
+                    target.sourcepackagename.name)
+                bugtask = self.getBugTask(distro_package)
+            else:
+                return None
+
+        if bugtask is None:
+            return None
+
+        if bugtask.conjoined_master is not None:
+            bugtask = bugtask.conjoined_master
+
+        bugtask_before_modification = Snapshot(
+            bugtask, providing=providedBy(bugtask))
+        bugtask.transitionToStatus(status)
+        if bugtask_before_modification.status != bugtask.status:
+            notify(SQLObjectModifiedEvent(
+                bugtask, bugtask_before_modification, ['status'], user=user))
+
+        return bugtask
+
+    def getBugTask(self, target):
+        """See IBug."""
+        for bugtask in self.bugtasks:
+            if bugtask.target == target:
+                return bugtask
+
+        return None
 
     def _getTags(self):
         """Get the tags as a sorted list of strings."""
