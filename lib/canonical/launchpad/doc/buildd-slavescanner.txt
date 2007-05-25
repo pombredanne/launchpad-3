@@ -332,29 +332,6 @@ extend it and try to reduce its usage:
   ...         setupBuildQueue(self, builder)
   ...     def destroySelf(self):
   ...         pass
-  ...     # XXX cprov 20070525: this code should be purged as soon as
-  ...     # we have access to a proper BuildQueue.
-  ...     def updateBuild_IDLE(self, slave, build_id, build_status, logtail,
-  ...                          filemap, dependencies, logger):
-  ...         logger.warn(
-  ...          "Builder on %s is Dory AICMFP. Builder forgot about build %s "
-  ...          "-- resetting buildqueue record"
-  ...          % (self.builder.url, self.build.title))
-  ...         self.builder = None
-  ...         self.buildstart = None
-  ...         self.build.buildstate = BuildStatus.NEEDSBUILD
-  ...     def updateBuild_BUILDING(self, slave, build_id, build_status,
-  ...                              logtail, filemap, dependencies, logger):
-  ...         self.logtail = encoding.guess(str(logtail))
-  ...     def updateBuild_ABORTING(self, slave, buildid, build_status,
-  ...                              logtail, filemap, dependencies, logger):
-  ...         self.logtail = "Waiting for slave process to be terminated"
-  ...     def updateBuild_ABORTED(self, slave, buildid, build_status,
-  ...                             logtail, filemap, dependencies, logger):
-  ...         self.builder.cleanSlave()
-  ...         self.builder = None
-  ...         self.buildstart = None
-  ...         self.build.buildstate = BuildStatus.BUILDING
 
 
 Remove any previous buildmaster ROOT directory, to avoid any garbage
