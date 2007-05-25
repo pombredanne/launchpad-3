@@ -166,7 +166,7 @@ slave has the requested file in cache.
 
   >>> class OkSlave:
   ...     def status(self):
-  ...         return ('BuilderStatus.IDLE',)
+  ...         return ('BuilderStatus.IDLE', '')
   ...     def ensurepresent(self, sha1, url):
   ...         print "ensurepresent called"
   ...         return True, None
@@ -174,8 +174,15 @@ slave has the requested file in cache.
   ...         info = 'OkSlave BUILDING'
   ...         print info
   ...         return ('BuildStatus.Building', info)
+  ...     def fetchlogtail(self, size):
+  ...         return 'BOGUS'
+  ...     def clean(self):
+  ...         pass
+  ...     def info(self):
+  ...         return ('1.0', 'i386', 'debian')
 
-  >>> class BuildingSlave:
+
+  >>> class BuildingSlave(OkSlave):
   ...     def status(self):
   ...         return ('BuilderStatus.BUILDING', '1-1', "This is a build log")
   ...     def getFile(self, sum):
@@ -184,32 +191,26 @@ slave has the requested file in cache.
   ...             s.headers={'content-length':19}
   ...             return s
 
-  >>> class AbortedSlave:
+
+  >>> class AbortedSlave(OkSlave):
   ...     def status(self):
   ...         return ('BuilderStatus.ABORTED', '1-1')
-  ...     def fetchlogtail(self, size):
-  ...         return 'BOGUS'
-  ...     def clean(self):
-  ...         pass
 
-  >>> class WaitingSlave:
+
+  >>> class WaitingSlave(OkSlave):
   ...     def __init__(self, state, dependencies=None):
   ...         self.state = state
   ...         self.dependencies = dependencies
   ...     def status(self):
   ...         return ('BuilderStatus.WAITING', self.state, '1-1', {},
   ...                 self.dependencies )
-  ...     def fetchlogtail(self, amount=None):
-  ...         return 'BOGUS'
-  ...     def clean(self):
-  ...         pass
   ...     def getFile(self, sum):
   ...         if sum == "buildlog":
   ...             s = StringIO("This is a build log")
   ...             s.headers={'content-length':19}
   ...             return s
 
-  >>> class AbortingSlave:
+  >>> class AbortingSlave(OkSlave):
   ...     def status(self):
   ...         return ('BuilderStatus.ABORTING', '1-1')
 
@@ -852,9 +853,27 @@ builds for post-release pockets:
   ...
   AssertionError: Mock Build (1) can not be built for pocket SECURITY: invalid pocket due to the release status of hoary.
 
+== Builder Status Handler ==
+
+Check how the homogeneous builder slave status handler works for each
+supported state:
 
   >>> a_builder.setSlaveForTesting(OkSlave())
-
   >>> a_builder.slaveStatus()
-  ('BuilderStatus.IDLE', None, None, None, None, None)
+  ('BuilderStatus.IDLE', '', None, None, None, None)
 
+  >>> a_builder.setSlaveForTesting(BuildingSlave())
+  >>> a_builder.slaveStatus()
+  ('BuilderStatus.BUILDING', '1-1', None, 'This is a build log', None, None)
+
+  >>> a_builder.setSlaveForTesting(WaitingSlave(state='BuildStatus.OK'))
+  >>> a_builder.slaveStatus()
+  ('BuilderStatus.WAITING', '1-1', 'BuildStatus.OK', None, {}, None)
+
+  >>> a_builder.setSlaveForTesting(AbortingSlave())
+  >>> a_builder.slaveStatus()
+  ('BuilderStatus.ABORTING', '1-1', None, None, None, None)
+
+  >>> a_builder.setSlaveForTesting(AbortedSlave())
+  >>> a_builder.slaveStatus()
+  ('BuilderStatus.ABORTED', '1-1', None, None, None, None)

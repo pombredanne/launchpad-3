@@ -184,8 +184,16 @@ class IBuilder(IHasOwner):
     def slaveStatus():
         """Get the slave status for this builder.
 
-        :return: homogeneous set of parameters across Status:
-        builder_status, build_id, build_status, logtail, filemap, dependencies
+        * builder_status => string
+        * build_id => string
+        * build_status => string or None
+        * logtail => string or None
+        * filename => dictionary or None
+        * dependencies => string or None
+
+        :return: a tuple containing (
+            builder_status, build_id, build_status, logtail, filemap,
+            dependencies)
         """
 
     def slaveStatusSentence():

@@ -180,7 +180,7 @@ class Builder(SQLBase):
     @property
     def slave(self):
         """See IBuilder.
-        
+
         A cached attribute _slave is used to allow tests to replace the _slave
         object, which is usually an XMLRPC client, with a stub object that
         removes the need to actually create a buildd slave in various states -
@@ -329,8 +329,31 @@ class Builder(SQLBase):
 
     def slaveStatus(self):
         """See IBuilder."""
-        status = self.slave.status()
-        return status + (None, None, None, None, None)
+        builder_version, builder_arch, mechanisms = self.slave.info()
+        status_sentence = self.slave.status()
+        builder_status = status_sentence[0]
+
+        if builder_status == 'BuilderStatus.WAITING':
+            (build_status, build_id) = status_sentence[1:3]
+            build_status_with_files = [
+                'BuildStatus.OK',
+                'BuildStatus.PACKAGEFAIL',
+                'BuildStatus.DEPFAIL',
+                ]
+            if build_status in build_status_with_files:
+                (filemap, dependencies) = status_sentence[3:]
+            else:
+                filemap = dependencies = None
+            logtail = None
+        elif builder_status == 'BuilderStatus.BUILDING':
+            (build_id, logtail) = status_sentence[1:]
+            build_status = filemap = dependencies = None
+        else:
+            build_id = status_sentence[1]
+            build_status = logtail = filemap = dependencies = None
+
+        return (builder_status, build_id, build_status, logtail, filemap,
+                dependencies)
 
     def slaveStatusSentence(self):
         """See IBuilder."""
@@ -365,7 +388,7 @@ class Builder(SQLBase):
             out_file.seek(0, 2)
             bytes_written = out_file.tell()
             out_file.seek(0)
-            
+
             return getUtility(ILibrarianClient).addFile(filename,
                 bytes_written, out_file,
                 contentType=filenameToContentType(filename))
