@@ -186,9 +186,10 @@ class BuilderGroup:
         return queueItem.builder.transferSlaveFileToLibrarian(
             'buildlog', logfilename)
 
-    def updateBuild(self, queueItem, librarian):
-        """Verify the current build job status and perform the required
-        actions for each state.
+    def updateBuild(self, queueItem):
+        """Verify the current build job status.
+
+        Perform the required actions for each state.
         """
         try:
             (builder_status, build_id, build_status, logtail, filemap,

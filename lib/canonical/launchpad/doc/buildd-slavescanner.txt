@@ -308,11 +308,6 @@ following states: FAILEDTOBUILD and CHROOTWAIT
   ...         pass
 
 
-Setup also a Librarian client to check indenpendent updateBuild() mechanism:
-
-  >>> from canonical.librarian.interfaces import ILibrarianClient
-  >>> librarian = getUtility(ILibrarianClient)
-
 Remove any previous buildmaster ROOT directory, to avoid any garbage
 lock conflict (it would be recreated automatically if necessary)
 
@@ -341,7 +336,7 @@ not yet factored into the content class.
   >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.PACKAGEFAIL'))
 
   >>> bqItem3 = MockBuildQueue(1, a_builder, MockBuild(1))
-  >>> buildergroup.updateBuild(bqItem3, librarian)
+  >>> buildergroup.updateBuild(bqItem3)
   >>> bqItem3.build.builder is not None
   True
   >>> bqItem3.build.datebuilt is not None
@@ -366,7 +361,7 @@ not yet factored into the content class.
   ...                                     'baz (>= 1.0.1)'))
 
   >>> bqItem4 = MockBuildQueue(2, a_builder, MockBuild(2))
-  >>> buildergroup.updateBuild(bqItem4, librarian)
+  >>> buildergroup.updateBuild(bqItem4)
   CRITICAL:root:***** bob is MANUALDEPWAIT *****
   >>> bqItem4.build.builder is not None
   True
@@ -391,7 +386,7 @@ not yet factored into the content class.
   >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.CHROOTFAIL'))
 
   >>> bqItem5 = MockBuildQueue(3, a_builder, MockBuild(3))
-  >>> buildergroup.updateBuild(bqItem5, librarian)
+  >>> buildergroup.updateBuild(bqItem5)
   CRITICAL:root:***** bob is CHROOTWAIT *****
   >>> bqItem5.build.builder is not None
   True
@@ -414,7 +409,7 @@ not yet factored into the content class.
   >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.BUILDERFAIL'))
 
   >>> bqItem6 = MockBuildQueue(4, a_builder, MockBuild(4))
-  >>> buildergroup.updateBuild(bqItem6, librarian)
+  >>> buildergroup.updateBuild(bqItem6)
   WARNING:root:***** bob has failed *****
   >>> a_builder.failnotes
   u'Builder returned BUILDERFAIL when asked for its status'
@@ -437,7 +432,7 @@ not yet factored into the content class.
   >>> a_builder.setSlaveForTesting(BuildingSlave())
 
   >>> bqItem7 = MockBuildQueue(5, a_builder, MockBuild(5))
-  >>> buildergroup.updateBuild(bqItem7, librarian)
+  >>> buildergroup.updateBuild(bqItem7)
   >>> bqItem7.build.notification_sent
   False
   >>> bqItem7.builder is a_builder
@@ -453,7 +448,7 @@ not yet factored into the content class.
   >>> bqItem8 = MockBuildQueue(6, a_builder, MockBuild(6))
   >>> bqItem8.builder.name
   u'bob'
-  >>> buildergroup.updateBuild(bqItem8, librarian)
+  >>> buildergroup.updateBuild(bqItem8)
   >>> bqItem8.builder is None
   True
 
@@ -466,7 +461,7 @@ not yet factored into the content class.
   >>> bqItem9 = MockBuildQueue(7, a_builder, MockBuild(7))
   >>> bqItem9.builder.name
   u'bob'
-  >>> buildergroup.updateBuild(bqItem9, librarian)
+  >>> buildergroup.updateBuild(bqItem9)
   >>> bqItem9.build.notification_sent
   False
   >>> bqItem9.logtail
@@ -512,7 +507,7 @@ If the build record wasn't updated before/during the updateBuild
 (precisely on binary upload time), the build will be considered
 FAILEDTOUPLOAD:
 
-  >>> buildergroup.updateBuild(bqItem10, librarian)
+  >>> buildergroup.updateBuild(bqItem10)
   >>> bqItem10.build.builder is not None
   True
   >>> bqItem10.build.datebuilt is not None
@@ -549,7 +544,7 @@ Now the updateBuild should recognise this build record as a
 Successfully built and uploaded procedure, not sending any
 notification and updating the build information:
 
-  >>> buildergroup.updateBuild(bqItem10, librarian)
+  >>> buildergroup.updateBuild(bqItem10)
   >>> bqItem10.build.builder is not None
   True
   >>> bqItem10.build.datebuilt is not None
@@ -572,7 +567,7 @@ notification and updating the build information:
 Create a mock slave so the builder gets the right responses for this test.
 
   >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.GIVENBACK'))
-  >>> buildergroup.updateBuild(bqItem11, librarian)
+  >>> buildergroup.updateBuild(bqItem11)
   WARNING:root:***** 1-1 is GIVENBACK by bob *****
 
 Ensure GIVENBACK build preserves the history for future use. (we
@@ -605,7 +600,7 @@ Create a mock slave so the builder gets the right responses for this test.
   >>> bqItem12 = MockBuildQueue(10, a_builder, MockBuild(10))
   >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
   >>> bqItem12.build.distroarchrelease = warty['i386']
-  >>> buildergroup.updateBuild(bqItem12, librarian)
+  >>> buildergroup.updateBuild(bqItem12)
   Traceback (most recent call last):
   ...
   AssertionError: Mock Build (10) can not be built for pocket RELEASE: illegal status

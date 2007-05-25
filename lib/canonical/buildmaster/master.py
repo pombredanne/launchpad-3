@@ -307,7 +307,7 @@ class BuilddMaster:
                 builders = notes[proc]["builders"]
             except KeyError:
                 continue
-            builders.updateBuild(job, self.librarian)
+            builders.updateBuild(job)
 
     def getLogger(self, subname=None):
         """Return the logger instance with specific prefix"""
