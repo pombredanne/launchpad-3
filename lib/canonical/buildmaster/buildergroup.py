@@ -231,43 +231,42 @@ class BuilderGroup:
             # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
             slave = removeSecurityProxy(queueItem.builder.slave)
             method(queueItem, slave, build_id, build_status, logtail,
-                   filemap, dependencies)
+                   filemap, dependencies, self.logger)
         except TypeError, e:
             self.logger.critical("Received wrong number of args in response.")
             self.logger.exception(e)
 
         self.commit()
 
-    def updateBuild_IDLE(self, queueItem, slave, buildid,
-                         build_status, logtail, filemap, dependencies):
+    def updateBuild_IDLE(self, queueItem, slave, buildid, build_status,
+                         logtail, filemap, dependencies, logger):
         """Somehow the builder forgot about the build job, log this and reset
         the record.
         """
-        self.logger.warn("Builder on %s is Dory AICMFP. "
-                         "Builder forgot about build %s "
-                         "-- resetting buildqueue record"
-                         % (queueItem.builder.url, queueItem.build.title))
-
+        logger.warn(
+            "Builder on %s is Dory AICMFP. Builder forgot about build %s "
+            "-- resetting buildqueue record"
+            % (queueItem.builder.url, queueItem.build.title))
         queueItem.builder = None
         queueItem.buildstart = None
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
 
-    def updateBuild_BUILDING(self, queueItem, slave, buildid,
-                             build_status, logtail, filemap, dependencies):
+    def updateBuild_BUILDING(self, queueItem, slave, build_id, build_status,
+                             logtail, filemap, dependencies, logger):
         """Build still building, Simple collects the logtail"""
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
         queueItem.logtail = encoding.guess(str(logtail))
 
-    def updateBuild_ABORTING(self, queueItem, slave, buildid,
-                             buildstatus, logtail, filemap, dependencies):
+    def updateBuild_ABORTING(self, queueItem, slave, buildid, build_status,
+                             logtail, filemap, dependencies, logger):
         """Build was ABORTED.
 
         Master-side should wait until the slave finish the process correctly.
         """
         queueItem.logtail = "Waiting for slave process to be terminated"
 
-    def updateBuild_ABORTED(self, queueItem, slave, buildid,
-                            build_status, logtail, filemap, dependencies):
+    def updateBuild_ABORTED(self, queueItem, slave, buildid, build_status,
+                            logtail, filemap, dependencies, logger):
         """ABORTING process has successfully terminated.
 
         Clean the builder for another jobs.
@@ -278,8 +277,8 @@ class BuilderGroup:
         queueItem.buildstart = None
         queueItem.build.buildstate = dbschema.BuildStatus.BUILDING
 
-    def updateBuild_WAITING(self, queueItem, slave, buildid,
-                            build_status, logtail, filemap, dependencies):
+    def updateBuild_WAITING(self, queueItem, slave, buildid, build_status,
+                            logtail, filemap, dependencies, logger):
         """Perform the actions needed for a slave in a WAITING state
 
         Buildslave can be WAITING in five situations:
@@ -301,8 +300,8 @@ class BuilderGroup:
         method = getattr(self, 'buildStatus_' + buildstatus, None)
 
         if method is None:
-            self.logger.critical("Unknown BuildStatus '%s' for builder '%s'"
-                                 % (buildstatus, queueItem.builder.url))
+            logger.critical("Unknown BuildStatus '%s' for builder '%s'"
+                            % (buildstatus, queueItem.builder.url))
             return
 
         method(queueItem, slave, librarian, buildid, filemap, dependencies)
