@@ -340,7 +340,6 @@ class POMessage(object):
                         wrapped_line.append(line)
                         line = u''
                         new_block += char
-                        continue
                 if line or new_block:
                     wrapped_line.append(u'%s%s' % (line, new_block))
             for line in wrapped_line:
