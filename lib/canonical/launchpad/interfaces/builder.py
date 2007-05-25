@@ -144,6 +144,14 @@ class IBuilder(IHasOwner):
     def failbuilder(reason):
         """Mark builder as failed for a given reason."""
 
+    def requestAbort():
+        """Ask that a build be aborted.
+
+        This takes place asynchronously: Actually killing everything running
+        can take some time so the slave status should be queried again to
+        detect when the abort has taken effect. (Look for status ABORTED).
+        """
+
     def slaveStatusSentence():
         """Get the slave status sentence for this builder.
 

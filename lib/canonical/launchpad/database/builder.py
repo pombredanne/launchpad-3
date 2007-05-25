@@ -64,6 +64,7 @@ class BuilderSlave(xmlrpclib.Server):
         fileurl = urlappend(self.urlbase, filelocation)
         return urllib2.urlopen(fileurl)
 
+
 class Builder(SQLBase):
 
     implements(IBuilder, IHasBuildRecords)
@@ -134,13 +135,17 @@ class Builder(SQLBase):
             raise BuildDaemonError("Failed to echo OK")
 
     def cleanSlave(self):
-        """Clean any temporary files from the slave."""
+        """See IBuilder."""
         return self.slave.clean()
 
     @property
     def currentjob(self):
         """See IBuilder"""
         return getUtility(IBuildQueueSet).getByBuilder(self)
+
+    def requestAbort(self):
+        """See IBuilder."""
+        return self.slave.abort()
 
     @property
     def slave(self):

@@ -126,11 +126,7 @@ class BuilderGroup:
             if status == 'BuilderStatus.WAITING':
                 builder.cleanSlave()
             else:
-                # ask for an abort; it will become visible as ABORTED at a
-                # later point and a future run of the slave scanner will
-                # cleanup the slave.
-                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-                removeSecurityProxy(builder.slave).abort()
+                builder.requestAbort()
             self.logger.warn("Builder '%s' rescued from '%s-%s: %s'" % (
                 builder.name, build_id, queue_item_id, reason))
 

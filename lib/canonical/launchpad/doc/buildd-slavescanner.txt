@@ -52,6 +52,8 @@ Mock Builder, a class to emulate the Builder behaviour:
   ...         return self.slave.status()
   ...     def cleanSlave(self):
   ...         return self.slave.clean()
+  ...     def requestAbort(self):
+  ...         return self.slave.abort()
 
 Let's play with a BuilderGroup method designed to rescue build slaves
 that are processing unknown jobs. In real conditions, this situation
