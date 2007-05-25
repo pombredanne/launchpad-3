@@ -8,8 +8,10 @@ __all__ = [
     ]
 
 import httplib
+import os
 import socket
 import subprocess
+import tempfile
 import urllib2
 import xmlrpclib
 
@@ -23,6 +25,7 @@ from canonical.config import config
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotResetHost,
     IBuildQueueSet, IBuildSet, IBuilder, IBuilderSet, IDistroArchReleaseSet,
@@ -30,6 +33,7 @@ from canonical.launchpad.interfaces import (
     ProtocolVersionMismatch)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.librarian.utils import copy_and_close
 from canonical.lp.dbschema import BuildStatus
 
 
@@ -323,14 +327,52 @@ class Builder(SQLBase):
         """See IHasBuildRecords."""
         return getUtility(IBuildSet).getBuildsForBuilder(self.id, status, name)
 
-    def slaveStatusSentence(self):
-        """See IBuilder."""
-        return self.slave.status()
-
     def slaveStatus(self):
         """See IBuilder."""
         status = self.slave.status()
         return status + (None, None, None, None, None)
+
+    def slaveStatusSentence(self):
+        """See IBuilder."""
+        return self.slave.status()
+
+    def transferSlaveFileToLibrarian(self, file_sha1, filename):
+        """See IBuilder."""
+        # ensure the tempfile will return a proper name, which does not
+        # confuses the gzip as suffixes like '-Z', '-z', almost everything
+        # insanely related to 'z'. Might also be solved by bug # 3111
+        out_file_fd, out_file_name = tempfile.mkstemp(suffix=".tmp")
+        out_file = os.fdopen(out_file_fd, "r+")
+        try:
+            slave_file = self.slave.getFile(file_sha1)
+            copy_and_close(slave_file, out_file)
+            # if the requested file is the 'buildlog' compress it using gzip
+            # before storing in Librarian
+            if file_sha1 == 'buildlog':
+                # XXX cprov 20051010:
+                # python.gzip presented weird errors at this point, most
+                # related to incomplete file storage, the compressed file
+                # was prematurely finished in a 0x00. Using system call as a
+                # workaround until bug #3111 is addressed.
+                os.system('gzip -9 %s' % out_file_name)
+                # modify the local and header filename
+                filename += '.gz'
+                out_file_name += '.gz'
+
+            # reopen the file, seek to its end position, count and seek
+            # to beginning, ready for adding to the Librarian.
+            out_file = open(out_file_name)
+            out_file.seek(0, 2)
+            bytes_written = out_file.tell()
+            out_file.seek(0)
+            
+            return getUtility(ILibrarianClient).addFile(filename,
+                bytes_written, out_file,
+                contentType=filenameToContentType(filename))
+        finally:
+            # Finally, remove the temporary file
+            out_file.close()
+            os.remove(out_file_name)
 
 
 class BuilderSet(object):

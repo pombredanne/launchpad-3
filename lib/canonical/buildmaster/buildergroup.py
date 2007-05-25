@@ -156,7 +156,7 @@ class BuilderGroup:
         builder.failbuilder(reason)
         self.updateOkSlaves()
 
-    def getLogFromSlave(self, slave, queueItem, librarian):
+    def getLogFromSlave(self, queueItem):
         """Get last buildlog from slave.
 
         Invoke getFileFromSlave method with 'buildlog' identifier.
@@ -182,61 +182,8 @@ class BuilderGroup:
                        % (distroname, distroreleasename,
                           archname, sourcename, version, state))
 
-        return self.getFileFromSlave(slave, logfilename,
-                                     'buildlog', librarian)
-
-    def getFileFromSlave(self, slave, filename, sha1sum, librarian):
-        """Request a file from Slave.
-
-        Protocol version 1.0new or higher provides /filecache/
-        which allows us to be clever in large file transfer. This method
-        Receive a file identifier (sha1sum) a MIME header filename and a
-        librarian instance. Store the incomming file in Librarian and return
-        the file alias_id, if it failed return None. 'buildlog' string is a
-        special identifier which recover the raw last slave buildlog,
-        compress it locally using gzip and finally store the compressed
-        copy in librarian.
-        """
-        aliasid = None
-        # ensure the tempfile will return a proper name, which does not
-        # confuses the gzip as suffixes like '-Z', '-z', almost everything
-        # insanely related to 'z'. Might also be solved by bug # 3111
-        out_file_fd, out_file_name = tempfile.mkstemp(suffix=".tmp")
-
-        try:
-            out_file = os.fdopen(out_file_fd, "r+")
-            slave_file = slave.getFile(sha1sum)
-            copy_and_close(slave_file, out_file)
-
-            # if the requested file is the 'buildlog' compress it using gzip
-            # before storing in Librarian
-            if sha1sum == 'buildlog':
-                # XXX cprov 20051010:
-                # python.gzip presented weird errors at this point, most
-                # related to incomplete file storage, the compressed file
-                # was prematurely finished in a 0x00. Using system call for
-                # while -> bug # 3111
-                os.system('gzip -9 %s' % out_file_name)
-                # modify the local and header filename
-                filename += '.gz'
-                out_file_name += '.gz'
-
-            # repopen the file, seek to its end position, count and seek
-            # to beginning, ready for adding to the Librarian.
-            out_file = open(out_file_name)
-            out_file.seek(0, 2)
-            bytes_written = out_file.tell()
-            out_file.seek(0)
-            ftype = filenameToContentType(filename)
-
-            aliasid = librarian.addFile(filename, bytes_written,
-                                        out_file, contentType=ftype)
-        finally:
-            # Finally, remove the temporary file
-            out_file.close()
-            os.remove(out_file_name)
-
-        return aliasid
+        return queueItem.builder.transferSlaveFileToLibrarian(
+            'buildlog', logfilename)
 
     def updateBuild(self, queueItem, librarian):
         """Verify the current build job status and perform the required
@@ -359,9 +306,10 @@ class BuilderGroup:
 
         Store Buildlog, datebuilt, duration, dependencies.
         """
-        queueItem.build.buildlog = self.getLogFromSlave(slave, queueItem,
-                                                        librarian)
+        queueItem.build.buildlog = self.getLogFromSlave(queueItem)
         queueItem.build.datebuilt = UTC_NOW
+        # XXX: This includes scanner latency in the measurement, it should
+        # really be asking the slave for the duration spent building.
         # we need dynamic datetime.now() instance to be able to perform
         # the time operations for duration.
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))

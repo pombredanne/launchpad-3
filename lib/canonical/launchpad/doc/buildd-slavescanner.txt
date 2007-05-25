@@ -326,7 +326,20 @@ Let's check the procedures to verify/collect running build process:
   WAITING - PACKAGEFAIL -> Package has failed to build, notice from
   builder is stored, but Build.buildstate is mark as 'Failed to Build':
 
-  >>> bqItem3 = MockBuildQueue(1, builder3, MockBuild(1))
+Get a builder from the sample data:
+
+  >>> a_builder = getUtility(IBuilderSet).get(1)
+
+Force the test builder to be 'ok' as the code required to do this automatically is
+not yet factored into the content class.
+
+  >>> a_builder.builderok = True
+
+  Create a mock slave so the builder can operate - one with a failed package.
+
+  >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.PACKAGEFAIL'))
+
+  >>> bqItem3 = MockBuildQueue(1, a_builder, MockBuild(1))
   >>> buildergroup.updateBuild(bqItem3, librarian)
   >>> bqItem3.build.builder is not None
   True
@@ -344,9 +357,16 @@ Let's check the procedures to verify/collect running build process:
   WAITING - DEPWAIT -> a required dependency is missing, again notice
   from builder, but Build.buildstate has the right state:
 
-  >>> bqItem4 = MockBuildQueue(2, builder4, MockBuild(2))
+
+  Create a mock slave so the builder can operate - one with a dependency error.
+
+  >>> a_builder.setSlaveForTesting(
+  ...                        WaitingSlave('BuildStatus.DEPFAIL',
+  ...                                     'baz (>= 1.0.1)'))
+
+  >>> bqItem4 = MockBuildQueue(2, a_builder, MockBuild(2))
   >>> buildergroup.updateBuild(bqItem4, librarian)
-  CRITICAL:root:***** Missing Dependency build is MANUALDEPWAIT *****
+  CRITICAL:root:***** bob is MANUALDEPWAIT *****
   >>> bqItem4.build.builder is not None
   True
   >>> bqItem4.build.datebuilt is not None
@@ -365,9 +385,13 @@ Let's check the procedures to verify/collect running build process:
   WAITING - CHROOTFAIL -> the Chroot for this distrorelease is damage, nor
   builder, but right state stored in Build entry:
 
-  >>> bqItem5 = MockBuildQueue(3, builder5, MockBuild(3))
+  Create a mock slave so the builder can operate - one with a failed chroot.
+
+  >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.CHROOTFAIL'))
+
+  >>> bqItem5 = MockBuildQueue(3, a_builder, MockBuild(3))
   >>> buildergroup.updateBuild(bqItem5, librarian)
-  CRITICAL:root:***** Bad Chroot is CHROOTWAIT *****
+  CRITICAL:root:***** bob is CHROOTWAIT *****
   >>> bqItem5.build.builder is not None
   True
   >>> bqItem5.build.datebuilt is not None
@@ -384,11 +408,15 @@ Let's check the procedures to verify/collect running build process:
   WAITING - BUILDERFAIL -> builder has failed by internal error, job is
   available for next build round:
 
-  >>> bqItem6 = MockBuildQueue(4, builder6, MockBuild(4))
+  Create a mock slave so the builder can operate - one with a builder error.
+
+  >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.BUILDERFAIL'))
+
+  >>> bqItem6 = MockBuildQueue(4, a_builder, MockBuild(4))
   >>> buildergroup.updateBuild(bqItem6, librarian)
-  WARNING:root:***** I am out of order has failed *****
-  >>> builder6.failnotes
-  'Builder returned BUILDERFAIL when asked for its status'
+  WARNING:root:***** bob has failed *****
+  >>> a_builder.failnotes
+  u'Builder returned BUILDERFAIL when asked for its status'
 
   >>> bqItem6.builder is None
   True
@@ -397,14 +425,22 @@ Let's check the procedures to verify/collect running build process:
   >>> bqItem6.build.buildstate.title
   'Needs building'
 
+  Reset the builder for the next test.
+
+  >>> a_builder.builderok = True
+
   BUILDING -> builder still processing the job, simply collect the logtail:
 
-  >>> bqItem7 = MockBuildQueue(5, builder7, MockBuild(5))
+  Create a mock slave so the builder can operate - one which is building.
+
+  >>> a_builder.setSlaveForTesting(BuildingSlave())
+
+  >>> bqItem7 = MockBuildQueue(5, a_builder, MockBuild(5))
   >>> buildergroup.updateBuild(bqItem7, librarian)
   >>> bqItem7.build.notification_sent
   False
-  >>> bqItem7.builder.name
-  'I am busy'
+  >>> bqItem7.builder is a_builder
+  True
   >>> bqItem7.logtail
   u'This is a build log'
 
@@ -458,10 +494,14 @@ record:
   >>> mock_build = MockBuild(8)
   >>> mock_build.buildstate = real_build.buildstate
 
-Build a mock BuildQueueItem using the 'real' Build ID and the
-mock_builder and mock_build as information containers:
+Build a mock BuildQueueItem using the 'real' Build ID and our test builder with
+a mock_build as information containers:
 
-  >>> bqItem10 = MockBuildQueue(8, builder10, mock_build)
+  >>> bqItem10 = MockBuildQueue(8, a_builder, mock_build)
+
+Create a mock slave so the builder gets the right responses for this test.
+
+  >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
 
 If the build record wasn't updated before/during the updateBuild
 (precisely on binary upload time), the build will be considered
@@ -488,7 +528,11 @@ Similar to what we have done in FAILEDTOUPLOAD we will map this
 procedure to same 'real' build record ID in FULLYBUILT state:
 
   >>> mock_build = MockBuild(2)
-  >>> bqItem10 = MockBuildQueue(2, builder10, mock_build)
+  >>> bqItem10 = MockBuildQueue(2, a_builder, mock_build)
+
+Create a mock slave so the builder gets the right responses for this test.
+
+  >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
 
 Now in order to emulate a successfully binary upload we will update
 the mock build record to FULLYBUILT, as the process-upload would do:
@@ -518,9 +562,13 @@ notification and updating the build information:
   WAITING -> GIVENBACK - slave requested build record to be
   reschedulled.
 
-  >>> bqItem11 = MockBuildQueue(9, builder11, MockBuild(9))
+  >>> bqItem11 = MockBuildQueue(9, a_builder, MockBuild(9))
+
+Create a mock slave so the builder gets the right responses for this test.
+
+  >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.GIVENBACK'))
   >>> buildergroup.updateBuild(bqItem11, librarian)
-  WARNING:root:***** 1-1 is GIVENBACK by I am giving this job back *****
+  WARNING:root:***** 1-1 is GIVENBACK by bob *****
 
 Ensure GIVENBACK build preserves the history for future use. (we
 can't be sure if logtail will contain any information, because it
@@ -544,8 +592,12 @@ the given distrorelease/pocket. Anytime it happens we need to manually
 investigate why this build end up built. (should never happen in real
 cases, and even so should be refused when we try to upload it.)
 
+Create a mock slave so the builder gets the right responses for this test.
+
+  >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
+
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> bqItem12 = MockBuildQueue(10, builder10, MockBuild(10))
+  >>> bqItem12 = MockBuildQueue(10, a_builder, MockBuild(10))
   >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
   >>> bqItem12.build.distroarchrelease = warty['i386']
   >>> buildergroup.updateBuild(bqItem12, librarian)
@@ -557,8 +609,7 @@ cases, and even so should be refused when we try to upload it.)
 The buildlog is collected and compressed locally using gzip algorithm,
 let's see how this method works:
 
-  >>> logfile_alias = buildergroup.getLogFromSlave(builder10.slave,
-  ...                                              bqItem10, librarian)
+  >>> logfile_alias = buildergroup.getLogFromSlave(bqItem10)
 
   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
 
@@ -752,16 +803,7 @@ Initialize BuildQueue missing attributes for building:
 Request a Mock slave build process, see OkSlave() class implementation
 for further details:
 
-Get a builder from the sample data:
-
-  >>> a_builder = getUtility(IBuilderSet).get(1)
-
-Force the builder to be 'ok' as the code required to do this automatically is
-not yet factored into the content class.
-
-  >>> a_builder.builderok = True
-
-Override the slave with one that will claim to be 'OK'
+Override the test builder's slave with one that will claim to be 'OK'
 
   >>> a_builder.setSlaveForTesting(OkSlave())
 

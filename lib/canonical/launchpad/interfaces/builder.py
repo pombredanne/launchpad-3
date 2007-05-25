@@ -181,6 +181,13 @@ class IBuilder(IHasOwner):
     def setSlaveForTesting(new_slave):
         """Set a new slave object. This is for testing only."""
 
+    def slaveStatus():
+        """Get the slave status for this builder.
+
+        :return: homogeneous set of parameters across Status:
+        builder_status, build_id, build_status, logtail, filemap, dependencies
+        """
+
     def slaveStatusSentence():
         """Get the slave status sentence for this builder.
 
@@ -188,7 +195,7 @@ class IBuilder(IHasOwner):
             build_id-queue-id and then optionally more elements depending on
             the status.
         """
-    
+
     def startBuild(build_queue_item, logger):
         """Start a build on this builder.
 
@@ -199,11 +206,15 @@ class IBuilder(IHasOwner):
             other than the build slave failing.
         """
 
-    def slaveStatus():
-        """Get the slave status sentence for this builder.
+    def transferSlaveFileToLibrarian(file_sha1, filename):
+        """Transfer a file from the slave to the librarian.
 
-        :return: homogeneous set of parameters across Status:
-        builder_status, build_id, build_status, logtail, filemap, dependencies
+        :param file_sha1: The file's sha1, which is how the file is addressed
+            in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
+            will cause the build log to be retrieved and gzipped.
+        :param filename: The name of the file to be given to the librarian file
+            alias.
+        :return: A librarian file alias.
         """
 
 
