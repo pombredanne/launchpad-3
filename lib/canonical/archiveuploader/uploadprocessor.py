@@ -295,6 +295,10 @@ class UploadProcessor:
                 self.log.exception("Unhandled exception processing upload")
                 upload.reject("Unhandled exception processing upload: %s" % e)
 
+            # XXX julian 2007-05-25
+            # When bug #29744 is fixed (zopeless mails should only be sent
+            # when transaction is committed) this will cause any emails sent
+            # sent by do_reject to be lost.
             if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
                 upload.do_reject()
