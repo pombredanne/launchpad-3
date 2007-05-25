@@ -8,8 +8,8 @@ hostile trust_root, a warning message is displayed to the user.
 ...     'openid.return_to': 'http://launchpad.dev/',
 ...     'openid.trust_root': 'http://*.dev',
 ...     })
->>> anon_browser.open('http://openid.launchpad.dev/?%s' % args)
->>> print '\n' + anon_browser.contents
+>>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> print '\n' + sabdfl_browser.contents
 <BLANKLINE>
 ...
 <p class="warning message">
@@ -28,7 +28,7 @@ If the trust_root looks fine, no warning is displayed.
 ...     'openid.return_to': 'http://example.com/whatever',
 ...     'openid.trust_root': 'http://example.com',
 ...     })
->>> anon_browser.open('http://openid.launchpad.dev/?%s' % args)
->>> 'warning' not in anon_browser.contents
+>>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+>>> 'warning' not in sabdfl_browser.contents
 True
 

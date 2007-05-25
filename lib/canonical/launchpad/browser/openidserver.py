@@ -103,13 +103,12 @@ class OpenIdView(LaunchpadView):
             self.login = self.extractName(self.openid_request.identity)
 
             if self.isAuthorized():
-                # User has previously allowed auth to this site, or we
-                # wish to force auth to be allowed to this site
+                # User is logged in and the site is authorized.
                 openid_response = self.openid_request.answer(True)
 
-
             elif self.openid_request.immediate:
-                # Immediate requests must fail if user is not logged in.
+                # Immediate requests must fail if user is not logged in
+                # or no authorization recorded.
                 openid_response = self.openid_request.answer(
                     False, allvhosts.configs['openid'].rooturl
                     )
@@ -124,6 +123,13 @@ class OpenIdView(LaunchpadView):
                 else:
                     self.login = self.user.name
                 return self.invalid_identity_template()
+
+            elif not self.isAuthenticated():
+                # Interactive request, but user is not yet logged on.
+                # Trigger authentication.
+                raise Unauthorized(
+                        "You are not authorized to use this OpenID identifier."
+                        )
 
             else:
                 # We have an interactive id check request (checkid_setup).

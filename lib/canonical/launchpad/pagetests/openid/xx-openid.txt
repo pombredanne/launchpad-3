@@ -3,9 +3,7 @@
 == Introduction ==
 
 Launchpad is an OpenID provider. If the URL is accessed by a web browser,
-an informative message is displayed. We replicate the one from the
-specification exactly, even though other OpenID servers take more
-liberties.
+an informative message is displayed as per the OpenID spec.
 
 >>> anon_browser.open('http://openid.launchpad.dev')
 >>> print anon_browser.headers
@@ -173,15 +171,32 @@ We test a success below in the 'Sticky Authorization' section.
 
 == checkid_setup Mode ==
 
-checkid_setup is interactive with the user, giving them the oppertunity
-to log in and approve access to the consumer site. We can extract the
+checkid_setup is interactive with the user. We can extract the
 URL for the checkid_setup from the result of the previous test.
 
 >>> [setup_url] = re.findall(
 ...     '(?m)^openid.user_setup_url:(.*)$', anon_browser.contents
 ...     )
->>> anon_browser.open(setup_url)
->>> print '\n' + anon_browser.contents
+
+
+To proceed, the user will need to login.
+
+>>> sabdfl_browser = setupBrowser()
+>>> sabdfl_browser.handleErrors = True
+>>> sabdfl_browser.open(setup_url)
+>>> print sabdfl_browser.url
+http://openid.launchpad.dev/+openid/+login?...
+>>> sabdfl_browser.handleErrors = False
+>>> sabdfl_browser.getControl('E-mail address', index=0).value = 'mark@hbd.com'
+>>> sabdfl_browser.getControl('Password', index=0).value = 'test'
+>>> sabdfl_browser.getControl('Log In', index=0).click()
+
+
+Once logged in, the user is redirected to the 'decide' page, where the
+user is informed about what is going on and they are given the oppertunity
+to allow authorization or decline.
+
+>>> print '\n' + sabdfl_browser.contents
 <BLANKLINE>
 ...
     <form method="get" action=".">
@@ -203,10 +218,10 @@ URL for the checkid_setup from the result of the previous test.
 Lets deny the request. This will return us to the consumer without
 authentication.
 
->>> anon_browser.getControl('Deny').click()
->>> print anon_browser.url
+>>> sabdfl_browser.getControl('Deny').click()
+>>> print sabdfl_browser.url
 http://launchpad.dev/+openid-consumer?openid.mode=cancel
->>> print anon_browser.contents
+>>> print sabdfl_browser.contents
 Consumer received GET
 openid.mode:cancel
 <BLANKLINE>
@@ -216,18 +231,8 @@ Now, lets do that again but allow the request. This will require us
 to log in to Launchpad before being redirected back to the consumer
 informing it that the request is valid.
 
->>> sabdfl_browser = setupBrowser()
->>> sabdfl_browser.handleErrors = True
 >>> sabdfl_browser.open(setup_url)
 >>> sabdfl_browser.getControl('Allow').click()
-
->>> print sabdfl_browser.url
-http://openid.launchpad.dev/+openid/+login?...
->>> sabdfl_browser.handleErrors = False
->>> sabdfl_browser.getControl('E-mail address', index=0).value = 'mark@hbd.com'
->>> sabdfl_browser.getControl('Password', index=0).value = 'test'
->>> sabdfl_browser.getControl('Log In', index=0).click()
-
 >>> print sabdfl_browser.url
 http://launchpad.dev/+openid-consumer?...
 >>> print sabdfl_browser.contents
@@ -413,12 +418,12 @@ Interactive mode:
 >>> [setup_url] = re.findall(
 ...     '(?m)^openid.user_setup_url:(.*)$', sabdfl_browser.contents
 ...     )
->>> sabdfl_browser.open(setup_url)
 >>> sabdfl_browser.handleErrors = False
->>> sabdfl_browser.getControl('Allow').click()
+>>> sabdfl_browser.open(setup_url)
 Traceback (most recent call last):
 ...
-Unauthorized: You are not yet authorized to use this OpenID identifier.
+Unauthorized: You are not authorized to use this OpenID identifier.
+>>> sabdfl_browser.handleErrors = True
 
 == Invalid identities ==
 
