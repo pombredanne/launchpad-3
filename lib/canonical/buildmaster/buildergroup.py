@@ -252,8 +252,7 @@ class BuilderGroup:
 
         method(queueItem, slave, librarian, buildid, filemap, dependencies)
 
-    def storeBuildInfo(self, queueItem, slave, librarian, buildid,
-                       dependencies):
+    def storeBuildInfo(self, queueItem, librarian, buildid, dependencies):
         """Store available information for build jobs.
 
         Store Buildlog, datebuilt, duration, dependencies.
@@ -361,8 +360,7 @@ class BuilderGroup:
 
         # Store build information, build record was already updated during
         # the binary upload.
-        self.storeBuildInfo(
-            queueItem, slave, librarian, buildid, dependencies)
+        self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
 
         # The famous 'flush_updates + clear_cache' will make visible the
         # DB changes done in process-upload, considering that the
@@ -423,7 +421,7 @@ class BuilderGroup:
         remove Buildqueue entry.
         """
         queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOBUILD
-        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
+        self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.builder.cleanSlave()
         queueItem.build.notify()
         queueItem.destroySelf()
@@ -437,7 +435,7 @@ class BuilderGroup:
         entry and release builder slave for another job.
         """
         queueItem.build.buildstate = dbschema.BuildStatus.MANUALDEPWAIT
-        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
+        self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         self.logger.critical("***** %s is MANUALDEPWAIT *****"
                              % queueItem.builder.name)
         queueItem.builder.cleanSlave()
@@ -452,7 +450,7 @@ class BuilderGroup:
         and release the builder.
         """
         queueItem.build.buildstate = dbschema.BuildStatus.CHROOTWAIT
-        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
+        self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         self.logger.critical("***** %s is CHROOTWAIT *****" %
                              queueItem.builder.name)
         queueItem.builder.cleanSlave()
@@ -474,7 +472,7 @@ class BuilderGroup:
                           "for its status"))
         # simply reset job
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
-        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
+        self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.builder = None
         queueItem.buildstart = None
 
@@ -489,7 +487,7 @@ class BuilderGroup:
         self.logger.warning("***** %s is GIVENBACK by %s *****"
                             % (buildid, queueItem.builder.name))
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
-        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
+        self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         # XXX cprov 20060530: Currently this information is not
         # properly presented in the Web UI. We will discuss it in
         # the next Paris Summit, infinity has some ideas about how
