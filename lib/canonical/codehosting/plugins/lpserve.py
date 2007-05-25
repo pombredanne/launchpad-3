@@ -94,7 +94,7 @@ class cmd_launchpad_server(Command):
             ui.ui_factory = old_factory
 
     def run(self, user_id, port=None, directory=None, read_only=False,
-            authserver_url=None):
+            authserver_url=None, inet=False):
         if directory is None:
             directory = config.codehosting.branches_root
         if authserver_url is None:
@@ -106,7 +106,7 @@ class cmd_launchpad_server(Command):
         authserver = xmlrpclib.ServerProxy(authserver_url)
 
         transport = self.get_transport(authserver, user_id, url)
-        smart_server = self.get_smart_server(transport, port)
+        smart_server = self.get_smart_server(transport, port, inet)
         self.run_server(smart_server)
 
 
