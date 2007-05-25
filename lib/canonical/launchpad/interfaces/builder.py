@@ -199,6 +199,13 @@ class IBuilder(IHasOwner):
             other than the build slave failing.
         """
 
+    def slaveStatus():
+        """Get the slave status sentence for this builder.
+
+        :return: homogeneous set of parameters across Status:
+        builder_status, build_id, build_status, logtail, filemap, dependencies
+        """
+
 
 class IBuilderSet(Interface):
     """Collections of builders.

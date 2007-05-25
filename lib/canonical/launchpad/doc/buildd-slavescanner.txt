@@ -811,3 +811,8 @@ builds for post-release pockets:
   AssertionError: Mock Build (1) can not be built for pocket SECURITY: invalid pocket due to the release status of hoary.
 
 
+  >>> a_builder.setSlaveForTesting(OkSlave())
+
+  >>> a_builder.slaveStatus()
+  ('BuilderStatus.IDLE', None, None, None, None, None)
+

@@ -327,6 +327,11 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.status()
 
+    def slaveStatus(self):
+        """See IBuilder."""
+        status = self.slave.status()
+        return status + (None, None, None, None, None)
+
 
 class BuilderSet(object):
     """See IBuilderSet"""
