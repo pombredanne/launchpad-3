@@ -29,11 +29,15 @@ Subversion, takes values from the 'RevisionControlSystems' vocabulary.
 
 == Code import from CVS ==
 
-DONTMERGE: unfinished
+Code imports from CVS specify the CVSROOT value, and the path to import in the
+repository, known as the "module".
 
   >>> cvs = RevisionControlSystems.CVS
   >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
   >>> cvs_module = 'hello'
+
+
+
   >>> cvs_import = code_import_set.new(
   ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
 
