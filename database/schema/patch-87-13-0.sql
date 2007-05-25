@@ -417,7 +417,7 @@ ALTER TABLE SourcePackageRelease
 ALTER TABLE SourcepackageRelease DROP CONSTRAINT "$3";
 ALTER TABLE SourcepackageRelease
     ADD CONSTRAINT sourcepackagerelease__dscsigningkey
-    FOREIGN KEY (dscsigningkey) REFERENCES Person;
+    FOREIGN KEY (dscsigningkey) REFERENCES GPGKey;
 
 -- Build.archive
 ALTER TABLE Build ADD COLUMN archive INTEGER;

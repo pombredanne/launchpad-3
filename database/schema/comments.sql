@@ -3,7 +3,7 @@
   table.
 */
 
-/* AnswerContact */
+-- AnswerContact
 
 COMMENT ON TABLE AnswerContact IS 'Defines the answer contact for a given question target. The answer contact will be automatically notified about changes to any questions filed on the question target.';
 COMMENT ON COLUMN AnswerContact.product IS 'The product that the answer contact supports.';
@@ -11,10 +11,9 @@ COMMENT ON COLUMN AnswerContact.distribution IS 'The distribution that the answe
 COMMENT ON COLUMN AnswerContact.sourcepackagename IS 'The sourcepackagename that the answer contact supports.';
 COMMENT ON COLUMN AnswerContact.person IS 'The person or team associated with the question target.';
 COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was submitted.';
-COMMENT ON COLUMN AnswerContact.want_english IS 'Whether or not the answer contact supports questions in English.';
+--COMMENT ON COLUMN AnswerContact.want_english IS 'Whether or not the answer contact supports questions in English.';
 
-/* Branch */
-
+-- Branch 
 COMMENT ON TABLE Branch IS 'Bzr branch';
 COMMENT ON COLUMN Branch.whiteboard IS 'Notes on the current status of the branch';
 COMMENT ON COLUMN Branch.summary IS 'A single paragraph description of the branch';
@@ -26,9 +25,9 @@ COMMENT ON COLUMN Branch.last_scanned IS 'The time when the branch was last scan
 COMMENT ON COLUMN Branch.last_scanned_id IS 'The revision ID of the branch when it was last scanned.';
 COMMENT ON COLUMN Branch.revision_count IS 'The number of revisions in the associated bazaar branch revision_history.';
 COMMENT ON COLUMN Branch.mirror_request_time IS 'The time when a user requested that we mirror this branch (NULL if not requested). This will be set automatically by pushing to a hosted branch. Once mirrored, it will be set back to NULL.';
-COMMENT ON COLUMN Branch.visibility_team IS 'If NULL then the branch is visible to all, otherwise only members of the team specified can see the branch. If the specified Person is actually a person and not a team, then the branch is only visible to that person.';
+COMMENT ON COLUMN Branch.private IS 'If the branch is private, then only the owner and subscribers of the branch can see it.';
 
-/* BranchSubscription*/
+-- BranchSubscription
 
 COMMENT ON TABLE BranchSubscription IS 'An association between a person or team and a bazaar branch.';
 COMMENT ON COLUMN BranchSubscription.person IS 'The person or team associated with the branch.';
@@ -36,7 +35,7 @@ COMMENT ON COLUMN BranchSubscription.branch IS 'The branch associated with the p
 COMMENT ON COLUMN BranchSubscription.notification_level IS 'The level of email the person wants to receive from branch updates.';
 COMMENT ON COLUMN BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.';
 
-/* BranchVisibilityPolicy */
+-- BranchVisibilityPolicy
 
 COMMENT ON TABLE BranchVisibilityPolicy IS 'Defines the policy for the initial visibility of branches.';
 COMMENT ON COLUMN BranchVisibilityPolicy.project IS 'Even though projects don\'t directly have branches themselves, if a product of the project does not specify its own branch visibility policies, those of the project are used.';
@@ -45,7 +44,7 @@ COMMENT ON COLUMN BranchVisibilityPolicy.team IS 'Refers to the team that the po
 COMMENT ON COLUMN BranchVisibilityPolicy.policy IS 'An enumerated type, one of PUBLIC or PRIVATE.  PUBLIC is the default value.';
 
 
-/* Bug */
+-- Bug
 
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or source packages to identify the location(s) that this bug is found.';
 COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
@@ -53,7 +52,7 @@ COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subs
 COMMENT ON COLUMN Bug.security_related IS 'Is this bug a security issue?';
 COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
 
-/* BugBranch */
+-- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
 COMMENT ON COLUMN BugBranch.bug IS 'The bug associated with this branch.';
 COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
@@ -61,7 +60,7 @@ COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this
 COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 
-/* BugNomination */
+-- BugNomination
 COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distrorelease or productseries';
 COMMENT ON COLUMN BugNomination.bug IS 'The bug being nominated.';
 COMMENT ON COLUMN BugNomination.distrorelease IS 'The distrorelease for which the bug is nominated.';
@@ -72,15 +71,15 @@ COMMENT ON COLUMN BugNomination.date_decided IS 'The date the nomination was app
 COMMENT ON COLUMN BugNomination.owner IS 'The person that submitted the nomination';
 COMMENT ON COLUMN BugNomination.decider IS 'The person who approved or declined the nomination';
 
-/* BugTag */
+-- BugTag
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
 COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';
 COMMENT ON COLUMN BugTag.tag IS 'The text representation of the tag.';
 
-/* OfficialBugTag */
+-- OfficialBugTag
 COMMENT ON TABLE OfficialBugTag IS 'Bug tags that have been officially endorced by this product''s or distribution''s lead';
 
-/* BugTask */
+-- BugTask
 COMMENT ON TABLE BugTask IS 'Links a given Bug to a particular (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.targetnamecache IS 'A cached value of the target name of this bugtask, to make it easier to sort and search on the target name.';
 COMMENT ON COLUMN BugTask.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
@@ -123,7 +122,7 @@ COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment additio
 COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
 
 
-/* BugPackageInfestation */
+-- BugPackageInfestation
 
 COMMENT ON TABLE BugPackageInfestation IS 'A BugPackageInfestation records the impact that a bug is known to have on a specific sourcepackagerelease. This allows us to track the versions of a package that are known to be affected or unaffected by a bug.';
 COMMENT ON COLUMN BugPackageInfestation.bug IS 'The Bug that infests this source package release.';
@@ -136,7 +135,7 @@ COMMENT ON COLUMN BugPackageInfestation.dateverified IS 'The timestamp when the 
 COMMENT ON COLUMN BugPackageInfestation.lastmodified IS 'The timestamp when this infestation report was last modified in any way. For example, when the infestation was adjusted, or it was verified, or otherwise modified.';
 COMMENT ON COLUMN BugPackageInfestation.lastmodifiedby IS 'The person who touched this infestation report last, in any way.';
 
-/* BugProductInfestation */
+-- BugProductInfestation
 
 COMMENT ON TABLE BugProductInfestation IS 'A BugProductInfestation records the impact that a bug is known to have on a specific productrelease. This allows us to track the versions of a product that are known to be affected or unaffected by a bug.';
 COMMENT ON COLUMN BugProductInfestation.bug IS 'The Bug that infests this product release.';
@@ -149,7 +148,7 @@ COMMENT ON COLUMN BugProductInfestation.dateverified IS 'The timestamp when the 
 COMMENT ON COLUMN BugProductInfestation.lastmodified IS 'The timestamp when this infestation report was last modified in any way. For example, when the infestation was adjusted, or it was verified, or otherwise modified.';
 COMMENT ON COLUMN BugProductInfestation.lastmodifiedby IS 'The person who touched this infestation report last, in any way.';
 
-/* BugTracker */
+-- BugTracker
 
 COMMENT ON TABLE BugTracker IS 'A bug tracker in some other project. Malone allows us to link Malone bugs with bugs recorded in other bug tracking systems, and to keep the status of the relevant bug task in sync with the status in that upstream bug tracker. So, for example, you might note that Malone bug #43224 is the same as a bug in the Apache bugzilla, number 534536. Then when the upstream guys mark that bug fixed in their bugzilla, Malone know that the bug is fixed upstream.';
 COMMENT ON COLUMN BugTracker.bugtrackertype IS 'The type of bug tracker, a pointer to the table of bug tracker types. Currently we know about debbugs and bugzilla bugtrackers, and plan to support roundup and sourceforge as well.';
@@ -161,12 +160,12 @@ COMMENT ON COLUMN BugTracker.baseurl IS 'The base URL for this bug tracker. Usin
 COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker entry and who thus has permission to modify it. Ideally we would like this to be the person who coordinates the running of the actual bug tracker upstream.';
 
 
-/* BugCve */
+-- BugCve
 
 COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
 
 
-/* CVE */
+-- CVE
 
 COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';
 COMMENT ON COLUMN CVE.sequence IS 'The official CVE entry number. It takes the form XXXX-XXXX where the first four digits are a year indicator, like 2004, and the latter four are the sequence number of the vulnerability in that year.';
@@ -174,7 +173,7 @@ COMMENT ON COLUMN CVE.status IS 'The current status of the CVE. The values are d
 COMMENT ON COLUMN CVE.datemodified IS 'The last time this CVE entry changed in some way - including addition or modification of references.';
 
 
-/* CveReference */
+-- CveReference
 
 COMMENT ON TABLE CveReference IS 'A reference in the CVE system that shows what outside tracking numbers are associated with the CVE. These are tracked in the CVE database and extracted from the daily XML dump that we fetch.';
 COMMENT ON COLUMN CveReference.source IS 'The SOURCE of the CVE reference. This is a text string, like XF or BUGTRAQ or MSKB. Each string indicates a different kind of reference. The list of known types is documented on the CVE web site. At some future date we might turn this into an enum rather than a text, but for the moment we prefer to keep it fluid and just suck in what CVE gives us. This means that CVE can add new source types without us having to update our code.';
@@ -188,7 +187,7 @@ COMMENT ON COLUMN DevelopmentManifest.distrorelease IS 'The distribution release
 COMMENT ON COLUMN DevelopmentManifest.sourcepackagename IS 'Again, this is just an indicator of the place the developer is primarily targeting the work. This same package may actually be uploaded under a different name somewhere else eventually.';
 
 
-/* DistributionSourcePackageCache */
+-- DistributionSourcePackageCache
 
 COMMENT ON TABLE DistributionSourcePackageCache IS 'A cache of the text associated with binary and source packages in the distribution. This table allows for fast queries to find a source packagename that matches a given text.';
 COMMENT ON COLUMN DistributionSourcePackageCache.distribution IS 'The distribution in which we are checking.';
@@ -200,7 +199,7 @@ COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggr
 COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
 
 
-/* DistroReleasePackageCache */
+-- DistroReleasePackageCache
 
 COMMENT ON TABLE DistroReleasePackageCache IS 'A cache of the text associated with binary packages in the distrorelease. This table allows for fast queries to find a binary packagename that matches a given text.';
 COMMENT ON COLUMN DistroReleasePackageCache.distrorelease IS 'The distrorelease in which we are checking.';
@@ -256,7 +255,7 @@ COMMENT ON COLUMN Product.official_answers IS 'Whether or not this product upstr
 COMMENT ON COLUMN Product.bugcontact IS 'Person who will be automatically subscribed to bugs targetted to this product';
 COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
-/*COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it\'s different from the project bug tracker.'; */
+--COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it\'s different from the project bug tracker.';
 COMMENT ON COLUMN Product.development_focus IS 'The product series that is the current focus of development.';
 COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in the Launchpad.';
 COMMENT ON COLUMN Product.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a product.';
@@ -377,7 +376,7 @@ translation, from the very open (anybody can edit any translation in any
 language) to the completely closed (only designated translators can make any
 changes at all).';
 COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
-/* COMMENT ON COLUMN Project.bugtracker IS 'The external bug tracker that is used to track bugs primarily for products within this project.'; */
+-- COMMENT ON COLUMN Project.bugtracker IS 'The external bug tracker that is used to track bugs primarily for products within this project.';
 COMMENT ON COLUMN Project.homepage_content IS 'A home page for this project in the Launchpad.';
 COMMENT ON COLUMN Project.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a project.';
 COMMENT ON COLUMN Project.mugshot IS 'The library file alias of a mugshot image to display as the branding of a project, on its home page.';
@@ -473,7 +472,7 @@ message set.';
 COMMENT ON COLUMN POMsgSet.reviewer IS 'The person who last reviewd the translations for this message.';
 COMMENT ON COLUMN POMsgSet.date_reviewed IS 'Last time this message was reviewed.';
 
-/* Sprint */
+-- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
 COMMENT ON COLUMN Sprint.time_zone IS 'The timezone of the sprint, stored in text format from the Olsen database names, like "US/Eastern".';
@@ -483,13 +482,13 @@ COMMENT ON COLUMN Sprint.mugshot IS 'The library file alias of a mugshot image t
 COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of this sprint\'s mugshot.';
 
 
-/* SprintAttendance */
+-- SprintAttendance
 COMMENT ON TABLE SprintAttendance IS 'The record that someone will be attending a particular sprint or meeting.';
 COMMENT ON COLUMN SprintAttendance.time_starts IS 'The time from which the person will be available to participate in meetings at the sprint.';
 COMMENT ON COLUMN SprintAttendance.time_ends IS 'The time of departure from the sprint or conference - this is the last time at which the person is available for meetings during the sprint.';
 
 
-/* SprintSpecification */
+-- SprintSpecification
 COMMENT ON TABLE SprintSpecification IS 'The link between a sprint and a specification, so that we know which specs are going to be discussed at which sprint.';
 COMMENT ON COLUMN SprintSpecification.status IS 'Whether or not the spec has been approved on the agenda for this sprint.';
 COMMENT ON COLUMN SprintSpecification.whiteboard IS 'A place to store comments specifically related to this spec being on the agenda of this meeting.';
@@ -498,7 +497,7 @@ COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or dec
 COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
 
 
-/* Question */
+-- Question
 COMMENT ON TABLE Question IS 'A question, or support request, for a distribution or for an application. Such questions are created by end users who need support on a particular feature or package or product.';
 COMMENT ON COLUMN Question.assignee IS 'The person who has been assigned to resolve this question. Note that there is no requirement that every question be assigned somebody. Anybody can chip in to help resolve a question, and if they think they have done so we call them the "answerer".';
 COMMENT ON COLUMN Question.answerer IS 'The person who last claimed to have "solved" this support question, giving a response that the owner believe should be sufficient to close the question. This will move the status of the question to "SOLVED". Note that the only person who can actually set the status to SOLVED is the person who asked the question.';
@@ -515,17 +514,17 @@ COMMENT ON COLUMN Question.dateclosed IS 'The date the requester marked this que
 COMMENT ON COLUMN Question.language IS 'The language of the question''s title and description.';
 COMMENT ON COLUMN Question.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the question. So its a useful way for projects to add their own semantics or metadata to the Answer Tracker.';
 
-/* QuestionBug */
+-- QuestionBug
 
 COMMENT ON TABLE QuestionBug IS 'A link between a question and a bug, showing that the bug is somehow related to this question.';
 
-/* QuestionMessage */
+-- QuestionMessage
 
 COMMENT ON TABLE QuestionMessage IS 'A link between a question and a message. This means that the message will be displayed on the question page.';
 COMMENT ON COLUMN QuestionMessage.action IS 'The action on the question that was done with this message. This is a value from the QuestionAction enum.';
 COMMENT ON COLUMN QuestionMessage.new_status IS 'The status of the question after this message.';
 
-/* QuestionReopening */
+-- QuestionReopening
 
 COMMENT ON TABLE QuestionReopening IS 'A record of the times when a question was re-opened. In each case we store the time that it happened, the person who did it, and the person who had previously answered / rejected the question.';
 COMMENT ON COLUMN QuestionReopening.reopener IS 'The person who reopened the question.';
@@ -533,12 +532,12 @@ COMMENT ON COLUMN QuestionReopening.answerer IS 'The person who was previously l
 COMMENT ON COLUMN QuestionReopening.priorstate IS 'The state of the question before it was reopened. You can reopen a question that is ANSWERED, or CLOSED, or REJECTED.';
 
 
-/* QuestionSubscription */
+-- QuestionSubscription
 
 COMMENT ON TABLE QuestionSubscription IS 'A subscription of a person to a particular question.';
 
 
-/* DistroReleaseLanguage */
+-- DistroReleaseLanguage
 
 COMMENT ON TABLE DistroReleaseLanguage IS 'A cache of the current translation status of that language across an entire distrorelease.';
 COMMENT ON COLUMN DistroReleaseLanguage.dateupdated IS 'The date these statistucs were last updated.';
@@ -547,7 +546,7 @@ COMMENT ON COLUMN DistroReleaseLanguage.updatescount IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.rosettacount IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.contributorcount IS 'The total number of contributors to the translation of this distrorelease into this language.';
 
-/* Manifest */
+-- Manifest
 
 COMMENT ON TABLE Manifest IS 'A Manifest describes the branches that go into
 making up a source package or product release. This allows us to describe
@@ -558,7 +557,7 @@ ANYTHING that points TO a manifest, such as ProductRelease or
 SourcePackageRelease, has an owner, so that we do not end up with orphaned
 manifests.';
 
-/* Calendar */
+-- Calendar
 
 COMMENT ON TABLE Calendar IS 'A Calendar attached to some other Launchpad object (currently People, Projects or Products)';
 COMMENT ON COLUMN Calendar.title IS 'The title of the Calendar';
@@ -587,7 +586,7 @@ COMMENT ON COLUMN BinaryPackageName.name IS
 COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
 
 
-/* Distribution */
+-- Distribution
 
 COMMENT ON COLUMN Distribution.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and
@@ -606,7 +605,7 @@ COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product 
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
 COMMENT ON COLUMN Distribution.main_archive IS 'The Archive used to publish this distribution.';
 
-/* DistroRelease */
+-- DistroRelease
 
 COMMENT ON COLUMN DistroRelease.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and
