@@ -262,6 +262,30 @@ class POMessage(object):
         "\n"
         msgstr ""
 
+        When the wrapping size was exactly gotten past by in the middle of
+        escape sequence like \" or \\, it got cut off in there, thus
+        creating a broken PO message.  This is bug #46156.
+        >>> pomsg = POMessage(
+        ...     msgid="1234567890abcde word\"1234567890abcdefghij",
+        ...     msgstr="")
+        >>> print pomsg.__unicode__(20)
+        msgid ""
+        "1234567890abcde "
+        "word\"1234567890abcd"
+        "efghij"
+        msgstr ""
+
+        Lets also make sure that the unconditional break is not occurring
+        inside a single long word in the middle of the escape sequence
+        like \" or \\:
+        >>> pomsg = POMessage(
+        ...     msgid="1234567890abcdefghij\\klmno",
+        ...     msgstr="")
+        >>> print pomsg.__unicode__(20)
+        msgid ""
+        "1234567890abcdefghij"
+        "\\klmno"
+        msgstr ""
 
         '''
         if wrap_width is None:
@@ -290,7 +314,7 @@ class POMessage(object):
             else:
                 paragraph += u'\\n'
             if len(paragraph) <= wrap_width:
-                wrapped_line = [u'%s%s' % (u'"', paragraph)]
+                wrapped_line = [paragraph]
             else:
                 line = u''
                 new_block = u''
@@ -303,14 +327,24 @@ class POMessage(object):
                         else:
                             new_block += char
                     else:
-                        wrapped_line.append(u'%s%s' % (u'"', line))
-                        line = u'%s%s' % (new_block, char)
-                        new_block = u''
+                        if not len(line):
+                            # Word is too long to fit into single line,
+                            # break it carefully, watching not to break
+                            # in the middle of the escape
+                            if new_block[wrap_width-1] == '\\':
+                                line = new_block[:wrap_width-1]
+                                new_block = new_block[wrap_width-1:]
+                            else:
+                                line = new_block[:wrap_width]
+                                new_block = new_block[wrap_width:]
+                        wrapped_line.append(line)
+                        line = u''
+                        new_block += char
+                        continue
                 if line or new_block:
-                    wrapped_line.append(u'%s%s%s' % (u'"', line, new_block))
-            for line in wrapped_line[:-1]:
-                wrapped_lines.append(u'%s%s' % (line, u'"'))
-            wrapped_lines.append(u'%s%s' % (wrapped_line[-1], u'"'))
+                    wrapped_line.append(u'%s%s' % (line, new_block))
+            for line in wrapped_line:
+                wrapped_lines.append(u'"%s"' % (line))
         return wrapped_lines
 
 class POHeader(dict, POMessage):
