@@ -13,7 +13,11 @@ First of all we'll create a new mirror for the Ubuntu distribution...
  
     >>> browser.url
     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive'
- 
+    >>> print extract_text(find_tag_by_id(browser.contents, 'mirror-details'))
+    Speed: 1 Mbps
+    Country: Antarctica
+    Content: Archive
+
 Note that even though the http_url we used didn't contain a trailing slash,
 the value stored in our database will contain it.
  
@@ -57,26 +61,25 @@ The mirror can't be probed before it's marked as official by one of the
 distribution owners.
  
     >>> browser.open(
-    ...   'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/')
-    >>> 'mirror "My.mirror.com-archive"' in browser.contents
-    True
- 
-    >>> "This mirror is an unofficial" in browser.contents
-    True
-    >>> "and will not be verified" in browser.contents
-    True
- 
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'last-probe'))
+    Last probe
+    This mirror is an unofficial Ubuntu Linux mirror, and will not be
+    verified.
+
 To make a mirror official, one has to go to the +mark-official page, which
 is accessible only to mirror admins of that distribution and the
 distribution owner.
  
     >>> browser.open(
-    ...   'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+mark-official')
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/'
+    ...     '+mark-official')
     Traceback (most recent call last):
     ...
     Unauthorized...
  
-Now one of the mirror administrators goes and make this an official mirror.
+Now one of the mirror administrators goes and make this an official mirror,
+leaving a comment on the whiteboard (which is only visible to mirror admins).
  
     # XXX: matsubara 2006-05-18: We need to reset the Browser object to
     # reset the headers.  https://launchpad.net/launchpad/+bug/45226
@@ -86,22 +89,21 @@ Now one of the mirror administrators goes and make this an official mirror.
  
     >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
     >>> browser.open(
-    ...   'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+mark-official')
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
+    >>> browser.getLink('Mark as official').click()
  
     >>> official_approved = browser.getControl(
     ...     'This is one of the official mirrors of this distribution')
     >>> official_approved.selected = True
+    >>> browser.getControl('Whiteboard').value = 'This is a good mirror'
     >>> browser.getControl('Save').click()
  
     >>> browser.url
     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive'
- 
- 
-And in the mirror's main page we can now see that it's an official mirror.
- 
-    >>> 'Official' in browser.contents
-    True
-
+    >>> print extract_text(find_tag_by_id(browser.contents, 'whiteboard'))
+    This is a good mirror 
+    >>> print extract_text(find_tag_by_id(browser.contents, 'status'))
+    Official Ubuntu Linux Mirror registered by Sample Person ... 
 
 == Error checking ==
 

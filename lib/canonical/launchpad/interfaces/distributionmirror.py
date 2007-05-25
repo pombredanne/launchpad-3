@@ -13,7 +13,7 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
-from canonical.launchpad.fields import ContentNameField, URIField
+from canonical.launchpad.fields import ContentNameField, URIField, Whiteboard
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad import _
@@ -152,6 +152,10 @@ class IDistributionMirror(Interface):
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    whiteboard = Whiteboard(
+        title=_('Whiteboard'), required=False,
+        description=_('Notes on the current status of the mirror (only '
+                      'visible to admins).'))
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
