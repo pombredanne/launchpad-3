@@ -190,7 +190,8 @@ class BuilderGroup:
         actions for each state.
         """
         try:
-            res = queueItem.builder.slaveStatusSentence()
+            (builder_status, build_id, build_status, logtail, filemap,
+             dependencies) = queueItem.builder.slaveStatus()
         except (xmlrpclib.Fault, socket.error), info:
             # XXX cprov 20050629
             # Hmm, a problem with the xmlrpc interface,
@@ -202,8 +203,6 @@ class BuilderGroup:
             # keep the job for scan
             return
 
-        # res = ('<status>', ..., ...)
-        builder_status = res[0]
         builder_status_handlers = {
             'BuilderStatus.IDLE': self.updateBuild_IDLE,
             'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
@@ -229,14 +228,16 @@ class BuilderGroup:
         try:
             # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
             slave = removeSecurityProxy(queueItem.builder.slave)
-            method(queueItem, slave, librarian, *res[1:])
+            method(queueItem, slave, librarian, build_id,
+                   build_status, logtail, filemap, dependencies)
         except TypeError, e:
             self.logger.critical("Received wrong number of args in response.")
             self.logger.exception(e)
 
         self.commit()
 
-    def updateBuild_IDLE(self, queueItem, slave, librarian, info):
+    def updateBuild_IDLE(self, queueItem, slave, librarian, buildid,
+                         build_status, logtail, filemap, dependencies):
         """Somehow the builder forgot about the build job, log this and reset
         the record.
         """
@@ -250,19 +251,21 @@ class BuilderGroup:
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
 
     def updateBuild_BUILDING(self, queueItem, slave, librarian, buildid,
-                             logtail):
+                             build_status, logtail, filemap, dependencies):
         """Build still building, Simple collects the logtail"""
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
         queueItem.logtail = encoding.guess(str(logtail))
 
-    def updateBuild_ABORTING(self, queueItem, slave, librarian, buildid):
+    def updateBuild_ABORTING(self, queueItem, slave, librarian, buildid,
+                             buildstatus, logtail, filemap, dependencies):
         """Build was ABORTED.
 
         Master-side should wait until the slave finish the process correctly.
         """
         queueItem.logtail = "Waiting for slave process to be terminated"
 
-    def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid):
+    def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid,
+                            build_status, logtail, filemap, dependencies):
         """ABORTING process has successfully terminated.
 
         Clean the builder for another jobs.
@@ -273,8 +276,8 @@ class BuilderGroup:
         queueItem.buildstart = None
         queueItem.build.buildstate = dbschema.BuildStatus.BUILDING
 
-    def updateBuild_WAITING(self, queueItem, slave, librarian, buildstatus,
-                            buildid, filemap=None, dependencies=None):
+    def updateBuild_WAITING(self, queueItem, slave, librarian, buildid,
+                            build_status, logtail, filemap, dependencies):
         """Perform the actions needed for a slave in a WAITING state
 
         Buildslave can be WAITING in five situations:
@@ -288,9 +291,9 @@ class BuilderGroup:
           the uploader for processing.
         """
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
-        assert buildstatus.startswith('BuildStatus.')
+        assert build_status.startswith('BuildStatus.')
 
-        buildstatus = buildstatus[len('BuildStatus.'):]
+        buildstatus = build_status[len('BuildStatus.'):]
         method = getattr(self, 'buildStatus_' + buildstatus, None)
 
         if method is None:

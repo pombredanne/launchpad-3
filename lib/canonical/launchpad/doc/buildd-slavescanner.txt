@@ -448,9 +448,11 @@ not yet factored into the content class.
   ABORTED -> builder was aborted, release builder and reset job for
   the next build round:
 
-  >>> bqItem8 = MockBuildQueue(6, builder8, MockBuild(6))
+  >>> a_builder.setSlaveForTesting(AbortedSlave())
+
+  >>> bqItem8 = MockBuildQueue(6, a_builder, MockBuild(6))
   >>> bqItem8.builder.name
-  'I was aborted'
+  u'bob'
   >>> buildergroup.updateBuild(bqItem8, librarian)
   >>> bqItem8.builder is None
   True
@@ -459,9 +461,11 @@ not yet factored into the content class.
   only action master can perform is polling the slave status until it gets
   ABORTED
 
-  >>> bqItem9 = MockBuildQueue(7, builder9, MockBuild(7))
+  >>> a_builder.setSlaveForTesting(AbortingSlave())
+
+  >>> bqItem9 = MockBuildQueue(7, a_builder, MockBuild(7))
   >>> bqItem9.builder.name
-  'I am trying to terminate the child process'
+  u'bob'
   >>> buildergroup.updateBuild(bqItem9, librarian)
   >>> bqItem9.build.notification_sent
   False
