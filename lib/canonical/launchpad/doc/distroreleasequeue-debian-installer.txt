@@ -42,6 +42,9 @@ happen in production:
   >>> import_public_test_keys()
   >>> login('foo.bar@canonical.com')
 
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
   >>> from canonical.archiveuploader.tests import (
   ...     datadir, getPolicy, mock_logger, mock_logger_quiet)
@@ -120,6 +123,7 @@ Process (publish) the custom upload:
 The current debian-installer directory (20070214ubuntu1) and a link to
 the last version (we only have the one we uploaded) should be
 presented:
+
   >>> sorted(os.listdir(installer_path))
   ['20070214ubuntu1', 'current']
 

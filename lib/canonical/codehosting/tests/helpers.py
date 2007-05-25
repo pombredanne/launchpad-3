@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Common helpers for supermirrorsftp tests."""
+"""Common helpers for codehosting tests."""
 
 __metaclass__ = type
 __all__ = ['AvatarTestCase']

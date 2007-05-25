@@ -97,8 +97,8 @@ __all__ = (
 'TranslationPriority',
 'TranslationPermission',
 'TranslationValidationStatus',
-'DistroReleaseQueueStatus',
-'DistroReleaseQueueCustomFormat',
+'PackageUploadStatus',
+'PackageUploadCustomFormat',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
 )
@@ -1849,11 +1849,11 @@ class TranslationPermission(DBSchema):
         reviewed before being accepted by the designated translator.""")
 
 
-class DistroReleaseQueueStatus(DBSchema):
+class PackageUploadStatus(DBSchema):
     """Distro Release Queue Status
 
     An upload has various stages it must pass through before becoming part
-    of a DistroRelease. These are managed via the DistroReleaseQueue table
+    of a DistroRelease. These are managed via the Upload table
     and related tables and eventually (assuming a successful upload into the
     DistroRelease) the effects are published via the PackagePublishing and
     SourcePackagePublishing tables.  """
@@ -1906,7 +1906,7 @@ class DistroReleaseQueueStatus(DBSchema):
 # If you change this (add items, change the meaning, whatever) search for
 # the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
 # update the stuff marked with it.
-class DistroReleaseQueueCustomFormat(DBSchema):
+class PackageUploadCustomFormat(DBSchema):
     """Custom formats valid for the upload queue
 
     An upload has various files potentially associated with it, from source

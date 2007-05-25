@@ -3,13 +3,13 @@ Let's remove the Hoary Gnome Team, they are not really translators. We
 should be redirected to the polyglot page.
 
   >>> admin_browser.open(
-  ...     'http://translations.launchpad.dev/+translation-groups/' +
+  ...     'http://translations.launchpad.dev/+groups/' +
   ...         'polyglot/ab/+remove')
   >>> print admin_browser.url
-  http://translations.launchpad.dev/+translation-groups/polyglot/ab/+remove
+  http://translations.launchpad.dev/+groups/polyglot/ab/+remove
   >>> admin_browser.getControl('Remove').click()
   >>> print admin_browser.url
-  http://translations.launchpad.dev/+translation-groups/polyglot
+  http://translations.launchpad.dev/+groups/polyglot
 
 And on that page, we should see the removal message.
 

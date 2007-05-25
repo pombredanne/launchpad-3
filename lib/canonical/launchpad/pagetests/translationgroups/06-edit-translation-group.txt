@@ -1,27 +1,27 @@
 When editing translation group details, we could rename the translation group.
 
   >>> admin_browser.open(
-  ...     'http://translations.launchpad.dev/+translation-groups')
+  ...     'http://translations.launchpad.dev/+groups')
   >>> print admin_browser.url
-  http://translations.launchpad.dev/+translation-groups
+  http://translations.launchpad.dev/+groups
 
 We can see that the translation group that we are going to duplicate
 exists already:
 
   >>> print admin_browser.getLink('The PolyGlot Translation Group').url
-  http://translations.launchpad.dev/+translation-groups/polyglot
+  http://translations.launchpad.dev/+groups/polyglot
 
 Navigate to the one we are going to rename.
 
   >>> admin_browser.getLink('Just a testing team').click()
   >>> print admin_browser.url
-  http://translations.launchpad.dev/+translation-groups/testing-translation-team
+  http://translations.launchpad.dev/+groups/testing-translation-team
 
 And select to edit its details.
 
   >>> admin_browser.getLink('Edit translation group details').click()
   >>> print admin_browser.url
-  http://translations.launchpad.dev/+translation-groups/testing-translation-team/+edit
+  http://translations.launchpad.dev/+groups/testing-translation-team/+edit
 
 Change the name.
 
@@ -32,7 +32,7 @@ The system detected that we tried to use an already existing name, so we
 didn't move away from this form.
 
   >>> print admin_browser.url
-  http://translations.launchpad.dev/+translation-groups/testing-translation-team/+edit
+  http://translations.launchpad.dev/+groups/testing-translation-team/+edit
   >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
   ...     print tag.renderContents()
   There is 1 error.
@@ -43,7 +43,7 @@ Chossing another name should work though.
   >>> admin_browser.getControl('Name').value = u'renamed-group'
   >>> admin_browser.getControl('Change').click()
   >>> print admin_browser.url
-  http://translations.launchpad.dev/+translation-groups/renamed-group
+  http://translations.launchpad.dev/+groups/renamed-group
   >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
   ...     print tag.renderContents()
 
