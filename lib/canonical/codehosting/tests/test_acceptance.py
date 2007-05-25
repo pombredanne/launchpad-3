@@ -14,7 +14,7 @@ import gc
 import threading
 
 import bzrlib.branch
-from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
+from bzrlib.tests import TestCaseWithMemoryTransport
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
 # XXX -- Unused, but needed to work-around bug in bzr 0.11
@@ -31,14 +31,13 @@ from twisted.internet import defer, threads
 from twisted.python.util import sibpath
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-import canonical
 from canonical.config import config
 from canonical.database.sqlbase import cursor, commit
 from canonical.launchpad import database
 from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.daemons.sftp import SFTPService
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.supermirrorsftp.sftponly import (
+from canonical.codehosting.sftponly import (
     BazaarFileTransferServer, SFTPOnlyAvatar)
 from canonical.database.sqlbase import sqlvalues
 from canonical.testing import TwistedLayer
@@ -484,7 +483,7 @@ class AcceptanceTests(SFTPTestCase):
     #    There should be an API that can generate a URL for a branch for
     #    copy-to-mirror script to use. For example, for a branch with a database
     #    ID of 0xabcdef12, the URL may be something like
-    #    `/srv/supermirrorsftp/branches/ab/cd/ef/12`.
+    #    `/srv/codehosting/branches/ab/cd/ef/12`.
     # This is covered by
     # canonical.launchpad.ftests.test_branchpulllist.test_branch_pull_render
 
@@ -535,8 +534,7 @@ def test_suite():
     from bzrlib.repository import (
         format_registry, RepositoryTestProviderAdapter)
     from bzrlib.repofmt.weaverepo import RepositoryFormat6
-    from bzrlib.tests import (
-        adapt_modules, default_transport, TestSuite, iter_suite_tests)
+    from bzrlib.tests import default_transport, iter_suite_tests
     supported_formats = [RepositoryFormat6()]
     supported_formats.extend([
         format_registry.get(k) for k in format_registry.keys()])

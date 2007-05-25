@@ -20,6 +20,7 @@
 
 <div metal:fill-slot="main">
 
+  <span metal:define-macro="object-reassignment">
   <p
     tal:condition="view/errormessage"
     class="error message"
@@ -72,6 +73,8 @@
         </td>
       </tr>
     </table>
+  </form>
+  </span>
 
 </div> 
 

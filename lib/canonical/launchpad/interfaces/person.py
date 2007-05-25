@@ -238,6 +238,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         title=_("This is an active user and not a team."), readonly=True)
     is_valid_person_or_team = Bool(
         title=_("This is an active user or a team."), readonly=True)
+    is_openid_enabled = Bool(
+        title=_("This user can use Launchpad as an OpenID provider."),
+        readonly=True)
     is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -401,6 +404,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
+
+    archive = Attribute(
+        "The Archive owned by this person, his PPA.")
 
     @invariant
     def personCannotHaveIcon(person):

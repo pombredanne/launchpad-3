@@ -45,6 +45,8 @@ BlueprintsLayer = BlueprintLayer
 class AnswersLayer(LaunchpadLayer):
     """The `AnswersLayer` layer."""
 
+class OpenIdLayer(LaunchpadLayer):
+    """The `OpenId` layer."""
 
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
