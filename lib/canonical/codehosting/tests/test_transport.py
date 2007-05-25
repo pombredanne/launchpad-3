@@ -68,6 +68,7 @@ class TestLaunchpadServer(TestCaseInTempDir):
         # Setting up the server registers its schema with the protocol
         # handlers.
         self.server.setUp()
+        self.addCleanup(self.server.tearDown)
         self.assertTrue(self.server.scheme in _get_protocol_handlers().keys())
 
     def test_tearDown(self):
