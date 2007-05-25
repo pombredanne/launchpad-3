@@ -147,7 +147,7 @@
     <allow interface="canonical.launchpad.interfaces.IBranchVisibilityPolicyItem" />
   </content>
 
-  <content class="canonical.launchpad.database.BranchVisibilityPolicyList">
+  <content class="canonical.launchpad.database.BranchVisibilityPolicy">
     <allow interface="canonical.launchpad.interfaces.IBranchVisibilityPolicy" />
     <require
         permission="zope.Public"

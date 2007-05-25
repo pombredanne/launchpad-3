@@ -16,17 +16,20 @@ The Policy is defined by the enumerated type BranchVisibilityPolicy.
 
     >>> from canonical.lp.dbschema import BranchVisibilityPolicy
 
-There are currently two visibility policies: public and private.  It is
-conceivable that we could also implement a "security policy" to allow
-the creation of security branches by particular teams, or to define an
-"forbidden policy" that will not allow particular teams to create
-branches at all.  The security and forbidden policies are not currently
-implemented and are documented here so we don't lose the idea.
+There are currently four visibility policies:
+ * Public - branches are public by default for the specified team.
+ * Private - branches are private by default for the specified team.
+ * Private only - branches are private by default, and the owner
+     of the branch is not able to make them public.
+ * Forbidden - members of the specified team are not able to create
+     branches in the context.
 
     >>> for item in BranchVisibilityPolicy.items:
     ...     print repr(item)
     <Item PUBLIC (1) from ...>
     <Item PRIVATE (2) from ...>
+    <Item PRIVATE_ONLY (3) from ...>
+    <Item FORBIDDEN (4) from ...>
 
 
 == IHasBranchVisibilityPolicy ==
@@ -64,28 +67,22 @@ attribute implements IBranchVisibilityPolicy.
 The policy object has a context that refers to the object that the
 policy applies to.
 
-    >>> print policy.context.name
-    firefox
+    >>> policy.context == firefox
+    True
 
-    >>> print mozilla.branch_visibility_policy.context.name
-    mozilla
+    >>> mozilla.branch_visibility_policy.context == mozilla
+    True
 
-== Teams and people to work with ==
+
+== Teams to work with ==
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> launchpad_team = person_set.getByName('launchpad')
     >>> ubuntu_gnome_team = person_set.getByName('name18')
-    >>> foo_bar = person_set.getByName('name16')
-    >>> sample_person = person_set.getByName('name12')
-    >>> no_priv = person_set.getByName('no-priv')
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> launchpad = getUtility(IProductSet).getByName('launchpad')
     >>> policy = launchpad.branch_visibility_policy
-
-foo_bar is a member of both the launchpad team and the ubuntu gnome
-team.  sample_person is an indirect member of the ubuntu_gnome_team.
-no_priv is not a member of any team.
 
     >>> def teamname(team):
     ...     if team is None:
@@ -96,6 +93,7 @@ no_priv is not a member of any team.
     >>> def print_policy_items(policy):
     ...     for item in policy.items:
     ...         print "%s: %s" % (teamname(item.team), item.policy.title)
+
 
 == Default policy ==
 
@@ -109,6 +107,7 @@ this is done by specifying None for the team.
     >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.PUBLIC)
     >>> print_policy_items(policy)
     *everyone*: Public
+
 
 == Setting the policy for teams ==
 
@@ -129,25 +128,24 @@ Setting again replaces the policy.
 
 Setting the policy for *everyone* is done by passing None for the team.
 
-    >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.PRIVATE)
+    >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.FORBIDDEN)
     >>> print_policy_items(policy)
-    *everyone*: Private
+    *everyone*: Forbidden
     Launchpad Developers: Private
 
-    >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.PUBLIC)
 
 == Removing teams from the policy object ==
 
     >>> policy.removeTeam(launchpad_team)
     >>> print_policy_items(policy)
-    *everyone*: Public
+    *everyone*: Forbidden
 
 Attempting to remove a team that doesn't exist is allowed, but does not
 change the state of the policy object.
 
     >>> policy.removeTeam(launchpad_team)
     >>> print_policy_items(policy)
-    *everyone*: Public
+    *everyone*: Forbidden
 
 In order to remove a policy assigned to everyone you pass None in for
 the team name.
@@ -172,54 +170,6 @@ with the policy for *everybody* being first.
     *everyone*: Public
     Launchpad Developers: Private
     Ubuntu Gnome Team: Private
-
-
-== Checking the visibility team for a user ==
-
-When the branch is created, the visibility team of the owner of the
-branch is used to determine the visibility team of the branch.
-
-The visibility team of a branch is used to determine who can see that
-branch.  If the visibility team is None, then the branch is visible to
-everyone, otherwise the branch is just visible to members of the
-visibility team.
-
-The visibility team of the owner of the branch is determined by the
-policy object of the project that the branch is associated with.
-
-If the user is a member of a team that has private branches, then the
-visibility team for that user will be the team.
-
-If the user is a member of multiple teams that have private branches set
-then the default visibibility team is the user themselves.  It is then
-up to the user to set the appropriate team for the branch at a later
-date.
-
-
-    >>> print teamname(policy.branchVisibilityTeamForUser(no_priv))
-    *everyone*
-
-    >>> print teamname(policy.branchVisibilityTeamForUser(sample_person))
-    Ubuntu Gnome Team
-
-    >>> print teamname(policy.branchVisibilityTeamForUser(foo_bar))
-    Foo Bar
-
-
-If the default policy for *everyone* is PRIVATE, then if the user
-is not a member of any team that has the private policy set then the
-visibility team is the user themselves.
-
-    >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.PRIVATE)
-
-    >>> print teamname(policy.branchVisibilityTeamForUser(no_priv))
-    No Privileges Person
-
-    >>> print teamname(policy.branchVisibilityTeamForUser(sample_person))
-    Ubuntu Gnome Team
-
-    >>> print teamname(policy.branchVisibilityTeamForUser(foo_bar))
-    Foo Bar
 
 
 == Inherited policies ==
@@ -258,7 +208,6 @@ there is no inherited policy.
     None
     >>> print launchpad_policy.isUsingInheritedPolicy()
     False
-
 
 Adding a team to the mozilla project will also affect products
 associated with the mozilla project that are inheriting the project's

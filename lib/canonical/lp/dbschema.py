@@ -2610,16 +2610,29 @@ class BranchVisibilityPolicy(DBSchema):
 
     PUBLIC = Item(1, """
         Public
-        
+
         Branches are public by default.
-       """)
+        """)
 
     PRIVATE = Item(2, """
         Private
 
         Branches are private by default.
         """)
-    
+
+    PRIVATE_ONLY = Item (3, """
+        Private only
+
+        Branches are private by default. Branch owners are not able
+        to change the visibility of the branches to public.
+        """)
+
+    FORBIDDEN = Item(4, """
+        Forbidden
+
+        Users are not able to create branches in the context.
+        """)
+
 
 class BugNominationStatus(DBSchema):
     """Bug Nomination Status

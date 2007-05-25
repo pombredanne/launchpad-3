@@ -47,7 +47,12 @@ class IBranchVisibilityPolicyItem(Interface):
 class IBranchVisibilityPolicy(Interface):
     """Specifies a list of branch visibility policy items."""
 
-    items = Attribute("A list of policy items")
+    items = Attribute("""
+        A list of policy items.
+
+        If there is a policy that does not have a team set, this
+        policy item is returned as the first item of the sequence.
+        """)
 
     context = Attribute("The object that the policy applies to")
 
@@ -57,7 +62,12 @@ class IBranchVisibilityPolicy(Interface):
         context.""")
 
     def isUsingInheritedPolicy():
-        """Return True if using policy from the inherited context."""
+        """Return True if using policy from the inherited context.
+
+        BranchVisibilityPolicy objects for products are constructed with the
+        BranchVisibilityPolicy objects of their projects if they have a
+        project.  Projects can't have inherited policies.
+        """
 
     def setTeamPolicy(team, policy):
         """Set the policy for the team.
@@ -73,7 +83,3 @@ class IBranchVisibilityPolicy(Interface):
         object is unchanged.  Attempting to remove the team None returns
         the policy for everyone back to the default, which is Public.
         """
-
-    def branchVisibilityTeamForUser(user):
-        """Return the initial branch visibility for the specified user."""
-

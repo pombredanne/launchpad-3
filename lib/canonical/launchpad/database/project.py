@@ -27,7 +27,7 @@ from canonical.lp.dbschema import (
     SpecificationFilter, SprintSpecificationStatus)
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
-    BranchVisibilityPolicyList)
+    BranchVisibilityPolicy)
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -101,7 +101,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def branch_visibility_policy(self):
         """See IHasBranchVisibilityPolicy."""
-        return BranchVisibilityPolicyList(project=self)
+        return BranchVisibilityPolicy(project=self)
 
     @property
     def products(self):

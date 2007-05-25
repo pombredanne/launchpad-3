@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'BranchVisibilityPolicyItem',
-    'BranchVisibilityPolicyList',
+    'BranchVisibilityPolicy',
     ]
 
 from zope.interface import implements
@@ -16,7 +16,8 @@ from sqlobject import ForeignKey
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.lp.dbschema import BranchVisibilityPolicy
+from canonical.lp.dbschema import (
+    BranchVisibilityPolicy as BranchVisibilityPolicyEnum)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
@@ -32,8 +33,9 @@ class BranchVisibilityPolicyItem(SQLBase):
     project = ForeignKey(dbName='project', foreignKey='Project')
     product = ForeignKey(dbName='product', foreignKey='Product')
     team = ForeignKey(dbName='team', foreignKey='Person', default=None)
-    policy = EnumCol(schema=BranchVisibilityPolicy, notNull=True,
-        default=BranchVisibilityPolicy.PUBLIC)
+    policy = EnumCol(
+        schema=BranchVisibilityPolicyEnum, notNull=True,
+        default=BranchVisibilityPolicyEnum.PUBLIC)
 
 
 def policy_item_key(item):
@@ -42,7 +44,7 @@ def policy_item_key(item):
     return item.team.displayname
 
 
-class BranchVisibilityPolicyList:
+class BranchVisibilityPolicy:
     """Specifies a list of branch visibility policy items."""
 
     implements(IBranchVisibilityPolicy)
@@ -60,18 +62,18 @@ class BranchVisibilityPolicyList:
             self.context = project
             self.product = None
             self.project = project
-        
-        self.inherited_policy = inherited_policy
-        self._loadItems()
 
-    def _loadItems(self):
-        # The query is listified here to get something we can
-        # actually query the length of.
+        self.inherited_policy = inherited_policy
+
+    @property
+    def policy_items(self):
+        # The query is shortlisted to demonstrate that we are only expecting a
+        # few items, and to give warnings if too many items start appearing.
         if self.product is not None:
             query = "BranchVisibilityPolicy.product = %s" % self.product.id
         else:
             query = "BranchVisibilityPolicy.project = %s" % self.project.id
-        self.policy_items = shortlist(BranchVisibilityPolicyItem.select(query))
+        return shortlist(BranchVisibilityPolicyItem.select(query))
 
     @property
     def items(self):
@@ -99,44 +101,12 @@ class BranchVisibilityPolicyList:
             item = BranchVisibilityPolicyItem(
                 product=self.product, project=self.project, team=team,
                 policy=policy)
-            self._loadItems()
         else:
             item.policy = policy
-        
+
     def removeTeam(self, team):
         """See IBranchVisibilityPolicy."""
         item = BranchVisibilityPolicyItem.selectOneBy(
             product=self.product, project=self.project, team=team)
         if item is not None:
             BranchVisibilityPolicyItem.delete(item.id)
-            self._loadItems()
-
-    def branchVisibilityTeamForUser(self, user):
-        """See IBranchVisibilityPolicy."""
-        # We use the items property here in order to correctly handle
-        # the situations where we are using inherited values.
-        items = self.items
-
-        if len(items) == 0:
-            # If there are no policy items defined, then it must be public.
-            return None
-
-        if items[0].team is None:
-            default_policy = items.pop(0).policy
-        else:
-            default_policy = BranchVisibilityPolicy.PUBLIC
-
-        teams = []
-        for item in items:
-            if (user.inTeam(item.team) and
-                item.policy != BranchVisibilityPolicy.PUBLIC):
-                teams.append(item.team)
-        team_count = len(teams)
-        if team_count == 1:
-            return teams[0]
-        elif team_count > 1:
-            return user
-        elif default_policy == BranchVisibilityPolicy.PUBLIC:
-            return None
-        else:
-            return user
