@@ -1388,7 +1388,7 @@ new imports with the information being copied.
             'active OR published')
 
         # Now pour the holding tables back into the originals
-        copier.pourHoldingTables()
+        copier.pourHoldingTables(ztm)
 
 
     def _copyActiveTranslationsAsUpdate(self, logger):
@@ -1758,14 +1758,14 @@ new imports with the information being copied.
             ]
 
         full_name = "%s_%s" % (self.distribution.name, self.name)
-        copier = MultiTableCopy(full_name, translation_tables, logger, ztm)
+        copier = MultiTableCopy(full_name, translation_tables, logger)
 
         if len(self.potemplates) == 0:
             # We're a new distrorelease; copy from scratch
             self._copyActiveTranslationsToNewRelease(logger, ztm, copier)
         elif copier.hasRecoverableHoldingTables():
             # Recover data from previous, abortive run
-            copier.pourHoldingTables()
+            copier.pourHoldingTables(ztm)
         else:
             # Incremental copy of updates from parent distrorelease
             self._copyActiveTranslationsAsUpdate(logger)

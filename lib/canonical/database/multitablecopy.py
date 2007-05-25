@@ -15,11 +15,21 @@ class MultiTableCopy:
 
     This allows data from a combination of tables, possibly with foreign-key
     references between them, to be copied to a set of corresponding "holding
-    tables;" processed and modfied there; and then be inserted back to the
+    tables;" processed and modified there; and then be inserted back to the
     original tables.  The holding tables are created on demand and dropped
     upon completion.
 
-    This is a two-stage process:
+    You can tell the algorithm to redirect foreign keys.  Say you're copying a
+    row x1 in a table X, and x1 has a foreign key referring to a row y1 in a
+    table Y that you're also copying.  You will get copied rows x2 and y2
+    respectively.  But if you declare the foreign-key relationship between X
+    and Y to the algorithm, then x2's instance of that foreign key will refer
+    not to y1 but to the new y2.  Any rows in X whose associated rows of Y are
+    not copied, are also not copied.  This can be useful when copying data in
+    entire sub-trees of the schema graph, e.g. "one distrorelease and all the
+    translations associated with it."
+
+    All this happens in a two-stage process:
 
     1. Extraction stage.  Use the extractToHoldingTable method to copy
     selected data to a holding table, one table at a time.  Ordering matters:
@@ -76,7 +86,7 @@ class MultiTableCopy:
     """
     # XXX: JeroenVermeulen 2007-05-24, More quoting, fewer assumptions!
 
-    def __init__(self, name, tables, logger=None, ztm=None, time_goal=4):
+    def __init__(self, name, tables, logger=None, time_goal=4):
         """Define a MultiTableCopy, including an in-order list of tables.
 
         The name parameter is a unique identifier for this MultiTableCopy
@@ -96,7 +106,6 @@ class MultiTableCopy:
         self.name = name
         self.tables = tables
         self.logger = logger
-        self.ztm = ztm
         self.time_goal = time_goal
         self.last_extracted_table = None
 
@@ -105,7 +114,7 @@ class MultiTableCopy:
         postgresql.drop_tables(cursor(),
             [self.getHoldingTableName(t) for t in self.tables])
 
-    def _getRawHoldingTableName(self, tablename, suffix=''):
+    def getRawHoldingTableName(self, tablename, suffix=''):
         """Name for a holding table, but without quotes.  Use with care."""
         if suffix:
             suffix = '_%s' % suffix
@@ -118,7 +127,7 @@ class MultiTableCopy:
         Return value is properly quoted for use as an SQL identifier.
         """
         return str(
-            quoteIdentifier(self._getRawHoldingTableName(tablename, suffix)))
+            quoteIdentifier(self.getRawHoldingTableName(tablename, suffix)))
 
 
     def extractToHoldingTable(self,
@@ -255,14 +264,14 @@ class MultiTableCopy:
         # tables, there must at least be one for the last table that
         # pourHoldingTables() processes.
         if not postgresql.have_table(cur,
-                self._getRawHoldingTableName(self.tables[-1])):
+                self.getRawHoldingTableName(self.tables[-1])):
             return False
 
         # If the first table in our list also still exists, and it still has
         # its new_id column, then the pouring process had not begun yet.
         # Assume the data was not ready for pouring.
         if postgresql.table_has_column(cur,
-                self._getRawHoldingTableName(self.tables[0]),
+                self.getRawHoldingTableName(self.tables[0]),
                 'new_id'):
             self._log_info(
                 "Previous run aborted too early for recovery; redo all")
@@ -272,7 +281,7 @@ class MultiTableCopy:
         return True
 
 
-    def pourHoldingTables(self):
+    def pourHoldingTables(self, ztm=None):
         """Pour data from holding tables back into source tables.
 
         Our transaction, if any, is committed and re-opened after every batch
@@ -287,7 +296,7 @@ class MultiTableCopy:
                 "Not safe to pour: last table '%s' was not extracted" %
                     self.tables[-1])
 
-        cur = self._commit()
+        cur = self._commit(ztm)
 
         # Main loop: for each of the source tables involved in copying
         # translations from our parent distrorelease, see if there's a
@@ -295,7 +304,7 @@ class MultiTableCopy:
         # table, and drop.
         for table in self.tables:
             holding_table = self.getHoldingTableName(table)
-            holding_table_unquoted = self._getRawHoldingTableName(table)
+            holding_table_unquoted = self.getRawHoldingTableName(table)
 
             if not postgresql.have_table(cur, holding_table_unquoted):
                 # We know we're in a suitable state for pouring.  If this
@@ -348,7 +357,7 @@ class MultiTableCopy:
             total_rows = highest_id + 1 - lowest_id
             self._log_info("Up to %d rows in holding table" % total_rows)
 
-            cur = self._commit(cur)
+            cur = self._commit(ztm, cur)
 
             # Minimum batch size.  We never process fewer rows than this in
             # one batch because at that level, we expect to be running into
@@ -387,7 +396,7 @@ class MultiTableCopy:
 
                 deletions_since_analyze = deletions_since_analyze + batch_size
 
-                cur = self._commit(cur)
+                cur = self._commit(ztm, cur)
 
                 highest_id = next
 
@@ -473,7 +482,7 @@ class MultiTableCopy:
                 batch_size = max(batch_size, min_batch_size)
                 batches_since_analyze = batches_since_analyze + 1
 
-            cur = self._commit(cur)
+            cur = self._commit(ztm, cur)
 
             self._log_info(
                 "Pouring %s took %.3f seconds." %
@@ -513,20 +522,20 @@ class MultiTableCopy:
         self.last_extracted_table = table_number
 
 
-    def _commit(self, cur=None):
+    def _commit(self, ztm, cur=None):
         """If we have a transaction, commit it and offer replacement cursor.
 
         Use this as "cur = self._commit(cur)" to commit a transaction, restart
         it, and replace cur with a cursor that lives within the new
         transaction.
         """
-        if self.ztm is None:
+        if ztm is None:
             return cur or cursor()
 
         start = time.time()
-        self.ztm.commit()
+        ztm.commit()
         self._log_info("Committed in %.3f seconds" % (time.time()-start))
-        self.ztm.begin()
+        ztm.begin()
         return cursor()
 
     def _log_info(self, message):
