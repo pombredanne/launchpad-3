@@ -98,38 +98,52 @@ class OpenIdView(LaunchpadView):
         if self.openid_request is None:
             return self.default_template()
 
-        if self.openid_request.mode in ['checkid_immediate', 'checkid_setup']:
-
+        # Handle checkid_immediate requests.
+        if self.openid_request.mode == 'checkid_immediate':
             self.login = self.extractName(self.openid_request.identity)
-
             if self.isAuthorized():
-                # User is logged in and the site is authorized.
                 openid_response = self.openid_request.answer(True)
-
-            elif self.openid_request.immediate:
-                # Immediate requests must fail if user is not logged in
-                # or no authorization recorded.
+            else:
                 openid_response = self.openid_request.answer(
                     False, allvhosts.configs['openid'].rooturl
                     )
+        # Handle checkid_setup requests.
+        elif self.openid_request.mode == 'checkid_setup':
 
-            elif self.login is None:
-                # Failed to extract the username from the identity, which
-                # means this is not a valid Launchpad identity.
-                # Display an error message to the user and let them
-                # continue.
+            # Determine the account we are trying to authenticate with.
+            # The consumer might have sent us an identity URL we can
+            # extract the identifier from, or maybe sent us a token
+            # indicating we need to calculate the identity.
+            if (self.openid_request.identity ==
+                    'http://specs.openid.net/auth/2.0/identifier_select'):
+                # Magic identity indicating that we need to determine it.
                 if self.user is None:
-                    self.login = 'username'
-                else:
-                    self.login = self.user.name
-                return self.invalid_identity_template()
+                    raise Unauthorized("You must be logged in to continue")
+                self.login = self.user.name
+                self.openid_request.identity = '%s~%s' % (
+                        allvhosts.configs['mainsite'].rooturl, self.login
+                        )
 
-            elif not self.isAuthenticated():
+            else:
+                # Consumer sent us an identity URL
+                self.login = self.extractName(self.openid_request.identity)
+                if self.login is None:
+                    if self.user is None:
+                        self.login = 'username'
+                    else:
+                        self.login = self.user.name
+                    return self.invalid_identity_template()
+
+            if not self.isAuthenticated():
                 # Interactive request, but user is not yet logged on.
                 # Trigger authentication.
                 raise Unauthorized(
                         "You are not authorized to use this OpenID identifier."
                         )
+
+            elif self.isAuthorized():
+                # User is logged in and the site is authorized.
+                openid_response = self.openid_request.answer(True)
 
             else:
                 # We have an interactive id check request (checkid_setup).
@@ -141,6 +155,8 @@ class OpenIdView(LaunchpadView):
                     self.openid_request
                     )
 
+        # If the above code has not already returned or raised an exception,
+        # openid_respose is filled out ready for the openid library to render.
         return self.renderOpenIdResponse(openid_response)
 
     def renderOpenIdResponse(self, openid_response):

@@ -1,0 +1,78 @@
+Our OpenID 1.1 implementation supports the OpenID 2.0 feature where the
+consumer need not specify the identity URL, instead leaving it up to the
+OpenID provider to determine it. We call this mode 'OP Identifier' for
+lack of a better name.
+
+To do this, the consumer simply needs to specify the identity as 
+'http://specs.openid.net/auth/2.0/identifier_select'. If authorization is
+successful, the consumer can determine the actual identity from the
+response and do further validation as normal.
+
+We are going to fake a consumer for these examples. In order to ensure
+that the consumer is being fed the correct replies, we register a view
+that renders the parameters in the response in an easily testable format.
+
+>>> from StringIO import StringIO
+>>> from canonical.launchpad.webapp.publisher import LaunchpadView
+>>> from zope.publisher.interfaces.browser import IBrowserPublisher
+>>> from zope.interface import implements
+>>> class ConsumerView(LaunchpadView):
+...     implements(IBrowserPublisher)
+...     def render(self):
+...         out = StringIO()
+...         print >> out, 'Consumer received %s' % self.request.method
+...         keys = sorted(self.request.form.keys())
+...         for key in keys:
+...             print >> out, '%s:%s' % (key, self.request.form[key])
+...         return out.getvalue()
+...     def browserDefault(self, request):
+...         return self, ()
+...
+>>> from zope.security.checker import defineChecker, Checker, CheckerPublic
+>>> defineChecker(ConsumerView, Checker({
+...     '__call__': CheckerPublic,
+...     'browserDefault': CheckerPublic,
+...     'render': CheckerPublic,
+...     }))
+>>> from zope.app.testing.ztapi import browserView
+>>> browserView(None, '+openid-consumer', ConsumerView)
+
+
+>>> from urllib import urlencode
+>>> args = urlencode({
+...     'openid.mode': 'checkid_setup',
+...     'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
+...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
+...     'openid.trust_root': 'http://launchpad.dev/+openid-consumer',
+...     })
+>>> sabdfl_browser = setupBrowser()
+>>> setup_url = 'http://openid.launchpad.dev/?%s' % args
+>>> sabdfl_browser.handleErrors = True
+>>> sabdfl_browser.open(setup_url)
+>>> sabdfl_browser.handleErrors = False
+>>> sabdfl_browser.getControl('E-mail address', index=0).value = 'mark@hbd.com'
+>>> sabdfl_browser.getControl('Password', index=0).value = 'test'
+>>> sabdfl_browser.getControl('Log In', index=0).click()
+
+
+Now we are logged in, we can see that the identity URL has been calculated
+for us.
+
+>>> print '\n' + sabdfl_browser.contents
+<BLANKLINE>
+...
+<em>http://launchpad.dev/+openid-consumer</em>
+has asked us for confirmation that
+<em>http://launchpad.dev/~sabdfl</em>
+is your identity URL.
+...
+
+>>> sabdfl_browser.getControl('Allow').click()
+>>> print sabdfl_browser.contents
+Consumer received GET
+...
+openid.identity:http://launchpad.dev/~sabdfl
+openid.mode:id_res
+openid.return_to:http://launchpad.dev/+openid-consumer
+...
+
