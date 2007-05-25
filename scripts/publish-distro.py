@@ -3,18 +3,15 @@
 import _pythonpath
 
 import gc
-import logging
 from optparse import OptionParser
 
 from zope.component import getUtility
 
-from canonical.archivepublisher.diskpool import DiskPool
-from canonical.archivepublisher.config import Config, LucilleConfigError
-from canonical.archivepublisher.publishing import Publisher
+from canonical.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, NotFoundError)
+    IArchiveSet, IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
@@ -52,52 +49,11 @@ def parse_options():
                       dest="distsroot", metavar="SUFFIX", default=None,
                       help="Override the dists path for generation")
 
+    parser.add_option("--ppa", action="store_true",
+                      dest="ppa", metavar="PPA", default=False,
+                      help="Run only over PPA archives.")
+
     return parser.parse_args()
-
-
-def getPublisher(options, log):
-    log.debug("Finding distribution object.")
-
-    try:
-        distro = getUtility(IDistributionSet).getByName(options.distribution)
-    except NotFoundError, info:
-        log.error(info)
-        raise
-
-    allowed_suites = set()
-    for suite in options.suite:
-        try:
-            distrorelease, pocket = distro.getDistroReleaseAndPocket(suite)
-        except NotFoundError, info:
-            log.error(info)
-            raise
-        allowed_suites.add((distrorelease.name, pocket))
-
-    log.debug("Finding configuration.")
-    try:
-        pubconf = Config(distro)
-    except LucilleConfigError, info:
-        log.error(info)
-        raise
-
-    if options.distsroot is not None:
-        log.debug("Overriding dists root with %s." % options.distsroot)
-        pubconf.distsroot = options.distsroot
-
-    # It may be the first time we're publishing this distribution; make
-    # sure the required directories exist.
-    log.debug("Making directories as needed.")
-    pubconf.setupArchiveDirs()
-
-    log.debug("Preparing on-disk pool representation.")
-    dp = DiskPool(pubconf.poolroot, pubconf.temproot,
-                  logging.getLogger("DiskPool"))
-    # Set the diskpool's log level to INFO to suppress debug output
-    dp.logger.setLevel(20)
-
-    log.debug("Preparing publisher.")
-    return Publisher(log, pubconf, dp, distro, allowed_suites)
-
 
 def main():
     options, args = parse_options()
@@ -130,25 +86,71 @@ def main():
     log.info("  Distribution: %s" % options.distribution)
     log.info("    Publishing: %s" % careful_msg(options.careful_publishing))
     log.info("    Domination: %s" % careful_msg(options.careful_domination))
-    log.info("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
+
+    if not options.ppa:
+        log.info("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
+    else:
+        log.info("      Indexing: %s" % careful_msg(options.careful_apt))
 
     log.debug("Initialising zopeless.")
-
     # Change this when we fix up db security
     txn = initZopeless(dbuser='lucille')
 
     execute_zcml_for_scripts()
 
-    publisher = getPublisher(options, log)
+    log.debug("Finding distribution object.")
 
-    try_and_commit("publishing", publisher.A_publish,
-                   options.careful or options.careful_publishing)
-    try_and_commit("dominating", publisher.B_dominate,
-                   options.careful or options.careful_domination)
-    try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
-                   options.careful or options.careful_apt)
-    try_and_commit("doing release files", publisher.D_writeReleaseFiles,
-                   options.careful or options.careful_apt)
+    try:
+        distribution = getUtility(IDistributionSet).getByName(
+            options.distribution)
+    except NotFoundError, info:
+        log.error(info)
+        raise
+
+    allowed_suites = set()
+    for suite in options.suite:
+        try:
+            distrorelease, pocket = distribution.getDistroReleaseAndPocket(
+                suite)
+        except NotFoundError, info:
+            log.error(info)
+            raise
+        allowed_suites.add((distrorelease.name, pocket))
+
+    if not options.ppa:
+        archives = [distribution.main_archive]
+    else:
+        if options.careful or options.careful_publishing:
+            archives = getUtility(IArchiveSet).getAllPPAs()
+        else:
+            archives = getUtility(IArchiveSet).getPendingPublicationPPAs()
+        if options.distsroot is not None:
+            log.error("We should not define 'distsroot' in PPA mode !")
+            return
+
+    for archive in archives:
+        if not options.ppa:
+            log.info("Processing %s main_archive" % distribution.name)
+        else:
+            log.info("Processing %s" % archive.archive_url)
+
+        publisher = getPublisher(
+            archive, distribution, allowed_suites, log, options.distsroot)
+
+        try_and_commit("publishing", publisher.A_publish,
+                       options.careful or options.careful_publishing)
+        try_and_commit("dominating", publisher.B_dominate,
+                       options.careful or options.careful_domination)
+
+        if not options.ppa:
+            try_and_commit("doing apt-ftparchive", publisher.C_doFTPArchive,
+                           options.careful or options.careful_apt)
+        else:
+            try_and_commit("building indexes", publisher.C_writeIndexes,
+                           options.careful or options.careful_apt)
+
+        try_and_commit("doing release files", publisher.D_writeReleaseFiles,
+                       options.careful or options.careful_apt)
 
     log.debug("Ciao")
 

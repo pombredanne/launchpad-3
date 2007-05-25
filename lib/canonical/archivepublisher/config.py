@@ -85,7 +85,11 @@ class Config(object):
             self.distroroot, '%s-temp' % self.distroName)
 
     def setupArchiveDirs(self):
-        """Create missing required directories in archive."""
+        """Create missing required directories in archive.
+
+        For PPA publication path are overriden after instantiation
+        and empty locations should not be considered for creation.
+        """
         required_directories = [
             self.distroroot,
             self.poolroot,
@@ -98,5 +102,7 @@ class Config(object):
             ]
 
         for directory in required_directories:
+            if directory is None:
+                continue
             if not os.path.exists(directory):
                 os.makedirs(directory, 0755)

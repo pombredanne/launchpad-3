@@ -387,17 +387,17 @@ class BaseTranslationView(LaunchpadView):
             #   -- kiko, 2006-10-18
             self.request.response.addErrorNotification("""
             <p>
-            Rosetta can&#8217;t handle the plural items in this file, because it
-            doesn&#8217;t yet know how plural forms work for %s.
+            Launchpad can&#8217;t handle the plural items in this file, 
+	    because it doesn&#8217;t yet know how plural forms work for %s.
             </p>
             <p>
             To fix this, please e-mail the <a
-            href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users mailing list</a>
+            href="mailto:rosetta-users@lists.ubuntu.com">Launchpad Translations users mailing list</a>
             with this information, preferably in the format described in the
-            <a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta FAQ</a>.
+            <a href="https://wiki.ubuntu.com/RosettaFAQ">FAQ</a>.
             </p>
             <p>
-            This only needs to be done once per language. Thanks for helping Rosetta.
+            This only needs to be done once per language. Thanks for helping Launchpad Translations.
             </p>
             """ % self.pofile.language.englishname)
             return
@@ -946,15 +946,22 @@ class POMsgSetView(LaunchpadView):
                              count_lines(translation) > 1 or
                              count_lines(self.msgid) > 1 or
                              count_lines(self.msgid_plural) > 1)
+            active_submission = self.context.getActiveSubmission(index)
+            is_same_translator = active_submission is not None and (
+                active_submission.person.id == self.context.reviewer.id)
+            is_same_date = active_submission is not None and (
+                active_submission.datecreated == self.context.date_reviewed)
             translation_entry = {
                 'plural_index': index,
                 'active_translation': text_to_html(
                     active, self.context.potmsgset.flags()),
                 'translation': translation,
-                'active_submission': self.context.getActiveSubmission(index),
+                'active_submission': active_submission,
                 'suggestion_block': self.suggestion_blocks[index],
                 'store_flag': index in self.plural_indices_to_store,
-                'is_multi_line': is_multi_line
+                'is_multi_line': is_multi_line,
+                'same_translator_and_reviewer': (is_same_translator and
+                                                 is_same_date)
                 }
 
             if self.message_must_be_hidden:

@@ -54,6 +54,7 @@
     <sectiontype name="translations" extends="virtual_host" />
     <sectiontype name="bugs" extends="virtual_host" />
     <sectiontype name="answers" extends="virtual_host" />
+    <sectiontype name="openid" extends="virtual_host" />
     <sectiontype name="shipitubuntu" extends="virtual_host" />
     <sectiontype name="shipitkubuntu" extends="virtual_host" />
     <sectiontype name="shipitedubuntu" extends="virtual_host" />
@@ -72,6 +73,7 @@
         <section name="*" type="translations" attribute="translations" required="yes" />
         <section name="*" type="bugs" attribute="bugs" required="yes" />
         <section name="*" type="answers" attribute="answers" required="yes" />
+        <section name="*" type="openid" attribute="openid" required="yes" />
         <section name="*" type="shipitubuntu" attribute="shipitubuntu" required="yes" />
         <section name="*" type="shipitkubuntu" attribute="shipitkubuntu" required="yes" />
         <section name="*" type="shipitedubuntu" attribute="shipitedubuntu" required="yes" />
@@ -150,6 +152,13 @@ k            </description>
             <description>
                 Maximum size of bug attachments in bytes. A value of 0 means
                 no limit.
+            </description>
+        </key>
+        <key name="max_productrelease_file_size" datatype="integer" required="no"
+            default="0">
+            <description>
+                Maximum size of product release download files in bytes. A value
+                of 0 means no limit.
             </description>
         </key>
         <key name="db_statement_timeout" datatype="integer" required="no">
@@ -245,6 +254,13 @@ k            </description>
                 If set, the host name to redirect beta testers to.
             </description>
             <example>beta.launchpad.net</example>
+        </key>
+        <key name="openid_users" datatype="string"
+            default="launchpad">
+            <description>
+                The team that can use Launchpad as an OpenID provider.
+                Set to 'all' for open access.
+            </description>
         </key>
         <key name="non_restricted_hostname" datatype="string"
              default="launchpad.net">
@@ -375,7 +391,7 @@ k            </description>
     <sectiontype name="gina">
         <key name="dbuser" datatype="string" default="gina">
             <description>
-                The database user wich will be used to make the
+                The database user which will be used to make the
                 package imports.
             </description>
         </key>
@@ -485,7 +501,7 @@ k            </description>
         <key name="bugnotification_dbuser"
              datatype="string" required="no" default="bugnotification">
             <description>
-                The database user wich will be used to send bug
+                The database user which will be used to send bug
                 notifications.
             </description>
         </key>
@@ -612,7 +628,7 @@ k            </description>
     <sectiontype name="distributionmirrorprober">
         <key name="dbuser" datatype="string" default="distributionmirror">
             <description>
-                The database user wich will be used to probe distribution
+                The database user which will be used to probe distribution
                 mirrors.
             </description>
         </key>
@@ -647,7 +663,7 @@ k            </description>
     <sectiontype name="expiredmembershipsflagger">
         <key name="dbuser" datatype="string" default="teammembership">
             <description>
-                The database user wich will be used to flag expired team
+                The database user which will be used to flag expired team
                 memberships.
             </description>
         </key>
@@ -656,7 +672,7 @@ k            </description>
     <sectiontype name="karmacacheupdater">
         <key name="dbuser" datatype="string" default="karma">
             <description>
-                The database user wich will be used to update the karmacache
+                The database user which will be used to update the karmacache
                 table.
             </description>
         </key>
@@ -673,7 +689,7 @@ k            </description>
     <sectiontype name="targetnamecacheupdater">
         <key name="dbuser" datatype="string" default="targetnamecacheupdater">
             <description>
-                The database user wich will be used to update the
+                The database user which will be used to update the
                 targetnamecache column of bugtasks.
             </description>
         </key>
@@ -684,7 +700,7 @@ k            </description>
              default="http://cve.mitre.org/cve/downloads/allitems.xml.gz" />
         <key name="dbuser" datatype="string" default="cve">
             <description>
-                The database user wich will be used to update the CVE
+                The database user which will be used to update the CVE
                 database.
             </description>
         </key>
@@ -693,7 +709,7 @@ k            </description>
     <sectiontype name="answertracker">
         <key name="dbuser" datatype="string" default="answertracker">
             <description>
-                The database user wich will be used to expire questions.
+                The database user which will be used to expire questions.
             </description>
         </key>
         <key name="email_domain" datatype="string"
@@ -874,7 +890,7 @@ k            </description>
             required="no" />
     </sectiontype>
 
-    <sectiontype name="supermirrorsftp">
+    <sectiontype name="codehosting">
         <key name="authserver" datatype="string" />
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
@@ -892,12 +908,52 @@ k            </description>
         <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
 
+    <sectiontype name="production_errorreports" extends="script_errorreports" />
+    <sectiontype name="autotest_errorreports" extends="script_errorreports" />
+
     <sectiontype name="importd">
         <key name="dbuser" datatype="string">
             <description>
                 The database user for importd and associated scripts.
             </description>
         </key>
+        <section name="*" type="production_errorreports"
+            attribute="production_errorreports" required="no" />
+        <section name="*" type="autotest_errorreports"
+            attribute="autotest_errorreports" required="no" />
+    </sectiontype>
+
+    <sectiontype name="personalpackagearchive">
+        <key name="root" datatype="string" required="yes">
+            <description>
+                Directory to be created to store PPAs.
+            </description>
+        </key>
+        <key name="base_url" datatype="string" required="no"
+             default="http://ppa.launchpad.dev">
+            <description>
+                External base URL for PPAs.
+            </description>
+        </key>
+    </sectiontype>
+
+    <sectiontype name="mailman-build"
+                 prefix="canonical.launchpad.mailman.config">
+        <key name="build"           datatype="boolean"      default="false" />
+        <key name="prefix"          datatype=".prefix"      default=""      />
+        <key name="var_dir"         datatype="string"
+             default="/var/mailman"  />
+        <key name="user_group"      datatype=".usergroup"   default="" />
+        <key name="site_list_owner" datatype=".siteowner"   default="" />
+        <key name="host_name"       datatype=".hostname"    default="" />
+    </sectiontype>
+
+    <sectiontype name="mailman" prefix="canonical.mailman.config">
+        <section name="*" type="mailman-build"
+                 attribute="build" required="yes" />
+
+        <key name="launch" datatype="boolean"  default="false" />
+        <key name="smtp"   datatype="inet-address"   default="localhost:25" />
     </sectiontype>
 
     <sectiontype name="canonical">
@@ -945,9 +1001,12 @@ k            </description>
         <section name="*" type="supermirror" attribute="supermirror" />
         <section name="*" type="branchscanner" attribute="branchscanner" />
         <section name="*" type="builddmaster" attribute="builddmaster" />
-        <section name="*" type="supermirrorsftp" attribute="supermirrorsftp" />
+        <section name="*" type="codehosting" attribute="codehosting" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
+        <section name="*" type="personalpackagearchive"
+            attribute="personalpackagearchive" />
+        <section name="*" type="mailman" attribute="mailman" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file
