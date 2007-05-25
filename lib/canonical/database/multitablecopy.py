@@ -84,7 +84,7 @@ class MultiTableCopy:
        in SQL without quoting.
 
      * Every foreign-key column that refers to a table that is also being
-       copied, must have the same name as the table it refers to.  This can be
+       copied, has the same name as the table it refers to.  This can be
        changed by subclassing and overriding the pointsToTable method.
 
      * Foreign-key column names and the tables they refer to can be used in
@@ -92,6 +92,12 @@ class MultiTableCopy:
 
      * For any foreign key column "x" referring to another table that is also
        being copied, there must not be a column called "new_x"
+
+    If you use this class, it is up to you to ensure that the data that you
+    copy does not break compliance between the time it is extracted from its
+    source tables and the moment it has been poured back there.  This means
+    that rows that the data refers to by foreign keys must not be deleted
+    while the multi-table copy is running, for instance.
     """
     # XXX: JeroenVermeulen 2007-05-24, More quoting, fewer assumptions!
 
