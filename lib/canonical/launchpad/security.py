@@ -913,29 +913,24 @@ class AdminLanguage(OnlyRosettaExpertsAndAdmins):
 class AccessBranch(AuthorizationBase):
     """Controls visibility of branches.
 
-    Branches are considered public if the visibility_team is None.
-    A person can see the branch if the branch is public or if they
-    are a member of the visibility team, or if they are subscribed
-    to the branch.
+    A person can see the branch if the branch is public or they are the owner
+    of the branch, subscribed to the branch, or a launchpad administrator.
     """
     permission = 'launchpad.View'
     usedfor = IBranch
 
     def checkAuthenticated(self, user):
-        if self.obj.visibility_team is None:
+        if not self.obj.private:
             return True
-        # Should lp admins be able to see the branches?
-        if user.inTeam(self.obj.visibility_team):
+        if user == self.obj.owner:
             return True
-        # Check the subscribers to the branch.
         for subscriber in self.obj.subscribers:
             if user.inTeam(subscriber):
                 return True
-
-        return False
+        return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
 
     def checkUnauthenticated(self):
-        return self.obj.visibility_team is None
+        return not self.obj.private
 
 
 class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):

@@ -4,53 +4,74 @@ Most branches on launchpad are considered public branches, and are
 visible to everybody, even people not logged in.
 
 Some branches are also considered "private".  These are branches that
-are only visible to a specific team of people.  This team is specified
-on the branch in the attribute visibility_team.
+are only visible to the owner of the branch, and the subscribers.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBranchSet
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
-    ...     '~name12/gnome-terminal/scanned')
-
-== Public Visibility ==
-
-If the visibility_team is None then the branch is "public".
-
-    >>> login(ANONYMOUS)
-    >>> print branch.visibility_team
-    None
-
-Public branches are viewable to all, even those not logged in.
-
-    >>> from canonical.launchpad.webapp.authorization import check_permission
-    >>> check_permission('launchpad.View', branch)
-    True
-
-== Visibility due to team membership ==
-
-Now if we set the visibility_team to something like the Ubuntu Gnome team.
-
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import IBranchSet, IPersonSet
     >>> person_set = getUtility(IPersonSet)
-    >>> ubuntu_gnome_team = person_set.getByName('name18')
-    >>> branch.visibility_team = ubuntu_gnome_team
+    >>> no_priv_person = person_set.getByName('no-priv')
 
-The branch will not be publicly viewable any more.
+    >>> branch = getUtility(IBranchSet).new(
+    ...     name='test-branch', owner=no_priv_person, product=None,
+    ...     url=None, title='Test branch')
 
-    >>> check_permission('launchpad.View', branch)
+Since many of the examples here are testing the ability of various users to
+access branches, we don't want all the access to the branch to go through the
+security proxy.  So we'll remove it.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> branch = removeSecurityProxy(branch)
+
+    >>> print branch.unique_name
+    ~no-priv/+junk/test-branch
+    >>> branch.private
     False
 
-Sample Person though is a member of the Ubuntu Gnome team, so they
-can see the branch.
 
-    >>> login('test@canonical.com')
-    >>> check_permission('launchpad.View', branch)
+== Accessing branches ==
+
+Branch access is controlled by the launchpad.View permission, and the
+class AccessBranch is used to authenticate users for IBranch
+for the launchpad.View permission.
+
+    >>> from canonical.launchpad.security import AccessBranch
+    >>> access = AccessBranch(branch)
+    >>> access.checkUnauthenticated()
+    True
+    >>> access.checkAuthenticated(no_priv_person)
     True
 
-No Privileges person though isn't a member of any team.
 
-    >>> login('no-priv@canonical.com')
-    >>> check_permission('launchpad.View', branch)
+== Private Branches ==
+
+Branches that are private are accessible by the owner and subscribers.
+
+    >>> branch.private = True
+    >>> access.checkUnauthenticated()
+    False
+    >>> branch.owner == no_priv_person
+    True
+    >>> access.checkAuthenticated(no_priv_person)
+    True
+
+Mark is a launchpad administrator, and launchpad administrators are special.
+Launchpad administrators often have a need to see private launchpad things
+in order to fix up fubars by users.
+
+    >>> sabdfl = person_set.getByName('sabdfl')
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> lp_admins = getUtility(ILaunchpadCelebrities).admin
+    >>> sabdfl.inTeam(lp_admins)
+    True
+    >>> access.checkAuthenticated(sabdfl)
+    True
+
+David is not a Launchpad admin, nor is currently subscribed to our new branch.
+
+    >>> ddaa = person_set.getByName('ddaa')
+    >>> ddaa.inTeam(lp_admins)
+    False
+    >>> access.checkAuthenticated(ddaa)
     False
 
 
@@ -59,52 +80,26 @@ No Privileges person though isn't a member of any team.
 Branches that are not public are viewable by members of the visibility_team
 and to subscribers.
 
-We are going to use Sample Person here, so firstly log them on.
+The Jeff Waugh is a member of the Ubuntu team, but not a Luanchpad admin.
 
-    >>> login('test@canonical.com')
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
-    ...     '~launchpad/gnome-terminal/launchpad')
-
-The branch is one that Sample Person has subscribed to.
-
-    >>> sample_person = person_set.getByEmail('test@canonical.com')
-    >>> branch in sample_person.subscribed_branches
+    >>> jdub = person_set.getByName('jdub')
+    >>> ubuntu_team = person_set.getByName('ubuntu-team')
+    >>> jdub.inTeam(ubuntu_team)
     True
-
-Sample Person isn't a member of the launchpad team.
-
-    >>> launchpad_team = person_set.getByName('launchpad')
-    >>> sample_person.inTeam(launchpad_team)
+    >>> jdub.inTeam(lp_admins)
+    False
+    >>> access.checkAuthenticated(jdub)
     False
 
-Set the visibility_team of the branch to the launchpad team.
+Subscribing the Ubuntu team will allow Jeff to have access to the branch.
 
-    >>> branch.visibility_team = launchpad_team
+    >>> from canonical.lp.dbschema import (
+    ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
 
-Sample Person can see the branch.
+    >>> branch.subscribe(ubuntu_team,
+    ...     BranchSubscriptionNotificationLevel.NOEMAIL,
+    ...     BranchSubscriptionDiffSize.NODIFF)
+    <BranchSubscription ...>
 
-    >>> check_permission('launchpad.View', branch)
+    >>> access.checkAuthenticated(jdub)
     True
-
-No Privileges person can't.
-
-    >>> login('no-priv@canonical.com')
-    >>> check_permission('launchpad.View', branch)
-    False
-
-Foo Bar can as they are a member of the launchpad team.
-
-    >>> login('foo.bar@canonical.com')
-    >>> foobar = person_set.getByEmail('foo.bar@canonical.com')
-    >>> branch in foobar.subscribed_branches
-    False
-    >>> foobar.inTeam(launchpad_team)
-    True
-    >>> check_permission('launchpad.View', branch)
-    True
-
-Non-logged in users cannot see it.
-
-    >>> login(ANONYMOUS)
-    >>> check_permission('launchpad.View', branch)
-    False
