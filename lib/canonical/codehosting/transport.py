@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = ['LaunchpadServer', 'LaunchpadTransport']
 
+from bzrlib import urlutils
 from bzrlib.transport import (
     get_transport,
     register_transport,
@@ -42,7 +43,7 @@ class LaunchpadServer(Server):
 
     def translate_virtual_path(self, virtual_path):
         user, product, branch, path = split(virtual_path.lstrip('/'), '/', 4)
-        assert user[0] == '~', "Temporary assertion"
+        assert user[0] == '~', (virtual_path, user)
         user = user[1:]
         branch_id = self._branches[(user, product, branch)]
         return '/'.join([branch_id_to_path(branch_id), path])
@@ -67,3 +68,15 @@ class LaunchpadTransport(Transport):
         self.server = server
         Transport.__init__(self, url)
 
+    def _abspath(self, relpath):
+        """Return the absolute path to `relpath` without the schema."""
+        return urlutils.joinpath(self.base[len(self.server.scheme)-1:],
+                                 relpath)
+
+    def clone(self, relpath):
+        return LaunchpadTransport(
+            self.server, urlutils.join(self.base, relpath))
+
+    def get(self, relpath):
+        return self.server.backing_transport.get(
+            self.server.translate_virtual_path(self._abspath(relpath)))
