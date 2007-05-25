@@ -1,6 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Tests for the Laucnhpad code hosting Bazaar transport."""
+"""Tests for the Launchpad code hosting Bazaar transport."""
 
 __metaclass__ = type
 
