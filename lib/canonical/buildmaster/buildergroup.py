@@ -161,29 +161,8 @@ class BuilderGroup:
 
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
-        sourcename = queueItem.build.sourcepackagerelease.name
-        version = queueItem.build.sourcepackagerelease.version
-        # we rely on previous storage of current buildstate
-        # in the state handling methods.
-        state = queueItem.build.buildstate.name
-
-        dar = queueItem.build.distroarchrelease
-        distroname = dar.distrorelease.distribution.name
-        distroreleasename = dar.distrorelease.name
-        archname = dar.architecturetag
-
-        # logfilename format:
-        # buildlog_<DISTRIBUTION>_<DISTRORELEASE>_<ARCHITECTURE>_\
-        # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
-        # as:
-        # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
-        # it fix request from bug # 30617
-        logfilename = ('buildlog_%s-%s-%s.%s_%s_%s.txt'
-                       % (distroname, distroreleasename,
-                          archname, sourcename, version, state))
-
         return queueItem.builder.transferSlaveFileToLibrarian(
-            'buildlog', logfilename)
+            'buildlog', queueItem.getLogFileName())
 
     def updateBuild(self, queueItem):
         """Verify the current build job status.
@@ -395,8 +374,15 @@ class BuilderGroup:
             'BuildMaster/BuilderGroup transaction isolation should be '
             'READ_COMMITTED_ISOLATION (not "%s")' % isolation_str)
 
+        original_slave = queueItem.builder.slave
         flush_database_updates()
         clear_current_connection_cache()
+        # XXX: This is forced on us by sqlobject refreshing the builder object during the
+        # transaction cache clearing; that is forced on us by using a different
+        # process to do the upload, but as that process runs in the same unix
+        # account, it is simply double handling and we would be better off to
+        # do it within this process. Robert Collins, Celso Providelo 20070526.
+        queueItem.builder.setSlaveForTesting(removeSecurityProxy(original_slave))
 
         # Retrive the up-to-date build record and perform consistency
         # checks. The build record should be updated during the binary

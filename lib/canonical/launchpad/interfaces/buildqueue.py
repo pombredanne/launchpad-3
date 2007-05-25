@@ -67,6 +67,9 @@ class IBuildQueue(Interface):
     def destroySelf():
         """Delete this entry from the database."""
 
+    def getLogFileName():
+        """Get the preferred filename for the buildlog of this build."""
+
     def updateBuild_IDLE(slave, build_id, build_status, logtail,
                          filemap, dependencies, logger):
         """Somehow the builder forgot about the build job.
