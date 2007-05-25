@@ -58,7 +58,7 @@
 
     <li><a href="https://help.launchpad.net/CreatingAHostedBranch">Create
       an <em>upload</em> branch</a>, that is a branch that you upload
-      directly, to use Launchpad has a community hosting service.</li>
+      directly, to use Launchpad as a community hosting service.</li>
   </ul>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>

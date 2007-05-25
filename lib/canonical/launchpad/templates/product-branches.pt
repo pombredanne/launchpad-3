@@ -50,7 +50,7 @@
   <p>
     If you want
     to <a href="https://help.launchpad.net/CreatingAHostedBranch">create
-    an <em>upload</em> branch</a> on Launchpad, you do not need to to
+    an <em>upload</em> branch</a> on Launchpad, you do not need to
     use this page.
   </p>
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
