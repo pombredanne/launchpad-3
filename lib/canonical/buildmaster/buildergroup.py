@@ -326,25 +326,29 @@ class BuilderGroup:
             return
 
         # res = ('<status>', ..., ...)
-        status = res[0]
+        builder_status = res[0]
+        builder_status_handlers = {
+            'BuilderStatus.IDLE': self.updateBuild_IDLE,
+            'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
+            'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
+            'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
+            'BuilderStatus.WAITING': self.updateBuild_WAITING,
+            }
 
-        assert status.startswith('BuilderStatus.')
-
-        status = status[len('BuilderStatus.'):]
-        method = getattr(self, 'updateBuild_' + status, None)
-
-        if method is None:
-            self.logger.critical("Builder on %s returned unknown status %s,"
-                                 " failing it" % (queueItem.builder.url,
-                                                  status))
-            self.failBuilder(queueItem.builder,
-                             ("Unknown status code (%s) returned from "
-                              "status() probe." % status))
+        if builder_status not in builder_status_handlers:
+            self.logger.critical(
+                "Builder on %s returned unknown status %s, failing it"
+                % (queueItem.builder.url, builder_status))
+            self.failBuilder(
+                queueItem.builder,
+                "Unknown status code (%s) returned from status() probe."
+                % builder_status)
             queueItem.builder = None
             queueItem.buildstart = None
             self.commit()
             return
 
+        method = builder_status_handlers[builder_status]
         try:
             # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
             slave = removeSecurityProxy(queueItem.builder.slave)
