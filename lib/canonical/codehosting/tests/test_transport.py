@@ -6,8 +6,9 @@ __metaclass__ = type
 
 import unittest
 
-from bzrlib.transport import get_transport
-from bzrlib.tests import TestCase
+from bzrlib.transport import get_transport, _get_protocol_handlers
+from bzrlib.transport.memory import MemoryTransport
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
 from canonical.config import config
 from canonical.codehosting import transport
@@ -31,27 +32,68 @@ class FakeLaunchpad:
                           {'id': 3, 'name': 'team1', 'displayname': 'Test Team'}]}
 
     def getBranchesForUser(self, personID):
-        return [(1, 'bar', [(1, 'baz'), (2, 'qux')])]
+        return [(1, 'bar', [(1, 'baz'), (2, 'qux')]),
+                (2, '+junk', [])]
 
 
-class TestLaunchpadTransport(TestCase):
+class TestLaunchpadServer(TestCaseInTempDir):
 
     def setUp(self):
-        TestCase.setUp(self)
+        TestCaseInTempDir.setUp(self)
         self.authserver = FakeLaunchpad()
         self.user_id = 1
+        self.backing_transport = MemoryTransport()
         self.server = transport.LaunchpadServer(
-            self.authserver, self.user_id)
+            self.authserver, self.user_id, self.backing_transport)
+
+    def test_construct(self):
+        self.assertEqual(self.backing_transport, self.server.backing_transport)
+        self.assertEqual(self.user_id, self.server.user_id)
+        self.assertEqual(self.authserver, self.server.authserver)
 
     def test_base_path_translation(self):
-        self.assertEqual('00/00/00/01/',
-                         self.server.translate_relpath('~foo/bar/baz'))
-        self.assertEqual('00/00/00/02/',
-                         self.server.translate_relpath('~team1/bar/qux'))
+        self.assertEqual(
+            '00/00/00/01/',
+            self.server.translate_virtual_path('/~foo/bar/baz'))
+        self.assertEqual(
+            '00/00/00/02/',
+            self.server.translate_virtual_path('/~team1/bar/qux'))
 
     def test_extend_path_translation(self):
-        self.assertEqual('00/00/00/01/.bzr',
-                         self.server.translate_relpath('~foo/bar/baz/.bzr'))
+        self.assertEqual(
+            '00/00/00/01/.bzr',
+            self.server.translate_virtual_path('/~foo/bar/baz/.bzr'))
+
+    def test_setUp(self):
+        self.server.setUp()
+        self.assertTrue(self.server.scheme in _get_protocol_handlers().keys())
+
+    def test_tearDown(self):
+        self.server.setUp()
+        self.server.tearDown()
+        self.assertFalse(self.server.scheme in _get_protocol_handlers().keys())
+
+    def test_get_url(self):
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+        self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
+
+
+class TestLaunchpadTransport(TestCaseWithMemoryTransport):
+
+    def setUp(self):
+        TestCaseInTempDir.setUp(self)
+        self.authserver = FakeLaunchpad()
+        self.user_id = 1
+        self.backing_transport = MemoryTransport()
+        self.server = transport.LaunchpadServer(
+            self.authserver, self.user_id, self.backing_transport)
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+
+    def test_get_transport(self):
+        transport = get_transport(self.server.get_url())
+        self.assertEqual(self.server.get_url(), transport.base)
 
 
 def test_suite():
