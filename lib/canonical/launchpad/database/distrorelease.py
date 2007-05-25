@@ -1270,7 +1270,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             ''' % sqlvalues(self.id, self.parentrelease.id))
 
 
-    def _copyActiveTranslationsToNewRelease(self, logger, ztm, copier):
+    def _copyActiveTranslationsToNewRelease(self, ztm, copier):
         """We're a new release; inherit translations from parent.
 
         This method uses MultiTableCopy to copy data.
@@ -1391,7 +1391,7 @@ new imports with the information being copied.
         copier.pourHoldingTables(ztm)
 
 
-    def _copyActiveTranslationsAsUpdate(self, logger):
+    def _copyActiveTranslationsAsUpdate(self):
         """Receive active, updated translations from parent release.
         """
 
@@ -1412,7 +1412,7 @@ new imports with the information being copied.
         # this statement.  After one POFile is copied, pt2 will have a POFile
         # attached and its other POFiles will no longer qualify for copying.
 
-        logger.info('Filling POFile table...')
+        logging.info('Filling POFile table...')
         cur = cursor()
         cur.execute('''
             INSERT INTO POFile (
@@ -1457,7 +1457,7 @@ new imports with the information being copied.
                 pt1.distrorelease = %s AND
                 pf2.id IS NULL''' % sqlvalues(self, self.parentrelease))
 
-        logger.info('Updating POMsgSet table...')
+        logging.info('Updating POMsgSet table...')
         cur.execute('''
             UPDATE POMsgSet SET
                 iscomplete = pms1.iscomplete, isfuzzy = pms1.isfuzzy,
@@ -1491,7 +1491,7 @@ new imports with the information being copied.
                 pms1.iscomplete = TRUE
                 ''' % sqlvalues(self, self.parentrelease))
 
-        logger.info('Filling POMsgSet table...')
+        logging.info('Filling POMsgSet table...')
         cur.execute('''
             INSERT INTO POMsgSet (
                 sequence, pofile, iscomplete, obsolete, isfuzzy, commenttext,
@@ -1537,7 +1537,7 @@ new imports with the information being copied.
         # going to modify so we can recalculate later its statistics. We
         # do this before copying POSubmission table entries because
         # otherwise we will not know exactly which one are being updated.
-        logger.info('Getting the list of POFiles with changes...')
+        logging.info('Getting the list of POFiles with changes...')
         cur.execute('''
             SELECT
                 DISTINCT pf2.id
@@ -1581,7 +1581,7 @@ new imports with the information being copied.
         replacements = sqlvalues(
             release=self, parentrelease=self.parentrelease)
 
-        logger.info( 'Filling POSubmission table with active rows...')
+        logging.info( 'Filling POSubmission table with active rows...')
         replacements['published'] = u'FALSE'
         replacements['active'] = u'FALSE'
 
@@ -1635,7 +1635,7 @@ new imports with the information being copied.
         # This query will be only useful if when we already have some
         # initial translations before this method call, because is the
         # only situation when we could have POSubmission rows to update.
-        logger.info(
+        logging.info(
             'Updating previous existing POSubmission rows...')
         cur.execute('''
             UPDATE POSubmission
@@ -1722,7 +1722,7 @@ new imports with the information being copied.
                 ''' % sqlvalues(self, self.parentrelease))
 
         # Update the statistics cache for every POFile we touched.
-        logger.info("Updating POFile's statistics")
+        logging.info("Updating POFile's statistics")
         for pofile_id in pofile_ids:
             pofile = POFile.get(pofile_id)
             pofile.updateStatistics()
@@ -1750,25 +1750,23 @@ new imports with the information being copied.
             # We don't have a parent from where we could copy translations.
             return
 
-        logger = logging.getLogger('initialise')
-
         translation_tables = [
             'POTemplate', 'POTMsgSet', 'POMsgIDSighting', 'POFile',
             'POMsgSet', 'POSubmission'
             ]
 
         full_name = "%s_%s" % (self.distribution.name, self.name)
-        copier = MultiTableCopy(full_name, translation_tables, logger)
+        copier = MultiTableCopy(full_name, translation_tables)
 
         if len(self.potemplates) == 0:
             # We're a new distrorelease; copy from scratch
-            self._copyActiveTranslationsToNewRelease(logger, ztm, copier)
+            self._copyActiveTranslationsToNewRelease(ztm, copier)
         elif copier.hasRecoverableHoldingTables():
             # Recover data from previous, abortive run
             copier.pourHoldingTables(ztm)
         else:
             # Incremental copy of updates from parent distrorelease
-            self._copyActiveTranslationsAsUpdate(logger)
+            self._copyActiveTranslationsAsUpdate()
 
 
     def copyMissingTranslationsFromParent(self, ztm=None):
