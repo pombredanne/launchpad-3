@@ -1,24 +1,24 @@
 = Queue Notify =
 
-DistroReleaseQueue has a notify() method to send emails.
-We need to be logged into the security model in order to get any further
+PackageUpload has a notify() method to send emails.
+We need to be logged into the security model in order to get any further.
 
   >>> login('foo.bar@canonical.com')
 
-Get a distroreleasequeue:
+Get a packageupload object for netapplet, which has a relatively intact
+set of supporting sample data:
 
-  >>> from canonical.launchpad.interfaces import IDistroReleaseQueueSet
-  >>> drq = getUtility(IDistroReleaseQueueSet)[3]
-  >>> print drq.displayname
+  >>> from canonical.launchpad.interfaces import IPackageUploadSet
+  >>> netapplet_upload = getUtility(IPackageUploadSet)[3]
+  >>> print netapplet_upload.displayname
   netapplet
 
 Set up some library files for the netapplet source package.
 
   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
-  >>> from canonical.archiveuploader.tests import (datadir, mock_logger)
+  >>> from canonical.archiveuploader.tests import datadir, mock_logger
   >>> import os
-  >>> [drqs] = drq.sources
-  >>> spr = drqs.sourcepackagerelease
+  >>> netapplet_spr = netapplet_upload.sources[0].sourcepackagerelease
   >>> librarian = getUtility(ILibraryFileAliasSet)
   >>> files = ['netapplet_1.0-1.dsc', 'netapplet_1.0.orig.tar.gz',
   ...     'netapplet_1.0-1.diff.gz']
@@ -27,17 +27,20 @@ Set up some library files for the netapplet source package.
   ...     fileobj = open(filepath, 'rb')
   ...     filesize = os.stat(filepath).st_size
   ...     lfa = librarian.create(file, filesize, fileobj, 'dummytype')
-  ...     sprf = spr.addFile(lfa)
+  ...     sprf = netapplet_spr.addFile(lfa)
   ...     fileobj.close()
 
-The notify() method generates one email here on this unsigned package:
+The notify() method generates one email here on this unsigned package.  It
+requires an annoucement list email address, a "changes_file_object" that is
+just an open file object for the original changes file, and a special
+logger object that will extract tracebacks for the purposes of this doctest.
 
-  >>> changesfilepath = datadir(
+  >>> changes_file_path = datadir(
   ...     'suite/netapplet_1.0-1/netapplet_1.0-1_source.changes')
-  >>> changesfile = open(changesfilepath,'r')
-  >>> drq.notify(
-  ...     announcelist="announcelist@canonical.com", 
-  ...     changesfileobject=changesfile, logger=mock_logger)
+  >>> changes_file = open(changes_file_path,'r')
+  >>> netapplet_upload.notify(
+  ...     announce_list="announcelist@canonical.com", 
+  ...     changes_file_object=changes_file, logger=mock_logger)
   DEBUG: Building recipients list.
   DEBUG: Changes file is unsigned, adding changer as recipient
   ...
@@ -46,32 +49,25 @@ The notify() method generates one email here on this unsigned package:
   DEBUG:     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
   DEBUG: above if files already exist in other distroreleases.
+  ...
+  DEBUG: signer of the above package.
 
 Helper functions to examine emails that were sent:
 
   >>> import email
   >>> from canonical.launchpad.mail import stub
+  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
   >>> def by_to_addrs(a, b):
   ...     return cmp(a[1], b[1])
-  >>> def pop_notifications():
-  ...     stub.test_emails.sort(by_to_addrs)
-  ...     notifications = [
-  ...         email.message_from_string(raw_message)
-  ...         for fromaddr, toaddrs, raw_message in stub.test_emails]
-  ...     stub.test_emails = []
-  ...     return notifications
 
 There's only one email generated from the preceding upload:
 
-  >>> transaction.commit()
-  >>> len(stub.test_emails)
-  1
+  >>> [notification] = pop_notifications()
 
 The mail headers contain our To: as set on the notify() call.  The
 subject contains "Accepted", the package name, its version and whether it's
 source or binary.
 
-  >>> [notification] = pop_notifications()
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
   >>> notification['Subject']
@@ -88,22 +84,28 @@ The mail body contains a list of files that were accepted:
   You may have gotten the distrorelease wrong.  If so, you may get warnings
   above if files already exist in other distroreleases.
   <BLANKLINE>
+  -- 
+  You are receiving this email because you are the uploader, maintainer or
+  signer of the above package.
+  <BLANKLINE>
 
-Now we will process a signed package.  First, we need to make the DRQ think
-that it's signed:
+Now we will process a signed package.  Signed packages will potentially have
+a different recipient list to unsigned ones.
+First, we need to make the package upload think that it's signed:
 
   >>> from canonical.launchpad.interfaces import IGPGKeySet
+  >>> from zope.security.proxy import removeSecurityProxy
   >>> gpgkey = getUtility(IGPGKeySet).get(1)
-  >>> drq.signing_key = gpgkey
+  >>> removeSecurityProxy(netapplet_upload).signing_key = gpgkey
 
 Now request the email:
 
-  >>> changesfilepath = datadir(
+  >>> changes_file_path = datadir(
   ...     'suite/netapplet_1.0-1-signed/netapplet_1.0-1_source.changes')
-  >>> changesfile = open(changesfilepath,'r')
-  >>> drq.notify(
-  ...     announcelist="announcelist@canonical.com", 
-  ...     changesfileobject=changesfile, logger=mock_logger)
+  >>> changes_file = open(changes_file_path,'r')
+  >>> netapplet_upload.notify(
+  ...     announce_list="announcelist@canonical.com", 
+  ...     changes_file_object=changes_file, logger=mock_logger)
   DEBUG: Building recipients list.
   ...
   DEBUG: Sent a mail:
@@ -111,16 +113,15 @@ Now request the email:
   DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
   DEBUG: above if files already exist in other distroreleases.
+  ...
+  DEBUG: signer of the above package.
 
 Again, there is only one email:
 
-  >>> transaction.commit()
-  >>> len(stub.test_emails)
-  1
+  >>> [notification] = pop_notifications()
 
 The mail headers are the same as before:
 
-  >>> [notification] = pop_notifications()
   >>> notification['To']
   'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
   >>> notification['Subject']
@@ -137,17 +138,23 @@ The mail body contains the same list of files again:
   You may have gotten the distrorelease wrong.  If so, you may get warnings
   above if files already exist in other distroreleases.
   <BLANKLINE>
+  -- 
+  You are receiving this email because you are the uploader, maintainer or
+  signer of the above package.
+  <BLANKLINE>
 
-notify() will also work without passing the changesfileobject parameter
+
+notify() will also work without passing the changes_file_object parameter
 provided that everything is already committed to the database (which is not
 the case when nascent upload runs).  This example demonstrates this usage:
 
   >>> from canonical.librarian.ftests.harness import (
   ...     fillLibrarianFile, cleanupLibrarianFiles)
-  >>> changesfile = open(changesfilepath,"r")
-  >>> fillLibrarianFile(1, content=changesfile.read())
-  >>> changesfile.close()
-  >>> drq.notify(announcelist="announcelist@canonical.com", logger=mock_logger)
+  >>> changes_file = open(changes_file_path,"r")
+  >>> fillLibrarianFile(1, content=changes_file.read())
+  >>> changes_file.close()
+  >>> netapplet_upload.notify(announce_list="announcelist@canonical.com", 
+  ...     logger=mock_logger)
   DEBUG: Building recipients list.
   ...
   DEBUG: Sent a mail:
@@ -155,16 +162,15 @@ the case when nascent upload runs).  This example demonstrates this usage:
   DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
   DEBUG: above if files already exist in other distroreleases.
+  ...
+  DEBUG: signer of the above package.
 
 Only one email is generated:
 
-  >>> transaction.commit()
-  >>> len(stub.test_emails)
-  1
+  >>> [notification] = pop_notifications()
 
 The mail headers are the same as before:
 
-  >>> [notification] = pop_notifications()
   >>> notification['To']
   'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
   >>> notification['Subject']
@@ -181,13 +187,19 @@ The mail body contains the same list of files again:
   You may have gotten the distrorelease wrong.  If so, you may get warnings
   above if files already exist in other distroreleases.
   <BLANKLINE>
+  -- 
+  You are receiving this email because you are the uploader, maintainer or
+  signer of the above package.
+  <BLANKLINE>
 
 
-notify() will also generate rejection notices if the upload failed:
+notify() will also generate rejection notices if the upload failed.  The
+summary_text argument is text that is appended to any auto-generated text for
+the summary.  Rejections don't currently auto-generate anything.
 
-  >>> drq.setRejected()
-  >>> drq.notify(summary_text="Testing rejection message", 
-  ...            logger=mock_logger)
+  >>> netapplet_upload.setRejected()
+  >>> netapplet_upload.notify(summary_text="Testing rejection message", 
+  ...     logger=mock_logger)
   DEBUG: Building recipients list.
   ...
   DEBUG: Sending rejection email.
@@ -200,6 +212,8 @@ notify() will also generate rejection notices if the upload failed:
   ...
   DEBUG: If you don't understand why your files were rejected, or if the
   DEBUG: override file requires editing, reply to this email.
+  ...
+  DEBUG: signer of the above package.
 
 Only one email is generated:
 

@@ -24,7 +24,7 @@ from sha import sha
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    NotFoundError, IDistributionSet, IDistroReleaseQueueSet,
+    NotFoundError, IDistributionSet, IPackageUploadSet,
     IComponentSet, ISectionSet, QueueInconsistentStateError,
     IPersonSet)
 
@@ -41,16 +41,16 @@ from canonical.launchpad.mail import sendmail
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
 from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, PackagePublishingPriority,
+    PackageUploadStatus, PackagePublishingPriority,
     PackagePublishingPocket)
 
 
 name_queue_map = {
-    "new": DistroReleaseQueueStatus.NEW,
-    "unapproved": DistroReleaseQueueStatus.UNAPPROVED,
-    "accepted": DistroReleaseQueueStatus.ACCEPTED,
-    "done": DistroReleaseQueueStatus.DONE,
-    "rejected": DistroReleaseQueueStatus.REJECTED
+    "new": PackageUploadStatus.NEW,
+    "unapproved": PackageUploadStatus.UNAPPROVED,
+    "accepted": PackageUploadStatus.ACCEPTED,
+    "done": PackageUploadStatus.DONE,
+    "rejected": PackageUploadStatus.REJECTED
     }
 
 name_priority_map = {
@@ -91,7 +91,7 @@ class QueueAction:
     """Queue Action base class.
 
     Implements a bunch of common/useful method designed to provide easy
-    DistroReleaseQueue handling.
+    PackageUpload handling.
     """
 
     def __init__(self, distribution_name, suite_name, queue, terms,
@@ -115,7 +115,7 @@ class QueueAction:
     @cachedproperty
     def size(self):
         """Return the size of the queue in question."""
-        return getUtility(IDistroReleaseQueueSet).count(
+        return getUtility(IPackageUploadSet).count(
             status=self.queue, distrorelease=self.distrorelease,
             pocket=self.pocket)
 
@@ -164,9 +164,9 @@ class QueueAction:
             self.displayUsage(FILTERMSG)
 
         if term.isdigit():
-            # retrieve DistroReleaseQueue item by id
+            # retrieve PackageUpload item by id
             try:
-                item = getUtility(IDistroReleaseQueueSet).get(int(term))
+                item = getUtility(IPackageUploadSet).get(int(term))
             except NotFoundError, info:
                 raise QueueActionError('Queue Item not found: %s' % info)
 
@@ -187,7 +187,7 @@ class QueueAction:
             self.items_size = 1
             self.term = None
         else:
-            # retrieve DistroReleaseQueue item by name/version key
+            # retrieve PackageUpload item by name/version key
             version = None
             if '/' in term:
                 term, version = term.strip().split('/')
@@ -449,7 +449,7 @@ class QueueActionReport(QueueAction):
                                            self.distrorelease.name))
 
         for queue in name_queue_map.values():
-            size = getUtility(IDistroReleaseQueueSet).count(
+            size = getUtility(IPackageUploadSet).count(
                 status=queue, distrorelease=self.distrorelease,
                 pocket=self.pocket)
             self.display("\t%s -> %s entries" % (queue.name, size))
@@ -819,8 +819,8 @@ class QueueActionOverride(QueueAction):
         overridden = None
         for queue_item in self.items:
             for build in queue_item.builds:
-                # Different than DistroReleaseQueueSources
-                # DistroReleaseQueueBuild points to a Build, that can,
+                # Different than PackageUploadSources
+                # PackageUploadBuild points to a Build, that can,
                 # and usually does, point to multiple BinaryPackageReleases.
                 # So we need to carefully select the requested package to be
                 # overridden

@@ -1,35 +1,35 @@
 == Upload processing queue ==
 
-The upload processing queue (DistroReleaseQueue and friends) is where
+The upload processing queue (PackageUpload and friends) is where
 uploads go after they have been checked by process-upload.py and
 before they get published by publish-distro.py.
 
-DistroReleaseQueue system stores syntactically corrects (see
+Upload system stores syntactically corrects (see
 nascentupload.txt) uploads driven by a submitted changesfile.
 
-One DistroReleaseQueue ~ One upload ~ One changesfile.
+One PackageUpload ~ One upload ~ One changesfile.
 
 An upload can contain a combination of content types, organized by:
 
- * Source (DistroReleaseQueueSource, DRQS):
+ * Source (PackageUploadSource):
    a SourcePackageRelease ([tar.gz +] diff)
 
- * Build (DistroReleaseQueueBuild, DRQB):
+ * Build (PackageUploadBuild):
    a Build result, one or more BinaryPackageReleases resulted from a
    successfully build (deb).
 
- * Custom (DistroReleaseQueueCustom, DRQC):
+ * Custom (PackageUploadCustom):
    a special file which will be processed in a specific way to publish
    its contents in the archive  (tar.gz). Currently we support
    translations, installer and  upgrader (see
    distroreleasequeue-{translation, dist-upgrader}).
 
-Each of those instances points back to a DistroReleaseQueue entry
+Each of those instances points back to a PackageUpload entry
 (parent) and to its type target:
 
- * DRQS -> SourcePackageRelease (SPR),
- * DRQB -> Build,
- * DRQC -> LibraryFileAlias (LFA).
+ * PackageUploadSource -> SourcePackageRelease (SPR),
+ * PackageUploadBuild -> Build,
+ * PackageUploadCustom -> LibraryFileAlias (LFA).
 
 The combination is assured by the upload policy used (see
 nascentupload.txt), some of them allow source + binaries, other only
@@ -48,12 +48,16 @@ We need some setup for the upload handler.
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
 
-Since we landed correct security adapters for DistroReleaseQueue,
+Since we landed correct security adapters for PackageUpload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 
   >>> from canonical.launchpad.ftests import login
   >>> login("foo.bar@canonical.com")
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> hoary = ubuntu['hoary']
 
 Construct an upload.
 
@@ -77,13 +81,11 @@ convert it to an ACCEPTED item.
 
   >>> from canonical.launchpad.interfaces import (
   ...      IDistributionSet, QueueInconsistentStateError)
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
 
-  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> hoary = ubuntu['hoary']
-  >>> new_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
 
-Use state-machine method provided by DistroReleaseQueue to ACCEPT an
+Use state-machine method provided by PackageUpload to ACCEPT an
 upload. If some designed check according the request state do not
 pass, the state-machine methods will raise an exception indicating the
 upload can not have that state.
@@ -100,7 +102,7 @@ Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
 
   >>> flush_database_updates()
 
-  >>> accepted_queue = hoary.getQueueItems(DistroReleaseQueueStatus.ACCEPTED)
+  >>> accepted_queue = hoary.getQueueItems(PackageUploadStatus.ACCEPTED)
 
   >>> for item in accepted_queue:
   ...     for source in item.sources:
@@ -123,21 +125,21 @@ Confirm we can now find ed published in hoary.
   0.2-20
 
 
-Check IDistroReleaseQueueSet behaviour:
+Check IPackageUploadSet behaviour:
 
-  >>> from canonical.launchpad.interfaces import IDistroReleaseQueueSet
+  >>> from canonical.launchpad.interfaces import IPackageUploadSet
   >>> from zope.interface.verify import verifyObject
 
 Grab an utility:
 
-  >>> qset = getUtility(IDistroReleaseQueueSet)
+  >>> qset = getUtility(IPackageUploadSet)
 
 Check if it implements its interface completely:
 
-  >>> verifyObject(IDistroReleaseQueueSet, qset)
+  >>> verifyObject(IPackageUploadSet, qset)
   True
 
-Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
+Iterating over IPackageUploads via iPackageUploadSet:
 
   >>> for item in qset:
   ...     print item.id
@@ -155,7 +157,7 @@ Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
   12
   13
 
-Retrieving an IDistroReleaseQueue by its id:
+Retrieving an IPackageUpload by its id:
 
   >>> qset[1].id
   1
@@ -168,27 +170,27 @@ Counter, optionally by status (informally named "queue") and or distrorelease:
   >>> qset.count()
   13
 
-  >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
+  >>> qset.count(PackageUploadStatus.ACCEPTED)
   1
 
-  >>> qset.count(DistroReleaseQueueStatus.REJECTED)
+  >>> qset.count(PackageUploadStatus.REJECTED)
   0
 
 Retrieve some data from DB to play more with counter.
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
   >>> breezy_autotest = distro['breezy-autotest']
 
   >>> qset.count(distrorelease=breezy_autotest)
   11
 
-  >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
+  >>> qset.count(status=PackageUploadStatus.ACCEPTED,
   ...            distrorelease=breezy_autotest)
   0
 
-  >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
+  >>> qset.count(status=PackageUploadStatus.ACCEPTED,
   ...            distrorelease=hoary)
   1
 
@@ -240,12 +242,12 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
   >>> custom_item.sourcepackagerelease
   Traceback (most recent call last):
   ...
-  AssertionError
+  AssertionError: No source available.
 
 
 == Upload Signing Key ==
 
-IDistroReleaseQueue.signing_key should store the IGPGKey reference to
+IPackageUpload.signing_key should store the IGPGKey reference to
 the key used to sign the changesfile when it applies (insecure policy
 uploads).
 
@@ -269,9 +271,9 @@ Let's process a new upload:
   >>> signed_queue = bar_ok.queue_root
 
   >>> from canonical.launchpad.interfaces import (
-  ...     IDistroReleaseQueue, IGPGKey)
+  ...     IPackageUpload, IGPGKey)
 
-  >>> verifyObject(IDistroReleaseQueue, signed_queue)
+  >>> verifyObject(IPackageUpload, signed_queue)
   True
 
   >>> verifyObject(IGPGKey, signed_queue.signing_key)
@@ -299,10 +301,10 @@ and sponsored by 'Foo Bar'.
 
 Explore the queue features of a DistroRelease instance, let's check
 some usages of IHasQueueItems.getQueueItems, which returns a list
-of IDistroReleaseQueue entries.
+of IPackageUpload entries.
 
   >>> new_items = breezy_autotest.getQueueItems(
-  ...    DistroReleaseQueueStatus.NEW)
+  ...    PackageUploadStatus.NEW)
   >>> new_items.count()
   6
 
@@ -320,7 +322,7 @@ Invetigate the queue entries type:
 Exercises build side of getQueueItems, Retrieve queue entry for a
 name like 'moz':
 
-  >>> items = breezy_autotest.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
   ...                                            name='moz')
   >>> items.count()
   1
@@ -334,7 +336,7 @@ Got a distrorelease build queue entry for 'mozilla-firefox_0.9'
 
 Try with version:
 
-  >>> items = breezy_autotest.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
   ...                                            name='moz', version='0.9')
   >>> items.count()
   1
@@ -348,7 +350,7 @@ Got the same queue entry.
 
 Let's try another entry where binary package name is LIKE 'pmount'
 
-  >>> items = breezy_autotest.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
   ...                                            name='pmount')
   >>> items.count()
   1
@@ -362,7 +364,7 @@ Got 'pmount_0.1-1'.
 
 Look for every queue entry which package name is like 'mo'
 
-  >>> items = breezy_autotest.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
   ...                                            name='mo')
   >>> items.count()
   2
@@ -377,7 +379,7 @@ Got both sampledata results 'p_mo_unt' & '_mo_zilla-firefox'
 
 Try 'exact_match' for 'mozil_0.0.1'
 
-  >>> items = breezy_autotest.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
   ...                 name='mozil', version='0.0.1', exact_match=True)
   >>> items.count()
   0
@@ -388,21 +390,21 @@ Try to match custom uploads by filename, there is one sampledata
 custom upload in UNAPPROVED queue.
 
   >>> items = breezy_autotest.getQueueItems(
-  ...      DistroReleaseQueueStatus.UNAPPROVED)
+  ...      PackageUploadStatus.UNAPPROVED)
   >>> items.count()
   5
 
 We can't retrieve it with a 'what' substring:
 
   >>> items = breezy_autotest.getQueueItems(
-  ...      DistroReleaseQueueStatus.UNAPPROVED, name='what')
+  ...      PackageUploadStatus.UNAPPROVED, name='what')
   >>> items.count()
   0
 
 But it works with the right substring 'net' from 'netapplet.tar.gz'
 
   >>> items = breezy_autotest.getQueueItems(
-  ...      DistroReleaseQueueStatus.UNAPPROVED, name='net')
+  ...      PackageUploadStatus.UNAPPROVED, name='net')
   >>> items.count()
   2
 
@@ -430,26 +432,25 @@ Ensure list of pockets is also valid:
 Check if association of status and pocket arguments works well:
 
   >>> breezy_autotest.getQueueItems(
-  ...      DistroReleaseQueueStatus.UNAPPROVED,
+  ...      PackageUploadStatus.UNAPPROVED,
   ...      pocket=PackagePublishingPocket.UPDATES).count()
   1
 
   >>> breezy_autotest.getQueueItems(
-  ...      DistroReleaseQueueStatus.NEW,
+  ...      PackageUploadStatus.NEW,
   ...      pocket=PackagePublishingPocket.UPDATES).count()
   0
 
   >>> breezy_autotest.getQueueItems(
-  ...      [DistroReleaseQueueStatus.NEW, DistroReleaseQueueStatus.UNAPPROVED],
+  ...      [PackageUploadStatus.NEW, PackageUploadStatus.UNAPPROVED],
   ...      pocket=PackagePublishingPocket.UPDATES).count()
   1
 
-
-Check State Machine over DistroReleaseQueue:
+Check State Machine over PackageUploadBuilds:
 
 Performing full acceptance:
 
-  >>> items = breezy_autotest.getQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW)
   >>> for item in items:
   ...      try:
   ...          item.setAccepted()
@@ -464,7 +465,7 @@ Performing full acceptance:
   pmount ACCEPTED
   mozilla-firefox ACCEPTED
 
-Move the DistroReleaseQueue items back to NEW
+Move the PackageUpload items back to NEW
 
   >>> for item in items:
   ...     item.setNew()
@@ -489,7 +490,7 @@ Check several available state machine methods on a NEW queue item
 (except setAccepted, it's already covered by other tests, check if they
 don't raise any exception):
 
-  >>> test_qitem = getUtility(IDistroReleaseQueueSet)[1]
+  >>> test_qitem = getUtility(IPackageUploadSet)[1]
   >>> test_qitem.setUnapproved()
   >>> test_qitem.setRejected()
   >>> test_qitem.setDone()
@@ -501,10 +502,10 @@ Check forbidden approval of not selected Section:
   >>> from canonical.launchpad.interfaces import (
   ...     IComponentSet, ISectionSet)
 
-Retrieve mozilla-firefox DRQ:
+Retrieve mozilla-firefox Upload:
 
   >>> item = breezy_autotest.getQueueItems(
-  ...     DistroReleaseQueueStatus.NEW, name='mozilla')[0]
+  ...     PackageUploadStatus.NEW, name='mozilla')[0]
 
 Override the mozilla-firefox component to fresh created 'hell' component.
 
@@ -526,7 +527,7 @@ Check how we treat source upload duplications in UNAPPROVED queue (NEW
 has a similar behaviour):
 
   >>> dups = breezy_autotest.getQueueItems(
-  ...     DistroReleaseQueueStatus.UNAPPROVED, name='cnews')
+  ...     PackageUploadStatus.UNAPPROVED, name='cnews')
   >>> dups.count()
   2
   >>> dup_one, dup_two = list(dups)
@@ -540,7 +541,7 @@ The upload admin can not accept both since we check unique
 (name, version) accross distribution:
 
   >>> dup_one.setAccepted()
-  >>> dup_one.status == DistroReleaseQueueStatus.ACCEPTED
+  >>> dup_one.status == PackageUploadStatus.ACCEPTED
   True
 
 The database modification needs to be realised in the DB, otherwise
@@ -575,7 +576,7 @@ test after the former accepted item was published (DONE queue)
   'UNAPPROVED'
 
   >>> dup_one.setDone()
-  >>> dup_one.status == DistroReleaseQueueStatus.DONE
+  >>> dup_one.status == PackageUploadStatus.DONE
   True
   >>> dup_one.syncUpdate()
 
@@ -592,7 +593,7 @@ Check forbidden approval of not selected Section:
 Retrieve pmount:
 
   >>> item = breezy_autotest.getQueueItems(
-  ...     DistroReleaseQueueStatus.NEW, name='pmount')[0]
+  ...     PackageUploadStatus.NEW, name='pmount')[0]
 
 Override the pmount section to fresh created 'heaven' section.
 
@@ -612,13 +613,13 @@ Try to perform single acceptance of pmount with not allowed section:
   ...     print item.displayname, 'ACCEPTED'
   pmount Section "heaven" is not allowed in breezy-autotest
 
-Check how the security adapters work for DistroReleaseQueue:
+Check how the security adapters work for PackageUpload:
 
-  >>> pub_qitem = getUtility(IDistroReleaseQueueSet)[1]
+  >>> pub_qitem = getUtility(IPackageUploadSet)[1]
 
 UNAPPROVED queue items are expected to be private:
 
-  >>> priv_qitem = getUtility(IDistroReleaseQueueSet)[5]
+  >>> priv_qitem = getUtility(IPackageUploadSet)[5]
 
 Anonymous don't have access any kind of access to both, private and
 public queue items:
@@ -628,12 +629,12 @@ public queue items:
   >>> pub_qitem.displayname
   Traceback (most recent call last):
   ...
-  Unauthorized: (<DistroReleaseQueue ..., 'displayname', 'launchpad.View')
+  Unauthorized: (<PackageUpload ..., 'displayname', 'launchpad.View')
 
   >>> priv_qitem.displayname
   Traceback (most recent call last):
   ...
-  Unauthorized: (<DistroReleaseQueue ..., 'displayname', 'launchpad.View')
+  Unauthorized: (<PackageUpload ..., 'displayname', 'launchpad.View')
 
 A normal user may see the public, but not the private, and can't act
 in both of them:
@@ -646,21 +647,21 @@ in both of them:
   >>> priv_qitem.displayname
   Traceback (most recent call last):
   ...
-  Unauthorized: (<DistroReleaseQueue ..., 'displayname', 'launchpad.View')
+  Unauthorized: (<PackageUpload ..., 'displayname', 'launchpad.View')
 
   >>> pub_qitem.setDone()
   Traceback (most recent call last):
   ...
-  Unauthorized: (<DistroReleaseQueue ..., 'setDone', 'launchpad.Edit')
+  Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
 
   >>> priv_qitem.setDone()
   Traceback (most recent call last):
   ...
-  Unauthorized: (<DistroReleaseQueue ..., 'setDone', 'launchpad.Edit')
+  Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
 
 
 Only the members of distrorelease drivers in question have
-launchpad.Edit on a distroreleasequeue record.
+launchpad.Edit on a packageupload record.
 
   >>> login('foo.bar@canonical.com')
 

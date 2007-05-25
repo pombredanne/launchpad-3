@@ -68,7 +68,8 @@ re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)");
 re_multi_line_field = re.compile(r"^\s(.*)");
 
 
-def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False):
+def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
+                        filename=None):
     """Parses a tag file and returns a dictionary where each field is a key.
 
     The mandatory first argument is the contents of the tag file as a
@@ -89,9 +90,6 @@ def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False):
     """
     error = ""
     changes = {}
-
-    if not lines:
-        raise TagFileParseError( "%s: empty file" % filename )
 
     # Reindex by line number so we can easily verify the format of
     # .dsc files...
@@ -188,5 +186,9 @@ def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
     changes_in = open(filename, "r")
     lines = changes_in.readlines()
     changes_in.close()
-    return parse_tagfile_lines(lines, dsc_whitespace_rules, allow_unsigned)
+    if not lines:
+        raise TagFileParseError( "%s: empty file" % filename )
+    return parse_tagfile_lines(
+        lines, dsc_whitespace_rules=dsc_whitespace_rules,
+        allow_unsigned=allow_unsigned, filename=filename)
 

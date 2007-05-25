@@ -179,18 +179,6 @@ class NascentUpload:
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
 
-        # Check if the policy distrorelese is already defined first.
-        # If it's not, skip pocket upload rights check, the upload
-        # is already rejected at this point.
-        distrorelease = self.policy.distrorelease
-        pocket = self.policy.pocket
-        if distrorelease and not distrorelease.canUploadToPocket(pocket):
-            self.reject(
-                "Not permitted to upload to the %s pocket in a "
-                "release in the '%s' state." % (
-                self.policy.pocket.name,
-                self.policy.distrorelease.releasestatus.name))
-
         # Perform policy checks
         self.policy.checkUpload(self)
 
@@ -212,19 +200,6 @@ class NascentUpload:
             if uploaded_file.new:
                 return True
         return False
-
-    @property
-    def sender(self):
-        """RFC822 sender header specified in LP configuration."""
-        return "%s <%s>" % (
-            config.uploader.default_sender_name,
-            config.uploader.default_sender_address)
-
-    @property
-    def default_recipient(self):
-        """RFC822 default recipient specified in LP configuration. """
-        return "%s <%s>" % (config.uploader.default_recipient_name,
-                            config.uploader.default_recipient_address)
 
     #
     # Overall consistency checks
@@ -333,7 +308,6 @@ class NascentUpload:
                 tar += 1
 
         # Okay, let's check the sanity of the upload.
-
         if dsc > 1:
             self.reject("Changes file lists more than one .dsc")
         if diff > 1:
@@ -420,6 +394,13 @@ class NascentUpload:
             else:
                 raise AssertionError("Unknown error occurred: %s" % str(error))
 
+    @property
+    def is_ppa(self):
+        """Whether or not the current upload is target for a PPA."""
+        if self.policy.archive.id != self.policy.distrorelease.main_archive.id:
+            return True
+        return False
+
     def reject(self, msg):
         """Add the provided message to the rejection message."""
         self.rejections.append(msg)
@@ -470,14 +451,24 @@ class NascentUpload:
         return in_keyring
 
     def processSignerAcl(self):
-        """Work out what components the signer is permitted to upload to and
-        verify that all files are either NEW or are targetted at those
-        components only.
-        """
+        """Check rights of the current upload submmiter.
 
+        Work out what components the signer is permitted to upload to and
+        verify that all files are either NEW or are targetted at those
+        components only for normal distribution uploads.
+
+        Ensure the signer is the onwer of the targeted archive for PPA
+        uploads.
+        """
         # If we have no signer, there's no ACL we can apply
         if self.changes.signer is None:
             self.logger.debug("No signer, therefore ACL not processed")
+            return
+
+        # verify PPA uploads
+        if self.is_ppa:
+            if not self.changes.signer.inTeam(self.policy.archive.owner):
+                self.reject("Signer has no upload rights to this PPA")
             return
 
         possible_components = self._components_valid_for(self.changes.signer)
@@ -492,6 +483,10 @@ class NascentUpload:
         """Verify that the uploaded files are okay for their named components
         by the provided signer.
         """
+        if self.is_ppa:
+            self.logger.debug("Do verify signer ACL for PPA")
+            return
+
         if self.changes.signer is None:
             self.logger.debug(
                 "No signer, therefore no point verifying signer against ACL")
@@ -551,11 +546,14 @@ class NascentUpload:
             return None
 
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
+
         for pocket in lookup_pockets:
             candidates = self.policy.distrorelease.getPublishedReleases(
-                source_name, include_pending=True, pocket=pocket)
+                source_name, include_pending=True, pocket=pocket,
+                archive=self.policy.archive)
             if candidates:
                 return candidates[0]
+
         return None
 
     def getBinaryAncestry(self, uploaded_file, try_other_archs=True):
@@ -589,7 +587,9 @@ class NascentUpload:
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
         for pocket in lookup_pockets:
             candidates = dar.getReleasedPackages(
-                binary_name, include_pending=True, pocket=pocket)
+                binary_name, include_pending=True, pocket=pocket,
+                archive=self.policy.archive)
+
             if candidates:
                 return candidates[0]
 
@@ -602,14 +602,16 @@ class NascentUpload:
                           if other_dar.id != dar.id]
             for other_dar in other_dars:
                 candidates = other_dar.getReleasedPackages(
-                    binary_name, include_pending=True, pocket=pocket)
+                    binary_name, include_pending=True, pocket=pocket,
+                    archive=self.policy.archive)
+
                 if candidates:
                     return candidates[0]
         return None
 
     def _checkVersion(self, proposed_version, archive_version, filename):
         """Check if the proposed version is higher than that in the archive."""
-        if apt_pkg.VersionCompare(proposed_version, archive_version) <= 0:
+        if apt_pkg.VersionCompare(proposed_version, archive_version) < 0:
             self.reject("%s: Version older than that in the archive. %s <= %s"
                         % (filename, proposed_version, archive_version))
 
@@ -691,9 +693,10 @@ class NascentUpload:
                     self.overrideSource(uploaded_file, ancestry)
                     uploaded_file.new = False
                 else:
-                    self.logger.debug(
-                        "%s: (source) NEW" % (uploaded_file.package))
-                    uploaded_file.new = True
+                    if not self.is_ppa:
+                        self.logger.debug(
+                            "%s: (source) NEW" % (uploaded_file.package))
+                        uploaded_file.new = True
 
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
@@ -721,9 +724,10 @@ class NascentUpload:
                     if ancestry is not None:
                         self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
-                    self.logger.debug(
-                        "%s: (binary) NEW" % (uploaded_file.package))
-                    uploaded_file.new = True
+                    if not self.is_ppa:
+                        self.logger.debug(
+                            "%s: (binary) NEW" % (uploaded_file.package))
+                        uploaded_file.new = True
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
@@ -755,10 +759,10 @@ class NascentUpload:
             # may fail yet this email will be sent.  The chances of this are
             # very small, and at some point the script infrastructure will
             # only send emails when the script exits successfully.
-            changesfileobject = open(self.changes.filepath, "r")
-            self.queue_root.notify(announcelist=self.policy.announcelist, 
-                changesfileobject=changesfileobject, logger=self.logger)
-            changesfileobject.close()
+            changes_file_object = open(self.changes.filepath, "r")
+            self.queue_root.notify(announce_list=self.policy.announcelist, 
+                changes_file_object=changes_file_object, logger=self.logger)
+            changes_file_object.close()
             return True
 
         except (SystemExit, KeyboardInterrupt):
@@ -767,9 +771,9 @@ class NascentUpload:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
             # reject message rather than being swallowed up.
-            self.reject("Exception while accepting: %s" % e)
+            self.reject("%s" % e)
             # Let's log tracebacks for uncaught exceptions ...
-            self.logger.error('BOOM:\n', exc_info=True)
+            self.logger.error('Exception while accepting:\n', exc_info=True)
             self.do_reject()
             return False
 
@@ -777,69 +781,10 @@ class NascentUpload:
         """Reject the current upload given the reason provided."""
         assert self.is_rejected, "The upload is not rejected."
 
-        changesfileobject = open(self.changes.filepath, "r")
+        changes_file_object = open(self.changes.filepath, "r")
         self.queue_root.notify(summary_text=self.rejection_message,
-            changesfileobject=changesfileobject, logger=self.logger)
-        changesfileobject.close()
-
-    def getRecipients(self):
-        """Return a list of recipients including every address we trust."""
-        recipients = []
-        self.logger.debug("Building recipients list.")
-        maintainer = self.changes.maintainer['person']
-        changer = self.changes.changed_by['person']
-
-        if self.changes.signer:
-            recipients.append(self.changes.signer_address['person'])
-
-            if (maintainer != self.changes.signer and
-                self.is_person_in_keyring(maintainer)):
-                self.logger.debug("Adding maintainer to recipients")
-                recipients.append(maintainer)
-
-            if (changer != self.changes.signer and changer != maintainer
-                and self.is_person_in_keyring(changer)):
-                self.logger.debug("Adding changed-by to recipients")
-                recipients.append(changer)
-        else:
-            # Only autosync policy allow unsigned changes
-            # We rely on the person running sync-tool about the identity
-            # of the changer.
-            self.logger.debug(
-                "Changes file is unsigned, adding changer as recipient")
-            recipients.append(changer)
-
-        valid_recipients = []
-        for person in recipients:
-            if person is None or person.preferredemail is None:
-                # We should only actually send mail to people that are
-                # registered Launchpad user with preferred email; this
-                # is a sanity check to avoid spamming the innocent.  Not
-                # that we do that sort of thing.
-                #
-                # In particular, people that were created because of
-                # policy.create_people won't get emailed. That's life.
-                continue
-            recipient = format_address(person.displayname,
-                                       person.preferredemail.email)
-            self.logger.debug("Adding recipient: '%s'" % recipient)
-            valid_recipients.append(recipient)
-        return valid_recipients
-
-    def getNotificationSummary(self):
-        """List the files and build the notification summary as needed."""
-        summary = []
-        for uploaded_file in self.changes.files:
-            if uploaded_file.new:
-                summary.append("NEW: %s" % uploaded_file.filename)
-            else:
-                summary.append(" OK: %s" % uploaded_file.filename)
-                if isinstance(uploaded_file, DSCFile):
-                    summary.append("     -> Component: %s Section: %s" % (
-                        uploaded_file.component.name,
-                        uploaded_file.section.name))
-
-        return "\n".join(summary)
+            changes_file_object=changes_file_object, logger=self.logger)
+        changes_file_object.close()
 
     #
     # Inserting stuff in the database
@@ -854,7 +799,8 @@ class NascentUpload:
         distrorelease = self.policy.distrorelease
         self.queue_root = distrorelease.createQueueEntry(
             self.policy.pocket, self.changes.filename,
-            self.changes.filecontents, self.changes.signingkey)
+            self.changes.filecontents, self.policy.archive,
+            self.changes.signingkey)
 
         # When binaryful and sourceful, we have a mixed-mode upload.
         # Mixed-mode uploads need special handling, and the spr here is
@@ -897,7 +843,7 @@ class NascentUpload:
 
             # Perform some checks on processed build(s) if there were any.
             # Ensure that only binaries for a single build were processed
-            # Then add a respective DistroReleaseQueueBuild entry for it
+            # Then add a respective PackageUploadBuild entry for it
             if len(processed_builds) > 0:
                 unique_builds = set([b.id for b in processed_builds])
                 assert len(unique_builds) == 1, (
@@ -907,6 +853,12 @@ class NascentUpload:
                 # They are all the same according the previous assertion.
                 considered_build = processed_builds[0]
                 self.queue_root.addBuild(considered_build)
+
+        # PPA uploads are Auto-Accepted by default
+        if self.is_ppa:
+            self.logger.debug("Setting it to ACCEPTED")
+            self.queue_root.setAccepted()
+            return
 
         if not self.is_new:
             # if it is known (already overridden properly), move it to

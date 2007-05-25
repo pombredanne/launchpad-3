@@ -22,8 +22,6 @@ def datadir(path):
     return os.path.join(here, 'data', path)
 
 
-
-
 class MockUploadOptions:
     """Mock upload policy options helper"""
 
@@ -31,7 +29,6 @@ class MockUploadOptions:
         self.distro = distro
         self.distrorelease = distrorelease
         self.buildid = buildid
-
 
 def getPolicy(name='anything', distro='ubuntu', distrorelease=None,
               buildid=None):

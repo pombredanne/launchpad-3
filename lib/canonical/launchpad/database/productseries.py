@@ -106,6 +106,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                             orderBy=['-id'])
 
     @property
+    def release_files(self):
+        """See IProductSeries."""
+        files = set()
+        for release in self.releases:
+            files = files.union(release.files)
+        return files
+
+    @property
     def displayname(self):
         return self.name
 
@@ -272,7 +280,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query += ' AND Specification.informational IS TRUE'
-        
+
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         completeness =  Specification.completeness_clause
@@ -392,7 +400,13 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def certifyForSync(self):
         """Enable the sync for processing."""
         self.dateprocessapproved = UTC_NOW
-        self.syncinterval = datetime.timedelta(1)
+        if self.rcstype == RevisionControlSystems.CVS:
+            self.syncinterval = datetime.timedelta(hours=12)
+        elif self.rcstype == RevisionControlSystems.SVN:
+            self.syncinterval = datetime.timedelta(hours=6)
+        else:
+            raise AssertionError('Unknown default sync interval for rcs type: %s'
+                                 % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
     def syncCertified(self):
@@ -521,7 +535,7 @@ class ProductSeriesSet:
             if ready is not None:
                 subqueries.append('Project.active IS TRUE')
                 subqueries.append('Project.reviewed IS TRUE')
-            queries.append('(Product.project IS NULL OR (%s))' % 
+            queries.append('(Product.project IS NULL OR (%s))' %
                            " AND ".join(subqueries))
 
             clauseTables.add('Project')
@@ -550,4 +564,3 @@ class ProductSeriesSet:
         if result is None:
             return default
         return result
-

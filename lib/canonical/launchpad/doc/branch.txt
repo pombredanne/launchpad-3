@@ -138,9 +138,9 @@ None
 The IBranchSet can tell us how many branches there are registered.
 
 >>> branchset.count()
-29
+30
 
-(25 in the sample data, and two added above.)
+(28 in the sample data, and two added above.)
 
 == Determing the number of branches with bugs ==
 
