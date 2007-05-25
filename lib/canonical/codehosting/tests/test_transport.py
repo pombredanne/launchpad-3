@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import unittest
 
+from bzrlib import errors
 from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryTransport
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
@@ -52,6 +53,8 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.assertEqual(self.authserver, self.server.authserver)
 
     def test_base_path_translation(self):
+        # ~person/product/branch maps to the branch ID converted to a four byte
+        # hexadecimal number and then split into four path segments.
         self.assertEqual(
             '00/00/00/01/',
             self.server.translate_virtual_path('/~foo/bar/baz'))
@@ -60,20 +63,28 @@ class TestLaunchpadServer(TestCaseInTempDir):
             self.server.translate_virtual_path('/~team1/bar/qux'))
 
     def test_extend_path_translation(self):
+        # Trailing path segments are preserved.
         self.assertEqual(
             '00/00/00/01/.bzr',
             self.server.translate_virtual_path('/~foo/bar/baz/.bzr'))
 
     def test_setUp(self):
+        # Setting up the server registers its schema with the protocol
+        # handlers.
         self.server.setUp()
         self.assertTrue(self.server.scheme in _get_protocol_handlers().keys())
 
     def test_tearDown(self):
+        # Setting up then tearing down the server removes its schema from the
+        # protocol handlers.
         self.server.setUp()
         self.server.tearDown()
         self.assertFalse(self.server.scheme in _get_protocol_handlers().keys())
 
     def test_get_url(self):
+        # The URL of the server is 'lp-<number>:///', where <number> is the
+        # id() of the server object. Including the id allows for multiple
+        # Launchpad servers to be running within a single process.
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
         self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
@@ -103,11 +114,20 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         self.assertEqual(self.server.get_url(), transport.base)
 
     def test_get_mapped_file(self):
-        # Getting a file from a public branch URL should get the file as stored
-        # on the filesystem.
+        # Getting a file from a public branch URL gets the file as stored on
+        # the base transport.
         transport = get_transport(self.server.get_url())
         self.assertEqual(
             'Hello World!', transport.get_bytes('~foo/bar/baz/hello.txt'))
+
+    def test_put_mapped_file(self):
+        # Putting a file from a public branch URL stores the file in the mapped
+        # URL on the base transport.
+        transport = get_transport(self.server.get_url())
+        transport.put_bytes('~foo/bar/baz/goodbye.txt', "Goodbye")
+        self.assertEqual(
+            "Goodbye",
+            self.backing_transport.get_bytes('00/00/00/01/goodbye.txt'))
 
     def test_cloning_updates_base(self):
         # Cloning a LaunchpadTransport returns a new transport with the base
@@ -134,6 +154,21 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         transport = transport.clone('~foo')
         self.assertEqual(
             'Hello World!', transport.get_bytes('bar/baz/hello.txt'))
+
+    def test_abspath(self):
+        # abspath for a relative path is the same as the base URL for a clone
+        # for that relative path.
+        transport = get_transport(self.server.get_url())
+        self.assertEqual(
+            transport.clone('~foo').base, transport.abspath('~foo'))
+
+    def test_incomplete_path_not_found(self):
+        # For a branch URL to be complete, it needs to have a person, product
+        # and branch. Trying to perform operations on an incomplete URL raises
+        # NoSuchFile errors.
+        transport = get_transport(self.server.get_url())
+        self.assertRaises(
+            errors.NoSuchFile, transport.get, '~foo')
 
 
 def test_suite():

@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = ['LaunchpadServer', 'LaunchpadTransport']
 
+from bzrlib.errors import NoSuchFile
 from bzrlib import urlutils
 from bzrlib.transport import (
     get_transport,
@@ -73,10 +74,26 @@ class LaunchpadTransport(Transport):
         return urlutils.joinpath(self.base[len(self.server.scheme)-1:],
                                  relpath)
 
+    def _call(self, methodname, relpath, *args, **kwargs):
+        method = getattr(self.server.backing_transport, methodname)
+        return method(self._translate_virtual_path(relpath), *args, **kwargs)
+
+    def _translate_virtual_path(self, relpath):
+        try:
+            return self.server.translate_virtual_path(self._abspath(relpath))
+        except KeyError:
+            raise NoSuchFile(relpath)
+
+    # Transport methods
+    def abspath(self, relpath):
+        return urlutils.join(self.server.scheme, relpath)
+
     def clone(self, relpath):
         return LaunchpadTransport(
             self.server, urlutils.join(self.base, relpath))
 
     def get(self, relpath):
-        return self.server.backing_transport.get(
-            self.server.translate_virtual_path(self._abspath(relpath)))
+        return self._call('get', relpath)
+
+    def put_file(self, relpath, f, mode=None):
+        return self._call('put_file', relpath, f, mode)
