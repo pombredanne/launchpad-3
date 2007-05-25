@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'BuildDaemonError',
     'BuildJobMismatch',
+    'BuildSlaveFailure',
+    'CannotBuild',
     'CannotResetHost',
     'IBuilder',
     'IBuilderSet',
@@ -37,6 +39,16 @@ class BuildJobMismatch(BuildDaemonError):
 
 class CannotResetHost(BuildDaemonError):
     """The build slave is hosted on a machine that cannot be remotely reset."""
+
+
+# CannotBuild is intended to be the base class for a family of more specific
+# errors.
+class CannotBuild(BuildDaemonError):
+    """The requested build cannot be done."""
+
+
+class BuildSlaveFailure(BuildDaemonError):
+    """The build slave has suffered an error and cannot be used."""
 
 
 class IBuilder(IHasOwner):
@@ -166,12 +178,25 @@ class IBuilder(IHasOwner):
             be reset.
         """
 
+    def setSlaveForTesting(new_slave):
+        """Set a new slave object. This is for testing only."""
+
     def slaveStatusSentence():
         """Get the slave status sentence for this builder.
 
         :return: A tuple with the first element containing the slave status,
             build_id-queue-id and then optionally more elements depending on
             the status.
+        """
+    
+    def startBuild(build_queue_item, logger):
+        """Start a build on this builder.
+
+        :param build_queue_item: A BuildQueueItem to build.
+        :param logger: A logger to be used to log diagnostic information.
+        :raises BuildSlaveFailure: When the build slave fails.
+        :raises CannotBuild: When a build cannot be started for some reason
+            other than the build slave failing.
         """
 
 

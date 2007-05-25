@@ -43,8 +43,6 @@ Mock Builder, a class to emulate the Builder behaviour:
   ...         slave.urlbase = self.url
   ...         self.name = name
   ...         self.trusted = False
-  ...     def cacheFileOnSlave(self, logger, filealias):
-  ...         print "cacheFile called"
   ...     def failbuilder(self, reason):
   ...         self.builderok = False
   ...         self.failnotes = reason
@@ -169,6 +167,9 @@ slave has the requested file in cache.
   >>> class OkSlave:
   ...     def status(self):
   ...         return ('BuilderStatus.IDLE',)
+  ...     def ensurepresent(self, sha1, url):
+  ...         print "ensurepresent called"
+  ...         return True, None
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
   ...         info = 'OkSlave BUILDING'
   ...         print info
@@ -253,7 +254,7 @@ slave has the requested file in cache.
 
   Stub classes to emulate Build and BuildQueue
 
-  >>> from canonical.launchpad.interfaces import IBuildSet
+  >>> from canonical.launchpad.interfaces import IBuildSet, IBuilderSet
 
 The slavescanner system also perform build-notification for the
 following states: FAILEDTOBUILD and CHROOTWAIT
@@ -751,8 +752,21 @@ Initialize BuildQueue missing attributes for building:
 Request a Mock slave build process, see OkSlave() class implementation
 for further details:
 
-  >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
-  cacheFile called
+Get a builder from the sample data:
+
+  >>> a_builder = getUtility(IBuilderSet).get(1)
+
+Force the builder to be 'ok' as the code required to do this automatically is
+not yet factored into the content class.
+
+  >>> a_builder.builderok = True
+
+Override the slave with one that will claim to be 'OK'
+
+  >>> a_builder.setSlaveForTesting(OkSlave())
+
+  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
+  ensurepresent called
   OkSlave BUILDING
 
 When there is no chroot it should not alter the buildstate:
@@ -766,7 +780,12 @@ When there is no chroot it should not alter the buildstate:
   >>> bqItem3.build.pocket = PackagePublishingPocket.SECURITY
   >>> bqItem3.build.buildstate = BuildStatus.NEEDSBUILD
 
-  >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
+Also reset the builder to be 'ready to build' by replacing the slave (where the
+actual state for building or not is stored).
+
+  >>> a_builder.setSlaveForTesting(OkSlave())
+
+  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
 
   >>> bqItem3.build.buildstate.name
   'NEEDSBUILD'
@@ -786,9 +805,9 @@ ubuntu/hoary/i386/SECURITY
 Since hoary is in development, we should not be able to dispatch
 builds for post-release pockets:
 
-  >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
+  >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
   Traceback (most recent call last):
   ...
-  AssertionError: Mock Build (1) can not be built for pocket SECURITY: illegal status
+  AssertionError: Mock Build (1) can not be built for pocket SECURITY: invalid pocket due to the release status of hoary.
 
 

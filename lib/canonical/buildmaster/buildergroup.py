@@ -156,50 +156,6 @@ class BuilderGroup:
         builder.failbuilder(reason)
         self.updateOkSlaves()
 
-    def findChrootFor(self, build_candidate, pocket):
-        """Return the CHROOT librarian identifier for (buildCandidate, pocket).
-
-        Calculate the right CHROOT file for the given pair buildCandidate and
-        pocket and return the Librarian file identifier for it, return None
-        if it wasn't found or wasn't able to calculate.
-        """
-        chroot = build_candidate.archrelease.getChroot(pocket)
-        if chroot:
-            return chroot.content.sha1
-
-    def startBuild(self, builder, queueItem, filemap, buildtype, pocket, args):
-        """Request a build procedure according given parameters."""
-        buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
-        self.logger.debug("Initiating build %s on %s" % (buildid, builder.url))
-
-        # PPA builds are not submitted to the main distribution policies.
-        build = queueItem.build
-        if build.is_trusted:
-            assert build.distrorelease.canUploadToPocket(build.pocket), (
-                "%s (%s) can not be built for pocket %s: illegal status"
-                % (build.title, build.id, build.pocket.name))
-
-        # refuse builds for missing CHROOTs
-        chroot = self.findChrootFor(queueItem, pocket)
-        if not chroot:
-            self.logger.critical("OOPS! Could not find CHROOT")
-            return
-        # store DB information
-        queueItem.builder = builder
-        queueItem.buildstart = UTC_NOW
-        queueItem.build.buildstate = dbschema.BuildStatus.BUILDING
-        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-        slave = removeSecurityProxy(builder.slave)
-        status, info = slave.build(buildid, buildtype, chroot, filemap, args)
-        message = """%s (%s):
-        ***** RESULT *****
-        %s
-        %s
-        %s: %s
-        ******************
-        """ % (builder.name, builder.url, filemap, args, status, info)
-        self.logger.info(message)
-
     def getLogFromSlave(self, slave, queueItem, librarian):
         """Get last buildlog from slave.
 

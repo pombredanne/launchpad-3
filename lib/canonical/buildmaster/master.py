@@ -23,7 +23,7 @@ from zope.component import getUtility
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.interfaces import (
-    IBuildQueueSet, IBuildSet
+    CannotBuild, BuildSlaveFailure, IBuildQueueSet, IBuildSet
     )
 
 from canonical.lp import dbschema
@@ -601,6 +601,7 @@ class BuilddMaster:
             if (spr.publishings and spr.publishings[0].status <=
                 dbschema.PackagePublishingStatus.PUBLISHED):
                 self.startBuild(builders, builder, build_candidate)
+                self.commit()
             else:
                 self._logger.debug(
                     "Build %s SUPERSEDED, queue item %s REMOVED"
@@ -613,76 +614,12 @@ class BuilddMaster:
 
     def startBuild(self, builders, builder, queueItem):
         """Find the list of files and give them to the builder."""
-        pocket = queueItem.build.pocket
-
-        self._logger.info("startBuild(%s, %s, %s, %s)"
-                           % (builder.url, queueItem.name,
-                              queueItem.version, pocket.title))
-
-        # ensure build has the need chroot
-        chroot = queueItem.archrelease.getChroot(pocket)
-        if chroot is None:
-            self._logger.debug(
-                "Missing CHROOT for %s/%s/%s/%s"
-                % (queueItem.build.distrorelease.distribution.name,
-                   queueItem.build.distrorelease.name,
-                   queueItem.build.distroarchrelease.architecturetag,
-                   queueItem.build.pocket.name))
-            return
-
         try:
-            # If we are building untrusted source reset the entire machine.
-            if not builder.trusted:
-                builder.resetSlaveHost(self._logger)
-            # Send chroot.
-            builder.cacheFileOnSlave(self._logger, chroot)
-
-            # Build filemap structure with the files required in this build
-            # and send them to the builder.
-            filemap = {}
-            for f in queueItem.files:
-                fname = f.libraryfile.filename
-                filemap[fname] = f.libraryfile.content.sha1
-                builder.cacheFileOnSlave(self._logger, f.libraryfile)
-
-            # Build extra arguments
-            args = {}
-            args["ogrecomponent"] = queueItem.component_name
-            # turn 'arch_indep' ON only if build is archindep or if
-            # the specific architecture is the nominatedarchindep for
-            # this distrorelease (in case it requires any archindep source)
-            # XXX: there is no point in checking if archhintlist ==
-            # 'all' here, because it's redundant with the check for
-            # isNominatedArchIndep. -- kiko, 2006-08-31
-            args['arch_indep'] = (queueItem.archhintlist == 'all' or
-                                  queueItem.archrelease.isNominatedArchIndep)
-
-            if not queueItem.is_trusted:
-                components_map = {
-                    'main': 'main',
-                    'restricted': 'main restricted',
-                    'universe': 'main restricted universe',
-                    'multiverse': 'main restricted universe multiverse',
-                    }
-                allowed_components = components_map[queueItem.component_name]
-                ppa_archive_url = queueItem.build.archive.archive_url
-                args['archives'] = [
-                    'http://archive.ubuntu.com/ubuntu %s' % allowed_components,
-                    '%s/ubuntu %s' % (ppa_archive_url, allowed_components)
-                    ]
-            else:
-                args['archives'] = []
-
-            # Request start of the process.
-            builders.startBuild(
-                builder, queueItem, filemap, "debian", pocket, args)
-
-        except (xmlrpclib.Fault, socket.error), info:
-            # mark builder as 'failed'.
-            self._logger.debug(
-                "Disabling builder: %s" % builder.url, exc_info=1)
-            builders.failBuilder(
-                builder, "Exception (%s) when setting up to new job" % info)
-
-        self.commit()
-
+            builder.startBuild(queueItem,  self._logger)
+        except BuildSlaveFailure:
+            # keep old mirrored-from-db-data in sync.
+            builders.updateOkSlaves()
+        except CannotBuild:
+            # Ignore the exception - this code is being refactored and the
+            # caller of startBuild expects it to never fail.
+            pass

@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 import httplib
+import socket
 import subprocess
 import urllib2
 import xmlrpclib
@@ -20,10 +21,12 @@ from sqlobject import (
 
 from canonical.config import config
 from canonical.buildmaster.master import BuilddMaster
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    BuildDaemonError, CannotResetHost, IBuildQueueSet, IBuildSet, IBuilder,
-    IBuilderSet, IDistroArchReleaseSet, IHasBuildRecords, NotFoundError,
+    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotResetHost,
+    IBuildQueueSet, IBuildSet, IBuilder, IBuilderSet, IDistroArchReleaseSet,
+    IHasBuildRecords, NotFoundError,
     ProtocolVersionMismatch)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
@@ -182,6 +185,113 @@ class Builder(SQLBase):
         if getattr(self, '_slave', None) is None:
             self._slave = BuilderSlave(self.url)
         return self._slave
+
+    def setSlaveForTesting(self, new_slave):
+        """See IBuilder."""
+        self._slave = new_slave
+
+    def startBuild(self, build_queue_item, logger):
+        """See IBuilder."""
+        logger.info("startBuild(%s, %s, %s, %s)", self.url,
+                    build_queue_item.name, build_queue_item.version,
+                    build_queue_item.build.pocket.title)
+        if self.trusted:
+            assert build_queue_item.is_trusted, \
+                "attempt to build untrusted item on a trusted-only builder."
+        # ensure build has the need chroot
+        chroot = build_queue_item.archrelease.getChroot(
+            build_queue_item.build.pocket)
+        if chroot is None:
+            logger.debug("Missing CHROOT for %s/%s/%s/%s",
+                build_queue_item.build.distrorelease.distribution.name,
+                build_queue_item.build.distrorelease.name,
+                build_queue_item.build.distroarchrelease.architecturetag,
+                build_queue_item.build.pocket.name)
+            raise CannotBuild
+        # The main distribution has policies prevent uploads to some pockets
+        # (e.g. security) during different parts of the distribution release
+        # lifecycle. These do not apply to PPA builds (which are untrusted).
+        if build_queue_item.is_trusted:
+            build = build_queue_item.build
+            # XXX: not an explicit CannotBuild exception yet because the callers
+            # have not been audited - Robert Collins 20070526.
+            assert build.distrorelease.canUploadToPocket(build.pocket), (
+                "%s (%s) can not be built for pocket %s: invalid pocket due "
+                "to the release status of %s."
+                % (build.title, build.id, build.pocket.name, build.distrorelease.name))
+        # If we are building untrusted source reset the entire machine.
+        if not self.trusted:
+            self.resetSlaveHost(logger)
+        # Send chroot.
+        self.cacheFileOnSlave(logger, chroot)
+        # Build filemap structure with the files required in this build
+        # and send them to the slave.
+        filemap = {}
+        for f in build_queue_item.files:
+            filemap[f.libraryfile.filename] = f.libraryfile.content.sha1
+            self.cacheFileOnSlave(logger, f.libraryfile)
+        # Build extra arguments
+        args = {}
+        args["ogrecomponent"] = build_queue_item.component_name
+        # turn 'arch_indep' ON only if build is archindep or if
+        # the specific architecture is the nominatedarchindep for
+        # this distrorelease (in case it requires any archindep source)
+        # XXX: there is no point in checking if archhintlist ==
+        # 'all' here, because it's redundant with the check for
+        # isNominatedArchIndep. -- kiko, 2006-08-31
+        args['arch_indep'] = (
+            build_queue_item.archhintlist == 'all' or
+            build_queue_item.archrelease.isNominatedArchIndep)
+        
+        if not build_queue_item.is_trusted:
+            # Add the urls for the current published archives to the build
+            # so that dependencies can be downloaded correctly.
+            # Only provide access to the minimal set of components required
+            # to be present by the component the build_queue_item is for.
+            components_map = {
+                'main': 'main',
+                'restricted': 'main restricted',
+                'universe': 'main restricted universe',
+                'multiverse': 'main restricted universe multiverse',
+                }
+            allowed_components = components_map[
+                build_queue_item.component_name]
+            args['archives'] = [
+                'http://archive.ubuntu.com/ubuntu %s' % allowed_components,
+                '%s/ubuntu %s' % (
+                    build_queue_item.build.archive.archive_url,
+                    allowed_components)
+                ]
+        else:
+            # Use the default archives generated by the build environment.
+            args['archives'] = []
+
+        chroot_sha1 = chroot.content.sha1
+        # store DB information
+        build_queue_item.builder = self
+        build_queue_item.buildstart = UTC_NOW
+        build_queue_item.build.buildstate = BuildStatus.BUILDING
+        # Generate a string which can be used to cross-check when obtaining
+        # results so we know we are referring to the right database object in
+        # subsequent runs.
+        buildid = "%s-%s" % (build_queue_item.build.id, build_queue_item.id)
+        logger.debug("Initiating build %s on %s" % (buildid, self.url))
+        try:
+            status, info = self.slave.build(buildid, "debian", chroot_sha1, filemap, args)
+            message = """%s (%s):
+            ***** RESULT *****
+            %s
+            %s
+            %s: %s
+            ******************
+            """ % (self.name, self.url, filemap, args, status, info)
+            logger.info(message)
+        except (xmlrpclib.Fault, socket.error), info:
+            # mark builder as 'failed'.
+            self._logger.debug(
+                "Disabling builder: %s" % self.url, exc_info=1)
+            self.failbuilder("Exception (%s) when setting up to new job" % info)
+            raise BuildSlaveFailure
 
     @property
     def status(self):
