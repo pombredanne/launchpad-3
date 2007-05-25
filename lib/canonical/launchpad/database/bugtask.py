@@ -202,6 +202,37 @@ class BugTaskMixin:
                 result.add(that_pillar)
         return sorted(result, key=pillar_sort_key)
 
+    @property
+    def mentoring_offers(self):
+        """See IHasMentoringOffers."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.mentoring_offers
+
+    def canMentor(self, user):
+        """See ICanBeMentored."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.canMentor(user)
+
+    def isMentor(self, user):
+        """See ICanBeMentored."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.isMentor(user)
+
+    def offerMentoring(self, user, team):
+        """See ICanBeMentored."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.offerMentoring(user, team)
+
+    def retractMentoring(self, user):
+        """See ICanBeMentored."""
+        # mentoring is on IBug as a whole, not on a specific task, so we
+        # pass through to the bug
+        return self.bug.retractMentoring(user)
+
 
 class NullBugTask(BugTaskMixin):
     """A null object for IBugTask.
@@ -335,6 +366,28 @@ class BugTask(SQLBase, BugTaskMixin):
         now = datetime.datetime.now(UTC)
 
         return now - self.datecreated
+
+    # Several other classes need to generate lists of bug tasks, and
+    # one thing they often have to filter for is completeness. We maintain
+    # this single canonical query string here so that it does not have to be
+    # cargo culted into Product, Distribution, ProductSeries etc
+    completeness_clause =  """
+        BugTask.status IN ( %s )
+        """ % ','.join([str(a.value) for a in RESOLVED_BUGTASK_STATUSES])
+
+    @property
+    def is_complete(self):
+        """See IBugTask. Note that this should be kept in sync with the
+        completeness_clause above."""
+        return self.status in RESOLVED_BUGTASK_STATUSES
+
+    def subscribe(self, person):
+        """See IBugTask."""
+        return self.bug.subscribe(person)
+
+    def isSubscribed(self, person):
+        """See IBugTask."""
+        return self.bug.isSubscribed(person)
 
     @property
     def conjoined_master(self):
@@ -998,10 +1051,11 @@ class BugTaskSet:
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
             SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.component IN %s AND
             SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(distrorelease, component_ids,
-                            PackagePublishingStatus.PUBLISHED)])
+            """ % sqlvalues(distrorelease, distrorelease.main_archive,
+                            component_ids, PackagePublishingStatus.PUBLISHED)])
 
         if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets

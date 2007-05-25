@@ -40,7 +40,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
-    NotFoundError, IDistributionMirrorSet)
+    IArchiveSet, NotFoundError, IDistributionMirrorSet)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -185,9 +185,9 @@ class DistributionOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
              'mirror_admin', 'reassign', 'addrelease', 'top_contributors',
-             'builds', 'release_mirrors', 'archive_mirrors',
+             'mentorship', 'builds', 'release_mirrors', 'archive_mirrors',
              'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
-             'launchpad_usage', 'upload_admin']
+             'launchpad_usage', 'upload_admin', 'ppas']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -218,6 +218,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     def top_contributors(self):
         text = 'List top contributors'
         return Link('+topcontributors', text, icon='info')
+
+    def mentorship(self):
+        text = 'Mentoring available'
+        return Link('+mentoring', text, icon='info')
 
     def release_mirrors(self):
         text = 'Show CD mirrors'
@@ -280,6 +284,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'Builds'
         return Link('+builds', text, icon='info')
+
+    def ppas(self):
+        text = 'Personal Package Archives'
+        return Link('+ppas', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
@@ -430,6 +438,10 @@ class DistributionView(BuildRecordsView):
         return sorted(releases, key=operator.attrgetter('version'),
                       reverse=True)
 
+    def getAllPPAs(self):
+        """Return alls Personal Package Archive available."""
+        return getUtility(IArchiveSet).getAllPPAs()
+
 
 class DistributionAllPackagesView(LaunchpadView):
     def initialize(self):
@@ -497,6 +509,7 @@ class DistributionAddView(LaunchpadFormView):
 
     @action("Save", name='save')
     def save_action(self, action, data):
+        archive = getUtility(IArchiveSet).new()
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -506,6 +519,7 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
+            main_archive=archive,
             )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)

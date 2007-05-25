@@ -27,15 +27,15 @@ For further info about DDTP see:
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.tests import (
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
 Login as an admin (or ubuntutest.archive_admin if we have one), since
-we need to access and modify DistroReleaseQueue records and other tables.
+we need to access and modify PackageUpload records and other tables.
 
   >>> login('foo.bar@canonical.com')
 
@@ -80,10 +80,6 @@ It was not rejected.
   DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
-
-  >>> print upload.rejection_message
-
-
 
 And all things worked.
 
@@ -142,9 +138,9 @@ Cleanup the mess:
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> queue_item = breezy_autotest.getQueueItems(
-  ...      status=DistroReleaseQueueStatus.ACCEPTED)[0]
+  ...      status=PackageUploadStatus.ACCEPTED)[0]
   >>> queue_item.customfiles[0].libraryfilealias.filename
   u'translations_main_20060728.tar.gz'
 
@@ -154,9 +150,16 @@ the tarball contents in the archive, collect and check debug message:
   >>> class MockLogger:
   ...    def debug(self, message):
   ...        print 'DEBUG: %s' % message
+  ...    def error(self, message):
+  ...        print 'ERROR: %s' % message
 
+The umask must be 022 in order to perform the upload.
+
+  >>> old_mask = os.umask(022)
   >>> queue_item.realiseUpload(MockLogger())
   DEBUG: Publishing custom translations_main_20060728.tar.gz to ubuntutest/breezy-autotest
+  >>> print '%03o' % os.umask(old_mask)
+  022
 
 Check what was published in the target directory:
 
@@ -234,7 +237,7 @@ Create a hard link to "bn" package file.
 Retrieve and publish new custom upload:
 
   >>> queue_item = breezy_autotest.getQueueItems(
-  ...      status=DistroReleaseQueueStatus.ACCEPTED)[0]
+  ...      status=PackageUploadStatus.ACCEPTED)[0]
 
   >>> queue_item.realiseUpload()
 

@@ -15,9 +15,10 @@ from zope.event import notify
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
-    SQLRelatedJoin, SQLObjectNotFound)
+    SQLRelatedJoin, SQLObjectNotFound, SingleJoin)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
+from canonical.config import config
 from canonical.database import postgresql
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -41,7 +42,8 @@ from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, SSHKeyType,
     EmailAddressStatus, TeamSubscriptionPolicy, TeamMembershipStatus,
     LoginTokenType, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale)
+    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale,
+    TeamMembershipRenewalPolicy)
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -54,16 +56,18 @@ from canonical.launchpad.interfaces import (
     IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasLogo, IHasMugshot,
     IHasIcon, JoinNotAllowed)
 
+from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.bugtask import (
-    get_bug_privacy_filter, search_value_to_where_condition)
+    BugTask, get_bug_privacy_filter, search_value_to_where_condition)
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import (
     MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT, ShippingRequest)
@@ -105,11 +109,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
-        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    mugshot = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+        dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
-        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
+        dbName='logo', foreignKey='LibraryFileAlias', default=None)
+    mugshot = ForeignKey(
+        dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -125,6 +129,9 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
+    renewal_policy = EnumCol(
+        schema=TeamMembershipRenewalPolicy,
+        default=TeamMembershipRenewalPolicy.NONE)
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
         schema=TeamSubscriptionPolicy,
@@ -172,6 +179,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
+
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -227,6 +235,53 @@ class Person(SQLBase, HasSpecificationsMixin):
                 SpecificationSubscription.q.personID == self.id),
             clauseTables=['SpecificationSubscription'],
             orderBy=['-datecreated']))
+
+    # mentorship
+    @property
+    def mentoring_offers(self):
+        """See IPerson"""
+        return MentoringOffer.select("""MentoringOffer.id IN
+        (SELECT MentoringOffer.id
+            FROM MentoringOffer
+            LEFT OUTER JOIN BugTask ON
+                MentoringOffer.bug = BugTask.bug
+            LEFT OUTER JOIN Bug ON
+                BugTask.bug = Bug.id
+            LEFT OUTER JOIN Specification ON
+                MentoringOffer.specification = Specification.id
+            WHERE
+                MentoringOffer.owner = %s
+                """ % sqlvalues(self.id) + """ AND (
+                BugTask.id IS NULL OR NOT
+                (Bug.private IS TRUE OR
+                  (""" + BugTask.completeness_clause +"""))) AND (
+                Specification.id IS NULL OR NOT
+                (""" + Specification.completeness_clause +")))",
+            )
+
+    @property
+    def team_mentorships(self):
+        """See IPerson"""
+        return MentoringOffer.select("""MentoringOffer.id IN
+        (SELECT MentoringOffer.id
+            FROM MentoringOffer
+            JOIN TeamParticipation ON
+                MentoringOffer.team = TeamParticipation.person
+            LEFT OUTER JOIN BugTask ON
+                MentoringOffer.bug = BugTask.bug
+            LEFT OUTER JOIN Bug ON
+                BugTask.bug = Bug.id
+            LEFT OUTER JOIN Specification ON
+                MentoringOffer.specification = Specification.id
+            WHERE
+                TeamParticipation.team = %s
+                """ % sqlvalues(self.id) + """ AND (
+                BugTask.id IS NULL OR NOT
+                (Bug.private IS TRUE OR
+                  (""" + BugTask.completeness_clause +"""))) AND (
+                Specification.id IS NULL OR NOT
+                (""" + Specification.completeness_clause +")))",
+            )
 
     @property
     def unique_displayname(self):
@@ -606,17 +661,14 @@ class Person(SQLBase, HasSpecificationsMixin):
         # This is our guarantee that _getDirectMemberIParticipateIn() will
         # never return None
         assert self.hasParticipationEntryFor(team), (
-            "Only call this method when you're sure the person is an indirect"
-            " member of the team.")
-        assert not self.isTeam()
-        assert team.isTeam()
+            "%s doesn't seem to be a member/participant in %s"
+            % (self.name, team.name))
+        assert team.isTeam(), "You can't pass a person to this method."
         path = [team]
         team = self._getDirectMemberIParticipateIn(team)
-        assert team is not None
         while team != self:
             path.insert(0, team)
             team = self._getDirectMemberIParticipateIn(team)
-            assert team is not None
         return path
 
     def _getDirectMemberIParticipateIn(self, team):
@@ -635,9 +687,14 @@ class Person(SQLBase, HasSpecificationsMixin):
             TeamParticipation.q.teamID == Person.q.id,
             TeamParticipation.q.personID == self.id)
         clauseTables = ['TeamMembership', 'TeamParticipation']
-        return Person.selectFirst(
+        member = Person.selectFirst(
             query, clauseTables=clauseTables, orderBy='datecreated')
-
+        assert member is not None, (
+            "%(person)s is an indirect member of %(team)s but %(person)s "
+            "is not a participant in any direct member of %(team)s"
+            % dict(person=self.name, team=team.name))
+        return member
+            
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
@@ -813,6 +870,28 @@ class Person(SQLBase, HasSpecificationsMixin):
             return False
         return self.is_valid_person_or_team
 
+    @property
+    def is_openid_enabled(self):
+        """See IPerson."""
+        if self.isTeam():
+            return False
+
+        if not self.is_valid_person:
+            return False
+
+        if config.launchpad.openid_users == 'all':
+            return True
+
+        openid_users = getUtility(IPersonSet).getByName(
+                config.launchpad.openid_users
+                )
+        assert openid_users is not None, \
+                'No Person %s found' % config.launchpad.openid_users
+        if self.inTeam(openid_users):
+            return True
+
+        return False
+
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
         """See IPerson."""
@@ -956,7 +1035,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         assert self.isTeam()
         to_addrs = set()
-        for person in self.getEffectiveAdministrators():
+        for person in self.getDirectAdministrators():
             to_addrs.update(contactEmailAddresses(person))
         return sorted(to_addrs)
 
@@ -1010,9 +1089,26 @@ class Person(SQLBase, HasSpecificationsMixin):
 
         tm.syncUpdate()
 
-    def getEffectiveAdministrators(self):
+    def getAdministratedTeams(self):
         """See IPerson."""
-        assert self.isTeam()
+        owner_of_teams = Person.select('''
+            Person.teamowner = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            ''' % sqlvalues(self),
+            clauseTables=['TeamParticipation'])
+        admin_of_teams = Person.select('''
+            Person.id = TeamMembership.team
+            AND TeamMembership.status = %(admin)s
+            AND TeamMembership.person = TeamParticipation.team
+            AND TeamParticipation.person = %(person)s
+            ''' % sqlvalues(person=self, admin=TeamMembershipStatus.ADMIN),
+            clauseTables=['TeamParticipation', 'TeamMembership'])
+        orderBy = SQLConstant("person_sort_key(displayname, name)")
+        return admin_of_teams.union(owner_of_teams, orderBy=orderBy)
+
+    def getDirectAdministrators(self):
+        """See IPerson."""
+        assert self.isTeam(), 'Method should only be called on a team.'
         owner = Person.select("id = %s" % sqlvalues(self.teamowner))
         # We can't use Person.sortingColumns with union() queries
         # because the table name Person is not available in that
@@ -1147,6 +1243,12 @@ class Person(SQLBase, HasSpecificationsMixin):
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
+    def getLatestApprovedMembershipsForPerson(self, limit=5):
+        """See IPerson."""
+        result = self.myactivememberships
+        result.orderBy(['-datejoined'])
+        return result[:limit]
+
     @property
     def teams_participated_in(self):
         """See IPerson."""
@@ -1159,14 +1261,40 @@ class Person(SQLBase, HasSpecificationsMixin):
             orderBy=Person.sortingColumns)
 
     @property
+    def teams_indirectly_participated_in(self):
+        """See IPerson."""
+        return Person.select("""
+              -- we are looking for teams, so we want "people" that are on the
+              -- teamparticipation.team side of teamparticipation
+            Person.id = TeamParticipation.team AND
+              -- where this person participates in the team
+            TeamParticipation.person = %s AND
+              -- but not the teamparticipation for "this person in himself"
+              -- which exists for every person
+            TeamParticipation.team != %s AND
+              -- nor do we want teams in which the person is a direct
+              -- participant, so we exclude the teams in which there is
+              -- a teammembership for this person
+            TeamParticipation.team NOT IN
+              (SELECT TeamMembership.team FROM TeamMembership WHERE
+                      TeamMembership.person = %s AND
+                      TeamMembership.status IN (%s, %s))
+            """ % sqlvalues(self.id, self.id, self.id,
+                            TeamMembershipStatus.APPROVED,
+                            TeamMembershipStatus.ADMIN),
+            clauseTables=['TeamParticipation'],
+            orderBy=Person.sortingColumns)
+
+    @property
     def teams_with_icons(self):
         """See IPerson."""
         return Person.select("""
             Person.id = TeamParticipation.team
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
-            AND Person.emblem IS NOT NULL
-            """ % sqlvalues(self.id),
+            AND Person.icon IS NOT NULL
+            AND TeamParticipation.team != %s
+            """ % sqlvalues(self.id, self.id),
             clauseTables=['TeamParticipation'],
             orderBy=Person.sortingColumns)
 
@@ -1376,6 +1504,10 @@ class Person(SQLBase, HasSpecificationsMixin):
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
 
+    @property
+    def archive(self):
+        """See IPerson."""
+        return Archive.selectOneBy(owner=self)
 
 class PersonSet:
     """The set of persons."""
@@ -1734,6 +1866,14 @@ class PersonSet:
                     % vars())
         skip.append(('gpgkey','owner'))
 
+        # Update OpenID. Just trash the authorizations for from_id - don't
+        # risk opening up auth wider than the user actually wants.
+        cur.execute("""
+                DELETE FROM OpenIdAuthorization WHERE person=%(from_id)d
+                """ % vars()
+                )
+        skip.append(('openidauthorization', 'person'))
+
         # Update WikiName. Delete the from entry for our internal wikis
         # so it can be reused. Migrate the non-internal wikinames.
         # Note we only allow one wikiname per person for the UBUNTU_WIKI_URL
@@ -2052,6 +2192,13 @@ class PersonSet:
             DELETE FROM TranslationImportQueueEntry WHERE importer=%(from_id)d
             ''' % vars())
         skip.append(('translationimportqueueentry', 'importer'))
+
+        # XXX cprov 20070222: Since we only allow one PPA for each user,
+        # we can't reassign the old user archive to the new user.
+        # It need to be done manually, probably by reasinning all publications
+        # to the old PPA to the new one, performing a careful_publishing on it
+        # and removing the old one from disk. See bug #87098
+        skip.append(('archive', 'owner'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.

@@ -22,7 +22,8 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.launchpad.webapp.interfaces import (
     NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag, IBreadcrumb,
     IBasicLaunchpadRequest, IAfterTraverseEvent, AfterTraverseEvent,
-    IBeforeTraverseEvent, BeforeTraverseEvent,
+    IBeforeTraverseEvent, BeforeTraverseEvent, UnexpectedFormData,
+    UnsafeFormGetSubmissionError,
     )
 
 __all__ = [
@@ -68,15 +69,12 @@ __all__ = [
     'NameNotAvailable',
     'NotFoundError',
     'UnexpectedFormData',
+    'UnsafeFormGetSubmissionError',
     ]
 
 
 class NameNotAvailable(KeyError):
     """You're trying to set a name, but the name you chose is not available."""
-
-
-class UnexpectedFormData(AssertionError):
-    """Got form data that is not what is expected by a form handler."""
 
 
 class ILaunchpadCelebrities(Interface):
@@ -98,7 +96,7 @@ class ILaunchpadCelebrities(Interface):
     bug_watch_updater = Attribute("The Bug Watch Updater.")
     bug_importer = Attribute("The bug importer.")
     landscape = Attribute("The Landscape project.")
-    launchpad = Attribute("The Launchpad product.")
+    launchpad = Attribute("The Launchpad project.")
     redfish = Attribute("The Redfish project.")
     answer_tracker_janitor = Attribute("The Answer Tracker Janitor.")
     team_membership_janitor = Attribute("The Team Membership Janitor.")
@@ -132,15 +130,15 @@ class IMaloneApplication(ILaunchpadApplication):
     def searchTasks(search_params):
         """Search IBugTasks with the given search parameters."""
 
-    bug_count = Attribute("The number of bugs recorded in Malone")
+    bug_count = Attribute("The number of bugs recorded in Launchpad")
     bugwatch_count = Attribute("The number of links to external bug trackers")
     bugextref_count = Attribute("The number of links to outside URL's")
-    bugtask_count = Attribute("The number of bug tasks in Malone")
+    bugtask_count = Attribute("The number of bug tasks in Launchpad")
     projects_with_bugs_count = Attribute("The number of products and "
         "distributions which have bugs in Launchpad.")
     shared_bug_count = Attribute("The number of bugs that span multiple "
         "products and distributions")
-    bugtracker_count = Attribute("The number of bug trackers in Malone")
+    bugtracker_count = Attribute("The number of bug trackers in Launchpad")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
     latest_bugs = Attribute("The latest 5 bugs filed.")
 
@@ -148,7 +146,10 @@ class IMaloneApplication(ILaunchpadApplication):
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
-    statsdate = Attribute("""The date stats were last updated.""")
+    language_count = Attribute(
+        'Number of languages Launchpad can translate into.')
+    statsdate = Attribute('The date stats were last updated.')
+    translation_groups = Attribute('ITranslationGroupSet object.')
 
     def translatable_products():
         """Return a list of the translatable products."""
@@ -161,9 +162,6 @@ class IRosettaApplication(ILaunchpadApplication):
         translations can be done.
         """
 
-    def translation_groups():
-        """Return a list of the translation groups in the system."""
-
     def potemplate_count():
         """Return the number of potemplates in the system."""
 
@@ -175,9 +173,6 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translator_count():
         """Return the number of people who have given translations."""
-
-    def language_count():
-        """Return the number of languages Rosetta can translate into."""
 
 
 class IRegistryApplication(ILaunchpadApplication):
@@ -409,5 +404,3 @@ class IAppFrontPageSearchForm(Interface):
 
     scope = Choice(title=_('Search scope'), required=False,
                    vocabulary='DistributionOrProductOrProject')
-
-

@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Browser views for products."""
 
@@ -17,6 +17,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductTranslationsMenu',
     'ProductView',
+    'ProductDownloadFilesView',
     'ProductAddView',
     'ProductBrandingView',
     'ProductEditView',
@@ -45,18 +46,17 @@ from zope.event import notify
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.formlib import form
-from zope.interface import alsoProvides, implements, providedBy
+from zope.interface import alsoProvides, implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
-    IProductSet, IProductSeries, IProject, ISourcePackage, ICountry,
+    ICountry, IProductSet, IProductSeries, IProject, ISourcePackage,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
-    IPillarNameSet, IDistribution, IHasIcon)
+    IPillarNameSet, IDistribution, IHasIcon, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
@@ -66,7 +66,6 @@ from canonical.launchpad.browser.bugtask import (
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.person import ObjectReassignmentView
-from canonical.launchpad.browser.project import ProjectDynMenu
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.productseries import get_series_branch_error
@@ -75,7 +74,6 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
-from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
@@ -83,7 +81,6 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, stepto, stepthrough, structured)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
-from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -190,7 +187,7 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     def translations(self):
         text = 'Translations'
-        summary = 'Translations of %s in Rosetta' % self.context.displayname
+        summary = 'Translations of %s in Launchpad' % self.context.displayname
         return Link('', text, summary)
 
     def calendar(self):
@@ -207,8 +204,8 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'distributions', 'packages', 'branch_add', 'series_add',
-        'launchpad_usage', 'administer', 'rdf']
+        'mentorship', 'distributions', 'packages', 'files', 'branch_add',
+        'series_add', 'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -239,9 +236,17 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Packaging information'
         return Link('+distributions', text, icon='info')
 
+    def mentorship(self):
+        text = 'Mentoring available'
+        return Link('+mentoring', text, icon='info')
+
     def packages(self):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
+
+    def files(self):
+        text = 'Download project files'
+        return Link('+download', text, icon='info')
 
     def series_add(self):
         text = 'Register a release series'
@@ -300,7 +305,7 @@ class ProductBranchesMenu(ApplicationMenu):
 
     def branch_add(self):
         text = 'Register branch'
-        summary = 'Register a new Bazaar branch for this product'
+        summary = 'Register a new Bazaar branch for this project'
         return Link('+addbranch', text, icon='add')
 
 
@@ -426,15 +431,16 @@ class ProductSetContextMenu(ContextMenu):
         return Link('/sprints/', 'View meetings')
 
 
-class ProductView:
+class ProductView(LaunchpadView):
 
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        self.context = context
-        self.product = context
-        self.request = request
-        self.form = request.form
+        LaunchpadView.__init__(self, context, request)
+        self.form = request.form_ng
+
+    def initialize(self):
+        self.product = self.context
         self.status_message = None
 
     def primary_translatable(self):
@@ -468,7 +474,7 @@ class ProductView:
                 object_translatable = {
                     'title': productseries.title,
                     'potemplates': productseries.currentpotemplates,
-                    'base_url': '/products/%s/%s' %(
+                    'base_url': '/projects/%s/%s' %(
                         self.context.name,
                         productseries.name)
                     }
@@ -557,6 +563,68 @@ class ProductView:
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
 
+class ProductDownloadFilesView(LaunchpadView):
+
+    __used_for__ = IProduct
+
+    def initialize(self):
+        self.form = self.request.form
+        self.product = self.context
+        del_count = None
+        if 'delete_files' in self.form:
+            if self.request.method == 'POST':
+                del(self.form['delete_files'])
+                del_count = self.delete_files(self.form)
+            else:
+                # If there is a form submission and it is not a POST then
+                # raise an error.  This is to protect against XSS exploits.
+                raise UnsafeFormGetSubmissionError(self.form['delete_files'])
+        if del_count is not None:
+            if del_count <= 0:
+                self.request.response.addNotification(
+                    "No files were deleted.")
+            elif del_count == 1:
+                self.request.response.addNotification(
+                    "1 file has been deleted.")
+            else:
+                self.request.response.addNotification(
+                    "%d files have been deleted." %
+                    del_count)
+
+    def delete_files(self, data):
+        del_keys = [int(v) for k,v in data.items()
+                    if k.startswith('checkbox')]
+        del_count = 0
+        for series in self.product.serieslist:
+            for release in series.releases:
+                for f in release.files:
+                    if f.libraryfile.id in del_keys:
+                        release.deleteFileAlias(f.libraryfile)
+                        del_keys.remove(f.libraryfile.id)
+                        del_count += 1
+        return del_count
+
+    def file_url(self, series, release, file_):
+        """Create a download URL for the file."""
+        return "%s/+download/%s" % (canonical_url(release),
+                                    file_.libraryfile.filename)
+
+    @cachedproperty
+    def milestones(self):
+        """Compute a mapping between series and releases that are milestones."""
+        result = dict()
+        for series in self.product.serieslist:
+            result[series] = dict()
+            milestone_list = [m.name for m in series.milestones]
+            for release in series.releases:
+                if release.version in milestone_list:
+                    result[series][release] = True
+        return result
+
+    def is_milestone(self, series, release):
+        """Determine whether a release is milestone for the series."""
+        return (series in self.milestones and
+                release in self.milestones[series])
 
 class ProductBrandingView(BrandingChangeView):
 
@@ -593,7 +661,7 @@ class ProductChangeTranslatorsView(ProductEditView):
 
 
 class ProductReviewView(ProductEditView):
-    label = "Administer product details"
+    label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "reviewed"]
 
 
@@ -606,37 +674,15 @@ class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
 
     @action("Change", name='change')
     def change_action(self, action, data):
-        #XXX: self.updateContextFromData(data) is not used since we need
-        #     to pass an adapters dictionary to form.applyChanges in
-        #     order to prevent adaptation failures while trying adapt to
-        #     IProductLaunchpadUsageForm.
-        #     -- Bjorn Tillenius, 2006-09-05
-        context_before_modification = Snapshot(
-            self.context, providing=providedBy(self.context))
-        if form.applyChanges(
-                self.context, self.form_fields, data,
-                adapters={self.schema: self.context}):
-            field_names = [form_field.__name__
-                           for form_field in self.form_fields]
-            notify(SQLObjectModifiedEvent(self.context,
-                                          context_before_modification,
-                                          field_names))
+        self.updateContextFromData(data)
 
     @property
     def next_url(self):
         return canonical_url(self.context)
 
-    #XXX: setUpWidgets is needed only because we need to pass in adapters
-    #     in order to prevent zope.formlib trying adapt the context to
-    #     IProductLaunchpadUsageForm. We should decide how to solve this
-    #     properly and modify LaunchpadEditFormView accordingly.
-    #     -- Bjorn Tillenius, 2006-09-05
-    def setUpWidgets(self):
-        self.widgets = form.setUpWidgets(
-            self.form_fields, self.prefix, self.context, self.request,
-            data=self.initial_values, ignore_request=False,
-            adapters={self.schema: self.context})
-
+    @property
+    def adapters(self):
+        return {self.schema: self.context}
 
 class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product release series"""
@@ -763,12 +809,12 @@ class ProductSetView(LaunchpadView):
     max_results_to_display = config.launchpad.default_batch_size
 
     def initialize(self):
-        form = self.request.form
-        self.soyuz = form.get('soyuz')
-        self.rosetta = form.get('rosetta')
-        self.malone = form.get('malone')
-        self.bazaar = form.get('bazaar')
-        self.search_string = form.get('text')
+        form = self.request.form_ng
+        self.soyuz = form.getOne('soyuz')
+        self.rosetta = form.getOne('rosetta')
+        self.malone = form.getOne('malone')
+        self.bazaar = form.getOne('bazaar')
+        self.search_string = form.getOne('text')
         self.results = None
 
         self.searchrequested = False
@@ -779,7 +825,7 @@ class ProductSetView(LaunchpadView):
             self.soyuz is not None):
             self.searchrequested = True
 
-        if form.get('exact_name'):
+        if form.getOne('exact_name'):
             # If exact_name is supplied, we try and locate this name in
             # the ProductSet -- if we find it, bingo, redirect. This
             # argument can be optionally supplied by callers.
@@ -790,7 +836,7 @@ class ProductSetView(LaunchpadView):
                 pass
             else:
                 url = canonical_url(product)
-                if form.get('malone'):
+                if form.getOne('malone'):
                     url = url + "/+bugs"
                 self.request.response.redirect(url)
                 return
@@ -813,7 +859,7 @@ class ProductSetView(LaunchpadView):
             PillarSearchItem(
                 pillar_type=item['type'], name=item['name'],
                 displayname=item['title'], summary=item['description'],
-                icon_id=item['emblem'])
+                icon_id=item['icon'])
             for item in getUtility(IPillarNameSet).search(search_string, limit)
         ]
 
@@ -825,7 +871,7 @@ class ProductAddView(LaunchpadFormView):
 
     schema = IProduct
     field_names = ['name', 'owner', 'displayname', 'title', 'summary',
-                   'description', 'project', 'homepageurl', 
+                   'description', 'project', 'homepageurl',
                    'sourceforgeproject', 'freshmeatproject',
                    'wikiurl', 'screenshotsurl', 'downloadurl',
                    'programminglang', 'reviewed']
@@ -834,7 +880,7 @@ class ProductAddView(LaunchpadFormView):
     custom_widget('wikiurl', TextWidget, displayWidth=30)
     custom_widget('downloadurl', TextWidget, displayWidth=30)
 
-    label = "Register an upstream open source product"
+    label = "Register an upstream open source project"
     product = None
 
     def isVCSImport(self):
@@ -917,7 +963,7 @@ class ProductBugContactEditView(SQLObjectEditView):
             self.request.response.addNotification(
                 "Successfully cleared the bug contact. There is no longer a "
                 "contact address that will receive all bugmail for this "
-                "product. You can set the bug contact again at any time.")
+                "project. You can set the bug contact again at any time.")
 
         self.request.response.redirect(canonical_url(product))
 
@@ -956,7 +1002,7 @@ class ProductShortLink(DefaultShortLink):
 
 class ProductBranchesView(BranchListingView):
     """View for branch listing for a product."""
-    
+
     extra_columns = ('author',)
 
     def _branches(self):
@@ -977,7 +1023,5 @@ class ProductBranchesView(BranchListingView):
                 '<a href="http://www.bazaar-vcs.org">www.bazaar-vcs.org</a> '
                 'for more information about how you can use the Bazaar '
                 'revision control system to improve community participation '
-                'in this product.')
+                'in this project.')
         return message % self.context.displayname
-
-

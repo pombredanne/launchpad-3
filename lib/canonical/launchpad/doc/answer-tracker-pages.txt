@@ -3,6 +3,8 @@
 Several views are used to handle the various operations on a question.
 
     >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
+    >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IProductSet)
@@ -281,30 +283,17 @@ The QuestionMakeBugView is used to handle the creation of a bug from a
 question. In addition to creating a bug, this operation will also link
 the bug to the question.
 
-If the user cancels a bug creation request, the user is redirected back
-the question page.
-
-    >>> login('foo.bar@canonical.com')
-    >>> request = LaunchpadTestRequest(form={'cancel': 'cancel'})
-    >>> request.method = 'POST'
-    >>> makebug = getView(question_three, '+makebug', request)
-    >>> makebug.initialize()
-    >>> makebug.process_form()
-    ''
-    >>> list(question_three.bugs)
-    []
-
 If the user creates a bug, a "Linked to bug" notification is sent and
 the user is subscribed to the bug.
 
+    >>> login('foo.bar@canonical.com')
     >>> request = LaunchpadTestRequest(
-    ...     form={'create': 'create',
+    ...     form={'field.actions.create': 'Create',
     ...           'field.title': 'Bug title',
     ...           'field.description': 'Bug description.'})
     >>> request.method = 'POST'
-    >>> makebug = getView(question_three, '+makebug', request)
+    >>> makebug = getMultiAdapter((question_three, request), name='+makebug')
     >>> makebug.initialize()
-    >>> makebug.process_form()
     >>> sorted(bug.id for bug in question_three.bugs)
     [13L]
     >>> print question_three.bugs[0].title
@@ -330,9 +319,10 @@ the user is subscribed to the bug.
 
 If the question already has bugs linked to it, no new bug can be created.
 
-    >>> request = LaunchpadTestRequest(form={'create': 'create'})
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.actions.create': 'create'})
     >>> request.method = 'POST'
-    >>> makebug = getView(question_three, '+makebug', request)
+    >>> makebug = getMultiAdapter((question_three, request), name='+makebug')
     >>> makebug.initialize()
     >>> for n in request.notifications:
     ...     print n.message
@@ -524,7 +514,8 @@ address is mapped to South Africa in the tests).
     ...     HTTP_ACCEPT_LANGUAGE='pt_BR')
     >>> from canonical.launchpad.browser.question import (
     ...     QuestionLanguageVocabularyFactory)
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> view = getMultiAdapter((firefox, request), name='+addticket')
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
     >>> languages[0].code
     u'en'
@@ -539,7 +530,7 @@ same logic is used to find the languages:
     >>> user.languages.count()
     0
 
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
     >>> languages[0].code
     u'en'
@@ -554,7 +545,7 @@ are used (plus English):
     >>> sorted(lang.code for lang in user.languages)
     [u'ca', u'es']
 
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
     >>> languages[0].code
     u'en'
@@ -570,7 +561,7 @@ English options).
     >>> sorted(lang.code for lang in user.languages)
     [u'cy', u'en_GB', u'ja']
 
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(None)
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
     >>> languages[0].code
     u'en'
@@ -584,7 +575,7 @@ by the previous rules.
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> afar = getUtility(ILanguageSet)['aa_DJ']
     >>> question_three.language = afar
-    >>> vocab = QuestionLanguageVocabularyFactory(request)(question_three)
+    >>> vocab = QuestionLanguageVocabularyFactory(view)(question_three)
     >>> afar in vocab
     True
 

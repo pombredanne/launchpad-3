@@ -29,6 +29,9 @@
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
     <style tal:condition="not: site_message" type="text/css"
     >#help_panel {top: 28px !important;}</style>
+    <!--[if IE 7]>
+      <style type="text/css">#portlets {left: 20px;}</style>
+    <![endif]-->
     <!-- Launchpad JS code -->
     <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
@@ -174,11 +177,18 @@
                           </tal:facet>
                         </ul>
                       </tal:applicationtabs>
-                      <br class="clear" />
+                      <!-- this br is conditional so that it does not show
+                           on applicationhomes, where it causes a large
+                           white space at the top of the page content area
+                           -->
+                      <br class="clear"
+                          tal:condition="view/macro:pagehas/pageheading"/>
                       <div id="container">
                         <div id="maincontent">
-                          <div class="pageheading"><!-- XXX obsolete -->
+                           <div class="pageheading"
+                                tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
+                              <!-- XXX obsolete -->
                             </metal:block>
                           </div>
                           <tal:notifications
