@@ -7,9 +7,10 @@ __all__ = [
     'BuilderSet',
     ]
 
-import xmlrpclib
 import httplib
+import subprocess
 import urllib2
+import xmlrpclib
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -21,8 +22,9 @@ from canonical.config import config
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    IBuilder, IBuilderSet, IDistroArchReleaseSet, NotFoundError,
-    IHasBuildRecords, IBuildSet, IBuildQueueSet)
+    BuildDaemonError, CannotResetHost, IBuildQueueSet, IBuildSet, IBuilder,
+    IBuilderSet, IDistroArchReleaseSet, IHasBuildRecords, NotFoundError,
+    ProtocolVersionMismatch)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import BuildStatus
@@ -146,6 +148,27 @@ class Builder(SQLBase):
     def requestAbort(self):
         """See IBuilder."""
         return self.slave.abort()
+
+    def resetSlaveHost(self, logger):
+        """See IBuilder."""
+        if self.trusted:
+            # currently trusted builders cannot reset their host environment.
+            raise CannotResetHost
+        # XXX cprov 20070510: Please FIX ME ASAP !
+        # The ssh command line should be in the respective configuration
+        # file. The builder XEN-host should be stored in DB (Builder.vmhost)
+        # and not be calculated on the fly (this is gross).
+        logger.debug("Resuming %s", self.url)
+        hostname = self.url.split(':')[1][2:].split('.')[0]
+        host_url = '%s-host.ppa' % hostname
+        resume_argv = [
+            'ssh', '-i' , '~/.ssh/ppa-reset-builder', 'ppa@%s' % host_url]
+        logger.debug('Running: %s', resume_argv)
+        resume_process = subprocess.Popen(
+            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        resume_process.communicate()
+        # XXX: If the reset command fails, we should raise an error rather than
+        # assuming it reset ok.
 
     @property
     def slave(self):

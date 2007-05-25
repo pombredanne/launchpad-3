@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BuildDaemonError',
     'BuildJobMismatch',
+    'CannotResetHost',
     'IBuilder',
     'IBuilderSet',
     'ProtocolVersionMismatch',
@@ -32,6 +33,10 @@ class ProtocolVersionMismatch(BuildDaemonError):
 
 class BuildJobMismatch(BuildDaemonError):
     """The build slave is working with mismatched information, needs rescue."""
+
+
+class CannotResetHost(BuildDaemonError):
+    """The build slave is hosted on a machine that cannot be remotely reset."""
 
 
 class IBuilder(IHasOwner):
@@ -150,6 +155,15 @@ class IBuilder(IHasOwner):
         This takes place asynchronously: Actually killing everything running
         can take some time so the slave status should be queried again to
         detect when the abort has taken effect. (Look for status ABORTED).
+        """
+
+    def resetSlaveHost(logger):
+        """Reset the slave host to a known good condition.
+
+        :param logger: A logger used for providing debug information.
+        :raises CannotResetHost: Currently only virtual machine based builders
+            (those that are used to build untrusted source (not self.trusted) can
+            be reset.
         """
 
     def slaveStatusSentence():

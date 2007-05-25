@@ -631,8 +631,9 @@ class BuilddMaster:
             return
 
         try:
-            # Resume build XEN-images
-            builders.resumeBuilder(builder)
+            # If we are building untrusted source reset the entire machine.
+            if not builder.trusted:
+                builder.resetSlaveHost(self._logger)
             # Send chroot.
             builder.cacheFileOnSlave(self._logger, chroot)
 

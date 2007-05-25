@@ -142,27 +142,6 @@ class BuilderGroup:
         if not self.okslaves:
             self.logger.warn("No builders are available")
 
-    def resumeBuilder(self, builder):
-        """Resume Builder via SSH trigger account."""
-        # XXX cprov 20070510: Please FIX ME ASAP !
-        # The ssh command line should be in the respective configuration
-        # file. The builder XEN-host should be stored in DB (Builder.vmhost)
-        # and not be calculated on the fly (this is gross).
-
-        # Skipping 'resumming' for trusted builders
-        if builder.trusted:
-            return
-
-        self.logger.debug("Resuming %s" % builder.url)
-        hostname = builder.url.split(':')[1][2:].split('.')[0]
-        host_url = '%s-host.ppa' % hostname
-        resume_argv = [
-            'ssh', '-i' , '~/.ssh/ppa-reset-builder', 'ppa@%s' % host_url]
-        self.logger.debug('Running: %s' % resume_argv)
-        resume_process = subprocess.Popen(
-            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        resume_process.communicate()
-
     def failBuilder(self, builder, reason):
         """Mark builder as failed.
 
