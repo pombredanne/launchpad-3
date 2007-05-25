@@ -3,12 +3,12 @@
 """Bazaar transport for the Launchpad code hosting file system."""
 
 __metaclass__ = type
-__all__ = ['LaunchpadServer', 'LaunchpadTransport']
+__all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport']
+
 
 from bzrlib.errors import NoSuchFile
 from bzrlib import urlutils
 from bzrlib.transport import (
-    get_transport,
     register_transport,
     Server,
     Transport,
@@ -28,6 +28,7 @@ def split(string, splitter, num_fields):
 
 
 class LaunchpadServer(Server):
+
     def __init__(self, authserver, user_id, transport):
         self.authserver = authserver
         self.user_id = user_id
@@ -65,6 +66,7 @@ class LaunchpadServer(Server):
 
 
 class LaunchpadTransport(Transport):
+
     def __init__(self, server, url):
         self.server = server
         Transport.__init__(self, url)
@@ -88,12 +90,53 @@ class LaunchpadTransport(Transport):
     def abspath(self, relpath):
         return urlutils.join(self.server.scheme, relpath)
 
+    def append_file(self, relpath, f, mode=None):
+        return self._call('append_file', relpath, f, mode)
+
     def clone(self, relpath):
         return LaunchpadTransport(
             self.server, urlutils.join(self.base, relpath))
 
+    def delete(self, relpath):
+        return self._call('delete', relpath)
+
+    def delete_tree(self, relpath):
+        return self._call('delete_tree', relpath)
+
     def get(self, relpath):
         return self._call('get', relpath)
 
+    def has(self, relpath):
+        return self._call('has', relpath)
+
+    def iter_files_recursive(self):
+        backing_transport = self.server.backing_transport.clone(
+            self._safe_relpath('.'))
+        return backing_transport.iter_files_recursive()
+
+    def listable(self):
+        return self.server.backing_transport.listable()
+
+    def list_dir(self, relpath):
+        return self._call('list_dir', relpath)
+
+    def lock_read(self, relpath):
+        return self._call('lock_read', relpath)
+
+    def lock_write(self, relpath):
+        return self._call('lock_write', relpath)
+
+    def mkdir(self, relpath, mode=None):
+        return self._call('mkdir', relpath, mode)
+
     def put_file(self, relpath, f, mode=None):
         return self._call('put_file', relpath, f, mode)
+
+    def rename(self, rel_from, rel_to):
+        return self._call('rename', rel_from, self._safe_relpath(rel_to))
+
+    def rmdir(self, relpath):
+        return self._call('rmdir', relpath)
+
+    def stat(self, relpath):
+        return self._call('stat', relpath)

@@ -11,14 +11,7 @@ from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryTransport
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
-from canonical.config import config
 from canonical.codehosting import transport
-from canonical.testing import reset_logging
-
-
-def branch_id_to_path(branch_id):
-    h = "%08x" % int(branch_id)
-    return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
 
 
 class FakeLaunchpad:
