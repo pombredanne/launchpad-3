@@ -17,6 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical import encoding
 from canonical.config import config
 from canonical.lp import dbschema
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.interfaces import (
     BuildDaemonError, IBuildQueueSet, BuildJobMismatch, IBuildSet, IBuilderSet,
@@ -228,15 +229,15 @@ class BuilderGroup:
         try:
             # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
             slave = removeSecurityProxy(queueItem.builder.slave)
-            method(queueItem, slave, librarian, build_id,
-                   build_status, logtail, filemap, dependencies)
+            method(queueItem, slave, build_id, build_status, logtail,
+                   filemap, dependencies)
         except TypeError, e:
             self.logger.critical("Received wrong number of args in response.")
             self.logger.exception(e)
 
         self.commit()
 
-    def updateBuild_IDLE(self, queueItem, slave, librarian, buildid,
+    def updateBuild_IDLE(self, queueItem, slave, buildid,
                          build_status, logtail, filemap, dependencies):
         """Somehow the builder forgot about the build job, log this and reset
         the record.
@@ -250,13 +251,13 @@ class BuilderGroup:
         queueItem.buildstart = None
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
 
-    def updateBuild_BUILDING(self, queueItem, slave, librarian, buildid,
+    def updateBuild_BUILDING(self, queueItem, slave, buildid,
                              build_status, logtail, filemap, dependencies):
         """Build still building, Simple collects the logtail"""
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
         queueItem.logtail = encoding.guess(str(logtail))
 
-    def updateBuild_ABORTING(self, queueItem, slave, librarian, buildid,
+    def updateBuild_ABORTING(self, queueItem, slave, buildid,
                              buildstatus, logtail, filemap, dependencies):
         """Build was ABORTED.
 
@@ -264,7 +265,7 @@ class BuilderGroup:
         """
         queueItem.logtail = "Waiting for slave process to be terminated"
 
-    def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid,
+    def updateBuild_ABORTED(self, queueItem, slave, buildid,
                             build_status, logtail, filemap, dependencies):
         """ABORTING process has successfully terminated.
 
@@ -276,7 +277,7 @@ class BuilderGroup:
         queueItem.buildstart = None
         queueItem.build.buildstate = dbschema.BuildStatus.BUILDING
 
-    def updateBuild_WAITING(self, queueItem, slave, librarian, buildid,
+    def updateBuild_WAITING(self, queueItem, slave, buildid,
                             build_status, logtail, filemap, dependencies):
         """Perform the actions needed for a slave in a WAITING state
 
@@ -290,6 +291,8 @@ class BuilderGroup:
           Librarian with getFileFromSlave() and then pass the binaries to
           the uploader for processing.
         """
+        librarian = getUtility(ILibrarianClient)
+
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
         assert build_status.startswith('BuildStatus.')
 
