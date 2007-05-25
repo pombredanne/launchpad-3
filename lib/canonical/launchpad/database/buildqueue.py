@@ -124,7 +124,7 @@ class BuildQueue(SQLBase):
             distroname, distroreleasename, archname, sourcename, version, state
             ))
 
-    def updateBuild_IDLE(self, slave, build_id, build_status, logtail,
+    def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
         """See IBuildQueue."""
         logger.warn(
@@ -135,17 +135,17 @@ class BuildQueue(SQLBase):
         self.buildstart = None
         self.build.buildstate = BuildStatus.NEEDSBUILD
 
-    def updateBuild_BUILDING(self, slave, build_id, build_status,
+    def updateBuild_BUILDING(self, build_id, build_status,
                              logtail, filemap, dependencies, logger):
         """See IBuildQueue"""
         self.logtail = encoding.guess(str(logtail))
 
-    def updateBuild_ABORTING(self, slave, buildid, build_status,
+    def updateBuild_ABORTING(self, buildid, build_status,
                              logtail, filemap, dependencies, logger):
         """See IBuildQueue"""
         self.logtail = "Waiting for slave process to be terminated"
 
-    def updateBuild_ABORTED(self, slave, buildid, build_status,
+    def updateBuild_ABORTED(self, buildid, build_status,
                             logtail, filemap, dependencies, logger):
         """See IBuildQueue"""
         self.builder.cleanSlave()

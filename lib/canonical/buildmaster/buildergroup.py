@@ -206,16 +206,14 @@ class BuilderGroup:
 
         method = builder_status_handlers[builder_status]
         try:
-            # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-            slave = removeSecurityProxy(queueItem.builder.slave)
             # XXX cprov 20070525: We need this code for WAITING status
             # handler only until we are able to also move it to
             # BuildQueue content class and avoid to pass 'queueItem'.
             if builder_status == 'BuilderStatus.WAITING':
-                method(queueItem, slave, build_id, build_status, logtail,
+                method(queueItem, build_id, build_status, logtail,
                        filemap, dependencies, self.logger)
             else:
-                method(slave, build_id, build_status, logtail,
+                method(build_id, build_status, logtail,
                        filemap, dependencies, self.logger)
         except TypeError, e:
             self.logger.critical("Received wrong number of args in response.")
@@ -223,7 +221,7 @@ class BuilderGroup:
 
         self.commit()
 
-    def updateBuild_WAITING(self, queueItem, slave, buildid, build_status,
+    def updateBuild_WAITING(self, queueItem, buildid, build_status,
                             logtail, filemap, dependencies, logger):
         """Perform the actions needed for a slave in a WAITING state
 
@@ -250,7 +248,7 @@ class BuilderGroup:
                             % (buildstatus, queueItem.builder.url))
             return
 
-        method(queueItem, slave, librarian, buildid, filemap, dependencies)
+        method(queueItem, librarian, buildid, filemap, dependencies)
 
     def storeBuildInfo(self, queueItem, librarian, buildid, dependencies):
         """Store available information for build jobs.
@@ -268,7 +266,7 @@ class BuilderGroup:
         queueItem.build.builder = queueItem.builder
         queueItem.build.dependencies = dependencies
 
-    def buildStatus_OK(self, queueItem, slave, librarian, buildid,
+    def buildStatus_OK(self, queueItem, librarian, buildid,
                        filemap=None, dependencies=None):
         """Handle a package that built successfully.
 
@@ -310,6 +308,7 @@ class BuilderGroup:
         upload_path = os.path.join(upload_dir, target_path)
         os.makedirs(upload_path)
 
+        slave = removeSecurityProxy(queueItem.builder.slave)
         for filename in filemap:
             slave_file = slave.getFile(filemap[filename])
             out_file_name = os.path.join(upload_path, filename)
@@ -412,7 +411,7 @@ class BuilderGroup:
         # build record.
         self.commit()
 
-    def buildStatus_PACKAGEFAIL(self, queueItem, slave, librarian, buildid,
+    def buildStatus_PACKAGEFAIL(self, queueItem, librarian, buildid,
                                 filemap=None, dependencies=None):
         """Handle a package that had failed to build.
 
@@ -426,7 +425,7 @@ class BuilderGroup:
         queueItem.build.notify()
         queueItem.destroySelf()
 
-    def buildStatus_DEPFAIL(self, queueItem, slave, librarian, buildid,
+    def buildStatus_DEPFAIL(self, queueItem, librarian, buildid,
                             filemap=None, dependencies=None):
         """Handle a package that had missing dependencies.
 
@@ -441,7 +440,7 @@ class BuilderGroup:
         queueItem.builder.cleanSlave()
         queueItem.destroySelf()
 
-    def buildStatus_CHROOTFAIL(self, queueItem, slave, librarian, buildid,
+    def buildStatus_CHROOTFAIL(self, queueItem, librarian, buildid,
                                filemap=None, dependencies=None):
         """Handle a package that had failed when unpacking the CHROOT.
 
@@ -457,7 +456,7 @@ class BuilderGroup:
         queueItem.build.notify()
         queueItem.destroySelf()
 
-    def buildStatus_BUILDERFAIL(self, queueItem, slave, librarian, buildid,
+    def buildStatus_BUILDERFAIL(self, queueItem, librarian, buildid,
                                 filemap=None, dependencies=None):
         """Handle builder failures.
 
@@ -476,7 +475,7 @@ class BuilderGroup:
         queueItem.builder = None
         queueItem.buildstart = None
 
-    def buildStatus_GIVENBACK(self, queueItem, slave, librarian, buildid,
+    def buildStatus_GIVENBACK(self, queueItem, librarian, buildid,
                               filemap=None, dependencies=None):
         """Handle automatic retry requested by builder.
 
