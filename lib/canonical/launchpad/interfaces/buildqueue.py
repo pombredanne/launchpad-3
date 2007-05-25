@@ -67,6 +67,31 @@ class IBuildQueue(Interface):
     def destroySelf():
         """Delete this entry from the database."""
 
+    def updateBuild_IDLE(slave, build_id, build_status, logtail,
+                         filemap, dependencies, logger):
+        """Somehow the builder forgot about the build job.
+
+        Log this and reset the record.
+        """
+
+    def updateBuild_BUILDING(slave, build_id, build_status,
+                             logtail, filemap, dependencies, logger):
+        """Build still building, Simple collects the logtail"""
+
+    def updateBuild_ABORTING(slave, buildid, build_status,
+                             logtail, filemap, dependencies, logger):
+        """Build was ABORTED.
+
+        Master-side should wait until the slave finish the process correctly.
+        """
+
+    def updateBuild_ABORTED(slave, buildid, build_status,
+                            logtail, filemap, dependencies, logger):
+        """ABORTING process has successfully terminated.
+
+        Clean the builder for another jobs.
+        """
+
 
 class IBuildQueueSet(Interface):
     """Launchpad Auto Build queue set handler and auxiliary methods."""

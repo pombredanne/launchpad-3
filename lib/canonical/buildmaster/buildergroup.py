@@ -14,7 +14,6 @@ from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical import encoding
 from canonical.config import config
 from canonical.lp import dbschema
 from canonical.librarian.interfaces import ILibrarianClient
@@ -206,10 +205,10 @@ class BuilderGroup:
             return
 
         builder_status_handlers = {
-            'BuilderStatus.IDLE': self.updateBuild_IDLE,
-            'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
-            'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
-            'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
+            'BuilderStatus.IDLE': queueItem.updateBuild_IDLE,
+            'BuilderStatus.BUILDING': queueItem.updateBuild_BUILDING,
+            'BuilderStatus.ABORTING': queueItem.updateBuild_ABORTING,
+            'BuilderStatus.ABORTED': queueItem.updateBuild_ABORTED,
             'BuilderStatus.WAITING': self.updateBuild_WAITING,
             }
 
@@ -230,52 +229,20 @@ class BuilderGroup:
         try:
             # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
             slave = removeSecurityProxy(queueItem.builder.slave)
-            method(queueItem, slave, build_id, build_status, logtail,
-                   filemap, dependencies, self.logger)
+            # XXX cprov 20070525: We need this code for WAITING status
+            # handler only until we are able to also move it to
+            # BuildQueue content class and avoid to pass 'queueItem'.
+            if builder_status == 'BuilderStatus.WAITING':
+                method(queueItem, slave, build_id, build_status, logtail,
+                       filemap, dependencies, self.logger)
+            else:
+                method(slave, build_id, build_status, logtail,
+                       filemap, dependencies, self.logger)
         except TypeError, e:
             self.logger.critical("Received wrong number of args in response.")
             self.logger.exception(e)
 
         self.commit()
-
-    def updateBuild_IDLE(self, queueItem, slave, buildid, build_status,
-                         logtail, filemap, dependencies, logger):
-        """Somehow the builder forgot about the build job, log this and reset
-        the record.
-        """
-        logger.warn(
-            "Builder on %s is Dory AICMFP. Builder forgot about build %s "
-            "-- resetting buildqueue record"
-            % (queueItem.builder.url, queueItem.build.title))
-        queueItem.builder = None
-        queueItem.buildstart = None
-        queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
-
-    def updateBuild_BUILDING(self, queueItem, slave, build_id, build_status,
-                             logtail, filemap, dependencies, logger):
-        """Build still building, Simple collects the logtail"""
-        # XXX: dsilvers: 20050302: Confirm the builder has the right build?
-        queueItem.logtail = encoding.guess(str(logtail))
-
-    def updateBuild_ABORTING(self, queueItem, slave, buildid, build_status,
-                             logtail, filemap, dependencies, logger):
-        """Build was ABORTED.
-
-        Master-side should wait until the slave finish the process correctly.
-        """
-        queueItem.logtail = "Waiting for slave process to be terminated"
-
-    def updateBuild_ABORTED(self, queueItem, slave, buildid, build_status,
-                            logtail, filemap, dependencies, logger):
-        """ABORTING process has successfully terminated.
-
-        Clean the builder for another jobs.
-        """
-        # XXX: dsilvers: 20050302: Confirm the builder has the right build?
-        queueItem.builder.cleanSlave()
-        queueItem.builder = None
-        queueItem.buildstart = None
-        queueItem.build.buildstate = dbschema.BuildStatus.BUILDING
 
     def updateBuild_WAITING(self, queueItem, slave, buildid, build_status,
                             logtail, filemap, dependencies, logger):
