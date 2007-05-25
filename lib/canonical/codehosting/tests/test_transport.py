@@ -27,7 +27,7 @@ class FakeLaunchpad:
 
     def getBranchesForUser(self, personID):
         return [(1, 'bar', [(1, 'baz'), (2, 'qux')]),
-                (2, '+junk', [])]
+                (2, '', [(3, 'random')])]
 
 
 class TestLaunchpadServer(TestCaseInTempDir):
@@ -54,6 +54,9 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.assertEqual(
             '00/00/00/02/',
             self.server.translate_virtual_path('/~team1/bar/qux'))
+        self.assertEqual(
+            '00/00/00/03/',
+            self.server.translate_virtual_path('/~foo/+junk/random'))
 
     def test_extend_path_translation(self):
         # Trailing path segments are preserved.
@@ -162,6 +165,24 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         transport = get_transport(self.server.get_url())
         self.assertRaises(
             errors.NoSuchFile, transport.get, '~foo')
+
+    def test_rename(self):
+        # rename needs to translate the target path as well as the source path,
+        # so we need a separate test for it.
+        transport = get_transport(self.server.get_url())
+        transport.rename('~foo/bar/baz/hello.txt', '~foo/bar/baz/goodbye.txt')
+        self.assertEqual(['goodbye.txt'], transport.list_dir('~foo/bar/baz'))
+        self.assertEqual(['goodbye.txt'],
+                         self.backing_transport.list_dir('00/00/00/01'))
+
+    def test_iter_files_recursive(self):
+        # iter_files_recursive doesn't take a relative path but still needs to
+        # do a path-based operation on the backing transport. Thus, we need a
+        # separate test for it.
+        transport = get_transport(self.server.get_url())
+        files = list(transport.clone('~foo/bar/baz').iter_files_recursive())
+        backing_transport = self.backing_transport.clone('00/00/00/01')
+        self.assertEqual(list(backing_transport.iter_files_recursive()), files)
 
 
 def test_suite():

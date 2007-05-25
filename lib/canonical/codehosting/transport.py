@@ -39,6 +39,8 @@ class LaunchpadServer(Server):
         for team_dict in self.authserver.getUser(self.user_id)['teams']:
             products = self.authserver.getBranchesForUser(team_dict['id'])
             for product_id, product_name, branches in products:
+                if product_name == '':
+                    product_name = '+junk'
                 for branch_id, branch_name in branches:
                     yield ((team_dict['name'], product_name, branch_name),
                            branch_id)
@@ -111,7 +113,7 @@ class LaunchpadTransport(Transport):
 
     def iter_files_recursive(self):
         backing_transport = self.server.backing_transport.clone(
-            self._safe_relpath('.'))
+            self._translate_virtual_path('.'))
         return backing_transport.iter_files_recursive()
 
     def listable(self):
@@ -133,7 +135,8 @@ class LaunchpadTransport(Transport):
         return self._call('put_file', relpath, f, mode)
 
     def rename(self, rel_from, rel_to):
-        return self._call('rename', rel_from, self._safe_relpath(rel_to))
+        return self._call(
+            'rename', rel_from, self._translate_virtual_path(rel_to))
 
     def rmdir(self, relpath):
         return self._call('rmdir', relpath)
