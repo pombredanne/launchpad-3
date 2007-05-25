@@ -390,12 +390,12 @@ def allow_sequential_scans(cur, permission):
     >>> allow_sequential_scans(cur, True)
     >>> cur.execute("SHOW enable_seqscan")
     >>> print cur.fetchall()[0][0]
-    True
+    on
 
     >>> allow_sequential_scans(cur, False)
     >>> cur.execute("SHOW enable_seqscan")
     >>> print cur.fetchall()[0][0]
-    False
+    off
     """
     permission_value = 'false'
     if permission:
