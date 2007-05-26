@@ -40,7 +40,7 @@ class PouringLoop(TunableLoop):
             (self.highest_id + 1 - self.lowest_id))
 
 
-    def done(self):
+    def isDone(self):
         return self.lowest_id > self.highest_id
 
 

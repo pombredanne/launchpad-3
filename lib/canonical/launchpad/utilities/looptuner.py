@@ -14,7 +14,7 @@ class TunableLoop:
     To construct a self-tuning batched loop, define your loop body as a
     derivative of TunableLoop and pass an instance to your LoopTuner.
     """
-    def done(self):
+    def isDone(self):
         """Is this loop finished?
 
         Once this returns True, the LoopTuner will no longer touch this
@@ -28,12 +28,6 @@ class TunableLoop:
         The chunk_size parameter says (in some way you define) how much work
         the LoopTuner believes you should try to do in this iteration in order
         to get as close as possible to your time goal.
-        """
-        pass
-
-    def post(self, chunk_size):
-        """Perform any work at the end of an iteration that should not be
-        counted towards the iteration's time budget.
         """
         pass
 
@@ -93,7 +87,7 @@ class LoopTuner:
         total_size = 0
         time_taken = self.time_goal
         start_time = time.time()
-        while not self.operation.done():
+        while not self.operation.isDone():
             iteration_start_time = time.time()
 
             self.operation.perform(chunk_size)
@@ -101,8 +95,6 @@ class LoopTuner:
             time_taken = time.time() - iteration_start_time
             logging.info("Iteration %d (%d): %.3f seconds" % (
                             iteration, chunk_size, time_taken))
-
-            self.operation.post(chunk_size)
 
             total_size += chunk_size
 
