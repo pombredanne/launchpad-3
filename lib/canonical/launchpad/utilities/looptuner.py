@@ -1,11 +1,18 @@
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+__all__ = ['LoopTuner', 'TunableLoop' ]
+
+
 import logging
 import time
 
-class TunedLoop:
+class TunableLoop:
     """Base class for self-tuning loop bodies to be driven by LoopTuner.
 
     To construct a self-tuning batched loop, define your loop body as a
-    derivative of TunedLoop and pass an instance to your LoopTuner.
+    derivative of TunableLoop and pass an instance to your LoopTuner.
     """
     def done(self):
         """Is this loop finished?
@@ -48,8 +55,8 @@ class LoopTuner:
     well, and on the other hand, it will still end up taking too much time per
     batch when the system slows down for whatever reason.
 
-    Instead, define your loop body in a subclass of TunedLoop; parameterize it
-    on the number of steps per batch; say how much time you'd like to spend
+    Instead, define your loop body in a subclass of TunableLoop; parameterize
+    it on the number of steps per batch; say how much time you'd like to spend
     per batch; and pass it to a LoopTuner.  The LoopTuner will execute your
     loop, dynamically tuning its batch-size parameter to stay close to your
     time goal.  If things go faster than expected, it will ask your loop body
@@ -64,7 +71,7 @@ class LoopTuner:
         Parameters:
 
         operation: an object implementing the loop body.  It should support at
-        least the interface of the TunedLoop class.
+        least the interface of the TunableLoop class.
 
         time_goal: the ideal number of seconds for any one iteration to take.
             The algorithm will vary chunk size in order to stick close to this
@@ -115,8 +122,8 @@ class LoopTuner:
             iteration += 1
 
         total_time = time.time() - start_time
-        average_size = total_size/iteration
-        average_speed = total_size/total_time
+        average_size = total_size/max(1, iteration)
+        average_speed = total_size/max(1, total_time)
         logging.info(
             "Done. %d items in %d iterations, "
             "%.3f seconds, "

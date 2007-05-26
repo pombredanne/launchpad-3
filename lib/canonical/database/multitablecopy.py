@@ -9,15 +9,17 @@ import time
 
 from canonical.database import postgresql
 from canonical.database.sqlbase import (cursor, quoteIdentifier)
-from canonical.launchpad.utilities.looptuner import ( LoopTuner, TunedLoop )
+from canonical.launchpad.utilities.looptuner import ( LoopTuner, TunableLoop )
 
 
-class PouringLoop(TunedLoop):
+class PouringLoop(TunableLoop):
+    """Loop body to pour data from holding tables back into source tables.
+
+    Used by MultiTableCopy internally to tell LoopTuner what to do.
+    """
     def __init__(self, from_table, to_table, ztm=None):
         self.from_table = from_table
         self.to_table = to_table
-        self.lowest_id = lowest_id
-        self.highest_id = highest_id
         self.ztm = ztm
         self.cur = cursor()
 
@@ -27,15 +29,15 @@ class PouringLoop(TunedLoop):
         # to be a problem though since we allocated all these ids in one
         # single SQL statement.  No time for gaps to form.
         self.cur.execute("SELECT min(id), max(id) FROM %s" % from_table)
-        self.lowest_id, self.highest_id = cur.fetchall()[0]
+        self.lowest_id, self.highest_id = self.cur.fetchall()[0]
 
         if self.lowest_id is None:
             # Table is empty.
             self.lowest_id = 1
             self.highest_id = 0
 
-        total_rows = highest_id + 1 - lowest_id
-        logging.info("Up to %d rows in holding table" % total_rows)
+        logging.info("Up to %d rows in holding table" %
+            (self.highest_id + 1 - self.lowest_id))
 
 
     def done(self):
@@ -432,13 +434,13 @@ class MultiTableCopy:
                 holding_table_unquoted, 'new_id')
 
             self._pourTable(holding_table, table, has_new_id, ztm)
+            postgresql.drop_tables(cursor(), holding_table)
 
             logging.info(
                 "Pouring %s took %.3f seconds." %
                     (holding_table, time.time()-tablestarttime))
 
-            postgresql.drop_tables(cursor(), holding_table)
-
+        self._commit(ztm)
 
     def _pourTable(self, holding_table, table, has_new_id, ztm):
         """Pour contents of a holding table back into its source table.
