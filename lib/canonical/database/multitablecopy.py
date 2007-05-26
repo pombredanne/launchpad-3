@@ -9,6 +9,61 @@ import time
 
 from canonical.database import postgresql
 from canonical.database.sqlbase import (cursor, quoteIdentifier)
+from canonical.launchpad.utilities.looptuner import ( LoopTuner, TunedLoop )
+
+
+class PouringLoop(TunedLoop):
+    def __init__(self, from_table, to_table, ztm=None):
+        self.from_table = from_table
+        self.to_table = to_table
+        self.lowest_id = lowest_id
+        self.highest_id = highest_id
+        self.ztm = ztm
+        self.cur = cursor()
+
+        # We batch simply by breaking the range of ids in our table down
+        # into fixed-size intervals.  Some of those fixed-size intervals
+        # may not have any rows in them, or very few.  That's not likely
+        # to be a problem though since we allocated all these ids in one
+        # single SQL statement.  No time for gaps to form.
+        self.cur.execute("SELECT min(id), max(id) FROM %s" % from_table)
+        self.lowest_id, self.highest_id = cur.fetchall()[0]
+
+        if self.lowest_id is None:
+            # Table is empty.
+            self.lowest_id = 1
+            self.highest_id = 0
+
+        total_rows = highest_id + 1 - lowest_id
+        logging.info("Up to %d rows in holding table" % total_rows)
+
+
+    def done(self):
+        return self.lowest_id > self.highest_id
+
+
+    def perform(self, batch_size):
+        """Loop body: pour rows with ids up to "next" over to to_table."""
+        next = self.lowest_id + batch_size
+
+        logging.info("pouring %s: %d rows (%d-%d)" %
+            (self.from_table, batch_size, self.lowest_id, next))
+
+        self.cur.execute("INSERT INTO %s (SELECT * FROM %s WHERE id <= %d)" %
+            (self.to_table, self.from_table, next))
+
+        self.cur.execute("DELETE FROM %s WHERE id <= %d" %
+            (self.from_table, next))
+
+        self.lowest_id = next
+        self._commit()
+
+
+    def _commit(self):
+        if self.ztm:
+            self.ztm.commit()
+            self.ztm.begin()
+            self.cur = cursor()
 
 
 class MultiTableCopy:
@@ -376,117 +431,40 @@ class MultiTableCopy:
             has_new_id = postgresql.table_has_column(cur,
                 holding_table_unquoted, 'new_id')
 
-            cur = self._pourTable(holding_table, table, has_new_id, ztm, cur)
+            self._pourTable(holding_table, table, has_new_id, ztm)
 
             logging.info(
                 "Pouring %s took %.3f seconds." %
                     (holding_table, time.time()-tablestarttime))
 
-            postgresql.drop_tables(cur, holding_table)
+            postgresql.drop_tables(cursor(), holding_table)
 
 
-    def _pourTable(self, holding_table, table, has_new_id, ztm, cur):
+    def _pourTable(self, holding_table, table, has_new_id, ztm):
         """Pour contents of a holding table back into its source table.
 
-        This will commit ztm, if one is given.
+        This will commit ztm, if one is given, probably several times.
         """
         if has_new_id:
             # Update ids in holding table from originals to copies.
             # (If this is where we got interrupted by a failure in a
             # previous run, no harm in doing it again)
+            cur = cursor()
             cur.execute("UPDATE %s SET id=new_id" % holding_table)
             # Restore table to original schema
             cur.execute("ALTER TABLE %s DROP COLUMN new_id" %
                 holding_table)
             logging.info("...rearranged ids...")
 
-        # Now pour holding table's data into its source table.  This is
-        # where we start writing to tables that other clients will be
-        # reading, so row locks are a concern.  Break the writes up in
-        # batches of a few thousand rows.  The goal is to have these
-        # transactions running no longer than five seconds or so each.
+        # Now pour holding table's data into its source table.  This is where
+        # we start writing to tables that other clients will be reading, and
+        # our transaction will usually be serializable, so row locks are a
+        # concern.  Break the writes up in batches of at least a thousand
+        # rows.  The goal is to have these transactions running no longer than
+        # five seconds or so each; we aim for four just to be sure.
 
-        # We batch simply by breaking the range of ids in our table down
-        # into fixed-size intervals.  Some of those fixed-size intervals
-        # may not have any rows in them, or very few.  That's not likely
-        # to be a problem though since we allocated all these ids in one
-        # single SQL statement.  No time for gaps to form.
-        cur.execute("SELECT min(id), max(id) FROM %s" % holding_table)
-        lowest_id, highest_id = cur.fetchall()[0]
-
-        if lowest_id is None:
-            # Table is empty.  Drop it and move on.
-            logging.info("Table is already empty.")
-            return cur
-
-        total_rows = highest_id + 1 - lowest_id
-        logging.info("Up to %d rows in holding table" % total_rows)
-
-        cur = self._commit(ztm, cur)
-
-        # Minimum batch size.  We never process fewer rows than this in
-        # one batch because at that level, we expect to be running into
-        # more or less constant transaction costs.  Reducing batch size
-        # any further is not likely to help much, but will make the
-        # overall procedure take much longer.
-        min_batch_size = 1000
-
-        batch_size = min_batch_size
-        while lowest_id <= highest_id:
-            next = lowest_id + batch_size
-
-            batchstarttime = time.time()
-            logging.info("Moving %d ids: %d-%d..." % (
-                batch_size, lowest_id, next))
-
-
-            self._pourBatch(table, holding_table, next, cur)
-            cur = self._commit(ztm, cur)
-
-            lowest_id = next
-
-            time_taken = time.time() - batchstarttime
-
-            batch_size = self._adjustBatchSize(time_taken, batch_size,
-                min_batch_size)
-
-            logging.info("...batch done in %.3f seconds (%d%%)." % (
-                time_taken,
-                100*(total_rows + lowest_id - highest_id)/total_rows))
-
-        cur = self._commit(ztm, cur)
-        return cur
-
-
-    def _adjustBatchSize(self, time_taken, batch_size, min_batch_size):
-        """Adjust batch size for pouring to approximate time_goal.
-
-        The new batchsize is the average of two values: the previous value for
-        batch_size, and an estimate of how many rows would take us to exactly
-        time_goal seconds.  The estimate is very simple: rows per second on
-        the last commit.
-        """
-
-        # Set a reasonable minimum for time_taken, just in case we get
-        # weird values for whatever reason and destabilize the
-        # algorithm.
-        time_taken = max(self.time_goal/10, time_taken)
-
-        # The weight in this estimate of any given historic datum
-        # decays exponentially with an exponent of 1/2.  This softens
-        # the blows from spikes and dips in processing time.
-        batch_size = batch_size*(1 + self.time_goal/time_taken)/2
-        return max(batch_size, min_batch_size)
-
-
-    def _pourBatch(self, table, holding_table, next, cur):
-        """Pour rows with ids up to "next" from holding_table to table.
-
-        Rows are atomically inserted in one table and deleted from the other.
-        """
-        cur.execute("INSERT INTO %s ( SELECT * FROM %s WHERE id <= %d)" %
-            (table, holding_table, next))
-        cur.execute("DELETE FROM %s WHERE id >= %d" % (holding_table, next))
+        pourer = PouringLoop(holding_table, table, ztm)
+        LoopTuner(pourer, 4, 1000).run()
 
 
     def _checkExtractionOrder(self, source_table):
