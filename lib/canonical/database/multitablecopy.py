@@ -416,7 +416,7 @@ class MultiTableCopy:
 
         if lowest_id is None:
             # Table is empty.  Drop it and move on.
-            postgresql.drop_tables(cur, holding_table)
+            logging.info("Table is already empty.")
             return cur
 
         total_rows = highest_id + 1 - lowest_id
