@@ -486,7 +486,7 @@ class MultiTableCopy:
         """
         cur.execute("INSERT INTO %s ( SELECT * FROM %s WHERE id <= %d)" %
             (table, holding_table, next))
-        cur.execute("DELETE FROM %s WHERE id >= %d" % (holding_table, next))
+        cur.execute("DELETE FROM %s WHERE id <= %d" % (holding_table, next))
 
 
     def _checkExtractionOrder(self, source_table):
