@@ -86,13 +86,13 @@ class LoopTuner:
         iteration = 0
         total_size = 0
         time_taken = self.time_goal
-        start_time = time.time()
+        start_time = self._time()
         while not self.operation.isDone():
-            iteration_start_time = time.time()
+            iteration_start_time = self._time()
 
             self.operation.perform(chunk_size)
 
-            time_taken = time.time() - iteration_start_time
+            time_taken = self._time() - iteration_start_time
             logging.info("Iteration %d (%d): %.3f seconds" % (
                             iteration, chunk_size, time_taken))
 
@@ -113,7 +113,7 @@ class LoopTuner:
             chunk_size = max(chunk_size, self.minimum_chunk_size)
             iteration += 1
 
-        total_time = time.time() - start_time
+        total_time = self._time() - start_time
         average_size = total_size/max(1, iteration)
         average_speed = total_size/max(1, total_time)
         logging.info(
@@ -122,4 +122,12 @@ class LoopTuner:
             "average size %f (%s/s)" % 
                 (total_size, iteration, total_time, average_size,
                  average_speed))
+
+    def _time(self):
+        """Monotonic system timer with unit of 1 second.
+
+        Overridable so tests can fake processing speeds accurately and without
+        actually waiting.
+        """
+        return time.time()
 
