@@ -222,7 +222,8 @@ class Builder(SQLBase):
             assert build.distrorelease.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
                 "to the release status of %s."
-                % (build.title, build.id, build.pocket.name, build.distrorelease.name))
+                % (build.title, build.id, build.pocket.name,
+                   build.distrorelease.name))
         # If we are building untrusted source reset the entire machine.
         if not self.trusted:
             self.resetSlaveHost(logger)
@@ -246,7 +247,7 @@ class Builder(SQLBase):
         args['arch_indep'] = (
             build_queue_item.archhintlist == 'all' or
             build_queue_item.archrelease.isNominatedArchIndep)
-        
+
         if not build_queue_item.is_trusted:
             # Add the urls for the current published archives to the build
             # so that dependencies can be downloaded correctly.
@@ -281,7 +282,8 @@ class Builder(SQLBase):
         buildid = "%s-%s" % (build_queue_item.build.id, build_queue_item.id)
         logger.debug("Initiating build %s on %s" % (buildid, self.url))
         try:
-            status, info = self.slave.build(buildid, "debian", chroot_sha1, filemap, args)
+            status, info = self.slave.build(
+                buildid, "debian", chroot_sha1, filemap, args)
             message = """%s (%s):
             ***** RESULT *****
             %s
