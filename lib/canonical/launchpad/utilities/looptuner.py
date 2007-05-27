@@ -76,7 +76,7 @@ class LoopTuner:
         """
 
         self.operation = operation
-        self.time_goal = time_goal
+        self.time_goal = float(time_goal)
         self.minimum_chunk_size = minimum_chunk_size
 
 
@@ -85,15 +85,15 @@ class LoopTuner:
         chunk_size = self.minimum_chunk_size
         iteration = 0
         total_size = 0
-        time_taken = self.time_goal
         start_time = self._time()
+        last_clock = start_time
         while not self.operation.isDone():
-            iteration_start_time = self._time()
-
             self.operation.perform(chunk_size)
 
-            time_taken = self._time() - iteration_start_time
-            logging.info("Iteration %d (%d): %.3f seconds" % (
+            new_clock = self._time()
+            time_taken = new_clock - last_clock
+            last_clock = new_clock
+            logging.info("Iteration %d (size %.1f): %.3f seconds" % (
                             iteration, chunk_size, time_taken))
 
             total_size += chunk_size
@@ -113,7 +113,7 @@ class LoopTuner:
             chunk_size = max(chunk_size, self.minimum_chunk_size)
             iteration += 1
 
-        total_time = self._time() - start_time
+        total_time = last_clock - start_time
         average_size = total_size/max(1, iteration)
         average_speed = total_size/max(1, total_time)
         logging.info(
