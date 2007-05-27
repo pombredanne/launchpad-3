@@ -1,6 +1,6 @@
 = Branch Visibility =
 
-Most branches on launchpad are considered public branches, and are
+Most branches on Launchpad are considered public branches, and are
 visible to everybody, even people not logged in.
 
 Some branches are also considered "private".  These are branches that
@@ -11,28 +11,51 @@ are only visible to the owner of the branch, and the subscribers.
     >>> person_set = getUtility(IPersonSet)
     >>> no_priv_person = person_set.getByName('no-priv')
 
-    >>> branch = getUtility(IBranchSet).new(
+    >>> proxied_branch = getUtility(IBranchSet).new(
     ...     name='test-branch', owner=no_priv_person, product=None,
     ...     url=None, title='Test branch')
 
-Since many of the examples here are testing the ability of various users to
-access branches, we don't want all the access to the branch to go through the
-security proxy.  So we'll remove it.
+Since many of the examples here are testing the ability of various users
+to access branches, we don't want all the access to the branch to go
+through the security proxy, as when the AccessBranch authorization class
+is used, it does not have a proxied object, but the direct object.  This
+is needed as in order to check to see if the user is authorized to see
+the branch we have to look at some of the member variables for the
+branch, and accessing these member variables triggers an authorization
+check on the proxied object.  So we'll remove it.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> branch = removeSecurityProxy(branch)
+    >>> branch = removeSecurityProxy(proxied_branch)
 
     >>> print branch.unique_name
     ~no-priv/+junk/test-branch
     >>> branch.private
     False
 
+Calling check_permission is used to show that the AccessBranch is in
+fact configured correctly.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.View', proxied_branch)
+    True
+    >>> login('test@canonical.com')
+    >>> check_permission('launchpad.View', proxied_branch)
+    True
+
 
 == Accessing branches ==
 
-Branch access is controlled by the launchpad.View permission, and the
-class AccessBranch is used to authenticate users for IBranch
-for the launchpad.View permission.
+Accessing any attributes of the Branch content class through the
+IBranch interface is configured to require the launchpad.View permission.
+The AccessBranch authorization class is used to authorize users
+for the combination of the launchpad.View permission and the IBranch
+interface.
+
+    >>> from canonical.launchpad.webapp.interfaces import IAuthorization
+    >>> from zope.component import getAdapter
+    >>> getAdapter(branch, IAuthorization, name='launchpad.View')
+    <canonical.launchpad.security.AccessBranch ...>
 
     >>> from canonical.launchpad.security import AccessBranch
     >>> access = AccessBranch(branch)
@@ -41,10 +64,12 @@ for the launchpad.View permission.
     >>> access.checkAuthenticated(no_priv_person)
     True
 
-
-== Private Branches ==
-
 Branches that are private are accessible by the owner and subscribers.
+
+
+== Visibility due to ownership ==
+
+The owners of the branch always have visiblity of their own branches.
 
     >>> branch.private = True
     >>> access.checkUnauthenticated()
@@ -54,9 +79,22 @@ Branches that are private are accessible by the owner and subscribers.
     >>> access.checkAuthenticated(no_priv_person)
     True
 
-Mark is a launchpad administrator, and launchpad administrators are special.
-Launchpad administrators often have a need to see private launchpad things
-in order to fix up fubars by users.
+Check the configuration of the AccessBranch authorization.
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> print getUtility(ILaunchBag).user.displayname
+    Sample Person
+    >>> getUtility(ILaunchBag).user == no_priv_person
+    False
+    >>> check_permission('launchpad.View', proxied_branch)
+    False
+
+
+== Visibility due to being a Launchpad administrator ==
+
+Mark is a Launchpad administrator, and Launchpad administrators are
+special.  Launchpad administrators often have a need to see private
+Launchpad things in order to fix up fubars by users.
 
     >>> sabdfl = person_set.getByName('sabdfl')
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
@@ -65,14 +103,6 @@ in order to fix up fubars by users.
     True
     >>> access.checkAuthenticated(sabdfl)
     True
-
-David is not a Launchpad admin, nor is currently subscribed to our new branch.
-
-    >>> ddaa = person_set.getByName('ddaa')
-    >>> ddaa.inTeam(lp_admins)
-    False
-    >>> access.checkAuthenticated(ddaa)
-    False
 
 
 == Visibility due to subscription ==
@@ -91,7 +121,8 @@ The Jeff Waugh is a member of the Ubuntu team, but not a Luanchpad admin.
     >>> access.checkAuthenticated(jdub)
     False
 
-Subscribing the Ubuntu team will allow Jeff to have access to the branch.
+Subscribing the Ubuntu team to the branch will allow Jeff to have access
+to the branch.
 
     >>> from canonical.lp.dbschema import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
@@ -103,3 +134,16 @@ Subscribing the Ubuntu team will allow Jeff to have access to the branch.
 
     >>> access.checkAuthenticated(jdub)
     True
+
+
+== Not visible to everyone else ==
+
+David is not a Launchpad admin, nor is currently subscribed to our new
+branch.
+
+    >>> ddaa = person_set.getByName('ddaa')
+    >>> ddaa.inTeam(lp_admins)
+    False
+    >>> access.checkAuthenticated(ddaa)
+    False
+

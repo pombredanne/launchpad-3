@@ -24,6 +24,7 @@ It's not tied to a specific revision history because each new commit appends to
 the history, and it's not restricted to appending to the history because the
 Bazaar model does not forbid users from replacing the history of a branch.
 
+
 == Interfaces ==
 
     >>> from zope.interface.verify import verifyObject
@@ -37,6 +38,7 @@ Bazaar model does not forbid users from replacing the history of a branch.
     True
     >>> verifyObject(IBranchSubscription, BranchSubscription.get(1))
     True
+
 
 == Creating branches ==
 
@@ -142,6 +144,7 @@ The IBranchSet can tell us how many branches there are registered.
 
 (28 in the sample data, and two added above.)
 
+
 == Determing the number of branches with bugs ==
 
 The count of branches that have bugs associated with them is another
@@ -151,6 +154,7 @@ branches and bugs.
 
     >>> branchset.countBranchesWithAssociatedBugs()
     2
+
 
 == Determining the recently changed, registered and imported branches ==
 
@@ -184,7 +188,7 @@ interesting results.
     >>> list(branchset.getRecentlyImportedBranches(5))
     []
 
-    >>> login("foo.bar@canonical.com")
+    >>> login('foo.bar@canonical.com')
     >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> today = datetime.now(pytz.timezone('UTC'))
@@ -251,6 +255,7 @@ returned.
     >>> print branchset.getByUrl(not_there_url, 123)
     123
 
+
 == Branches and products ==
 
 Branch not associated to a product are called "junk" branch and treated for
@@ -261,6 +266,7 @@ navigation purposes as if they were associated to a magic product named
     '+junk'
     >>> gterm_dev.product_name
     u'gnome-terminal'
+
 
 == Branch names ==
 
@@ -282,6 +288,7 @@ unique_name otherwise.
     >>> assert pushed.title is None
     >>> pushed.displayname == pushed.unique_name
     True
+
 
 == Branches registered and authored ==
 
@@ -312,6 +319,7 @@ authored branch listings for a person.
 
     >>> list(ddaa.registered_branches) == [gterm_dev]
     True
+
 
 == Branch sort key ==
 
@@ -360,6 +368,7 @@ And on a branch with a NULL author.
     >>> gterm_24.sort_key[1] == BranchLifecycleStatus.ABANDONED.sortkey
     True
 
+
 == Branch subscriptions ==
 
 Branches can be subscribed to and unsubscribed from by a Person.
@@ -401,6 +410,7 @@ BranchSubscriptionNotificationLevel.
     >>> gterm_dev.subscribers.count()
     0
 
+
 == Branches related to a person ==
 
 Finally, you can get the list of related branches for a person, that includes
@@ -420,6 +430,7 @@ the branches registered, authored and subscribed to by this person.
     >>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
     True
 
+
 == Branches and revisions ==
 
 See revision.txt for a doctest covering the creation of revisions and related
@@ -432,6 +443,7 @@ Let's get a branch with some revisions in it.
     >>> junk = sample_person.getBranch('+junk', 'junk.dev')
     >>> print junk.unique_name
     ~name12/+junk/junk.dev
+
 
 == Revision history of Branch ==
 
@@ -473,6 +485,7 @@ skewed clock.
     >>> two_latest = list(junk.revision_history)[:2]
     >>> list(junk.revisions_since(timestamp)) == two_latest
     True
+
 
 == Ancestry of Revision ==
 
@@ -521,6 +534,7 @@ database. getByRevisionId returns None.
 
     >>> revisionset.getByRevisionId('missing-revision-id') is None
     True
+
 
 == Getting the tip revision for a Branch ==
 
@@ -599,6 +613,7 @@ scanned ID is.
     >>> branch in branchset.getBranchesToScan()
     False
 
+
 == Getting last commit time for branches ==
 
 There is not sufficient correct data in the sample code to make this
@@ -612,6 +627,7 @@ right, but we still want to test the corner cases.
     >>> another = branchset.get(2)
     >>> branchset.getLastCommitForBranches([branch, another])
     {<Branch ...>: None, <Branch ...>: None}
+
 
 == Getting the development focus branches for products ==
 
@@ -633,6 +649,7 @@ Lets make gnome terminal have a user branch as the dev focus.
     ...     print branch.unique_name
     ~name12/gnome-terminal/main
     ~vcs-imports/evolution/main
+
 
 == Getting the branch count and last commit for products ==
 
@@ -671,6 +688,7 @@ arbitrary people.
     ~ddaa/+junk/junkcode
     ~ddaa/gnome-terminal/dev
     ~launchpad/gnome-terminal/launchpad
+
 
 == Getting all branches for a person ==
 
@@ -768,5 +786,4 @@ extra display information.
     >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
     Development ~name12/gnome-terminal/main
-
 
