@@ -118,9 +118,6 @@ class AbstractUploadPolicy:
             if self.pocket != PackagePublishingPocket.RELEASE:
                 upload.reject(
                     "PPA uploads must be for the RELEASE pocket.")
-            if not upload.changes.signer.is_ubuntero:
-                upload.reject(
-                    "PPA uploads must be signed by an 'ubuntero'.")
         else:
             if not self.distrorelease.canUploadToPocket(self.pocket):
                 upload.reject(
@@ -201,9 +198,14 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
 
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now."""
-        if self.pocket == PackagePublishingPocket.SECURITY:
-            upload.reject(
-                "This upload queue does not permit SECURITY uploads.")
+        if upload.is_ppa:
+            if upload.changes.signer.is_ubuntero:
+                upload.reject(
+                    "PPA uploads must be signed by an 'ubuntero'.")
+        else:
+            if self.pocket == PackagePublishingPocket.SECURITY:
+                upload.reject(
+                    "This upload queue does not permit SECURITY uploads.")
 
     def autoApprove(self, upload):
         """The insecure policy only auto-approves RELEASE pocket stuff.
