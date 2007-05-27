@@ -1,0 +1,90 @@
+= Tunable Loops =
+
+Some large jobs have to be done in smaller chunks, e.g. because you want to
+report progress to a user, or you're holding locks that others may be waiting
+for.  But you can't always afford to stop and look at your watch every
+iteration of your loop: sometimes you need to decide how big your chunk will
+be before you start processing it.
+
+One way to solve this is to measure performance of your loop, and pick a chunk
+size that will give you decent performance while also stopping at more or less
+regular intervals to update your progress display, refresh your locks, or
+whatever else you want to do.  But what if the Moon is in the House of Uranus
+and the server slows down?  Conversely, you may be wasting time if you stop too
+often.
+
+The LoopTuner solves this.  You tell it what you want to do and how long each
+chunk should take, and it will figure out how many items you need to process
+per chunk to get close to your ideal time between stops.  Chunk sizes will
+adjust themselves dynamically to actual performance.
+
+    >>> from canonical.launchpad.utilities.looptuner import (
+    ...     LoopTuner, TunableLoop)
+
+Here's a very simple TunableLoop.  It receives a list of timings to simulate
+for its iterations (it finishes when the list runs out)
+
+    >>> minimum_batch_size = 100
+    >>> time_goal = 10.0
+
+    >>> class PlannedLoop(TunableLoop):
+    ...     def __init__(self, timings):
+    ...         self.last_batch_size = None
+    ...         self.iteration = 0
+    ...         self.timings = timings
+    ...         self.clock = 0
+    ...
+    ...     def isDone(self):
+    ...         return self.iteration > len(self.timings)+1
+    ...
+    ...     def perform(self, batch_size):
+    ...         if self.last_batch_size is None:
+    ...             print "start"
+    ...         elif batch_size > self.last_batch_size:
+    ...             print "increased"
+    ...         elif batch_size < self.last_batch_size:
+    ...             print "decreased"
+    ...         else:
+    ...             print "same"
+    ...         self.last_batch_size = batch_size
+
+
+In combination with that, we tweak LoopTuner to simulate the timings we gave
+the PlannedLoop.  This is for testing only; in normal use you wouldn't need to
+subclass the LoopTuner.
+
+    >>> class TestTuner(LoopTuner):
+    ...     def _time(self):
+    ...         clock_now = float(self.operation.clock)
+    ...         if self.operation.iteration < len(self.operation.timings):
+    ...             next = self.operation.timings[self.operation.iteration]
+    ...             self.operation.clock += next
+    ...         self.operation.iteration += 1
+    ...         return clock_now
+
+== Ideal Case ==
+
+A typical run using the TunableLoop follows this pattern: the LoopTuner very
+conservatively starts out with the minimum batch size, finds that its first
+iteration finishes well within its time goal, and starts jacking up the work
+per iteration until it nears the ideal time per iteration.  Due to practical
+variations, it keeps oscillating a bit.
+
+    >>> body = PlannedLoop([5, 7, 8, 9, 10, 11, 10, 9, 10, 9, 10, 11, 10])
+    >>> loop = TestTuner(body, time_goal, minimum_batch_size)
+    >>> loop.run()
+    start
+    increased
+    increased
+    increased
+    increased
+    same
+    decreased
+    same
+    increased
+    same
+    increased
+    same
+    decreased
+    same
+
