@@ -472,18 +472,20 @@ Branches
 
 = Uploaders =
 
-We can ascertain whether a person is an uploader to a distribution.
+We can ascertain whether a person is an uploader to a distribution.  An 
+uploader is someone with rights to upload packages.
+
 'cprov' is an uploader to Ubuntu:
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> person = getUtility(IPersonSet).getByName('cprov')
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> person.isUploader(ubuntu)
+  >>> cprov.isUploader(ubuntu)
   True
 
 'kiko' is not an uploader to Ubuntu:
 
-  >>> person = getUtility(IPersonSet).getByName('kiko')
-  >>> person.isUploader(ubuntu)
+  >>> kiko = getUtility(IPersonSet).getByName('kiko')
+  >>> kiko.isUploader(ubuntu)
   False
 

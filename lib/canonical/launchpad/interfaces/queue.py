@@ -111,6 +111,8 @@ class IPackageUpload(Interface):
         "wheter or not this upload contains upgrader images")
     containsDdtp = Attribute(
         "wheter or not this upload contains DDTP images")
+    isPPA = Attribute(
+        "Return True if this PackageUpload is a PPA upload.")
 
     def setNew():
         """Set queue state to NEW."""
@@ -152,9 +154,6 @@ class IPackageUpload(Interface):
         """Add the provided library file alias as a custom queue entry of
         the given custom type.
         """
-
-    def isPPA():
-        """Return True if this PackageUpload is a PPA upload."""
 
     def syncUpdate():
         """Write updates made on this object to the database.

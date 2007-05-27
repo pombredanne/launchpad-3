@@ -86,14 +86,12 @@ It was not rejected.
   DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
   DEBUG: Sent a mail:
   ...
-  DEBUG: Thank you for your contribution to Ubuntu Test.
+  DEBUG: signer of the above package.
   DEBUG: Sent a mail:
   DEBUG:     Subject: Accepted translations_main_20060728.tar.gz - (raw-ddtp-tarball)
   DEBUG:     Recipients: test@example.com
   ...
-  <BLANKLINE>
 
-  
 
 And all things worked.
 

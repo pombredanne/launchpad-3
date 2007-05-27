@@ -62,7 +62,7 @@ It was not rejected.
   DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
   DEBUG: Sent a mail:
   ...
-  DEBUG: Thank you for your contribution to Ubuntu Test.
+  DEBUG: signer of the above package.
 
 And all things worked.
 
@@ -250,7 +250,7 @@ manual intervention.
   DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
   DEBUG: Sent a mail:
   ...
-  DEBUG: Thank you for your contribution to Ubuntu Test.
+  DEBUG: signer of the above package.
 
 Make the just-uploaded librarian file visible:
 
@@ -310,11 +310,14 @@ files in the respective PPA location.
   DEBUG: Do verify signer ACL for PPA
   DEBUG: Finished checking upload.
 
-  >>> success, msgs = ppa_upload.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  >>> success = ppa_upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: signer of the above package.
 
   >>> transaction.commit()
   >>> ppa_upload.queue_root.realiseUpload(mock_logger)

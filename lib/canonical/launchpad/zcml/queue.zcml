@@ -19,7 +19,8 @@
                       datecreated sourcepackagerelease
                       containsSource containsBuild
                       containsTranslation containsInstaller containsUpgrader
-                      containsDdtp displayname displayarchs displayversion"
+                      containsDdtp displayname displayarchs displayversion
+                      isPPA"
           />
       <require
           permission="launchpad.Edit"

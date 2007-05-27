@@ -314,7 +314,8 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG:
   DEBUG:
 
-  >>> msgs = pop_notifications(sort_by=by_to_addrs)
+  >>> import operator
+  >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
   >>> len(msgs)
   2
 

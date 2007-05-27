@@ -6,14 +6,17 @@ We need to be logged into the security model in order to get any further.
   >>> login('foo.bar@canonical.com')
 
 Get a packageupload object for netapplet, which has a relatively intact
-set of supporting sample data:
+set of supporting sample data.  It has rows in distribution, distrorelease, 
+sourcepackagerelease, person and a librarian entry for the changes file 
+which are all needed for successful operation of notify().
 
   >>> from canonical.launchpad.interfaces import IPackageUploadSet
   >>> netapplet_upload = getUtility(IPackageUploadSet)[3]
   >>> print netapplet_upload.displayname
   netapplet
 
-Set up some library files for the netapplet source package.
+Set up some library files for the netapplet source package.  These are not
+already present in the sample data.
 
   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
   >>> from canonical.archiveuploader.tests import datadir, mock_logger
@@ -31,7 +34,7 @@ Set up some library files for the netapplet source package.
   ...     fileobj.close()
 
 The notify() method generates one email here on this unsigned package.  It
-requires an annoucement list email address, a "changes_file_object" that is
+requires an announcement list email address, a "changes_file_object" that is
 just an open file object for the original changes file, and a special
 logger object that will extract tracebacks for the purposes of this doctest.
 
@@ -90,8 +93,9 @@ The mail body contains a list of files that were accepted:
   <BLANKLINE>
 
 Now we will process a signed package.  Signed packages will potentially have
-a different recipient list to unsigned ones.
-First, we need to make the package upload think that it's signed:
+a different recipient list to unsigned ones; recipients for signed package 
+uploads can be the signer, the maintainer and the changer, where these people 
+are different.  Unsigned packages only send notifications to the changer.
 
   >>> from canonical.launchpad.interfaces import IGPGKeySet
   >>> from zope.security.proxy import removeSecurityProxy
