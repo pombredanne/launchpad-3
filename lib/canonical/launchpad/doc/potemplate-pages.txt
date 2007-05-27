@@ -26,7 +26,7 @@ Let's got some needed objects.
     >>> release = distribution['hoary']
     >>> potemplateset = getUtility(IPOTemplateSet)
     >>> potemplatesubset = potemplateset.getSubset(
-    ...     distrorelease=release, sourcepackagename=sourcepackagename)
+    ...     distroseries=release, sourcepackagename=sourcepackagename)
     >>> potemplate = potemplatesubset['evolution-2.2']
 
 It's time to check that the upload form sets the right fields.

@@ -228,8 +228,8 @@
         class="canonical.launchpad.browser.PackagingAddView"
         schema="canonical.launchpad.interfaces.IPackaging"
         label="Add distribution packaging record"
-        fields="distrorelease sourcepackagename packaging"
-        keyword_arguments="distrorelease sourcepackagename packaging"
+        fields="distroseries sourcepackagename packaging"
+        keyword_arguments="distroseries sourcepackagename packaging"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-packaging.pt" >

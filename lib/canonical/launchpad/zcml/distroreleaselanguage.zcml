@@ -4,34 +4,34 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-  <!-- DistroReleaseLanguage and Dummy -->
-  <content class="canonical.launchpad.database.DistroReleaseLanguage">
-    <allow interface="canonical.launchpad.interfaces.IDistroReleaseLanguage" />
+  <!-- DistroSeriesLanguage and Dummy -->
+  <content class="canonical.launchpad.database.DistroSeriesLanguage">
+    <allow interface="canonical.launchpad.interfaces.IDistroSeriesLanguage" />
   </content>
 
-  <content class="canonical.launchpad.database.DummyDistroReleaseLanguage">
-    <allow interface="canonical.launchpad.interfaces.IDistroReleaseLanguage"
+  <content class="canonical.launchpad.database.DummyDistroSeriesLanguage">
+    <allow interface="canonical.launchpad.interfaces.IDistroSeriesLanguage"
       />
   </content>
 
   <browser:url
-    for="canonical.launchpad.interfaces.IDistroReleaseLanguage"
+    for="canonical.launchpad.interfaces.IDistroSeriesLanguage"
     path_expression="string:+lang/${language/code}"
-    attribute_to_parent="distrorelease"
+    attribute_to_parent="distroseries"
     />
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.IDistroReleaseLanguage"
+    for="canonical.launchpad.interfaces.IDistroSeriesLanguage"
     name="+index"
     />
 
   <browser:pages
-    for="canonical.launchpad.interfaces.IDistroReleaseLanguage"
+    for="canonical.launchpad.interfaces.IDistroSeriesLanguage"
     permission="zope.Public"
     facet="translations">
     <browser:page
       name="+portlet-stats"
-      template="../templates/distroreleaselanguage-portlet-stats.pt" />
+      template="../templates/distroserieslanguage-portlet-stats.pt" />
     <browser:page
       name="+rosetta-status-legend"
       template="../templates/rosetta-status-legend.pt" />
@@ -40,17 +40,17 @@
   <browser:page
     name="+index"
     permission="zope.Public"
-    for="canonical.launchpad.interfaces.IDistroReleaseLanguage"
-    template="../templates/distroreleaselanguage-index.pt"
-    class="canonical.launchpad.browser.DistroReleaseLanguageView"
+    for="canonical.launchpad.interfaces.IDistroSeriesLanguage"
+    template="../templates/distroserieslanguage-index.pt"
+    class="canonical.launchpad.browser.DistroSeriesLanguageView"
     facet="translations" />
 
-  <!-- DistroReleaseLanguageSet -->
+  <!-- DistroSeriesLanguageSet -->
   <securedutility
-    class="canonical.launchpad.database.DistroReleaseLanguageSet"
-    provides="canonical.launchpad.interfaces.IDistroReleaseLanguageSet">
+    class="canonical.launchpad.database.DistroSeriesLanguageSet"
+    provides="canonical.launchpad.interfaces.IDistroSeriesLanguageSet">
     <allow
-      interface="canonical.launchpad.interfaces.IDistroReleaseLanguageSet" />
+      interface="canonical.launchpad.interfaces.IDistroSeriesLanguageSet" />
   </securedutility>
 
 </configure>

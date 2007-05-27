@@ -11,7 +11,7 @@ from canonical.launchpad.interfaces import (
     IDistributionSet, IComponentSet)
 
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, DistributionReleaseStatus)
+    PackagePublishingPocket, DistroSeriesStatus)
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -212,7 +212,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         """
         if self.pocket == PackagePublishingPocket.RELEASE:
             if (self.distrorelease.releasestatus !=
-                DistributionReleaseStatus.FROZEN):
+                DistroSeriesStatus.FROZEN):
                 return True
         return False
 

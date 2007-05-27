@@ -1,10 +1,10 @@
 <div class="portlet">
 
   <h2>Package "<span tal:replace="context/name">apache2</span>"
-  (<span tal:replace="context/distroarchrelease/architecturetag">i386</span>)
+  (<span tal:replace="context/distroarchseries/architecturetag">i386</span>)
   in
   <span tal:replace="context/distribution/name">ubuntu</span>
-  <span tal:replace="context/distrorelease/name">hoary</span></h2>
+  <span tal:replace="context/distroseries/name">hoary</span></h2>
 
   <div class="portletBody portletContent"
        tal:define="cr context/currentrelease">
@@ -17,8 +17,8 @@
     <tal:no_currentrelease condition="not: cr">
       <i>There is no current release for this package in
         <span tal:replace="context/distribution/displayname">ubuntu</span>
-        <span tal:replace="context/distrorelease/name">hoary</span>
-        (<span tal:replace="context/distroarchrelease/architecturetag">
+        <span tal:replace="context/distroseries/name">hoary</span>
+        (<span tal:replace="context/distroarchseries/architecturetag">
           i386
         </span>)</i>
     </tal:no_currentrelease>

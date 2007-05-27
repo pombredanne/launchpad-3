@@ -33,7 +33,7 @@ Incidentally that restores the test data to its initial state.
 
 NOTE: Transferring to a team we are creating is a stock functionality of
 ObjectReassignmentView and is not tested here. On 2006-08-30 this is is tested
-in lib/canonical/launchpad/pagetests/standalone/xx-reassign-distrorelease.txt;
+in lib/canonical/launchpad/pagetests/standalone/xx-reassign-distroseries.txt;
 look for "Now we reassign it to a newly the GNOME Terminal Klingon support branch to SABDFL.
 create team: ubuntu2".
 

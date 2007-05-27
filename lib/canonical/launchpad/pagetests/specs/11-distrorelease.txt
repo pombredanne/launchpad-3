@@ -2,7 +2,7 @@ It is possible to set a specification to a specific distribution
 release.
 
 This pagetest tries to add a spec to the Ubuntu distribution and set it
-to the Grumpy distrorelease.
+to the Grumpy distroseries.
 
 First we try to access the addspec page.
 
@@ -40,7 +40,7 @@ target the newly created spec to a distribution.
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+spec/testspec/+setrelease'
  
-We are able to target a specification to a distrorelease. We expect to be
+We are able to target a specification to a distroseries. We expect to be
 redirected back to the spec page when we are done.
 
   >>> user_browser.open(

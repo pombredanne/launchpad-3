@@ -33,13 +33,13 @@ class TestDistributionMirror(LaunchpadFunctionalTestCase):
         self.hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
         self.hoary_i386 = self.hoary['i386']
 
-    def _create_source_mirror(self, distrorelease, pocket, component, status):
-        source_mirror1 = self.archive_mirror.ensureMirrorDistroReleaseSource(
-            distrorelease, pocket, component)
+    def _create_source_mirror(self, distroseries, pocket, component, status):
+        source_mirror1 = self.archive_mirror.ensureMirrorDistroSeriesSource(
+            distroseries, pocket, component)
         removeSecurityProxy(source_mirror1).status = status
 
     def _create_bin_mirror(self, archrelease, pocket, component, status):
-        bin_mirror = self.archive_mirror.ensureMirrorDistroArchRelease(
+        bin_mirror = self.archive_mirror.ensureMirrorDistroArchSeries(
             archrelease, pocket, component)
         removeSecurityProxy(bin_mirror).status = status
         return bin_mirror

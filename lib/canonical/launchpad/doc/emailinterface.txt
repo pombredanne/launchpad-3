@@ -1056,7 +1056,7 @@ He can also approve existing nominations.
     Ubuntu Grumpy
 
 It works the same when specifying a source package while targeting a
-specific distrorelease.
+specific distroseries.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
@@ -1098,7 +1098,7 @@ driver of the release, only a nomination will be created.
     ...     print nomination.target.bugtargetname
     Ubuntu Hoary
 
-Nominating product series work the same way as for distro releases.
+Nominating product series work the same way as for distro seriess.
 Sample person is a driver for the Firefox trunk series, so the
 nomination is automatically approved.
 

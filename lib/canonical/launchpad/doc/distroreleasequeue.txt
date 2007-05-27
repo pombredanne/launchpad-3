@@ -22,7 +22,7 @@ An upload can contain a combination of content types, organized by:
    a special file which will be processed in a specific way to publish
    its contents in the archive  (tar.gz). Currently we support
    translations, installer and  upgrader (see
-   distroreleasequeue-{translation, dist-upgrader}).
+   distroseriesqueue-{translation, dist-upgrader}).
 
 Each of those instances points back to a PackageUpload entry
 (parent) and to its type target:
@@ -62,7 +62,7 @@ launchpad.Edit on the records:
 Construct an upload.
 
   >>> anything_policy = getPolicy(
-  ...     name='anything', distro='ubuntu', distrorelease='hoary')
+  ...     name='anything', distro='ubuntu', distroseries='hoary')
   >>> anything_policy.can_upload_binaries = True
   >>> anything_policy.can_upload_mixed = True
 
@@ -119,7 +119,7 @@ Confirm we can now find ed published in hoary.
   >>> from canonical.launchpad.database import SourcePackagePublishingHistory
   >>> from canonical.lp.dbschema import PackagePublishingStatus
   >>> for release in SourcePackagePublishingHistory.selectBy(
-  ...     distrorelease=hoary, status=PackagePublishingStatus.PENDING):
+  ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
   ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
   ...         print release.sourcepackagerelease.version
   0.2-20
@@ -165,7 +165,7 @@ Retrieving an IPackageUpload by its id:
   >>> qset.get(1).id
   1
 
-Counter, optionally by status (informally named "queue") and or distrorelease:
+Counter, optionally by status (informally named "queue") and or distroseries:
 
   >>> qset.count()
   13
@@ -183,15 +183,15 @@ Retrieve some data from DB to play more with counter.
   >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
   >>> breezy_autotest = distro['breezy-autotest']
 
-  >>> qset.count(distrorelease=breezy_autotest)
+  >>> qset.count(distroseries=breezy_autotest)
   11
 
   >>> qset.count(status=PackageUploadStatus.ACCEPTED,
-  ...            distrorelease=breezy_autotest)
+  ...            distroseries=breezy_autotest)
   0
 
   >>> qset.count(status=PackageUploadStatus.ACCEPTED,
-  ...            distrorelease=hoary)
+  ...            distroseries=hoary)
   1
 
 
@@ -258,7 +258,7 @@ done by someone else.
 Let's process a new upload:
 
   >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntu', distrorelease='hoary')
+  ...     name='insecure', distro='ubuntu', distroseries='hoary')
 
   >>> bar_ok = NascentUpload(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
@@ -299,7 +299,7 @@ and sponsored by 'Foo Bar'.
 
 == IHasQueueItems ==
 
-Explore the queue features of a DistroRelease instance, let's check
+Explore the queue features of a DistroSeries instance, let's check
 some usages of IHasQueueItems.getQueueItems, which returns a list
 of IPackageUpload entries.
 
@@ -332,7 +332,7 @@ name like 'moz':
   >>> items[0].builds[0].build.binarypackages[0].version
   u'0.9'
 
-Got a distrorelease build queue entry for 'mozilla-firefox_0.9'
+Got a distroseries build queue entry for 'mozilla-firefox_0.9'
 
 Try with version:
 
@@ -660,7 +660,7 @@ in both of them:
   Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
 
 
-Only the members of distrorelease drivers in question have
+Only the members of distroseries drivers in question have
 launchpad.Edit on a packageupload record.
 
   >>> login('foo.bar@canonical.com')

@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces import (
     IArchiveSet, IPersonSet)
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket,
-    DistributionReleaseStatus)
+    DistroSeriesStatus)
 
 
 class TestPublisher(TestNativePublishingBase):
@@ -95,7 +95,7 @@ class TestPublisher(TestNativePublishingBase):
                              PackagePublishingPocket.UPDATES)])
 
         self.ubuntutest['breezy-autotest'].releasestatus = (
-            DistributionReleaseStatus.CURRENT)
+            DistroSeriesStatus.CURRENT)
 
         pub_source = self.getPubSource(
             filecontent='foo',
@@ -393,7 +393,7 @@ class TestPublisher(TestNativePublishingBase):
             self.ubuntutest.main_archive)
 
         self.ubuntutest['breezy-autotest'].releasestatus = (
-            DistributionReleaseStatus.OBSOLETE)
+            DistroSeriesStatus.OBSOLETE)
 
         pub_source = self.getPubSource(
             status=PackagePublishingStatus.SUPERSEDED)

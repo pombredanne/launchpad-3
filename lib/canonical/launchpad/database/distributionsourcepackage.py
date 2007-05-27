@@ -115,7 +115,7 @@ class DistributionSourcePackage(BugTargetBase,
             """ % sqlvalues(self.sourcepackagename, self.distribution,
                             self.distribution.main_archive,
                             PackagePublishingStatus.REMOVED),
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
             orderBy=[SQLConstant(order_const),
                      "-SourcePackagePublishingHistory.datepublished"])
 
@@ -195,11 +195,11 @@ class DistributionSourcePackage(BugTargetBase,
 
     # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
     @property
-    def by_distroreleases(self):
+    def by_distroseriess(self):
         """See IDistributionSourcePackage."""
         result = []
-        for release in self.distribution.releases:
-            candidate = SourcePackage(self.sourcepackagename, release)
+        for series in self.distribution.serieses:
+            candidate = SourcePackage(self.sourcepackagename, series)
             if candidate.currentrelease:
                 result.append(candidate)
         return result
@@ -220,8 +220,8 @@ class DistributionSourcePackage(BugTargetBase,
         query = """
             DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
@@ -234,7 +234,7 @@ class DistributionSourcePackage(BugTargetBase,
                       % sqlvalues(status))
 
         return SourcePackagePublishingHistory.select(query,
-            clauseTables=['DistroRelease', 'SourcePackageRelease'],
+            clauseTables=['DistroSeries', 'SourcePackageRelease'],
             prejoinClauseTables=['SourcePackageRelease'],
             orderBy='-datecreated')
 
@@ -243,8 +243,8 @@ class DistributionSourcePackage(BugTargetBase,
     def releases(self):
         """See IDistributionSourcePackage."""
         ret = SourcePackagePublishingHistory.select("""
-            sourcepackagepublishinghistory.distrorelease = distrorelease.id AND
-            distrorelease.distribution = %s AND
+            sourcepackagepublishinghistory.distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = %s AND
             sourcepackagepublishinghistory.archive = %s AND
             sourcepackagepublishinghistory.sourcepackagerelease =
                 sourcepackagerelease.id AND

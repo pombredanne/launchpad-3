@@ -81,7 +81,7 @@ Or by version:
     >>> print v504.name
     hoary
 
-You can list development distroreleases:
+You can list development distroseriess:
 
     >>> devdists = ubuntu.getDevelopmentReleases()
     >>> for devdist in devdists:
@@ -139,10 +139,10 @@ It also raises NotFoundError on distributions with no releases:
 Even if we add a release to Gentoo, no packages have ever been published
 in it, and therefore guessPackageNames will still fail:
 
-    >>> from canonical.launchpad.interfaces import IDistroReleaseSet
+    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> distroreleaseset = getUtility(IDistroReleaseSet)
-    >>> gentoo_two = distroreleaseset.new(gentoo, 'gentoo-two', 'Gentoo Two',
+    >>> distroseriesset = getUtility(IDistroSeriesSet)
+    >>> gentoo_two = distroseriesset.new(gentoo, 'gentoo-two', 'Gentoo Two',
     ...                                   'Gentoo Two Dot Oh', 'Gentoo 2', 'G2',
     ...                                   '2.0', None, gentoo.owner)
     >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
@@ -198,46 +198,46 @@ and even on substrings:
     1
 
 
-=== Finding distroreleases and pockets from distribution names ===
+=== Finding distroseriess and pockets from distribution names ===
 
-A distribution knows what distroreleases it has. Those distroreleases have
+A distribution knows what distroseriess it has. Those distroseriess have
 pockets which have suffixes used by the archive publisher. Because we sometimes
-need to talk about distroreleases such as ubuntu/hoary-security we need some
-way to decompose that into the distrorelease and the pocket. Distribution
+need to talk about distroseriess such as ubuntu/hoary-security we need some
+way to decompose that into the distroseries and the pocket. Distribution
 can do that for us.
 
-If we ask for a totally unknown distrorelease, we raise NotFoundError
-    >>> ubuntu.getDistroReleaseAndPocket('unknown')
+If we ask for a totally unknown distroseries, we raise NotFoundError
+    >>> ubuntu.getDistroSeriesAndPocket('unknown')
     Traceback (most recent call last):
     ...
     NotFoundError: 'unknown'
 
-If we ask for a plain distrorelease, it should come back with the RELEASE
+If we ask for a plain distroseries, it should come back with the RELEASE
 pocket as the pocket.
-    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary')
+    >>> dr, pocket = ubuntu.getDistroSeriesAndPocket('hoary')
     >>> print dr.name
     hoary
     >>> print pocket.name
     RELEASE
 
-If we ask for a security pocket in a known distrorelease it should come out
+If we ask for a security pocket in a known distroseries it should come out
 on the other side.
-    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary-security')
+    >>> dr, pocket = ubuntu.getDistroSeriesAndPocket('hoary-security')
     >>> print dr.name
     hoary
     >>> print pocket.name
     SECURITY
 
 Find the backports pocket, too:
-    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary-backports')
+    >>> dr, pocket = ubuntu.getDistroSeriesAndPocket('hoary-backports')
     >>> print dr.name
     hoary
     >>> print pocket.name
     BACKPORTS
 
-If we ask for a valid distrorelease which doesn't have a given pocket it should
+If we ask for a valid distroseries which doesn't have a given pocket it should
 raise NotFoundError for us
-    >>> ubuntu.getDistroReleaseAndPocket('hoary-bullshit')
+    >>> ubuntu.getDistroSeriesAndPocket('hoary-bullshit')
     Traceback (most recent call last):
     ...
     NotFoundError: 'hoary-bullshit'

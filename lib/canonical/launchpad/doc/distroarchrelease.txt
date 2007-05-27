@@ -3,16 +3,16 @@ Distro Arch Release
    >>> from zope.interface.verify import verifyObject
 
    >>> from canonical.launchpad.interfaces import (
-   ...    IDistroArchReleaseBinaryPackageRelease,
-   ...    IDistroArchReleaseBinaryPackage,
+   ...    IDistroArchSeriesBinaryPackageRelease,
+   ...    IDistroArchSeriesBinaryPackage,
    ...    IBinaryPackagePublishingHistory,
    ...    ISectionSet)
 
-   >>> from canonical.launchpad.database.distroarchrelease import (
-   ...     DistroArchRelease)
+   >>> from canonical.launchpad.database.distroarchseries import (
+   ...     DistroArchSeries)
 
 
-   >>> hoary_i386 = DistroArchRelease.get(6)
+   >>> hoary_i386 = DistroArchSeries.get(6)
 
 XXX: This needs many more tests to be effective.
      bug 3257
@@ -32,7 +32,7 @@ interrogate this information.
    pmount
 
 
-DistroArchRelease class has a built-in method to return a single 
+DistroArchSeries class has a built-in method to return a single 
 dependency package candidate by its name as a PublishedPackage 
 instance:
 
@@ -56,7 +56,7 @@ list of IDARBPR instances containing the matching packages.
 The method works even when we are searching for packages whose names are
 not fti-matchable, such as "linux-2.6.12", and substrings:
 
-   >>> warty_i386 = DistroArchRelease.get(1)
+   >>> warty_i386 = DistroArchSeries.get(1)
    >>> results = warty_i386.searchBinaryPackages(text='linux-2.6.12')
    >>> len(results)
    1
@@ -66,14 +66,14 @@ not fti-matchable, such as "linux-2.6.12", and substrings:
 
    XXX cprov 20060321: Broken implementation, missing lastversions
    attribute.
-   verifyObject(IDistroArchReleaseBinaryPackageRelease, pmount)
+   verifyObject(IDistroArchSeriesBinaryPackageRelease, pmount)
    True
 
 Check IDARBP provider
 
    >>> pmount_hoary_i386 = hoary_i386.getBinaryPackage('pmount')
 
-   >>> verifyObject(IDistroArchReleaseBinaryPackage, pmount_hoary_i386)
+   >>> verifyObject(IDistroArchSeriesBinaryPackage, pmount_hoary_i386)
    True
 
    >>> pmount_hoary_i386.name
@@ -92,7 +92,7 @@ Most recent published history row:
    >>> bpph = pmount_hoary_i386.current_published
 
    XXX cprov 20060322: the object doesn't pass verifyObject()
-   due the lack of distroarchreleasebinarypackagerelease attribute.
+   due the lack of distroarchseriesbinarypackagerelease attribute.
 
    >>> IBinaryPackagePublishingHistory.providedBy(bpph)
    True

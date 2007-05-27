@@ -11,37 +11,37 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Releases</h1>
-    <tal:has-releases condition="context/releases">
+  <h1>Versions</h1>
+    <tal:has-serieses condition="context/serieses">
     <ul>
-      <li class="distrorelease" tal:repeat="release context/releases">
-        <a tal:attributes="href release/fmt:url">
-          <tal:version replace="release/version" />
-          (<tal:codename replace="release/displayname" />)
+      <li class="distroseries" tal:repeat="series context/serieses">
+        <a tal:attributes="href series/fmt:url">
+          <tal:version replace="series/version" />
+          (<tal:codename replace="series/displayname" />)
         </a>
-        <div tal:content="release/summary" />
+        <div tal:content="series/summary" />
         <div>
           <strong>Status:</strong>
-          <span tal:replace="release/releasestatus/title" />
+          <span tal:replace="series/status/title" />
         </div>
-        <div tal:condition="release/parentrelease">
+        <div tal:condition="series/parentseries">
           <strong>Derives from:</strong>
-          <a tal:attributes="href release/parentrelease/fmt:url">
+          <a tal:attributes="href series/parentseries/fmt:url">
             <tal:distro
-              replace="release/parentrelease/distribution/displayname" />
-            <tal:distrorelease replace="release/parentrelease/displayname" />
+              replace="series/parentseries/distribution/displayname" />
+            <tal:distroseries replace="series/parentseries/displayname" />
           </a>
         </div>
         <br />
       </li>
     </ul>
-    </tal:has-releases>
+    </tal:has-serieses>
 
-    <tal:no-releases condition="not: context/releases">
-    <p><tal:name replace="context/displayname" /> has no releases registered
+    <tal:no-serieses condition="not: context/serieses">
+    <p><tal:name replace="context/displayname" /> has no versions registered
       yet.
     </p>
-    </tal:no-releases>
+    </tal:no-serieses>
 </div>
 </body>
 </html>

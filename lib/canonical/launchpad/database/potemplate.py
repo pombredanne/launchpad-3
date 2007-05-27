@@ -93,8 +93,8 @@ class POTemplate(SQLBase, RosettaStats):
         dbName='from_sourcepackagename', notNull=False, default=None)
     sourcepackageversion = StringCol(dbName='sourcepackageversion',
         notNull=False, default=None)
-    distrorelease = ForeignKey(foreignKey='DistroRelease',
-        dbName='distrorelease', notNull=False, default=None)
+    distroseries = ForeignKey(foreignKey='DistroSeries',
+        dbName='distroseries', notNull=False, default=None)
     header = StringCol(dbName='header', notNull=False, default=None)
     binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
         dbName='binarypackagename', notNull=False, default=None)
@@ -132,11 +132,11 @@ class POTemplate(SQLBase, RosettaStats):
                 self.name,
                 self.productseries.product.displayname,
                 self.productseries.displayname)
-        if self.distrorelease:
+        if self.distroseries:
             dn = '%s in %s %s package "%s"' % (
                 self.name,
-                self.distrorelease.distribution.displayname,
-                self.distrorelease.displayname,
+                self.distroseries.distribution.displayname,
+                self.distroseries.displayname,
                 self.sourcepackagename.name)
         return dn
 
@@ -148,19 +148,19 @@ class POTemplate(SQLBase, RosettaStats):
                 self.name,
                 self.productseries.product.displayname,
                 self.productseries.displayname)
-        if self.distrorelease:
+        if self.distroseries:
             title = 'Template "%s" in %s %s package "%s"' % (
                 self.name,
-                self.distrorelease.distribution.displayname,
-                self.distrorelease.displayname,
+                self.distroseries.distribution.displayname,
+                self.distroseries.displayname,
                 self.sourcepackagename.name)
         return title
 
     @property
     def distribution(self):
         """See IPOTemplate."""
-        if self.distrorelease is not None:
-            return self.distrorelease.distribution
+        if self.distroseries is not None:
+            return self.distroseries.distribution
         else:
             return None
 
@@ -176,8 +176,8 @@ class POTemplate(SQLBase, RosettaStats):
     def translationgroups(self):
         """See IPOTemplate."""
         ret = []
-        if self.distrorelease:
-            tg = self.distrorelease.distribution.translationgroup
+        if self.distroseries:
+            tg = self.distroseries.distribution.translationgroup
             if tg is not None:
                 ret.append(tg)
         elif self.productseries:
@@ -195,10 +195,10 @@ class POTemplate(SQLBase, RosettaStats):
     @property
     def translationpermission(self):
         """See IPOTemplate."""
-        if self.distrorelease:
+        if self.distroseries:
             # in the case of a distro template, use the distro translation
             # permission settings
-            return self.distrorelease.distribution.translationpermission
+            return self.distroseries.distribution.translationpermission
         elif self.productseries:
             # for products, use the "most restrictive permission" between
             # project and product.
@@ -224,14 +224,14 @@ class POTemplate(SQLBase, RosettaStats):
                 iscurrent = TRUE
                 ''' % sqlvalues(self.id, self.productseries.id),
                 orderBy=['id'])
-        elif self.distrorelease and self.sourcepackagename:
+        elif self.distroseries and self.sourcepackagename:
             return POTemplate.select('''
                 id <> %s AND
-                distrorelease = %s AND
+                distroseries = %s AND
                 sourcepackagename = %s AND
                 iscurrent = TRUE
                 ''' % sqlvalues(self.id,
-                    self.distrorelease.id, self.sourcepackagename.id),
+                    self.distroseries.id, self.sourcepackagename.id),
                 orderBy=['id'])
         else:
             raise AssertionError('Unknown POTemplate source.')
@@ -250,10 +250,10 @@ class POTemplate(SQLBase, RosettaStats):
     def translationtarget(self):
         if self.productseries is not None:
             return self.productseries
-        elif self.distrorelease is not None:
+        elif self.distroseries is not None:
             from canonical.launchpad.database.sourcepackage import \
                 SourcePackage
-            return SourcePackage(distrorelease=self.distrorelease,
+            return SourcePackage(distroseries=self.distroseries,
                 sourcepackagename=self.sourcepackagename)
         raise AssertionError('Unknown POTemplate translation target')
 
@@ -639,44 +639,44 @@ class POTemplateSubset:
     implements(IPOTemplateSubset)
 
     def __init__(self, sourcepackagename=None, from_sourcepackagename=None,
-                 distrorelease=None, productseries=None):
+                 distroseries=None, productseries=None):
         """Create a new POTemplateSubset object.
 
         The set of POTemplate depends on the arguments you pass to this
         constructor. The sourcepackagename, from_sourcepackagename,
-        distrorelease and productseries are just filters for that set.
+        distroseries and productseries are just filters for that set.
         """
         self.sourcepackagename = sourcepackagename
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
         self.productseries = productseries
         self.clausetables = []
         self.orderby = []
 
-        assert productseries is None or distrorelease is None, (
-            'A product series must not be used with a distro release.')
+        assert productseries is None or distroseries is None, (
+            'A product series must not be used with a distro series.')
 
-        assert productseries is not None or distrorelease is not None, (
-            'Either productseries or distrorelease must be not None.')
+        assert productseries is not None or distroseries is not None, (
+            'Either productseries or distroseries must be not None.')
 
         if productseries is not None:
             self.query = ('POTemplate.productseries = %s' %
                 sqlvalues(productseries.id))
-        elif distrorelease is not None and from_sourcepackagename is not None:
+        elif distroseries is not None and from_sourcepackagename is not None:
             self.query = ('POTemplate.from_sourcepackagename = %s AND'
-                          ' POTemplate.distrorelease = %s ' %
+                          ' POTemplate.distroseries = %s ' %
                             sqlvalues(from_sourcepackagename.id,
-                                      distrorelease.id))
+                                      distroseries.id))
             self.sourcepackagename = from_sourcepackagename
-        elif distrorelease is not None and sourcepackagename is not None:
+        elif distroseries is not None and sourcepackagename is not None:
             self.query = ('POTemplate.sourcepackagename = %s AND'
-                          ' POTemplate.distrorelease = %s ' %
-                            sqlvalues(sourcepackagename.id, distrorelease.id))
+                          ' POTemplate.distroseries = %s ' %
+                            sqlvalues(sourcepackagename.id, distroseries.id))
         else:
             self.query = (
-                'POTemplate.distrorelease = DistroRelease.id AND'
-                ' DistroRelease.id = %s' % sqlvalues(distrorelease.id))
-            self.orderby.append('DistroRelease.name')
-            self.clausetables.append('DistroRelease')
+                'POTemplate.distroseries = DistroSeries.id AND'
+                ' DistroSeries.id = %s' % sqlvalues(distroseries.id))
+            self.orderby.append('DistroSeries.name')
+            self.clausetables.append('DistroSeries')
 
         # Finally, we sort the query by its path in all cases.
         self.orderby.append('POTemplate.path')
@@ -706,8 +706,8 @@ class POTemplateSubset:
     def title(self):
         """See IPOTemplateSubset."""
         titlestr = ''
-        if self.distrorelease:
-            titlestr += ' ' + self.distrorelease.displayname
+        if self.distroseries:
+            titlestr += ' ' + self.distroseries.displayname
         if self.sourcepackagename:
             titlestr += ' ' + self.sourcepackagename.name
         if self.productseries:
@@ -719,7 +719,7 @@ class POTemplateSubset:
         """See IPOTemplateSubset."""
         return POTemplate(potemplatename=potemplatename,
                           sourcepackagename=self.sourcepackagename,
-                          distrorelease=self.distrorelease,
+                          distroseries=self.distroseries,
                           productseries=self.productseries,
                           path=path,
                           owner=owner)
@@ -760,8 +760,8 @@ class POTemplateSubset:
         query = []
         if self.productseries is not None:
             query.append('productseries = %s' % sqlvalues(self.productseries))
-        if self.distrorelease is not None:
-            query.append('distrorelease = %s' % sqlvalues(self.distrorelease))
+        if self.distroseries is not None:
+            query.append('distroseries = %s' % sqlvalues(self.distroseries))
         if self.sourcepackagename is not None:
             query.append('sourcepackagename = %s' % sqlvalues(
                 self.sourcepackagename))
@@ -810,7 +810,7 @@ class POTemplateSet:
         values = ",".join(sqlvalues(*ids))
         return POTemplate.select("POTemplate.id in (%s)" % values,
             prejoins=["potemplatename", "productseries",
-                      "distrorelease", "sourcepackagename"],
+                      "distroseries", "sourcepackagename"],
             orderBy=["POTemplate.id"])
 
     def getAllByName(self, name):
@@ -825,27 +825,27 @@ class POTemplateSet:
         """See IPOTemplateSet."""
         return POTemplate.select(orderBy=['-date_last_updated'])
 
-    def getSubset(self, distrorelease=None, sourcepackagename=None,
+    def getSubset(self, distroseries=None, sourcepackagename=None,
                   productseries=None):
         """See IPOTemplateSet."""
         return POTemplateSubset(
-            distrorelease=distrorelease,
+            distroseries=distroseries,
             sourcepackagename=sourcepackagename,
             productseries=productseries)
 
-    def getSubsetFromImporterSourcePackageName(self, distrorelease,
+    def getSubsetFromImporterSourcePackageName(self, distroseries,
         sourcepackagename):
         """See IPOTemplateSet."""
-        if distrorelease is None or sourcepackagename is None:
+        if distroseries is None or sourcepackagename is None:
             raise AssertionError(
-                'distrorelease and sourcepackage must be not None.')
+                'distroseries and sourcepackage must be not None.')
 
         return POTemplateSubset(
-            distrorelease=distrorelease,
+            distroseries=distroseries,
             sourcepackagename=sourcepackagename)
 
     def getPOTemplateByPathAndOrigin(self, path, productseries=None,
-        distrorelease=None, sourcepackagename=None):
+        distroseries=None, sourcepackagename=None):
         """See IPOTemplateSet."""
         if productseries is not None:
             return POTemplate.selectOne('''
@@ -859,10 +859,10 @@ class POTemplateSet:
             # another package that the one it's linked at the moment so we
             # first check to find it at IPOTemplate.from_sourcepackagename
             potemplate = POTemplate.selectOne('''
-                    POTemplate.distrorelease = %s AND
+                    POTemplate.distroseries = %s AND
                     POTemplate.from_sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
-                        distrorelease.id,
+                        distroseries.id,
                         sourcepackagename.id,
                         path)
                     )
@@ -873,10 +873,10 @@ class POTemplateSet:
                 return potemplate
 
             return POTemplate.selectOne('''
-                    POTemplate.distrorelease = %s AND
+                    POTemplate.distroseries = %s AND
                     POTemplate.sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
-                        distrorelease.id,
+                        distroseries.id,
                         sourcepackagename.id,
                         path)
                     )

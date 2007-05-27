@@ -14,7 +14,7 @@ package's +packaging page:
 
 As we could see 'mozilla' sourcepackage has no established Packaging
 records. We can add or edit the Packaging information for a specific
-distrorelease context. Let's try it for "grumpy":
+distroseries context. Let's try it for "grumpy":
 
   >>> user_browser.open(
   ...     "http://launchpad.dev/ubuntu/grumpy/+source/mozilla/+edit-packaging")

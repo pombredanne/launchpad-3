@@ -1,6 +1,6 @@
 
 First, let's make sure the sample user (name12) can't view the page to
-add a milestone to the Ubuntu/hoary distrorelease, which is owned by the Ubuntu
+add a milestone to the Ubuntu/hoary distroseries, which is owned by the Ubuntu
 Team (ubuntu-team).
 
   >>> print http(r"""

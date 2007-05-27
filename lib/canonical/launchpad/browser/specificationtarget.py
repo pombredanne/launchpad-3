@@ -5,7 +5,6 @@ __metaclass__ = type
 
 __all__ = [
     'HasSpecificationsView',
-    'SpecificationTargetView',
     ]
 
 from canonical.lp.dbschema import (
@@ -18,7 +17,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistribution,
-    IDistroRelease,
+    IDistroSeries,
     IHasDrivers,
     IPerson,
     IProduct,
@@ -87,7 +86,7 @@ class HasSpecificationsView(LaunchpadView):
             self.show_target = True
             self.show_series = True
         elif (IProductSeries.providedBy(self.context) or
-              IDistroRelease.providedBy(self.context)):
+              IDistroSeries.providedBy(self.context)):
             self.is_series = True
             self.show_milestone = True
         elif ISprint.providedBy(self.context):
@@ -117,7 +116,7 @@ class HasSpecificationsView(LaunchpadView):
             'drafter',
             'approver',
             'owner',
-            'distrorelease',
+            'distroseries',
             'direction_approved',
             'man_days',
             'delivery',
@@ -145,10 +144,10 @@ class HasSpecificationsView(LaunchpadView):
             row.append(fperson(spec.drafter))
             row.append(fperson(spec.approver))
             row.append(fperson(spec.owner))
-            if spec.distrorelease is None:
+            if spec.distroseries is None:
                 row.append('none')
             else:
-                row.append(spec.distrorelease.name)
+                row.append(spec.distroseries.name)
             row.append(spec.direction_approved)
             row.append(spec.man_days)
             row.append(dbschema(spec.delivery))
@@ -356,13 +355,4 @@ class HasSpecificationsView(LaunchpadView):
         self._plan = plan
         self._dangling = dangling
 
-
-class SpecificationTargetView(HasSpecificationsView):
-
-    @property
-    def goaltitle(self):
-        if IProduct.providedBy(self.context):
-            return 'Series'
-        elif IDistribution.providedBy(self.context):
-            return 'Release'
 

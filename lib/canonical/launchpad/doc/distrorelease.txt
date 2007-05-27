@@ -8,78 +8,78 @@ From the DerivationOverview spec
     possibly a live-CD, some amount of metadata associated with the arrangement
     of those elements and also a lot of information on managing it.
 
-A distro release is a given version of a distribution. So, for Ubuntu, there
+A distro series is a given version of a distribution. So, for Ubuntu, there
 are releases (or planned releases) like "warty", "hoary" and "bendy".
 
-Distro releases are retrieved with the IDistroReleaseSet utility, much like
+Distro releases are retrieved with the IDistroSeriesSet utility, much like
 people are retrieved with the IPersonSet utility, or bug tasks are retrieved
 with the IBugTaskSet utility.
 
-The IDistroReleaseSet utility is accessed in the usual fashion:
+The IDistroSeriesSet utility is accessed in the usual fashion:
 
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistroRelease, IDistroReleaseSet, IDistributionSet)
-    >>> distroreleaseset = getUtility(IDistroReleaseSet)
+    ...     IDistroSeries, IDistroSeriesSet, IDistributionSet)
+    >>> distroseriesset = getUtility(IDistroSeriesSet)
 
-To retrieve a specific release of a distribution, use IDistroReleaseSet.get:
+To retrieve a specific release of a distribution, use IDistroSeriesSet.get:
 
-    >>> warty = distroreleaseset.get(1)
+    >>> warty = distroseriesset.get(1)
     >>> print warty.name
     warty
     >>> print warty.fullreleasename
     Ubuntu Warty
 
-Or IDistroReleaseSet.findByName:
+Or IDistroSeriesSet.findByName:
 
-    >>> for distrorelease in distroreleaseset.findByName("warty"):
-    ...     print distrorelease.name
+    >>> for distroseries in distroseriesset.findByName("warty"):
+    ...     print distroseries.name
     warty
 
 To get one specific release by name, use queryByName:
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
 
-    >>> warty = distroreleaseset.queryByName(ubuntu, "warty")
+    >>> warty = distroseriesset.queryByName(ubuntu, "warty")
     >>> warty.name
     u'warty'
 
 If the release by that name doesn't exist, None will be returned:
 
-    >>> foobar = distroreleaseset.queryByName(ubuntu, "foobar")
+    >>> foobar = distroseriesset.queryByName(ubuntu, "foobar")
     >>> print foobar
     None
 
-Or IDistroReleaseSet.findByVersion:
+Or IDistroSeriesSet.findByVersion:
 
-    >>> for distrorelease in distroreleaseset.findByVersion("5.04"):
-    ...     print distrorelease.name
+    >>> for distroseries in distroseriesset.findByVersion("5.04"):
+    ...     print distroseries.name
     hoary
 
-We verify that a distrorelease does in fact fully provide IDistroRelease:
+We verify that a distroseries does in fact fully provide IDistroSeries:
 
-    >>> verifyObject(IDistroRelease, warty)
+    >>> verifyObject(IDistroSeries, warty)
     True
-    >>> IDistroRelease.providedBy(warty)
+    >>> IDistroSeries.providedBy(warty)
     True
 
-To search the set of IDistroReleases, use IDistroReleaseSet.search:
+To search the set of IDistroSeriess, use IDistroSeriesSet.search:
 
-    >>> ubuntu_releases = distroreleaseset.search(
+    >>> ubuntu_releases = distroseriesset.search(
     ...     distribution=ubuntu, isreleased=True, orderBy="-datereleased")
     >>> [release.name for release in ubuntu_releases]
     [u'warty']
 
-    >>> all_ubuntu_releases = distroreleaseset.search(distribution=ubuntu)
+    >>> all_ubuntu_releases = distroseriesset.search(distribution=ubuntu)
     >>> all_ubuntu_releases.count()
     4
 
-DistroRelease.getPublishedReleases:
+DistroSeries.getPublishedReleases:
 
-    >>> from canonical.launchpad.database import SourcePackageName, DistroRelease
-    >>> warty2 = DistroRelease.get(1)
+    >>> from canonical.launchpad.database import SourcePackageName, DistroSeries
+    >>> warty2 = DistroSeries.get(1)
 
 Passing a ISourcePackageName as argument:
 
@@ -107,7 +107,7 @@ Not found as empty list:
     0
 
 canUploadToPocket method helps us to decide if an upload is allowed or
-not, according the distrorelease status and the upload target pocket.
+not, according the distroseries status and the upload target pocket.
 
    >>> from canonical.launchpad.interfaces import IDistributionSet
    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -149,14 +149,14 @@ through fti, and even for substrings:
     1
 
 
-DistroReleases have components and sections
+DistroSeriess have components and sections
 -------------------------------------------
 
-A distrorelease has some number of components and/or sections which
-are valid for that distrorelease. These selections are used by (among
+A distroseries has some number of components and/or sections which
+are valid for that distroseries. These selections are used by (among
 other things) the uploader for validating incoming uploads.
 
-   >>> hoary = distroreleaseset.get(3)
+   >>> hoary = distroseriesset.get(3)
    >>> for c in hoary.components:
    ...     print c.name
    main
@@ -195,26 +195,26 @@ other things) the uploader for validating incoming uploads.
    translations
 
 
-DistroReleases can be initialised from their parents
+DistroSeriess can be initialised from their parents
 ----------------------------------------------------
 
-When a distrorelease is derived from another distrorelease (be it a
+When a distroseries is derived from another distroseries (be it a
 derivative distribution, or simply the next release in a sequence from
 Ubuntu) we need to initialise the new release with quite a lot of
 information. Not least of which is the section and component
-selections and the publishing information for the distrorelease.
+selections and the publishing information for the distroseries.
 
-DistroRelease provides us with a method for doing this which carefully
+DistroSeries provides us with a method for doing this which carefully
 goes behind the back of sqlobject to copy potentially tens of
-thousands of rows around in order to set up a distrorelease.
+thousands of rows around in order to set up a distroseries.
 
-IDistroRelease lists a series of preconditions for performing an
+IDistroSeries lists a series of preconditions for performing an
 initialisation. In particular the initialiser won't overwrite
 publishing records etc. Essentially this is a "Do not push this button
 again" type set of assertions.
 
    >>> login("foo.bar@canonical.com")
-   >>> humpy = distroreleaseset.new(ubuntu, 'humpy', 'Humpy Hippo',
+   >>> humpy = distroseriesset.new(ubuntu, 'humpy', 'Humpy Hippo',
    ...                              'The Humpy Hippo', 'Fat', 'Yo Momma',
    ...                              '99.2',hoary, hoary.owner)
    >>> humpy_i386 = humpy.newArch('i386', hoary['i386'].processorfamily,
@@ -231,26 +231,26 @@ again" type set of assertions.
    1
 
 Check if the attributes of an DRSPR instance for the just initialised
-distrorelease are sane. A DRSPR instance should filter attributes of
-a SPR according the distrorelease in question (practically according
+distroseries are sane. A DRSPR instance should filter attributes of
+a SPR according the distroseries in question (practically according
 what is published in this distrorelelase)
 
 Since the initialise-from-parent procedure copies the latest
 publications from the parent IDRSPR.builds should be empty, reflecting
-that there are no builds for this SPR in this DistroRelease.
+that there are no builds for this SPR in this DistroSeries.
 IDRSPR.builds will be non-empty after a developer submits a new SPR
-for the  DistroRelease.
+for the  DistroSeries.
 
 In other hand IDRSPR.binaries should return the binaries resulted of
 the SPRs inheritance by joining BPP->BPR->BUILD->SPR, i.e, binaries
-published in this distrorelease (in fact, in one of its architectures)
+published in this distroseries (in fact, in one of its architectures)
 resulted of the sourcepackagerelease in question, but built anywhere.
 (fix bug #52938)
 
-Initialise a new distrorelease based on warty (since it has, at least
+Initialise a new distroseries based on warty (since it has, at least
 one coherent published source + binary, mozilla-firefox)
 
-   >>> bumpy = distroreleaseset.new(ubuntu, 'bumpy', 'Bumpy',
+   >>> bumpy = distroseriesset.new(ubuntu, 'bumpy', 'Bumpy',
    ...                              'The Bumpy', 'Fat', 'Boom',
    ...                              '99.3', warty, warty.owner)
 
@@ -259,7 +259,7 @@ one coherent published source + binary, mozilla-firefox)
    >>> bumpy.nominatedarchindep = bumpy_i386
    >>> bumpy.initialiseFromParent()
 
-Build a new ISourcePackage based in the new distrorelease:
+Build a new ISourcePackage based in the new distroseries:
 
    >>> bumpy_firefox_sp = bumpy.getSourcePackage('mozilla-firefox')
 
@@ -271,11 +271,11 @@ Check the content IDRSPR binaries & builds attributes:
    1
 
    >>> for bin in bumpy_firefox_sp.currentrelease.binaries:
-   ...     print bin.id, bin.title, bin.build.distroarchrelease.title
+   ...     print bin.id, bin.title, bin.build.distroarchseries.title
    12 mozilla-firefox-0.9 The Warty Warthog Release for i386 (x86)
 
 'builds' should be empty since it was built in parent (warty), not in this
-distrorelease (bumby.
+distroseries (bumby.
 
    >>> bumpy_firefox_sp.currentrelease.builds.count()
    0
@@ -299,7 +299,7 @@ distribution release:
    pmount
 
 Packages can be linked to upstream productseries in specific
-distribution releases. IDistroRelease offers a way to query translatable
+distribution releases. IDistroSeries offers a way to query translatable
 packages that are linked to upstream productseries.
 
    >>> unlinked_translatables = hoary.getUnlinkedTranslatableSourcePackages()
@@ -323,13 +323,13 @@ From the results above you can notice that neither mozilla-firefox nor
 netapplet are translatable in Hoary.
 
 
-DistroRelease can build meta objects for packages
+DistroSeries can build meta objects for packages
 -------------------------------------------------
 
    >>> from canonical.launchpad.interfaces import (
    ...     ISourcePackage,
-   ...     IDistroReleaseBinaryPackage,
-   ...     IDistroReleaseSourcePackageRelease,
+   ...     IDistroSeriesBinaryPackage,
+   ...     IDistroSeriesSourcePackageRelease,
    ...     ISourcePackagePublishingHistory)
 
 
@@ -342,7 +342,7 @@ DistroRelease can build meta objects for packages
    ...                                       BinaryPackageName)
    >>> pmount_bin_name =  BinaryPackageName.byName('pmount')
    >>> pmount_drbp = hoary.getBinaryPackage(pmount_bin_name)
-   >>> IDistroReleaseBinaryPackage.providedBy(pmount_drbp)
+   >>> IDistroSeriesBinaryPackage.providedBy(pmount_drbp)
    True
    >>> len(pmount_drbp.current_publishings)
    3
@@ -355,7 +355,7 @@ DistroRelease can build meta objects for packages
    u'pmount'
 
    >>> pmount_srcrel = hoary.getSourcePackageRelease(pmount_rel)
-   >>> IDistroReleaseSourcePackageRelease.providedBy(pmount_srcrel)
+   >>> IDistroSeriesSourcePackageRelease.providedBy(pmount_srcrel)
    True
 
 Check some properties of DRSPR meta class
@@ -423,13 +423,13 @@ We need to flush cached values.
    ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 
 
-DistroRelease Translations migration
+DistroSeries Translations migration
 ------------------------------------
 
-We have several ways to copy translations between distro releases.
+We have several ways to copy translations between distro seriess.
 
 The main one is to clone what we have in its parent distribution.  This will
-only work if we keep the new distrorelease's translations hidden from the
+only work if we keep the new distroseries's translations hidden from the
 public:
 
    >>> humpy.hide_all_translations = False
@@ -471,7 +471,7 @@ Only current PO templates are copied from the distribution parent:
    True
 
 Define a couple of functions we will need to compare the files from the parent
-and child distro release.
+and child distro series.
 
    >>> def get_diff(old_file, new_file):
    ...     from canonical.launchpad.helpers import test_diff
@@ -489,14 +489,14 @@ and child distro release.
    ...                 old_file_lines, new_file_lines)
    ...     return u''
 
-   >>> def compare_translations(orig_distrorelease, dest_distrorelease):
+   >>> def compare_translations(orig_distroseries, dest_distroseries):
    ...
    ...
    ...     orig_templates = sorted(
-   ...         orig_distrorelease.currentpotemplates,
+   ...         orig_distroseries.currentpotemplates,
    ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
    ...     dest_templates = sorted(
-   ...         dest_distrorelease.potemplates,
+   ...         dest_distroseries.potemplates,
    ...         key=lambda x: (x.potemplatename.name, x.sourcepackagename.name))
    ...
    ...     output_text = u''
@@ -521,7 +521,7 @@ and child distro release.
    ...                 output_text += output
    ...     return output_text
 
-Let's compare what we have in our parent distro release and the new one just
+Let's compare what we have in our parent distro series and the new one just
 created. We should get no differences at all.
 
    >>> print compare_translations(hoary, humpy)
@@ -539,11 +539,11 @@ Get the needed objects to prepare this test.
     ...     ISourcePackageNameSet, IPOTemplateSet, IPersonSet)
     >>> evolution = getUtility(ISourcePackageNameSet)['evolution']
     >>> potemplateset = getUtility(IPOTemplateSet)
-    >>> potemplatesubset_hoary = potemplateset.getSubset(distrorelease=hoary,
+    >>> potemplatesubset_hoary = potemplateset.getSubset(distroseries=hoary,
     ...     sourcepackagename=evolution)
     >>> potemplate_hoary = potemplatesubset_hoary.getPOTemplateByName('evolution-2.2')
     >>> pofile_es_hoary = potemplate_hoary.getPOFileByLang('es')
-    >>> potemplatesubset_humpy = potemplateset.getSubset(distrorelease=humpy,
+    >>> potemplatesubset_humpy = potemplateset.getSubset(distroseries=humpy,
     ...     sourcepackagename=evolution)
     >>> potemplate_humpy = potemplatesubset_humpy.getPOTemplateByName('evolution-2.2')
     >>> pofile_es_humpy = potemplate_humpy.getPOFileByLang('es')
@@ -692,7 +692,7 @@ the same values:
 SourcePackagePublishingHistory
 ------------------------------
 
-IDistroRelease.getSourcePackagePublishing returns all the ISPPH
+IDistroSeries.getSourcePackagePublishing returns all the ISPPH
 records for a given status in a given pocket. It makes easy to
 generate a list of currently published sources for override-check, for
 instance. it can also be used to generate the archive packages list in
@@ -803,8 +803,8 @@ publication in question:
    >>> warty_mozilla_pub_bin.section.name
    u'base'
 
-DistroRelease.getBinaryPackagePublishing will return
-BinaryPackagePublishingHistory objects for the DistroRelease:
+DistroSeries.getBinaryPackagePublishing will return
+BinaryPackagePublishingHistory objects for the DistroSeries:
 
     >>> warty = ubuntu['warty']
     >>> bpphs = warty.getBinaryPackagePublishing()
@@ -875,7 +875,7 @@ Specification Listings
 ======================
 
 We should be able to get lists of specifications in different states
-related to a distrorelease.
+related to a distroseries.
 
 Basically, we can filter by completeness, and by whether or not the spec is
 informational.
@@ -923,7 +923,7 @@ If we ask for all specs, we get them in the order of priority.
  Not krunch-desktop-plan
 
 
-With a distrorelease, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
+With a distroseries, we can ask for ACCEPTED, PROPOSED and DECLINED specs:
 
  >>> filter=[SpecificationFilter.ACCEPTED]
  >>> for spec in krunch.specifications(filter=filter):
@@ -967,12 +967,12 @@ Drivers
 Distributions have drivers, who are people that have permission to approve
 bugs and features for specific releases. The rules are that:
 
- 1. a "driver" can be set on either Distribution or DistroRelease
- 2. drivers are only actually relevant on a DistroRelease, because thats the
+ 1. a "driver" can be set on either Distribution or DistroSeries
+ 2. drivers are only actually relevant on a DistroSeries, because thats the
     granularity at which we track spec/bug targeting
- 3. the important attribute is ".drivers" on a distrorelease, it is
+ 3. the important attribute is ".drivers" on a distroseries, it is
     calculated based on the combination of owners and drivers in the
-    distribution and the distrorelease. It is a LIST of drivers, which might
+    distribution and the distroseries. It is a LIST of drivers, which might
     be empty, or have one or two people/teams in it.
  4. If the release has a driver, then that driver is in the list.
  5. If the distribution has a driver then that is in the list too, otherwise
@@ -1046,21 +1046,21 @@ driver. Here, we expect the driver to be the owner of the distribution
 
 == Last Uploads ==
 
-IDistroRelease provides the 'getLastUpload' method which returns a
-list of last 5 (five) IDistroReleaseSourcePackageRelease (IDRSPR)
+IDistroSeries provides the 'getLastUpload' method which returns a
+list of last 5 (five) IDistroSeriesSourcePackageRelease (IDRSPR)
 uploaded and published in its context.
 
   >>> warty = ubuntu['warty']
   >>> last_uploads = warty.getLastUploads()
 
-Each element is a IDistroReleaseSourcePackageRelease instance:
+Each element is a IDistroSeriesSourcePackageRelease instance:
 
   >>> for upload in last_uploads:
   ...     print upload.name, upload.version
   mozilla-firefox 0.9
 
 Also, empty results (caused obviously by lack of sample data or very
-earlier development state of a distrorelease) are possible:
+earlier development state of a distroseries) are possible:
 
   >>> breezy_autotest = ubuntu['breezy-autotest']
   >>> last_uploads = breezy_autotest.getLastUploads()

@@ -1,20 +1,20 @@
 Distro Arch Release Binary Package Release
 ==========================================
 
-  >>> from canonical.launchpad.database.distroarchreleasebinarypackagerelease \
-  ...   import DistroArchReleaseBinaryPackageRelease as DARBPR
+  >>> from canonical.launchpad.database.distroarchseriesbinarypackagerelease \
+  ...   import DistroArchSeriesBinaryPackageRelease as DARBPR
   >>> from canonical.launchpad.database.binarypackagerelease import (
   ...     BinaryPackageRelease)
-  >>> from canonical.launchpad.database.distroarchrelease import (
-  ...     DistroArchRelease)
+  >>> from canonical.launchpad.database.distroarchseries import (
+  ...     DistroArchSeries)
 
 Grab the relevant DARs and BPRs:
 
-  >>> warty = DistroArchRelease.get(1)
-  >>> print warty.distrorelease.name
+  >>> warty = DistroArchSeries.get(1)
+  >>> print warty.distroseries.name
   warty
-  >>> hoary = DistroArchRelease.get(6)
-  >>> print hoary.distrorelease.name
+  >>> hoary = DistroArchSeries.get(6)
+  >>> print hoary.distroseries.name
   hoary
 
   >>> mf = BinaryPackageRelease.get(12)

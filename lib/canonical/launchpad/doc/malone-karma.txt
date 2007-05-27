@@ -143,20 +143,20 @@ Create a new bug task on a product series:
     >>> notify(SQLObjectCreatedEvent(evolution_trunk_task))
     Karma added: action=bugtaskcreated, product=evolution
 
-Create a new bug task on a distrorelease:
+Create a new bug task on a distroseries:
 
     >>> debian_woody = debian.getRelease("woody")
     >>> debian_woody_task = getUtility(IBugTaskSet).createTask(
-    ...     bug, distrorelease=debian_woody, owner=foo_bar)
+    ...     bug, distroseries=debian_woody, owner=foo_bar)
     >>> notify(SQLObjectCreatedEvent(debian_woody_task))
     Karma added: action=bugtaskcreated, distribution=debian
 
-Accept a distro release task.
+Accept a distro series task.
 
     >>> debian_woody_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
-    >>> from canonical.launchpad.interfaces import IDistroReleaseBugTask
+    >>> from canonical.launchpad.interfaces import IDistroSeriesBugTask
     >>> old_bugtask = Snapshot(
-    ...     debian_woody_task, providing=IDistroReleaseBugTask)
+    ...     debian_woody_task, providing=IDistroSeriesBugTask)
     >>> debian_woody_task.transitionToStatus(BugTaskStatus.CONFIRMED)
     >>> notify(SQLObjectModifiedEvent(debian_woody_task, old_bugtask, ['status']))
     Karma added: action=bugaccepted, distribution=debian

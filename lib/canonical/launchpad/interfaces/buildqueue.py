@@ -38,7 +38,7 @@ class IBuildQueue(Interface):
 
     # properties inherited from related Content classes.
     archrelease = Attribute(
-        "DistroArchRelease target of the IBuild releated to this job.")
+        "DistroArchSeries target of the IBuild releated to this job.")
     name = Attribute(
         "Name of the ISourcePackageRelease releated to this job.")
     version = Attribute(
@@ -115,6 +115,6 @@ class IBuildQueueSet(Interface):
         """Return the candidates for building
 
         The result is a unsorted list of BuildQueue items in a given state
-        within a given DistroArchRelease group.
+        within a given DistroArchSeries group.
         """
 

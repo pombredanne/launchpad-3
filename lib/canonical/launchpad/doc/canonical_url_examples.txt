@@ -99,7 +99,7 @@ An ICodeOfConduct
     u'http://launchpad.dev/codeofconduct/1.0'
 
 
-== Distributions, distroreleases and so on ==
+== Distributions, distroseriess and so on ==
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
 
@@ -115,7 +115,7 @@ An IDistribution.
     >>> canonical_url(celebs.ubuntu)
     u'http://launchpad.dev/ubuntu'
 
-An IDistroRelease.
+An IDistroSeries.
 
     >>> hoary = celebs.ubuntu.getRelease('hoary')
     >>> canonical_url(hoary)
@@ -180,7 +180,7 @@ An IProductRelease.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBug, IBugSet, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
-    ...     IDistroReleaseBugTask, IBugWatchSet,
+    ...     IDistroSeriesBugTask, IBugWatchSet,
     ...     IBugExternalRefSet)
     >>> from canonical.launchpad.database import (
     ...     BugWatchSet, BugExternalRefSet)
@@ -217,13 +217,13 @@ An IDistroBugTask without a sourcepackage.
     u'http://bugs.launchpad.dev/debian/+bug/1'
     >>> distro_task.sourcepackagename = temp_spname
 
-An IDistroReleaseBugTask.
+An IDistroSeriesBugTask.
 
     >>> distro_release_task = getUtility(IBugTaskSet).get(16)
     >>> canonical_url(distro_release_task)
     u'http://bugs.launchpad.dev/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
-An IDistroReleaseBugTask without a sourcepackage.
+An IDistroSeriesBugTask without a sourcepackage.
 
     >>> temp_spname = distro_release_task.sourcepackagename
     >>> distro_release_task.sourcepackagename = None
@@ -346,7 +346,7 @@ And here's our subset.
 
     >>> potemplateset = getUtility(IPOTemplateSet)
     >>> potemplatesubset = potemplateset.getSubset(
-    ...     distrorelease=hoary, sourcepackagename=sourcepackagename)
+    ...     distroseries=hoary, sourcepackagename=sourcepackagename)
 
     >>> canonical_url(potemplatesubset)
     u'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots'

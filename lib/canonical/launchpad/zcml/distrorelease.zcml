@@ -4,8 +4,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-  <content class="canonical.launchpad.database.DistroRelease">
-    <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
+  <content class="canonical.launchpad.database.DistroSeries">
+    <allow interface="canonical.launchpad.interfaces.IDistroSeries"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
@@ -27,88 +27,88 @@
          shedloads of data. -->
     <require
         permission="launchpad.Admin"
-        set_attributes="version name releasestatus owner nominatedarchindep
+        set_attributes="version name status owner nominatedarchindep
                         changeslist"
         />
   </content>
 
   <securedutility
-    class="canonical.launchpad.database.DistroReleaseSet"
-    provides="canonical.launchpad.interfaces.IDistroReleaseSet">
-    <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
+    class="canonical.launchpad.database.DistroSeriesSet"
+    provides="canonical.launchpad.interfaces.IDistroSeriesSet">
+    <allow interface="canonical.launchpad.interfaces.IDistroSeriesSet" />
   </securedutility>
 
   <adapter
     provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.IDistroRelease"
-    factory="canonical.launchpad.browser.DistroReleaseSOP"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    factory="canonical.launchpad.browser.DistroSeriesSOP"
     permission="zope.Public"
     />
   <adapter
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
-    factory="canonical.launchpad.components.question.distrorelease_to_questiontarget"
+    factory="canonical.launchpad.components.question.distroseries_to_questiontarget"
     />
 
   <browser:navigation
     module="canonical.launchpad.browser"
-    classes="DistroReleaseNavigation"
+    classes="DistroSeriesNavigation"
     />
 
   <browser:page
-      for="canonical.launchpad.interfaces.IDistroRelease"
+      for="canonical.launchpad.interfaces.IDistroSeries"
       permission="zope.Public"
-      class="canonical.launchpad.browser.DistroReleaseDynMenu"
+      class="canonical.launchpad.browser.DistroSeriesDynMenu"
       attribute="__call__"
       name="+menudata"
       />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     path_expression="name"
     attribute_to_parent="distribution"
     />
 
   <browser:menus
-    module="canonical.launchpad.browser.distrorelease"
-    classes="DistroReleaseFacets DistroReleaseOverviewMenu
-             DistroReleaseBugsMenu DistroReleaseSpecificationsMenu
-             DistroReleaseTranslationsMenu"
+    module="canonical.launchpad.browser.distroseries"
+    classes="DistroSeriesFacets DistroSeriesOverviewMenu
+             DistroSeriesBugsMenu DistroSeriesSpecificationsMenu
+             DistroSeriesTranslationsMenu"
     />
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     name="+index" />
   <browser:defaultView
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     name="+specs"
     layer="canonical.launchpad.layers.BlueprintLayer"
     />
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     layer="canonical.launchpad.layers.BugsLayer"
     name="+bugs-index" />
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     name="+translations"
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:pages
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     class="canonical.launchpad.browser.BugTargetBugListingView"
     facet="bugs"
     permission="zope.Public">
     <browser:page
-      name="+portlet-bugtasklist-releasebugs"
-      template="../templates/bugtask-portlet-releasebugs.pt"
+      name="+portlet-bugtasklist-seriesbugs"
+      template="../templates/bugtask-portlet-seriesbugs.pt"
       />
   </browser:pages>
 
   <browser:page
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     name="+bugs-index"
     class="canonical.launchpad.browser.BugTargetBugsView"
     permission="zope.Public"
@@ -117,8 +117,8 @@
     />
 
   <browser:pages
-    for="canonical.launchpad.interfaces.IDistroRelease"
-    class="canonical.launchpad.browser.DistroReleaseView"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesView"
     permission="zope.Public">
     <browser:page
       name="+filebug"
@@ -127,18 +127,18 @@
     <browser:page
       name="+index"
       facet="overview"
-      template="../templates/distrorelease-index.pt" />
+      template="../templates/distroseries-index.pt" />
     <browser:page
       name="+translations"
       facet="translations"
-      template="../templates/distrorelease-translations.pt" />
+      template="../templates/distroseries-translations.pt" />
     <browser:page
       name="+langchart"
-      template="../templates/distrorelease-langchart.pt" />
+      template="../templates/distroseries-langchart.pt" />
     <browser:page
       name="+packaging"
       facet="overview"
-      template="../templates/distrorelease-packaging.pt" />
+      template="../templates/distroseries-packaging.pt" />
     <browser:page
       name="+potlist"
       facet="translations"
@@ -146,12 +146,12 @@
     <browser:page
       name="+builds"
       facet="overview"
-      template="../templates/distrorelease-builds.pt"
+      template="../templates/distroseries-builds.pt"
       />
     <browser:page
       name="+search"
       facet="overview"
-      template="../templates/distrorelease-search.pt"
+      template="../templates/distroseries-search.pt"
       />
     <browser:page
       name="+builds-list"
@@ -164,12 +164,12 @@
     <browser:page
       name="+portlet-details"
       facet="overview"
-      template="../templates/distrorelease-portlet-details.pt"
+      template="../templates/distroseries-portlet-details.pt"
       />
     <browser:page
       name="+portlet-lifecycle"
       facet="overview"
-      template="../templates/distrorelease-portlet-lifecycle.pt"
+      template="../templates/distroseries-portlet-lifecycle.pt"
       />
     <browser:page
       name="+portlet-milestones"
@@ -181,31 +181,31 @@
       />
     <browser:page
       name="+latest-uploads"
-      template="../templates/distrorelease-latest-uploads.pt"
+      template="../templates/distroseries-latest-uploads.pt"
       />
   </browser:pages>
 
   <browser:page
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     class="canonical.launchpad.browser.CVEReportView"
     permission="zope.Public"
     name="+cve"
     facet="bugs"
-    template="../templates/distrorelease-cvereport.pt" />
+    template="../templates/distroseries-cvereport.pt" />
 
   <browser:pages
-    for="canonical.launchpad.interfaces.IDistroRelease"
-    class="canonical.launchpad.browser.DistroReleaseView"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesView"
     permission="launchpad.AnyPerson">
     <browser:page
       name="+queue"
       facet="overview"
-      template="../templates/distrorelease-queue.pt"
+      template="../templates/distroseries-queue.pt"
       />
   </browser:pages>
 
   <browser:pages
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     permission="launchpad.Admin"
     facet="overview"
     class="canonical.launchpad.browser.ObjectReassignmentView">
@@ -216,47 +216,47 @@
   </browser:pages>
 
   <!-- NB DO NOT CHANGE WITHOUT THINKING
-       Do not allow people to change the details of the distro release that
-       will affect the way Soyuz publishes the distrorelease. Check with
+       Do not allow people to change the details of the distro series that
+       will affect the way Soyuz publishes the distroseries. Check with
        SABDFL before modifying this page. -->
   <browser:editform
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     permission="launchpad.Edit"
-    label="Edit release details"
+    label="Edit series details"
     name="+edit"
-    schema="canonical.launchpad.interfaces.IDistroRelease"
+    schema="canonical.launchpad.interfaces.IDistroSeries"
     facet="overview"
     fields="displayname title summary description"
-    template="../templates/distrorelease-edit.pt"
+    template="../templates/distroseries-edit.pt"
     />
 
   <browser:page
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     permission="launchpad.TranslationsAdmin"
-    class="canonical.launchpad.browser.DistroReleaseTranslationsAdminView"
+    class="canonical.launchpad.browser.DistroSeriesTranslationsAdminView"
     name="+admin"
     facet="translations"
-    template="../templates/distrorelease-translationsadmin.pt"
+    template="../templates/distroseries-translationsadmin.pt"
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <!-- NB DO NOT CHANGE WITHOUT THINKING
-       Do not allow people to change the details of the distro release that
-       will affect the way Soyuz publishes the distrorelease. Check with
+       Do not allow people to change the details of the distro series that
+       will affect the way Soyuz publishes the distroseries. Check with
        SABDFL before modifying this page. -->
   <browser:editform
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     permission="launchpad.Admin"
     name="+admin"
-    schema="canonical.launchpad.interfaces.IDistroRelease"
+    schema="canonical.launchpad.interfaces.IDistroSeries"
     facet="overview"
-    fields="name releasestatus version changeslist"
+    fields="name status version changeslist"
     template="../templates/launchpad-editform.pt"
     />
 
   <browser:addform
     name="+addmilestone"
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     schema="canonical.launchpad.interfaces.IMilestone"
     class="canonical.launchpad.browser.milestone.MilestoneAddView"
     facet="overview"
@@ -269,14 +269,14 @@
 
   <browser:addform
     name="+addport"
-    for="canonical.launchpad.interfaces.IDistroRelease"
-    schema="canonical.launchpad.interfaces.IDistroArchRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    schema="canonical.launchpad.interfaces.IDistroArchSeries"
     fields="architecturetag processorfamily official owner"
     arguments="architecturetag processorfamily official owner"
-    class="canonical.launchpad.browser.DistroArchReleaseAddView"
+    class="canonical.launchpad.browser.DistroArchSeriesAddView"
     facet="overview"
     permission="launchpad.Admin"
-    template="../templates/distrorelease-addport.pt"
+    template="../templates/distroseries-addport.pt"
     >
     <browser:widget
       field="owner"
@@ -284,7 +284,7 @@
   </browser:addform>
 
   <browser:page
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     class="canonical.launchpad.browser.HasSpecificationsView"
     permission="zope.Public"
     name="+mdz-specs.csv"
@@ -293,7 +293,7 @@
 
   <browser:page
     name="+ask-a-question-button"
-    for="canonical.launchpad.interfaces.IDistroRelease"
+    for="canonical.launchpad.interfaces.IDistroSeries"
     class="canonical.launchpad.browser.AskAQuestionButtonView"
     permission="zope.Public"
     />

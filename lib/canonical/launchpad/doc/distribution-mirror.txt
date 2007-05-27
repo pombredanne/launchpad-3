@@ -6,8 +6,8 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> from datetime import datetime, timedelta
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, ICountrySet, IDistroReleaseSet,
-    ...     IDistroArchReleaseSet, IDistributionMirrorSet,
+    ...     IDistributionSet, IPersonSet, ICountrySet, IDistroSeriesSet,
+    ...     IDistroArchSeriesSet, IDistributionMirrorSet,
     ...     ILibraryFileAliasSet)
     >>> from canonical.lp.dbschema import (
     ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
@@ -49,7 +49,7 @@ functionality of Launchpad enabled:
     None
 
 The contents of a distribution mirror are represented by its associated
-MirrorDistroArchReleases and MirrorDistroReleaseSources. This data is updated
+MirrorDistroArchSeriess and MirrorDistroSeriesSources. This data is updated
 at least once a day by the distributionmirror-prober cronscript, to make sure
 the information we have is always up to date.
 
@@ -58,18 +58,18 @@ the information we have is always up to date.
     >>> new_mirror.arch_releases.count()
     0
 
-To create a new MirrorDistroArchRelease (or MirrorDistroReleaseSource)
-associated with a given mirror, we use the ensureMirrorDistroArchRelease
-(or ensureMirrorDistroReleaseSource) method.
+To create a new MirrorDistroArchSeries (or MirrorDistroSeriesSource)
+associated with a given mirror, we use the ensureMirrorDistroArchSeries
+(or ensureMirrorDistroSeriesSource) method.
 
-    >>> warty = getUtility(IDistroReleaseSet).get(1)
-    >>> warty_i386 = getUtility(IDistroArchReleaseSet).get(1)
+    >>> warty = getUtility(IDistroSeriesSet).get(1)
+    >>> warty_i386 = getUtility(IDistroArchSeriesSet).get(1)
     >>> pocket = PackagePublishingPocket.RELEASE
     >>> warty_component = warty.components[0]
-    >>> warty_i386_mirror = new_mirror.ensureMirrorDistroArchRelease(
+    >>> warty_i386_mirror = new_mirror.ensureMirrorDistroArchSeries(
     ...     warty_i386, pocket, warty_component)
 
-    >>> warty_mirror = new_mirror.ensureMirrorDistroReleaseSource(
+    >>> warty_mirror = new_mirror.ensureMirrorDistroSeriesSource(
     ...     warty, pocket, warty_component)
 
     >>> new_mirror.source_releases.count()
@@ -77,25 +77,25 @@ associated with a given mirror, we use the ensureMirrorDistroArchRelease
     >>> new_mirror.arch_releases.count()
     1
 
-If we try to create another MirrorDistroArchRelease with the same arch release
+If we try to create another MirrorDistroArchSeries with the same arch release
 and pocket, that method will simply return the existing one.
 
-    >>> same_warty_i386_mirror = new_mirror.ensureMirrorDistroArchRelease(
+    >>> same_warty_i386_mirror = new_mirror.ensureMirrorDistroArchSeries(
     ...     warty_i386, pocket, warty_component)
     >>> same_warty_i386_mirror == warty_i386_mirror
     True
 
-    >>> same_warty_mirror = new_mirror.ensureMirrorDistroReleaseSource(
+    >>> same_warty_mirror = new_mirror.ensureMirrorDistroSeriesSource(
     ...     warty, pocket, warty_component)
     >>> same_warty_mirror == warty_mirror
     True
 
-It's also possible to delete a MirrorDistroArchRelease/MirrorDistroReleaseSource
+It's also possible to delete a MirrorDistroArchSeries/MirrorDistroSeriesSource
 if we find out their contents are not in a mirror where they used to be.
 
-    >>> new_mirror.deleteMirrorDistroReleaseSource(
+    >>> new_mirror.deleteMirrorDistroSeriesSource(
     ...     warty, pocket, warty_component)
-    >>> new_mirror.deleteMirrorDistroArchRelease(
+    >>> new_mirror.deleteMirrorDistroArchSeries(
     ...     warty_i386, pocket, warty_component)
 
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -289,7 +289,7 @@ weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
      u'archive-mirror2']
 
 If when we finish probing a mirror, that mirror doesn't have any
-MirrorDistroReleaseSource or MirrorDistroArchRelease, that mirror is marked as
+MirrorDistroSeriesSource or MirrorDistroArchSeries, that mirror is marked as
 disabled and a notification is sent to its owner and to the distribution's
 mirror admin. This is done using IDistributionMirror.disable().
 Disabling a mirror causes it not to show up on the public mirror listings.
@@ -386,7 +386,7 @@ IDistributionMirror.
 For Release mirrors, these files are listed in a file stored in
 http://releases.ubuntu.com/. This file is parsed by
 get_expected_cdimage_paths(), which returns a list of 
-(distrorelease, flavour name, path) elements.
+(distroseries, flavour name, path) elements.
 (For testing we have a sample of that file stored in our tree, which is
 pointed by the config.distributionmirrorprober.releases_file_list_url option)
 
@@ -416,7 +416,7 @@ After knowing what content a mirror is expected to contain, we need to check
 when that mirror last synced its contents. 
 
 To do that we use the getURLsToCheckUpdateness() of either
-MirrorDistroReleaseSource or MirrorDistroArchRelease. This method returns a
+MirrorDistroSeriesSource or MirrorDistroArchSeries. This method returns a
 dictionary mapping MirrorStatuses to URLs on that mirror. 
 
 The prober will then check, between all reachable URLs, which one has the
@@ -642,13 +642,13 @@ First, let's check the source and arch releases of one archive mirror.
     >>> mirror_source_releases = (
     ...     archive_mirror.getSummarizedMirroredSourceReleases())
     >>> for mirror_source_release in mirror_source_releases:
-    ...     print (mirror_source_release.distrorelease.displayname,
+    ...     print (mirror_source_release.distroseries.displayname,
     ...            mirror_source_release.status.title)
     (u'Warty', 'Up to date')
     (u'Hoary', 'Up to date')
     (u'Breezy Badger Autotest', 'Up to date')
 
-Because all MirrorDistroArchReleases and MirrorDistroReleaseSources of this
+Because all MirrorDistroArchSeriess and MirrorDistroSeriesSources of this
 mirror have 'Up to date' as status, this mirror's overall status will also be
 'Up to date'.
 
@@ -656,7 +656,7 @@ mirror have 'Up to date' as status, this mirror's overall status will also be
     'Up to date'
 
 
-Now we check the MirrorCDImageDistroReleases of a release mirror.
+Now we check the MirrorCDImageDistroSeriess of a release mirror.
 
     >>> release_mirror.name
     u'releases-mirror'
@@ -664,7 +664,7 @@ Now we check the MirrorCDImageDistroReleases of a release mirror.
     >>> mirrored_releases = []
     >>> for mirror_cdimage_release in release_mirror.cdimage_releases:
     ...     mirrored_releases.append(
-    ...         (mirror_cdimage_release.distrorelease.displayname,
+    ...         (mirror_cdimage_release.distroseries.displayname,
     ...          mirror_cdimage_release.flavour))
     >>> [release for release in sorted(mirrored_releases)]
     [(u'Hoary', u'kubuntu'), (u'Hoary', u'ubuntu'), (u'Warty', u'ubuntu')]

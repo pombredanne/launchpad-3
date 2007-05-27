@@ -21,9 +21,9 @@ For further info about DDTP see:
   https://wiki.ubuntu.com/TranslatedPackageDescriptionsSpec
 
   >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
+  ...     IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet)
 
-  >>> distro_release_set = getUtility(IDistroReleaseSet)
+  >>> distro_release_set = getUtility(IDistroSeriesSet)
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
 
@@ -43,7 +43,7 @@ First, test the rejection of a missapplied changesfile name, which
 doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
 
   >>> sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntutest', distrorelease=None)
+  ...     name='sync', distro='ubuntutest', distroseries=None)
 
   >>> upload = NascentUpload(
   ...     datadir('ddtp-tarball/translations-main_20060728.changes'),
@@ -55,7 +55,7 @@ doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
 Now do a proper upload into the system.
 
   >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntutest', distrorelease=None)
+  ...     name='insecure', distro='ubuntutest', distroseries=None)
 
   >>> upload = NascentUpload(
   ...     datadir('ddtp-tarball/translations-main_20060728_all.changes'),
@@ -196,7 +196,7 @@ know as "partial update" and will save some storage when fixing specific
 language indexes or adding new ones:
 
   >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntutest', distrorelease=None)
+  ...     name='insecure', distro='ubuntutest', distroseries=None)
 
   >>> upload = NascentUpload(
   ...     datadir('ddtp-tarball/translations-main_20060817_all.changes'),

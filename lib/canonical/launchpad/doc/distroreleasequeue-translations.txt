@@ -7,7 +7,7 @@ uploaded into the system.
   ...     ProcessorFamily, Component, GPGKey, Section, Manifest,
   ...     SecureSourcePackagePublishingHistory)
   >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
+  ...     IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet)
   >>> from canonical.lp.dbschema import PackagePublishingPocket
 
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
@@ -26,11 +26,11 @@ uploaded into the system.
   >>> login('foo.bar@canonical.com')
 
   # We need to setup our test environment and create the needed objects.
-  >>> distro_release_set = getUtility(IDistroReleaseSet)
+  >>> distro_release_set = getUtility(IDistroSeriesSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = distro_release_set.queryByName(ubuntu, 'hoary')
 
-  # Create the Dapper distro release.
+  # Create the Dapper distro series.
   >>> dapper = distro_release_set.new( ubuntu, 'dapper', 'Dapper', 'Dapper',
   ...     'Dapper', 'Dapper', '06.04', hoary, hoary.owner)
 
@@ -51,7 +51,7 @@ queue:
   ...     Manifest.get(1), None, None, None, None, dapper.main_archive)
 
   >>> publishing_history = SecureSourcePackagePublishingHistory(
-  ...     distrorelease=dapper.id,
+  ...     distroseries=dapper.id,
   ...     sourcepackagerelease=source_package_release.id,
   ...     component=source_package_release.component.id,
   ...     section=source_package_release.section.id,
@@ -67,7 +67,7 @@ queue:
   ...      dapper_amd64, PackagePublishingPocket.RELEASE, dapper.main_archive)
 
   >>> buildd_policy = getPolicy(
-  ...     name='buildd', distro='ubuntu', distrorelease='dapper',
+  ...     name='buildd', distro='ubuntu', distroseries='dapper',
   ...     buildid=build.id)
 
   >>> pmount_upload = NascentUpload(

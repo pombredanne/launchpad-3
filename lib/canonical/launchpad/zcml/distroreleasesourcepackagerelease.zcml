@@ -4,47 +4,47 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
-  <!-- DistroReleaseSourcePackageRelease -->
-  <content class="canonical.launchpad.database.DistroReleaseSourcePackageRelease">
-    <allow interface="canonical.launchpad.interfaces.IDistroReleaseSourcePackageRelease" />
+  <!-- DistroSeriesSourcePackageRelease -->
+  <content class="canonical.launchpad.database.DistroSeriesSourcePackageRelease">
+    <allow interface="canonical.launchpad.interfaces.IDistroSeriesSourcePackageRelease" />
   </content>
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.IDistroReleaseSourcePackageRelease"
+    for="canonical.launchpad.interfaces.IDistroSeriesSourcePackageRelease"
     name="+index" />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IDistroReleaseSourcePackageRelease"
+    for="canonical.launchpad.interfaces.IDistroSeriesSourcePackageRelease"
     path_expression="string:+source/${name}/${version}"
-    attribute_to_parent="distrorelease"
+    attribute_to_parent="distroseries"
     />
 
   <browser:navigation
     module="canonical.launchpad.browser"
-    classes="DistroReleaseSourcePackageReleaseNavigation"
+    classes="DistroSeriesSourcePackageReleaseNavigation"
     />
 
   <browser:menus
-    module="canonical.launchpad.browser.distroreleasesourcepackagerelease"
-    classes="DistroReleaseSourcePackageReleaseFacets"
+    module="canonical.launchpad.browser.distroseriessourcepackagerelease"
+    classes="DistroSeriesSourcePackageReleaseFacets"
     />
 
   <browser:pages
-    for="canonical.launchpad.interfaces.IDistroReleaseSourcePackageRelease"
-    class="canonical.launchpad.browser.DistroReleaseSourcePackageReleaseView"
+    for="canonical.launchpad.interfaces.IDistroSeriesSourcePackageRelease"
+    class="canonical.launchpad.browser.DistroSeriesSourcePackageReleaseView"
     permission="zope.Public"
     >
     <browser:page
       name="+index"
       facet="overview"
-      template="../templates/distroreleasesourcepackagerelease-index.pt"
+      template="../templates/distroseriessourcepackagerelease-index.pt"
       />
 
-    <!-- DistroReleaseSourcePackageRelease Portlets -->
+    <!-- DistroSeriesSourcePackageRelease Portlets -->
     <browser:page
       name="+portlet-details"
       facet="overview"
-      template="../templates/distroreleasesourcepackagerelease-portlet-details.pt"
+      template="../templates/distroseriessourcepackagerelease-portlet-details.pt"
       />
   </browser:pages>
 

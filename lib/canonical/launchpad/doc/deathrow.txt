@@ -60,7 +60,7 @@ And, if we mark some packages to be pending removal. Source publication
 Source publication 12 includes alsa-utils_1.0.9a-4ubuntu1.dsc:
 
   >>> pub = SSPPH.get(12)
-  >>> print pub.distrorelease.name
+  >>> print pub.distroseries.name
   hoary
   >>> print pub.dateremoved
   None
@@ -73,7 +73,7 @@ references to the file are ready to be removed, the file will not be
 deleted yet. 
 
   >>> pub = SSPPH.get(20)
-  >>> print pub.distrorelease.name
+  >>> print pub.distroseries.name
   warty
   >>> print [f.libraryfile.filename 
   ...        for f in pub.sourcepackagerelease.files]

@@ -24,7 +24,7 @@ To retrieve all milestones, iterate over an IMilestoneSet object:
     [1, 2, 3]
 
 To create a new Milestone, use the .newMilestone(name, dateexpected=None)
-method of a ProductSeries or DistroRelease:
+method of a ProductSeries or DistroSeries:
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> productset = getUtility(IProductSet)
@@ -56,7 +56,7 @@ return None:
     >>> print non_ms
     None
 
-Now, lets test all of that for DistroReleases too!
+Now, lets test all of that for DistroSeriess too!
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> kubuntu = getUtility(IDistributionSet).getByName('kubuntu')
@@ -66,7 +66,7 @@ Now, lets test all of that for DistroReleases too!
     1.3rc2
     >>> print new_ms.distribution.name
     kubuntu
-    >>> print new_ms.distrorelease.name
+    >>> print new_ms.distroseries.name
     krunch
     >>> print kubuntu.getMilestone('foo2.3')
     None

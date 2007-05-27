@@ -124,7 +124,7 @@ add more CDs to our existing request...
 
 Now we'll create a ShippingRun to simulate that this request was shipped, so
 that we can see how shipit behaves for people making further requests for a
-given distrorelease.
+given distroseries.
 
   >>> from canonical.launchpad.database import ShippingRequestSet
   >>> login(ANONYMOUS)

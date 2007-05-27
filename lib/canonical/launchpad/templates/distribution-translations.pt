@@ -36,21 +36,21 @@
     <div tal:replace="structure view/translation_focus/@@+langchart" />
   </tal:block>
 
-  <tal:block condition="view/secondary_translatable_releases">
+  <tal:block condition="view/secondary_translatable_serieses">
     <h2 tal:condition="view/translation_focus">
-      Other releases of <span tal:replace="context/displayname">Ubuntu</span>
+      Other series of <span tal:replace="context/displayname">Ubuntu</span>
     </h2>
     <table class="listing">
       <thead>
         <tr>
-          <th>Release</th>
+          <th>Series</th>
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="distrorelease view/secondary_translatable_releases">
-          <td><a tal:attributes="href distrorelease/fmt:url"
+        <tr tal:repeat="distroseries view/secondary_translatable_serieses">
+          <td><a tal:attributes="href distroseries/fmt:url"
                  tal:content=
-                    "string: ${distrorelease/version} ${distrorelease/title}"
+                    "string: ${distroseries/version} ${distroseries/title}"
                 >5.04 The Hoary Hedgehog Release</a>
           </td>
         </tr>
@@ -62,10 +62,9 @@
 
 <div metal:fill-slot="help">
   <p>
-    These are the releases of the
+    These are the series of the
     <span tal:replace="context/displayname">Ubuntu</span> distribution that are
-    available for translation.  Pick your release and language to start
-    translating, or manage how and by whom the release should be translated.
+    available for translation.
   </p>
   <p>
     If you have the access privileges to manage translation for this

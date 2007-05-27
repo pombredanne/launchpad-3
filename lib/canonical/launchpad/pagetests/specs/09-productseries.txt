@@ -2,7 +2,7 @@
 Targeting to ProductSeries
 ==========================
 
-In terms of feature management for release series and for distroreleases, we
+In terms of feature management for release series and for distroseriess, we
 want to target one of these specs to the 1.0 series. We will use the "e4x"
 specification.
 

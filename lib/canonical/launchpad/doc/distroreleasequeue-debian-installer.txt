@@ -50,8 +50,8 @@ happen in production:
   ...     datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> anything_policy = getPolicy(
-  ...     name='anything', distro='ubuntutest', distrorelease=None)
-  >>> anything_policy.setDistroReleaseAndPocket('hoary-test')
+  ...     name='anything', distro='ubuntutest', distroseries=None)
+  >>> anything_policy.setDistroSeriesAndPocket('hoary-test')
 
   >>> upload = NascentUpload(
   ...     datadir(

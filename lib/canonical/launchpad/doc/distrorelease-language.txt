@@ -1,24 +1,24 @@
 
-DistroReleaseLanguage
+DistroSeriesLanguage
 =====================
 
 This is a special class which encapsulates the information associated with a
-particular language and distrorelease.
+particular language and distroseries.
 
-First we need to know which distroreleaselanguage we are working with. We
+First we need to know which distroserieslanguage we are working with. We
 will work with spanish in Hoary first.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistroReleaseSet, IDistributionSet, ILanguageSet,
-    ...     IDistroReleaseLanguage)
-    >>> distroreleaseset = getUtility(IDistroReleaseSet)
+    ...     IDistroSeriesSet, IDistributionSet, ILanguageSet,
+    ...     IDistroSeriesLanguage)
+    >>> distroseriesset = getUtility(IDistroSeriesSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> hoary = distroreleaseset.queryByName(ubuntu, "hoary")
+    >>> hoary = distroseriesset.queryByName(ubuntu, "hoary")
     >>> hoary.name
     u'hoary'
     >>> spanish = getUtility(ILanguageSet)['es']
-    >>> hoary_spanish = hoary.getDistroReleaseLanguage(spanish)
+    >>> hoary_spanish = hoary.getDistroSeriesLanguage(spanish)
 
 Now lets get the list of real pofiles. By this we mean the ones where there
 is actually a translation or two:
@@ -52,7 +52,7 @@ for Hoary
     pmount
 
 But if we get the whole list of templates, even non current ones, we can see
-that there is one extra template that was not shown in distroreleaselanguage
+that there is one extra template that was not shown in distroserieslanguage
 listing.
 
     >>> for potemplate in hoary.potemplates: print potemplate.name
@@ -71,13 +71,13 @@ hoary_spanish.pofiles is hidding as expected.
     ...         print potemplate.getPOFileByLang('es').title
     Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"
 
-We also have DummyDistroReleaseLanguages.
+We also have DummyDistroSeriesLanguages.
 
-    >>> from canonical.launchpad.database import DummyDistroReleaseLanguage
+    >>> from canonical.launchpad.database import DummyDistroSeriesLanguage
     >>> amharic = getUtility(ILanguageSet)['am']
-    >>> hoary_amharic = hoary.getDistroReleaseLanguageOrDummy(amharic)
+    >>> hoary_amharic = hoary.getDistroSeriesLanguageOrDummy(amharic)
     >>> print hoary_amharic.__class__
-    <class 'canonical.launchpad.database.distroreleaselanguage.DummyDistroReleaseLanguage'>
+    <class 'canonical.launchpad.database.distroserieslanguage.DummyDistroSeriesLanguage'>
 
 It should give you the same set of templates to translate.
 
@@ -88,14 +88,14 @@ It should give you the same set of templates to translate.
     pkgconf-mozilla
     pmount
 
-Now, we should test that a DummyDistroReleaseLanguage implements the full
-interface of a normal DistroReleaseLanguage.
+Now, we should test that a DummyDistroSeriesLanguage implements the full
+interface of a normal DistroSeriesLanguage.
 
-NB IF THIS FAILS then it means that the DistroReleaseLanguage object has
-been extended, and the DummyDistroReleaseLanguage has not been similarly
+NB IF THIS FAILS then it means that the DistroSeriesLanguage object has
+been extended, and the DummyDistroSeriesLanguage has not been similarly
 extended.
 
-   >>> print IDistroReleaseLanguage.providedBy(hoary_amharic)
+   >>> print IDistroSeriesLanguage.providedBy(hoary_amharic)
    True
 
 
@@ -151,7 +151,7 @@ And now we can confirm that priority does in fact dominate
  6 man
  5 evolution-2.2
 
-And now this priority should also dominate the distrorelease language pofile
+And now this priority should also dominate the distroseries language pofile
 sort order:
 
  >>> for po in hoary_amharic.po_files_or_dummies: print po.potemplate.name

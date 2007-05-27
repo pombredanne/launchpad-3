@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'can_be_nominated_for_releases',
+    'can_be_nominated_for_serieses',
     'validate_url',
     'valid_webref',
     'valid_branch_url',
@@ -44,8 +44,8 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.validators.url import valid_absolute_url
 
-def can_be_nominated_for_releases(releases):
-    """Can the bug be nominated for these releases?"""
+def can_be_nominated_for_serieses(serieses):
+    """Can the bug be nominated for these serieses?"""
     current_bug = getUtility(ILaunchBag).bug
     unnominatable_releases = []
     for release in releases:

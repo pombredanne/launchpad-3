@@ -86,12 +86,12 @@ class BinaryPackageRelease(SQLBase):
         return self.build.sourcepackagerelease.sourcepackagename.name
 
     def lastversions(self):
-        """Return the SUPERSEDED BinaryPackageReleases in a DistroRelease.
+        """Return the SUPERSEDED BinaryPackageReleases in a DistroSeries.
 
-        The distrorelease information comes from the SourcepackageRelease
+        The distroseries information comes from the SourcepackageRelease
         and the publishing system.
         """
-        # XXX malcc 2006-10-03: This is crack, each DistroRelease does
+        # XXX malcc 2006-10-03: This is crack, each DistroSeries does
         # *not* compile all of its Packages. The callsite for this method
         # (binarypackagerelease-portlet-latestversions) needs reviewing,
         # to determine what it actually wants to fetch. For now, I'm just
@@ -100,9 +100,9 @@ class BinaryPackageRelease(SQLBase):
         
         # Daniel Debonzi: To get the lastest versions of a BinaryPackage
         # Im suposing that one BinaryPackage is build for only one
-        # DistroRelease (Each DistroRelease compile all its Packages). 
-        # (BinaryPackage.build.distroarchrelease = \
-        # PackagePublishing.distroarchrelease
+        # DistroSeries (Each DistroSeries compile all its Packages). 
+        # (BinaryPackage.build.distroarchseries = \
+        # PackagePublishing.distroarchseries
         # where PackagePublishing.binarypackage = BinaryPackage.id)
         # When it is not true anymore, probably it should
         # be retrieved in a view class where I can use informations from
@@ -119,8 +119,8 @@ class BinaryPackageRelease(SQLBase):
         BinaryPackagePublishingHistory.archive = %s AND
         BinaryPackagePublishingHistory.status = %s
         """ % sqlvalues(self.binarypackagename,
-                        self.build.distroarchrelease,
-                        self.build.distroarchrelease.main_archive,
+                        self.build.distroarchseries,
+                        self.build.distroarchseries.main_archive,
                         dbschema.PackagePublishingStatus.SUPERSEDED)
 
         return shortlist(BinaryPackageRelease.select(
@@ -141,22 +141,22 @@ class BinaryPackageRelease(SQLBase):
                                  libraryfile=file)
 
     def publish(self, priority, status, pocket, embargo,
-                distroarchrelease=None):
+                distroarchseries=None):
         """See IBinaryPackageRelease."""
         # XXX: completely untested code
-        if not distroarchrelease:
-            distroarchrelease = self.build.distroarchrelease
+        if not distroarchseries:
+            distroarchseries = self.build.distroarchseries
 
         return SecureBinaryPackagePublishingHistory(
             binarypackagerelease=self,
-            distroarchrelease=distroarchrelease,
+            distroarchseries=distroarchseries,
             component=self.build.sourcepackagerelease.component,
             section=self.build.sourcepackagerelease.section,
             priority=priority,
             status=status,
             pocket=pocket,
             embargo=embargo,
-            archive=distroarchrelease.main_archive
+            archive=distroarchseries.main_archive
             )
 
     def override(self, component=None, section=None, priority=None):
@@ -173,13 +173,13 @@ class BinaryPackageReleaseSet:
     """A Set of BinaryPackageReleases."""
     implements(IBinaryPackageReleaseSet)
 
-    def findByNameInDistroRelease(self, distrorelease, pattern, archtag=None,
+    def findByNameInDistroSeries(self, distroseries, pattern, archtag=None,
                                   fti=False):
         """Returns a set of binarypackagereleases that matchs pattern inside a
-        distrorelease.
+        distroseries.
         """
         pattern = pattern.replace('%', '%%')
-        query, clauseTables = self._buildBaseQuery(distrorelease)
+        query, clauseTables = self._buildBaseQuery(distroseries)
         queries = [query]
 
         match_query = ("BinaryPackageName.name LIKE lower('%%' || %s || '%%')"
@@ -190,7 +190,7 @@ class BinaryPackageReleaseSet:
         queries.append(match_query)
 
         if archtag:
-            queries.append('DistroArchRelease.architecturetag=%s'
+            queries.append('DistroArchSeries.architecturetag=%s'
                            % sqlvalues(archtag))
 
         query = " AND ".join(queries)
@@ -198,10 +198,10 @@ class BinaryPackageReleaseSet:
         return BinaryPackageRelease.select(query, clauseTables=clauseTables,
                                            orderBy='BinaryPackageName.name')
 
-    def getByNameInDistroRelease(self, distrorelease, name=None,
+    def getByNameInDistroSeries(self, distroseries, name=None,
                                  version=None, archtag=None, orderBy=None):
-        """Get a BinaryPackageRelease in a DistroRelease by its name."""
-        query, clauseTables = self._buildBaseQuery(distrorelease)
+        """Get a BinaryPackageRelease in a DistroSeries by its name."""
+        query, clauseTables = self._buildBaseQuery(distroseries)
         queries = [query]
 
         if name:
@@ -218,7 +218,7 @@ class BinaryPackageReleaseSet:
                          % sqlvalues(status_published))
 
         if archtag:
-            queries.append('DistroArchRelease.architecturetag = %s'
+            queries.append('DistroArchSeries.architecturetag = %s'
                          % sqlvalues(archtag))
 
         query = " AND ".join(queries)
@@ -226,21 +226,21 @@ class BinaryPackageReleaseSet:
                                            clauseTables=clauseTables,
                                            orderBy=orderBy)
 
-    def _buildBaseQuery(self, distrorelease):
+    def _buildBaseQuery(self, distroseries):
         query = """
         BinaryPackagePublishingHistory.binarypackagerelease =
            BinaryPackageRelease.id AND
         BinaryPackagePublishingHistory.distroarchrelease =
-           DistroArchRelease.id AND
+           DistroArchSeries.id AND
         BinaryPackagePublishingHistory.archive = %s AND
-        DistroArchRelease.distrorelease = %s AND
+        DistroArchSeries.distroseries = %s AND
         BinaryPackageRelease.binarypackagename =
            BinaryPackageName.id AND
         BinaryPackagePublishingHistory.status != %s
-        """ % sqlvalues(distrorelease.main_archive, distrorelease,
+        """ % sqlvalues(distroseries.main_archive, distroseries,
                         dbschema.PackagePublishingStatus.REMOVED)
 
-        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
+        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
                         'BinaryPackageRelease', 'BinaryPackageName']
 
         return query, clauseTables

@@ -68,8 +68,8 @@ class SourcePackageRelease(SQLBase):
     architecturehintlist = StringCol(dbName='architecturehintlist')
     format = EnumCol(dbName='format', schema=SourcePackageFormat,
         default=SourcePackageFormat.DPKG, notNull=True)
-    uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
-        dbName='uploaddistrorelease')
+    uploaddistroseries = ForeignKey(foreignKey='DistroSeries',
+        dbName='uploaddistroseries')
     upload_archive = ForeignKey(
         foreignKey='Archive', dbName='upload_archive', notNull=True)
 
@@ -133,15 +133,15 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
         # we avoid doing an extra query doing getSourcepackage
-        release = self.uploaddistrorelease
-        return release.getSourcePackage(self.sourcepackagename)
+        series = self.uploaddistroseries
+        return series.getSourcePackage(self.sourcepackagename)
 
     @property
     def distrosourcepackage(self):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
         # we avoid doing an extra query doing getSourcepackage
-        distribution = self.uploaddistrorelease.distribution
+        distribution = self.uploaddistroseries.distribution
         return distribution.getSourcePackage(self.sourcepackagename)
 
     @property
@@ -168,11 +168,11 @@ class SourcePackageRelease(SQLBase):
             from canonical.launchpad.database.sourcepackage import \
                  SourcePackage
             # Only process main archive to skip PPA publishings.
-            if (publishing.distrorelease.main_archive.id !=
+            if (publishing.distroseries.main_archive.id !=
                 publishing.archive.id):
                 continue
             sp = SourcePackage(self.sourcepackagename,
-                               publishing.distrorelease)
+                               publishing.distroseries)
             sp_series = sp.productseries
             if sp_series is not None:
                 if series is None:
@@ -198,7 +198,7 @@ class SourcePackageRelease(SQLBase):
 
     def countOpenBugsInUploadedDistro(self, user):
         """See ISourcePackageRelease."""
-        upload_distro = self.uploaddistrorelease.distribution
+        upload_distro = self.uploaddistroseries.distribution
         params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
             user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
         # XXX: we need to omit duplicates here or else our bugcounts are
@@ -211,19 +211,19 @@ class SourcePackageRelease(SQLBase):
     @property
     def current_publishings(self):
         """See ISourcePackageRelease."""
-        from canonical.launchpad.database.distroreleasesourcepackagerelease \
-            import DistroReleaseSourcePackageRelease
-        return [DistroReleaseSourcePackageRelease(pub.distrorelease, self)
+        from canonical.launchpad.database.distroseriessourcepackagerelease \
+            import DistroSeriesSourcePackageRelease
+        return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
                 for pub in self.publishings]
 
-    def architecturesReleased(self, distroRelease):
+    def architecturesReleased(self, distroseries):
         # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.soyuz import DistroArchRelease
+        from canonical.launchpad.database.soyuz import DistroArchSeries
         clauseTables = ['BinaryPackagePublishingHistory',
                         'BinaryPackageRelease',
                         'Build']
         # XXX cprov 20060823: will distinct=True help us here ?
-        archReleases = sets.Set(DistroArchRelease.select(
+        archSerieses = sets.Set(DistroArchSeries.select(
             """
             BinaryPackagePublishingHistory.distroarchrelease =
                DistroArchRelease.id AND
@@ -233,10 +233,10 @@ class SourcePackageRelease(SQLBase):
                BinaryPackageRelease.id AND
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %d
-            """ % (distroRelease, distroRelease.main_archive, self),
+            """ % (distroseries, distroseries.main_archive, self),
             clauseTables=clauseTables))
 
-        return archReleases
+        return archSerieses
 
     def addFile(self, file):
         """See ISourcePackageRelease."""
@@ -254,12 +254,12 @@ class SourcePackageRelease(SQLBase):
                                         filetype=determined_filetype,
                                         libraryfile=file)
 
-    def createBuild(self, distroarchrelease, pocket, archive, processor=None,
+    def createBuild(self, distroarchseries, pocket, archive, processor=None,
                     status=BuildStatus.NEEDSBUILD):
         """See ISourcePackageRelease."""
         # Guess a processor if one is not provided
         if processor is None:
-            pf = distroarchrelease.processorfamily
+            pf = distroarchseries.processorfamily
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
 
@@ -268,7 +268,7 @@ class SourcePackageRelease(SQLBase):
         # same datecreated.
         datecreated = datetime.datetime.now(pytz.timezone('UTC'))
 
-        return Build(distroarchrelease=distroarchrelease,
+        return Build(distroarchseries=distroarchseries,
                      sourcepackagerelease=self,
                      processor=processor,
                      buildstate=status,
@@ -276,17 +276,17 @@ class SourcePackageRelease(SQLBase):
                      pocket=pocket,
                      archive=archive)
 
-    def getBuildByArch(self, distroarchrelease, archive):
+    def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
 	# Look for a published build
         query = """
         Build.id = BinaryPackageRelease.build AND
         BinaryPackageRelease.id =
             BinaryPackagePublishingHistory.binarypackagerelease AND
-        BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.distroarchseries = %s AND
         BinaryPackagePublishingHistory.archive = %s AND
         Build.sourcepackagerelease = %s
-        """  % sqlvalues(distroarchrelease, archive, self)
+        """  % sqlvalues(distroarchseries, archive, self)
 
         tables = ['BinaryPackageRelease', 'BinaryPackagePublishingHistory']
 
@@ -298,10 +298,10 @@ class SourcePackageRelease(SQLBase):
         # nasty code.
         build = Build.selectFirst(query, clauseTables=tables, orderBy="id")
 
-        # If not, look for a build directly in this distroarchrelease.
+        # If not, look for a build directly in this distroarchseries.
         if build is None:
             build = Build.selectOneBy(
-                distroarchrelease=distroarchrelease,
+                distroarchseries=distroarchseries,
                 archive=archive,
                 sourcepackagerelease=self)
 
@@ -352,5 +352,5 @@ class SourcePackageRelease(SQLBase):
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, is_published, importer,
                 sourcepackagename=self.sourcepackagename,
-                distrorelease=self.uploaddistrorelease)
+                distroseries=self.uploaddistroseries)
 

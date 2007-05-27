@@ -13,7 +13,7 @@ Get evolution template for Ubuntu Hoary
 >>> release = distribution['hoary']
 >>> potemplateset = getUtility(IPOTemplateSet)
 >>> potemplatesubset = potemplateset.getSubset(
-...     distrorelease=release, sourcepackagename=sourcepackagename)
+...     distroseries=release, sourcepackagename=sourcepackagename)
 >>> potemplate = potemplatesubset['evolution-2.2']
 
 Get Xhosa translation

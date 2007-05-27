@@ -350,7 +350,7 @@ Let's check if packages were uploaded correctly.
   'DPKG'
   >>> spr.urgency.name
   'LOW'
-  >>> spr.uploaddistrorelease.name
+  >>> spr.uploaddistroseries.name
   u'breezy-autotest'
 
 
@@ -380,7 +380,7 @@ Same thing for etherwake:
   'DPKG'
   >>> spr.urgency.name
   'LOW'
-  >>> spr.uploaddistrorelease.name
+  >>> spr.uploaddistroseries.name
   u'breezy-autotest'
 
 

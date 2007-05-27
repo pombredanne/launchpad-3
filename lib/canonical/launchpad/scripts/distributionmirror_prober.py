@@ -16,7 +16,7 @@ from twisted.python.failure import Failure
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IDistroArchRelease, IDistroRelease, ILaunchpadCelebrities,
+    IDistroArchSeries, IDistroSeries, ILaunchpadCelebrities,
     UnableToFetchCDImageFileList)
 from canonical.lp.dbschema import MirrorStatus
 
@@ -309,55 +309,55 @@ class ArchiveMirrorProberCallbacks(object):
 
     expected_failures = (BadResponseCode, ProberTimeout, ConnectionSkipped)
 
-    def __init__(self, mirror, release, pocket, component, url, log_file):
+    def __init__(self, mirror, series, pocket, component, url, log_file):
         self.mirror = mirror
-        self.release = release
+        self.series = series
         self.pocket = pocket
         self.component = component
         self.url = url
         self.log_file = log_file
-        if IDistroArchRelease.providedBy(release):
-            self.mirror_class_name = 'MirrorDistroArchRelease'
-            self.deleteMethod = self.mirror.deleteMirrorDistroArchRelease
-            self.ensureMethod = self.mirror.ensureMirrorDistroArchRelease
-        elif IDistroRelease.providedBy(release):
-            self.mirror_class_name = 'MirrorDistroRelease'
-            self.deleteMethod = self.mirror.deleteMirrorDistroReleaseSource
-            self.ensureMethod = self.mirror.ensureMirrorDistroReleaseSource
+        if IDistroArchSeries.providedBy(series):
+            self.mirror_class_name = 'MirrorDistroArchSeries'
+            self.deleteMethod = self.mirror.deleteMirrorDistroArchSeries
+            self.ensureMethod = self.mirror.ensureMirrorDistroArchSeries
+        elif IDistroSeries.providedBy(series):
+            self.mirror_class_name = 'MirrorDistroSeries'
+            self.deleteMethod = self.mirror.deleteMirrorDistroSeriesSource
+            self.ensureMethod = self.mirror.ensureMirrorDistroSeriesSource
         else:
-            raise AssertionError('release must provide either '
-                                 'IDistroArchRelease or IDistroRelease.')
+            raise AssertionError('series must provide either '
+                                 'IDistroArchSeries or IDistroSeries.')
 
-    def deleteMirrorRelease(self, failure):
-        """Delete the mirror for self.release, self.pocket and self.component.
+    def deleteMirrorSeries(self, failure):
+        """Delete the mirror for self.series, self.pocket and self.component.
 
         If the failure we get from twisted is not a timeout, a bad response
         code or a connection skipped, then this failure is propagated.
         """
-        self.deleteMethod(self.release, self.pocket, self.component)
+        self.deleteMethod(self.series, self.pocket, self.component)
         msg = ('Deleted %s of %s with url %s because: %s.\n'
                % (self.mirror_class_name,
-                  self._getReleasePocketAndComponentDescription(), self.url,
+                  self._getSeriesPocketAndComponentDescription(), self.url,
                   failure.getErrorMessage()))
         self.log_file.write(msg)
         failure.trap(*self.expected_failures)
 
-    def ensureMirrorRelease(self, http_status):
-        """Make sure we have a mirror for self.release, self.pocket and 
+    def ensureMirrorSeries(self, http_status):
+        """Make sure we have a mirror for self.series, self.pocket and 
         self.component.
         """
         msg = ('Ensuring %s of %s with url %s exists in the database.\n'
                % (self.mirror_class_name,
-                  self._getReleasePocketAndComponentDescription(),
+                  self._getSeriesPocketAndComponentDescription(),
                   self.url))
         mirror = self.ensureMethod(
-            self.release, self.pocket, self.component)
+            self.series, self.pocket, self.component)
 
         self.log_file.write(msg)
         return mirror
 
     def updateMirrorStatus(self, arch_or_source_mirror):
-        """Update the status of this MirrorDistro{ArchRelease,ReleaseSource}.
+        """Update the status of this MirrorDistro{ArchSeries,SeriesSource}.
 
         This is done by issuing HTTP HEAD requests on that mirror looking for 
         some packages found in our publishing records. Then, knowing what 
@@ -373,12 +373,12 @@ class ArchiveMirrorProberCallbacks(object):
         scheme, host, port, path = _parse(self.url)
         status_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
         if not status_url_mapping or should_skip_host(host):
-            # Either we have no publishing records for self.release,
+            # Either we have no publishing records for self.series,
             # self.pocket and self.component or we got too may timeouts from
             # this host and thus should skip it, so it's better to delete this
-            # MirrorDistroArchRelease/MirrorDistroReleaseSource than to keep
+            # MirrorDistroArchSeries/MirrorDistroSeriesSource than to keep
             # it with an UNKNOWN status.
-            self.deleteMethod(self.release, self.pocket, self.component)
+            self.deleteMethod(self.series, self.pocket, self.component)
             return
 
         deferredList = []
@@ -410,24 +410,24 @@ class ArchiveMirrorProberCallbacks(object):
         if status < arch_or_source_mirror.status:
             msg = ('Found that %s exists. Updating %s of %s status to %s.\n'
                    % (url, self.mirror_class_name,
-                      self._getReleasePocketAndComponentDescription(), 
+                      self._getSeriesPocketAndComponentDescription(), 
                       status.title))
             self.log_file.write(msg)
             arch_or_source_mirror.status = status
 
-    def _getReleasePocketAndComponentDescription(self):
-        """Return a string containing the name of the release, pocket and
+    def _getSeriesPocketAndComponentDescription(self):
+        """Return a string containing the name of the series, pocket and
         component.
 
         This is meant to be used in the logs, to help us identify if this is a
-        MirrorDistroReleaseSource or a MirrorDistroArchRelease.
+        MirrorDistroSeriesSource or a MirrorDistroArchSeries.
         """
-        if IDistroArchRelease.providedBy(self.release):
-            text = ("Distro Release %s, Architecture %s" %
-                    (self.release.distrorelease.title,
-                     self.release.architecturetag))
+        if IDistroArchSeries.providedBy(self.series):
+            text = ("Series %s, Architecture %s" %
+                    (self.series.distroseries.title,
+                     self.series.architecturetag))
         else:
-            text = "Distro Release %s" % self.release.title
+            text = "Series %s" % self.series.title
         text += (", Component %s and Pocket %s" % 
                  (self.component.name, self.pocket.title))
         return text
@@ -435,7 +435,7 @@ class ArchiveMirrorProberCallbacks(object):
     def logError(self, failure, url):
         msg = ("%s on %s of %s\n" 
                % (failure.getErrorMessage(), url,
-                  self._getReleasePocketAndComponentDescription()))
+                  self._getSeriesPocketAndComponentDescription()))
         if failure.check(*self.expected_failures) is not None:
             self.log_file.write(msg)
         else:
@@ -451,24 +451,24 @@ class MirrorCDImageProberCallbacks(object):
 
     expected_failures = (BadResponseCode, ProberTimeout, ConnectionSkipped)
 
-    def __init__(self, mirror, distrorelease, flavour, log_file):
+    def __init__(self, mirror, distroseries, flavour, log_file):
         self.mirror = mirror
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
         self.flavour = flavour
         self.log_file = log_file
 
-    def ensureOrDeleteMirrorCDImageRelease(self, result):
+    def ensureOrDeleteMirrorCDImageSeries(self, result):
         """Check if the result of the deferredList contains only success and
-        then ensure we have a MirrorCDImageRelease for self.distrorelease and
+        then ensure we have a MirrorCDImageSeries for self.distroseries and
         self.flavour.
 
         If result contains one or more failures, then we ensure that
-        MirrorCDImageRelease is deleted.
+        MirrorCDImageSeries is deleted.
         """
         for success_or_failure, response in result:
             if success_or_failure == defer.FAILURE:
-                self.mirror.deleteMirrorCDImageRelease(
-                    self.distrorelease, self.flavour)
+                self.mirror.deleteMirrorCDImageSeries(
+                    self.distroseries, self.flavour)
                 if response.check(*self.expected_failures) is None:
                     msg = ("%s on mirror %s. Check its logfile for more "
                            "details.\n" 
@@ -480,11 +480,11 @@ class MirrorCDImageProberCallbacks(object):
                     logger.error(msg)
                 return None
 
-        mirror = self.mirror.ensureMirrorCDImageRelease(
-            self.distrorelease, self.flavour)
+        mirror = self.mirror.ensureMirrorCDImageSeries(
+            self.distroseries, self.flavour)
         self.log_file.write(
-            "Found all ISO images for release %s and flavour %s.\n"
-            % (self.distrorelease.title, self.flavour))
+            "Found all ISO images for series %s and flavour %s.\n"
+            % (self.distroseries.title, self.flavour))
         return mirror
 
     def logMissingURL(self, failure, url):
@@ -499,7 +499,7 @@ def _build_request_for_cdimage_file_list(url):
 
 
 def _get_cdimage_file_list():
-    url = config.distributionmirrorprober.releases_file_list_url
+    url = config.distributionmirrorprober.serieses_file_list_url
     try:
         return urllib2.urlopen(_build_request_for_cdimage_file_list(url))
     except urllib2.URLError, e:
@@ -519,10 +519,10 @@ def restore_http_proxy(http_proxy):
 
 
 def get_expected_cdimage_paths():
-    """Get all paths where we can find CD image files on a release mirror.
+    """Get all paths where we can find CD image files on a cdimage mirror.
 
-    Return a list containing, for each Ubuntu DistroRelease and flavour, a
-    list of CD image file paths for that DistroRelease and flavour.
+    Return a list containing, for each Ubuntu DistroSeries and flavour, a
+    list of CD image file paths for that DistroSeries and flavour.
 
     This list is read from a file located at http://releases.ubuntu.com,
     so if something goes wrong while reading that file, an
@@ -530,16 +530,16 @@ def get_expected_cdimage_paths():
     """
     d = {}
     for line in _get_cdimage_file_list().readlines():
-        flavour, releasename, path, size = line.split('\t')
-        paths = d.setdefault((flavour, releasename), [])
+        flavour, seriesname, path, size = line.split('\t')
+        paths = d.setdefault((flavour, seriesname), [])
         paths.append(path)
 
     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     paths = []
     for key, value in d.items():
-        flavour, releasename = key
-        release = ubuntu.getRelease(releasename)
-        paths.append((release, flavour, value))
+        flavour, seriesname = key
+        series = ubuntu.getSeries(seriesname)
+        paths.append((series, flavour, value))
     return paths
 
 
@@ -566,10 +566,10 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
     packages_paths = mirror.getExpectedPackagesPaths()
     sources_paths = mirror.getExpectedSourcesPaths()
     all_paths = itertools.chain(packages_paths, sources_paths)
-    for release, pocket, component, path in all_paths:
+    for series, pocket, component, path in all_paths:
         url = "%s/%s" % (mirror.base_url, path)
         callbacks = ArchiveMirrorProberCallbacks(
-            mirror, release, pocket, component, url, logfile)
+            mirror, series, pocket, component, url, logfile)
         unchecked_keys.append(url)
         prober = ProberFactory(url)
 
@@ -582,7 +582,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
             prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
         deferred = semaphore.run(prober.probe)
         deferred.addCallbacks(
-            callbacks.ensureMirrorRelease, callbacks.deleteMirrorRelease)
+            callbacks.ensureMirrorSeries, callbacks.deleteMirrorSeries)
 
         deferred.addCallback(callbacks.updateMirrorStatus)
         deferred.addErrback(logger.error)
@@ -590,31 +590,31 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
         deferred.addBoth(checkComplete, url, unchecked_keys)
 
 
-def probe_release_mirror(mirror, logfile, unchecked_keys, logger,
+def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger,
                          host_semaphores=host_semaphores):
-    """Probe a release mirror for its contents.
+    """Probe a cdimage mirror for its contents.
     
-    This is done by checking the list of files for each flavour and release
+    This is done by checking the list of files for each flavour and series
     returned by get_expected_cdimage_paths(). If a mirror contains all
-    files for a given release and flavour, then we consider that mirror is
-    actually mirroring that release and flavour.
+    files for a given series and flavour, then we consider that mirror is
+    actually mirroring that series and flavour.
     """
     # The list of files a mirror should contain will change over time and we
     # don't want to keep records for files a mirror doesn't need to have
     # anymore, so we delete all records before start probing. This also fixes
     # https://launchpad.net/bugs/46662
-    mirror.deleteAllMirrorCDImageReleases()
+    mirror.deleteAllMirrorCDImageSerieses()
     try:
         cdimage_paths = get_expected_cdimage_paths()
     except UnableToFetchCDImageFileList, e:
         logger.error(e)
         return
 
-    for release, flavour, paths in cdimage_paths:
+    for series, flavour, paths in cdimage_paths:
         callbacks = MirrorCDImageProberCallbacks(
-            mirror, release, flavour, logfile)
+            mirror, series, flavour, logfile)
 
-        mirror_key = (release, flavour)
+        mirror_key = (series, flavour)
         unchecked_keys.append(mirror_key)
         deferredList = []
         for path in paths:
@@ -634,7 +634,7 @@ def probe_release_mirror(mirror, logfile, unchecked_keys, logger,
             deferredList.append(deferred)
 
         deferredList = defer.DeferredList(deferredList, consumeErrors=True)
-        deferredList.addCallback(callbacks.ensureOrDeleteMirrorCDImageRelease)
+        deferredList.addCallback(callbacks.ensureOrDeleteMirrorCDImageSeries)
         deferredList.addCallback(checkComplete, mirror_key, unchecked_keys)
 
 

@@ -73,7 +73,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
                      filename=None, filecontent='I do not care about sources.',
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
-                     distrorelease=None, archive=None, builddepends=None,
+                     distroseries=None, archive=None, builddepends=None,
                      builddependsindep=None, architecturehintlist='all',
                      dsc_standards_version='3.6.2', dsc_format='1.0',
                      dsc_binaries='foo-bin',
@@ -84,12 +84,12 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
 
         component = getUtility(IComponentSet)[component]
 
-        if distrorelease is None:
-            distrorelease = self.breezy_autotest
+        if distroseries is None:
+            distroseries = self.breezy_autotest
         if archive is None:
             archive = self.breezy_autotest.main_archive
 
-        spr = distrorelease.createUploadedSourcePackageRelease(
+        spr = distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=spn,
             maintainer=self.person,
             creator=self.person,
@@ -117,7 +117,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         spr.addFile(alias)
 
         sspph = SecureSourcePackagePublishingHistory(
-            distrorelease=distrorelease,
+            distroseries=distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
             section=spr.section,
@@ -183,7 +183,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         bpr.addFile(alias)
 
         sbpph = SecureBinaryPackagePublishingHistory(
-            distroarchrelease=self.breezy_autotest_i386,
+            distroarchseries=self.breezy_autotest_i386,
             binarypackagerelease=bpr,
             component=bpr.component,
             section=bpr.section,

@@ -6,51 +6,51 @@
 
 <facet facet="overview">
 
-    <!-- DistroArchRelease -->
-    <content class="canonical.launchpad.database.DistroArchRelease">
-        <allow interface="canonical.launchpad.interfaces.IDistroArchRelease"/>
+    <!-- DistroArchSeries -->
+    <content class="canonical.launchpad.database.DistroArchSeries">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchSeries"/>
         <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <allow interface="canonical.launchpad.interfaces.IPublishing"/>
         <require
             permission="launchpad.Admin"
-            set_schema="canonical.launchpad.interfaces.IDistroArchRelease"/>
+            set_schema="canonical.launchpad.interfaces.IDistroArchSeries"/>
     </content>
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistroArchRelease"
+        for="canonical.launchpad.interfaces.IDistroArchSeries"
         name="+index" />
 
    <browser:menus
-        module="canonical.launchpad.browser.distroarchrelease"
-        classes="DistroArchReleaseFacets DistroArchReleaseContextMenu"
+        module="canonical.launchpad.browser.distroarchseries"
+        classes="DistroArchSeriesFacets DistroArchSeriesContextMenu"
         />
 
     <browser:url
-        for="canonical.launchpad.interfaces.IDistroArchRelease"
+        for="canonical.launchpad.interfaces.IDistroArchSeries"
         path_expression="architecturetag"
-        attribute_to_parent="distrorelease" />
+        attribute_to_parent="distroseries" />
 
     <browser:navigation
         module="canonical.launchpad.browser"
-        classes="DistroArchReleaseNavigation"
+        classes="DistroArchSeriesNavigation"
         />
 
     <browser:pages
-        for="canonical.launchpad.database.DistroArchRelease" 
+        for="canonical.launchpad.database.DistroArchSeries" 
         permission="zope.Public"
-        class="canonical.launchpad.browser.DistroArchReleaseView">
+        class="canonical.launchpad.browser.DistroArchSeriesView">
       <browser:page
           name="+index"
-          template="../templates/distroarchrelease-index.pt"
+          template="../templates/distroarchseries-index.pt"
           />
       <browser:page
           name="+portlet-details"
-          template="../templates/distroarchrelease-portlet-details.pt"
+          template="../templates/distroarchseries-portlet-details.pt"
           />
       <browser:page
           name="+builds"
           facet="overview"
-          template="../templates/distroarchrelease-builds.pt"
+          template="../templates/distroarchseries-builds.pt"
           />
       <browser:page
           name="+builds-list"
@@ -59,34 +59,34 @@
     </browser:pages>
 
     <browser:page
-      for="canonical.launchpad.database.DistroArchRelease" 
+      for="canonical.launchpad.database.DistroArchSeries" 
       permission="zope.Public"
       name="+search"
-      class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
-      template="../templates/distroarchrelease-search.pt"
+      class="canonical.launchpad.browser.DistroArchSeriesBinariesView"
+      template="../templates/distroarchseries-search.pt"
       />
 
     <browser:editform
-      for="canonical.launchpad.interfaces.IDistroArchRelease"
+      for="canonical.launchpad.interfaces.IDistroArchSeries"
       permission="launchpad.Admin"
       name="+admin"
-      schema="canonical.launchpad.interfaces.IDistroArchRelease"
+      schema="canonical.launchpad.interfaces.IDistroArchSeries"
       facet="overview"
       fields="architecturetag official"
-      template="../templates/distroarchrelease-admin.pt"
+      template="../templates/distroarchseries-admin.pt"
       />
 
 </facet>
 
-    <!-- DistroArchReleaseSet -->
-    <content class="canonical.launchpad.database.DistroArchReleaseSet">
-        <allow interface="canonical.launchpad.interfaces.IDistroArchReleaseSet"/>
+    <!-- DistroArchSeriesSet -->
+    <content class="canonical.launchpad.database.DistroArchSeriesSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchSeriesSet"/>
     </content>
 
     <securedutility
-        class="canonical.launchpad.database.DistroArchReleaseSet"
-        provides="canonical.launchpad.interfaces.IDistroArchReleaseSet">
-        <allow interface="canonical.launchpad.interfaces.IDistroArchReleaseSet" />
+        class="canonical.launchpad.database.DistroArchSeriesSet"
+        provides="canonical.launchpad.interfaces.IDistroArchSeriesSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchSeriesSet" />
     </securedutility>
 
 

@@ -10,7 +10,7 @@ __metaclass__ = type
 from canonical.archivepublisher.tests import datadir
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingStatus,
-    DistributionReleaseStatus)
+    DistroSeriesStatus)
 
 __all__ = ['FakeLogger']
 
@@ -45,7 +45,7 @@ class FakeDistroRelease:
         self.distribution = distro
         self.architectures = [FakeDistroArchRelease(self, "i386"),
                               FakeDistroArchRelease(self, "powerpc")]
-        self.releasestatus = DistributionReleaseStatus.DEVELOPMENT
+        self.releasestatus = DistroSeriesStatus.DEVELOPMENT
         self.distribution.registerRelease(self)
 
 

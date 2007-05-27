@@ -197,7 +197,7 @@ And finally, four of them are already shipped.
 
 
 It's also possible to search for requests containing CDs of a given flavour or
-of a given distrorelease (or both, obviously).
+of a given distroseries (or both, obviously).
 
   >>> kubuntu = ShipItFlavour.KUBUNTU
   >>> [(shipreq.recipient.displayname , shipreq.id)
@@ -206,10 +206,10 @@ of a given distrorelease (or both, obviously).
    (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
    (u'James Blackwell', 17), (u'ShipIt Administrators', 19)]
 
-  >>> from canonical.lp.dbschema import ShipItDistroRelease
-  >>> feisty = ShipItDistroRelease.FEISTY
+  >>> from canonical.lp.dbschema import ShipItDistroSeries
+  >>> feisty = ShipItDistroSeries.FEISTY
   >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distrorelease=feisty)]
+  ...  for shipreq in requestset.search(distroseries=feisty)]
   [(u'Robert Collins', 4), (u'No Privileges Person', 1),
    (u'Celso Providelo', 6), (u'Mark Shuttleworth', 20),
    (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
@@ -220,13 +220,13 @@ of a given distrorelease (or both, obviously).
 
   >>> edubuntu = ShipItFlavour.EDUBUNTU
   >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distrorelease=feisty, flavour=edubuntu)]
+  ...  for shipreq in requestset.search(distroseries=feisty, flavour=edubuntu)]
   [(u'David Allouche', 18), (u'Jordi Mallach', 16),
    (u'ShipIt Administrators', 13)]
 
-  >>> edgy = ShipItDistroRelease.EDGY
+  >>> edgy = ShipItDistroSeries.EDGY
   >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distrorelease=edgy)]
+  ...  for shipreq in requestset.search(distroseries=edgy)]
   [(u'ShipIt Administrators', 19)]
 
 
@@ -399,7 +399,7 @@ to each country.
 
 The generateCountryBasedReport() method accepts a current_release_only
 argument that, if True, will include only requests of
-ShipItConstants.current_distrorelease.
+ShipItConstants.current_distroseries.
 
   >>> csv_file = requestset.generateCountryBasedReport(
   ...     current_release_only=False)
@@ -688,7 +688,7 @@ sizes we had.
 
 The generateShipmentSizeBasedReport() method accepts a current_release_only
 argument that, if True, will include only requests of
-ShipItConstants.current_distrorelease.
+ShipItConstants.current_distroseries.
 
   >>> csv_file = requestset.generateShipmentSizeBasedReport(
   ...     current_release_only=False)
@@ -727,12 +727,12 @@ ShipItConstants.current_distrorelease.
 
 
 There's also a report of requests by week, which can be tweaked to report only
-requests for CDs of the current distrorelease or all requests.
+requests for CDs of the current distroseries or all requests.
 
   >>> start_date = date(2006, 2, 24)
   >>> end_date = date(2006, 4, 3)
   >>> csv_file = requestset.generateWeekBasedReport(
-  ...     start_date, end_date, only_current_distrorelease=True)
+  ...     start_date, end_date, only_current_distroseries=True)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
                               Year: 2006
@@ -846,7 +846,7 @@ requests for CDs of the current distrorelease or all requests.
   >>> start_date = date(2005, 5, 1)
   >>> end_date = date(2005, 5, 23)
   >>> csv_file = requestset.generateWeekBasedReport(
-  ...     start_date, end_date, only_current_distrorelease=True)
+  ...     start_date, end_date, only_current_distroseries=True)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
                               Year: 2005
@@ -922,7 +922,7 @@ requests for CDs of the current distrorelease or all requests.
         Edubuntu Requested Mac CDs: 0
 
   >>> csv_file = requestset.generateWeekBasedReport(
-  ...     start_date, end_date, only_current_distrorelease=False)
+  ...     start_date, end_date, only_current_distroseries=False)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
                               Year: 2005

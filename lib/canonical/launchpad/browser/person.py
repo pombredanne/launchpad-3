@@ -1877,8 +1877,8 @@ class PersonTranslationView(LaunchpadView):
         #   potemplate.potemplatename
         #   potemplate.productseries
         #   potemplate.productseries.product
-        #   potemplate.distrorelease
-        #   potemplate.distrorelease.distribution
+        #   potemplate.distroseries
+        #   potemplate.distroseries.distribution
         #   potemplate.sourcepackagename
         # However, a list this long may be actually suggesting that
         # displayname be cached in a table field; particularly given the

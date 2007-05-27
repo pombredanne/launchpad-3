@@ -5,7 +5,7 @@
        2005-09-16
      </td>
      <td tal:content="context/status/title">PUBLISHED</td>
-     <td><a tal:content="context/meta_sourcepackage/distrorelease/name"
+     <td><a tal:content="context/meta_sourcepackage/distroseries/name"
             tal:attributes="href context/meta_sourcepackage/fmt:url">
          alsa-utils
          </a>

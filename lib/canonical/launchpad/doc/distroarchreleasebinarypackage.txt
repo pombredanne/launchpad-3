@@ -3,14 +3,14 @@ Distro Arch Release Binary Package
 
   >>> from canonical.launchpad.database.binarypackagename import (
   ...     BinaryPackageName)
-  >>> from canonical.launchpad.database.distroarchrelease import (
-  ...     DistroArchRelease)
-  >>> from canonical.launchpad.database.distroarchreleasebinarypackage import (
-  ...     DistroArchReleaseBinaryPackage)
-  >>> hoary_i386 = DistroArchRelease.get(6)
+  >>> from canonical.launchpad.database.distroarchseries import (
+  ...     DistroArchSeries)
+  >>> from canonical.launchpad.database.distroarchseriesbinarypackage import (
+  ...     DistroArchSeriesBinaryPackage)
+  >>> hoary_i386 = DistroArchSeries.get(6)
   >>> pmount_name = BinaryPackageName.selectOneBy(name="pmount")
   >>> firefox_name = BinaryPackageName.selectOneBy(name="mozilla-firefox")
-  >>> pmount_hoary_i386 = DistroArchReleaseBinaryPackage(hoary_i386,
+  >>> pmount_hoary_i386 = DistroArchSeriesBinaryPackage(hoary_i386,
   ...                                                    pmount_name)
 
 First, we create a new version of pmount, and a version of
@@ -59,7 +59,7 @@ existing builds that are in sampledata!
   ...   component=main_component.id,
   ...   section=misc_section.id,
   ...   priority=priority,
-  ...   distroarchrelease=hoary_i386.id,
+  ...   distroarchseries=hoary_i386.id,
   ...   status=dbschema.PackagePublishingStatus.PUBLISHED,
   ...   datecreated=UTC_NOW,
   ...   datepublished=UTC_NOW,
@@ -98,7 +98,7 @@ existing builds that are in sampledata!
   ...   component=main_component.id,
   ...   section=misc_section.id,
   ...   priority=priority,
-  ...   distroarchrelease=hoary_i386.id,
+  ...   distroarchseries=hoary_i386.id,
   ...   status=dbschema.PackagePublishingStatus.PUBLISHED,
   ...   datecreated=UTC_NOW,
   ...   datepublished=UTC_NOW,
@@ -134,12 +134,12 @@ latter view comes from SBPPH, though.
   >>> pe.id == current_release.current_publishing_record.id
   True
   >>> (pe.status.title,
-  ...  pe.distroarchrelease.architecturetag)
+  ...  pe.distroarchseries.architecturetag)
   ('Published', u'i386')
 
   >>> old_pubrec = old_release.current_publishing_record
   >>> (old_pubrec.id , old_pubrec.status.title,
-  ...  old_pubrec.distroarchrelease.architecturetag)
+  ...  old_pubrec.distroarchseries.architecturetag)
   (12, 'Published', u'i386')
 
 Note that it is only really possible to have two packages in the

@@ -119,9 +119,9 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "Series, sorted with latest release first.")
 
     potemplates = Attribute(
-        _("Return an iterator over this productrelease's PO templates."))
+        _("Return an iterator over this series' PO templates."))
     currentpotemplates = Attribute(
-        _("Return an iterator over this productrelease's PO templates that "
+        _("Return an iterator over this series' PO templates that "
           "have the 'iscurrent' flag set'."))
     packagings = Attribute("An iterator over the Packaging entries "
         "for this product series.")
@@ -167,21 +167,21 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         Return None is there is no such release.
         """
 
-    def getPackage(distrorelease):
+    def getPackage(distroseries):
         """Return the SourcePackage for this productseries in the supplied
-        distrorelease. This will use a Packaging record if one exists, but
-        it will also work through the ancestry of the distrorelease to try
+        distroseries. This will use a Packaging record if one exists, but
+        it will also work through the ancestry of the distroseries to try
         to find a Packaging entry that may be relevant."""
 
-    def setPackaging(distrorelease, sourcepackagename, owner):
+    def setPackaging(distroseries, sourcepackagename, owner):
         """Create or update a Packaging record for this product series,
-        connecting it to the given distrorelease and source package name.
+        connecting it to the given distroseries and source package name.
         """
 
     def getPackagingInDistribution(distribution):
         """Return all the Packaging entries for this product series for the
         given distribution. Note that this only returns EXPLICT packaging
-        entries, it does not look at distro release ancestry in the same way
+        entries, it does not look at distro series ancestry in the same way
         that IProductSeries.getPackage() does.
         """
 
@@ -189,7 +189,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """Return the POTemplate with this name for the series."""
 
     def newMilestone(name, dateexpected=None):
-        """Create a new milestone for this DistroRelease."""
+        """Create a new milestone for this DistroSeries."""
 
     # revision control items
     import_branch = Choice(

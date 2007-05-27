@@ -21,7 +21,7 @@ from canonical.config import config
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    IBuilder, IBuilderSet, IDistroArchReleaseSet, NotFoundError,
+    IBuilder, IBuilderSet, IDistroArchSeriesSet, NotFoundError,
     IHasBuildRecords, IBuildSet, IBuildQueueSet)
 from canonical.launchpad.webapp import urlappend
 from canonical.lp.dbschema import BuildStatus
@@ -173,9 +173,9 @@ class BuilderSet(object):
         buildMaster = BuilddMaster(logger, txn)
 
         logger.info("Setting Builders.")
-        # Put every distroarchrelease we can find into the build master.
-        for archrelease in getUtility(IDistroArchReleaseSet):
-            buildMaster.addDistroArchRelease(archrelease)
+        # Put every distroarchseries we can find into the build master.
+        for archrelease in getUtility(IDistroArchSeriesSet):
+            buildMaster.addDistroArchSeries(archrelease)
             buildMaster.setupBuilders(archrelease)
 
         logger.info("Scanning Builders.")

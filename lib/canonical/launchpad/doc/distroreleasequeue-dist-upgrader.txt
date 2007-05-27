@@ -3,13 +3,13 @@
 This test will check the upload of dist-upgrade tarballs
 
   >>> from canonical.launchpad.interfaces import (
-  ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
+  ...     IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet)
 
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
   >>> from canonical.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
-  >>> distro_release_set = getUtility(IDistroReleaseSet)
+  >>> distro_release_set = getUtility(IDistroSeriesSet)
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
 
@@ -23,7 +23,7 @@ Login as an admin.
 First, test the rejection of a missapplied changesfile name:
 
   >>> sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntutest', distrorelease=None)
+  ...     name='sync', distro='ubuntutest', distroseries=None)
 
   >>> upload = NascentUpload(
   ...     datadir('dist-upgrader/dist-upgrader_20060302.0120.changes'),
@@ -35,7 +35,7 @@ First, test the rejection of a missapplied changesfile name:
 Now do a proper upload into the system.
 
   >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntutest', distrorelease=None)
+  ...     name='insecure', distro='ubuntutest', distroseries=None)
 
   >>> upload = NascentUpload(
   ...     datadir('dist-upgrader/dist-upgrader_20060302.0120_all.changes'),
@@ -225,7 +225,7 @@ printed and the queue item will remain in ACCEPTED queue waiting for
 manual intervention.
 
   >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntutest', distrorelease=None)
+  ...     name='insecure', distro='ubuntutest', distroseries=None)
 
   >>> upload = NascentUpload(
   ...     datadir('dist-upgrader/dist-upgrader_20070219.1234_all.changes'),

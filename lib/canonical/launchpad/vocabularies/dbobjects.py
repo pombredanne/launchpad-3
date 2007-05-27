@@ -11,7 +11,7 @@ __metaclass__ = type
 __all__ = [
     'BountyVocabulary',
     'BranchVocabulary',
-    'BugNominatableReleasesVocabulary',
+    'BugNominatableSeriesesVocabulary',
     'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
@@ -21,9 +21,9 @@ __all__ = [
     'DistributionOrProductVocabulary',
     'DistributionOrProductOrProjectVocabulary',
     'DistributionUsingMaloneVocabulary',
-    'DistroReleaseVocabulary',
-    'FilteredDistroArchReleaseVocabulary',
-    'FilteredDistroReleaseVocabulary',
+    'DistroSeriesVocabulary',
+    'FilteredDistroArchSeriesVocabulary',
+    'FilteredDistroSeriesVocabulary',
     'FilteredProductSeriesVocabulary',
     'FutureSprintVocabulary',
     'KarmaCategoryVocabulary',
@@ -69,18 +69,18 @@ from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectHugeVocabulary, SQLObjectVocabularyBase,
     NamedSQLObjectVocabulary, IHugeVocabulary)
 from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import EmailAddressStatus, DistributionReleaseStatus
+from canonical.lp.dbschema import EmailAddressStatus, DistroSeriesStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
-    Distribution, DistroRelease, Person, SourcePackageRelease, Branch,
-    BugWatch, Sprint, DistroArchRelease, KarmaCategory, Language,
+    Distribution, DistroSeries, Person, SourcePackageRelease, Branch,
+    BugWatch, Sprint, DistroArchSeries, KarmaCategory, Language,
     Milestone, Product, Project, ProductRelease, ProductSeries,
     TranslationGroup, BugTracker, POTemplateName, Bounty, Country,
     Specification, Bug, Processor, ProcessorFamily, Component,
     PillarName)
 from canonical.launchpad.interfaces import (
     IBranchSet, IBugTask, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask, IEmailAddressSet,
+    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
     ILaunchBag, IMilestoneSet, IPerson, IPersonSet, IPillarName, IProduct,
     IProject, ISourcePackage, ISpecification, ITeam, IUpstreamBugTask)
 
@@ -723,9 +723,9 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         return objs
 
 
-class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
-    """Describes the releases of a particular distribution."""
-    _table = DistroRelease
+class FilteredDistroSeriesVocabulary(SQLObjectVocabularyBase):
+    """Describes the series of a particular distribution."""
+    _table = DistroSeries
     _orderBy = 'version'
 
     def toTerm(self, obj):
@@ -739,35 +739,35 @@ class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
         launchbag = getUtility(ILaunchBag)
         if launchbag.distribution:
             distribution = launchbag.distribution
-            releases = self._table.selectBy(
+            serieses = self._table.selectBy(
                 distributionID=distribution.id, **kw)
-            for release in sorted(releases, key=lambda x: x.sortkey):
+            for series in sorted(serieses, key=lambda x: x.sortkey):
                 yield self.toTerm(release)
 
 
-class FilteredDistroArchReleaseVocabulary(SQLObjectVocabularyBase):
-    """All arch releases of a particular distribution."""
+class FilteredDistroArchSeriesVocabulary(SQLObjectVocabularyBase):
+    """All arch series of a particular distribution."""
 
-    _table = DistroArchRelease
-    _orderBy = ['DistroRelease.version', 'architecturetag', 'id']
-    _clauseTables = ['DistroRelease']
+    _table = DistroArchSeries
+    _orderBy = ['DistroSeries.version', 'architecturetag', 'id']
+    _clauseTables = ['DistroSeries']
 
     def toTerm(self, obj):
-        name = "%s %s (%s)" % (obj.distrorelease.distribution.name,
-                               obj.distrorelease.name, obj.architecturetag)
+        name = "%s %s (%s)" % (obj.distroseries.distribution.name,
+                               obj.distroseries.name, obj.architecturetag)
         return SimpleTerm(obj, obj.id, name)
 
     def __iter__(self):
         distribution = getUtility(ILaunchBag).distribution
         if distribution:
             query = """
-                DistroRelease.id = distrorelease AND
-                DistroRelease.distribution = %s
+                DistroSeries.id = distroseries AND
+                DistroSeries.distribution = %s
                 """ % sqlvalues(distribution.id)
             results = self._table.select(
                 query, orderBy=self._orderBy, clauseTables=self._clauseTables)
-            for distroarchrelease in results:
-                yield self.toTerm(distroarchrelease)
+            for distroarchseries in results:
+                yield self.toTerm(distroarchseries)
 
 
 class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
@@ -813,18 +813,18 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             target = milestone_context.product
         elif IDistroBugTask.providedBy(milestone_context):
             target = milestone_context.distribution
-        elif IDistroReleaseBugTask.providedBy(milestone_context):
-            target = milestone_context.distrorelease
+        elif IDistroSeriesBugTask.providedBy(milestone_context):
+            target = milestone_context.distroseries
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
-            target = milestone_context.distrorelease
+            target = milestone_context.distroseries
         elif ISpecification.providedBy(milestone_context):
             target = milestone_context.target
         elif (IProject.providedBy(milestone_context) or
               IProduct.providedBy(milestone_context) or
               IDistribution.providedBy(milestone_context) or
-              IDistroRelease.providedBy(milestone_context)):
+              IDistroSeries.providedBy(milestone_context)):
             target = milestone_context
         else:
             # We didn't find a context that can have milestones attached
@@ -1040,18 +1040,18 @@ class DistributionUsingMaloneVocabulary:
         return self.getTerm(found_dist)
 
 
-class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
+class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
 
-    _table = DistroRelease
-    _orderBy = ["Distribution.displayname", "-DistroRelease.date_created"]
+    _table = DistroSeries
+    _orderBy = ["Distribution.displayname", "-DistroSeries.date_created"]
     _clauseTables = ['Distribution']
 
     def __iter__(self):
-        releases = self._table.select(
-            DistroRelease.q.distributionID==Distribution.q.id,
+        serieses = self._table.select(
+            DistroSeries.q.distributionID==Distribution.q.id,
             orderBy=self._orderBy, clauseTables=self._clauseTables)
-        for release in sorted(releases, key=lambda x: x.sortkey):
-            yield self.toTerm(release)
+        for series in sorted(serieses, key=lambda x: x.sortkey):
+            yield self.toTerm(series)
 
     def toTerm(self, obj):
         # NB: We use '/' as the separator because '-' is valid in
@@ -1062,15 +1062,15 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
 
     def getTermByToken(self, token):
         try:
-            distroname, distroreleasename = token.split('/', 1)
+            distroname, distroseriesname = token.split('/', 1)
         except ValueError:
             raise LookupError(token)
 
-        obj = DistroRelease.selectOne('''
-                    Distribution.id = DistroRelease.distribution AND
+        obj = DistroSeries.selectOne('''
+                    Distribution.id = DistroSeries.distribution AND
                     Distribution.name = %s AND
-                    DistroRelease.name = %s
-                    ''' % sqlvalues(distroname, distroreleasename),
+                    DistroSeries.name = %s
+                    ''' % sqlvalues(distroname, distroseriesname),
                     clauseTables=['Distribution'])
         if obj is None:
             raise LookupError(token)
@@ -1085,10 +1085,10 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         query = query.lower()
         objs = self._table.select(
                 AND(
-                    Distribution.q.id == DistroRelease.q.distributionID,
+                    Distribution.q.id == DistroSeries.q.distributionID,
                     OR(
                         CONTAINSSTRING(Distribution.q.name, query),
-                        CONTAINSSTRING(DistroRelease.q.name, query)
+                        CONTAINSSTRING(DistroSeries.q.name, query)
                         )
                     ),
                 orderBy=self._orderBy
@@ -1119,11 +1119,11 @@ class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'name'
 
 
-def BugNominatableReleasesVocabulary(context=None):
-    """Return a nominatable releases vocabulary."""
+def BugNominatableSeriesesVocabulary(context=None):
+    """Return a nominatable serieses vocabulary."""
 
     if getUtility(ILaunchBag).distribution:
-        return BugNominatableDistroReleaseVocabulary(
+        return BugNominatableDistroSeriesVocabulary(
             context, getUtility(ILaunchBag).distribution)
     else:
         assert getUtility(ILaunchBag).product
@@ -1131,17 +1131,17 @@ def BugNominatableReleasesVocabulary(context=None):
             context, getUtility(ILaunchBag).product)
 
 
-class BugNominatableReleaseVocabularyBase(NamedSQLObjectVocabulary):
-    """Base vocabulary class for releases for which a bug can be nominated."""
+class BugNominatableSeriesVocabularyBase(NamedSQLObjectVocabulary):
+    """Base vocabulary class for series for which a bug can be nominated."""
 
     def __iter__(self):
         bug = self.context.bug
 
-        releases = self._getNominatableObjects()
+        serieses = self._getNominatableObjects()
 
-        for release in sorted(releases, key=attrgetter("displayname")):
-            if bug.canBeNominatedFor(release):
-                yield self.toTerm(release)
+        for series in sorted(serieses, key=attrgetter("displayname")):
+            if bug.canBeNominatedFor(series):
+                yield self.toTerm(series)
 
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.name.capitalize())
@@ -1154,50 +1154,50 @@ class BugNominatableReleaseVocabularyBase(NamedSQLObjectVocabulary):
         return self.toTerm(obj)
 
     def _getNominatableObjects(self):
-        """Return the release objects that the bug can be nominated for."""
+        """Return the series objects that the bug can be nominated for."""
         raise NotImplementedError
 
     def _queryNominatableObjectByName(self, name):
-        """Return the release object with the given name."""
+        """Return the series object with the given name."""
         raise NotImplementedError
 
 
-class BugNominatableProductSeriesVocabulary(BugNominatableReleaseVocabularyBase):
+class BugNominatableProductSeriesVocabulary(BugNominatableSeriesVocabularyBase):
     """The product series for which a bug can be nominated."""
 
     _table = ProductSeries
 
     def __init__(self, context, product):
-        BugNominatableReleaseVocabularyBase.__init__(self, context)
+        BugNominatableSeriesVocabularyBase.__init__(self, context)
         self.product = product
 
     def _getNominatableObjects(self):
-        """See BugNominatableReleaseVocabularyBase."""
+        """See BugNominatableSeriesVocabularyBase."""
         return shortlist(self.product.serieslist)
 
     def _queryNominatableObjectByName(self, name):
-        """See BugNominatableReleaseVocabularyBase."""
+        """See BugNominatableSeriesVocabularyBase."""
         return self.product.getSeries(name)
 
 
-class BugNominatableDistroReleaseVocabulary(BugNominatableReleaseVocabularyBase):
-    """The distribution releases for which a bug can be nominated."""
+class BugNominatableDistroSeriesVocabulary(BugNominatableSeriesVocabularyBase):
+    """The distribution series for which a bug can be nominated."""
 
-    _table = DistroRelease
+    _table = DistroSeries
 
     def __init__(self, context, distribution):
-        BugNominatableReleaseVocabularyBase.__init__(self, context)
+        BugNominatableSeriesVocabularyBase.__init__(self, context)
         self.distribution = distribution
 
     def _getNominatableObjects(self):
-        """Return all non-obsolete distribution releases."""
+        """Return all non-obsolete distribution serieses"""
         return [
-            release for release in shortlist(self.distribution.releases)
-            if release.releasestatus != DistributionReleaseStatus.OBSOLETE]
+            series for series in shortlist(self.distribution.serieses)
+            if series.status != DistroSeriesStatus.OBSOLETE]
 
     def _queryNominatableObjectByName(self, name):
-        """See BugNominatableReleaseVocabularyBase."""
-        return self.distribution.getRelease(name)
+        """See BugNominatableSeriesVocabularyBase."""
+        return self.distribution.getSeries(name)
 
 
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):

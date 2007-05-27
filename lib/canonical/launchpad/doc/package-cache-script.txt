@@ -32,7 +32,7 @@ cache:
   1
 
 Normal operation produces INFO level information about the
-distribution and respective distroreleases considered in stderr.
+distribution and respective distroseriess considered in stderr.
 
   >>> import subprocess
   >>> import sys

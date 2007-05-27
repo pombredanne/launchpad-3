@@ -69,14 +69,14 @@ Reflects the available constants for Packaging.packaging field.
 In cases where we won't have many rows, some of the database
 vocabularies can be enumerated over.
 
-DistroReleaseVocabulary
+DistroSeriesVocabulary
 -----------------------
 Reflects the available distribution releases.  Results are ordered by
 `name`
 
-    >>> distrorelease_vocabulary = vocabulary_registry.get(
-    ...     None,"DistroRelease")
-    >>> for term in distrorelease_vocabulary:
+    >>> distroseries_vocabulary = vocabulary_registry.get(
+    ...     None,"DistroSeries")
+    >>> for term in distroseries_vocabulary:
     ...     print "%30s %s" % (term.token, term.title)
             ubuntu/breezy-autotest Ubuntu: Breezy Badger Autotest
                      ubuntu/grumpy Ubuntu: The Grumpy Groundhog Release
@@ -92,24 +92,24 @@ Reflects the available distribution releases.  Results are ordered by
         ubuntutest/breezy-autotest ubuntutest: Breezy Badger Autotest
              ubuntutest/hoary-test ubuntutest: Mock Hoary
 
-    >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value.title
+    >>> distroseries_vocabulary.getTermByToken('ubuntu/hoary').value.title
     u'The Hoary Hedgehog Release'
 
     >>> def getTerms(vocab, search_text):
     ...     [vocab.toTerm(item) for item in vocab.search(search_text)]
 
-    >>> getTerms(distrorelease_vocabulary, 'woody')
-    >>> getTerms(distrorelease_vocabulary, 'debian')
-    >>> getTerms(distrorelease_vocabulary, 'invalid')
-    >>> getTerms(distrorelease_vocabulary, '')
+    >>> getTerms(distroseries_vocabulary, 'woody')
+    >>> getTerms(distroseries_vocabulary, 'debian')
+    >>> getTerms(distroseries_vocabulary, 'invalid')
+    >>> getTerms(distroseries_vocabulary, '')
 
-    >> [term.token for term in distrorelease_vocabulary.search('woody')]
+    >> [term.token for term in distroseries_vocabulary.search('woody')]
     ['debian/woody']
-    >> [term.token for term in distrorelease_vocabulary.search('debian')]
+    >> [term.token for term in distroseries_vocabulary.search('debian')]
     ['debian/sarge', 'debian/sid', 'debian/woody']
-    >> [term.token for term in distrorelease_vocabulary.search('invalid')]
+    >> [term.token for term in distroseries_vocabulary.search('invalid')]
     []
-    >> [term.token for term in distrorelease_vocabulary.search('')]
+    >> [term.token for term in distroseries_vocabulary.search('')]
     []
 
 DistributionUsingMaloneVocabulary
@@ -269,7 +269,7 @@ in the vocabulary.
     u'mozilla-firefox (Debian Woody)'
     >>> debian_woody_milestones = vocabulary_registry.get(
     ...     debian_woody_task, 'Milestone')
-    >>> debian_woody = debian_woody_task.distrorelease
+    >>> debian_woody = debian_woody_task.distroseries
     >>> len(debian_woody_milestones)
     2
 

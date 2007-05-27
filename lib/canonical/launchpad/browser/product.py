@@ -249,7 +249,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+download', text, icon='info')
 
     def series_add(self):
-        text = 'Register a release series'
+        text = 'Register a series'
         return Link('+addseries', text, icon='add')
 
     def branch_add(self):
@@ -464,7 +464,7 @@ class ProductView(LaunchpadView):
                     'potemplates': sourcepackage.currentpotemplates,
                     'base_url': '/distros/%s/%s/+sources/%s' % (
                         sourcepackage.distribution.name,
-                        sourcepackage.distrorelease.name,
+                        sourcepackage.distroseries.name,
                         sourcepackage.name)
                     }
 
@@ -513,18 +513,18 @@ class ProductView(LaunchpadView):
             for packaging in series.packagings:
                 all_packagings.append(packaging)
         # we sort it so that the packagings will always be displayed in the
-        # distrorelease version, then productseries name order
-        all_packagings.sort(key=lambda a: (a.distrorelease.version,
+        # distroseries version, then productseries name order
+        all_packagings.sort(key=lambda a: (a.distroseries.version,
             a.productseries.name, a.id))
         for packaging in all_packagings:
-            if distros.has_key(packaging.distrorelease.distribution.name):
-                distro = distros[packaging.distrorelease.distribution.name]
+            if distros.has_key(packaging.distroseries.distribution.name):
+                distro = distros[packaging.distroseries.distribution.name]
             else:
                 distro = {}
-                distro['name'] = packaging.distrorelease.distribution.name
-                distro['title'] = packaging.distrorelease.distribution.title
+                distro['name'] = packaging.distroseries.distribution.name
+                distro['title'] = packaging.distroseries.distribution.title
                 distro['packagings'] = []
-                distros[packaging.distrorelease.distribution.name] = distro
+                distros[packaging.distroseries.distribution.name] = distro
             distro['packagings'].append(packaging)
         # now we sort the resulting set of "distro" objects, and return that
         result = distros.values()
@@ -684,8 +684,9 @@ class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
     def adapters(self):
         return {self.schema: self.context}
 
+
 class ProductAddSeriesView(LaunchpadFormView):
-    """A form to add new product release series"""
+    """A form to add new product series"""
 
     schema = IProductSeries
     field_names = ['name', 'summary', 'user_branch', 'releasefileglob']

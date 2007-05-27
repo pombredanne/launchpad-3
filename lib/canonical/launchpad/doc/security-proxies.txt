@@ -49,14 +49,14 @@ XXX: stevea: 20051018: Rewrite this test to use security proxies directly
 XXX: bug 3315
 DB schema objects should be comparable correctly when proxied...
 
-    >>> from canonical.launchpad.interfaces import IDistroReleaseSet
-    >>> from canonical.lp.dbschema import DistributionReleaseStatus
-    >>> hoary = getUtility(IDistroReleaseSet).get(3)
+    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
+    >>> from canonical.lp.dbschema import DistroSeriesStatus
+    >>> hoary = getUtility(IDistroSeriesSet).get(3)
     >>> print hoary.releasestatus.name
     DEVELOPMENT
-    >>> hoary.releasestatus == DistributionReleaseStatus.DEVELOPMENT
+    >>> hoary.releasestatus == DistroSeriesStatus.DEVELOPMENT
     True
-    >>> hoary.releasestatus is DistributionReleaseStatus.DEVELOPMENT
+    >>> hoary.releasestatus is DistroSeriesStatus.DEVELOPMENT
     False
 
 Finally, tear down the test:

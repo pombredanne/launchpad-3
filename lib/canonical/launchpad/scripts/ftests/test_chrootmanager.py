@@ -26,7 +26,7 @@ class TestChrootManager(TestCase):
         """Setup the test environment and retrieve useful instances."""
         self.files_to_delete = []
         self.distribution = getUtility(IDistributionSet)['ubuntu']
-        self.distroarchrelease = self.distribution.currentrelease['i386']
+        self.distroarchseries = self.distribution.currentrelease['i386']
         self.pocket = PackagePublishingPocket.SECURITY
 
     def tearDown(self):
@@ -56,10 +56,10 @@ class TestChrootManager(TestCase):
 
     def test_initialize(self):
         """Chroot Manager initialization"""
-        chroot_manager = ChrootManager(self.distroarchrelease, self.pocket)
+        chroot_manager = ChrootManager(self.distroarchseries, self.pocket)
 
-        self.assertEqual(self.distroarchrelease,
-                         chroot_manager.distroarchrelease)
+        self.assertEqual(self.distroarchseries,
+                         chroot_manager.distroarchseries)
         self.assertEqual(self.pocket, chroot_manager.pocket)
         self.assertEqual([], chroot_manager._messages)
 
@@ -69,7 +69,7 @@ class TestChrootManager(TestCase):
         chrootfilename = os.path.basename(chrootfilepath)
 
         chroot_manager = ChrootManager(
-            self.distroarchrelease, self.pocket, filepath=chrootfilepath)
+            self.distroarchseries, self.pocket, filepath=chrootfilepath)
 
         chroot_manager.add()
         self.assertEqual(
@@ -77,7 +77,7 @@ class TestChrootManager(TestCase):
              "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'"
              "/SECURITY (1) added."], chroot_manager._messages)
 
-        pocket_chroot = self.distroarchrelease.getPocketChroot(self.pocket)
+        pocket_chroot = self.distroarchseries.getPocketChroot(self.pocket)
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
 
         # required to turn librarian results visible.
@@ -86,7 +86,7 @@ class TestChrootManager(TestCase):
         dest = self._create_file('chroot.gotten')
 
         chroot_manager = ChrootManager(
-            self.distroarchrelease, self.pocket, filepath=dest)
+            self.distroarchseries, self.pocket, filepath=dest)
 
         chroot_manager.get()
         self.assertEqual(
@@ -102,7 +102,7 @@ class TestChrootManager(TestCase):
         chrootfilename = os.path.basename(chrootfilepath)
 
         chroot_manager = ChrootManager(
-            self.distroarchrelease, self.pocket, filepath=chrootfilepath)
+            self.distroarchseries, self.pocket, filepath=chrootfilepath)
 
         chroot_manager.update()
         self.assertEqual(
@@ -110,14 +110,14 @@ class TestChrootManager(TestCase):
              "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
              "SECURITY (1) updated."], chroot_manager._messages)
 
-        pocket_chroot = self.distroarchrelease.getPocketChroot(self.pocket)
+        pocket_chroot = self.distroarchseries.getPocketChroot(self.pocket)
         self.assertEqual(chrootfilename, pocket_chroot.chroot.filename)
 
         # required to turn librarian results visible.
         commit()
 
         chroot_manager = ChrootManager(
-            self.distroarchrelease, self.pocket)
+            self.distroarchseries, self.pocket)
 
         chroot_manager.remove()
         self.assertEqual(
@@ -126,13 +126,13 @@ class TestChrootManager(TestCase):
              "PocketChroot for 'The Hoary Hedgehog Release for i386 (x86)'/"
              "SECURITY (1) removed."], chroot_manager._messages)
 
-        pocket_chroot = self.distroarchrelease.getPocketChroot(self.pocket)
+        pocket_chroot = self.distroarchseries.getPocketChroot(self.pocket)
         self.assertEqual(None, pocket_chroot.chroot)
 
     def test_remove_fail(self):
         """Attempt to remove inexistent chroot fail."""
         chroot_manager = ChrootManager(
-            self.distroarchrelease, PackagePublishingPocket.RELEASE)
+            self.distroarchseries, PackagePublishingPocket.RELEASE)
 
         self.assertRaises(
             ChrootManagerError, chroot_manager.remove)
@@ -140,7 +140,7 @@ class TestChrootManager(TestCase):
     def test_add_fail(self):
         """Attempt to add inexistent local chroot fail."""
         chroot_manager = ChrootManager(
-            self.distroarchrelease, PackagePublishingPocket.UPDATES,
+            self.distroarchseries, PackagePublishingPocket.UPDATES,
             filepath='foo-bar')
 
         self.assertRaises(

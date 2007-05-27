@@ -1,7 +1,7 @@
 == Manage-Chroot Tool ==
 
-This tool is used for add or update chroots for suites (distrorelease
-+ pocket) and DistroArchReleases.
+This tool is used for add or update chroots for suites (distroseries
++ pocket) and DistroArchSeriess.
 
 Chroots are compressed files which contains a pristine ubuntu
 work-tree, they are used to build packages. When LP is requested to
@@ -73,7 +73,7 @@ Update the previous chroot (with the same file, just a test):
 
 
 Check the error when requesting to add a chroot for an unknown suite
-(<distrorelease>-<pocket> term, extensively used in soyuz context):
+(<distroseries>-<pocket> term, extensively used in soyuz context):
 
   >>> process = subprocess.Popen([sys.executable, script, "-v", "add",
   ...                             "-d", "ubuntu",

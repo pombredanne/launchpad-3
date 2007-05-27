@@ -1,7 +1,7 @@
 Bug nominations are displayed in the table at the top of the bug page,
 using the +bugtasks-and-nominations-table-row view. This view allows
 privileged users, i.e., users that have launchpad.Driver permission on
-the distrorelease or productseries, to approve or decline the
+the distroseries or productseries, to approve or decline the
 nomination.
 
 no-priv cannot approve or decline his nomination, because he does not

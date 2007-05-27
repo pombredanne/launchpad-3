@@ -10,8 +10,8 @@
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/distroarchrelease/distrorelease/@@+portlet-details" />
-    <div tal:replace="structure context/distroarchrelease/@@+portlet-details" />
+    <div tal:replace="structure context/distroarchseries/distroseries/@@+portlet-details" />
+    <div tal:replace="structure context/distroarchseries/@@+portlet-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">

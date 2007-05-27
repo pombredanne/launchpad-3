@@ -9,7 +9,7 @@
           tal:repeat="drspr context/current_publishings">
         <a tal:attributes="href drspr/fmt:url">
           <span tal:replace="drspr/distribution/name">ubuntu</span>
-          <span tal:replace="drspr/distrorelease/name">hoary</span>
+          <span tal:replace="drspr/distroseries/name">hoary</span>
         </a>
       </li>
     </ul>

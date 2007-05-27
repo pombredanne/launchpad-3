@@ -126,7 +126,7 @@ Now, let's do a bunch of changes, and see what the result looks like:
     New whiteboard comments.
     >>> print delta.specurl
     http://www.ubuntu.com/NewSpec
-    >>> print delta.distrorelease.name
+    >>> print delta.distroseries.name
     hoary
 
     >>> print delta.name['old']
@@ -260,7 +260,7 @@ Specification Goals
 ===================
 
 We can propose a specification as a feature goal for a particular series
-or distrorelease. That spec can then be approved or declined by the series
+or distroseries. That spec can then be approved or declined by the series
 drivers.
 
 First, we will show how to propose a goal, and what metadata is recorded

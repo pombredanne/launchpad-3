@@ -3,7 +3,7 @@
 """Database classes related to bug nomination.
 
 A bug nomination is a suggestion from a user that a bug be fixed in a
-particular distro release or product series. A bug may have zero, one,
+particular distro series or product series. A bug may have zero, one,
 or more nominations.
 """
 
@@ -41,8 +41,8 @@ class BugNomination(SQLBase):
         dbName='decider', foreignKey='Person', notNull=False, default=None)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_decided = UtcDateTimeCol(notNull=False, default=None)
-    distrorelease = ForeignKey(
-        dbName='distrorelease', foreignKey='DistroRelease',
+    distroseries = ForeignKey(
+        dbName='distroseries', foreignKey='DistroSeries',
         notNull=False, default=None)
     productseries = ForeignKey(
         dbName='productseries', foreignKey='ProductSeries',
@@ -55,7 +55,7 @@ class BugNomination(SQLBase):
     @property
     def target(self):
         """See IBugNomination."""
-        return self.distrorelease or self.productseries
+        return self.distroseries or self.productseries
 
     def approve(self, approver):
         """See IBugNomination."""
@@ -64,24 +64,24 @@ class BugNomination(SQLBase):
         self.date_decided = datetime.now(pytz.timezone('UTC'))
 
         bugtaskset = getUtility(IBugTaskSet)
-        if self.distrorelease:
+        if self.distroseries:
             # Figure out which packages are affected in this distro for
             # this bug.
             targets = []
-            distribution = self.distrorelease.distribution
-            distrorelease = self.distrorelease
+            distribution = self.distroseries.distribution
+            distroseries = self.distroseries
             for task in self.bug.bugtasks:
                 if not task.distribution == distribution:
                     continue
                 if task.sourcepackagename:
                     bugtaskset.createTask(
                         bug=self.bug, owner=approver,
-                        distrorelease=distrorelease,
+                        distroseries=distroseries,
                         sourcepackagename=task.sourcepackagename)
                 else:
                     bugtaskset.createTask(
                         bug=self.bug, owner=approver,
-                        distrorelease=distrorelease)
+                        distroseries=distroseries)
         else:
             bugtaskset.createTask(
                 bug=self.bug, owner=approver, productseries=self.productseries)

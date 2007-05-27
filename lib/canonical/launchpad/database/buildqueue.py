@@ -43,7 +43,7 @@ class BuildQueue(SQLBase):
     @property
     def archrelease(self):
         """See IBuildQueue."""
-        return self.build.distroarchrelease
+        return self.build.distroarchseries
 
     @property
     def urgency(self):
@@ -154,7 +154,7 @@ class BuildQueueSet(object):
         arch_ids = [d.id for d in archreleases]
 
         candidates = BuildQueue.select("""
-        build.distroarchrelease IN %s AND
+        build.distroarchseries IN %s AND
         build.buildstate = %s AND
         buildqueue.build = build.id AND
         buildqueue.builder IS NULL
