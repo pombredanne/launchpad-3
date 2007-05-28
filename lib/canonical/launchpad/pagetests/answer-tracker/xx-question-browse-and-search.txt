@@ -680,7 +680,7 @@ When no results are found, a message informs the user of this fact:
     ...     browser.contents).first('p').renderContents()
     There are no questions matching "firefox" with the requested statuses.
 
-Clicking the 'Search' button without any entering any search text will
+Clicking the 'Search' button without entering any search text will
 display all questions asked in Launchpad with the selected statuses.
 
     >>> browser.getControl(name='field.status').displayValue = ['Open']
