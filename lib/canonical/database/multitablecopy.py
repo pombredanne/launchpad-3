@@ -46,6 +46,7 @@ class PouringLoop(TunableLoop):
 
     def perform(self, batch_size):
         """Loop body: pour rows with ids up to "next" over to to_table."""
+        batch_size = int(batch_size)
         next = self.lowest_id + batch_size
 
         logging.info("pouring %s: %d rows (%d-%d)" %

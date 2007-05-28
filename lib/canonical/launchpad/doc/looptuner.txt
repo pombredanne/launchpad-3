@@ -21,32 +21,40 @@ adjust themselves dynamically to actual performance.
     >>> from canonical.launchpad.utilities.looptuner import (
     ...     LoopTuner, TunableLoop)
 
-Here's a very simple TunableLoop.  It receives a list of timings to simulate
-for its iterations (it finishes when the list runs out)
 
-    >>> minimum_batch_size = 100
+== Chunk Size Convergence ==
+
+Here's a very simple TunableLoop.  It receives a list of timings to simulate
+for its iterations (it finishes when the list runs out), and for every
+iteration, prints out what happened to its chunk size parameter.
+
     >>> time_goal = 10.0
+    >>> def print_change(last_chunk_size, new_chunk_size):
+    ...     if last_chunk_size is None:
+    ...         print "start"
+    ...     elif new_chunk_size > last_chunk_size:
+    ...         print "increased"
+    ...     elif new_chunk_size < last_chunk_size:
+    ...         print "decreased"
+    ...     else:
+    ...         print "same"
 
     >>> class PlannedLoop(TunableLoop):
     ...     def __init__(self, timings):
-    ...         self.last_batch_size = None
+    ...         self.last_chunk_size = None
     ...         self.iteration = 0
     ...         self.timings = timings
     ...         self.clock = 0
     ...
     ...     def isDone(self):
-    ...         return self.iteration > len(self.timings)+1
+    ...         done = (self.iteration > len(self.timings)+1)
+    ...         if done:
+    ...             print "done"
+    ...         return done
     ...
-    ...     def perform(self, batch_size):
-    ...         if self.last_batch_size is None:
-    ...             print "start"
-    ...         elif batch_size > self.last_batch_size:
-    ...             print "increased"
-    ...         elif batch_size < self.last_batch_size:
-    ...             print "decreased"
-    ...         else:
-    ...             print "same"
-    ...         self.last_batch_size = batch_size
+    ...     def perform(self, chunk_size):
+    ...         print_change(self.last_chunk_size, chunk_size)
+    ...         self.last_chunk_size = chunk_size
 
 
 In combination with that, we tweak LoopTuner to simulate the timings we gave
@@ -62,16 +70,28 @@ subclass the LoopTuner.
     ...         self.operation.iteration += 1
     ...         return clock_now
 
-== Ideal Case ==
+
+=== Trivial Case ===
+
+If there's nothing to do, nothing happens.
+
+    >>> body = PlannedLoop([])
+    >>> loop = TestTuner(body, time_goal, 100)
+    >>> loop.run()
+    start
+    done
+
+
+=== Ideal Case ===
 
 A typical run using the TunableLoop follows this pattern: the LoopTuner very
-conservatively starts out with the minimum batch size, finds that its first
+conservatively starts out with the minimum chunk size, finds that its first
 iteration finishes well within its time goal, and starts jacking up the work
 per iteration until it nears the ideal time per iteration.  Due to practical
 variations, it keeps oscillating a bit.
 
     >>> body = PlannedLoop([5, 7, 8, 9, 10, 11, 10, 9, 10, 9, 10, 11, 10])
-    >>> loop = TestTuner(body, time_goal, minimum_batch_size)
+    >>> loop = TestTuner(body, time_goal, 100)
     >>> loop.run()
     start
     increased
@@ -87,4 +107,245 @@ variations, it keeps oscillating a bit.
     same
     decreased
     same
+    done
+
+
+=== Slow Run ===
+
+If our iterations consistently exceed their time goal, we stay stuck at the
+minimum chunk size.
+
+    >>> body = PlannedLoop([15, 11, 16, 20, 14, 15, 10, 12, 15])
+    >>> loop = TestTuner(body, time_goal, 100)
+    >>> loop.run()
+    start
+    same
+    same
+    same
+    same
+    same
+    same
+    same
+    same
+    same
+    done
+
+
+=== Typical Run ===
+
+What happens usually is that performance is relatively stable, so chunk size
+converges to a steady state, but there are occasional spikes.  When one chunk
+is suddenly very slow, the algorithm compensates for that so that if the drop
+in performance was a fluke, the next chunk falls well short of its time goal.
+
+    >>> body = PlannedLoop([5, 7, 8, 9, 10, 11, 9, 20, 7, 10, 10])
+    >>> loop = TestTuner(body, time_goal, 100)
+    >>> loop.run()
+    start
+    increased
+    increased
+    increased
+    increased
+    same
+    decreased
+    increased
+    decreased
+    increased
+    same
+    same
+    done
+
+
+== Cost Functions ==
+
+It's up to the TunableLoop to define what "chunk size" really means.  It's an
+arbitrary unit of work.  The only requirement for LoopTuner to do useful work
+is that on the whole, performance should tend to increase with chunk size.
+
+Here we illustrate how a tuned loop behaves with different cost functions
+governing the relationship between chunk size and chunk processing time.
+
+This variant of the LoopTuner simulates an overridable cost function:
+
+    >>> class CostedLoop(TunableLoop):
+    ...     def __init__(self, cost_function, counter):
+    ...         self.last_chunk_size = None
+    ...         self.iteration = 0
+    ...         self.cost_function = cost_function
+    ...         self.counter = counter
+    ...         self.clock = 0
+    ...
+    ...     def isDone(self):
+    ...         done = (self.iteration >= self.counter)
+    ...         if done:
+    ...             print "done"
+    ...         return done
+    ...
+    ...     def perform(self, chunk_size):
+    ...         print_change(self.last_chunk_size, chunk_size)
+    ...         self.last_chunk_size = chunk_size
+    ...         self.iteration += 1
+    ...
+    ...     def computeCost(self):
+    ...         return self.cost_function(self.last_chunk_size)
+
+
+    >>> class CostedTuner(LoopTuner):
+    ...     def __init__(self, *argl, **argv):
+    ...         self.clock = 0
+    ...         LoopTuner.__init__(self, *argl, **argv)
+    ...
+    ...     def _time(self):
+    ...         if self.operation.last_chunk_size is not None:
+    ...             self.clock += self.operation.computeCost()
+    ...         return self.clock
+
+Below we'll see how the loop tuner adapts to various cost functions.
+
+
+=== Constant Cost ===
+
+We've already seen a constant-time loop body where every iteration took too
+much time, and we got stuck on the minimum chunk size.  Now we look at the
+converse case.
+
+If iterations consistently take less than the ideal time, the algorithm will
+"push the boundary," jacking up the workload until it manages to fill up the
+per-iteration goal time.  This is good if, for instance, the cost function is
+very flat, increasing very little with chunk size but with a relatively large
+constant overhead.  In that case, doing more work per iteration means more
+work done for every time we pay that constant overhead.  And usually, fewer
+iterations overall.
+
+Another case where chunk size may keep increasing is where chunk size turns
+out not to affect performance at all.  Chunk size is capped to stop it from
+spinning into infinity in that case, or if for some reason execution time
+should turn out to vary inversely with chunk size.
+
+    >>> body = CostedLoop((lambda c: time_goal/2), 20)
+    >>> loop = CostedTuner(body, time_goal, 100, 1000)
+    >>> loop.run()
+    start
+    increased
+    increased
+    increased
+    ...
+    same
+    same
+    same
+    done
+
+
+=== Linear Cost ===
+
+The model behind LoopTuner assumes that the cost of an iteration will tend to
+increase as a linear function of chunk size.  Constant cost is a degenerate
+case of that; here we look at more meaningful linear functions.
+
+==== Without Constant ====
+
+If cost function is purely linear with zero overhead, we approach our time
+goal asymptotically.  In principle we never quite get there.
+
+    >>> body = CostedLoop((lambda c: c/20), 10)
+    >>> loop = CostedTuner(body, time_goal, 100)
+    >>> loop.run()
+    start
+    increased
+    increased
+    increased
+    ...
+    increased
+    increased
+    done
+
+    >>> body.computeCost() < time_goal
+    True
+    >>> body.computeCost() > time_goal*0.9
+    True
+
+
+==== With Constant ====
+
+Here's a variant with a relatively flat linear cost function (25 units of work
+per second), plus a large constant overhead of half the time goal.  It does
+not achieve equilibrium in 10 iterations:
+
+    >>> body = CostedLoop((lambda c: time_goal/2+c/25), 10)
+    >>> loop = CostedTuner(body, time_goal, 100)
+    >>> loop.run()
+    start
+    increased
+    increased
+    increased
+    ...
+    increased
+    done
+    >>> body.computeCost() < time_goal
+    True
+
+But once again it does get pretty close:
+
+    >>> body.computeCost() > time_goal*0.9
+    True
+
+
+=== Exponential Cost ===
+
+What if the relationship between chunk size and iteration time is much more
+radical?
+
+
+==== Low Exponent ====
+
+Due to the way LoopTuner's approximation function works, an exponential cost
+function will cause some oscillation where iteration time overshoots the goal,
+compensates, then finally converges towards it.
+
+If the cost function is highly regular and predictable, the oscillation will
+be a neat alternation of oversized and undersized chunks.
+
+    >>> body = CostedLoop((lambda c: pow(1.2, c)), 50)
+    >>> loop = CostedTuner(body, time_goal, 1)
+    >>> loop.run()
+    start
+    increased
+    increased
+    ...
+    decreased
+    increased
+    decreased
+    increased
+    ...
+    same
+    ...
+    same
+    ...
+    done
+
+
+==== High Exponent ====
+
+With more extreme exponential behaviour, the overshoot increases but the
+effect remains the same:
+
+    >>> body = CostedLoop((lambda c: pow(3, c)), 50)
+    >>> loop = CostedTuner(body, time_goal, 1)
+    >>> loop.run()
+    start
+    increased
+    ...
+    decreased
+    increased
+    decreased
+    increased
+    ...
+    same
+    ...
+    same
+    ...
+    done
+
+Most practical algorithms will be closer to the linear cost function than they
+are to the exponential one.
 

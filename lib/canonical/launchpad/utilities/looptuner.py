@@ -59,7 +59,8 @@ class LoopTuner:
     spikes and troughs in processing speed.
     """
 
-    def __init__(self, operation, time_goal, minimum_chunk_size):
+    def __init__(self, operation, time_goal, minimum_chunk_size=1,
+            maximum_chunk_size=1000000000):
         """Initialize a loop, to be run to completion at most once.
 
         Parameters:
@@ -78,6 +79,7 @@ class LoopTuner:
         self.operation = operation
         self.time_goal = float(time_goal)
         self.minimum_chunk_size = minimum_chunk_size
+        self.maximum_chunk_size = maximum_chunk_size
 
 
     def run(self):
@@ -111,6 +113,7 @@ class LoopTuner:
             time_taken = max(self.time_goal/10, time_taken)
             chunk_size *= (1 + self.time_goal/time_taken)/2
             chunk_size = max(chunk_size, self.minimum_chunk_size)
+            chunk_size = min(chunk_size, self.maximum_chunk_size)
             iteration += 1
 
         total_time = last_clock - start_time
