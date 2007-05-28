@@ -24,7 +24,8 @@ class FakeLaunchpad:
             2: dict(name='team1', displayname='Test Team'),
             }
         self._product_set = {
-            1: dict(name='bar')
+            1: dict(name='bar'),
+            2: dict(name='product2'),
             }
         self._branch_set = {}
         self.createBranch(1, 1, 'baz')
@@ -37,15 +38,18 @@ class FakeLaunchpad:
         row['id'] = item_id
         return row
 
+    def _insert(self, item_set, item_dict):
+        new_id = max(item_set.keys() + [0]) + 1
+        item_set[new_id] = item_dict
+        return new_id
+
     def createBranch(self, user_id, product_id, branch_name):
         new_branch = dict(
             name=branch_name, user_id=user_id, product_id=product_id)
         for branch in self._branch_set.values():
             if branch == new_branch:
                 raise ValueError("Already have branch: %r" % (new_branch,))
-        new_id = max(self._branch_set.keys() + [0]) + 1
-        self._branch_set[new_id] = new_branch
-        return new_id
+        return self._insert(self._branch_set, new_branch)
 
     def fetchProductID(self, name):
         for product_id, product_info in self._product_set.iteritems():
@@ -304,6 +308,13 @@ class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
         branch_id = self.server._branches[('foo', 'bar', 'banana')]
         self.assertTrue(
             self.backing_transport.has(transport.branch_id_to_path(branch_id)))
+
+    def test_make_directory_without_prefix(self):
+        # Because the user and product directories don't exist on the
+        # filesystem, we can create a branch directory for a product even if
+        # there are no existing branches for that product.
+        self.transport.mkdir('~foo/product2/banana')
+        self.assertTrue(self.transport.has('~foo/product2/banana'))
 
 
 def test_suite():
