@@ -14,6 +14,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts.base import LaunchpadScript
 
+
 class TranslationsCopier(LaunchpadScript):
     """A LaunchpadScript for copying distrorelease translations from parent.
 
