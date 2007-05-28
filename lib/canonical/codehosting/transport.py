@@ -51,7 +51,6 @@ class LaunchpadServer(Server):
             raise NoSuchFile(virtual_path)
         branch_id = self._make_branch(*path_segments)
         self.backing_transport.mkdir(branch_id_to_path(branch_id))
-        self._branches = dict(self._iter_branches())
 
     def _make_branch(self, user, product, branch):
         if not user.startswith('~'):
@@ -60,7 +59,9 @@ class LaunchpadServer(Server):
         user = user[1:]
         user_id = self.authserver.getUser(self.user_id)['id']
         product_id = self.authserver.fetchProductID(product)
-        return self.authserver.createBranch(user_id, product_id, branch)
+        branch_id = self.authserver.createBranch(user_id, product_id, branch)
+        self._branches[(user, product, branch)] = branch_id
+        return branch_id
 
     def translate_virtual_path(self, virtual_path):
         user, product, branch, path = split(virtual_path.lstrip('/'), '/', 4)
