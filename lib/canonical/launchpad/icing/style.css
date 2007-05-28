@@ -31,6 +31,7 @@ kbd {
   min-width: 1em;
   outline: 1px #666;
 }
+
 label {
   white-space: nowrap;
   font-weight: bold;
@@ -566,8 +567,11 @@ So it's hidden initially, and then revealed if JavaScript is available.
 
 /*- App home pages and pillar indexes both have a heading and app buttons, -*/
 table#applications {margin-bottom: -0.5em;}
-table#applications th, table#applications td {vertical-align: baseline;}
-table#applications th {padding-left: 60px; text-align: left;}
+/* Victor: vertical-align changed from 'baseline' to 'bottom' to solve a Safari+Konqueror issue */
+table#applications th, table#applications td {vertical-align: bottom;}
+table#applications th {padding-left:60px; text-align: left;}
+/* Victor: Added to solve an issue on Safari+Konqueror */
+table#applications th h1 {margin-top: 40px;}
 table#applications td {text-align: right;}
 /* though the pillar indexes have no watermark, so no heading indenting. */
 body.pillarindex table#applications th {padding-left: 0;}
@@ -693,19 +697,30 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 
 /* --- Portlets --- */
-
 #portlets {
-  float: left;
-  width: 200px;
-  overflow: hidden;
-  margin: 0px 16px 0px 16px;
-  padding: 0;
-  list-style: none;
-  font-size: 11px;
+	position: relative;
+	display: inline;
+	float: left;
+	width: 200px;
+	overflow: hidden;
+	margin: 0 16px 0 16px;
+	padding: 0;
+	list-style: none;
+	font-size: 11px;
 }
+/* matthew's code */
+#portlets {
+	margin: 0 0 20px -100%;
+	padding: 0 20px;
+	right: 240px;
+}
+* html #portlets { /* Works around Internet Explorer bug */
+	left: 20px;
+}
+/* end matthew's code */
 #portlets .portlet {
-  clear: both;
-  float: left;
+	clear: both;
+	float: left;
 }
 #portlets .portlet h2 {
   display: block;
@@ -958,6 +973,22 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .boardCommentContent { line-height: 1.5em;}
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
+
+/* Victor: Sets the watermark up to its right place */
+body.tab-branches #applications,
+body.tab-bugs #applications,
+body.tab-specifications #applications,
+body.tab-answers #applications,
+body.tab-translations #applications {
+	background-position: 0px -12px !important;
+}
+/* Victor: Sets the section title up to its right place */
+table#applications th h1 {
+	margin-top: 20px !important;
+	margin-top: 14px; /* IE6 hack */
+	padding-bottom: 20px !important;
+	padding-bottom: 10px; /* IE6 hack */
+}
 
 /* --- Overview --- */
 
@@ -1225,7 +1256,7 @@ body.tab-translations #mainarea ul#applicationchooser li {
   background-image: url(appchoose_tab5_a.gif);
 }
 body.tab-translations #mainarea ul#applicationchooser li.tab-translations {
-  background-position: -200px 0px !important;
+  background-position: -300px 0px !important;
 }
 body.tab-translations #mainarea #portlets .portlet.active h2 a,
 body.tab-translations #mainarea div#portlets div.portlet.active a {
@@ -1340,23 +1371,14 @@ body.applicationhome #container {padding-left: 20px;}
   padding-left: 20px;
   padding-top: 50px;
 }
-#maincontent, #portlets {
-  display: inline;
-  float: left;
-  position: relative;
-}
 #maincontent {
   width: 100%;
   padding: 0 0 20px 0;
 }
-#portlets {
-  width: 200px;
-  margin: 0 0 20px -100%;
-  padding: 0 20px;
-  right: 240px;
-}
-* html #portlets { /* Works around Internet Explorer bug */
-  left: 20px;
+#maincontent {
+  display: inline;
+  float: left;
+  position: relative;
 }
 #portlets .portlet {
   width: 200px;
