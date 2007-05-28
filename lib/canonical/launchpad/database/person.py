@@ -5,10 +5,6 @@ __all__ = [
     'Person', 'PersonSet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet',
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
-# XXX: Yeah, you bastard, this is to make hundreds of tests to fail so that
-# you remember to put all the imports on this file in alphabetical order
-# before sending this off to pqm.
-from foo import baz
 from datetime import datetime, timedelta
 import pytz
 import sha
@@ -18,8 +14,8 @@ from zope.component import getUtility
 from zope.event import notify
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
-    SQLRelatedJoin, SQLObjectNotFound, SingleJoin)
+    BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
+    SQLObjectNotFound, SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
@@ -28,8 +24,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
-    flush_database_caches)
+    cursor, flush_database_caches, flush_database_updates, quote, quote_like,
+    sqlvalues, SQLBase)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -43,22 +39,21 @@ from canonical.launchpad.helpers import (
     contactEmailAddresses, is_english_variant, shortlist)
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, SSHKeyType,
-    EmailAddressStatus, TeamSubscriptionPolicy, TeamMembershipStatus,
-    LoginTokenType, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale,
-    TeamMembershipRenewalPolicy)
+    BugTaskImportance, BugTaskStatus, EmailAddressStatus, LoginTokenType,
+    PersonCreationRationale, SpecificationFilter, SpecificationSort,
+    SpecificationStatus, ShippingRequestStatus, SSHKeyType,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy)
 
 from canonical.launchpad.interfaces import (
-    IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
-    IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet,
-    ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
-    IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
-    ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
-    ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH, IProduct,
-    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasLogo, IHasMugshot,
-    IHasIcon, JoinNotAllowed, ILaunchBag)
+    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
+    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
+    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
+    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILanguageSet,
+    ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
+    IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
+    ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
+    JoinNotAllowed, QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
@@ -84,7 +79,7 @@ from canonical.launchpad.database.specificationfeedback import (
 from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
-    TeamMembership, TeamParticipation, TeamMembershipSet)
+    TeamMembership, TeamMembershipSet, TeamParticipation)
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
