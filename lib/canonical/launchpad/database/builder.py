@@ -174,9 +174,9 @@ class BuilderSet(object):
 
         logger.info("Setting Builders.")
         # Put every distroarchseries we can find into the build master.
-        for archrelease in getUtility(IDistroArchSeriesSet):
-            buildMaster.addDistroArchSeries(archrelease)
-            buildMaster.setupBuilders(archrelease)
+        for archseries in getUtility(IDistroArchSeriesSet):
+            buildMaster.addDistroArchSeries(archseries)
+            buildMaster.setupBuilders(archseries)
 
         logger.info("Scanning Builders.")
         # Scan all the pending builds, update logtails and retrieve

@@ -221,7 +221,7 @@ class SourcePackageView(BuildRecordsView):
         results = {}
         all_arch = sorted([arch.architecturetag for arch in
                            self.context.distroseries.architectures])
-        for bin in self.context.currentseries.binaries:
+        for bin in self.context.currentrelease.binaries:
             distroarchseries = bin.build.distroarchseries
             if bin.name not in results:
                 results[bin.name] = []
@@ -246,15 +246,15 @@ class SourcePackageView(BuildRecordsView):
 
     def builddepends(self):
         return self._relationship_parser(
-            self.context.currentseries.builddepends)
+            self.context.currentrelease.builddepends)
 
     def builddependsindep(self):
         return self._relationship_parser(
-            self.context.currentseries.builddependsindep)
+            self.context.currentrelease.builddependsindep)
 
     def has_build_depends(self):
-        depends_indep = self.context.currentseries.builddependsindep
-        depends = self.context.currentseries.builddepends
+        depends_indep = self.context.currentrelease.builddependsindep
+        depends = self.context.currentrelease.builddepends
         if depends or depends_indep:
             return True
         return False

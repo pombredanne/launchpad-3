@@ -125,7 +125,7 @@ class DistroSeriesSourcePackageRelease:
         clauseTables = [
             'SourcePackageRelease',
             'BinaryPackageRelease',
-            'DistroArchSeries',
+            'DistroArchRelease',
             'Build',
             'BinaryPackagePublishingHistory'
         ]
@@ -137,7 +137,7 @@ class DistroSeriesSourcePackageRelease:
             BinaryPackagePublishingHistory.distroarchrelease AND
         BinaryPackagePublishingHistory.binarypackagerelease=
             BinaryPackageRelease.id AND
-        DistroArchSeries.distrorelease=%s AND
+        DistroArchRelease.distrorelease=%s AND
         BinaryPackagePublishingHistory.archive = %s AND
         Build.sourcepackagerelease=%s
         """ % sqlvalues(self.distroseries,

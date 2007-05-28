@@ -126,10 +126,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     binary_package_caches = SQLMultipleJoin('DistroSeriesPackageCache',
         joinColumn='distroseries', orderBy='name')
     components = SQLRelatedJoin(
-        'Component', joinColumn='distroseries', otherColumn='component',
+        'Component', joinColumn='distrorelease', otherColumn='component',
         intermediateTable='ComponentSelection')
     sections = SQLRelatedJoin(
-        'Section', joinColumn='distroseries', otherColumn='section',
+        'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
 
     @property
@@ -707,7 +707,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                       % sqlvalues(version))
 
         if archtag:
-            query.append('DistroArchSeries.architecturetag = %s'
+            query.append('DistroArchRelease.architecturetag = %s'
                       % sqlvalues(archtag))
 
         if sourcename:
@@ -796,7 +796,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         bpns = set(BinaryPackageName.select("""
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
-            DistroArchSeries.distrorelease = %s AND
+            DistroArchRelease.distrorelease = %s AND
             BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
@@ -863,7 +863,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 BinaryPackagePublishingHistory.binarypackagerelease AND
             BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
-            DistroArchSeries.distrorelease = %s AND
+            DistroArchRelease.distrorelease = %s AND
             BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.status != %s
             """ % sqlvalues(binarypackagename, self, self.main_archive,
@@ -1217,7 +1217,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                    %s as archive, %s as datecreated, %s as datepublished,
                    %s as pocket, false as embargo
             FROM BinaryPackagePublishingHistory AS bpph
-            WHERE bpph.distroarchseries = %s AND bpph.status in (%s, %s) AND
+            WHERE bpph.distroarchrelease = %s AND bpph.status in (%s, %s) AND
                   bpph.pocket = %s and bpph.archive = %s
             ''' % sqlvalues(arch.id, self.main_archive, UTC_NOW, UTC_NOW,
                             PackagePublishingPocket.RELEASE,

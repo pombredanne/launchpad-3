@@ -14,7 +14,7 @@ that of the DistributionSourcePackage (and not the SourcePackage):
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> firefox = ubuntu.currentrelease.getSourcePackage('mozilla-firefox')
+    >>> firefox = ubuntu.currentseries.getSourcePackage('mozilla-firefox')
 
     >>> question = firefox.getQuestion(3)
     >>> question.target == firefox

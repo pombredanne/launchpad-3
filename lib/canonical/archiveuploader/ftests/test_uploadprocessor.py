@@ -20,7 +20,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import (
     import_public_test_keys, syncUpdate)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroReleaseSet, IPersonSet, IArchiveSet)
+    IDistributionSet, IDistroSeriesSet, IPersonSet, IArchiveSet)
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
     PackageUploadStatus, DistroSeriesStatus, PackagePublishingStatus,
@@ -58,7 +58,7 @@ class TestUploadProcessorBase(unittest.TestCase):
         self.options.base_fsroot = self.queue_folder
         self.options.leafname = None
         self.options.distro = "ubuntu"
-        self.options.distrorelease = None
+        self.options.distroseries = None
         self.options.nomails = False
         self.options.context = 'insecure'
 
@@ -72,7 +72,7 @@ class TestUploadProcessorBase(unittest.TestCase):
         self.assertTrue(line in self.log.lines)
 
     def setupBreezy(self):
-        """Create a fresh distrorelease in ubuntu.
+        """Create a fresh distroseries in ubuntu.
 
         Use *initialiseFromParent* procedure to create 'breezy'
         on ubuntu based on the last 'breezy-autotest'.
@@ -81,7 +81,7 @@ class TestUploadProcessorBase(unittest.TestCase):
         """
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
-        dr_set = getUtility(IDistroReleaseSet)
+        dr_set = getUtility(IDistroSeriesSet)
         self.breezy = dr_set.new(
             self.ubuntu, 'breezy', 'Breezy Badger',
             'The Breezy Badger', 'Black and White', 'Someone',
@@ -130,10 +130,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     * Check if the rejection message is send even when an unexpected
       exception occur when processing the upload.
-    * Check if known uploads targeted to a FROZEN distrorelease
+    * Check if known uploads targeted to a FROZEN distroseries
       end up in UNAPPROVED queue.
 
-    This test case is able to setup a fresh distrorelease in Ubuntu.
+    This test case is able to setup a fresh distroseries in Ubuntu.
     """
 
     def testRejectionEmailForUnhandledException(self):
@@ -170,16 +170,16 @@ class TestUploadProcessor(TestUploadProcessorBase):
                         "raised by BrokenUploadPolicy for testing." in raw_msg)
 
     def testUploadToFrozenDistro(self):
-        """Uploads to a frozen distrorelease should work, but be unapproved.
+        """Uploads to a frozen distroseries should work, but be unapproved.
 
-        The rule for a frozen distrorelease is that uploads should still
+        The rule for a frozen distroseries is that uploads should still
         be permitted, but that the usual rule for auto-accepting uploads
         of existing packages should be suspended. New packages will still
         go into NEW, but new versions will be UNAPPROVED, rather than
         ACCEPTED.
 
         To test this, we will upload two versions of the same package,
-        accepting and publishing the first, and freezing the distrorelease
+        accepting and publishing the first, and freezing the distroseries
         before the second. If all is well, the second upload should go
         through ok, but end up in status UNAPPROVED, and with the
         appropriate email contents.
@@ -223,7 +223,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
-        self.breezy.releasestatus = DistroSeriesStatus.FROZEN
+        self.breezy.status = DistroSeriesStatus.FROZEN
         self.layer.txn.commit()
 
         # Upload a newer version of bar.
@@ -257,7 +257,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         """Setup infrastructure for PPA tests.
 
         Additionally to the TestUploadProcessorBase.setUp, set 'breezy'
-        distrorelease and an new uploadprocessor instance.
+        distroseries and an new uploadprocessor instance.
         """
         TestUploadProcessorBase.setUp(self)
 
@@ -330,14 +330,14 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.assertEqual(pending_ppas.count(), 1)
         self.assertEqual(pending_ppas[0], name16.archive)
 
-    def testPPADistroreleaseOverrides(self):
-        """It's possible to override target distroreleases of PPA uploads.
+    def testPPADistroSeriesOverrides(self):
+        """It's possible to override target distroserieses of PPA uploads.
 
         Similar to usual PPA uploads:
 
          * The PPA is created if necessary.
          * Email notification is sent
-         * The upload is auto-accepted in the overridden target distrorelease.
+         * The upload is auto-accepted in the overridden target distroseries.
          * The modified PPA is found by getPendingAcceptancePPA() lookup.
         """
         name16 = getUtility(IPersonSet).getByName("name16")
@@ -471,7 +471,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes Rejected",
             "Path mismatch 'ubuntu/one/two/three/four'. "
-            "Use ~<person>/<distro>/[distrorelease]/[files] for PPAs "
+            "Use ~<person>/<distro>/[distroseries]/[files] for PPAs "
             "and <distro>/[files] for normal uploads."]
         self.assertEmail(contents)
 

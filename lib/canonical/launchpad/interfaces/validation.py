@@ -47,15 +47,15 @@ from canonical.launchpad.validators.url import valid_absolute_url
 def can_be_nominated_for_serieses(serieses):
     """Can the bug be nominated for these serieses?"""
     current_bug = getUtility(ILaunchBag).bug
-    unnominatable_releases = []
-    for release in releases:
-        if not current_bug.canBeNominatedFor(release):
-            unnominatable_releases.append(release.name.capitalize())
+    unnominatable_serieses = []
+    for series in serieses:
+        if not current_bug.canBeNominatedFor(series):
+            unnominatable_serieses.append(series.name.capitalize())
 
-    if unnominatable_releases:
+    if unnominatable_serieses:
         raise LaunchpadValidationError(_(
-            "This bug has already been nominated for these releases: %s" %
-                ", ".join(unnominatable_releases)))
+            "This bug has already been nominated for these series: %s" %
+                ", ".join(unnominatable_serieses)))
 
     return True
 

@@ -240,7 +240,7 @@ class DistroArchSeries(SQLBase):
     def getPendingPublications(self, archive, pocket, is_careful):
         """See IPublishing."""
         queries = [
-            "distroarchseries=%s AND archive=%s"
+            "distroarchrelease = %s AND archive = %s"
             % sqlvalues(self, archive)
             ]
 

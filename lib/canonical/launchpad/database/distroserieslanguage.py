@@ -30,7 +30,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
 
     implements(IDistroSeriesLanguage)
 
-    _table = 'DistroSeriesLanguage'
+    _table = 'DistroReleaseLanguage'
 
     distroseries = ForeignKey(foreignKey='DistroSeries',
         dbName='distrorelease', notNull=False, default=None)

@@ -190,7 +190,7 @@ class BinaryPackageReleaseSet:
         queries.append(match_query)
 
         if archtag:
-            queries.append('DistroArchSeries.architecturetag=%s'
+            queries.append('DistroArchRelease.architecturetag=%s'
                            % sqlvalues(archtag))
 
         query = " AND ".join(queries)
@@ -218,7 +218,7 @@ class BinaryPackageReleaseSet:
                          % sqlvalues(status_published))
 
         if archtag:
-            queries.append('DistroArchSeries.architecturetag = %s'
+            queries.append('DistroArchRelease.architecturetag = %s'
                          % sqlvalues(archtag))
 
         query = " AND ".join(queries)

@@ -198,7 +198,7 @@ class DistroArchSeriesBinaryPackage:
     def current_published(self):
         """See IDistroArchSeriesBinaryPackage."""
         current = BinaryPackagePublishingHistory.selectFirst("""
-            BinaryPackagePublishingHistory.distroarchseries = %s AND
+            BinaryPackagePublishingHistory.distroarchrelease = %s AND
             BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND

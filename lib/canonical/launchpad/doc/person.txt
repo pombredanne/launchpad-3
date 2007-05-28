@@ -250,7 +250,7 @@ person uploaded (where he isn't the maintainer).
 
     >>> sabdfl = personset.getByName('sabdfl')
     >>> for sprelease in sabdfl.latestMaintainedPackages():
-    ...     print (sprelease.name, sprelease.uploaddistroseries.fullreleasename,
+    ...     print (sprelease.name, sprelease.uploaddistroseries.fullseriesname,
     ...            sprelease.version)
     (u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
     (u'pmount', u'Ubuntu Hoary', u'0.1-2')
@@ -261,7 +261,7 @@ person uploaded (where he isn't the maintainer).
     (u'evolution', u'Ubuntu Hoary', u'1.0')
 
     >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
-    ...     print (sprelease.name, sprelease.uploaddistroseries.fullreleasename,
+    ...     print (sprelease.name, sprelease.uploaddistroseries.fullseriesname,
     ...            sprelease.version)
     (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
     (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')

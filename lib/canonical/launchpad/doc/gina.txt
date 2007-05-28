@@ -555,7 +555,7 @@ that's what overrides actually do.
     >>> print x11_pub.section.name
     net
     >>> ed_pub = SBPPH.select("""binarypackagerelease = %s
-    ...                           AND distroarchseries = %s
+    ...                           AND distroarchrelease = %s
     ...                           AND status in (%s, %s)""" %
     ...                         (ed.id, breezy_i386.id,
     ...                          PackagePublishingStatus.PUBLISHED,

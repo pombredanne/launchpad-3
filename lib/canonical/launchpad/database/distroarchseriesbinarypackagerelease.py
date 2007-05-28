@@ -82,7 +82,7 @@ class DistroArchSeriesBinaryPackageRelease:
         return record
 
     def _latest_publishing_record(self, status=None):
-        query = ("binarypackagerelease = %s AND distroarchseries = %s "
+        query = ("binarypackagerelease = %s AND distroarchrelease = %s "
                  "AND archive = %s"
                  % sqlvalues(self.binarypackagerelease,
                              self.distroarchseries,

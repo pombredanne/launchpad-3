@@ -27,7 +27,7 @@ class PublishedPackage(SQLBase):
     distribution = ForeignKey(dbName='distribution',
                               foreignKey='Distribution',
                               immutable=True)
-    distroarchseries = ForeignKey(dbName='distroarchseries',
+    distroarchseries = ForeignKey(dbName='distroarchrelease',
                                    foreignKey='DistroArchSeries',
                                    immutable=True)
     distroseries = ForeignKey(dbName='distrorelease',
@@ -77,7 +77,7 @@ class PublishedPackageSet:
         if distroseries:
             queries.append("distrorelease = %d" % distroseries.id)
         if distroarchseries:
-            queries.append("distroarchseries = %d" % distroarchseries.id)
+            queries.append("distroarchrelease = %d" % distroarchseries.id)
         if component:
             queries.append("component = %s" % quote(component))
         if text:

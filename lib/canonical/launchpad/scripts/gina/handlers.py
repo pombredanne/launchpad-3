@@ -820,7 +820,7 @@ class BinaryPackageHandler:
                  % (srcpkg.id, distribution.id))
 
         if archtag != "all":
-            query += ("AND DistroArchSeries.architecturetag = %s" 
+            query += ("AND DistroArchRelease.architecturetag = %s" 
                       % quote(archtag))
 
         try:
