@@ -30,7 +30,7 @@ class TestPerson(LaunchpadFunctionalTestCase):
         # _getDirectMemberIParticipateIn() call will actually return
         # warty_team.
         login(warty_team.teamowner.preferredemail.email)
-        warty_team.acceptInvitationToBeMemberOf(ubuntu_team)
+        warty_team.acceptInvitationToBeMemberOf(ubuntu_team, comment="foo")
         flush_database_updates()
         self.failUnless(warty_team in ubuntu_team.activemembers)
         self.failUnlessEqual(
