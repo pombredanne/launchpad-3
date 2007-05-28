@@ -44,6 +44,68 @@ If the package doesn't exist, queryByName returns None:
     None
 
 
+=== Latest published component ===
+
+The 'latest_published_component' attribute indicates the component where
+the package was last published.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_warty = ubuntu.getRelease('warty')
+    >>> firefox_warty = ubuntu_warty.getSourcePackage('mozilla-firefox')
+    >>> firefox_warty.latest_published_component.name
+    u'main'
+
+It's worth nothing the returned component is the one in the latest
+publishing record, not the component where the package was latest
+uploaded. After a package has been uploaded, and a SourcePackageRelease
+record has been created, the component may be changed. The
+SourcePackageRelease still has the same component as the original
+upload, though.
+
+    # Remove the security proxy to access the non-public
+    # _getPublishingHistory method.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> publishing_history = removeSecurityProxy(
+    ...     firefox_warty)._getPublishingHistory()
+    >>> for publishing in publishing_history:
+    ...     print publishing.status.name, publishing.component.name
+    PENDING main
+    PUBLISHED main
+
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from canonical.launchpad.database import Component
+    >>> from canonical.launchpad.database import (
+    ...     SecureSourcePackagePublishingHistory)
+    >>> from canonical.launchpad.ftests import syncUpdate
+
+    # SourcePackagePublishingHistory is just a view on
+    # SecureSourcePackagePublishingHistory with some rows removed, so need
+    # to update the SecureSourcePackagePublishingHistory table.
+    >>> latest_publishing = SecureSourcePackagePublishingHistory.get(
+    ...     publishing_history[-1].id)
+    >>> universe = Component.byName('universe')
+    >>> latest_publishing.component = universe
+    >>> syncUpdate(latest_publishing)
+    >>> flush_database_caches()
+
+    >>> for release in firefox_warty.distinctreleases:
+    ...     print release.component.name
+    main
+    >>> firefox_warty.latest_published_component.name
+    u'universe'
+
+Only PUBLISHED records are considered when looking the latest published
+component. If there are no PUBLISHED records, None is returned.
+
+    >>> from canonical.lp.dbschema import PackagePublishingStatus
+
+    >>> latest_publishing.status = PackagePublishingStatus.REMOVED
+    >>> syncUpdate(latest_publishing)
+    >>> print firefox_warty.latest_published_component
+    None
+
+
 == Distribution Source Packages ==
 
 In some cases it's useful to be able to refer to a source package at a
@@ -248,6 +310,7 @@ Lastly, note that sourcepackages know how to compare to each other:
     >>> hoary_firefox_one == warty_firefox
     False
 
+
 == Direct Packagings ==
 
     >>> print sp.direct_packaging
@@ -256,6 +319,7 @@ Lastly, note that sourcepackages know how to compare to each other:
     Mozilla Firefox Series: 1.0
     >>> print warty_firefox.direct_packaging.productseries.title
     Mozilla Firefox Series: trunk
+
 
 == releasehistory ==
 

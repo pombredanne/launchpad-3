@@ -9,9 +9,11 @@ __all__ = [
     ]
 
 from zope.interface import Attribute
+from zope.schema import Object
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
+from canonical.launchpad.interfaces.component import IComponent
 
 
 class ISourcePackage(IBugTarget):
@@ -119,3 +121,6 @@ class ISourcePackage(IBugTarget):
         set of Bazaar branches which describe the source package release.
         The attribute is True or False.""")
 
+    latest_published_component = Object(
+        title=u'The component in which the package was last published.',
+        schema=IComponent, readonly=True, required=False)

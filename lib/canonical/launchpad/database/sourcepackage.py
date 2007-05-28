@@ -557,3 +557,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)
+
+    @property
+    def latest_published_component(self):
+        """See `ISourcePackage`."""
+        latest_publishing = self._getFirstPublishingHistory(
+            include_status=[PackagePublishingStatus.PUBLISHED])
+        if latest_publishing is not None:
+            return latest_publishing.component
+        else:
+            return None
+
