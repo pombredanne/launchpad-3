@@ -278,6 +278,13 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         # in the database.
         self.assertTrue(transport.has('~foo/bar/banana'))
 
+    def test_make_junk_branch(self):
+        # Users can make branches beneath their '+junk' folder.
+        transport = get_transport(self.server.get_url())
+        transport.mkdir('~foo/+junk/banana')
+        # See comment in test_make_branch_directory.
+        self.assertTrue(transport.has('~foo/+junk/banana'))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

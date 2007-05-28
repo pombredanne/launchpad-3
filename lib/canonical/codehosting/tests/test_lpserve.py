@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 import os
+import signal
 import unittest
 
 import bzrlib
@@ -34,16 +35,13 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
     layer = TwistedLayer
 
-    def assertInetServerShutsdownCleanly(self, process):
-        """Shutdown the server process looking for errors."""
-        # Shutdown the server: the server should shut down when it cannot read
-        # from stdin anymore.
-        process.stdin.close()
-        # Hide stdin from the subprocess module, so it won't fail to close it.
-        process.stdin = None
-        result = self.finish_bzr_subprocess(process, retcode=0)
+    def assertServerFinishesCleanly(self, process):
+        """Shutdown the bzr serve instance process looking for errors."""
+        # Shutdown the server
+        result = self.finish_bzr_subprocess(process, retcode=3,
+                                            send_signal=signal.SIGINT)
         self.assertEqual('', result[0])
-        self.assertEqual('', result[1])
+        self.assertEqual('bzr: interrupted\n', result[1])
 
     def start_server_port(self, user_id, extra_options=()):
         """Start a bzr server subprocess.
