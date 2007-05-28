@@ -334,25 +334,15 @@ class POFileTranslateView(BaseTranslationView):
             'changed_in_launchpad'):
             # XXX: should this be an UnexpectedFormData?
             self.show = self.DEFAULT_SHOW
-        self.show_all = False
-        self.show_need_review = False
-        self.show_translated = False
-        self.show_untranslated = False
-        self.show_changed_in_launchpad = False
         if self.show == 'all':
-            self.show_all = True
             self.shown_count = self.context.messageCount()
         elif self.show == 'translated':
-            self.show_translated = True
             self.shown_count = self.context.translatedCount()
         elif self.show == 'untranslated':
-            self.show_untranslated = True
             self.shown_count = self.context.untranslatedCount()
         elif self.show == 'need_review':
-            self.show_need_review = True
             self.shown_count = self.context.fuzzy_count
         elif self.show == 'changed_in_launchpad':
-            self.show_changed_in_launchpad = True
             self.shown_count = self.context.changedInLaunchpadCount()
         else:
             raise AssertionError("Bug in _initializeShowOption")

@@ -391,8 +391,9 @@ class POFile(SQLBase, RosettaStats):
 
     def getPOTMsgSetChangedInLaunchpad(self, slice=None):
         """See IPOFile."""
-        # A POT set has "new" suggestions if there is a POMsgSet with
-        # submissions after active translation was reviewed
+        # POT set has been changed in Launchpad if it contains active
+        # translation which didn't come from a published package
+        # (iow, it's different from a published translation).
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
@@ -410,7 +411,7 @@ class POFile(SQLBase, RosettaStats):
                 ps2.active IS TRUE AND
                 POTMsgSet.sequence > 0 AND
                 POTMsgSet.potemplate = %s)
-            ''' % sqlvalues(self.id, self.potemplate.id),
+            ''' % sqlvalues(self, self.potemplate),
             orderBy='POTmsgSet.sequence')
 
         if slice is not None:
