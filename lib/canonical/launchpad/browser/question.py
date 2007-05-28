@@ -843,7 +843,9 @@ class SearchAllQuestionsView(SearchQuestionsView):
         attribute and redirects to questions when the term is a question id.
         """
         super(SearchAllQuestionsView, self).search_action.success(data)
-        
+
+        if not self.search_text:
+            return
         id_matches = SearchAllQuestionsView.id_pattern.match(self.search_text)
         if id_matches is not None:
             question = getUtility(IQuestionSet).get(id_matches.group(1))
