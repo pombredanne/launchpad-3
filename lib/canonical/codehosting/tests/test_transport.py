@@ -185,6 +185,14 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         backing_transport = self.backing_transport.clone('00/00/00/01')
         self.assertEqual(list(backing_transport.iter_files_recursive()), files)
 
+    def test_make_toplevel_directory(self):
+        # Making a top-level directory is not supported by the Launchpad
+        # transport.
+        transport = get_transport(self.server.get_url())
+        self.assertRaises(errors.NoSuchFile, transport.mkdir, '~apple')
+        self.assertRaises(
+            errors.TransportNotPossible, transport.mkdir, 'apple')
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

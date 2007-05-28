@@ -16,7 +16,7 @@ from bzrlib import urlutils, ui
 
 from bzrlib.smart import medium, server
 from bzrlib.transport import get_transport
-from bzrlib.transport.remote import BZR_DEFAULT_PORT, BZR_DEFAULT_INTERFACE
+from bzrlib.transport import remote
 
 from canonical.config import config
 from canonical.codehosting import transport
@@ -68,9 +68,9 @@ class cmd_launchpad_server(Command):
             smart_server = medium.SmartServerPipeStreamMedium(
                 sys.stdin, sys.stdout, transport)
         else:
-            host = BZR_DEFAULT_INTERFACE
+            host = remote.BZR_DEFAULT_INTERFACE
             if port is None:
-                port = BZR_DEFAULT_PORT
+                port = remote.BZR_DEFAULT_PORT
             else:
                 if ':' in port:
                     host, port = port.split(':')

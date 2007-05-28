@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport']
 
 
-from bzrlib.errors import NoSuchFile
+from bzrlib.errors import NoSuchFile, TransportNotPossible
 from bzrlib import urlutils
 from bzrlib.transport import (
     register_transport,
@@ -47,7 +47,9 @@ class LaunchpadServer(Server):
 
     def translate_virtual_path(self, virtual_path):
         user, product, branch, path = split(virtual_path.lstrip('/'), '/', 4)
-        assert user[0] == '~', (virtual_path, user)
+        if not user.startswith('~'):
+            raise TransportNotPossible(
+                'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
         branch_id = self._branches[(user, product, branch)]
         return '/'.join([branch_id_to_path(branch_id), path])
