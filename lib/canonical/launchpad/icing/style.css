@@ -856,11 +856,11 @@ ul#applicationchooser li#applicationchooser_selected {
   background-repeat: repeat-x;
   background-position: bottom left;
   position: relative;
-  top: -15px; /*- reduces pillargotchi~tab gap -*/
+  top: -15px; /*- reduces logo~tab gap -*/
 }
 body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
-body.freeform #mainarea {top: 20px;} /*- no pillargotchi on freeform pages -*/
+body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
 #mainarea div.t {
   width: 100%;
   background-image: url(mainarea_left.gif);

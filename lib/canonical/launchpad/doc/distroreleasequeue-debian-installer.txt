@@ -42,8 +42,11 @@ happen in production:
   >>> import_public_test_keys()
   >>> login('foo.bar@canonical.com')
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.tests import (
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
   ...     datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> anything_policy = getPolicy(
@@ -121,7 +124,7 @@ The current debian-installer directory (20070214ubuntu1) and a link to
 the last version (we only have the one we uploaded) should be
 presented:
 
-  >>> os.listdir(installer_path)
+  >>> sorted(os.listdir(installer_path))
   ['20070214ubuntu1', 'current']
 
 As a consistency check, let's verify one of the files inside the

@@ -74,6 +74,7 @@
     <include file="marketing.zcml" />
     <include file="message.zcml" />
     <include file="milestone.zcml" />
+    <include file="openid.zcml" />
     <include file="packagebugcontact.zcml" />
     <include file="packagerelationship.zcml" />
     <include file="packaging.zcml" />
@@ -135,6 +136,7 @@
     <include file="section.zcml" />
     <include file="vpoexport.zcml" />
     <include file="vpotexport.zcml" />
+    <include file="archive.zcml" />
 
     <include file="fields.zcml" />
     <include file="resources.zcml" />

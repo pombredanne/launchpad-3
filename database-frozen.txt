@@ -8,6 +8,6 @@ means.
 
 Status
 ------
-Database patches can be landed at the moment. Beta code updates are
-blocked. If this is a problem, notify stub.
+Database patches are frozen. Roll out is scheduled late May 24th. Once
+roll out is enacted edge and beta code updates will be reenabled.
 
