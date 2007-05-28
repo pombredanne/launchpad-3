@@ -27,12 +27,21 @@ We're working inside Ubuntu:
 
   >>> distro = Distribution.selectOneBy(name="ubuntu")
 
+Temporary directories to be used in tests:
+
+  >>> import os
+  >>> pool_path = '/tmp/pool'
+  >>> os.makedirs(pool_path)
+  >>> temp_path = '/tmp/temp'
+  >>> os.makedirs(temp_path)
+
+
 Nothing to do
 =============
 
 The no-operation use case:
 
-  >>> dp = DiskPool("/tmp", "/tmp", MockLogger())
+  >>> dp = DiskPool(pool_path, temp_path, MockLogger())
   >>> dr = DeathRow(distro, dp, MockLogger())
   >>> dr.reap(dry_run=True)
   INFO: Removing 0 files marked for reaping
@@ -70,12 +79,12 @@ Source publication 12 includes alsa-utils_1.0.9a-4ubuntu1.dsc:
 But so does source publication 20, which we'll set to pending removal
 but with a scheduled deletion date in the future. Because not all of the
 references to the file are ready to be removed, the file will not be
-deleted yet. 
+deleted yet.
 
   >>> pub = SSPPH.get(20)
   >>> print pub.distrorelease.name
   warty
-  >>> print [f.libraryfile.filename 
+  >>> print [f.libraryfile.filename
   ...        for f in pub.sourcepackagerelease.files]
   [u'alsa-utils_1.0.9a-4ubuntu1.dsc']
   >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
@@ -99,25 +108,25 @@ As above, both 19 and 21 refer to the same pmount binaries, and since 21
 is not to be removed, we won't try and remove its files:
 
   >>> pub = SBPPH.get(19)
-  >>> print [f.libraryfile.filename 
+  >>> print [f.libraryfile.filename
   ...        for f in pub.binarypackagerelease.files]
   [u'pmount_1.9-1_all.deb']
   >>> pub = SBPPH.get(21)
-  >>> print [f.libraryfile.filename 
+  >>> print [f.libraryfile.filename
   ...        for f in pub.binarypackagerelease.files]
   [u'pmount_1.9-1_all.deb']
 
 Flush our these updates and kick the DeathRow processor again.
 
   >>> flush_database_updates()
-  >>> dp = DiskPool("/tmp", "/tmp", MockLogger())
+  >>> dp = DiskPool(pool_path, temp_path, MockLogger())
   >>> dr = DeathRow(distro, dp, MockLogger())
   >>> dr.reap(dry_run=True)
   INFO: Removing 2 files marked for reaping
-  DEBUG: (Not really!) removing main alsa-utils/alsa-utils_1.0.9a-4.dsc
-  DEBUG: File to remove main alsa-utils/alsa-utils_1.0.9a-4.dsc is not in pool, skipping
   DEBUG: (Not really!) removing main linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb
   DEBUG: File to remove main linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb is not in pool, skipping
+  DEBUG: (Not really!) removing main alsa-utils/alsa-utils_1.0.9a-4.dsc
+  DEBUG: File to remove main alsa-utils/alsa-utils_1.0.9a-4.dsc is not in pool, skipping
   INFO: Total bytes freed: 0
   DEBUG: Marking 4 condemned packages as removed.
 
@@ -163,8 +172,8 @@ Test that bytes freed computing is handled correctly:
   >>> flush_database_updates()
   >>> dr.reap()
   INFO: Removing 2 files marked for reaping
-  DEBUG: (Not really!) removing main evolution/evolution-1.0.tar.gz
   DEBUG: (Not really!) removing main pmount/pmount_1.9-1_all.deb
+  DEBUG: (Not really!) removing main evolution/evolution-1.0.tar.gz
   INFO: Total bytes freed: 10
   DEBUG: Marking 2 condemned packages as removed.
 
@@ -185,3 +194,9 @@ Test that random exceptions are handled correctly:
   INFO: Total bytes freed: 0
   DEBUG: Marking 1 condemned packages as removed.
 
+
+Remove temporary diretories used for tests:
+
+  >>> import shutil
+  >>> shutil.rmtree(pool_path)
+  >>> shutil.rmtree(temp_path)
