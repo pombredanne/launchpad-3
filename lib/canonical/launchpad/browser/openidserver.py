@@ -17,7 +17,7 @@ import pytz
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implements, Interface
 from zope.publisher.interfaces import IPublishTraverse
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
         ILaunchpadOpenIdStoreFactory, IPersonSet, UnexpectedFormData,
         )
 from canonical.launchpad.webapp import LaunchpadView, canonical_url
-from canonical.launchpad.webapp.publisher import RedirectionView
+from canonical.launchpad.webapp.publisher import RedirectionView, Navigation
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 
@@ -50,8 +50,12 @@ def null_log(message, level=0):
 oidutil.log = null_log
 
 
+class IOpenIdView(Interface):
+    """Marker interface"""
+    pass
+
 class OpenIdView(LaunchpadView):
-    implements(IPublishTraverse)
+    implements(IOpenIdView)
 
     openid_request = None
 
@@ -369,7 +373,10 @@ class OpenIdView(LaunchpadView):
     def getSession(self):
         return ISession(self.request)[SESSION_PKG_KEY]
 
-    def publishTraverse(self, request, name):
+
+class OpenIdNavigation(Navigation):
+    usedfor = IOpenIdView
+    def traverse(self, name):
         # Provide a permanent OpenID identity for use by the Ubuntu shop
         # or other services that cannot cope with name changes.
         try:
@@ -379,7 +386,7 @@ class OpenIdView(LaunchpadView):
         else:
             person = getUtility(IPersonSet).get(person_id)
             if person is not None:
-                return MinimalOpenIdIdentityView(request, person)
+                return MinimalOpenIdIdentityView(self.request, person)
 
         # Allow traversal to email addresses, redirecting to the
         # user's permanent OpenID URL.
@@ -388,8 +395,9 @@ class OpenIdView(LaunchpadView):
             target = '%s+openid/%d' % (
                     allvhosts.configs['openid'].rooturl, email.personID
                     )
-            return RedirectionView(target, request, 303)
-        return None
+            return RedirectionView(target, self.request, 303)
+
+        raise NotFoundError(name)
 
 
 class ProtocolErrorView(LaunchpadView):
