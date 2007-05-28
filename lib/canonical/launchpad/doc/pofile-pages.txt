@@ -23,10 +23,10 @@ Now it's time to test the initialisation of the view class.
     >>> sourcepackagename = sourcepackagenameset['evolution']
     >>> distributionset = getUtility(IDistributionSet)
     >>> distribution = distributionset['ubuntu']
-    >>> release = distribution['hoary']
+    >>> series = distribution['hoary']
     >>> potemplateset = getUtility(IPOTemplateSet)
     >>> potemplatesubset = potemplateset.getSubset(
-    ...     distroseries=release, sourcepackagename=sourcepackagename)
+    ...     distroseries=series, sourcepackagename=sourcepackagename)
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> pofile_es = potemplate.getPOFileByLang('es')
     >>> request = LaunchpadTestRequest(form={'show': 'all' })

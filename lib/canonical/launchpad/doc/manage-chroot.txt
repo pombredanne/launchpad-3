@@ -7,7 +7,7 @@ Chroots are compressed files which contains a pristine ubuntu
 work-tree, they are used to build packages. When LP is requested to
 build "foo in dapper/i386", it needs to use the respective chroot.
 
-This script is based on the IDistroArchrelease.addOrUpdateChroot
+This script is based on the IDistroArchSeries.addOrUpdateChroot
 method, which is better tested in doc/pocketchroot.txt.
 
 

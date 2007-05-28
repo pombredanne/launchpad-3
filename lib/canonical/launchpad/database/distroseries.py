@@ -836,7 +836,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                             PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
-                          'DistroArchSeries',
+                          'DistroArchRelease',
                           'BinaryPackageRelease']))
 
         # now ask each of them to update themselves. commit every 100
@@ -911,7 +911,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         drpcaches = DistroSeriesPackageCache.select("""
             distrorelease = %s AND (
             fti @@ ftq(%s) OR
-            DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
+            DistroReleasePackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self.id), quote(text), quote_like(text)),
             selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
             orderBy=['-rank'],
@@ -1131,7 +1131,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         raise NotImplementedError(
             "A new bug cannot be filed directly on a distribution series, "
             "because series are meant for \"targeting\" a fix to a specific "
-            "release. It's possible that we may change this behaviour to "
+            "version. It's possible that we may change this behaviour to "
             "allow filing a bug on a distribution series in the "
             "not-too-distant future. For now, you probably meant to file "
             "the bug on the distribution instead.")

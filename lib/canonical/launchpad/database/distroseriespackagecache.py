@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import IDistroSeriesPackageCache
 
 class DistroSeriesPackageCache(SQLBase):
     implements(IDistroSeriesPackageCache)
-    _table = 'DistroSeriesPackageCache'
+    _table = 'DistroReleasePackageCache'
 
     distroseries = ForeignKey(dbName='distrorelease',
         foreignKey='DistroSeries', notNull=True)

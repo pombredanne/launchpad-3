@@ -240,7 +240,7 @@ class BinaryPackageReleaseSet:
         """ % sqlvalues(distroseries.main_archive, distroseries,
                         dbschema.PackagePublishingStatus.REMOVED)
 
-        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
+        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']
 
         return query, clauseTables

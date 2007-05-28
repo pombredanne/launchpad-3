@@ -1,17 +1,17 @@
-Get a tarball representation of a release's translations.
+Get a tarball representation of a series's translations.
 
-Get hold of our distribution release.
+Get hold of our distribution series.
 
   >>> from canonical.launchpad.database import DistroSeries
-  >>> release = DistroSeries.get(3)
-  >>> release.name
+  >>> series = DistroSeries.get(3)
+  >>> series.name
   u'hoary'
 
-Now get hold of a tarball for the release.
+Now get hold of a tarball for the series.
 
   >>> from canonical.launchpad.components.poexport import \
   ...     DistroSeriesPOExporter
-  >>> exporter = DistroSeriesPOExporter(release)
+  >>> exporter = DistroSeriesPOExporter(series)
   >>> tarfile_string = exporter.export_tarball()
 
 Check the tarball has the right members.

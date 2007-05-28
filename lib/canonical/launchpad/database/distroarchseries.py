@@ -87,7 +87,7 @@ class DistroArchSeries(SQLBase):
     def updatePackageCount(self):
         """See IDistroArchSeries """
         query = """
-            BinaryPackagePublishingHistory.distroarchseries = %s AND
+            BinaryPackagePublishingHistory.distroarchrelease = %s AND
             BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.status = %s AND
             BinaryPackagePublishingHistory.pocket = %s
@@ -305,7 +305,7 @@ class PocketChroot(SQLBase):
     implements(IPocketChroot)
     _table = "PocketChroot"
 
-    distroarchseries = ForeignKey(dbName='distroarchseries',
+    distroarchseries = ForeignKey(dbName='distroarchrelease',
                                    foreignKey='DistroArchSeries',
                                    notNull=True)
 

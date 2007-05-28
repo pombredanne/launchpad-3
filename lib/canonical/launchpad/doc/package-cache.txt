@@ -156,7 +156,7 @@ cache when it's updated the next time.
   >>> cdrkit_cache is None
   True
 
-We can invoke the cache updater directly on IDistrorelease:
+We can invoke the cache updater directly on IDistroSeries:
 
   >>> ubuntu.updateCompleteSourcePackageCache(
   ...    ztm=transaction, log=TestLog())
@@ -247,7 +247,7 @@ cache will be added to it.
   >>> cdrkit_bin_cache is None
   True
 
-We can invoke the cache updater directly on IDistrorelease:
+We can invoke the cache updater directly on IDistroSeries:
 
   >>> warty.updateCompletePackageCache(
   ...    ztm=transaction, log=TestLog())

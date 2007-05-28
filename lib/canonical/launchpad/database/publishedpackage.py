@@ -33,7 +33,7 @@ class PublishedPackage(SQLBase):
     distroseries = ForeignKey(dbName='distrorelease',
                                foreignKey='DistroSeries',
                                immutable=True)
-    distroseriesname = StringCol(immutable=True)
+    distroseriesname = StringCol(dbName='distroreleasename', immutable=True)
     processorfamily = ForeignKey(dbName="processorfamily",
                                  foreignKey="ProcessorFamily",
                                  immutable=True)

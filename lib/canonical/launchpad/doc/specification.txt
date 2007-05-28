@@ -101,7 +101,7 @@ Now, let's do a bunch of changes, and see what the result looks like:
     >>> ubuspec.title = 'New Title'
     >>> ubuspec.summary = 'New summary.'
     >>> ubuspec.specurl = 'http://www.ubuntu.com/NewSpec'
-    >>> ubuspec.proposeGoal(ubuntu.getRelease('hoary'), jdub)
+    >>> ubuspec.proposeGoal(ubuntu.getSeries('hoary'), jdub)
     >>> ubuspec.name = 'new-spec'
     >>> ubuspec.priority = SpecificationPriority.LOW
     >>> ubuspec.status = SpecificationStatus.DRAFT

@@ -37,7 +37,7 @@ class IBuildQueue(Interface):
     manual = Attribute("Whether or not the job was manually scored")
 
     # properties inherited from related Content classes.
-    archrelease = Attribute(
+    archseries = Attribute(
         "DistroArchSeries target of the IBuild releated to this job.")
     name = Attribute(
         "Name of the ISourcePackageRelease releated to this job.")
@@ -111,7 +111,7 @@ class IBuildQueueSet(Interface):
         is empty, but the result isn't might to be used in call site.
         """
 
-    def calculateCandidates(archreleases, state):
+    def calculateCandidates(archserieses, state):
         """Return the candidates for building
 
         The result is a unsorted list of BuildQueue items in a given state

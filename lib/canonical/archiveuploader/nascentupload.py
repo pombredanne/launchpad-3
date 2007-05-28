@@ -120,13 +120,13 @@ class NascentUpload:
         self.logger.debug("Beginning processing.")
 
         try:
-            self.policy.setDistroReleaseAndPocket(self.changes.suite_name)
+            self.policy.setDistroSeriesAndPocket(self.changes.suite_name)
         except NotFoundError:
             self.reject(
-                "Unable to find distrorelease: %s" % self.changes.suite_name)
+                "Unable to find distroseries: %s" % self.changes.suite_name)
 
         # We need to process changesfile addresses at this point because
-        # we depend on an already initialised policy (distrorelease
+        # we depend on an already initialised policy (distroseries
         # and pocket set) to have proper person 'creation rationale'.
         self.run_and_collect_errors(self.changes.processAddresses)
 
@@ -410,7 +410,7 @@ class NascentUpload:
     @property
     def is_ppa(self):
         """Whether or not the current upload is target for a PPA."""
-        if self.policy.archive.id != self.policy.distrorelease.main_archive.id:
+        if self.policy.archive.id != self.policy.distroseries.main_archive.id:
             return True
         return False
 
@@ -561,7 +561,7 @@ class NascentUpload:
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
         for pocket in lookup_pockets:
-            candidates = self.policy.distrorelease.getPublishedReleases(
+            candidates = self.policy.distroseries.getPublishedReleases(
                 source_name, include_pending=True, pocket=pocket,
                 archive=self.policy.archive)
             if candidates:
@@ -577,7 +577,7 @@ class NascentUpload:
 
         This method may raise NotFoundError if it is dealing with an
         uploaded file targeted to an architecture not present in the
-        distrorelease in context. So callsites needs to be aware.
+        distroseries in context. So callsites needs to be aware.
         """
         binary_name = getUtility(
             IBinaryPackageNameSet).queryByName(uploaded_file.package)
@@ -586,7 +586,7 @@ class NascentUpload:
             return None
 
         if uploaded_file.architecture == "all":
-            arch_indep = self.policy.distrorelease.nominatedarchindep
+            arch_indep = self.policy.distroseries.nominatedarchindep
             archtag = arch_indep.architecturetag
         else:
             archtag = uploaded_file.architecture
@@ -594,7 +594,7 @@ class NascentUpload:
         # XXX cprov 20070213: it raises NotFoundError for unknown
         # architectures. For now, it is treated in find_and_apply_overrides().
         # But it should be refactored ASAP.
-        dar = self.policy.distrorelease[archtag]
+        dar = self.policy.distroseries[archtag]
 
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
@@ -610,7 +610,7 @@ class NascentUpload:
                 continue
 
             # Try the other architectures...
-            dars = self.policy.distrorelease.architectures
+            dars = self.policy.distroseries.architectures
             other_dars = [other_dar for other_dar in dars
                           if other_dar.id != dar.id]
             for other_dar in other_dars:
@@ -672,7 +672,7 @@ class NascentUpload:
         Override target component, section and priority.
         """
         self.logger.debug("%s: (binary) exists in %s/%s" % (
-            uploaded_file.package, override.distroarchrelease.architecturetag,
+            uploaded_file.package, override.distroarchseries.architecturetag,
             override.pocket.name))
 
         uploaded_file.component_name = override.component.name
@@ -767,7 +767,7 @@ class NascentUpload:
                 "SUMMARY": self.getNotificationSummary(),
                 "CHANGESFILE": guess_encoding(self.changes.filecontents),
                 "DISTRO": self.policy.distro.title,
-                "DISTRORELEASE": self.policy.distrorelease.name,
+                "DISTROSERIES": self.policy.distroseries.name,
                 "ANNOUNCE": self.policy.announcelist,
                 "SOURCE": self.changes.source,
                 "VERSION": self.changes.version,
@@ -931,8 +931,8 @@ class NascentUpload:
         # Queue entries are created in the NEW state by default; at the
         # end of this method we cope with uploads that aren't new.
         self.logger.debug("Creating queue entry")
-        distrorelease = self.policy.distrorelease
-        self.queue_root = distrorelease.createQueueEntry(
+        distroseries = self.policy.distroseries
+        self.queue_root = distroseries.createQueueEntry(
             self.policy.pocket, self.changes.filename,
             self.changes.filecontents, self.policy.archive,
             self.changes.signingkey)

@@ -260,8 +260,8 @@ Direct Packagings
     >>> print warty_firefox.direct_packaging.productseries.title
     Mozilla Firefox Series: trunk
 
-releasehistory
---------------
+Release History
+---------------
 
     >>> len(list(hoary_firefox_one.distinctreleases))
     1

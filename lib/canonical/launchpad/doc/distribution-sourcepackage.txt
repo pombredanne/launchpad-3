@@ -7,7 +7,7 @@ package.
 
 This is useful for, among other things, tracking bugs in source
 packages, ensuring that bug reports automatically carry forward from one
-distribution release to the next.
+distribution series to the next.
 
 Fetching a Distribution Source Package
 ======================================

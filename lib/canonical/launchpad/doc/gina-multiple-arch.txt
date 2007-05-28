@@ -26,7 +26,7 @@ Get the current counts of stuff in the database:
     >>> orig_build_count = Build.select().count()
     >>> orig_sbpph_count = SBPPH.select().count()
 
-Create a distribution release and an arch release for dapper:
+Create a distribution series and an arch series for dapper:
 
     >>> from canonical.launchpad.database import (DistroSeriesSet,
     ...     ProcessorFamily, DistroArchSeries)

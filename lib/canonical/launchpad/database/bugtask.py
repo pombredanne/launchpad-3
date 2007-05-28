@@ -724,15 +724,15 @@ class BugTask(SQLBase, BugTaskMixin):
         # Calculate an appropriate display value for the component, if the
         # target looks like some kind of source package.
         component = 'None'
-        currentseries = None
+        currentrelease = None
         if ISourcePackage.providedBy(self.target):
-            currentseries = self.target.currentseries
+            currentrelease = self.target.currentrelease
         if IDistributionSourcePackage.providedBy(self.target):
-            if self.target.currentseries:
-                currentseries = self.target.currentseries.sourcepackagerelease
+            if self.target.currentrelease:
+                currentrelease = self.target.currentrelease.sourcepackagerelease
 
-        if currentseries:
-            component = currentseries.component.name
+        if currentrelease:
+            component = currentrelease.component.name
 
         if IUpstreamBugTask.providedBy(self):
             header_value = 'product=%s;' %  self.target.name
@@ -750,7 +750,7 @@ class BugTask(SQLBase, BugTaskMixin):
         elif IDistroSeriesBugTask.providedBy(self):
             header_value = ((
                 'distribution=%(distroname)s; '
-                'distrorelease=%(distroseriesname)s; '
+                'distroseries=%(distroseriesname)s; '
                 'sourcepackage=%(sourcepackagename)s; '
                 'component=%(componentname)s;') %
                 {'distroname': self.distroseries.distribution.name,

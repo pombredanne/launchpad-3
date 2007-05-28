@@ -358,24 +358,13 @@ them, e.g. IDistroSeries and ISourcePackage.
     >>> ubuntu_warty.createBug(params)
     Traceback (most recent call last):
       ...
-    NotImplementedError: A new bug cannot be filed directly on a
-        distribution series, because series are meant for "targeting"
-        a fix to a specific series. It's possible that we may change
-        this behaviour to allow filing a bug on a distribution series
-        in the not-too-distant future. For now, you probably meant to
-        file the bug on the distribution instead.
+    NotImplementedError: A new bug cannot be filed directly...
     >>> params = CreateBugParams
     ...     owner=current_user(), title="test", comment="test")
     >>> ubuntu_warty_firefox.createBug(params)
     Traceback (most recent call last):
       ...
-    NotImplementedError: A new bug cannot be filed directly on a source
-        package in a specific distribution series, because series are
-        meant for "targeting" a fix to a specific release. It's possible
-        that we may change this behaviour to allow filing a bug on a
-        distribution series source package in the not-too-distant
-        future.  For now, you probably meant to file the bug on the
-        distro-wide (i.e.  not series-specific) source package.
+    NotImplementedError: A new bug cannot be filed directly...
 
 == Date Last Updated ==
 

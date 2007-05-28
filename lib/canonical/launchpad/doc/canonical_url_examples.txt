@@ -117,7 +117,7 @@ An IDistribution.
 
 An IDistroSeries.
 
-    >>> hoary = celebs.ubuntu.getRelease('hoary')
+    >>> hoary = celebs.ubuntu.getSeries('hoary')
     >>> canonical_url(hoary)
     u'http://launchpad.dev/ubuntu/hoary'
 
@@ -219,17 +219,17 @@ An IDistroBugTask without a sourcepackage.
 
 An IDistroSeriesBugTask.
 
-    >>> distro_release_task = getUtility(IBugTaskSet).get(16)
-    >>> canonical_url(distro_release_task)
+    >>> distro_series_task = getUtility(IBugTaskSet).get(16)
+    >>> canonical_url(distro_series_task)
     u'http://bugs.launchpad.dev/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
 An IDistroSeriesBugTask without a sourcepackage.
 
-    >>> temp_spname = distro_release_task.sourcepackagename
-    >>> distro_release_task.sourcepackagename = None
-    >>> canonical_url(distro_release_task)
+    >>> temp_spname = distro_series_task.sourcepackagename
+    >>> distro_series_task.sourcepackagename = None
+    >>> canonical_url(distro_series_task)
     u'http://bugs.launchpad.dev/ubuntu/warty/+bug/5'
-    >>> distro_release_task.sourcepackagename = temp_spname
+    >>> distro_series_task.sourcepackagename = temp_spname
 
 A private bug, as an anonymous user! (We'll temporarily subscribe to the bug,
 to ensure that at least one person has the perms to edit it while it's set
@@ -237,23 +237,23 @@ private.)
 
     >>> from canonical.launchpad.interfaces import ILaunchBag
     >>> current_user = getUtility(ILaunchBag).user
-    >>> subscription = distro_release_task.bug.subscribe(current_user)
+    >>> subscription = distro_series_task.bug.subscribe(current_user)
 
-    >>> distro_release_task.bug.private = True
+    >>> distro_series_task.bug.private = True
 
     >>> login(ANONYMOUS)
 
-    >>> canonical_url(distro_release_task.bug)
+    >>> canonical_url(distro_series_task.bug)
     u'http://bugs.launchpad.dev/bugs/5'
 
 A private bugtask, as an anonymous user.
 
-    >>> canonical_url(distro_release_task)
+    >>> canonical_url(distro_series_task)
     u'http://bugs.launchpad.dev/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
     >>> login("foo.bar@canonical.com")
-    >>> distro_release_task.bug.private = False
-    >>> distro_release_task.bug.unsubscribe(current_user)
+    >>> distro_series_task.bug.private = False
+    >>> distro_series_task.bug.unsubscribe(current_user)
 
 An IBugWatchSet.
 
@@ -378,7 +378,7 @@ Even for a dummy PO msgset
     u'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es_ES/1'
 
 Upstream POTemplateSubsets work in much the same way, except they hang off a
-product release.  Let's get a product release.
+product series.  Let's get a product series.
 
 Now we can get an upstream subset and do the same sorts of thing as we did
 with the distro subset.

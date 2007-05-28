@@ -283,7 +283,7 @@ class SourcePackageRelease(SQLBase):
         Build.id = BinaryPackageRelease.build AND
         BinaryPackageRelease.id =
             BinaryPackagePublishingHistory.binarypackagerelease AND
-        BinaryPackagePublishingHistory.distroarchseries = %s AND
+        BinaryPackagePublishingHistory.distroarchrelease = %s AND
         BinaryPackagePublishingHistory.archive = %s AND
         Build.sourcepackagerelease = %s
         """  % sqlvalues(distroarchseries, archive, self)

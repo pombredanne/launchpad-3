@@ -145,7 +145,7 @@ Create a new bug task on a product series:
 
 Create a new bug task on a distroseries:
 
-    >>> debian_woody = debian.getRelease("woody")
+    >>> debian_woody = debian.getSeries("woody")
     >>> debian_woody_task = getUtility(IBugTaskSet).createTask(
     ...     bug, distroseries=debian_woody, owner=foo_bar)
     >>> notify(SQLObjectCreatedEvent(debian_woody_task))

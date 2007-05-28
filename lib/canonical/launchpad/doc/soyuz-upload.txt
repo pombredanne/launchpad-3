@@ -443,17 +443,17 @@ launchpad.Edit on the records:
   >>> login("foo.bar@canonical.com")
 
   >>> distro = getUtility(IDistributionSet).getByName('ubuntutest')
-  >>> release = distro['breezy-autotest']
+  >>> series = distro['breezy-autotest']
 
 Let's test IHasQueueItems.getQueueItems:
 
-  >>> new_items = release.getQueueItems(PackageUploadStatus.NEW)
+  >>> new_items = series.getQueueItems(PackageUploadStatus.NEW)
   >>> new_items.count()
   2
 
 Querying by status and a name term:
 
-  >>> items = release.getQueueItems(PackageUploadStatus.NEW,
+  >>> items = series.getQueueItems(PackageUploadStatus.NEW,
   ...                                    name='dr')
   >>> items.count()
   1
@@ -465,12 +465,12 @@ Querying by status and a name term:
 
 Querying by status, name and version terms:
 
-  >>> items = release.getQueueItems(PackageUploadStatus.NEW,
+  >>> items = series.getQueueItems(PackageUploadStatus.NEW,
   ...                               name='dr', version='1.2')
   >>> items.count()
   1
 
-  >>> items = release.getQueueItems(PackageUploadStatus.NEW,
+  >>> items = series.getQueueItems(PackageUploadStatus.NEW,
   ...                               name='dr', version='1.5')
   >>> items.count()
   0
@@ -484,19 +484,19 @@ attribute in two, as exact_name & exact_version, which might be
 a good idea, since it produce a more controllable behaviour.
 See bug # 29642
 
-  >>> items = release.getQueueItems(PackageUploadStatus.NEW,
+  >>> items = series.getQueueItems(PackageUploadStatus.NEW,
   ...                      name='dr', version='1.2', exact_match=True)
   >>> items.count()
   0
 
-  >>> items = release.getQueueItems(PackageUploadStatus.NEW,
+  >>> items = series.getQueueItems(PackageUploadStatus.NEW,
   ...          name='drdsl', version='1.2.0-0ubuntu1', exact_match=True)
   >>> items.count()
   1
 
 Using getQueueItem to inspect current NEW queue and accept them.
 
-  >>> queue_items = release.getQueueItems(PackageUploadStatus.NEW)
+  >>> queue_items = series.getQueueItems(PackageUploadStatus.NEW)
   >>> L = []
   >>> for queue_item in queue_items:
   ...      try:

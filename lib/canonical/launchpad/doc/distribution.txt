@@ -71,19 +71,19 @@ have a SourcePackageName object for it.
 
 You can also get a release by name:
 
-    >>> hoary = ubuntu.getRelease("hoary")
+    >>> hoary = ubuntu.getSeries("hoary")
     >>> print hoary.name
     hoary
 
 Or by version:
 
-    >>> v504 = ubuntu.getRelease("5.04")
+    >>> v504 = ubuntu.getSeries("5.04")
     >>> print v504.name
     hoary
 
 You can list development distroseriess:
 
-    >>> devdists = ubuntu.getDevelopmentReleases()
+    >>> devdists = ubuntu.getDevelopmentSerieses()
     >>> for devdist in devdists:
     ...     print devdist.name
     hoary
@@ -129,14 +129,14 @@ Raises NotFoundError for following conditions:
     ...
     NotFoundError: 'Unknown package: 1234'
 
-It also raises NotFoundError on distributions with no releases:
+It also raises NotFoundError on distributions with no series:
 
     >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
     Traceback (most recent call last):
     ...
-    NotFoundError: u"Gentoo has no releases; 'pmount' was never published in it"
+    NotFoundError: u"Gentoo has no series; 'pmount' was never published in it"
 
-Even if we add a release to Gentoo, no packages have ever been published
+Even if we add a series to Gentoo, no packages have ever been published
 in it, and therefore guessPackageNames will still fail:
 
     >>> from canonical.launchpad.interfaces import IDistroSeriesSet
@@ -403,7 +403,7 @@ We can get only valid specs (those that are not obsolete or superseded):
 == Milestones ==
 
 We can use IDistribution.milestones to get all milestones associated with any
-releases of a distribution.
+series of a distribution.
 
     >>> from datetime import datetime
     >>> [milestone.name for milestone in debian.milestones]

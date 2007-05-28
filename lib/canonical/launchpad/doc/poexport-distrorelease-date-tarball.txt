@@ -1,8 +1,8 @@
-Distribution Release PO File Exports With Date Limits
-=====================================================
+Distribution Series PO File Exports With Date Limits
+====================================================
 
 This tests the ability to generate a tarball of PO files for a distribution
-release that only includes PO files which have been changed since a certain
+series that only includes PO files which have been changed since a certain
 date.
 
 First we need to set up some data to test with, and for this we need some DB
@@ -20,8 +20,8 @@ Get hold of a person.
 
 Get a distro series.
 
-    >>> release = DistroSeries.get(5)
-    >>> release.name
+    >>> series = DistroSeries.get(5)
+    >>> series.name
     u'grumpy'
 
 Get a source package name to go with our distro series.
@@ -43,7 +43,7 @@ Create a PO template and put a single message set in it.
 
     >>> ptn = POTemplateName(name='test', translationdomain='test', title='test')
     >>> template = POTemplate(
-    ...     potemplatename=ptn, distroseries=release, sourcepackagename=spn,
+    ...     potemplatename=ptn, distroseries=series, sourcepackagename=spn,
     ...     owner=person, languagepack=True, path='po/test.pot')
     >>> potmsgset = template.createMessageSetFromText(u'blah')
     >>> potmsgset.sequence = 1
@@ -85,7 +85,7 @@ Set up the exporter.
 
     >>> from canonical.launchpad.components.poexport import \
     ...     DistroSeriesPOExporter
-    >>> exporter = DistroSeriesPOExporter(release)
+    >>> exporter = DistroSeriesPOExporter(series)
 
 This is handy for examining the tar files that are generated.
 

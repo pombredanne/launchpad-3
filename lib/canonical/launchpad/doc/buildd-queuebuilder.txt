@@ -70,11 +70,11 @@ Pick up any existent librarian file as chroot.
 Produce a set of available DistroArchSeries, for which the
 build jobs will be created.
 
-  >>> distroseriess = set()
+  >>> distroserieses = set()
   >>> for dar in DistroArchSeries.select():
-  ...     distroseriess.add(dar.distroseries)
+  ...     distroserieses.add(dar.distroseries)
   ...     bm.addDistroArchSeries(dar)
-  >>> distroseriess = sorted(distroseriess, key=operator.attrgetter('name'))
+  >>> distroserieses = sorted(distroserieses, key=operator.attrgetter('name'))
 
 Only Ubuntu/Hoary/i386 and Debian/Woody/i386 have an available CHROOT.
 
@@ -89,7 +89,7 @@ Kick off any pending builds we have to avoid any lint in our tests (there are a
 couple that will be created based on our sampledata). This is to allow
 us to study carefully what is being added as we add new series and builds.
 
-  >>> for dr in distroseriess:
+  >>> for dr in distroserieses:
   ...      bm.createMissingBuilds(dr)
 
   >>> flush_database_updates()
@@ -293,11 +293,11 @@ pas.py:_handleBinaryPAS for more information on why.
 Create and verify the new builds
 --------------------------------
 
-Create missing builds (packages w/o build entry) for those distroseriess.
+Create missing builds (packages w/o build entry) for those distroserieses.
 We expect to have a couple of new builds for the sane Hoary and a warning about
 the absence of nominatedarchindep field for Woody:
 
-  >>> for dr in distroseriess:
+  >>> for dr in distroserieses:
   ...      bm.createMissingBuilds(dr)
 
   >>> flush_database_updates()
@@ -316,7 +316,7 @@ Check that we only created new Build entries for the new hoary releases:
   hppa build of test-buildd-6 672 in ubuntu hoary UPDATES
   i386 build of test-buildd-7 673 in ubuntu hoary UPDATES
 
-And have a look at our arch-all release's build:
+And have a look at our arch-all series's build:
 
   >>> b = Build.selectOneBy(sourcepackagerelease=spr_all)
   >>> (b.sourcepackagerelease.name, b.distroarchseries.distroseries.name)
@@ -407,7 +407,7 @@ the sample data:
 
 Now we create builds and buildqueues and check their contents:
 
-  >>> for dr in distroseriess:
+  >>> for dr in distroserieses:
   ...      bm.createMissingBuilds(dr)
   >>> flush_database_updates()
 

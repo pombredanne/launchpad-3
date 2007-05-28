@@ -41,7 +41,7 @@ address:
   >>> from canonical.lp.dbschema import DistroSeriesStatus
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
-  >>> hoary.releasestatus = DistroSeriesStatus.DEVELOPMENT
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
   >>> hoary.changeslist = "hoary-announce@lists.ubuntu.com"
 
 
@@ -176,7 +176,7 @@ Again, no messages were generated since this upload is targeted for
 
 Release hoary, enable uploads to post-release pockets:
 
-  >>> hoary.releasestatus = DistroSeriesStatus.CURRENT
+  >>> hoary.status = DistroSeriesStatus.CURRENT
 
 
 Import the test keys to use 'insecure' policy.

@@ -1,7 +1,7 @@
 Bug Nomination Pages
 ====================
 
-Release targeting is done on the +nominate page of a bug. From here,
+Series targeting is done on the +nominate page of a bug. From here,
 normal users can propose that the bug be fixed in specific distribution
 and product series, and release managers can directly target
 the bug to series for which they are drivers.

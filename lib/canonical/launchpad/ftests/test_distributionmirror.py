@@ -64,18 +64,18 @@ class TestDistributionMirror(LaunchpadFunctionalTestCase):
         expected_file_count = 1
         self.failUnless(self.release_mirror.shouldDisable(expected_file_count))
 
-    def test_delete_all_mirror_cdimage_releases(self):
+    def test_delete_all_mirror_cdimage_serieses(self):
         mirror = self.release_mirror.ensureMirrorCDImageRelease(
             self.hoary, flavour='ubuntu')
         mirror = self.release_mirror.ensureMirrorCDImageRelease(
             self.hoary, flavour='edubuntu')
-        self.failUnless(self.release_mirror.cdimage_releases.count() == 2)
-        self.release_mirror.deleteAllMirrorCDImageReleases()
-        self.failUnless(self.release_mirror.cdimage_releases.count() == 0)
+        self.failUnless(self.release_mirror.cdimage_serieses.count() == 2)
+        self.release_mirror.deleteAllMirrorCDImageSerieses()
+        self.failUnless(self.release_mirror.cdimage_serieses.count() == 0)
 
     def test_archive_mirror_without_content_status(self):
-        self.failIf(self.archive_mirror.source_releases or
-                    self.archive_mirror.arch_releases)
+        self.failIf(self.archive_mirror.source_serieses or
+                    self.archive_mirror.arch_serieses)
         self.failUnless(
             self.archive_mirror.getOverallStatus() == MirrorStatus.UNKNOWN)
 

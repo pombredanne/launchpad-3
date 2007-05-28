@@ -322,11 +322,11 @@ class BuildSet:
         if not archserieses:
             return None
 
-        archrelease_ids = [d.id for d in archserieses]
+        archseries_ids = [d.id for d in archserieses]
 
         return Build.select(
             AND(Build.q.buildstate==BuildStatus.NEEDSBUILD,
-                IN(Build.q.distroarchreleaseID, archseries_ids))
+                IN(Build.q.distroarchseriesID, archseries_ids))
             )
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None):

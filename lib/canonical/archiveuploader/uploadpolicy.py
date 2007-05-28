@@ -30,9 +30,9 @@ def policy_options(optparser):
                          dest="distro", metavar="DISTRO", default="ubuntu",
                          help="Distribution to give back from")
 
-    optparser.add_option("-r", "--release", action="store", default=None,
-                         dest="distrorelease", metavar="DISTRORELEASE",
-                         help="Distribution to give back from.")
+    optparser.add_option("-s", "--series", action="store", default=None,
+                         dest="distroseries", metavar="DISTROSERIES",
+                         help="Distro series to give back from.")
 
     optparser.add_option("-b", "--buildid", action="store", type="int",
                          dest="buildid", metavar="BUILD",
@@ -64,7 +64,7 @@ class AbstractUploadPolicy:
         """Prepare a policy..."""
         self.name = 'abstract'
         self.distro = None
-        self.distrorelease = None
+        self.distroseries = None
         self.pocket = None
         self.archive = None
         self.unsigned_changes_ok = False
@@ -83,33 +83,33 @@ class AbstractUploadPolicy:
         self.options = options
         # Extract and locate the distribution though...
         self.distro = getUtility(IDistributionSet)[options.distro]
-        if options.distrorelease is not None:
-            self.setDistroReleaseAndPocket(options.distrorelease)
+        if options.distroseries is not None:
+            self.setDistroSeriesAndPocket(options.distroseries)
 
-    def setDistroReleaseAndPocket(self, dr_name):
-        """Set the distrorelease and pocket from the provided name.
+    def setDistroSeriesAndPocket(self, dr_name):
+        """Set the distroseries and pocket from the provided name.
 
-        It also sets self.archive to the distrorelease main_archive.
+        It also sets self.archive to the distroseries main_archive.
         """
-        if self.distrorelease is not None:
+        if self.distroseries is not None:
             assert self.archive is not None, "Archive must be set."
             # We never override the policy
             return
 
-        self.distroreleasename = dr_name
-        (self.distrorelease,
-         self.pocket) = self.distro.getDistroReleaseAndPocket(dr_name)
+        self.distroseriesname = dr_name
+        (self.distroseries,
+         self.pocket) = self.distro.getDistroSeriesAndPocket(dr_name)
 
         if self.archive is None:
-            self.archive = self.distrorelease.main_archive
+            self.archive = self.distroseries.main_archive
 
     @property
     def announcelist(self):
         """Return the announcement list address."""
         announce_list = getattr(self.options, 'announcelist', None)
         if (announce_list is None and
-            getattr(self, 'distrorelease', None) is not None):
-            announce_list = self.distrorelease.changeslist
+            getattr(self, 'distroseries', None) is not None):
+            announce_list = self.distroseries.changeslist
         return announce_list
 
     def checkUpload(self, upload):
@@ -122,11 +122,11 @@ class AbstractUploadPolicy:
                 upload.reject(
                     "PPA uploads must be signed by an 'ubuntero'.")
         else:
-            if not self.distrorelease.canUploadToPocket(self.pocket):
+            if not self.distroseries.canUploadToPocket(self.pocket):
                 upload.reject(
                     "Not permitted to upload to the %s pocket in a "
-                    "release in the '%s' state." % (
-                    self.pocket.name, self.distrorelease.releasestatus.name))
+                    "series in the '%s' state." % (
+                    self.pocket.name, self.distroseries.status.name))
 
         # reject PPA uploads by default
         self.rejectPPAUploads(upload)
@@ -208,10 +208,10 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def autoApprove(self, upload):
         """The insecure policy only auto-approves RELEASE pocket stuff.
 
-        Additionally, we only auto-approve if the distrorelease is not FROZEN.
+        Additionally, we only auto-approve if the distroseries is not FROZEN.
         """
         if self.pocket == PackagePublishingPocket.RELEASE:
-            if (self.distrorelease.releasestatus !=
+            if (self.distroseries.status !=
                 DistroSeriesStatus.FROZEN):
                 return True
         return False

@@ -16,7 +16,7 @@ distroseries so that we can upload to it.
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> from canonical.lp.dbschema import DistroSeriesStatus
-  >>> hoary.releasestatus = DistroSeriesStatus.DEVELOPMENT
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
 
 A NascentUpload is a collection of files in a directory. They
 represent what may turn out to be an acceptable upload to a launchpad
@@ -610,9 +610,9 @@ Chuck it all away again:
 And this time, try an upload to -updates, it'll have to be signed etc because
 we're using the insecure policy to check everything in it end-to-end. We have
 to set hoary to CURRENT in order to do this because we're not allowed
-to upload to -UPDATES in a DEVELOPMENT release.
+to upload to -UPDATES in a DEVELOPMENT series.
 
-  >>> hoary.releasestatus = DistroSeriesStatus.CURRENT
+  >>> hoary.status = DistroSeriesStatus.CURRENT
 
 Note that the policy do not have fixed distroseries, it will be
 overridden by the changesfile:
@@ -641,7 +641,7 @@ unapproved.
 
 And pop it back to development now that we're done
 
-  >>> hoary.releasestatus = DistroSeriesStatus.DEVELOPMENT
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
 
 Check the uploader behaviour against a missing orig.tar.gz file,
       bug # 30741.

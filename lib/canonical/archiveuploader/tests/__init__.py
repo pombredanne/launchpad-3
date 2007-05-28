@@ -23,16 +23,16 @@ def datadir(path):
 class MockUploadOptions:
     """Mock upload policy options helper"""
 
-    def __init__(self, distro='ubuntutest', distrorelease=None, buildid=None):
+    def __init__(self, distro='ubuntutest', distroseries=None, buildid=None):
         self.distro = distro
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
         self.buildid = buildid
 
-def getPolicy(name='anything', distro='ubuntu', distrorelease=None,
+def getPolicy(name='anything', distro='ubuntu', distroseries=None,
               buildid=None):
     """Build and return an Upload Policy for the given context."""
     policy = findPolicyByName(name)
-    options = MockUploadOptions(distro, distrorelease, buildid)
+    options = MockUploadOptions(distro, distroseries, buildid)
     policy.setOptions(options)
     return policy
 

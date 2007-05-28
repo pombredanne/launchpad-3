@@ -70,7 +70,7 @@ class DistributionSourcePackageRelease:
             """ % sqlvalues(self.distribution,
                             self.distribution.main_archive,
                             self.sourcepackagerelease),
-            clauseTables=['DistroSeries'],
+            clauseTables=['DistroRelease'],
             orderBy='-datecreated')
 
     @property

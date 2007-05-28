@@ -53,7 +53,7 @@ translatable for that product:
 
 We can also see how many translatables it has:
 
-But for a52dec, where we have no translatable release or Ubuntu package, the
+But for a52dec, where we have no translatable series or Ubuntu package, the
 primary_translatable is nonexistent:
 
     >>> print a52dec.primary_translatable

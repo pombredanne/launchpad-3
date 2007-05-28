@@ -36,7 +36,7 @@ is the Launchpad-bugs-fixed header.
     ...     PackageUploadStatus, PackagePublishingPocket)
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_hoary = ubuntu.getRelease('hoary')
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
     >>> changes = changes_template % pmount_bug_id
     >>> changes_file = getUtility(ILibrarianClient).addFile(
     ...     'pmount.changes', len(changes), StringIO(changes), 'text/plain')
@@ -50,7 +50,7 @@ is the Launchpad-bugs-fixed header.
 
 The DistroSeriesQueueSource items are linke to SourcePackageRelease
 items, but for closing bugs the only thing that mattters is who uploaded
-it, what package name is it, and to what distribution release it was
+it, what package name is it, and to what distribution series it was
 uploaded to.
 
 

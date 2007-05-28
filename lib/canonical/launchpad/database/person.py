@@ -1470,7 +1470,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                        sourcepackagerelease.id
                   FROM sourcepackagerelease
                  WHERE %s
-              ORDER BY uploaddistroseries, sourcepackagename,
+              ORDER BY uploaddistrorelease, sourcepackagename,
                        dateuploaded DESC
               )
               """ % extra

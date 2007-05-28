@@ -1,10 +1,8 @@
 Milestones
 ==========
 
-A milestone is a significant event in a project. A release of a new version of
-a piece of software is a significant event (we're geeks, give us a break.) In
-Malone, milestones can be defined to assign bug fixes to a specific release of
-some software.
+A milestone is a significant event in a project. In Malone, milestones can be
+defined to assign bug fixes to a specific release of some software.
 
 This document is about milestones in Malone.
 
@@ -60,7 +58,7 @@ Now, lets test all of that for DistroSeriess too!
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> kubuntu = getUtility(IDistributionSet).getByName('kubuntu')
-    >>> krunch = kubuntu.getRelease('krunch')
+    >>> krunch = kubuntu.getSeries('krunch')
     >>> new_ms = krunch.newMilestone('1.3rc2')
     >>> print new_ms.name
     1.3rc2

@@ -260,17 +260,17 @@ class BuilddMaster:
 
     def _createMissingBuildsForPublication(self, pubrec, build_archs):
         header = ("build record %s-%s for '%s' " %
-                  (pubrec.sourcepackageseries.name,
-                   pubrec.sourcepackageseries.version,
-                   pubrec.sourcepackageseries.architecturehintlist))
-        assert pubrec.sourcepackageseries.architecturehintlist
+                  (pubrec.sourcepackagerelease.name,
+                   pubrec.sourcepackagerelease.version,
+                   pubrec.sourcepackagerelease.architecturehintlist))
+        assert pubrec.sourcepackagerelease.architecturehintlist
         for archseries in build_archs:
             if not archseries.processors:
                 self._logger.debug(
                     "No processors defined for %s: skipping %s"
                     % (archseries.title, header))
                 return
-            if pubrec.sourcepackageseries.getBuildByArch(
+            if pubrec.sourcepackagerelease.getBuildByArch(
                 archseries, pubrec.archive):
                 # verify this build isn't already present for this
                 # distroarchseries
@@ -280,7 +280,7 @@ class BuilddMaster:
                 header + "Creating %s (%s)"
                 % (archseries.architecturetag, pubrec.pocket.title))
 
-            pubrec.sourcepackageseries.createBuild(
+            pubrec.sourcepackagerelease.createBuild(
                 distroarchseries=archseries,
                 pocket=pubrec.pocket,
                 processor=archseries.default_processor,
@@ -614,7 +614,7 @@ class BuilddMaster:
                 continue
             # either dispatch or mark obsolete builds (sources superseded
             # or removed) as SUPERSEDED.
-            spr = build_candidate.build.sourcepackageseries
+            spr = build_candidate.build.sourcepackagerelease
             if (spr.publishings and spr.publishings[0].status <=
                 dbschema.PackagePublishingStatus.PUBLISHED):
                 self.startBuild(builders, builder, build_candidate)

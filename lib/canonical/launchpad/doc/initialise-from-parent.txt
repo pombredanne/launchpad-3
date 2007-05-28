@@ -49,12 +49,12 @@ Check if it fails for an already released distroseries:
   >>> print stderr
   DEBUG   Acquiring lock
   DEBUG   Initialising connection.
-  DEBUG   Check empty mutable queues in parentrelease
-  DEBUG   Check for no pending builds in parentrelease
+  DEBUG   Check empty mutable queues in parentseries
+  DEBUG   Check for no pending builds in parentseries
   DEBUG   Copying distroarchseriess from parent and setting nominatedarchindep.
   Traceback (most recent call last):
   ...
-  AssertionError: Can not copy distroarchseriess from parent, there are already distroarchseries(s) initialised for this release.
+  AssertionError: Can not copy distroarchseriess from parent, there are already distroarchseries(s) initialised for this series.
   <BLANKLINE>
 
 
@@ -70,8 +70,8 @@ Let's initialise the just created distroseries:
   >>> print stderr
   DEBUG   Acquiring lock
   DEBUG   Initialising connection.
-  DEBUG   Check empty mutable queues in parentrelease
-  DEBUG   Check for no pending builds in parentrelease
+  DEBUG   Check empty mutable queues in parentseries
+  DEBUG   Check for no pending builds in parentseries
   DEBUG   Copying distroarchseriess from parent and setting nominatedarchindep.
   DEBUG   initialising from parent, copying publishing records.
   DEBUG   Committing transaction.
@@ -102,7 +102,7 @@ First we get a binarypackagerelease published in foobuntu:
   >>> pmount_binrel.title
   u'pmount-0.1-1'
 
-Follow BPR.build and discover it was built in the parent release:
+Follow BPR.build and discover it was built in the parent series:
 
   >>> pmount_binrel.build.id
   7
@@ -116,7 +116,7 @@ Now we obtain the sourcepackagerelease from the build:
   u'pmount - 0.1-1'
 
 and check it the ISPR.getBuildByArch() would find out the same build
-record for foobuntu and it's parent release (hoary):
+record for foobuntu and it's parent series (hoary):
 
   >>> foobuntu_pmount = pmount_srcrel.getBuildByArch(
   ...     foobuntu['i386'], foobuntu.main_archive)

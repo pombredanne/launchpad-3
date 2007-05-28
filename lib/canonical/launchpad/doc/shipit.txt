@@ -397,12 +397,12 @@ based on shipit data.
 One of the reports we can generate gives us information about orders shipped
 to each country.
 
-The generateCountryBasedReport() method accepts a current_release_only
+The generateCountryBasedReport() method accepts a current_series_only
 argument that, if True, will include only requests of
 ShipItConstants.current_distroseries.
 
   >>> csv_file = requestset.generateCountryBasedReport(
-  ...     current_release_only=False)
+  ...     current_series_only=False)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
                           Country: Bermuda
@@ -553,7 +553,7 @@ ShipItConstants.current_distroseries.
                         Continent: North America
 
   >>> csv_file = requestset.generateCountryBasedReport(
-  ...     current_release_only=True)
+  ...     current_series_only=True)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
                           Country: Bermuda
@@ -686,12 +686,12 @@ ShipItConstants.current_distroseries.
 There's another report which gives us the number of shipments of all shipment
 sizes we had.
 
-The generateShipmentSizeBasedReport() method accepts a current_release_only
+The generateShipmentSizeBasedReport() method accepts a current_series_only
 argument that, if True, will include only requests of
 ShipItConstants.current_distroseries.
 
   >>> csv_file = requestset.generateShipmentSizeBasedReport(
-  ...     current_release_only=False)
+  ...     current_series_only=False)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
         Number of CDs: 1
@@ -710,7 +710,7 @@ ShipItConstants.current_distroseries.
   Number of Shipments: 2
 
   >>> csv_file = requestset.generateShipmentSizeBasedReport(
-  ...     current_release_only=True)
+  ...     current_series_only=True)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
         Number of CDs: 1
@@ -998,8 +998,8 @@ requests for CDs of the current distroseries or all requests.
         Edubuntu Requested Mac CDs: 0
 
 
-To help identifying if we're reaching new users with every release, we have a
-report which shows the distribution of requests. Both for the current release
+To help identifying if we're reaching new users with every series, we have a
+report which shows the distribution of requests. Both for the current series
 and to the previous one.
 
   >>> csv_file = requestset.generateRequestDistributionReport()
@@ -1008,7 +1008,7 @@ and to the previous one.
   # span across multiple columns, screwing our pprint_csv() function.
   >>> header1, header2, content = csv_file.read().split('\n', 2)
   >>> print header1
-  "","","Current Release Only","","","","","Previous Releases Only",""
+  "","","Current Series Only","","","","","Previous Series Only",""
   >>> print header2
   "","requests","","shipped","","requests","","shipped",""
   >>> pprint_csv(content)
