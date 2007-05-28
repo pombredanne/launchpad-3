@@ -22,7 +22,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
-    ILaunchpadCelebrities, NotFoundError)
+    ILaunchBag, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
@@ -471,6 +471,28 @@ class BranchSet:
         branches = Branch.select('Branch.owner in %s' % quote(owner_ids))
         return branches.prejoin(['product'])
 
+    def _generateBranchQuery(self, query, clauseTables=None):
+        logged_in_user = getUtility(ILaunchBag).user
+        public_clause = '%s AND NOT Branch.private' % query
+        public_branches = Branch.select(
+            public_clause, clauseTables=clauseTables)
+        if logged_in_user is None:
+            return public_branches
+
+        if clauseTables is None:
+            clauseTables = []
+        private_clause = '''%s
+            AND Branch.private
+            AND Branch.id = BranchSubscription.branch
+            AND BranchSubscription.person = TeamParticipation.team
+            AND TeamParticipation.person = %d''' % (query, logged_in_user.id)
+        private_tables = set(clauseTables).union(set(
+            ['BranchSubscription', 'TeamParticipation']))
+        private_branches = Branch.select(
+            private_clause, clauseTables=private_tables)
+        return public_branches.union(
+            private_branches, orderBy=Branch._defaultOrder)
+
     def _lifecycleClause(self, lifecycle_statuses):
         lifecycle_clause = ''
         if lifecycle_statuses:
@@ -483,17 +505,17 @@ class BranchSet:
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
-        subscribed_branches = Branch.select(
+        subscribed_branches = self._generateBranchQuery(
             '''Branch.id = BranchSubscription.branch
             AND BranchSubscription.person = %s %s
             ''' % (person.id, lifecycle_clause),
             clauseTables=['BranchSubscription'])
 
-        owner_author_branches = Branch.select(
+        owner_author_branches = self._generateBranchQuery(
             '''(Branch.owner = %s
             OR Branch.author = %s) %s
             ''' % (person.id, person.id, lifecycle_clause))
-        
+
         return subscribed_branches.union(
             owner_author_branches, orderBy=Branch._defaultOrder)
 
@@ -501,14 +523,14 @@ class BranchSet:
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
-        return Branch.select(
+        return self._generateBranchQuery(
             'Branch.author = %s %s' % (person.id, lifecycle_clause))
 
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None):
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
-        return Branch.select(
+        return self._generateBranchQuery(
             '''Branch.owner = %s AND
             (Branch.author is NULL OR
              Branch.author != %s) %s''' %
@@ -518,7 +540,7 @@ class BranchSet:
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
-        return Branch.select(
+        return self._generateBranchQuery(
             '''Branch.id = BranchSubscription.branch
             AND BranchSubscription.person = %s %s
             ''' % (person.id, lifecycle_clause),
@@ -528,9 +550,9 @@ class BranchSet:
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
-        return Branch.select(
-            'Branch.product = %s %s' % (product.id, lifecycle_clause))
+        query = 'Branch.product = %s %s' % (product.id, lifecycle_clause)
 
+        return self._generateBranchQuery(query, [])
 
 
 class BranchRelationship(SQLBase):
