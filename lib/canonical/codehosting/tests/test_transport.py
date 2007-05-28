@@ -16,18 +16,64 @@ from canonical.codehosting import transport
 
 class FakeLaunchpad:
 
+    def __init__(self):
+        self._person_set = {
+            1: dict(name='foo', displayname='Test User',
+                    emailaddresses=['test@test.com'], wikiname='TestUser',
+                    teams=[1, 2]),
+            2: dict(name='team1', displayname='Test Team'),
+            }
+        self._product_set = {
+            1: dict(name='bar')
+            }
+        self._branch_set = {}
+        self.createBranch(1, 1, 'baz')
+        self.createBranch(1, 1, 'qux')
+        self.createBranch(1, '', 'random')
+        self.createBranch(2, 1, 'qux')
+
+    def _lookup(self, item_set, item_id):
+        row = dict(item_set[item_id])
+        row['id'] = item_id
+        return row
+
+    def createBranch(self, user_id, product_id, branch_name):
+        new_branch = dict(
+            name=branch_name, user_id=user_id, product_id=product_id)
+        for branch in self._branch_set.values():
+            if branch == new_branch:
+                raise ValueError("Already have branch: %r" % (new_branch,))
+        new_id = max(self._branch_set.keys() + [0]) + 1
+        self._branch_set[new_id] = new_branch
+        return new_id
+
+    def fetchProductID(self, name):
+        for product_id, product_info in self._product_set.iteritems():
+            if product_info['name'] == name:
+                return product_id
+        return None
+
     def getUser(self, loginID):
-        assert loginID == 1, \
-               "The Launchpad transport will always know the user id."
-        return {'id': loginID, 'displayname': 'Test User',
-                'emailaddresses': ['test@test.com'],
-                'wikiname': 'TestUser',
-                'teams': [{'id': 2, 'name': 'foo', 'displayname': 'Test User'},
-                          {'id': 3, 'name': 'team1', 'displayname': 'Test Team'}]}
+        user_dict = self._lookup(self._person_set, loginID)
+        user_dict['teams'] = [
+            self._lookup(self._person_set, id) for id in user_dict['teams']]
+        return user_dict
 
     def getBranchesForUser(self, personID):
-        return [(1, 'bar', [(1, 'baz'), (2, 'qux')]),
-                (2, '', [(3, 'random')])]
+        product_branches = {}
+        for branch_id, branch in self._branch_set.iteritems():
+            if branch['user_id'] != personID:
+                continue
+            product_branches.setdefault(
+                branch['product_id'], []).append((branch_id, branch['name']))
+        result = []
+        for product, branches in product_branches.iteritems():
+            if product == '':
+                result.append(('', '', branches))
+            else:
+                result.append(
+                    (product, self._product_set[product]['name'], branches))
+        return result
 
 
 class TestLaunchpadServer(TestCaseInTempDir):
@@ -52,7 +98,7 @@ class TestLaunchpadServer(TestCaseInTempDir):
             '00/00/00/01/',
             self.server.translate_virtual_path('/~foo/bar/baz'))
         self.assertEqual(
-            '00/00/00/02/',
+            '00/00/00/04/',
             self.server.translate_virtual_path('/~team1/bar/qux'))
         self.assertEqual(
             '00/00/00/03/',
@@ -185,13 +231,48 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         backing_transport = self.backing_transport.clone('00/00/00/01')
         self.assertEqual(list(backing_transport.iter_files_recursive()), files)
 
-    def test_make_toplevel_directory(self):
+    def test_make_invalid_user_directory(self):
+        # TransportNotPossible is raised when one performs an operation on a
+        # path that isn't of the form '~user/...'.
+        transport = get_transport(self.server.get_url())
+        self.assertRaises(
+            errors.TransportNotPossible, transport.mkdir, 'apple')
+
+    def test_make_valid_user_directory(self):
         # Making a top-level directory is not supported by the Launchpad
         # transport.
         transport = get_transport(self.server.get_url())
         self.assertRaises(errors.NoSuchFile, transport.mkdir, '~apple')
-        self.assertRaises(
-            errors.TransportNotPossible, transport.mkdir, 'apple')
+
+    def test_make_existing_user_directory(self):
+        # Making a user directory raises an error. We don't really care what
+        # the error is, but it should be one of FileExists,
+        # TransportNotPossible or NoSuchFile
+        transport = get_transport(self.server.get_url())
+        self.assertRaises(errors.NoSuchFile, transport.mkdir, '~foo')
+
+    def test_make_product_directory_for_nonexistent_product(self):
+        # Making a directory for a non-existent product is not allowed.
+        # Products must first be registered in Launchpad.
+        transport = get_transport(self.server.get_url())
+        self.assertRaises(errors.NoSuchFile, transport.mkdir, '~foo/pear')
+
+    def test_make_product_directory_for_existent_product(self):
+        # The transport raises a FileExists error if it tries to make the
+        # directory of a product that is registered with Launchpad.
+
+        # XXX - do we care what the error is? It should be TransportNotPossible
+        # or FileExists. NoSuchFile might be acceptable though.
+        # Jonathan Lange, 2007-05-07
+        transport = get_transport(self.server.get_url())
+        self.assertRaises(errors.NoSuchFile, transport.mkdir, '~foo/bar')
+
+    def test_make_branch_directory(self):
+        # We allow users to create new branches by pushing them beneath an
+        # existing product directory.
+        transport = get_transport(self.server.get_url())
+        transport.mkdir('~foo/bar/banana')
+        self.assertTrue(transport.has('~foo/bar/banana'))
 
 
 def test_suite():

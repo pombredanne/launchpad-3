@@ -45,6 +45,23 @@ class LaunchpadServer(Server):
                     yield ((team_dict['name'], product_name, branch_name),
                            branch_id)
 
+    def mkdir(self, virtual_path):
+        path_segments = virtual_path.strip('/').split('/')
+        if len(path_segments) != 3:
+            raise NoSuchFile(virtual_path)
+        branch_id = self._make_branch(*path_segments)
+        self.backing_transport.mkdir(branch_id_to_path(branch_id))
+        self._branches = dict(self._iter_branches())
+
+    def _make_branch(self, user, product, branch):
+        if not user.startswith('~'):
+            raise TransportNotPossible(
+                'Path must start with user or team directory: %r' % (user,))
+        user = user[1:]
+        user_id = self.authserver.getUser(self.user_id)['id']
+        product_id = self.authserver.fetchProductID(product)
+        return self.authserver.createBranch(user_id, product_id, branch)
+
     def translate_virtual_path(self, virtual_path):
         user, product, branch, path = split(virtual_path.lstrip('/'), '/', 4)
         if not user.startswith('~'):
@@ -131,7 +148,12 @@ class LaunchpadTransport(Transport):
         return self._call('lock_write', relpath)
 
     def mkdir(self, relpath, mode=None):
-        return self._call('mkdir', relpath, mode)
+        try:
+            path = self.server.translate_virtual_path(self._abspath(relpath))
+        except KeyError:
+            return self.server.mkdir(self._abspath(relpath))
+        else:
+            return self.backing_transport.mkdir(path, mode)
 
     def put_file(self, relpath, f, mode=None):
         return self._call('put_file', relpath, f, mode)
