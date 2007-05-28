@@ -50,7 +50,10 @@ class LaunchpadServer(Server):
         if len(path_segments) != 3:
             raise NoSuchFile(virtual_path)
         branch_id = self._make_branch(*path_segments)
-        self.backing_transport.mkdir(branch_id_to_path(branch_id))
+        segments = []
+        for segment in branch_id_to_path(branch_id).split('/'):
+            segments.append(segment)
+            self.backing_transport.mkdir('/'.join(segments))
 
     def _make_branch(self, user, product, branch):
         if not user.startswith('~'):
@@ -154,7 +157,7 @@ class LaunchpadTransport(Transport):
         except KeyError:
             return self.server.mkdir(self._abspath(relpath))
         else:
-            return self.backing_transport.mkdir(path, mode)
+            return self.server.backing_transport.mkdir(path, mode)
 
     def put_file(self, relpath, f, mode=None):
         return self._call('put_file', relpath, f, mode)

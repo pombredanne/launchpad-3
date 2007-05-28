@@ -231,31 +231,42 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         backing_transport = self.backing_transport.clone('00/00/00/01')
         self.assertEqual(list(backing_transport.iter_files_recursive()), files)
 
+
+class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
+
+    def setUp(self):
+        TestCaseWithMemoryTransport.setUp(self)
+        self.authserver = FakeLaunchpad()
+        self.user_id = 1
+        self.backing_transport = self.get_transport()
+        self.server = transport.LaunchpadServer(
+            self.authserver, self.user_id, self.backing_transport)
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+        self.transport = get_transport(self.server.get_url())
+
     def test_make_invalid_user_directory(self):
         # TransportNotPossible is raised when one performs an operation on a
         # path that isn't of the form '~user/...'.
-        transport = get_transport(self.server.get_url())
         self.assertRaises(
-            errors.TransportNotPossible, transport.mkdir, 'apple')
+            errors.TransportNotPossible, self.transport.mkdir, 'apple')
 
     def test_make_valid_user_directory(self):
         # Making a top-level directory is not supported by the Launchpad
         # transport.
-        transport = get_transport(self.server.get_url())
-        self.assertRaises(errors.NoSuchFile, transport.mkdir, '~apple')
+        self.assertRaises(errors.NoSuchFile, self.transport.mkdir, '~apple')
 
     def test_make_existing_user_directory(self):
         # Making a user directory raises an error. We don't really care what
         # the error is, but it should be one of FileExists,
         # TransportNotPossible or NoSuchFile
-        transport = get_transport(self.server.get_url())
-        self.assertRaises(errors.NoSuchFile, transport.mkdir, '~foo')
+        self.assertRaises(errors.NoSuchFile, self.transport.mkdir, '~foo')
 
     def test_make_product_directory_for_nonexistent_product(self):
         # Making a directory for a non-existent product is not allowed.
         # Products must first be registered in Launchpad.
         transport = get_transport(self.server.get_url())
-        self.assertRaises(errors.NoSuchFile, transport.mkdir, '~foo/pear')
+        self.assertRaises(errors.NoSuchFile, self.transport.mkdir, '~foo/pear')
 
     def test_make_product_directory_for_existent_product(self):
         # The transport raises a FileExists error if it tries to make the
@@ -264,26 +275,35 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         # XXX - do we care what the error is? It should be TransportNotPossible
         # or FileExists. NoSuchFile might be acceptable though.
         # Jonathan Lange, 2007-05-07
-        transport = get_transport(self.server.get_url())
-        self.assertRaises(errors.NoSuchFile, transport.mkdir, '~foo/bar')
+        self.assertRaises(errors.NoSuchFile, self.transport.mkdir, '~foo/bar')
 
     def test_make_branch_directory(self):
         # We allow users to create new branches by pushing them beneath an
         # existing product directory.
-        transport = get_transport(self.server.get_url())
-        transport.mkdir('~foo/bar/banana')
+        self.transport.mkdir('~foo/bar/banana')
         # This implicitly tests that the branch has been created in the
         # database. The call to transport.has will blow up if it can't map the
         # path to a branch ID, there won't be a branch ID unless the branch is
         # in the database.
-        self.assertTrue(transport.has('~foo/bar/banana'))
+        self.assertTrue(self.transport.has('~foo/bar/banana'))
 
     def test_make_junk_branch(self):
         # Users can make branches beneath their '+junk' folder.
-        transport = get_transport(self.server.get_url())
-        transport.mkdir('~foo/+junk/banana')
+        self.transport.mkdir('~foo/+junk/banana')
         # See comment in test_make_branch_directory.
-        self.assertTrue(transport.has('~foo/+junk/banana'))
+        self.assertTrue(self.transport.has('~foo/+junk/banana'))
+
+    def test_directory_inside_branch(self):
+        # We allow users to create new branches by pushing them beneath an
+        # existing product directory.
+        self.transport.mkdir('~foo/bar/banana')
+        self.transport.mkdir('~foo/bar/banana/.bzr')
+        # WHITEBOX ALERT. The transport doesn't have any API for providing the
+        # branch ID (which is a good thing), and we need the id to find the
+        # path on the underlying transport.
+        branch_id = self.server._branches[('foo', 'bar', 'banana')]
+        self.assertTrue(
+            self.backing_transport.has(transport.branch_id_to_path(branch_id)))
 
 
 def test_suite():
