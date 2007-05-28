@@ -36,9 +36,9 @@ Subscribe the other user to this bug.
 The user is notified that the other user has been subscribed.
 
     >>> for tag in find_tags_by_class(user_browser.contents,
-    ...     "informational message"):
-    ...     print tag.renderContents()
-    'No Privileges Person' has been subscribed to this bug.
+    ...     'informational message'):
+    ...     tag.renderContents()
+    'No Privileges Person has been subscribed to this bug.'
 
 The other user is listed as a subscriber to this bug.
 
