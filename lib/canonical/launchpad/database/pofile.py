@@ -393,7 +393,9 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         # POT set has been changed in Launchpad if it contains active
         # translation which didn't come from a published package
-        # (iow, it's different from a published translation).
+        # (iow, it's different from a published translation: this only
+        # lists translations which have actually changed in LP, not
+        # translations which are 'new' and only exist in LP).
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
@@ -996,7 +998,7 @@ class DummyPOFile(RosettaStats):
         """See IPOFile."""
         return self.potemplate.getPOTMsgSets(slice)
 
-    def getPOTMsgChangedInLaunchpad(self, slice=None):
+    def getPOTMsgSetChangedInLaunchpad(self, slice=None):
         """See IPOFile."""
         return None
 

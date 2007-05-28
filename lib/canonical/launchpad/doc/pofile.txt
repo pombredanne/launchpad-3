@@ -586,6 +586,81 @@ exports it as UTF-8
   "Content-Type: text/plain; charset=UTF-8\n"
   ...
 
+== getPOTMsgSetChangedInLaunchpad ==
+
+This method returns only those POTMsgSet's which contain translation
+submissions through Launchpad which change existing published translations.
+
+Lets get Evolution Spanish translation in distribution Hoary.
+
+  >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
+  >>> sourcepackagename = sourcepackagenameset['evolution']
+  >>> distributionset = getUtility(IDistributionSet)
+  >>> distribution = distributionset['ubuntu']
+  >>> release = distribution['hoary']
+  >>> potemplateset = getUtility(IPOTemplateSet)
+  >>> potemplatesubset = potemplateset.getSubset(
+  ...     distrorelease=release, sourcepackagename=sourcepackagename)
+  >>> potemplate = potemplatesubset['evolution-2.2']
+  >>> pofile_changed = potemplate.getPOFileByLang('es')
+
+This translation file already contains one message which has been changed in
+Launchpad.
+
+  >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
+  >>> len(potmsgsets)
+  1
+
+We make sure that submissions on untranslated strings are not considered
+'changed in Launchpad', since this method is mainly designed to help
+translators revert translations to published translations.
+
+Lets get a single untranslated POTMsgSet.
+
+  >>> untranslated = list(pofile_changed.getPOTMsgSetUntranslated())[0]
+  >>> untranslated is None
+  False
+  >>> pomsgset = pofile_changed.getPOMsgSet(untranslated.primemsgid_.msgid)
+  >>> pomsgset is None
+  False
+
+Now, lets provide a translation for it.
+
+  >>> import datetime
+  >>> import pytz
+  >>> UTC = pytz.timezone('UTC')
+  >>> pomsgset.updateTranslationSet(
+  ...     pofile_changed.owner, {0: u'sample translation'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+
+And make sure that the count of changed in Launchpad hasn't changed.
+
+  >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
+  >>> len(potmsgsets)
+  1
+
+Now, lets change translation for a message which already has a published
+translation.  First we need to find a message with active, published
+translation:
+
+  >>> for pomsgset in pofile_changed:
+  ...     submission = pomsgset.getPublishedSubmission(0)
+  ...     if submission and submission.active:
+  ...         break
+  >>> pomsgset is None
+  False
+
+Lets re-translate that:
+
+  >>> pomsgset.updateTranslationSet(
+  ...     pofile_changed.owner, {0: u'new translation'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+
+And make sure that the count of messages changed in Launchpad _has_ changed:
+
+  >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
+  >>> len(potmsgsets)
+  2
 
 = POFile Security tests =
 
