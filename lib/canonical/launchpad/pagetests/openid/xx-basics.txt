@@ -24,30 +24,8 @@ We are going to fake a consumer for these examples. In order to ensure
 that the consumer is being fed the correct replies, we register a view
 that renders the parameters in the response in an easily testable format.
 
->>> from StringIO import StringIO
->>> from canonical.launchpad.webapp.publisher import LaunchpadView
->>> from zope.publisher.interfaces.browser import IBrowserPublisher
->>> from zope.interface import implements
->>> class ConsumerView(LaunchpadView):
-...     implements(IBrowserPublisher)
-...     def render(self):
-...         out = StringIO()
-...         print >> out, 'Consumer received %s' % self.request.method
-...         keys = sorted(self.request.form.keys())
-...         for key in keys:
-...             print >> out, '%s:%s' % (key, self.request.form[key])
-...         return out.getvalue()
-...     def browserDefault(self, request):
-...         return self, ()
-...
->>> from zope.security.checker import defineChecker, Checker, CheckerPublic
->>> defineChecker(ConsumerView, Checker({
-...     '__call__': CheckerPublic,
-...     'browserDefault': CheckerPublic,
-...     'render': CheckerPublic,
-...     }))
->>> from zope.app.testing.ztapi import browserView
->>> browserView(None, '+openid-consumer', ConsumerView)
+>>> from canonical.launchpad.ftests.openid import install_consumer
+>>> install_consumer()
 
 NB. The plus is in the query to ensure this test is running with an up to
 date enough Zope3
@@ -65,12 +43,14 @@ tag to allow OpenID consumers to determine the URL of the OpenID server to
 be contacted.
 
 >>> anon_browser.open('http://launchpad.dev/~sabdfl')
->>> print '\n' + anon_browser.contents
-<BLANKLINE>
-...
+>>> print anon_browser.contents
+<...
 <head>
 ...
 <link rel="openid.server" href="http://openid.launchpad.dev/" />
+<link
+    rel="openid.delegate"
+    href="http://openid.launchpad.dev/+openid/+id/temp1" />
 </head>
 ...
 
@@ -196,10 +176,9 @@ Once logged in, the user is redirected to the 'decide' page, where the
 user is informed about what is going on and they are given the oppertunity
 to allow authorization or decline.
 
->>> print '\n' + sabdfl_browser.contents
-<BLANKLINE>
-...
-    <form method="get" action=".">
+>>> print find_main_content(sabdfl_browser.contents)
+<...
+    <form method="post" action=".">
         <input type="hidden" name="token"
             value="..." />
         <select name="allow_duration">

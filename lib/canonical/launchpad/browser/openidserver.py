@@ -37,7 +37,9 @@ from canonical.launchpad.interfaces import (
         ILaunchpadOpenIdStoreFactory, IPersonSet, UnexpectedFormData,
         )
 from canonical.launchpad.webapp import LaunchpadView, canonical_url
-from canonical.launchpad.webapp.publisher import RedirectionView, Navigation
+from canonical.launchpad.webapp.publisher import (
+        stepthrough, Navigation, RedirectionView,
+        )
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 
@@ -56,6 +58,12 @@ class IOpenIdView(Interface):
 
 class OpenIdView(LaunchpadView):
     implements(IOpenIdView)
+
+    def publishTraverse(self, request, name):
+        # XXX: Argh! Navigation doesn't seem to be hooked into view traversal
+        # -- StuartBishop 20070428
+        nav = OpenIdViewNavigation(self, request)
+        return nav.publishTraverse(request, name)
 
     openid_request = None
 
@@ -104,7 +112,9 @@ class OpenIdView(LaunchpadView):
 
         # Handle checkid_immediate requests.
         if self.openid_request.mode == 'checkid_immediate':
-            self.login = self.extractName(self.openid_request.identity)
+            self.login = self.getPersonNameByIdentity(
+                    self.openid_request.identity
+                    )
             if self.isAuthorized():
                 openid_response = self.openid_request.answer(True)
             else:
@@ -113,7 +123,6 @@ class OpenIdView(LaunchpadView):
                     )
         # Handle checkid_setup requests.
         elif self.openid_request.mode == 'checkid_setup':
-
             # Determine the account we are trying to authenticate with.
             # The consumer might have sent us an identity URL we can
             # extract the identifier from, or maybe sent us a token
@@ -124,13 +133,16 @@ class OpenIdView(LaunchpadView):
                 if self.user is None:
                     raise Unauthorized("You must be logged in to continue")
                 self.login = self.user.name
-                self.openid_request.identity = '%s~%s' % (
-                        allvhosts.configs['mainsite'].rooturl, self.login
+                self.openid_request.identity = '%s+openid/+id/%s' % (
+                        allvhosts.configs['openid'].rooturl,
+                        self.user.openid_identifier
                         )
 
             else:
                 # Consumer sent us an identity URL
-                self.login = self.extractName(self.openid_request.identity)
+                self.login = self.getPersonNameByIdentity(
+                        self.openid_request.identity
+                        )
                 if self.login is None:
                     if self.user is None:
                         self.login = 'username'
@@ -172,46 +184,65 @@ class OpenIdView(LaunchpadView):
             response.setHeader(header, value)
         return webresponse.body
 
-    def extractName(self, identity):
-        """Return the Person.name from the OpenID identitifier.
+    def getPersonByIdentity(self, identity):
+        """Return the Person from the OpenID identitifier.
         
         Returns None if the identity was not a valid Launchpad OpenID
         identifier. This includes checks that the name belongs to a valid
         person and is not a team.
 
         >>> view = OpenIdView(None, None)
-        >>> view.extractName('foo')
-        >>> view.extractName('https://launchpad.dev/~admins')
-        >>> view.extractName('http://example.com/~sabdfl')
-        >>> view.extractName('http://launchpad.dev/~sabdfl')
-        'sabdfl'
-        >>> view.extractName('https://launchpad.dev/~sabdfl')
-        'sabdfl'
-        >>> view.extractName('https://launchpad.dev/%7Esabdfl')
-        'sabdfl'
-        >>> view.extractName('https://launchpad.dev/~sabdfl/')
-        'sabdfl'
+        >>> view.getPersonByIdentity('foo')
+        >>> view.getPersonByIdentity('https://launchpad.dev/~admins')
+        >>> view.getPersonByIdentity('http://example.com/~sabdfl')
+        >>> view.getPersonByIdentity('http://launchpad.dev/~sabdfl').name
+        u'sabdfl'
+        >>> view.getPersonByIdentity('https://launchpad.dev/~sabdfl').name
+        u'sabdfl'
+        >>> view.getPersonByIdentity('https://launchpad.dev/%7Esabdfl').name
+        u'sabdfl'
+        >>> view.getPersonByIdentity('https://launchpad.dev/~sabdfl/').name
+        u'sabdfl'
+        >>> view.getPersonByIdentity(
+        ...     'https://openid.launchpad.dev/+openid/+id/temp1').name
+        u'sabdfl'
+        >>> view.getPersonByIdentity(
+        ...     'http://openid.launchpad.dev/+openid/+id/temp1').name
+        u'sabdfl'
         """
-        rooturl = allvhosts.configs['mainsite'].rooturl
-        if rooturl.startswith('http:'):
-            url_match_string = 'https?' + re.escape(rooturl[4:])
-        elif rooturl.startswith('https:'):
-            url_match_string = 'https?' + re.escape(rooturl[5:])
+        root_url = allvhosts.configs['mainsite'].rooturl
+        if root_url.startswith('http:'):
+            url_match_string = 'https?' + re.escape(root_url[4:])
         else:
-            raise AssertionError("Invalid root url %s" % rooturl)
+            url_match_string = 'https?' + re.escape(root_url[5:])
 
-        # Note that we accept
+        # Note that we accept both http and https urls.
         match = re.search(
                 r'^\s*%s(?:~|%%7E)(\w+)/?\s*$' % url_match_string, identity
                 )
 
-        if match is None:
-            return None
-
-        name = match.group(1)
-
         person_set = getUtility(IPersonSet)
-        person = person_set.getByName(name)
+
+        if match is not None:
+            person = person_set.getByName(match.group(1))
+
+        else:
+            openid_url = allvhosts.configs['openid'].rooturl
+            if openid_url.startswith('http:'):
+                url_match_string = 'https?' + re.escape(openid_url[4:])
+            else:
+                url_match_string = 'https?' + re.escape(openid_url[5:])
+
+            url_match_string += re.escape('+openid/+id/')
+
+            match = re.search(
+                    r'^\s*%s(\w+)/?\s*$' % url_match_string, identity
+                    )
+
+            if match is None:
+                return None
+
+            person = person_set.getByOpenIdIdentifier(match.group(1))
 
         if person is None:
             return None
@@ -219,7 +250,23 @@ class OpenIdView(LaunchpadView):
         if not person.is_openid_enabled:
             return None
 
-        return name
+        return person
+
+    def getPersonNameByIdentity(self, identity):
+        """Return the Person.name for the given Identity URL, or None.
+
+        >>> view = OpenIdView(None, None)
+        >>> view.getPersonNameByIdentity('foo')
+        >>> view.getPersonNameByIdentity('https://launchpad.dev/~admins')
+        >>> view.getPersonNameByIdentity('http://example.com/~sabdfl')
+        >>> view.getPersonNameByIdentity('http://launchpad.dev/~sabdfl')
+        u'sabdfl'
+        """
+        person = self.getPersonByIdentity(identity)
+        if person is None:
+            return None
+        else:
+            return person.name
 
     @property
     def trust_root(self):
@@ -330,7 +377,9 @@ class OpenIdView(LaunchpadView):
         """
         # If the user is not authenticated as the user owning the
         # identifier, bounce them to the login page.
-        self.login = self.extractName(self.openid_request.identity)
+        self.login = self.getPersonNameByIdentity(
+                self.openid_request.identity
+                )
         if not self.isAuthenticated():
             raise Unauthorized(
                     "You are not yet authorized to use this OpenID identifier."
@@ -374,8 +423,32 @@ class OpenIdView(LaunchpadView):
         return ISession(self.request)[SESSION_PKG_KEY]
 
 
-class OpenIdNavigation(Navigation):
+class OpenIdViewNavigation(Navigation):
     usedfor = IOpenIdView
+
+    @stepthrough('+email')
+    def traverse_email(self, name):
+        # Allow traversal to email addresses, redirecting to the
+        # user's permanent OpenID URL.
+        email = getUtility(IEmailAddressSet).getByEmail(name)
+        if email is not None:
+            person = getUtility(IPersonSet).get(email.personID)
+            target = '%s+openid/+id/%s' % (
+                    allvhosts.configs['openid'].rooturl,
+                    person.openid_identifier
+                    )
+            return RedirectionView(target, self.request, 303)
+        else:
+            return None
+
+    @stepthrough('+id')
+    def traverse_id(self, name):
+        person = getUtility(IPersonSet).getByOpenIdIdentifier(name)
+        if person is not None:
+            return MinimalOpenIdIdentityView(self.request, person)
+        else:
+            return None
+    
     def traverse(self, name):
         # Provide a permanent OpenID identity for use by the Ubuntu shop
         # or other services that cannot cope with name changes.
@@ -387,15 +460,6 @@ class OpenIdNavigation(Navigation):
             person = getUtility(IPersonSet).get(person_id)
             if person is not None:
                 return MinimalOpenIdIdentityView(self.request, person)
-
-        # Allow traversal to email addresses, redirecting to the
-        # user's permanent OpenID URL.
-        email = getUtility(IEmailAddressSet).getByEmail(name)
-        if email is not None:
-            target = '%s+openid/%d' % (
-                    allvhosts.configs['openid'].rooturl, email.personID
-                    )
-            return RedirectionView(target, self.request, 303)
 
         raise NotFoundError(name)
 
@@ -422,17 +486,19 @@ class MinimalOpenIdIdentityView:
         self.context = context
 
     def __call__(self):
+        # XXX: No idea how to make this next line work. Hardcode for now
+        # -- StuartBishop 20070528
+        #person_url = canonical_url(self.context, rootsite='openid')
+        openid_identifier = self.context.openid_identifier
         server_url = allvhosts.configs['openid'].rooturl
-        person_id = self.context.id
-        person_url = canonical_url(self.context, rootsite='mainsite')
+        person_url = '%s+openid/+id/%s' % (server_url, openid_identifier)
         return textwrap.dedent("""\
                 <html>
                 <head>
                 <link rel="openid.server" href="%(server_url)s">
-                <link rel="openid.delegate" href="%(person_url)s">
                 </head>
                 <body>
-                <h1>OpenID Identity URL #%(person_id)d</h1>
+                <h1>OpenID Identity URL %(openid_identifier)s</h1>
                 </body>
                 </html>
                 """ % vars())

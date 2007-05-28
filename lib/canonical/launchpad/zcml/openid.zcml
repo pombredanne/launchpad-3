@@ -11,7 +11,7 @@
 
     <browser:navigation
         module="canonical.launchpad.browser.openidserver"
-        classes="OpenIdNavigation"
+        classes="OpenIdViewNavigation"
         />
 
     <content class="canonical.launchpad.database.OpenIdAuthorization">
