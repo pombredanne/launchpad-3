@@ -199,7 +199,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now."""
         if upload.is_ppa:
-            if upload.changes.signer.is_ubuntero:
+            if not upload.changes.signer.is_ubuntero:
                 upload.reject(
                     "PPA uploads must be signed by an 'ubuntero'.")
         else:
