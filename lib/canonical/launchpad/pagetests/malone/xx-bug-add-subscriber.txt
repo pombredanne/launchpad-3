@@ -5,45 +5,36 @@ In addition to subscribing / unsubscribing yourself, it is possible to add a
 person as a subscriber to the bug. You would use this feature to subscribe
 someone else to the bug.
 
-You have to be logged in to subscribe someone else.
+Anonymous users cannot subscribe someone else to a bug.
 
-    >>> test_url = 'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
-    >>> bug_url = 'http://bugs.launchpad.dev/firefox/+bug/1'
-    
     >>> anon_browser.handleErrors = True
-    >>> anon_browser.open(bug_url)
-    >>> link = anon_browser.getLink('Subscribe someone else')
-    >>> link.click()
-    >>> anon_browser.url == test_url
-    False
-    
-    >>> user_browser.open(bug_url)
-    >>> link = user_browser.getLink('Subscribe someone else')
-    >>> link.click()
-    >>> user_browser.url == test_url
-    True
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+    >>> anon_browser.getLink('Subscribe someone else').click()
+    >>> anon_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber/+login'
 
-Lets make sure our subscribee isn't already subscribed.
+Users who are logged in can subscribe someone else to a bug.
 
-    >>> subscribee = 'no-priv'
-    >>> subscribee_name = 'No Privileges Person'
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+    >>> user_browser.getLink('Subscribe someone else').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
 
-    >>> from canonical.launchpad.ftests.test_pages import find_portlet
-    >>> user_browser.open(bug_url)
+Make sure the other user is not already subscribed.
+
     >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
-    >>> subscribee_name not in subs('ul')[0].renderContents()
+    >>> 'No Privileges Person' not in subs('ul')[0].renderContents()
     True
 
-Now, we'll subscribe our subscribee to the bug.
+Subscribe the other user to this bug.
 
-    >>> user_browser.open(test_url)
-    >>> user_browser.getControl("Person").value = subscribee
+    >>> user_browser.getControl("Person").value = 'no-priv'
     >>> user_browser.getControl("Add").click()
-    >>> user_browser.url == bug_url
-    True
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1'
 
-We should see our subscribee in the list of subscribers to this bug.
+The other user is listed as a subscriber to this bug.
 
     >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
-    >>> subscribee_name in subs('ul')[0].renderContents()
-    True
+    >>> subs('ul')[0].renderContents()
+    '...No Privileges Person...'
