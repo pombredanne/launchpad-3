@@ -43,6 +43,7 @@ And set up a prospective MultiTableCopy on them.
 
     >>> copier = MultiTableCopy('test', ['numeric', 'textual'], 0.1, 1)
 
+
 === Ordering ===
 
 We're about to start extracting data from these tables.  But we can't do that
