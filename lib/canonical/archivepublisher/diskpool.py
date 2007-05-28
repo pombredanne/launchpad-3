@@ -111,11 +111,11 @@ class DiskPoolEntry:
     instance of this class unless you need to know what's already on
     the disk for this file.
 
-    'tempath' must be in the same filesystem than 'rootpath', it will be
-    used to store the instalation candidade while it is being downloaded
-    from Librarian.
+    'tempath' must be in the same filesystem as 'rootpath', it will be
+    used to store the instalation candidate while it is being downloaded
+    from the Librarian.
 
-    Remaining files in the 'temppath' indicated instalation failures and
+    Remaining files in the 'temppath' indicated installation failures and
     require manual removal after further investigation.
     """
     def __init__(self, rootpath, temppath, source, filename, logger):
@@ -351,9 +351,9 @@ class DiskPoolEntry:
 class DiskPool:
     """Scan a pool on the filesystem and record information about it.
 
-    Its contructor receives 'rootpath', which is the pool path where the
+    Its constructor receives 'rootpath', which is the pool path where the
     files will be installed, and the 'temppath', which is a temporary
-    directory used to store the instalation candidate from librarian.
+    directory used to store the installation candidate from librarian.
 
     'rootpath' and 'temppath' must be in the same filesystem, see
     DiskPoolEntry for further information.
@@ -366,6 +366,8 @@ class DiskPool:
             self.rootpath += "/"
 
         self.temppath = temppath
+        if not temppath.endswith("/"):
+            self.temppath += "/"
 
         self.entries = {}
         self.logger = logger

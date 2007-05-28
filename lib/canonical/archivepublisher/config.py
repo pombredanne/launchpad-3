@@ -81,6 +81,7 @@ class Config(object):
         # XXX cprov 20070426: we should build all the previous attributes
         # dynamically like this. It would reduce the configuration complexity.
         # Even before we have it properly modeled in LPDB.
+        # See bug #45270 for further information.
         self.temproot = os.path.join(
             self.distroroot, '%s-temp' % self.distroName)
 

@@ -82,6 +82,7 @@ class TestPool(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.pool_path)
+        shutil.rmtree(self.temp_path)
 
     def testSimpleAdd(self):
         """Adding a new file should work."""
