@@ -12,20 +12,6 @@ case, it means being logged in.
 
 So let's login and add a comment.
 
-    >>> import re
-    >>> from BeautifulSoup import BeautifulSoup
-
-    >>> def get_feedback_messages(browser):
-    ...     soup = BeautifulSoup(browser.contents)
-    ...     feedback_messages = []
-    ...     for div_tag in soup('div',
-    ...         {'class': ['message',
-    ...                    'informational message',
-    ...                    'error message']}):
-    ...         feedback_messages.append(div_tag.string)
-    ...
-    ...     return feedback_messages
-
     >>> user_browser.open(
     ...     "http://bugs.launchpad.dev/firefox/+bug/1/+addcomment-form")
     >>> user_browser.getControl("Comment").value = "a test comment"

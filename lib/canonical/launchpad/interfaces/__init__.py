@@ -153,4 +153,4 @@ from canonical.launchpad.interfaces.developmentmanifest import *
 from canonical.launchpad.interfaces.distrocomponentuploader import *
 
 from canonical.launchpad.interfaces.cal import *
-
+from canonical.launchpad.interfaces.archive import *

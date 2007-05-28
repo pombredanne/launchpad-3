@@ -11,7 +11,7 @@
           interface="canonical.launchpad.interfaces.IBranch"
           />
       <require
-          permission="zope.Public"
+          permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IBranch"
           />
     </content>

@@ -113,6 +113,11 @@ class IBranch(IHasOwner):
         title=_('The last message we got when mirroring this branch '
                 'into supermirror.'), required=False, readonly=False)
 
+    private = Bool(
+        title=_("Keep branch confidential"), required=False,
+        description=_("Make this branch visible only to its subscribers"),
+        default=False)
+
     # People attributes
     """Product owner, it can either a valid Person or Team
             inside Launchpad context."""
@@ -122,11 +127,6 @@ class IBranch(IHasOwner):
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "
                       "does not have a Launchpad account."))
-    visibility_team = Choice(
-        title=_('Visibility Team'), required=False,
-        vocabulary='ValidPersonOrTeam', description=_(
-        "The team that can see the branch.  If None, then the branch "
-        "is visible to all."))
 
     # Product attributes
     product = Choice(

@@ -7,25 +7,28 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
+# XXX: thumper 2007-05-25
+# This import should really be tidied up. Made into alphabetical
+# order ideally.
 from canonical.launchpad.interfaces import (
-    IBazaarApplication, IBranch, IBuild, IBuilder, IBuilderSet,
-    IBug, IBugAttachment, IBugBranch, IBugNomination, IBugTracker,
-    IDistribution, IDistributionMirror, IDistroRelease, IDistroReleaseQueue,
-    IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguageSet,
-    ILaunchpadCelebrities, IMilestone, IPackageUploadQueue, IPerson,
-    IPOFile, IPOTemplate, IPOTemplateName, IPOTemplateNameSet,
-    IPoll, IPollOption, IPollSubset, IProduct, IProductRelease,
-    IProductSeries, IQuestion, IRequestedCDs, IShipItApplication,
-    IShippingRequest, IShippingRequestSet, IShippingRun, ISourcePackage,
-    ISpecification, ISpecificationSubscription, ISprint, ISprintSpecification,
-    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
-    ITranslator, ITranslationGroup, ITranslationGroupSet,
-    ITranslationImportQueue, ITranslationImportQueueEntry,
-    )
+    IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
+    IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
+    ITranslationGroup, ITranslationGroupSet, IProduct, IProductSeries,
+    IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
+    ISourcePackage, ILaunchpadCelebrities, IDistroRelease, IBugTracker,
+    IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
+    IShippingRequest, IShippingRequestSet, IRequestedCDs,
+    IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
+    IShippingRun, ISpecification, IQuestion, ITranslationImportQueueEntry,
+    ITranslationImportQueue, IDistributionMirror, IHasBug,
+    IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
+    IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
+    IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
+    IDistroReleaseLanguage, IBranch)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import PackageUploadStatus
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -783,6 +786,7 @@ class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueue
 
+
 class EditPackageUploadQueue(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
     usedfor = IPackageUploadQueue
@@ -807,20 +811,20 @@ class ViewPackageUploadQueue(EditPackageUploadQueue):
         if EditPackageUploadQueue.checkAuthenticated(self, user):
             return True
         # deny access to non-admin on unapproved records
-        if self.obj.status == DistroReleaseQueueStatus.UNAPPROVED:
+        if self.obj.status == PackageUploadStatus.UNAPPROVED:
             return False
 
         return True
 
 
-class EditDistroReleaseQueue(EditPackageUploadQueue):
+class EditPackageUpload(EditPackageUploadQueue):
     permission = 'launchpad.Edit'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUpload
 
 
-class ViewDistroReleaseQueue(ViewPackageUploadQueue):
+class ViewPackageUpload(ViewPackageUploadQueue):
     permission = 'launchpad.View'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUpload
 
 
 class AdminByBuilddAdmin(AuthorizationBase):
@@ -909,28 +913,36 @@ class AdminLanguage(OnlyRosettaExpertsAndAdmins):
 class AccessBranch(AuthorizationBase):
     """Controls visibility of branches.
 
-    Branches are considered public if the visibility_team is None.
-    A person can see the branch if the branch is public or if they
-    are a member of the visibility team, or if they are subscribed
-    to the branch.
+    A person can see the branch if the branch is public or they are the owner
+    of the branch, subscribed to the branch, or a launchpad administrator.
     """
     permission = 'launchpad.View'
     usedfor = IBranch
 
     def checkAuthenticated(self, user):
-        if self.obj.visibility_team is None:
+        if not self.obj.private:
             return True
-        # Should lp admins be able to see the branches?
-        if user.inTeam(self.obj.visibility_team):
+        if user == self.obj.owner:
             return True
-        # Check the subscribers to the branch.
         for subscriber in self.obj.subscribers:
             if user.inTeam(subscriber):
                 return True
-        
-        return False
+        return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
 
     def checkUnauthenticated(self):
-        return self.obj.visibility_team is None
-    
-            
+        return not self.obj.private
+
+
+class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = IPOTemplateSubset
+
+
+class AdminDistroReleaseLanguage(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = IDistroReleaseLanguage
+
+
+class AdminDistroReleaseTranslations(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IDistroRelease
