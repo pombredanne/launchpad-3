@@ -107,12 +107,12 @@ class DistroSeriesSourcePackageRelease:
         """See IDistroSeriesSourcePackageRelease."""
         return Build.select("""
             Build.sourcepackagerelease = %s AND
-            Build.distroarchseries = DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s
+            Build.distroarchrelease = DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = %s
             """ % sqlvalues(self.sourcepackagerelease.id,
                             self.distroseries.id),
             orderBy='-datecreated',
-            clauseTables=['distroarchseries'])
+            clauseTables=['DistroArchRelease'])
 
     @property
     def files(self):
@@ -182,7 +182,7 @@ class DistroSeriesSourcePackageRelease:
         """See IDistroArchSeriesSourcePackage."""
         # Retrieve current publishing info
         current = SourcePackagePublishingHistory.selectFirst("""
-        distroseries = %s AND
+        distrorelease = %s AND
         archive = %s AND
         sourcepackagerelease = %s AND
         status = %s

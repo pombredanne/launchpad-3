@@ -561,14 +561,14 @@ class MirrorCDImageDistroSeries(SQLBase):
     """See IMirrorCDImageDistroSeries"""
 
     implements(IMirrorCDImageDistroSeries)
-    _table = 'MirrorCDImageDistroSeries'
+    _table = 'MirrorCDImageDistroRelease'
     _defaultOrder = 'id'
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
         notNull=True)
     distroseries = ForeignKey(
-        dbName='distroseries', foreignKey='DistroSeries', notNull=True)
+        dbName='distrorelease', foreignKey='DistroSeries', notNull=True)
     flavour = StringCol(notNull=True)
 
 
@@ -576,7 +576,7 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
     """See IMirrorDistroArchSeries"""
 
     implements(IMirrorDistroArchSeries)
-    _table = 'MirrorDistroArchSeries'
+    _table = 'MirrorDistroArchRelease'
     _defaultOrder = [
         'distro_arch_release', 'component', 'pocket', 'status', 'id']
 
@@ -645,14 +645,14 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
     """See IMirrorDistroSeriesSource"""
 
     implements(IMirrorDistroSeriesSource)
-    _table = 'MirrorDistroSeriesSource'
-    _defaultOrder = ['distroseries', 'component', 'pocket', 'status', 'id']
+    _table = 'MirrorDistroReleaseSource'
+    _defaultOrder = ['distrorelease', 'component', 'pocket', 'status', 'id']
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
         notNull=True)
     distroseries = ForeignKey(
-        dbName='distroseries', foreignKey='DistroSeries',
+        dbName='distrorelease', foreignKey='DistroSeries',
         notNull=True)
     component = ForeignKey(
         dbName='component', foreignKey='Component', notNull=True)
@@ -665,7 +665,7 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
         query = """
             SecureSourcePackagePublishingHistory.pocket = %s 
             AND SecureSourcePackagePublishingHistory.component = %s 
-            AND SecureSourcePackagePublishingHistory.distroseries = %s
+            AND SecureSourcePackagePublishingHistory.distrorelease = %s
             AND SecureSourcePackagePublishingHistory.archive = %s
             AND SecureSourcePackagePublishingHistory.status = %s
             """ % sqlvalues(self.pocket, self.component, 

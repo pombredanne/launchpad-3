@@ -42,7 +42,7 @@ class BugNomination(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_decided = UtcDateTimeCol(notNull=False, default=None)
     distroseries = ForeignKey(
-        dbName='distroseries', foreignKey='DistroSeries',
+        dbName='distrorelease', foreignKey='DistroSeries',
         notNull=False, default=None)
     productseries = ForeignKey(
         dbName='productseries', foreignKey='ProductSeries',

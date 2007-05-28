@@ -25,8 +25,8 @@
         template="../templates/sourcepackagerelease-portlet-details.pt"
         />
       <browser:page
-        name="+portlet-distroseriess"
-        template="../templates/sourcepackagerelease-portlet-distroseriess.pt"
+        name="+portlet-distroseries"
+        template="../templates/sourcepackagerelease-portlet-distroseries.pt"
         />
       <browser:page
         name="+portlet-details-content"

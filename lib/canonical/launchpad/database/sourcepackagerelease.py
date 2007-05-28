@@ -69,7 +69,7 @@ class SourcePackageRelease(SQLBase):
     format = EnumCol(dbName='format', schema=SourcePackageFormat,
         default=SourcePackageFormat.DPKG, notNull=True)
     uploaddistroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='uploaddistroseries')
+        dbName='uploaddistrorelease')
     upload_archive = ForeignKey(
         foreignKey='Archive', dbName='upload_archive', notNull=True)
 

@@ -36,10 +36,10 @@ from canonical.lp.dbschema import (
 
 class DistroArchSeries(SQLBase):
     implements(IDistroArchSeries, IHasBuildRecords, IPublishing)
-    _table = 'DistroArchSeries'
+    _table = 'DistroArchRelease'
     _defaultOrder = 'id'
 
-    distroseries = ForeignKey(dbName='distroseries',
+    distroseries = ForeignKey(dbName='distrorelease',
         foreignKey='DistroSeries', notNull=True)
     processorfamily = ForeignKey(dbName='processorfamily',
         foreignKey='ProcessorFamily', notNull=True)

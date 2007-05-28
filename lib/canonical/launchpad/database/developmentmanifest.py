@@ -27,7 +27,7 @@ class DevelopmentManifest(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     manifest = ForeignKey(dbName='manifest', foreignKey='Manifest',
         notNull=True)
-    distroseries = ForeignKey(dbName='distroseries',
+    distroseries = ForeignKey(dbName='distrorelease',
         foreignKey='DistroSeries', notNull=True)
     sourcepackagename = ForeignKey(dbName='sourcepackagename',
         foreignKey='SourcePackageName', notNull=True)

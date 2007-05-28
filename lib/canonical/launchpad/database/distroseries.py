@@ -86,7 +86,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     implements(IDistroSeries, IHasBuildRecords, IHasQueueItems, IPublishing,
                IHasTranslationImports)
 
-    _table = 'DistroSeries'
+    _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
 
     distribution = ForeignKey(dbName='distribution',
@@ -97,11 +97,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
-    status = EnumCol(notNull=True, schema=DistroSeriesStatus)
+    status = EnumCol(
+        dbName='releasestatus', notNull=True, schema=DistroSeriesStatus)
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
     parentseries =  ForeignKey(
-        dbName='parentseries', foreignKey='DistroRelease', notNull=False)
+        dbName='parentrelease', foreignKey='DistroSeries', notNull=False)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
     driver = ForeignKey(
@@ -172,10 +173,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # on.
         packagings = Packaging.select(
             "Packaging.sourcepackagename = SourcePackageName.id "
-            "AND DistroSeries.id = Packaging.distroseries "
-            "AND DistroSeries.id = %d" % self.id,
-            prejoinClauseTables=["SourcePackageName", "DistroSeries"],
-            clauseTables=["SourcePackageName", "DistroSeries"],
+            "AND DistroRelease.id = Packaging.distrorelease "
+            "AND DistroRelease.id = %d" % self.id,
+            prejoinClauseTables=["SourcePackageName", ],
+            clauseTables=["SourcePackageName", "DistroRelease"],
             prejoins=["productseries", "productseries.product"],
             orderBy=["SourcePackageName.name"]
             )
@@ -184,9 +185,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     @property
     def distroserieslanguages(self):
         result = DistroSeriesLanguage.select(
-            "DistroSeriesLanguage.language = Language.id AND"
-            " DistroSeriesLanguage.distroseries = %d AND"
-            " Language.visible = TRUE" % self.id,
+            "DistroReleaseLanguage.language = Language.id AND "
+            "DistroReleaseLanguage.distrorelease = %d AND "
+            "Language.visible = TRUE" % self.id,
             prejoinClauseTables=["Language"],
             clauseTables=["Language"],
             prejoins=["distroseries"],
@@ -317,17 +318,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
-        search_params.setDistributionSeries(self)
+        search_params.setDistroSeries(self)
         return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
         """See IBugTarget."""
-        return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
+        return get_bug_tags("BugTask.distrorelease = %s" % sqlvalues(self))
 
     def getUsedBugTagsWithOpenCounts(self, user):
         """See IBugTarget."""
         return get_bug_tags_open_count(
-            "BugTask.distroseries = %s" % sqlvalues(self), user)
+            "BugTask.distrorelease = %s" % sqlvalues(self), user)
 
     @property
     def has_any_specifications(self):
@@ -401,13 +402,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                          'Specification.id']
 
         # figure out what set of specifications we are interested in. for
-        # distroseriess, we need to be able to filter on the basis of:
+        # distroseries, we need to be able to filter on the basis of:
         #
         #  - completeness.
         #  - goal status.
         #  - informational.
         #
-        base = 'Specification.distroseries = %s' % self.id
+        base = 'Specification.distrorelease = %s' % self.id
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
@@ -474,7 +475,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 Language.visible = TRUE AND
                 Language.id = POFile.language AND
                 POFile.potemplate = POTemplate.id AND
-                POTemplate.distroseries = %s AND
+                POTemplate.distrorelease = %s AND
                 POTemplate.iscurrent = TRUE
                 ''' % sqlvalues(self.id),
                 orderBy=['code'],
@@ -536,7 +537,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         query = """
             POTemplate.sourcepackagename = SourcePackageName.id AND
             POTemplate.iscurrent = TRUE AND
-            POTemplate.distroseries = %s""" % sqlvalues(self.id)
+            POTemplate.distrorelease = %s""" % sqlvalues(self.id)
         result = SourcePackageName.select(query, clauseTables=['POTemplate'],
             orderBy=['name'], distinct=True)
         return [SourcePackage(sourcepackagename=spn, distroseries=self) for
@@ -549,16 +550,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # "unlinked translatables".
         query = """
             SourcePackageName.id NOT IN (SELECT DISTINCT
-             sourcepackagename FROM Packaging WHERE distroseries = %s) AND
+             sourcepackagename FROM Packaging WHERE distrorelease = %s) AND
             POTemplate.sourcepackagename = SourcePackageName.id AND
-            POTemplate.distroseries = %s""" % sqlvalues(self.id, self.id)
+            POTemplate.distrorelease = %s""" % sqlvalues(self.id, self.id)
         unlinked = SourcePackageName.select(query, clauseTables=['POTemplate'],
               orderBy=['name'])
         query = """
             Packaging.sourcepackagename = SourcePackageName.id AND
             Packaging.productseries = NULL AND
             POTemplate.sourcepackagename = SourcePackageName.id AND
-            POTemplate.distroseries = %s""" % sqlvalues(self.id)
+            POTemplate.distrorelease = %s""" % sqlvalues(self.id)
         linked_but_no_productseries = SourcePackageName.select(query,
             clauseTables=['POTemplate', 'Packaging'], orderBy=['name'])
         result = unlinked.union(linked_but_no_productseries)
@@ -626,7 +627,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def getSourcesPublishedForAllArchives(self):
         """See IDistroSeries."""
-        queries = ['distroseries=%s AND status=%s AND archive=%s' %
+        queries = ['distrorelease=%s AND status=%s AND archive=%s' %
                    sqlvalues(self, PackagePublishingStatus.PUBLISHED,
                              self.main_archive)]
         if not self.isUnstable():
@@ -637,7 +638,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             " AND ".join(queries), orderBy="id")
 
         query = """
-        distroseries=%s AND status=%s AND archive <> %s
+        distrorelease=%s AND status=%s AND archive <> %s
         """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED,
                         self.main_archive)
         ppa_sources = SourcePackagePublishingHistory.select(query, orderBy="id")
@@ -655,7 +656,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename=
                 SourcePackageName.id AND
-            SourcePackagePublishingHistory.distroseries=%s AND
+            SourcePackagePublishingHistory.distrorelease=%s AND
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status=%s AND
             SourcePackagePublishingHistory.pocket=%s
@@ -877,7 +878,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # find or create the cache entry
         cache = DistroSeriesPackageCache.selectOne("""
-            distroseries = %s AND
+            distrorelease = %s AND
             binarypackagename = %s
             """ % sqlvalues(self.id, binarypackagename.id))
         if cache is None:
@@ -908,7 +909,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def searchPackages(self, text):
         """See IDistroSeries."""
         drpcaches = DistroSeriesPackageCache.select("""
-            distroseries = %s AND (
+            distrorelease = %s AND (
             fti @@ ftq(%s) OR
             DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
             """ % (quote(self.id), quote(text), quote_like(text)),
@@ -982,7 +983,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         """See IDistroSeries."""
 
         default_clauses = ["""
-            packageupload.distroseries = %s""" % sqlvalues(self)]
+            packageupload.distrorelease = %s""" % sqlvalues(self)]
 
         # restrict result to a given archive
         if archive is None:
@@ -1137,7 +1138,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def _getBugTaskContextClause(self):
         """See BugTargetBase."""
-        return 'BugTask.distroseries = %s' % sqlvalues(self)
+        return 'BugTask.distrorelease = %s' % sqlvalues(self)
 
     def initialiseFromParent(self):
         """See IDistroSeries."""
@@ -1243,7 +1244,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                    %s as datecreated, %s as datepublished,
                    %s as pocket, false as embargo
             FROM SourcePackagePublishingHistory AS spph
-            WHERE spph.distroseries = %s AND spph.status in (%s, %s) AND
+            WHERE spph.distrorelease = %s AND spph.status in (%s, %s) AND
                   spph.pocket = %s and spph.archive = %s
             ''' % sqlvalues(self.id, self.main_archive, UTC_NOW, UTC_NOW,
                             PackagePublishingPocket.RELEASE,
@@ -1260,14 +1261,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Copy the component selections
         cur.execute('''
             INSERT INTO ComponentSelection (distroseries, component)
-            SELECT %s AS distroseries, cs.component AS component
-            FROM ComponentSelection AS cs WHERE cs.distroseries = %s
+            SELECT %s AS distrorelease, cs.component AS component
+            FROM ComponentSelection AS cs WHERE cs.distrorelease = %s
             ''' % sqlvalues(self.id, self.parentseries.id))
         # Copy the section selections
         cur.execute('''
-            INSERT INTO SectionSelection (distroseries, section)
-            SELECT %s as distroseries, ss.section AS section
-            FROM SectionSelection AS ss WHERE ss.distroseries = %s
+            INSERT INTO SectionSelection (distrorelease, section)
+            SELECT %s as distrorelease, ss.section AS section
+            FROM SectionSelection AS ss WHERE ss.distrorelease = %s
             ''' % sqlvalues(self.id, self.parentseries.id))
 
 
@@ -1695,7 +1696,7 @@ new imports with the information being copied.
             logger,
             'POTemplate',
             [],
-            'distroseries=%s AND iscurrent' % quote(self.parentseries))
+            'distrorelease=%s AND iscurrent' % quote(self.parentseries))
 
         # Now that we have the data "in private," where nobody else can see
         # it, we're free to play with it.  No risk of locking other processes
@@ -1705,7 +1706,7 @@ new imports with the information being copied.
         cursor().execute('''
             UPDATE %s
             SET
-                distroseries = %s,
+                distrorelease = %s,
                 datecreated =
                     timezone('UTC'::text,
                         ('now'::text)::timestamp(6) with time zone)
@@ -1808,14 +1809,14 @@ new imports with the information being copied.
                 JOIN POTemplate AS pt2 ON
                     pt2.potemplatename = pt1.potemplatename AND
                     pt2.sourcepackagename = pt1.sourcepackagename AND
-                    pt2.distroseries = %s
+                    pt2.distrorelease = %s
                 LEFT OUTER JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
                     pf2.language = pf1.language AND
                     (pf2.variant = pf1.variant OR
                      (pf2.variant IS NULL AND pf1.variant IS NULL))
             WHERE
-                pt1.distroseries = %s AND
+                pt1.distrorelease = %s AND
                 pf2.id IS NULL''' % sqlvalues(self, self.parentseries))
 
         logger.info('Updating POMsgSet table...')
@@ -1831,7 +1832,7 @@ new imports with the information being copied.
                 JOIN POTemplate AS pt2 ON
                     pt2.potemplatename = pt1.potemplatename AND
                     pt2.sourcepackagename = pt1.sourcepackagename AND
-                    pt2.distroseries = %s
+                    pt2.distrorelease = %s
                 JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
                     pf2.language = pf1.language AND
@@ -1845,7 +1846,7 @@ new imports with the information being copied.
                     ptms2.potemplate = pt2.id AND
                     ptms2.primemsgid = ptms1.primemsgid
             WHERE
-                pt1.distroseries = %s AND
+                pt1.distrorelease = %s AND
                 POMsgSet.potmsgset = ptms2.id AND
                 POMsgSet.pofile = pf2.id AND
                 POMsgSet.iscomplete = FALSE AND
@@ -1874,7 +1875,7 @@ new imports with the information being copied.
                 JOIN POTemplate AS pt2 ON
                     pt2.potemplatename = pt1.potemplatename AND
                     pt2.sourcepackagename = pt1.sourcepackagename AND
-                    pt2.distroseries = %s
+                    pt2.distrorelease = %s
                 JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
                     pf2.language = pf1.language AND
@@ -1891,7 +1892,7 @@ new imports with the information being copied.
                     pms2.potmsgset = ptms2.id AND
                     pms2.pofile = pf2.id
             WHERE
-                pt1.distroseries = %s AND
+                pt1.distrorelease = %s AND
                 pms2.id IS NULL''' % sqlvalues(self, self.parentseries))
 
         # At this point, we need to know the list of POFiles that we are
@@ -1908,7 +1909,7 @@ new imports with the information being copied.
                 JOIN POTemplate AS pt2 ON
                     pt2.potemplatename = pt1.potemplatename AND
                     pt2.sourcepackagename = pt1.sourcepackagename AND
-                    pt2.distroseries = %s
+                    pt2.distrorelease = %s
                 JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
                     pf2.language = pf1.language AND
@@ -1933,7 +1934,7 @@ new imports with the information being copied.
                     ps2.potranslation = ps1.potranslation AND
                     ((ps2.published AND ps2.active) OR ps2.active = FALSE)
             WHERE
-                pt1.distroseries = %s AND ps2.id IS NULL
+                pt1.distrorelease = %s AND ps2.id IS NULL
                 ''' % sqlvalues(self, self.parentseries))
 
         pofile_rows = cur.fetchall()
@@ -1990,7 +1991,7 @@ new imports with the information being copied.
                     ps2.pluralform = ps1.pluralform AND
                     ps2.potranslation = ps1.potranslation
             WHERE
-                pt1.distroseries = %(parentseries)s AND ps2.id IS NULL
+                pt1.distrorelease = %(parentseries)s AND ps2.id IS NULL
             ''' % replacements)
 
         # This query will be only useful if when we already have some
@@ -2007,7 +2008,7 @@ new imports with the information being copied.
                     JOIN POTemplate AS pt2 ON
                         pt2.potemplatename = pt1.potemplatename AND
                         pt2.sourcepackagename = pt1.sourcepackagename AND
-                        pt2.distroseries = %s
+                        pt2.distrorelease = %s
                     JOIN POFile AS pf2 ON
                         pf2.potemplate = pt2.id AND
                         pf2.language = pf1.language AND
@@ -2032,7 +2033,7 @@ new imports with the information being copied.
                         newactive_ps2.pluralform = ps1.pluralform AND
                         newactive_ps2.potranslation = ps1.potranslation
                 WHERE
-                    pt1.distroseries = %s AND
+                    pt1.distrorelease = %s AND
                     POSubmission.pomsgset = pms2.id AND
                     POSubmission.pluralform = ps1.pluralform AND
                     POSubmission.potranslation <> ps1.potranslation AND
@@ -2049,7 +2050,7 @@ new imports with the information being copied.
                     JOIN POTemplate AS pt2 ON
                         pt2.potemplatename = pt1.potemplatename AND
                         pt2.sourcepackagename = pt1.sourcepackagename AND
-                        pt2.distroseries = %s
+                        pt2.distrorelease = %s
                     JOIN POFile AS pf2 ON
                         pf2.potemplate = pt2.id AND
                         pf2.language = pf1.language AND
@@ -2074,7 +2075,7 @@ new imports with the information being copied.
                         active_ps2.pluralform = ps1.pluralform AND
                         active_ps2.active
                 WHERE
-                    pt1.distroseries = %s AND
+                    pt1.distrorelease = %s AND
                     POSubmission.pomsgset = pms2.id AND
                     POSubmission.pluralform = ps1.pluralform AND
                     POSubmission.potranslation = ps1.potranslation AND
@@ -2133,7 +2134,7 @@ new imports with the information being copied.
 
     def getPendingPublications(self, archive, pocket, is_careful):
         """See IPublishing."""
-        queries = ['distroseries = %s' % sqlvalues(self)]
+        queries = ['distrorelease = %s' % sqlvalues(self)]
 
         # Query main archive for this distroseries
         queries.append('archive=%s' % sqlvalues(archive))
@@ -2235,7 +2236,7 @@ class DistroSeriesSet:
     def translatables(self):
         """See IDistroSeriesSet."""
         return DistroSeries.select(
-            "POTemplate.distroseries=DistroSeries.id",
+            "POTemplate.distrorelease=DistroRelease.id",
             clauseTables=['POTemplate'], distinct=True)
 
     def findByName(self, name):

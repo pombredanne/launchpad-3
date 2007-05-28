@@ -43,7 +43,7 @@ class Build(SQLBase):
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
         notNull=True)
-    distroarchseries = ForeignKey(dbName='distroarchseries',
+    distroarchseries = ForeignKey(dbName='distroarchrelease',
         foreignKey='DistroArchSeries', notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True, schema=BuildStatus)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
@@ -304,7 +304,7 @@ class BuildSet:
 
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
         """See IBuildSet"""
-        clauseTables = ['DistroArchSeries']
+        clauseTables = ['DistroArchRelease']
         query = ('Build.sourcepackagerelease = %s '
                  'AND Build.distroarchrelease = DistroArchRelease.id '
                  'AND DistroArchRelease.architecturetag = %s'
@@ -379,10 +379,10 @@ class BuildSet:
 
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
-            condition_clauses = [('distroarchseries=%s'
+            condition_clauses = [('distroarchrelease=%s'
                                   % sqlvalues(arch_ids[0]))]
         else:
-            condition_clauses = [('distroarchseries IN %s'
+            condition_clauses = [('distroarchrelease IN %s'
                                   % sqlvalues(arch_ids))]
 
         # XXX cprov 20060925: It would be nice if we could encapsulate
@@ -435,13 +435,13 @@ class BuildSet:
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
-        clauseTables.extend(["DistroArchSeries",
-                             "DistroSeries",
+        clauseTables.extend(["DistroArchRelease",
+                             "DistroRelease",
                              "Distribution"])
         condition_clauses.append("""
-            Build.distroarchseries = DistroArchSeries.id AND
-            DistroArchSeries.distroseries = DistroSeries.id AND
-            DistroSeries.distribution = Distribution.id AND
+            Build.distroarchrelease = DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = Distribution.id AND
             Distribution.main_archive = Build.archive
             """)
 

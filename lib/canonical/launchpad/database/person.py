@@ -710,7 +710,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         query = '''
             ShippingRequest.recipient = %s
             AND ShippingRequest.id = RequestedCDs.request
-            AND RequestedCDs.distroseries = %s
+            AND RequestedCDs.distrorelease = %s
             AND ShippingRequest.shipment IS NOT NULL
             ''' % sqlvalues(self.id, ShipItConstants.current_distroseries)
         return ShippingRequest.select(
@@ -1765,7 +1765,7 @@ class PersonSet:
             POFileTranslator.pofile = POFile.id AND
             POFile.language = %s AND
             POFile.potemplate = POTemplate.id AND
-            POTemplate.distroseries = %s AND
+            POTemplate.distrorelease = %s AND
             POTemplate.iscurrent = TRUE"""
                 % sqlvalues(language, distroseries),
             clauseTables=["POFileTranslator", "POFile", "POTemplate"],

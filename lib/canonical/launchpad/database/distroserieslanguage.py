@@ -33,7 +33,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
     _table = 'DistroSeriesLanguage'
 
     distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distroseries', notNull=False, default=None)
+        dbName='distrorelease', notNull=False, default=None)
     language = ForeignKey(foreignKey='Language', dbName='language',
         notNull=True)
     currentcount = IntCol(notNull=True, default=0)
@@ -55,7 +55,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
             POFile.language = %s AND
             POFile.variant IS NULL AND
             POFile.potemplate = POTemplate.id AND
-            POTemplate.distroseries = %s AND
+            POTemplate.distrorelease = %s AND
             POTemplate.iscurrent = TRUE
             ''' % sqlvalues(self.language.id, self.distroseries.id),
             clauseTables=['POTemplate'],
@@ -87,13 +87,12 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
         return Translator.select('''
             Translator.translationgroup = TranslationGroup.id AND
             Distribution.translationgroup = TranslationGroup.id AND
-            DistroSeries.distribution = Distribution.id AND
-            DistroSeries.id = %s AND
+            Distribution.id = %s
             Translator.language = %s
-            ''' % sqlvalues(self.distroseries.id, self.language.id),
+            ''' % sqlvalues(self.distroseries.distribution.id,
+                            self.language.id),
             orderBy=['id'],
-            clauseTables=['TranslationGroup', 'Distribution',
-                          'DistroSeries'],
+            clauseTables=['TranslationGroup', 'Distribution',],
             distinct=True)
 
     @property

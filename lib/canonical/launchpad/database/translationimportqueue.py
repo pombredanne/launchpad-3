@@ -49,7 +49,7 @@ class TranslationImportQueueEntry(SQLBase):
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
     distroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='distroseries', notNull=False, default=None)
+        dbName='distrorelease', notNull=False, default=None)
     productseries = ForeignKey(foreignKey='ProductSeries',
         dbName='productseries', notNull=False, default=None)
     is_published = BoolCol(dbName='is_published', notNull=True)
@@ -458,7 +458,7 @@ class TranslationImportQueueEntry(SQLBase):
         query = ("path LIKE %s || '%%.pot' AND id <> %s" % 
                  (quote_like(path), self.id))
         if self.distroseries is not None:
-            query += ' AND distroseries = %s' % sqlvalues(
+            query += ' AND distrorelease = %s' % sqlvalues(
                 self.distroseries)
         if self.sourcepackagename is not None:
             query += ' AND sourcepackagename = %s' % sqlvalues(
@@ -565,7 +565,7 @@ class TranslationImportQueue:
                 "TranslationImportQueueEntry.path = %s AND"
                 " TranslationImportQueueEntry.importer = %s AND"
                 " TranslationImportQueueEntry.sourcepackagename = %s AND"
-                " TranslationImportQueueEntry.distroseries = %s" % sqlvalues(
+                " TranslationImportQueueEntry.distrorelease = %s" % sqlvalues(
                     path, importer.id, sourcepackagename.id, distroseries.id)
                 )
         else:
@@ -684,10 +684,10 @@ class TranslationImportQueue:
 
         oldest_w_dr = TranslationImportQueueEntry.selectFirst('''
             status = %s AND
-            translationimportqueueentry.distroseries = distroseries.id AND
-            not distroseries.defer_translation_imports
+            TranslationImportQueueEntry.distrorelease = DistroRelease.id AND
+            not DistroRelease.defer_translation_imports
             ''' % sqlvalues(RosettaImportStatus.APPROVED),
-            clauseTables=['distroseries'],
+            clauseTables=['DistroRelease'],
             orderBy=['dateimported'])
 
         if oldest_w_dr is None:
@@ -707,7 +707,7 @@ class TranslationImportQueue:
         """See ITranslationImportQueue."""
         queries = ["path LIKE '%%.pot'"]
         if distroseries is not None:
-            queries.append('distroseries = %s' % sqlvalues(distroseries.id))
+            queries.append('distrorelease = %s' % sqlvalues(distroseries.id))
         if sourcepackagename is not None:
             queries.append('sourcepackagename = %s' %
                 sqlvalues(sourcepackagename.id))
@@ -732,9 +732,9 @@ class TranslationImportQueue:
             distinct=True)
 
         distroseriess = DistroSeries.select(
-            """TranslationImportQueueEntry.distroseries IS NOT NULL AND
-            TranslationImportQueueEntry.distroseries=DistroSeries.id AND
-            DistroSeries.defer_translation_imports IS FALSE AND
+            """TranslationImportQueueEntry.distrorelease IS NOT NULL AND
+            TranslationImportQueueEntry.distrorelease=DistroRelease.id AND
+            DistroRelease.defer_translation_imports IS FALSE AND
             TranslationImportQueueEntry.status=%s""" % sqlvalues(
             RosettaImportStatus.APPROVED),
             clauseTables=['TranslationImportQueueEntry'],

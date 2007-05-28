@@ -115,7 +115,7 @@ class DistributionSourcePackage(BugTargetBase,
             """ % sqlvalues(self.sourcepackagename, self.distribution,
                             self.distribution.main_archive,
                             PackagePublishingStatus.REMOVED),
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=[SQLConstant(order_const),
                      "-SourcePackagePublishingHistory.datepublished"])
 
@@ -220,8 +220,8 @@ class DistributionSourcePackage(BugTargetBase,
         query = """
             DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
+            SourcePackagePublishingHistory.distrorelease =
+                DistroRelease.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
@@ -234,7 +234,7 @@ class DistributionSourcePackage(BugTargetBase,
                       % sqlvalues(status))
 
         return SourcePackagePublishingHistory.select(query,
-            clauseTables=['DistroSeries', 'SourcePackageRelease'],
+            clauseTables=['DistroRelease', 'SourcePackageRelease'],
             prejoinClauseTables=['SourcePackageRelease'],
             orderBy='-datecreated')
 

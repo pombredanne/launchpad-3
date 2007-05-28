@@ -34,7 +34,7 @@ class ComponentSelection(SQLBase):
 
     _defaultOrder= ['id']
 
-    distroseries = ForeignKey(dbName='distroseries',
+    distroseries = ForeignKey(dbName='distrorelease',
                                foreignKey='DistroSeries', notNull=True)
     component = ForeignKey(dbName='component',
                            foreignKey='Component', notNull=True)

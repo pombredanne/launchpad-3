@@ -27,7 +27,7 @@ class Milestone(SQLBase):
 
     productseries = ForeignKey(dbName='productseries',
         foreignKey='ProductSeries', default=None)
-    distroseries = ForeignKey(dbName='distroseries',
+    distroseries = ForeignKey(dbName='distrorelease',
         foreignKey='DistroSeries', default=None)
     name = StringCol(notNull=True)
     dateexpected = DateCol(notNull=False, default=None)

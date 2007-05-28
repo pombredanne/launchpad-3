@@ -164,7 +164,7 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 
-def bug_nominate_for_release(context, view):
+def bug_nominate_for_series(context, view):
     return view.label
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
@@ -348,7 +348,7 @@ distribution_mirrors = ContextTitle("Mirrors of %s")
 
 distribution_newmirror = ContextTitle("Register a new mirror for %s")
 
-distribution_releases = ContextTitle("%s releases")
+distribution_series = ContextTitle("%s version history")
 
 distribution_translations = ContextDisplayName('Translating %s')
 

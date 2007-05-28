@@ -121,7 +121,7 @@
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
     facet="overview"
-    class="canonical.launchpad.browser.DistroSeriesMirrorsView"
+    class="canonical.launchpad.browser.DistributionSeriesMirrorsView"
     permission="zope.Public"
     name="+cdmirrors"
     template="../templates/distribution-mirrors.pt"
@@ -131,7 +131,7 @@
     for="canonical.launchpad.interfaces.IDistribution"
     name="+cdmirrors-rss"
     permission="zope.Public"
-    class="canonical.launchpad.browser.DistroSeriesMirrorsRSSView"
+    class="canonical.launchpad.browser.DistributionSeriesMirrorsRSSView"
     template="../templates/distribution-mirrors-rss.pt"
     />
 

@@ -697,7 +697,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % sqlvalues(self, self.main_archive,
                             PackagePublishingStatus.REMOVED),
             distinct=True,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
                 'SourcePackageRelease']))
 
         # Now update, committing every 50 packages.
@@ -727,7 +727,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % sqlvalues(sourcepackagename, self, self.main_archive,
                             PackagePublishingStatus.REMOVED),
             orderBy='id',
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             distinct=True))
 
         if len(sprs) == 0:

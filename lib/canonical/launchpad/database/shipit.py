@@ -374,7 +374,7 @@ class ShippingRequest(SQLBase):
                 AND country = %(country)s
                 AND recipient != %(recipient)s
                 AND status NOT IN (%(cancelled)s, %(denied)s)
-                AND RequestedCDs.distroseries = %(series)s
+                AND RequestedCDs.distrorelease = %(series)s
             """ % sqlvalues(
                 address=self.normalized_address, recipient=self.recipient,
                 denied=ShippingRequestStatus.DENIED, country=self.country,
@@ -481,7 +481,7 @@ class ShippingRequestSet:
             FROM ShippingRequest, RequestedCDs
             WHERE shipment IS NULL 
                   AND ShippingRequest.id = RequestedCDs.request
-                  AND RequestedCDs.distroseries = %(distroseries)s
+                  AND RequestedCDs.distrorelease = %(distroseries)s
                   AND status = %(status)s
                   %(priorityfilter)s
             ORDER BY id
@@ -508,7 +508,7 @@ class ShippingRequestSet:
         if distroseries is not None:
             queries.append("""
                 ShippingRequest.id IN (
-                    SELECT request FROM RequestedCDs WHERE distroseries = %s)
+                    SELECT request FROM RequestedCDs WHERE distrorelease = %s)
                 """ % sqlvalues(distroseries))
 
         if flavour is not None:
@@ -619,7 +619,7 @@ class ShippingRequestSet:
         series_filter = ""
         if current_series_only:
             series_filter = (
-                " AND RequestedCDs.distroseries = %s"
+                " AND RequestedCDs.distrorelease = %s"
                 % sqlvalues(ShipItConstants.current_distroseries))
         for flavour in ShipItFlavour.items:
             quantities[flavour] = {}
@@ -672,7 +672,7 @@ class ShippingRequestSet:
             clauseTables = []
             if current_series_only:
                 base_query += """ 
-                    AND RequestedCDs.distroseries = %s
+                    AND RequestedCDs.distrorelease = %s
                     AND RequestedCDs.request = ShippingRequest.id
                     """ % ShipItConstants.current_distroseries
                 clauseTables.append('RequestedCDs')
@@ -764,7 +764,7 @@ class ShippingRequestSet:
                 FROM ShippingRequest, RequestedCDs
                 WHERE ShippingRequest.status != %s
                       AND RequestedCDs.request = ShippingRequest.id
-                      AND RequestedCDs.distroseries = %s
+                      AND RequestedCDs.distrorelease = %s
                 """ % sqlvalues(ShippingRequestStatus.CANCELLED,
                                 ShipItConstants.current_distroseries)
         else:
@@ -782,7 +782,7 @@ class ShippingRequestSet:
             """ % sqlvalues(ShippingRequestStatus.CANCELLED)
         if only_current_distroseries:
             sum_base_query += (
-                " AND RequestedCDs.distroseries = %s"
+                " AND RequestedCDs.distrorelease = %s"
                 % sqlvalues(ShipItConstants.current_distroseries))
 
         sum_group_by = " GROUP BY flavour, architecture"
@@ -852,7 +852,7 @@ class ShippingRequestSet:
         series_filter = ""
         if current_series_only:
             series_filter = (
-                " AND RequestedCDs.distroseries = %s"
+                " AND RequestedCDs.distrorelease = %s"
                 % sqlvalues(ShipItConstants.current_distroseries))
         query_str = """
             SELECT shipment_size, COUNT(request_id) AS shipments
@@ -895,7 +895,7 @@ class ShippingRequestSet:
                     FROM RequestedCDs
                         JOIN ShippingRequest ON 
                             ShippingRequest.id = RequestedCDs.request
-                    WHERE distroseries = %(current_series)s
+                    WHERE distrorelease = %(current_series)s
                         AND status != %(cancelled)s
                         AND recipient != %(shipit_admins)s
                     GROUP BY recipient
@@ -923,7 +923,7 @@ class ShippingRequestSet:
                     FROM RequestedCDs
                         JOIN ShippingRequest ON 
                             ShippingRequest.id = RequestedCDs.request
-                    WHERE distroseries = %(current_series)s
+                    WHERE distrorelease = %(current_series)s
                         AND status IN (%(approved)s, %(shipped)s)
                         AND recipient != %(shipit_admins)s
                     GROUP BY recipient
@@ -949,7 +949,7 @@ class ShippingRequestSet:
                 FROM ShippingRequest
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
-                WHERE distroseries = %(current_series)s
+                WHERE distrorelease = %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status != %(cancelled)s);
             CREATE UNIQUE INDEX current_series_requester__unq 

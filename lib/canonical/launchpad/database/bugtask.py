@@ -302,7 +302,7 @@ class BugTask(SQLBase, BugTaskMixin):
     implements(IBugTask)
     _table = "BugTask"
     _defaultOrder = ['distribution', 'product', 'productseries',
-                     'distroseries', 'milestone', 'sourcepackagename']
+                     'distrorelease', 'milestone', 'sourcepackagename']
     _CONJOINED_ATTRIBUTES = (
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
@@ -323,7 +323,7 @@ class BugTask(SQLBase, BugTaskMixin):
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
     distroseries = ForeignKey(
-        dbName='distroseries', foreignKey='DistroSeries',
+        dbName='distrorelease', foreignKey='DistroSeries',
         notNull=False, default=None)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
@@ -750,7 +750,7 @@ class BugTask(SQLBase, BugTaskMixin):
         elif IDistroSeriesBugTask.providedBy(self):
             header_value = ((
                 'distribution=%(distroname)s; '
-                'distroseries=%(distroseriesname)s; '
+                'distrorelease=%(distroseriesname)s; '
                 'sourcepackage=%(sourcepackagename)s; '
                 'component=%(componentname)s;') %
                 {'distroname': self.distroseries.distribution.name,
@@ -940,7 +940,7 @@ class BugTaskSet:
             'importance': params.importance,
             'product': params.product,
             'distribution': params.distribution,
-            'distroseries': params.distroseries,
+            'distrorelease': params.distroseries,
             'productseries': params.productseries,
             'milestone': params.milestone,
             'assignee': params.assignee,

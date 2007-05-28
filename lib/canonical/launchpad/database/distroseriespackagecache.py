@@ -17,7 +17,7 @@ class DistroSeriesPackageCache(SQLBase):
     implements(IDistroSeriesPackageCache)
     _table = 'DistroSeriesPackageCache'
 
-    distroseries = ForeignKey(dbName='distroseries',
+    distroseries = ForeignKey(dbName='distrorelease',
         foreignKey='DistroSeries', notNull=True)
     binarypackagename = ForeignKey(dbName='binarypackagename',
         foreignKey='BinaryPackageName', notNull=True)

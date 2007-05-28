@@ -30,7 +30,7 @@ class PublishedPackage(SQLBase):
     distroarchseries = ForeignKey(dbName='distroarchseries',
                                    foreignKey='DistroArchSeries',
                                    immutable=True)
-    distroseries = ForeignKey(dbName='distroseries',
+    distroseries = ForeignKey(dbName='distrorelease',
                                foreignKey='DistroSeries',
                                immutable=True)
     distroseriesname = StringCol(immutable=True)
@@ -75,7 +75,7 @@ class PublishedPackageSet:
         if distribution:
             queries.append("distribution = %d" % distribution.id)
         if distroseries:
-            queries.append("distroseries = %d" % distroseries.id)
+            queries.append("distrorelease = %d" % distroseries.id)
         if distroarchseries:
             queries.append("distroarchseries = %d" % distroarchseries.id)
         if component:

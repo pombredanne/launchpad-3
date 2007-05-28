@@ -112,12 +112,12 @@ class VPOExportSet:
         join = '''
             FROM POFile
               JOIN POTemplate ON POTemplate.id = POFile.potemplate
-              JOIN DistroSeries ON
-                DistroSeries.id = POTemplate.distroseries'''
+              JOIN DistroRelease ON
+                DistroRelease.id = POTemplate.distrorelease'''
 
         where = '''
             WHERE
-              DistroSeries.id = %s
+              DistroRelease.id = %s
               ''' % sqlvalues(series)
 
         if date is not None:
@@ -181,8 +181,8 @@ class VPOExportSet:
         join = '''
             SELECT DISTINCT POTemplate.id
             FROM POTemplate
-              JOIN DistroSeries ON
-                DistroSeries.id = POTemplate.distroseries'''
+              JOIN DistroRelease ON
+                DistroRelease.id = POTemplate.distrorelease'''
 
         where = '''
             WHERE
@@ -192,10 +192,10 @@ class VPOExportSet:
         if component is not None:
             join += '''
             JOIN SourcePackagePublishingHistory ON
-                SourcePackagePublishingHistory.distrorelease=
+                SourcePackagePublishingHistory.distrorelease =
                     DistroRelease.id
             JOIN SourcePackageRelease ON
-                SourcePackagePublishingHistory.sourcepackagerelease=
+                SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id
             JOIN Component ON
                 SourcePackagePublishingHistory.component=Component.id

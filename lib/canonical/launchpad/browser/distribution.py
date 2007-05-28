@@ -185,7 +185,7 @@ class DistributionOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
              'mirror_admin', 'reassign', 'addseries', 'top_contributors',
-             'mentorship', 'builds', 'series_mirrors', 'archive_mirrors',
+             'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
              'launchpad_usage', 'upload_admin', 'ppas']
 
@@ -223,7 +223,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Mentoring available'
         return Link('+mentoring', text, icon='info')
 
-    def series_mirrors(self):
+    def cdimage_mirrors(self):
         text = 'Show CD mirrors'
         enabled = self.context.full_functionality
         return Link('+cdmirrors', text, enabled=enabled, icon='info')
@@ -607,7 +607,7 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
     show_status = False
 
     def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.series_mirrors)
+        return self._groupMirrorsByCountry(self.context.cdimage_mirrors)
 
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):
@@ -640,7 +640,7 @@ class DistributionSeriesMirrorsRSSView(DistributionMirrorsRSSBaseView):
 
     @property
     def mirrors(self):
-        return self.context.series_mirrors
+        return self.context.cdimage_mirrors
 
 
 class DistributionMirrorsAdminView(DistributionMirrorsView):
@@ -698,7 +698,7 @@ class DistributionDynMenu(
 
     @neverempty
     def mainMenu(self):
-        yield self.makeLink('Series', page='+serieses', submenu='serieses')
+        yield self.makeLink('Series', page='+series', submenu='serieses')
         yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
         yield self.makeLink(
             'Milestones', page='+milestones', submenu='milestones')

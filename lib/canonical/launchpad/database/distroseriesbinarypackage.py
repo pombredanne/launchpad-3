@@ -52,7 +52,7 @@ class DistroSeriesBinaryPackage:
     def cache(self):
         """See IDistroSeriesBinaryPackage."""
         return DistroSeriesPackageCache.selectOne("""
-            distroseries = %s AND
+            distrorelease = %s AND
             binarypackagename = %s
             """ % sqlvalues(self.distroseries.id, self.binarypackagename.id))
 

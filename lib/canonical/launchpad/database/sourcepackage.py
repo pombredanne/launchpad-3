@@ -321,7 +321,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
                             self.distribution,
                             self.distribution.main_archive,
                             PackagePublishingStatus.REMOVED),
-            clauseTables=['DistroSeries', 'SourcePackagePublishingHistory'],
+            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
             selectAlso="%s" % (SQLConstant(order_const)),
             orderBy=[SQLConstant(order_const+" DESC")])
         return releases.distinct()
@@ -448,7 +448,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
     def getUsedBugTagsWithOpenCounts(self, user):
         """See IBugTarget."""
         return get_bug_tags_open_count(
-            "BugTask.distroseries = %s" % sqlvalues(self.distroseries),
+            "BugTask.distrorelease = %s" % sqlvalues(self.distroseries),
             user,
             count_subcontext_clause="BugTask.sourcepackagename = %s" % (
                 sqlvalues(self.sourcepackagename)))
@@ -470,7 +470,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
     def _getBugTaskContextClause(self):
         """See BugTargetBase."""
         return (
-            'BugTask.distroseries = %s AND BugTask.sourcepackagename = %s' %
+            'BugTask.distrorelease = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distroseries, self.sourcepackagename))
 
     def setPackaging(self, productseries, user):

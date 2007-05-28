@@ -231,9 +231,9 @@ class BinaryPackageReleaseSet:
         BinaryPackagePublishingHistory.binarypackagerelease =
            BinaryPackageRelease.id AND
         BinaryPackagePublishingHistory.distroarchrelease =
-           DistroArchSeries.id AND
+           DistroArchRelease.id AND
         BinaryPackagePublishingHistory.archive = %s AND
-        DistroArchSeries.distroseries = %s AND
+        DistroArchRelease.distrorelease = %s AND
         BinaryPackageRelease.binarypackagename =
            BinaryPackageName.id AND
         BinaryPackagePublishingHistory.status != %s
