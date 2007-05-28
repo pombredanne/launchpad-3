@@ -159,7 +159,8 @@ class MultiTableCopy:
     """
     # XXX: JeroenVermeulen 2007-05-24, More quoting, fewer assumptions!
 
-    def __init__(self, name, tables, time_goal=4):
+    def __init__(self, name, tables, time_per_batch=4,
+            minimum_batch_size=1000):
         """Define a MultiTableCopy, including an in-order list of tables.
 
         The name parameter is a unique identifier for this MultiTableCopy
@@ -179,7 +180,8 @@ class MultiTableCopy:
         self.name = name
         self.tables = tables
         self.lower_tables = [t.lower() for t in self.tables]
-        self.time_goal = time_goal
+        self.time_per_batch = time_per_batch
+        self.minimum_batch_size = minimum_batch_size
         self.last_extracted_table = None
 
 
@@ -468,7 +470,7 @@ class MultiTableCopy:
         # five seconds or so each; we aim for four just to be sure.
 
         pourer = PouringLoop(holding_table, table, ztm)
-        LoopTuner(pourer, 4, 1000).run()
+        LoopTuner(pourer, self.time_per_batch, self.minimum_batch_size).run()
 
 
     def _checkExtractionOrder(self, source_table):
