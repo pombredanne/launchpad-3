@@ -824,3 +824,85 @@ in the structuralheader area.
     >>> print zope.i18n.translate(
     ...     firefox_question_sop.getMainHeading())
     Question #2 in Mozilla Firefox
+
+
+== ManageAnswerContactView ==
+
+That view is used by a user to register himself or any team he
+administrates as an answer contact for the project.
+
+Jeff Waugh is an administrator for the Ubuntu Team. Thus he can
+register himself or the Ubuntu Team as answer contact for ubuntu:
+
+    >>> list(ubuntu.answer_contacts)
+    []
+    >>> login('jeff.waugh@ubuntulinux.com')
+    >>> jeff_waugh = getUtility(ILaunchBag).user
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> jeff_waugh in ubuntu_team.getDirectAdministrators()
+    True
+
+    >>> request = LaunchpadTestRequest(
+    ...     method='POST', form={
+    ...         'field.actions.update': 'Continue',
+    ...         'field.want_to_be_answer_contact': 'on',
+    ...         'field.answer_contact_teams': 'ubuntu-team'})
+    >>> view = getMultiAdapter((ubuntu, request), name="+answer-contact")
+    >>> view.initialize()
+
+    >>> sorted(
+    ...     [person.displayname for person in ubuntu.direct_answer_contacts])
+    [u'Jeff Waugh', u'Ubuntu Team']
+
+The view adds notifications about the answer contacts added:
+
+    >>> for notification in request.notifications:
+    ...     print notification.message
+    You have been added as an answer contact for Ubuntu.
+    Ubuntu Team has been added as an answer contact for Ubuntu.
+
+But Daniel Silverstone is only a regular member of Ubuntu Team, so he
+can only subscribe himself:
+
+    >>> login('daniel.silverstone@canonical.com')
+    >>> kinnison = getUtility(ILaunchBag).user
+    >>> kinnison in ubuntu_team.getDirectAdministrators()
+    False
+
+    >>> request = LaunchpadTestRequest(
+    ...     method='POST', form={
+    ...         'field.actions.update': 'Continue',
+    ...         'field.want_to_be_answer_contact': 'on'})
+    >>> view = getMultiAdapter((ubuntu, request), name="+answer-contact")
+    >>> view.initialize()
+
+    >>> sorted(
+    ...     [person.displayname for person in ubuntu.direct_answer_contacts])
+    [u'Daniel Silverstone', u'Jeff Waugh', u'Ubuntu Team']
+
+    >>> for notification in request.notifications:
+    ...     print notification.message
+    You have been added as an answer contact for Ubuntu.
+
+The same view is used to remove answer contact registrations. The user
+can only remove his own registration.
+
+    >>> login('jeff.waugh@ubuntulinux.com')
+    >>> request = LaunchpadTestRequest(
+    ...     method='POST', form={
+    ...         'field.actions.update': 'Continue',
+    ...         'field.want_to_be_answer_contact': 'off',
+    ...         'field.answer_contact_teams-empty-marker': '1'})
+    >>> view = getMultiAdapter((ubuntu, request), name="+answer-contact")
+    >>> view.initialize()
+
+    >>> sorted(
+    ...     [person.displayname for person in ubuntu.direct_answer_contacts])
+    [u'Daniel Silverstone']
+
+    >>> for notification in request.notifications:
+    ...     print notification.message
+    You have been removed as an answer contact for Ubuntu.
+    Ubuntu Team has been removed as an answer contact for Ubuntu.
