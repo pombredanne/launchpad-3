@@ -143,7 +143,7 @@ of t1.
 
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(t2.teamowner.preferredemail.email)
-    >>> t2.acceptInvitationToBeMemberOf(t1)
+    >>> t2.acceptInvitationToBeMemberOf(t1, comment='something')
     >>> [m.displayname for m in t1.allmembers]
     [u'Foo Bar', u't2']
 
@@ -151,7 +151,7 @@ A team admin can also decline an invitation made to his team.
 
     >>> t2.addMember(t3, reviewer=sabdfl)
     >>> login(t3.teamowner.preferredemail.email)
-    >>> t3.declineInvitationToBeMemberOf(t2)
+    >>> t3.declineInvitationToBeMemberOf(t2, comment='something')
     >>> membership = membershipset.getByPersonAndTeam(t3, t2)
     >>> membership.status == TeamMembershipStatus.INVITATION_DECLINED
     True
