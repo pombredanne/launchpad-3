@@ -40,6 +40,17 @@
     name="+open_questions_count"
     permission="zope.Public"
     />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISourcePackageRelease"
+    class="canonical.launchpad.browser.SourcePackageReleaseView"
+    permission="zope.Public">
+    <browser:page
+      name="+changelog"
+      template="../templates/sourcepackagerelease-changelog.pt"
+    />
+  </browser:pages>
+
    <adapter
     for="canonical.launchpad.interfaces.ISourcePackageRelease"
     provides="canonical.launchpad.interfaces.IQuestionTarget"

@@ -70,7 +70,10 @@ class SourcePackageRelease(SQLBase):
         default=SourcePackageFormat.DPKG, notNull=True)
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='uploaddistrorelease')
-    # XXX cprov 20060926: Those fields should be notNull and required in
+    upload_archive = ForeignKey(
+        foreignKey='Archive', dbName='upload_archive', notNull=True)
+
+    # XXX cprov 20060926: Those fields are set as notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old
     # records doesn't satisfy this condition. We will sort it before using
     # landing 'NoMoreAptFtparchive' implementation for main archive. For
@@ -164,6 +167,10 @@ class SourcePackageRelease(SQLBase):
             # imports us, so avoid circular import
             from canonical.launchpad.database.sourcepackage import \
                  SourcePackage
+            # Only process main archive to skip PPA publishings.
+            if (publishing.distrorelease.main_archive.id !=
+                publishing.archive.id):
+                continue
             sp = SourcePackage(self.sourcepackagename,
                                publishing.distrorelease)
             sp_series = sp.productseries
@@ -221,11 +228,12 @@ class SourcePackageRelease(SQLBase):
             BinaryPackagePublishingHistory.distroarchrelease =
                DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %d AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                BinaryPackageRelease.id AND
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %d
-            """ % (distroRelease.id, self.id),
+            """ % (distroRelease, distroRelease.main_archive, self),
             clauseTables=clauseTables))
 
         return archReleases
@@ -246,7 +254,7 @@ class SourcePackageRelease(SQLBase):
                                         filetype=determined_filetype,
                                         libraryfile=file)
 
-    def createBuild(self, distroarchrelease, pocket, processor=None,
+    def createBuild(self, distroarchrelease, pocket, archive, processor=None,
                     status=BuildStatus.NEEDSBUILD):
         """See ISourcePackageRelease."""
         # Guess a processor if one is not provided
@@ -265,9 +273,10 @@ class SourcePackageRelease(SQLBase):
                      processor=processor,
                      buildstate=status,
                      datecreated=datecreated,
-                     pocket=pocket)
+                     pocket=pocket,
+                     archive=archive)
 
-    def getBuildByArch(self, distroarchrelease):
+    def getBuildByArch(self, distroarchrelease, archive):
         """See ISourcePackageRelease."""
 	# Look for a published build
         query = """
@@ -275,8 +284,9 @@ class SourcePackageRelease(SQLBase):
         BinaryPackageRelease.id =
             BinaryPackagePublishingHistory.binarypackagerelease AND
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.archive = %s AND
         Build.sourcepackagerelease = %s
-        """  % sqlvalues(distroarchrelease.id, self.id)
+        """  % sqlvalues(distroarchrelease, archive, self)
 
         tables = ['BinaryPackageRelease', 'BinaryPackagePublishingHistory']
 
@@ -292,6 +302,7 @@ class SourcePackageRelease(SQLBase):
         if build is None:
             build = Build.selectOneBy(
                 distroarchrelease=distroarchrelease,
+                archive=archive,
                 sourcepackagerelease=self)
 
         return build

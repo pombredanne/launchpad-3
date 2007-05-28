@@ -407,6 +407,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
+    archive = Attribute(
+        "The Archive owned by this person, his PPA.")
+
     @invariant
     def personCannotHaveIcon(person):
         if person.icon is not None and not person.isTeam():

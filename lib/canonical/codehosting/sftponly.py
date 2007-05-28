@@ -1,6 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from twisted.conch import avatar
+from twisted.conch.error import ConchError
 from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
 from twisted.conch.ssh.common import getNS, NS
@@ -9,15 +10,14 @@ from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
 from twisted.internet import defer
-from twisted.python import components
+from twisted.python import components, failure
 from twisted.vfs.pathutils import FileSystem
 from twisted.vfs.adapters import sftp
-from canonical.supermirrorsftp.bazaarfs import SFTPServerRoot
+from canonical.codehosting.bazaarfs import SFTPServerRoot
 
 from zope.interface import implements
 import binascii
 import os
-import os.path
 
 
 class SubsystemOnlySession(session.SSHSession, object):
@@ -212,7 +212,8 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         self.method = method
         d = self.tryAuth(method, user, rest)
         if not d:
-            self._ebBadAuth(ConchError('auth returned none'))
+            self._ebBadAuth(failure.Failure(ConchError('auth returned none')))
+            return
         d.addCallbacks(self._cbFinishedAuth)
         d.addErrback(self._ebMaybeBadAuth)
         # The following line does not appear in the original Twisted source.

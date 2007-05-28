@@ -96,6 +96,9 @@ class ISourcePackageRelease(Interface):
     current_publishings = Attribute("A list of the current places where "
         "this source package is published, in the form of a list of "
         "DistroReleaseSourcePackageReleases.")
+    upload_archive = Attribute(
+        "The archive for which this package was first uploaded in Launchpad")
+
 
     # XXX: What do the following methods and attributes do?
     #      These were missing from the interfaces, but being used
@@ -108,16 +111,18 @@ class ISourcePackageRelease(Interface):
         in this package.
         """
 
-    def createBuild(distroarchrelease, pocket, processor=None,
+    def createBuild(distroarchrelease, pocket, archive, processor=None,
                     status=BuildStatus.NEEDSBUILD):
-        """Create a build for a given distroarchrelease/pocket  and return it.
+        """Create a build for a given distroarchrelease/pocket/archive
 
         If the processor isn't given, guess it from the distroarchrelease.
         If the status isn't given, use NEEDSBUILD.
+
+        Return the just created IBuild.
         """
 
-    def getBuildByArch(distroarchrelease):
-        """Return build for the given distroarchrelease.
+    def getBuildByArch(distroarchrelease, archive):
+        """Return build for the given distroarchrelease/archive.
 
         This will look first for published builds in the given
         distroarchrelease. It uses the publishing tables to return a build,

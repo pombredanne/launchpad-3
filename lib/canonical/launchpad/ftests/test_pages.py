@@ -102,6 +102,18 @@ def find_main_content(content):
         return tag
     return soup.find(attrs={'id': 'singlecolumn'}) # single-column page
 
+def get_feedback_messages(browser):
+    """Find and return the feedback messages of the page."""
+    soup = BeautifulSoup(browser.contents)
+    feedback_messages = []
+    for div_tag in soup('div',
+        {'class': ['message',
+                   'informational message',
+                   'error message']}):
+        feedback_messages.append(div_tag.string)
+
+    return feedback_messages
+
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
@@ -219,6 +231,7 @@ def setUpGlobs(test):
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
+    test.globs['get_feedback_messages'] = get_feedback_messages
     test.globs['extract_text'] = extract_text
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
