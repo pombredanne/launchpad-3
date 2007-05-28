@@ -272,6 +272,10 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         # existing product directory.
         transport = get_transport(self.server.get_url())
         transport.mkdir('~foo/bar/banana')
+        # This implicitly tests that the branch has been created in the
+        # database. The call to transport.has will blow up if it can't map the
+        # path to a branch ID, there won't be a branch ID unless the branch is
+        # in the database.
         self.assertTrue(transport.has('~foo/bar/banana'))
 
 
