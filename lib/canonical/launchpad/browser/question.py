@@ -452,8 +452,7 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     """View for editing a Question."""
     schema = IQuestion
     label = 'Edit question'
-    field_names = ["title", "description", "target", "priority", "assignee", 
-                   "whiteboard"]
+    field_names = ["title", "description", "target", "assignee", "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)

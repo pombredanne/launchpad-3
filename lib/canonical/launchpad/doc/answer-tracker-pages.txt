@@ -379,7 +379,7 @@ outside of the comment workflow.
 
 QuestionEditView available through '+edit' is used to edit most 
 question fields. It can be used to edit the question title and 
-description and also its metadata like language, priority, assignee, 
+description and also its metadata like language, assignee,
 distribution, source package, product and whiteboard.
 
     >>> login('test@canonical.com')
@@ -392,8 +392,7 @@ distribution, source package, product and whiteboard.
     ...     'field.target.distribution': 'ubuntu',
     ...     'field.target.package': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
-    ...     'field.whiteboard': 'Some note',
-    ...     'field.priority': 'Wishlist'})
+    ...     'field.whiteboard': 'Some note'})
     >>> request.method = 'POST'
 
     >>> view = getView(question_three, '+edit', request)
@@ -410,11 +409,8 @@ distribution, source package, product and whiteboard.
     None
 
 Since only a user with launchpad.Admin privilege can change the
-priority, assignee and status whiteboard, the values won't have been
-changed:
+assignee and status whiteboard, the values won't have been changed:
 
-    >>> print question_three.priority.title
-    Normal
     >>> question_three.assignee is None
     True
     >>> question_three.whiteboard is None
@@ -436,8 +432,8 @@ This View send the event appropriate to send out a notification:
     A better description.
     <BLANKLINE>
 
-If the user has the required permission, the assignee, whiteboard and
-priority fields will be updated:
+If the user has the required permission, the assignee and whiteboard
+fields will be updated:
 
     >>> login('foo.bar@canonical.com')
     >>> request = LaunchpadTestRequest(form={
@@ -449,13 +445,10 @@ priority fields will be updated:
     ...     'field.target.distribution': 'ubuntu',
     ...     'field.target.package': 'mozilla-firefox',
     ...     'field.assignee': 'name16',
-    ...     'field.whiteboard': 'Some note',
-    ...     'field.priority': 'Wishlist'})
+    ...     'field.whiteboard': 'Some note'})
     >>> request.method = 'POST'
     >>> view = getView(question_three, '+edit', request)
     >>> view.initialize()
-    >>> print question_three.priority.title
-    Wishlist
     >>> print question_three.assignee.displayname
     Foo Bar
     >>> print question_three.whiteboard
@@ -474,8 +467,7 @@ a distribution question:
     ...     'field.target.package': 'mozilla-firefox',
     ...     'field.target.product': 'firefox',
     ...     'field.assignee': '',
-    ...     'field.whiteboard': '',
-    ...     'field.priority': 'Normal'})
+    ...     'field.whiteboard': ''})
     >>> request.method = 'POST'
     >>> view = getView(question_three, '+edit', request)
     >>> view.initialize()
