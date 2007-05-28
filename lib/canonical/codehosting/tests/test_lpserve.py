@@ -45,10 +45,6 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
         self.assertEqual('', result[0])
         self.assertEqual('', result[1])
 
-    # Need to run this in a thread, otherwise stdout.readline() will block,
-    # waiting for 'bzr lp-serve', which is waiting for us to provide authserver
-    # information.
-    @deferToThread
     def start_server_port(self, user_id, extra_options=()):
         """Start a bzr server subprocess.
 
@@ -106,14 +102,16 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
         self.assertIsInstance(
             get_cmd_object('lp-serve'), lpserve.cmd_launchpad_server)
 
+    @deferToThread
+    def _test_bzr_serve_port_readonly(self):
+        process, url = self.start_server_port('sabdfl', ['--read-only'])
+        transport = get_transport(url)
+        self.assertRaises(errors.TransportNotPossible,
+                          transport.mkdir, '~sabdfl/+junk/new-branch')
+        self.assertServerFinishesCleanly(process)
+
     def test_bzr_serve_port_readonly(self):
-        d = self.start_server_port('sabdfl', ['--read-only'])
-        def check((process, url)):
-            transport = get_transport(url)
-            self.assertRaises(errors.TransportNotPossible,
-                              transport.mkdir, '~sabdfl/+junk/new-branch')
-            self.assertServerFinishesCleanly(process)
-        return d.addCallback(check)
+        return self._test_bzr_serve_port_readonly()
 
 
 def test_suite():
