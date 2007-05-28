@@ -3,7 +3,7 @@
 __metaclass__ = type
 __all__ = ['TeamMembership', 'TeamMembershipSet', 'TeamParticipation']
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import itertools
 import pytz
 
@@ -18,7 +18,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.config import config
 
-from canonical.lp.dbschema import TeamMembershipStatus
+from canonical.lp.dbschema import (
+    TeamMembershipRenewalPolicy, TeamMembershipStatus)
 
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.mailnotification import MailWrapper
@@ -43,8 +44,8 @@ class TeamMembership(SQLBase):
     reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
     status = EnumCol(
         dbName='status', notNull=True, schema=TeamMembershipStatus)
-    datejoined = UtcDateTimeCol(dbName='datejoined', default=UTC_NOW,
-                                notNull=True)
+    datejoined = UtcDateTimeCol(
+        dbName='datejoined', default=UTC_NOW, notNull=True)
     dateexpires = UtcDateTimeCol(dbName='dateexpires', default=None)
     reviewercomment = StringCol(dbName='reviewercomment', default=None)
 
@@ -56,6 +57,40 @@ class TeamMembership(SQLBase):
     def isExpired(self):
         """See ITeamMembership"""
         return self.status == TeamMembershipStatus.EXPIRED
+
+    def sendAutoRenewalNotification(self):
+        """See ITeamMembership"""
+        team = self.team
+        member = self.person
+        assert team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC
+
+        from_addr = format_address(
+            "Launchpad Team Membership Notifier", config.noreply_from_address)
+        replacements = {'member_name': member.unique_displayname,
+                        'team_name': team.unique_displayname,
+                        'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
+        subject = ('Launchpad: renewed %s as member of %s'
+                   % (member.name, team.name))
+
+        member_addrs = []
+        if member.isTeam():
+            member_addrs.extend(contactEmailAddresses(member.teamowner))
+            templatename = 'membership-auto-renewed-impersonal.txt'
+        else:
+            templatename = 'membership-auto-renewed-personal.txt'
+            member_addrs.extend(contactEmailAddresses(member))
+        template = get_email_template(templatename)
+        msg = MailWrapper().format(template % replacements)
+        for address in member_addrs:
+            simple_sendmail(from_addr, address, subject, msg)
+
+        templatename = 'membership-auto-renewed-impersonal.txt'
+        admins_addrs = self.team.getTeamAdminsEmailAddresses()
+        admins_addrs = set(admins_addrs).difference(member_addrs)
+        template = get_email_template(templatename)
+        msg = MailWrapper().format(template % replacements)
+        for address in admins_addrs:
+            simple_sendmail(from_addr, address, subject, msg)
 
     def sendExpirationWarningEmail(self):
         """See ITeamMembership"""
@@ -265,6 +300,24 @@ class TeamMembershipSet:
             _fillTeamParticipation(person, team)
 
         return tm
+
+    def handleMembershipsExpiringToday(self, reviewer):
+        """See ITeamMembershipSet"""
+        memberships = self.getMembershipsToExpire()
+        for membership in memberships:
+            team = membership.team
+            if team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC:
+                # Keep the same status, change the expiration date and send a
+                # notification explaining the membership has been renewed.
+                assert (team.defaultrenewalperiod is not None
+                        and team.defaultrenewalperiod > 0), (
+                    'Teams with a renewal policy of AUTOMATIC must specify '
+                    'a default renewal period greater than 0.')
+                membership.dateexpires += timedelta(
+                    days=team.defaultrenewalperiod)
+                membership.sendAutoRenewalNotification()
+            else:
+                membership.setStatus(TeamMembershipStatus.EXPIRED, reviewer)
 
     def getByPersonAndTeam(self, person, team, default=None):
         """See ITeamMembershipSet"""

@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ITeamMembershipSet)
 from canonical.launchpad.scripts.base import (
@@ -24,13 +23,14 @@ class ExpireMemberships(LaunchpadScript):
         membershipset = getUtility(ITeamMembershipSet)
         self.txn.begin()
         reviewer = getUtility(ILaunchpadCelebrities).team_membership_janitor
-        for membership in membershipset.getMembershipsToExpire():
-            membership.setStatus(TeamMembershipStatus.EXPIRED, reviewer)
+        membershipset.handleMembershipsExpiringToday(reviewer)
         self.txn.commit()
 
-        one_week_from_now = datetime.now(pytz.timezone('UTC')) + timedelta(days=7)
+        one_week_from_now = datetime.now(
+            pytz.timezone('UTC')) + timedelta(days=7)
         self.txn.begin()
-        for membership in membershipset.getMembershipsToExpire(one_week_from_now):
+        for membership in membershipset.getMembershipsToExpire(
+                one_week_from_now):
             membership.sendExpirationWarningEmail()
         self.txn.commit()
 

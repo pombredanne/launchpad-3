@@ -467,40 +467,97 @@ ITeamMembership.sendExpirationWarningEmail to do its job.
 
 == Membership expiration notification ==
 
-If a membership is not renewed before its expiration date it'll be flagged as expired and a notification is sent to the team admins and to the member whose membership expired.
+For teams with a renewal policy other than AUTOMATIC, if a membership is not
+renewed before its expiration date it'll be flagged as expired and a
+notification is sent to the team admins and to the member whose membership
+expired. If the renewal policy is AUTOMATIC, though, the memberships that
+should expire will retain their status and have their dateexpires update. A
+notification is also sent to the member and to team admins when a membership
+is automatically renewed.
 
-    >>> ubuntu_team_on_guadamen.setStatus(
-    ...     TeamMembershipStatus.EXPIRED, guadamen.teamowner)
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
+    >>> utc_now = datetime.now(pytz.timezone('UTC'))
+    >>> lp_admins = personset.getByName('admins')
+    >>> lp_admins.renewal_policy == TeamMembershipRenewalPolicy.NONE
+    True
+    >>> sabdfl_on_admins = membershipset.getByPersonAndTeam(sabdfl, lp_admins)
+    >>> sabdfl_on_admins.dateexpires = utc_now
+
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> ubuntu_team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+    >>> ubuntu_team.defaultrenewalperiod = 365
+    >>> jdub = personset.getByName('jdub')
+    >>> jdub_on_ubuntu_team = membershipset.getByPersonAndTeam(
+    ...     jdub, ubuntu_team)
+    >>> jdub_on_ubuntu_team.dateexpires = utc_now
+    >>> flush_database_updates()
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> membershipset.handleMembershipsExpiringToday(
+    ...     reviewer=getUtility(ILaunchpadCelebrities).team_membership_janitor)
+    >>> flush_database_updates()
     >>> transaction.commit()
+
     >>> len(stub.test_emails)
-    2
-    >>> admins_notification, member_notification = pop_notifications()
+    6
 
-    >>> print member_notification['To']
-    support@ubuntu.com
-    >>> print member_notification['Subject']
-    Launchpad: ubuntu-team expired from guadamen
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+The expiration/auto-renewal notifications are sent to each person
+individually rather than sending a single email to everybody, so we'll
+just show the recipients and the different messages we may send.
+
+    >>> distinct_messages = {}
+    >>> for message in pop_notifications():
+    ...     recipients = set(
+    ...         recipient.strip() for recipient in message['To'].split(','))
+    ...     body = message.get_payload()
+    ...     if body not in distinct_messages:
+    ...         distinct_messages[body] = recipients
+    ...     else:
+    ...         existing_recipients = distinct_messages[body]
+    ...         distinct_messages[body] = existing_recipients.union(recipients)
+
+    >>> for message in sorted(distinct_messages):
+    ...     print 'To:', sorted(distinct_messages[message])
+    ...     print message #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-"*40
+    To: ['colin.watson@ubuntulinux.com', 'foo.bar@canonical.com', 'mark@hbd.com']
     Hello,
     <BLANKLINE>
-    The membership of Ubuntu Team (ubuntu-team) in the GuadaMen (guadamen)
-    team has expired.
+    The membership of Jeff Waugh (jdub) in the Ubuntu Team (ubuntu-team)
+    team has been automatically renewed until 2008-05-27.
     <BLANKLINE>
     Regards,
     The Launchpad team
-
-    >>> print admins_notification['To']
-    foo.bar@canonical.com
-    >>> print admins_notification['Subject']
-    Launchpad: ubuntu-team expired from guadamen
-    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    ----------------------------------------
+    To: ['foo.bar@canonical.com', 'guilherme.salgado@canonical.com']
     Hello,
     <BLANKLINE>
-    The membership of Ubuntu Team (ubuntu-team) in the GuadaMen (guadamen)
-    team has expired.
+    The membership of Mark Shuttleworth (sabdfl) in the Launchpad
+    Administrators (admins) team has expired.
     <BLANKLINE>
     Regards,
     The Launchpad team
+    ----------------------------------------
+    To: ['mark@hbd.com']
+    Hello,
+    <BLANKLINE>
+    Your membership in the Launchpad Administrators (admins) team has
+    expired.
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    To: ['jeff.waugh@ubuntulinux.com']
+    Hello,
+    <BLANKLINE>
+    Your membership in the Ubuntu Team (ubuntu-team) team has been
+    automatically renewed until 2008-05-27.
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
 
 
 == Some special cases ==

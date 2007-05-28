@@ -38,6 +38,14 @@ class ITeamMembership(Interface):
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
 
+    def sendAutoRenewalNotification():
+        """Send an email to the member and to team admins notifying that this
+        membership has been automatically renewed.
+
+        This method must not be called if the team's renewal policy is not
+        AUTOMATIC.
+        """
+
     def sendExpirationWarningEmail():
         """Send an email to the member warning him that this membership will
         expire soon.
@@ -55,6 +63,14 @@ class ITeamMembership(Interface):
 
 class ITeamMembershipSet(Interface):
     """A Set for TeamMembership objects."""
+
+    def handleMembershipsExpiringToday(reviewer):
+        """Expire or renew the memberships flagged to expire today.
+
+        If the team's renewal policy is AUTOMATIC, renew the membership
+        (keeping the same status) and send a notification to the member and
+        team admins. Otherwise flag the membership as expired.
+        """
 
     def getMembershipsToExpire(when=None):
         """Return all TeamMemberships that should be expired.

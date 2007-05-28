@@ -48,7 +48,8 @@ from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
 from canonical.lp.dbschema import (
-    TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
+    PersonCreationRationale, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy)
 
 
 class PersonNameField(BlacklistableContentNameField):
@@ -381,6 +382,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "'Moderated' means all subscriptions must be approved. 'Open' "
             "means any user can join without approval. 'Restricted' means "
             "new members can be added only by a team administrator."))
+
+    renewal_policy = Choice(
+        title=_("When someone's membership is about to expire, Launchpad "
+                "should notify them and:"),
+        required=True, vocabulary='TeamMembershipRenewalPolicy',
+        default=TeamMembershipRenewalPolicy.NONE)
 
     merged = Int(
         title=_('Merged Into'), required=False, readonly=True,
