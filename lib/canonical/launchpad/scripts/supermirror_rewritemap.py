@@ -18,7 +18,7 @@ def write_map(outfile):
     """
     branches = getUtility(IBranchSet)
     for branch in branches:
-        if branch.visibility_team is None:
+        if not branch.private:
             line = generate_mapping_for_branch(branch)
             outfile.write(line)
 

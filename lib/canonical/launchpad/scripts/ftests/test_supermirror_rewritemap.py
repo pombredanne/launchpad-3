@@ -9,7 +9,7 @@ from unittest import TestCase, TestLoader
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IBranchSet, IPersonSet
+from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.scripts import supermirror_rewritemap
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -42,7 +42,7 @@ class TestRewriteMapScript(TestCase):
         # Make the branch private by setting the visibility team.
         branch_unique_name = '~name12/gnome-terminal/scanned'
         branch = getUtility(IBranchSet).getByUniqueName(branch_unique_name)
-        branch.visibility_team = getUtility(IPersonSet).getByName('name12')
+        branch.private = True
         # Now create the rewrite map.
         file = StringIO()
         supermirror_rewritemap.write_map(file)
