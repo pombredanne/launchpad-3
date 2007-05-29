@@ -12,6 +12,7 @@ from bzrlib.transport.memory import MemoryTransport
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
 from canonical.codehosting import transport
+from canonical.testing import BzrlibLayer
 
 
 class FakeLaunchpad:
@@ -87,6 +88,8 @@ class FakeLaunchpad:
 
 class TestLaunchpadServer(TestCaseInTempDir):
 
+    layer = BzrlibLayer
+
     def setUp(self):
         TestCaseInTempDir.setUp(self)
         self.authserver = FakeLaunchpad()
@@ -143,6 +146,8 @@ class TestLaunchpadServer(TestCaseInTempDir):
 
 
 class TestLaunchpadTransport(TestCaseWithMemoryTransport):
+
+    layer = BzrlibLayer
 
     def setUp(self):
         TestCaseWithMemoryTransport.setUp(self)
@@ -242,6 +247,8 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
 
 
 class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
+
+    layer = BzrlibLayer
 
     def setUp(self):
         TestCaseWithMemoryTransport.setUp(self)

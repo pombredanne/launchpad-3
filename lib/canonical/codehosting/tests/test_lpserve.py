@@ -27,16 +27,20 @@ from canonical.codehosting.plugins import lpserve
 from canonical.codehosting.tests.test_acceptance import deferToThread
 from canonical.config import config
 from canonical.launchpad.daemons.authserver import AuthserverService
-from canonical.testing import TwistedLayer
+from canonical.testing import TwistedLayer, BzrlibLayer
 
 
 ROCKETFUEL_ROOT = os.path.dirname(
     os.path.dirname(os.path.dirname(bzrlib.__file__)))
 
 
+class TwistedBzrlibLayer(TwistedLayer, BzrlibLayer):
+    """Use the Twisted reactor and Bazaar's temporary directory logic."""
+
+
 class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
-    layer = TwistedLayer
+    layer = TwistedBzrlibLayer
 
     def assertInetServerShutsdownCleanly(self, process):
         """Shutdown the server process looking for errors."""
