@@ -296,9 +296,9 @@ class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
         # The transport raises a FileExists error if it tries to make the
         # directory of a product that is registered with Launchpad.
 
-        # XXX - do we care what the error is? It should be TransportNotPossible
-        # or FileExists. NoSuchFile might be acceptable though.
-        # Jonathan Lange, 2007-05-07
+        # XXX: JonathanLange 2007-05-27, do we care what the error is? It
+        # should be TransportNotPossible or FileExists. NoSuchFile might be
+        # acceptable though.
         self.assertRaises(errors.NoSuchFile, self.transport.mkdir, '~foo/bar')
 
     def test_make_branch_directory(self):

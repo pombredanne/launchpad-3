@@ -58,8 +58,7 @@ class cmd_launchpad_server(Command):
     takes_args = ['user_id']
 
     def get_transport(self, authserver, user_id, url):
-        # XXX - The 'chroot' lines lack unit tests.
-        # Jonathan Lange, 2007-05-29
+        # XXX: JonathanLange 2007-05-29, The 'chroot' lines lack unit tests.
         chroot_server = chroot.ChrootServer(get_transport(url))
         chroot_server.setUp()
         backing_transport = get_transport(chroot_server.get_url())

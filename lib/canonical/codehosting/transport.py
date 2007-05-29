@@ -79,12 +79,11 @@ class LaunchpadServer(Server):
         self.authserver = authserver
         self.user_id = user_id
         self.backing_transport = transport
-        # XXX - Instead of fetching branch information as needed, we load it
-        # all when the server is started. This mimics the behaviour of the SFTP
-        # server, and is the path of least resistance given the authserver's
-        # present API. However, in the future, we will want to get branch
-        # information as required.
-        # Jonathan Lange, 2007-05-29
+        # XXX: JonathanLange 2007-05-29, Instead of fetching branch information
+        # as needed, we load it all when the server is started. This mimics the
+        # behaviour of the SFTP server, and is the path of least resistance
+        # given the authserver's present API. However, in the future, we will
+        # want to get branch information as required.
         self._branches = dict(self._iter_branches())
 
     def _iter_branches(self):
@@ -110,8 +109,8 @@ class LaunchpadServer(Server):
             raise NoSuchFile(virtual_path)
         branch_id = self._make_branch(*path_segments)
 
-        # XXX - This should be self.backing_transport.makedirs instead.
-        # Jonathan Lange, 2007-05-29
+        # XXX: JonathanLange 2007-05-29, This should be
+        # self.backing_transport.makedirs instead.
         makedirs(self.backing_transport, branch_id_to_path(branch_id))
 
     def _make_branch(self, user, product, branch):
@@ -148,11 +147,12 @@ class LaunchpadServer(Server):
         :raise TransportNotPossible: If the path is necessarily invalid. Most
             likely because it didn't begin with a tilde ('~').
         """
-        # XXX - what if some berk makes a branch called '' - jml, 2007-05-29.
+        # XXX: JonathanLange 2007-05-29, what if some berk makes a branch
+        # called ''?
 
-        # XXX - We could differentiate between 'branch not found' and 'not
-        # enough information in path to figure out a branch'
-        # Jonathan Lange, 2007-05-29.
+        # XXX: JonathanLange 2007-05-29, We could differentiate between
+        # 'branch not found' and 'not enough information in path to figure out
+        # a branch'.
         user, product, branch, path = split_with_padding(
             virtual_path.lstrip('/'), '/', 4)
         if not user.startswith('~'):
@@ -268,7 +268,7 @@ class LaunchpadTransport(Transport):
         return self._call('lock_write', relpath)
 
     def mkdir(self, relpath, mode=None):
-        # XXX - ugly and unclear - jml
+        # XXX: JonathanLange 2007-05-29, ugly and unclear.
         try:
             path = self.server.translate_virtual_path(self._abspath(relpath))
         except UntranslatablePath:
