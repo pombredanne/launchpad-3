@@ -24,6 +24,10 @@ Rejected:
 
 If you don't understand why your files were rejected, or if the
 override file requires editing, reply to this email.
+
+-- 
+You are receiving this email because you are the uploader, maintainer or
+signer of the above package.
 """
 
 new_template = """From: %(SENDER)s
@@ -42,6 +46,10 @@ packages are usually added to the overrides about once a week.
 
 You may have gotten the distrorelease wrong.  If so, you may get warnings
 above if files already exist in other distroreleases.
+
+-- 
+You are receiving this email because you are the uploader, maintainer or
+signer of the above package.
 """
 
 accepted_template="""From: %(SENDER)s
@@ -60,6 +68,10 @@ Accepted:
 Announcing to %(ANNOUNCE)s
 
 Thank you for your contribution to %(DISTRO)s.
+
+-- 
+You are receiving this email because you are the uploader, maintainer or
+signer of the above package.
 """
 
 # The Debian PTS offers a way of notifying subscribers of when

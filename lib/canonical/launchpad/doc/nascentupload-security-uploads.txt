@@ -11,9 +11,9 @@ respective binary.
 
 While we don't have Security-in-Soyuz (s-i-s) implemented, this will
 be a more secure way to perform security uploads of binaires built in
-dak, since it guaratee that the interactions will be atomic.
+dak, since it guarantee that the interactions will be atomic.
 
-We need to be logged into the security model in order to get any further
+We need to be logged into the security framework in order to get any further
 
   >>> login('foo.bar@canonical.com')
 
@@ -27,7 +27,7 @@ managed archive.
 
   >>> security_policy = getPolicy(name='security', distro='ubuntu')
 
-We are going to use 'warty/powerpc' distroarchreleae and its
+We are going to use 'warty/powerpc' distroarchrelease and its
 respective processorfamily and processor. Let's create them
 on-the-fly:
 

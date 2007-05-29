@@ -7,7 +7,7 @@ Version: 2.9-4
 Distribution: breezy-proposed
 Urgency: low
 Maintainer: Launchpad team <launchpad@lists.canonical.com>
-Changed-By: Celso Providelo <cprov@canonical.com>
+Changed-By: Celso Providelo <celso.providelo@canonical.com>
 Description: 
  foo        - Stuff for testing
 Changes: 
