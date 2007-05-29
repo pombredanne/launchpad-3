@@ -121,8 +121,7 @@ class LaunchpadServer(Server):
             raise TransportNotPossible(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
-        # XXX - this should be using 'user', not self.user_id
-        user_id = self.authserver.getUser(self.user_id)['id']
+        user_id = self.authserver.getUser(user)['id']
         # XXX - why does this work when product == '+junk'
         product_id = self.authserver.fetchProductID(product)
         branch_id = self.authserver.createBranch(user_id, product_id, branch)

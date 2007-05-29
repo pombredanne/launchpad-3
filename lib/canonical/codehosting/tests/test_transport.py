@@ -23,7 +23,7 @@ class FakeLaunchpad:
             1: dict(name='foo', displayname='Test User',
                     emailaddresses=['test@test.com'], wikiname='TestUser',
                     teams=[1, 2]),
-            2: dict(name='team1', displayname='Test Team'),
+            2: dict(name='team1', displayname='Test Team', teams=[]),
             }
         self._product_set = {
             1: dict(name='bar'),
@@ -63,7 +63,16 @@ class FakeLaunchpad:
 
     def getUser(self, loginID):
         """See IUserDetailsStorage.getUser."""
-        user_dict = self._lookup(self._person_set, loginID)
+        matching_user_id = None
+        for user_id, user_dict in self._person_set.iteritems():
+            loginIDs = [user_id, user_dict['name']]
+            loginIDs.extend(user_dict.get('emailaddresses', []))
+            if loginID in loginIDs:
+                matching_user_id = user_id
+                break
+        if matching_user_id is None:
+            raise ValueError("Cannot find user for %r" % (loginID,))
+        user_dict = self._lookup(self._person_set, matching_user_id)
         user_dict['teams'] = [
             self._lookup(self._person_set, id) for id in user_dict['teams']]
         return user_dict
@@ -302,6 +311,8 @@ class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
         # path to a branch ID, there won't be a branch ID unless the branch is
         # in the database.
         self.assertTrue(self.transport.has('~foo/bar/banana'))
+        self.transport.mkdir('~team1/bar/banana')
+        self.assertTrue(self.transport.has('~team1/bar/banana'))
 
     def test_make_junk_branch(self):
         # Users can make branches beneath their '+junk' folder.
