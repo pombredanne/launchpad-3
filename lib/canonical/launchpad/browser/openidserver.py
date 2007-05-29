@@ -85,7 +85,7 @@ class OpenIdView(LaunchpadView):
         self.request.response
         """
         # Detect submission of the decide page
-        if self.request.form.has_key('token'):
+        if self.request.form.has_key('nonce'):
             self.restoreSessionOpenIdRequest()
             if self.request.form.get('action_deny'):
                 return self.renderOpenIdResponse(self.deny())
@@ -123,9 +123,10 @@ class OpenIdView(LaunchpadView):
                     )
         # Handle checkid_setup requests.
         elif self.openid_request.mode == 'checkid_setup':
+
             # Determine the account we are trying to authenticate with.
             # The consumer might have sent us an identity URL we can
-            # extract the identifier from, or maybe sent us a token
+            # extract the identifier from, or maybe sent us a nonce
             # indicating we need to calculate the identity.
             if (self.openid_request.identity ==
                     'http://specs.openid.net/auth/2.0/identifier_select'):
@@ -192,57 +193,36 @@ class OpenIdView(LaunchpadView):
         person and is not a team.
 
         >>> view = OpenIdView(None, None)
-        >>> view.getPersonByIdentity('foo')
-        >>> view.getPersonByIdentity('https://launchpad.dev/~admins')
-        >>> view.getPersonByIdentity('http://example.com/~sabdfl')
-        >>> view.getPersonByIdentity('http://launchpad.dev/~sabdfl').name
-        u'sabdfl'
-        >>> view.getPersonByIdentity('https://launchpad.dev/~sabdfl').name
-        u'sabdfl'
-        >>> view.getPersonByIdentity('https://launchpad.dev/%7Esabdfl').name
-        u'sabdfl'
-        >>> view.getPersonByIdentity('https://launchpad.dev/~sabdfl/').name
-        u'sabdfl'
         >>> view.getPersonByIdentity(
         ...     'https://openid.launchpad.dev/+openid/+id/temp1').name
         u'sabdfl'
         >>> view.getPersonByIdentity(
         ...     'http://openid.launchpad.dev/+openid/+id/temp1').name
         u'sabdfl'
+        >>> view.getPersonByIdentity(
+        ...     'https://openid.launchpad.dev/+openid/+id/temp1/').name
+        u'sabdfl'
+        >>> view.getPersonByIdentity('foo')
+        >>> view.getPersonByIdentity('http://example.com/+openid/+id/temp1')
         """
-        root_url = allvhosts.configs['mainsite'].rooturl
-        if root_url.startswith('http:'):
-            url_match_string = 'https?' + re.escape(root_url[4:])
-        else:
-            url_match_string = 'https?' + re.escape(root_url[5:])
-
+        openid_url = allvhosts.configs['openid'].rooturl
         # Note that we accept both http and https urls.
+
+        if openid_url.startswith('http:'):
+            url_match_string = 'https?' + re.escape(openid_url[4:])
+        else:
+            url_match_string = 'https?' + re.escape(openid_url[5:])
+
+        url_match_string += re.escape('+openid/+id/')
+
         match = re.search(
-                r'^\s*%s(?:~|%%7E)(\w+)/?\s*$' % url_match_string, identity
+                r'^\s*%s(\w+)/?\s*$' % url_match_string, identity
                 )
 
-        person_set = getUtility(IPersonSet)
+        if match is None:
+            return None
 
-        if match is not None:
-            person = person_set.getByName(match.group(1))
-
-        else:
-            openid_url = allvhosts.configs['openid'].rooturl
-            if openid_url.startswith('http:'):
-                url_match_string = 'https?' + re.escape(openid_url[4:])
-            else:
-                url_match_string = 'https?' + re.escape(openid_url[5:])
-
-            url_match_string += re.escape('+openid/+id/')
-
-            match = re.search(
-                    r'^\s*%s(\w+)/?\s*$' % url_match_string, identity
-                    )
-
-            if match is None:
-                return None
-
-            person = person_set.getByOpenIdIdentifier(match.group(1))
+        person = getUtility(IPersonSet).getByOpenIdIdentifier(match.group(1))
 
         if person is None:
             return None
@@ -257,9 +237,8 @@ class OpenIdView(LaunchpadView):
 
         >>> view = OpenIdView(None, None)
         >>> view.getPersonNameByIdentity('foo')
-        >>> view.getPersonNameByIdentity('https://launchpad.dev/~admins')
-        >>> view.getPersonNameByIdentity('http://example.com/~sabdfl')
-        >>> view.getPersonNameByIdentity('http://launchpad.dev/~sabdfl')
+        >>> view.getPersonNameByIdentity(
+        ...     'http://openid.launchpad.dev/+openid/+id/temp1')
         u'sabdfl'
         """
         person = self.getPersonByIdentity(identity)
@@ -285,26 +264,26 @@ class OpenIdView(LaunchpadView):
         if self.trust_root is None:
             raise UnexpectedFormData("Invalid trust root")
         # To ensure that the user has seen this page and it was actually the
-        # user that clicks the 'Accept' button, we generate a token and
-        # use it to store the openid_request in the session. The token
+        # user that clicks the 'Accept' button, we generate a nonce and
+        # use it to store the openid_request in the session. The nonce
         # is passed through by the form, but it is only meaningful if
         # it was used to store information in the actual users session,
         # rather than the session of a malicious connection attempting a
         # man-in-the-middle attack.
-        token = generate_uuid()
+        nonce = generate_uuid()
         session = self.getSession()
         # We also store the time with the openid_request so we can clear
         # out old requests after some time, say 1 hour.
         now = time()
         self._sweep(now, session)
-        # Store token with a distinct prefix to ensure malicious requests
-        # can't trick our code into retrieving something that isn't a token.
-        session['token_' + token] = (now, self.openid_request)
-        self.token = token
+        # Store nonce with a distinct prefix to ensure malicious requests
+        # can't trick our code into retrieving something that isn't a nonce.
+        session['nonce' + nonce] = (now, self.openid_request)
+        self.nonce = nonce
         return self.decide_template()
 
     def _sweep(self, now, session):
-        """Clean our Session of tokens older than 1 hour."""
+        """Clean our Session of nonces older than 1 hour."""
         to_delete = []
         for key, value in session.items():
             timestamp = value[0]
@@ -340,33 +319,33 @@ class OpenIdView(LaunchpadView):
                 )
 
     def restoreSessionOpenIdRequest(self):
-        """Get the OpenIDRequest from our session using the token in the
+        """Get the OpenIDRequest from our session using the nonce in the
         request.
         """
         try:
-            token = self.request.form['token']
+            nonce = self.request.form['nonce']
         except LookupError:
-            raise UnexpectedFormData("No token in request")
+            raise UnexpectedFormData("No nonce in request")
         session = self.getSession()
         try:
-            timestamp, self.openid_request = session['token_' + token]
+            timestamp, self.openid_request = session['nonce' + nonce]
         except LookupError:
-            raise UnexpectedFormData("Invalid or expired token")
+            raise UnexpectedFormData("Invalid or expired nonce")
 
         assert zisinstance(self.openid_request, CheckIDRequest), \
                 'Invalid OpenIDRequest in session'
 
     def trashSessionOpenIdRequest(self):
-        """Remove the OpenIdRequest from the session using the token in the
+        """Remove the OpenIdRequest from the session using the nonce in the
         request.
         """
         try:
-            token = self.request.form['token']
+            nonce = self.request.form['nonce']
         except LookupError:
-            raise UnexpectedFormData("No token in request")
+            raise UnexpectedFormData("No nonce in request")
         session = self.getSession()
         try:
-            del session['token_' + token]
+            del session['nonce' + nonce]
         except LookupError:
             pass
 

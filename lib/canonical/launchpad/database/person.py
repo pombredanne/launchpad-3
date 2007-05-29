@@ -897,7 +897,10 @@ class Person(SQLBase, HasSpecificationsMixin):
         # XXX: This should be a value stored in the database. Calculating
         # using a hash for now so we can test during database freeze
         # -- StuartBishop 20070528
-        return 'temp%d' % self.id
+        if self.isTeam():
+            return None
+        else:
+            return 'temp%d' % self.id
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):

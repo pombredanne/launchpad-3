@@ -27,8 +27,8 @@
         </p>
 
         <form method="post" action=".">
-            <input type="hidden" name="token"
-                tal:attributes="value view/token" />
+            <input type="hidden" name="nonce"
+                tal:attributes="value view/nonce" />
             <select name="allow_duration">
                 <option value="once">Once only</option>
                 <option value="300">5 minutes</option>
