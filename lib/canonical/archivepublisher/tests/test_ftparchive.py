@@ -49,6 +49,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         LaunchpadZopelessTestCase.setUp(self)
         self.library = LibrarianClient()
         self._distribution = getUtility(IDistributionSet)['ubuntutest']
+        self._archive = self._distribution.main_archive
         self._config = Config(self._distribution)
         self._config.setupArchiveDirs()
 
@@ -59,8 +60,9 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         self._pooldir = self._config.poolroot
         self._overdir = self._config.overrideroot
         self._listdir = self._config.overrideroot
+        self._tempdir = self._config.temproot
         self._logger = FakeLogger()
-        self._dp = DiskPool(self._pooldir, self._logger)
+        self._dp = DiskPool(self._pooldir, self._tempdir, self._logger)
 
     def tearDown(self):
         LaunchpadZopelessTestCase.tearDown(self)
@@ -178,7 +180,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         from canonical.archivepublisher.ftparchive import FTPArchiveHandler
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(self._logger, self._config, self._dp,
-                              self._distribution)
+                              self._distribution, self._archive)
         fa = FTPArchiveHandler(self._logger, self._config, self._dp,
                                self._distribution, publisher)
         src = [self._getFakePubSource(
@@ -252,9 +254,10 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         allowed_suites = set()
         allowed_suites.add(('hoary-test', PackagePublishingPocket.UPDATES))
 
-        publisher = Publisher(self._logger, self._config, self._dp,
-                              self._distribution,
-                              allowed_suites=allowed_suites)
+        publisher = Publisher(
+            self._logger, self._config, self._dp, self._distribution,
+            allowed_suites=allowed_suites, archive=self._archive)
+
         fa = FTPArchiveHandler(self._logger, self._config, self._dp,
                                self._distribution, publisher)
 

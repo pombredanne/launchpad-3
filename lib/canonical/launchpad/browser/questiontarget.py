@@ -529,7 +529,7 @@ class ManageAnswerContactView(LaunchpadFormView):
                     _('You have been removed as an answer contact for '
                       '$context.', mapping=replacements))
 
-        for team in self.user.teams_participated_in:
+        for team in self.administrated_teams:
             replacements['teamname'] = team.displayname
             if team in answer_contact_teams:
                 if self.context.addAnswerContact(team):

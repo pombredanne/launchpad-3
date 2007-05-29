@@ -759,6 +759,8 @@ potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
+ppa_list = 'Personal Package Archive List'
+
 product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
@@ -1102,9 +1104,11 @@ team_edit = 'Edit team information'
 
 team_editemail = ContextDisplayName('%s contact e-mail address')
 
+team_editproposed = ContextBrowsername('Proposed members of %s')
+
 team_index = ContextBrowsername(smartquote('"%s" team in Launchpad'))
 
-team_editproposed = ContextBrowsername('Proposed members of %s')
+team_invitations = ContextBrowsername("Invitations sent to %s")
 
 team_join = ContextBrowsername('Join %s')
 
@@ -1116,6 +1120,10 @@ team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
 
 def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (
+        context.person.browsername, context.team.browsername)
+
+def teammembership_invitation(context, view):
+    return "Make %s a member of %s" % (
         context.person.browsername, context.team.browsername)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
