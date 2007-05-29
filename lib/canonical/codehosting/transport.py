@@ -242,6 +242,7 @@ class LaunchpadTransport(Transport):
         return self._call('lock_write', relpath)
 
     def mkdir(self, relpath, mode=None):
+        # XXX - ugly and unclear - jml
         try:
             path = self.server.translate_virtual_path(self._abspath(relpath))
         except KeyError:
