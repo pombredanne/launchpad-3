@@ -324,7 +324,8 @@ class TestNativePublishing(TestNativePublishingBase):
         """
         cprov = getUtility(IPersonSet).getByName('cprov')
         test_pool_dir = tempfile.mkdtemp()
-        test_disk_pool = DiskPool(test_pool_dir, self.logger)
+        test_temo_dir = tempfile.mkdtemp()
+        test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc",
@@ -341,6 +342,7 @@ class TestNativePublishing(TestNativePublishingBase):
 
         # remove locally created dir
         shutil.rmtree(test_pool_dir)
+        shutil.rmtree(test_temp_dir)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

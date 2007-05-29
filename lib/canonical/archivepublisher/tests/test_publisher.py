@@ -191,7 +191,8 @@ class TestPublisher(TestNativePublishingBase):
 
         test_archive = getUtility(IArchiveSet).new()
         test_pool_dir = tempfile.mkdtemp()
-        test_disk_pool = DiskPool(test_pool_dir, self.logger)
+        test_temp_dir = tempfile.mkdtemp()
+        test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
 
         publisher = Publisher(
             self.logger, self.config, test_disk_pool, self.ubuntutest,
