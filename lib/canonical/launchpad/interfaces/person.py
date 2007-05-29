@@ -267,6 +267,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     myactivememberships = Attribute(
         "List of TeamMembership objects for Teams this Person is an active "
         "member of.")
+    open_membership_invitations = Attribute(
+        "All TeamMemberships which represent an invitation (to join a team) "
+        "sent to this person.")
     teams_participated_in = Attribute(
         "Iterable of all Teams that this person is active in, recursive")
     teams_indirectly_participated_in = Attribute(

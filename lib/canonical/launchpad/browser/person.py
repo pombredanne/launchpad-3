@@ -95,7 +95,9 @@ from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.interface import implements
 from zope.component import getUtility
+from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
@@ -118,7 +120,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet)
+    BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet, ITeamMembership)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -135,6 +137,7 @@ from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -227,6 +230,20 @@ class TeamNavigation(CalendarTraversalMixin,
     def traverse_poll(self, name):
         return getUtility(IPollSet).getByTeamAndName(self.context, name)
 
+    @stepthrough('+invitation')
+    def traverse_invitation(self, name):
+        team = getUtility(IPersonSet).getByName(name)
+        if team is None:
+            return None
+        # Return any TeamMembership (regardless of its status) because the
+        # page to approve invitations will display a nice message if it has
+        # been accepted already --that's better than a 404.
+        membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.context, team)
+        if membership is None:
+            return None
+        return TeamInvitationView(membership, self.request)
+
     @stepthrough('+member')
     def traverse_member(self, name):
         person = getUtility(IPersonSet).getByName(name)
@@ -234,6 +251,57 @@ class TeamNavigation(CalendarTraversalMixin,
             return None
         return getUtility(ITeamMembershipSet).getByPersonAndTeam(
             person, self.context)
+
+
+class TeamInvitationView(LaunchpadFormView):
+
+    implements(IBrowserPublisher)
+
+    schema = ITeamMembership
+    label = 'Team membership invitation'
+    field_names = ['reviewercomment']
+    custom_widget('reviewercomment', TextAreaWidget, height=5, width=60)
+    template = ViewPageTemplateFile(
+        '../templates/teammembership-invitation.pt')
+
+    def __init__(self, context, request):
+        # Only admins of the invited team can see the page in which they
+        # approve/decline invitations.
+        if not check_permission('launchpad.Edit', context.person):
+            raise Unauthorized(
+                "Only team administrators can approve/decline invitations "
+                "sent to this team.")
+        LaunchpadFormView.__init__(self, context, request)
+
+    def browserDefault(self, request):
+        return self, ()
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.person)
+
+    @action(_("Accept"), name="accept")
+    def accept_action(self, action, data):
+        member = self.context.person
+        member.acceptInvitationToBeMemberOf(
+            self.context.team, data['reviewercomment'])
+        self.request.response.addInfoNotification(
+            _("This team is now a member of %(team)s"),
+            team=self.context.team.browsername)
+
+    @action(_("Decline"), name="decline")
+    def decline_action(self, action, data):
+        member = self.context.person
+        member.declineInvitationToBeMemberOf(
+            self.context.team, data['reviewercomment'])
+        self.request.response.addInfoNotification(
+            _("Declined the invitation to join %(team)s"),
+            team=self.context.team.browsername)
+
+    @action(_("Cancel"), name="cancel")
+    def cancel_action(self, action, data):
+        # Simply redirect back.
+        pass
 
 
 class PersonSetNavigation(Navigation):
@@ -674,7 +742,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = ITeam
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'memberships', 'mugshots', 
+             'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'polls', 'add_poll',
              'joinleave', 'mentorships', 'reassign', 'common_packages',
              ]
@@ -703,6 +771,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+members'
         text = 'Show all members'
         return Link(target, text, icon='people')
+
+    @enabled_with_permission('launchpad.Edit')
+    def received_invitations(self):
+        target = '+invitations'
+        text = 'Show received invitations'
+        return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def add_member(self):

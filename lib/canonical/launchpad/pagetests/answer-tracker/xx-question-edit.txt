@@ -80,7 +80,7 @@ Product questions ignore sourcepackage information if it is submitted:
 == Changing Other Metadata ==
 
 A user with 'launchpad.Admin' privilege (usually the product or
-distribution owner) can also change the question Assignee, Priority and
+distribution owner) can also change the question Assignee, and
 edit the Status Whiteboard using the 'Edit Question' page.
 
     >>> browser.addHeader(
@@ -88,7 +88,6 @@ edit the Status Whiteboard using the 'Edit Question' page.
     >>> browser.open('http://localhost/ubuntu/+question/5')
     >>> browser.getLink('Edit question').click()
 
-    >>> browser.getControl('Priority').value = ['Wishlist']
     >>> browser.getControl('Assignee').value = 'name16'
     >>> browser.getControl('Status Whiteboard').value = 'Some note'
     >>> browser.getControl('Continue').click()
@@ -98,8 +97,6 @@ edit the Status Whiteboard using the 'Edit Question' page.
     Some note
     >>> 'Foo Bar' in extract_text(soup.first('b', text='Assignee:').findNext('a'))
     True
-    >>> print soup.first('b', text='Priority:').next.strip()
-    Wishlist
 
 Since the assignee is notified of changes to the question, his name also
 appears under the 'Also notified' list in the 'Subscribers' portlet:
@@ -119,10 +116,6 @@ These fields cannot be modified by a non-privileged user:
 
     >>> user_browser.open('http://localhost/ubuntu/+question/5')
     >>> user_browser.getLink('Edit question').click()
-    >>> user_browser.getControl('Priority')
-    Traceback (most recent call last):
-    ...
-    LookupError...
     >>> user_browser.getControl('Assignee')
     Traceback (most recent call last):
     ...

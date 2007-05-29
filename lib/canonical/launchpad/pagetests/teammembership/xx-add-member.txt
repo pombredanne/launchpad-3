@@ -84,6 +84,79 @@ members.
     >>> membership.statusname
     'Invited'
 
+And nor will the admins of Landscape Developers be able to do any changes
+with the TeamMembership representing the invitation sent to the Launchpad
+team, not even if they manually craft the URL.
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/~landscape-developers/+member/launchpad')
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Invited member
+    Launchpad Developers (launchpad) has been invited to join this team, but
+    hasn't responded to the invitation yet.
+
+    >>> landscape_admin_browser = browser
+
+=== Accepting/Declining invitations ===
+
+Any admin of the team which receives an invitation can either accept or deny
+it. Although they get a link to the invitation's page, there's also a page
+listing all open invitation sent to a given team.
+
+    >>> from zope.testbrowser.testing import Browser
+    >>> browser = Browser()
+    >>> browser.handleErrors = False
+    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~launchpad')
+    >>> browser.getLink('Show received invitations').click()
+    >>> browser.url
+    'http://launchpad.dev/~launchpad/+invitations'
+
+As said above, only admins of the invited team can accept/decline the
+invitation. Not even an admin of the landscape team (which as so has the
+rights to edit the membership in question) can do it.
+
+    >>> landscape_admin_browser.open(
+    ...     'http://launchpad.dev/~launchpad/+invitation/landscape-developers')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+First, let's accept the invitation sent on behalf of Landscape Developers to
+the Launchpad Developers.
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'invitations'))
+    Sent by         On behalf of
+    Sample Person   Landscape Developers
+
+    >>> browser.getLink(
+    ...     url='/~launchpad/+invitation/landscape-developers').click()
+    >>> browser.url
+    'http://launchpad.dev/~launchpad/+invitation/landscape-developers'
+
+    >>> browser.getControl(name='field.reviewercomment').value = (
+    ...     'This is just a test')
+    >>> browser.getControl('Accept').click()
+
+    >>> browser.url
+    'http://launchpad.dev/~launchpad'
+    >>> print extract_text(
+    ...     find_tags_by_class(browser.contents, 'informational')[0])
+    This team is now a member of Landscape Developers
+
+Now we'll decline the invitation sent on behalf of Ubuntu Team to
+Warty Security Team:
+
+    >>> browser.open('http://launchpad.dev/~name20/+invitation/ubuntu-team')
+    >>> browser.getControl('Decline').click()
+    >>> browser.url
+    'http://launchpad.dev/~name20'
+    >>> print extract_text(
+    ...     find_tags_by_class(browser.contents, 'informational')[0])
+    Declined the invitation to join Ubuntu Team
+
+== Evil workarounds ==
 
 One thing to keep in mind is that we can't invite a team without active
 members.
@@ -102,6 +175,10 @@ the bug sice we could skip the notification sent to the team in this case.
     ...     TeamMembershipStatus.DEACTIVATED, ubuntu_translators.teamowner)
     >>> carlos_translators_membership.syncUpdate()
 
+    >>> browser = Browser()
+    >>> browser.handleErrors = False
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~landscape-developers/+addmember')
     >>> browser.getControl('New member').value = 'ubuntu-translators'
     >>> browser.getControl('Add Member').click()
 

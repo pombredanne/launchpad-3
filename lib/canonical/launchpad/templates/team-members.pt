@@ -110,6 +110,7 @@
             <tr>
               <th>Name</th>
               <th>Invited</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody>
@@ -127,6 +128,12 @@
                     tal:content="membership/datejoined/fmt:approximatedate">
                     2005-06-14
                   </span>
+                </td>
+                <td tal:condition="membership/status/enumvalue:INVITED">
+                  Pending
+                </td>
+                <td tal:condition="membership/status/enumvalue:INVITATION_DECLINED">
+                  Declined
                 </td>
               </tal:block>
             </tr>

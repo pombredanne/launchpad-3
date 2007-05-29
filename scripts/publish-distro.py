@@ -55,7 +55,6 @@ def parse_options():
 
     return parser.parse_args()
 
-
 def main():
     options, args = parse_options()
     assert len(args) == 0, "publish-distro takes no arguments, only options."

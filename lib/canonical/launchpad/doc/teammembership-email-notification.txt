@@ -41,11 +41,12 @@ for the member.
     >>> sampleperson = personset.getByName('name12')
     >>> ubuntu_team = personset.getByName('ubuntu-team')
 
-Now Sample Person proposes himself as a member of the Ubuntu Team. This
+Now Robert Collins proposes himself as a member of the Ubuntu Team. This
 generates a notification email only to Ubuntu Team administrators.
 
-    >>> sampleperson.join(ubuntu_team)
-    >>> membership = membershipset.getByPersonAndTeam(sampleperson, ubuntu_team)
+    >>> lifeless = personset.getByName('lifeless')
+    >>> lifeless.join(ubuntu_team)
+    >>> membership = membershipset.getByPersonAndTeam(lifeless, ubuntu_team)
     >>> membership.status.title
     'Proposed'
 
@@ -57,18 +58,18 @@ generates a notification email only to Ubuntu Team administrators.
     colin.watson@ubuntulinux.com, foo.bar@canonical.com,
     jeff.waugh@ubuntulinux.com, mark@hbd.com
     >>> admins_notification['Subject']
-    'Launchpad: name12 wants to join team ubuntu-team'
+    'Launchpad: lifeless wants to join team ubuntu-team'
     >>> admins_notification['Reply-To']
-    'test@canonical.com'
+    'robertc@robertcollins.net'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello
     <BLANKLINE>
-    Sample Person (name12) wants to be a member of Ubuntu Team (ubuntu-
+    Robert Collins (lifeless) wants to be a member of Ubuntu Team (ubuntu-
     team), but this is a moderated team, so that membership has to be
     approved.  You can approve, decline or leave it as proposed by following
     the link below.
     <BLANKLINE>
-        http://launchpad.dev/~ubuntu-team/+member/name12
+        http://launchpad.dev/~ubuntu-team/+member/lifeless
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -90,22 +91,22 @@ and team admins.
     colin.watson@ubuntulinux.com, foo.bar@canonical.com,
     jeff.waugh@ubuntulinux.com, mark@hbd.com
     >>> admins_notification['Subject']
-    'Launchpad: Membership change: name12 in ubuntu-team'
+    'Launchpad: Membership change: lifeless in ubuntu-team'
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
-    The membership status of Sample Person (name12) in the team Ubuntu Team
-    (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Proposed to
-    Declined.
+    The membership status of Robert Collins (lifeless) in the team Ubuntu
+    Team (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from
+    Proposed to Declined.
     <BLANKLINE>
     <BLANKLINE>
     Regards,
     The Launchpad team
 
     >>> member_notification['To']
-    'test@canonical.com' 
+    'robertc@robertcollins.net'
     >>> member_notification['Subject']
-    'Launchpad: Membership change: name12 in ubuntu-team'
+    'Launchpad: Membership change: lifeless in ubuntu-team'
     >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
@@ -280,7 +281,7 @@ only be activated if they accept the invitation.
     <BLANKLINE>
     You can accept or decline this invitation on the following page:
     <BLANKLINE>
-        http://launchpad.dev/~ubuntu-mirror-admins/+membership-invitations
+        http://launchpad.dev/~ubuntu-mirror-admins/+invitation/ubuntu-team
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -288,7 +289,8 @@ only be activated if they accept the invitation.
 If one of the admins accept the invitation, then a notification is sent to the
 team which just became a member and to the admins of the hosting team.
 
-    >>> mirror_admins.acceptInvitationToBeMemberOf(ubuntu_team)
+    >>> comment = "Of course I want to be part of ubuntu!"
+    >>> mirror_admins.acceptInvitationToBeMemberOf(ubuntu_team, comment)
     >>> flush_database_updates()
     >>> transaction.commit()
 
@@ -305,6 +307,10 @@ team which just became a member and to the admins of the hosting team.
     Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
     team).
     <BLANKLINE>
+    Comment:
+    Of course I want to be part of ubuntu!
+    <BLANKLINE>
+    <BLANKLINE>
     Regards,
     The Launchpad team
 
@@ -317,46 +323,97 @@ team which just became a member and to the admins of the hosting team.
     Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
     team).
     <BLANKLINE>
+    Comment:
+    Of course I want to be part of ubuntu!
+    <BLANKLINE>
+    <BLANKLINE>
     Regards,
     The Launchpad team
 
+
+Similarly, a notification is sent if the invitation is declined.
+
+    >>> landscape = personset.getByName('landscape-developers')
+    >>> ubuntu_team.addMember(landscape, reviewer=cprov)
+
+    # Reset stub.test_emails as we don't care about the notification triggered
+    # by the addMember() call.
+    >>> transaction.commit()
+    >>> stub.test_emails = []
+
+    >>> comment = "Landscape has nothing to do with ubuntu, unfortunately."
+    >>> landscape.declineInvitationToBeMemberOf(ubuntu_team, comment)
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    2
+    >>> admins_notification, member_notification = pop_notifications()
+    >>> print admins_notification['To']
+    colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+    jeff.waugh@ubuntulinux.com, mark@hbd.com
+    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hello,
+    <BLANKLINE>
+    Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
+    Developers (landscape-developers) a member of Ubuntu Team (ubuntu-team).
+    <BLANKLINE>
+    Comment:
+    Landscape has nothing to do with ubuntu, unfortunately.
+    <BLANKLINE>
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+
+    >>> print member_notification['To']
+    test@canonical.com,guilherme.salgado@canonical.com
+    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hello,
+    <BLANKLINE>
+    Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
+    Developers (landscape-developers) a member of Ubuntu Team (ubuntu-team).
+    <BLANKLINE>
+    Comment:
+    Landscape has nothing to do with ubuntu, unfortunately.
+    <BLANKLINE>
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
 
 It's also possible to forcibly add a team as a member of another one, by
 passing force_team_add=True to the addMember() method.
 
-    >>> landscape = personset.getByName('landscape-developers')
-    >>> ubuntu_team.addMember(landscape, reviewer=cprov, force_team_add=True)
+    >>> launchpad = personset.getByName('launchpad')
+    >>> ubuntu_team.addMember(launchpad, reviewer=cprov, force_team_add=True)
+    >>> flush_database_updates()
     >>> transaction.commit()
     >>> len(stub.test_emails)
     2
-    >>> admins_notification, member_notification = pop_notifications()
-    >>> member_notification['To']
-    'test@canonical.com,guilherme.salgado@canonical.com'
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello,
-    <BLANKLINE>
-    Celso Providelo (cprov) added Landscape Developers (landscape-
-    developers) (which you are a member of) as a member of Ubuntu Team
-    (ubuntu-team).
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
-
+    >>> member_notification, admins_notification = pop_notifications()
     >>> print admins_notification['To']
-    colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com, mark@hbd.com,
-    foo.bar@canonical.com
+    jeff.waugh@ubuntulinux.com,mark@hbd.com,colin.watson@ubuntulinux.com
     >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello,
     <BLANKLINE>
-    Landscape Developers (landscape-developers) has been added as a member
-    of Ubuntu Team (ubuntu-team) by Celso Providelo (cprov). Follow the link
-    below for more details.
+    Launchpad Developers (launchpad) has been added as a member of Ubuntu
+    Team (ubuntu-team) by Celso Providelo (cprov). Follow the link below for
+    more details.
     <BLANKLINE>
-        http://launchpad.dev/~ubuntu-team/+member/landscape-developers
+        http://launchpad.dev/~ubuntu-team/+member/launchpad
     <BLANKLINE>
     Regards,
     The Launchpad team
 
+    >>> print member_notification['To']
+    foo.bar@canonical.com
+    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hello,
+    <BLANKLINE>
+    Celso Providelo (cprov) added Launchpad Developers (launchpad) (which
+    you are a member of) as a member of Ubuntu Team (ubuntu-team).
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
 
 == Membership expiration warnings ==
 
