@@ -130,6 +130,8 @@ class LaunchpadServer(Server):
             likely because it didn't begin with a tilde ('~').
         """
         # XXX - what if some berk makes a branch called '' - jml, 2007-05-29.
+        # XXX - this should *not* raise KeyError. It should raise some other
+        # custom error.
         user, product, branch, path = split_with_padding(
             virtual_path.lstrip('/'), '/', 4)
         if not user.startswith('~'):
