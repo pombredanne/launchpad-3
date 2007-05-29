@@ -3,14 +3,11 @@
 Only an administrator (as well as the team owner) of a team can change the
 details of that team.
 
-    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~ubuntu-team/+edit')
+    >>> user_browser.open('http://launchpad.dev/~ubuntu-team/+edit')
     Traceback (most recent call last):
     ...
     Unauthorized:...
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
     >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> browser.getLink('Change details').click()
@@ -22,30 +19,64 @@ details of that team.
     'Ubuntu Team'
     >>> browser.getControl('Team Description').value
     'This Team is responsible for the Ubuntu Distribution'
-    >>> browser.getControl('Subscription Policy').value
-    ['Moderated Team']
+    >>> browser.getControl('Moderated Team').selected
+    True
+    >>> browser.getControl('invite them to apply for renewal').selected
+    True
+    >>> print browser.getControl('Renewal period').value
 
 Now we'll change some values.
 
     >>> browser.getControl('Name', index=0).value = 'ubuntuteam'
     >>> browser.getControl('Display Name').value = 'The Ubuntu Team'
     >>> browser.getControl('Team Description').value = ''
-    >>> browser.getControl('Subscription Policy').value = ['Restricted Team']
+    >>> browser.getControl('Restricted Team').selected = True
 
     >>> browser.getControl('Save').click()
 
-Here we see the updated values.
+We're now redirected to the team's home page, which is now on a different
+URL since we changed its name.
 
     >>> browser.url
     'http://launchpad.dev/~ubuntuteam'
     >>> browser.getLink('Change details').click()
 
+    >>> browser.url
+    'http://launchpad.dev/~ubuntuteam/+edit'
     >>> browser.getControl('Name', index=0).value
     'ubuntuteam'
     >>> browser.getControl('Display Name').value
     'The Ubuntu Team'
     >>> browser.getControl('Team Description').value
     ''
-    >>> browser.getControl('Subscription Policy').value
-    ['Restricted Team']
+    >>> browser.getControl('Restricted Team').selected
+    True
+
+If we try to use a name which is already in use, we'll get an error
+message explaining it.
+
+    >>> browser.getControl('Name', index=0).value = 'sabdfl'
+    >>> browser.getControl('Save').click()
+
+    >>> browser.url
+    'http://launchpad.dev/%7Eubuntuteam/+edit'
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print extract_text(tag)
+    There is 1 error.
+    sabdfl is already in use by another person or team.
+
+We also get an error message if we attempt to create a team with a renewal
+policy other than None and don't specify a default renewal period.
+
+    >>> browser.getControl('Name', index=0).value = 'ubuntuteam'
+    >>> browser.getControl(
+    ...     'invite them to renew their own membership').selected = True
+    >>> browser.getControl('Save').click()
+
+    >>> browser.url
+    'http://launchpad.dev/%7Eubuntuteam/+edit'
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print extract_text(tag)
+    There is 1 error.
+    You must specify a default renewal period greater than 0.
 

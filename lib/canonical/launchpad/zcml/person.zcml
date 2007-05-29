@@ -615,23 +615,13 @@
     template="../templates/people-newperson.pt" 
     />
 
-  <browser:addform
+  <browser:page
     name="+newteam"
     for="canonical.launchpad.interfaces.IPersonSet"
-    schema="canonical.launchpad.interfaces.ITeamCreation"
-    fields="name displayname contactemail teamdescription
-            defaultmembershipperiod defaultrenewalperiod subscriptionpolicy"
     class="canonical.launchpad.browser.TeamAddView"
     permission="launchpad.AnyPerson"
     template="../templates/people-newteam.pt"
-    >
-    <browser:widget
-      field="teamdescription"
-      class="zope.app.form.browser.TextAreaWidget"
-      displayWidth="30"
-      height="10" 
-      />
-  </browser:addform>
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IPersonSet"

@@ -353,7 +353,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     defaultmembershipperiod = Int(
         title=_('Subscription period'), required=False,
         description=_(
-            "The number of days a new subscription lasts before expiring. "
+            "Number of days a new subscription lasts before expiring. "
             "You can customize the length of an individual subscription when "
             "approving it. Leave this empty or set to 0 for subscriptions to "
             "never expire."))
@@ -362,9 +362,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         title=_('Renewal period'),
         required=False,
         description=_(
-            "The number of days a subscription lasts after being renewed. "
-            "You can customize the lengths of individual renewals. Leave "
-            "this empty or set to 0 for subscriptions to never expire."))
+            "Number of days a subscription lasts after being renewed. "
+            "You can customize the lengths of individual renewals, but this "
+            "is what's used for auto-renewed and user-renewed memberships."))
 
     defaultexpirationdate = Attribute(
         "The date, according to team's default values, in which a newly "
@@ -416,8 +416,28 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     @invariant
     def personCannotHaveIcon(person):
+        # XXX: This invariant is busted! The person parameter provided to this
+        # method will always be an instance of zope.formlib.form.FormData
+        # containing only the values of the fields included in the POSTed
+        # form. IOW, person.inTeam() will raise a NoInputData just like
+        # person.teamowner would as it's not present in most of the
+        # person-related forms.
+        # -- Guilherme Salgado, 2007-05-28
         if person.icon is not None and not person.isTeam():
             raise Invalid('Only teams can have an icon.')
+
+    @invariant
+    def defaultRenewalPeriodIsRequiredForSomeTeams(person):
+        """Teams for which memberships can be renewed automatically or by
+        the members themselves must specify a default renewal period.
+        """
+        automatic, ondemand = [TeamMembershipRenewalPolicy.AUTOMATIC,
+                               TeamMembershipRenewalPolicy.ONDEMAND]
+        if (person.teamowner is not None
+                and person.renewal_policy in [automatic, ondemand]
+                and person.defaultrenewalperiod <= 0):
+            raise Invalid(
+                'You must specify a default renewal period greater than 0.')
 
     def getActiveMemberships():
         """Return all active TeamMembership objects of this team.

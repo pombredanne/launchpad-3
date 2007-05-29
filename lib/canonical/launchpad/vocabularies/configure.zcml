@@ -346,6 +346,11 @@
     />
 
   <vocabulary
+    name="TeamMembershipRenewalPolicy"
+    factory="canonical.launchpad.vocabularies.TeamMembershipRenewalPolicyVocabulary"
+    />
+
+  <vocabulary
     name="TeamSubscriptionPolicy"
     factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
     />

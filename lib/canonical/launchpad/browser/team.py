@@ -13,34 +13,55 @@ __all__ = [
 
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.app.form.browser.add import AddView
+from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 
 from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
+from canonical.widgets import (
+    HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
+    action, canonical_url, custom_widget, LaunchpadEditFormView,
+    LaunchpadFormView)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
-    IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet,
-    ITeam, ITeamMember)
+    IEmailAddressSet, ILaunchBag, ILoginTokenSet, IPersonSet,
+    ITeamCreation, ITeamMember, ITeam)
 
 
 class TeamEditView(LaunchpadEditFormView):
 
     schema = ITeam
     field_names = [
-        'name', 'displayname', 'teamdescription',
-        'defaultmembershipperiod', 'defaultrenewalperiod',
-        'subscriptionpolicy']
+        'teamowner', 'name', 'displayname', 'teamdescription',
+        'subscriptionpolicy', 'defaultmembershipperiod',
+        'renewal_policy', 'defaultrenewalperiod']
+    custom_widget('teamowner', SinglePopupWidget, visible=False)
+    custom_widget(
+        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget(
+        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
 
     @action('Save', name='save')
     def action_save(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
+
+    # Override isMultiLineLayout and isSingleLineLayout because the
+    # renewal_policy field has a _very_ long label and so we need to use a
+    # multi-line layout to display the widget properly. 
+    def isMultiLineLayout(self, field_name):
+        if field_name == 'renewal_policy':
+            return True
+        return LaunchpadEditFormView.isMultiLineLayout(self, field_name)
+
+    def isSingleLineLayout(self, field_name):
+        if field_name == 'renewal_policy':
+            return False
+        return LaunchpadEditFormView.isSingleLineLayout(self, field_name)
 
 
 def generateTokenAndValidationEmail(email, team):
@@ -147,25 +168,29 @@ class TeamEmailView:
             "for up to an hour or two.)" % email)
 
 
-class TeamAddView(AddView):
+class TeamAddView(LaunchpadFormView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
-        self._nextURL = '.'
+    schema = ITeamCreation
+    label = ''
+    field_names = ["name", "displayname", "contactemail", "teamdescription",
+                   "subscriptionpolicy", "defaultmembershipperiod",
+                   "renewal_policy", "defaultrenewalperiod", "teamowner"]
+    custom_widget('teamowner', HiddenUserWidget)
+    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget(
+        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget(
+        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
 
-    def nextURL(self):
-        return self._nextURL
-
-    def createAndAdd(self, data):
+    @action('Create', name='create')
+    def create_action(self, action, data):
         name = data.get('name')
         displayname = data.get('displayname')
         teamdescription = data.get('teamdescription')
         defaultmembershipperiod = data.get('defaultmembershipperiod')
         defaultrenewalperiod = data.get('defaultrenewalperiod')
         subscriptionpolicy = data.get('subscriptionpolicy')
-        teamowner = getUtility(ILaunchBag).user
+        teamowner = data.get('teamowner')
         team = getUtility(IPersonSet).newTeam(
             teamowner, name, displayname, teamdescription,
             subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
@@ -182,8 +207,20 @@ class TeamAddView(AddView):
                 "provider might use 'greylisting', which could delay the "
                 "message for up to an hour or two.)" % email)
 
-        self._nextURL = canonical_url(team)
-        return team
+        self.next_url = canonical_url(team)
+
+    # Override isMultiLineLayout and isSingleLineLayout because the
+    # renewal_policy field has a _very_ long label and so we need to use a
+    # multi-line layout to display the widget properly. 
+    def isMultiLineLayout(self, field_name):
+        if field_name == 'renewal_policy':
+            return True
+        return LaunchpadFormView.isMultiLineLayout(self, field_name)
+
+    def isSingleLineLayout(self, field_name):
+        if field_name == 'renewal_policy':
+            return False
+        return LaunchpadFormView.isSingleLineLayout(self, field_name)
 
 
 class ProposedTeamMembersEditView:

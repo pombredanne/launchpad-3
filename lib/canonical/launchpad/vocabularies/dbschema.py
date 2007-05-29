@@ -48,6 +48,7 @@ __all__ = [
     'SpecificationStatusVocabulary',
     'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
+    'TeamMembershipRenewalPolicyVocabulary',
     'TeamSubscriptionPolicyVocabulary',
     'TextDirectionVocabulary',
     'TranslationPermissionVocabulary',

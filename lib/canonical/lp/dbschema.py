@@ -642,14 +642,14 @@ class TeamMembershipRenewalPolicy(DBSchema):
     """
 
     NONE = Item(10, """
-        None
+        invite them to apply for renewal
 
         Memberships can be renewed only by team administrators or by going
         through the normal workflow for joining the team.
         """)
 
     ONDEMAND = Item(20, """
-        On demand
+        invite them to renew their own membership
 
         Memberships can be renewed by the members themselves a few days before
         it expires. After it expires the member has to go through the normal
@@ -657,7 +657,7 @@ class TeamMembershipRenewalPolicy(DBSchema):
         """)
 
     AUTOMATIC = Item(30, """
-        Automatic
+        renew their membership automatically, also notifying the admins
 
         Memberships are automatically renewed when they expire and a note is
         sent to the member and to team admins.

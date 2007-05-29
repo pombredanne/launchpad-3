@@ -433,8 +433,11 @@ class LaunchpadTestRequest(TestRequest):
     >>> isinstance(request, TestRequest)
     True
 
-    It adds a mock INotificationRequest implementation
+    It provides LaunchpadLayer and adds a mock INotificationRequest
+    implementation.
 
+    >>> canonical.launchpad.layers.LaunchpadLayer.providedBy(request)
+    True
     >>> INotificationRequest.providedBy(request)
     True
     >>> request.uuid == request.response.uuid
@@ -449,7 +452,7 @@ class LaunchpadTestRequest(TestRequest):
     >>> verifyObject(IBrowserFormNG, request.form_ng)
     True
     """
-    implements(INotificationRequest)
+    implements(INotificationRequest, canonical.launchpad.layers.LaunchpadLayer)
 
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET', **kw):
