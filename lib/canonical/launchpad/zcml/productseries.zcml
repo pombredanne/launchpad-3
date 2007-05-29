@@ -246,6 +246,13 @@
             />
     </browser:pages>
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+filebug"
+        class="canonical.launchpad.browser.ProductSeriesFileBugRedirect"
+        permission="zope.Public"
+        />
+
   <!-- ProductSeriesSet -->
   <content class="canonical.launchpad.database.ProductSeriesSet">
     <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />

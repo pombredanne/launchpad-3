@@ -153,7 +153,7 @@ SERVICES = {
                               config.buildsequencer),
     'authserver': TacFile('authserver', 'daemons/authserver.tac',
                           config.authserver),
-    'sftp': TacFile('sftp', 'daemons/sftp.tac', config.supermirrorsftp),
+    'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
     'mailman': MailmanService(),
     }
 

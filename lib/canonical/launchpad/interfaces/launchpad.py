@@ -22,7 +22,8 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.launchpad.webapp.interfaces import (
     NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag, IBreadcrumb,
     IBasicLaunchpadRequest, IAfterTraverseEvent, AfterTraverseEvent,
-    IBeforeTraverseEvent, BeforeTraverseEvent, UnexpectedFormData
+    IBeforeTraverseEvent, BeforeTraverseEvent, UnexpectedFormData,
+    UnsafeFormGetSubmissionError,
     )
 
 __all__ = [
@@ -68,6 +69,7 @@ __all__ = [
     'NameNotAvailable',
     'NotFoundError',
     'UnexpectedFormData',
+    'UnsafeFormGetSubmissionError',
     ]
 
 
@@ -402,5 +404,3 @@ class IAppFrontPageSearchForm(Interface):
 
     scope = Choice(title=_('Search scope'), required=False,
                    vocabulary='DistributionOrProductOrProject')
-
-

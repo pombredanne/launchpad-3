@@ -9,7 +9,11 @@ import subprocess
 import sys
 import unittest
 
+from zope.component import getUtility
+
 from canonical.config import config
+from canonical.launchpad.interfaces import (
+    IArchiveSet, IPersonSet)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket)
@@ -38,7 +42,7 @@ class TestPublishDistro(TestNativePublishingBase):
 
         rc, out, err = self.runPublishDistro([])
 
-        self.assertEqual(0, rc)
+        self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
@@ -67,7 +71,7 @@ class TestPublishDistro(TestNativePublishingBase):
 
         rc, out, err = self.runPublishDistro(['-s', 'hoary-test'])
 
-        self.assertEqual(0, rc)
+        self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
 
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
         self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
@@ -77,6 +81,45 @@ class TestPublishDistro(TestNativePublishingBase):
 
         baz_path = "%s/main/b/baz/baz.dsc" % self.pool_dir
         self.assertEqual('baz', open(baz_path).read().strip())
+
+    def testForPPA(self):
+        """Try to run publish-distro in PPA mode.
+
+        It should deal only with PPA publications.
+        """
+        pub_source = self.getPubSource(filecontent='foo')
+
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        pub_source2 = self.getPubSource(
+            sourcename='baz', filecontent='baz', archive=cprov.archive)
+
+        name16 = getUtility(IPersonSet).getByName('name16')
+        getUtility(IArchiveSet).new(owner=name16)
+        pub_source3 = self.getPubSource(
+            sourcename='bar', filecontent='bar', archive=name16.archive)
+
+        self.layer.txn.commit()
+
+        rc, out, err = self.runPublishDistro(['--ppa'])
+
+        self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
+
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_source2.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source3.status, PackagePublishingStatus.PUBLISHED)
+
+        foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        self.assertEqual(False, os.path.exists(foo_path))
+
+        baz_path = os.path.join(
+            config.personalpackagearchive.root, cprov.name,
+            'ubuntutest/pool/main/b/baz/baz.dsc')
+        self.assertEqual('baz', open(baz_path).read().strip())
+
+        bar_path = os.path.join(
+            config.personalpackagearchive.root, name16.name,
+            'ubuntutest/pool/main/b/bar/bar.dsc')
+        self.assertEqual('bar', open(bar_path).read().strip())
 
     def testRunWithEmptySuites(self):
         """Try a publish-distro run on empty suites in careful_apt mode

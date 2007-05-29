@@ -402,6 +402,8 @@ distrorelease_search = ContextDisplayName('Search packages in %s')
 
 distrorelease_translations = ContextTitle('Translations of %s in Launchpad')
 
+distrorelease_translationsadmin = ContextTitle('Admin translation options of %s')
+
 distrorelease_builds = ContextTitle('Builds for %s')
 
 distrorelease_queue = ContextTitle('Queue for %s')
@@ -496,6 +498,8 @@ launchpad_onezerostatus = 'One-Zero Page Template Status'
 launchpad_requestexpired = 'Error: Timeout'
 
 launchpad_search = 'Search projects in Launchpad'
+
+launchpad_translationunavailable= 'Translation page is not available'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
@@ -755,6 +759,8 @@ potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
+ppa_list = 'Personal Package Archive List'
+
 product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
@@ -780,6 +786,8 @@ product_new = 'Register a project in Launchpad'
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
+product_files = ContextDisplayName('%s project files')
+
 product_series = ContextDisplayName('%s timeline')
 
 product_translations = ContextTitle('Translations of %s in Launchpad')
@@ -787,6 +795,8 @@ product_translations = ContextTitle('Translations of %s in Launchpad')
 product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
+
+productrelease_file_add = ContextDisplayName('Add a file to %s')
 
 productrelease_admin = ContextTitle('Administer %s in Launchpad')
 
@@ -1094,9 +1104,11 @@ team_edit = 'Edit team information'
 
 team_editemail = ContextDisplayName('%s contact e-mail address')
 
+team_editproposed = ContextBrowsername('Proposed members of %s')
+
 team_index = ContextBrowsername(smartquote('"%s" team in Launchpad'))
 
-team_editproposed = ContextBrowsername('Proposed members of %s')
+team_invitations = ContextBrowsername("Invitations sent to %s")
 
 team_join = ContextBrowsername('Join %s')
 
@@ -1108,6 +1120,10 @@ team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
 
 def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (
+        context.person.browsername, context.team.browsername)
+
+def teammembership_invitation(context, view):
+    return "Make %s a member of %s" % (
         context.person.browsername, context.team.browsername)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')

@@ -23,6 +23,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
 
         self.breezy_autotest.publish(
             self.disk_pool, self.logger,
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=False)
         self.layer.txn.commit()
@@ -46,6 +47,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
 
         self.breezy_autotest_i386.publish(
             self.disk_pool, self.logger,
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=False)
         self.layer.txn.commit()
@@ -85,6 +87,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # state only 'pending' publishing records for pocket RELEASE
         # are published.
         pub_records = self.breezy_autotest.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=False)
         self.assertEqual(pub_records.count(), 1)
@@ -94,6 +97,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # This step is unsusual but checks if the pocket restriction also
         # work for other pockets than the RELEASE.
         pub_records = self.breezy_autotest.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.UPDATES,
             is_careful=False)
         self.assertEqual(pub_records.count(), 1)
@@ -103,6 +107,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # Restricting to a pocket with no publication returns an
         # empty SQLResult.
         pub_records = self.breezy_autotest.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.BACKPORTS,
             is_careful=False)
         self.assertEqual(pub_records.count(), 0)
@@ -111,6 +116,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # of every 'pending' and 'published' records present in
         # the given pocket.
         pub_records = self.breezy_autotest.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=True)
         self.assertEqual(pub_records.count(), 2)
@@ -147,6 +153,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # Since the distro is published, nothing is returned because
         # RELEASE pocket is ignored, in both modes, careful or not.
         pub_records = self.breezy_autotest.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=False)
         self.assertEqual(pub_records.count(), 0)
@@ -158,6 +165,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # mirrors/clients out.
         # At the end, "careful" mode is such a gross hack.
         pub_records = self.breezy_autotest.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=True)
         self.assertEqual(pub_records.count(), 0)
@@ -165,6 +173,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # Publications targeted to other pockets than RELEASE are
         # still reachable.
         pub_records = self.breezy_autotest.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.UPDATES,
             is_careful=False)
         self.assertEqual(pub_records.count(), 1)
@@ -197,6 +206,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # state only 'pending' publishing records for pocket RELEASE
         # are published.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=False)
         self.assertEqual(pub_records.count(), 1)
@@ -206,6 +216,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # This step is unsusual but checks if the pocket restriction also
         # work for other pockets than the RELEASE.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.UPDATES,
             is_careful=False)
         self.assertEqual(pub_records.count(), 1)
@@ -215,6 +226,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # Restricting to a pocket with no publication returns an
         # empty SQLResult.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.BACKPORTS,
             is_careful=False)
         self.assertEqual(pub_records.count(), 0)
@@ -223,6 +235,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # of every 'pending' and 'published' records present in
         # the given pocket.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=True)
         self.assertEqual(pub_records.count(), 2)
@@ -262,6 +275,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # Since the distro is published, nothing is returned because
         # RELEASE pocket is ignored, in both modes, careful or not.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=False)
         self.assertEqual(pub_records.count(), 0)
@@ -273,6 +287,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # mirrors/clients out.
         # At the end, "careful" mode is such a gross hack.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.RELEASE,
             is_careful=True)
         self.assertEqual(pub_records.count(), 0)
@@ -280,6 +295,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # Publications targeted to other pockets than RELEASE are
         # still reachable.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
             pocket=PackagePublishingPocket.UPDATES,
             is_careful=False)
         self.assertEqual(pub_records.count(), 1)
