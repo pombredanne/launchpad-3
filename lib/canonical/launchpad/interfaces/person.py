@@ -414,6 +414,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
+    archive = Attribute(
+        "The Archive owned by this person, his PPA.")
+
     @invariant
     def personCannotHaveIcon(person):
         # XXX: This invariant is busted! The person parameter provided to this
@@ -604,6 +607,14 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         This method will only include the latest source package release
         for each source package name, distribution release combination.
         """
+
+    def isUploader(distribution):
+        """Return whether this person is an uploader for distribution.
+
+        Returns True if this person is an uploader for distribution, or
+        False otherwise.
+        """
+
 
     def validateAndEnsurePreferredEmail(email):
         """Ensure this person has a preferred email.

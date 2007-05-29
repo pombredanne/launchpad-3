@@ -6,10 +6,10 @@ that this person participates in that has branches.
 The portlet only appears when the persons teams actually have branches,
 and only teams that have branches are shown.
 
-None of Sample Person's teams have any branches, so there should
+None of No Privileges Person's teams have any branches, so there should
 not be a portlet there.
 
-    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> browser.open('http://code.launchpad.dev/~no-priv')
     >>> portlet = find_portlet(browser.contents, 'Branches for')
     >>> print portlet
     None

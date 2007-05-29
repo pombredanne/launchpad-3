@@ -66,6 +66,7 @@ class AbstractUploadPolicy:
         self.distro = None
         self.distrorelease = None
         self.pocket = None
+        self.archive = None
         self.unsigned_changes_ok = False
         self.unsigned_dsc_ok = False
         self.create_people = True
@@ -86,13 +87,21 @@ class AbstractUploadPolicy:
             self.setDistroReleaseAndPocket(options.distrorelease)
 
     def setDistroReleaseAndPocket(self, dr_name):
-        """Set the distrorelease and pocket from the provided name."""
+        """Set the distrorelease and pocket from the provided name.
+
+        It also sets self.archive to the distrorelease main_archive.
+        """
         if self.distrorelease is not None:
+            assert self.archive is not None, "Archive must be set."
             # We never override the policy
             return
+
         self.distroreleasename = dr_name
         (self.distrorelease,
          self.pocket) = self.distro.getDistroReleaseAndPocket(dr_name)
+
+        if self.archive is None:
+            self.archive = self.distrorelease.main_archive
 
     @property
     def announcelist(self):
@@ -104,7 +113,39 @@ class AbstractUploadPolicy:
         return announce_list
 
     def checkUpload(self, upload):
+        """Mandatory policy checks on NascentUploads."""
+        if upload.is_ppa:
+            if self.pocket != PackagePublishingPocket.RELEASE:
+                upload.reject(
+                    "PPA uploads must be for the RELEASE pocket.")
+            if not upload.changes.signer.is_ubuntero:
+                upload.reject(
+                    "PPA uploads must be signed by an 'ubuntero'.")
+        else:
+            # XXX julian 2005-05-29
+            # This is a greasy hack until bug #117557 is fixed.
+            if (self.distrorelease and 
+                not self.distrorelease.canUploadToPocket(self.pocket)):
+                upload.reject(
+                    "Not permitted to upload to the %s pocket in a "
+                    "release in the '%s' state." % (
+                    self.pocket.name, self.distrorelease.releasestatus.name))
+
+        # reject PPA uploads by default
+        self.rejectPPAUploads(upload)
+
+        # execute policy specific checks
         self.policySpecificChecks(upload)
+
+    def rejectPPAUploads(self, upload):
+        """Reject uploads targeted to PPA.
+
+        We will only allow it on 'insecure' and 'buildd' policy because we
+        ensure the uploads are signed.
+        """
+        if upload.is_ppa:
+            upload.reject(
+                "PPA upload are not allowed in '%s' policy" % self.name)
 
     def policySpecificChecks(self, upload):
         """Implement any policy-specific checks in child."""
@@ -112,14 +153,17 @@ class AbstractUploadPolicy:
             "Policy specific checks must be implemented in child policies.")
 
     def autoApprove(self, upload):
-        """Return whether or not the policy approves of the upload.
+        """Return whether the upload should be automatically approved.
 
-        Often the pocket may decide whether or not a policy approves of an
-        upload. E.g. The insecure policy probably approves of things going
-        to the RELEASE pocket, but needs extra approval for UPDATES.
+        This is called only if the upload is a recognised package; if it
+        is new, autoApproveNew is used instead.
         """
         # The base policy approves of everything.
         return True
+
+    def autoApproveNew(self, upload):
+        """Return whether the NEW upload should be automatically approved."""
+        return False
 
     @classmethod
     def _registerPolicy(cls, policy_type):
@@ -154,6 +198,9 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         self.can_upload_binaries = False
         self.can_upload_mixed = False
 
+    def rejectPPAUploads(self, upload):
+        """Insecure policy allows PPA upload."""
+        return False
 
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now."""
@@ -172,7 +219,9 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 return True
         return False
 
+
 AbstractUploadPolicy._registerPolicy(InsecureUploadPolicy)
+
 
 class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     """The build daemon upload policy is invoked by the slave scanner."""
@@ -197,6 +246,11 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         # XXX: dsilvers: 20051014: Implement this to check the buildid etc.
         # bug 3135
         pass
+
+    def rejectPPAUploads(self, upload):
+        """Buildd policy allows PPA upload."""
+        return False
+
 
 AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
 

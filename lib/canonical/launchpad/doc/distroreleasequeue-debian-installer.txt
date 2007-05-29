@@ -42,6 +42,9 @@ happen in production:
   >>> import_public_test_keys()
   >>> login('foo.bar@canonical.com')
 
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+
   >>> from canonical.archiveuploader.nascentupload import NascentUpload
   >>> from canonical.archiveuploader.tests import (
   ...     datadir, getPolicy, mock_logger, mock_logger_quiet)
@@ -50,12 +53,16 @@ happen in production:
   ...     name='anything', distro='ubuntutest', distrorelease=None)
   >>> anything_policy.setDistroReleaseAndPocket('hoary-test')
 
+Set the email address for annoucements emails:
+
+  >>> anything_policy.distrorelease.changeslist = 'announce@example.com'
+
   >>> upload = NascentUpload(
   ...     datadir(
   ...       'debian-installer/debian-installer_20070214ubuntu1_i386.changes'),
   ...     anything_policy, mock_logger_quiet)
   >>> upload.process()
-  >>> success, msgs = upload.do_accept()
+  >>> success = upload.do_accept()
   >>> success
   True
 
@@ -65,15 +72,17 @@ information we find out that it contains one custom upload.
 
   >>> upload.queue_root.status.name
   'ACCEPTED'
-  >>> len(msgs)
-  2
-  >>> upload.queue_root.customfiles.count()
-  1
 
 Make librarian files available for publication:
 
   >>> import transaction
   >>> transaction.commit()
+
+  >>> from canonical.launchpad.mail import stub
+  >>> len(stub.test_emails)
+  2
+  >>> upload.queue_root.customfiles.count()
+  1
 
 Let's force an error simulating a conflict in archive:
 
@@ -121,7 +130,7 @@ The current debian-installer directory (20070214ubuntu1) and a link to
 the last version (we only have the one we uploaded) should be
 presented:
 
-  >>> os.listdir(installer_path)
+  >>> sorted(os.listdir(installer_path))
   ['20070214ubuntu1', 'current']
 
 As a consistency check, let's verify one of the files inside the

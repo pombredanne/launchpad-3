@@ -78,10 +78,19 @@ class Config(object):
         self.overrideroot = self._distroconfig.get("publishing","overrideroot")
         self.cacheroot = self._distroconfig.get("publishing","cacheroot")
         self.miscroot = self._distroconfig.get("publishing","miscroot")
-
+        # XXX cprov 20070426: we should build all the previous attributes
+        # dynamically like this. It would reduce the configuration complexity.
+        # Even before we have it properly modeled in LPDB.
+        # See bug #45270 for further information.
+        self.temproot = os.path.join(
+            self.distroroot, '%s-temp' % self.distroName)
 
     def setupArchiveDirs(self):
-        """Create missing required directories in archive."""
+        """Create missing required directories in archive.
+
+        For PPA publication path are overriden after instantiation
+        and empty locations should not be considered for creation.
+        """
         required_directories = [
             self.distroroot,
             self.poolroot,
@@ -89,9 +98,12 @@ class Config(object):
             self.archiveroot,
             self.cacheroot,
             self.overrideroot,
-            self.miscroot
+            self.miscroot,
+            self.temproot,
             ]
 
         for directory in required_directories:
+            if directory is None:
+                continue
             if not os.path.exists(directory):
                 os.makedirs(directory, 0755)

@@ -379,7 +379,8 @@ Person's supported IQuestionTargets:
     # We need to accept the invitation sent by the addMember() call in
     # order to make landscape_team an actual member of translator_team.
     >>> login(landscape_team.teamowner.preferredemail.email)
-    >>> landscape_team.acceptInvitationToBeMemberOf(translator_team)
+    >>> landscape_team.acceptInvitationToBeMemberOf(
+    ...     translator_team, comment='something')
 
     >>> no_priv.hasParticipationEntryFor(translator_team)
     True

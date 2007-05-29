@@ -348,6 +348,19 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if this bug doesn't have such a bug watch.
         """
 
+    def setStatus(target, status, user):
+        """Set the status of the bugtask related to the specified target.
+
+            :target: The target of the bugtask that should be modified.
+            :status: The status the bugtask should be set to.
+            :user: The IPerson doing the change.
+
+        If a bug task was edited, emit a SQLObjectModifiedEvent and
+        return the edited bugtask.
+
+        Return None if no bugtask was edited.
+        """
+
     def getBugTask(target):
         """Return the bugtask with the specified target.
 

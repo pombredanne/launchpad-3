@@ -289,7 +289,8 @@ only be activated if they accept the invitation.
 If one of the admins accept the invitation, then a notification is sent to the
 team which just became a member and to the admins of the hosting team.
 
-    >>> mirror_admins.acceptInvitationToBeMemberOf(ubuntu_team)
+    >>> comment = "Of course I want to be part of ubuntu!"
+    >>> mirror_admins.acceptInvitationToBeMemberOf(ubuntu_team, comment)
     >>> flush_database_updates()
     >>> transaction.commit()
 
@@ -306,6 +307,10 @@ team which just became a member and to the admins of the hosting team.
     Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
     team).
     <BLANKLINE>
+    Comment:
+    Of course I want to be part of ubuntu!
+    <BLANKLINE>
+    <BLANKLINE>
     Regards,
     The Launchpad team
 
@@ -317,6 +322,10 @@ team which just became a member and to the admins of the hosting team.
     Mark Shuttleworth (sabdfl) has accepted the invitation to make Mirror
     Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
     team).
+    <BLANKLINE>
+    Comment:
+    Of course I want to be part of ubuntu!
+    <BLANKLINE>
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -332,7 +341,8 @@ Similarly, a notification is sent if the invitation is declined.
     >>> transaction.commit()
     >>> stub.test_emails = []
 
-    >>> landscape.declineInvitationToBeMemberOf(ubuntu_team)
+    >>> comment = "Landscape has nothing to do with ubuntu, unfortunately."
+    >>> landscape.declineInvitationToBeMemberOf(ubuntu_team, comment)
     >>> flush_database_updates()
     >>> transaction.commit()
 
@@ -348,6 +358,10 @@ Similarly, a notification is sent if the invitation is declined.
     Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
     Developers (landscape-developers) a member of Ubuntu Team (ubuntu-team).
     <BLANKLINE>
+    Comment:
+    Landscape has nothing to do with ubuntu, unfortunately.
+    <BLANKLINE>
+    <BLANKLINE>
     Regards,
     The Launchpad team
 
@@ -358,6 +372,10 @@ Similarly, a notification is sent if the invitation is declined.
     <BLANKLINE>
     Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
     Developers (landscape-developers) a member of Ubuntu Team (ubuntu-team).
+    <BLANKLINE>
+    Comment:
+    Landscape has nothing to do with ubuntu, unfortunately.
+    <BLANKLINE>
     <BLANKLINE>
     Regards,
     The Launchpad team

@@ -939,8 +939,10 @@ address if Spanish is among its preferred languages:
     # We need to accept the invitation sent by the addMember() call in
     # order to make guadamen an actual member of admins.
     >>> login(guadamen.teamowner.preferredemail.email)
-    >>> guadamen.acceptInvitationToBeMemberOf(admins)
+    >>> guadamen.acceptInvitationToBeMemberOf(admins, comment='something')
 
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
     >>> transaction.commit()
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []

@@ -4,9 +4,10 @@
 __metaclass__ = type
 
 import threading
+import xmlrpclib
 
 from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
-from zope.publisher.xmlrpc import XMLRPCRequest
+from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.app.session.interfaces import ISession
 from zope.interface import implements
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
@@ -34,6 +35,7 @@ from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
+from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.opstats import OpStats
 
 
@@ -671,6 +673,27 @@ class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
 class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
                              ErrorReportRequest):
     """Request type for doing XMLRPC in Launchpad."""
+
+    def _createResponse(self):
+        return LaunchpadXMLRPCResponse()
+
+
+class LaunchpadXMLRPCResponse(XMLRPCResponse):
+    """Response type for doing XMLRPC in Launchpad."""
+
+    def handleException(self, exc_info):
+        # If we don't have a proper xmlrpclib.Fault, and we have
+        # logged an OOPS, create a Fault that reports the OOPS ID to
+        # the user.
+        exc_value = exc_info[1]
+        if not isinstance(exc_value, xmlrpclib.Fault):
+            request = get_current_browser_request()
+            if request is not None and request.oopsid is not None:
+                exc_info = (xmlrpclib.Fault,
+                            xmlrpclib.Fault(-1, request.oopsid),
+                            None)
+        XMLRPCResponse.handleException(self, exc_info)
+
 
 # ---- openid
 

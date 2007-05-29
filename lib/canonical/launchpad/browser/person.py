@@ -137,6 +137,7 @@ from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -258,9 +259,19 @@ class TeamInvitationView(LaunchpadFormView):
 
     schema = ITeamMembership
     label = 'Team membership invitation'
-    field_names = []
+    field_names = ['reviewercomment']
+    custom_widget('reviewercomment', TextAreaWidget, height=5, width=60)
     template = ViewPageTemplateFile(
         '../templates/teammembership-invitation.pt')
+
+    def __init__(self, context, request):
+        # Only admins of the invited team can see the page in which they
+        # approve/decline invitations.
+        if not check_permission('launchpad.Edit', context.person):
+            raise Unauthorized(
+                "Only team administrators can approve/decline invitations "
+                "sent to this team.")
+        LaunchpadFormView.__init__(self, context, request)
 
     def browserDefault(self, request):
         return self, ()
@@ -272,7 +283,8 @@ class TeamInvitationView(LaunchpadFormView):
     @action(_("Accept"), name="accept")
     def accept_action(self, action, data):
         member = self.context.person
-        member.acceptInvitationToBeMemberOf(self.context.team)
+        member.acceptInvitationToBeMemberOf(
+            self.context.team, data['reviewercomment'])
         self.request.response.addInfoNotification(
             _("This team is now a member of %(team)s"),
             team=self.context.team.browsername)
@@ -280,7 +292,8 @@ class TeamInvitationView(LaunchpadFormView):
     @action(_("Decline"), name="decline")
     def decline_action(self, action, data):
         member = self.context.person
-        member.declineInvitationToBeMemberOf(self.context.team)
+        member.declineInvitationToBeMemberOf(
+            self.context.team, data['reviewercomment'])
         self.request.response.addInfoNotification(
             _("Declined the invitation to join %(team)s"),
             team=self.context.team.browsername)

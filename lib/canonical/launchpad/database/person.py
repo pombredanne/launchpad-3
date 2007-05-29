@@ -14,8 +14,8 @@ from zope.component import getUtility
 from zope.event import notify
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, SQLMultipleJoin,
-    SQLRelatedJoin, SQLObjectNotFound)
+    BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
+    SQLObjectNotFound, SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
@@ -24,8 +24,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
-    flush_database_caches)
+    cursor, flush_database_caches, flush_database_updates, quote, quote_like,
+    sqlvalues, SQLBase)
 
 from canonical.foaf import nickname
 from canonical.cachedproperty import cachedproperty
@@ -39,23 +39,23 @@ from canonical.launchpad.helpers import (
     contactEmailAddresses, is_english_variant, shortlist)
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, SSHKeyType,
-    EmailAddressStatus, TeamSubscriptionPolicy, TeamMembershipStatus,
-    LoginTokenType, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, ShippingRequestStatus, PersonCreationRationale,
-    TeamMembershipRenewalPolicy)
+    BugTaskImportance, BugTaskStatus, EmailAddressStatus, LoginTokenType,
+    PersonCreationRationale, SpecificationFilter, SpecificationSort,
+    SpecificationStatus, ShippingRequestStatus, SSHKeyType,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy)
 
 from canonical.launchpad.interfaces import (
-    IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
-    IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet,
-    ISSHKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
-    IBugTaskSet, UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    ITranslationGroupSet, ILaunchpadStatisticSet, ShipItConstants,
-    ILaunchpadCelebrities, ILanguageSet, IDistributionSet, IPillarNameSet,
-    ISourcePackageNameSet, QUESTION_STATUS_DEFAULT_SEARCH, IProduct,
-    IDistribution, UNRESOLVED_BUGTASK_STATUSES, IHasLogo, IHasMugshot,
-    IHasIcon, JoinNotAllowed, ILaunchBag)
+    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
+    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
+    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
+    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILanguageSet,
+    ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
+    IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
+    ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
+    JoinNotAllowed, QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants,
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
+from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.branch import Branch
@@ -79,7 +79,7 @@ from canonical.launchpad.database.specificationfeedback import (
 from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
-    TeamMembership, TeamParticipation, TeamMembershipSet)
+    TeamMembership, TeamMembershipSet, TeamParticipation)
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
@@ -113,11 +113,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     teamdescription = StringCol(dbName='teamdescription', default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
-        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    mugshot = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+        dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
-        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
+        dbName='logo', foreignKey='LibraryFileAlias', default=None)
+    mugshot = ForeignKey(
+        dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -183,6 +183,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
+
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -1085,7 +1086,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     # to protect them with a launchpad.Edit permission. We could do that by
     # defining explicit permissions for all IPerson methods/attributes in
     # the zcml but that's far from optimal given the size of IPerson.
-    def acceptInvitationToBeMemberOf(self, team):
+    def acceptInvitationToBeMemberOf(self, team, comment):
         """Accept an invitation to become a member of the given team.
         
         There must be a TeamMembership for this person and the given team with
@@ -1096,23 +1097,22 @@ class Person(SQLBase, HasSpecificationsMixin):
         assert tm is not None
         assert tm.status == TeamMembershipStatus.INVITED
         tm.setStatus(
-            TeamMembershipStatus.APPROVED, getUtility(ILaunchBag).user)
+            TeamMembershipStatus.APPROVED, getUtility(ILaunchBag).user,
+            reviewercomment=comment)
 
-    def declineInvitationToBeMemberOf(self, team):
+    def declineInvitationToBeMemberOf(self, team, comment):
         """Decline an invitation to become a member of the given team.
         
         There must be a TeamMembership for this person and the given team with
         the INVITED status. The status of this TeamMembership will be changed
         to INVITATION_DECLINED.
         """
-        # XXX: Is it worth refactoring these two methods to avoid the
-        # duplication of these checks?
         tm = TeamMembership.selectOneBy(person=self, team=team)
         assert tm is not None
         assert tm.status == TeamMembershipStatus.INVITED
         tm.setStatus(
             TeamMembershipStatus.INVITATION_DECLINED,
-            getUtility(ILaunchBag).user)
+            getUtility(ILaunchBag).user, reviewercomment=comment)
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
@@ -1364,7 +1364,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             Person.id = TeamParticipation.team
             AND TeamParticipation.person = %s
             AND Person.teamowner IS NOT NULL
-            AND Person.emblem IS NOT NULL
+            AND Person.icon IS NOT NULL
             AND TeamParticipation.team != %s
             """ % sqlvalues(self.id, self.id),
             clauseTables=['TeamParticipation'],
@@ -1552,6 +1552,13 @@ class Person(SQLBase, HasSpecificationsMixin):
                      'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer'])
 
+    def isUploader(self, distribution):
+        """See IPerson."""
+        for acl in distribution.uploaders:
+            if self in acl:
+                return True
+        return False
+
     @cachedproperty
     def is_ubuntero(self):
         """See IPerson."""
@@ -1576,6 +1583,10 @@ class Person(SQLBase, HasSpecificationsMixin):
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
 
+    @property
+    def archive(self):
+        """See IPerson."""
+        return Archive.selectOneBy(owner=self)
 
 class PersonSet:
     """The set of persons."""
@@ -2257,6 +2268,13 @@ class PersonSet:
             DELETE FROM TranslationImportQueueEntry WHERE importer=%(from_id)d
             ''' % vars())
         skip.append(('translationimportqueueentry', 'importer'))
+
+        # XXX cprov 20070222: Since we only allow one PPA for each user,
+        # we can't reassign the old user archive to the new user.
+        # It need to be done manually, probably by reasinning all publications
+        # to the old PPA to the new one, performing a careful_publishing on it
+        # and removing the old one from disk. See bug #87098
+        skip.append(('archive', 'owner'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
