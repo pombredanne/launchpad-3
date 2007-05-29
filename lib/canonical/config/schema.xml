@@ -923,6 +923,20 @@ k            </description>
             attribute="autotest_errorreports" required="no" />
     </sectiontype>
 
+    <sectiontype name="personalpackagearchive">
+        <key name="root" datatype="string" required="yes">
+            <description>
+                Directory to be created to store PPAs.
+            </description>
+        </key>
+        <key name="base_url" datatype="string" required="no"
+             default="http://ppa.launchpad.dev">
+            <description>
+                External base URL for PPAs.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="mailman-build"
                  prefix="canonical.launchpad.mailman.config">
         <key name="build"           datatype="boolean"      default="false" />
@@ -990,6 +1004,8 @@ k            </description>
         <section name="*" type="codehosting" attribute="codehosting" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
+        <section name="*" type="personalpackagearchive"
+            attribute="personalpackagearchive" />
         <section name="*" type="mailman" attribute="mailman" />
     </sectiontype>
 

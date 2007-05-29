@@ -402,6 +402,8 @@ distrorelease_search = ContextDisplayName('Search packages in %s')
 
 distrorelease_translations = ContextTitle('Translations of %s in Launchpad')
 
+distrorelease_translationsadmin = ContextTitle('Admin translation options of %s')
+
 distrorelease_builds = ContextTitle('Builds for %s')
 
 distrorelease_queue = ContextTitle('Queue for %s')
@@ -496,6 +498,8 @@ launchpad_onezerostatus = 'One-Zero Page Template Status'
 launchpad_requestexpired = 'Error: Timeout'
 
 launchpad_search = 'Search projects in Launchpad'
+
+launchpad_translationunavailable= 'Translation page is not available'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
@@ -754,6 +758,8 @@ potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Launchpad'))
 potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
+
+ppa_list = 'Personal Package Archive List'
 
 product_add = 'Register a project in Launchpad'
 

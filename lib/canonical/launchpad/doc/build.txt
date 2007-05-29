@@ -44,6 +44,9 @@ Let's check the complex properties of a build object.
   >>> firefox_build.calculated_buildstart
   datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
 
+  >>> firefox_build.is_trusted
+  True
+
 Test "retry" functionality:
 
   >>> firefox_build.can_be_retried
