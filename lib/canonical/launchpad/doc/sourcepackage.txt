@@ -1,5 +1,4 @@
-Source Packages
-===============
+= Source Packages =
 
 A source package is a thing from which binary packages are built, to then be
 installed using a package management tool like apt-get or rpm. One named source
@@ -8,8 +7,8 @@ packages, on one or more architectures. One named binary package in a distro
 may have been built from more than one named source package (e.g. a different
 source package may have been used to build "foo" on i386 vs. "foo" on ppc.)
 
-Named Source Package
---------------------
+
+== Named Source Package ==
 
 The are various metadata we're interested in collecting about a bundle of code
 used to build binary packages for installation in a particular distro release.
@@ -44,8 +43,8 @@ If the package doesn't exist, queryByName returns None:
     >>> print biscoito
     None
 
-Distribution Source Packages
-----------------------------
+
+== Distribution Source Packages ==
 
 In some cases it's useful to be able to refer to a source package at a
 distribution level, independent of any particular distrorelease. For
@@ -97,8 +96,8 @@ You can search for bugs in an IDistroSourcePackage using the
     >>> tasks[0].id
     17
 
-Packaging
----------
+
+== Packaging ==
 
 Distribution packages are linked to upstream productseries through the
 packaging process. Here we test the code that links all of those.
@@ -234,8 +233,7 @@ distinctreleases, so we use this ugly hack:
     2
 
 
-Comparing Sourcepackages
-------------------------
+== Comparing Sourcepackages ==
 
 Lastly, note that sourcepackages know how to compare to each other:
 
@@ -250,8 +248,7 @@ Lastly, note that sourcepackages know how to compare to each other:
     >>> hoary_firefox_one == warty_firefox
     False
 
-Direct Packagings
------------------
+== Direct Packagings ==
 
     >>> print sp.direct_packaging
     None
@@ -260,8 +257,7 @@ Direct Packagings
     >>> print warty_firefox.direct_packaging.productseries.title
     Mozilla Firefox Series: trunk
 
-releasehistory
---------------
+== releasehistory ==
 
     >>> len(list(hoary_firefox_one.distinctreleases))
     1
