@@ -18,8 +18,7 @@ from bzrlib.option import Option
 from bzrlib import urlutils, ui
 
 from bzrlib.smart import medium, server
-from bzrlib.transport import get_transport
-from bzrlib.transport import remote
+from bzrlib.transport import chroot, get_transport, remote
 
 from canonical.config import config
 from canonical.codehosting import transport
@@ -59,10 +58,15 @@ class cmd_launchpad_server(Command):
     takes_args = ['user_id']
 
     def get_transport(self, authserver, user_id, url):
+        # XXX - The 'chroot' lines lack unit tests.
+        # Jonathan Lange, 2007-05-29
+        chroot_server = chroot.ChrootServer(get_transport(url))
+        chroot_server.setUp()
+        backing_transport = get_transport(chroot_server.get_url())
         lp_server = transport.LaunchpadServer(
             authserver,
             user_id,
-            get_transport(url))
+            backing_transport)
         lp_server.setUp()
         return get_transport(lp_server.get_url())
 

@@ -19,6 +19,7 @@ from bzrlib.smart import medium
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.transport import get_transport, remote
 
+from twisted.enterprise.adbapi import ConnectionPool
 from twisted.internet import defer
 from canonical.tests.test_twisted import TwistedTestCase
 
@@ -126,22 +127,16 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
         assert os.path.isfile(bzr_path), "Bad Rocketfuel. Couldn't find bzr."
         return bzr_path
 
-    def iterate_reactor(self):
-        # XXX - This atrocity is here so that the adbapi's threadpool gets a
-        # chance to start up.
-        # Jonathan Lange, 2007-05-25
-        from twisted.internet import reactor
-        d = defer.Deferred()
-        reactor.callLater(0.0001, d.callback, None)
-        return d
-
     def setUp(self):
         TestCaseInTempDir.setUp(self)
+        # Work around bug in Twisted that prevents closing connection pools
+        # synchronously.
+        # See http://twistedmatrix.com/trac/ticket/2680
+        ConnectionPool.shutdownID = None
         self.make_empty_directory(config.codehosting.branches_root)
         authserver = AuthserverService()
         authserver.startService()
         self.addCleanup(authserver.stopService)
-        return self.iterate_reactor()
 
     def test_command_registered(self):
         # The 'lp-serve' command object is registered as soon as the plugin is
