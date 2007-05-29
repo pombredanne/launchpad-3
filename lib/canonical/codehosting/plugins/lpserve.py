@@ -1,6 +1,9 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Bazaar plugin to run the smart server on Launchpad."""
+"""Bazaar plugin to run the smart server on Launchpad.
+
+Cribbed from bzrlib.builtins.cmd_serve from Bazaar 0.16.
+"""
 
 __metaclass__ = type
 

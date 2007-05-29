@@ -140,11 +140,17 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
         return self.iterate_reactor()
 
     def test_command_registered(self):
+        # The 'lp-serve' command object is registered as soon as the plugin is
+        # imported.
         self.assertIsInstance(
             get_cmd_object('lp-serve'), lpserve.cmd_launchpad_server)
 
     @deferToThread
     def _test_bzr_serve_port_readonly(self):
+        # When the server is started read only, attempts to write data are
+        # rejected as 'TransportNotPossible'.
+        #
+        # This tests the 'listening on a port' code path.
         process, url = self.start_server_port('sabdfl', ['--read-only'])
         transport = get_transport(url)
         self.assertRaises(errors.TransportNotPossible,
@@ -156,6 +162,10 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
     @deferToThread
     def _test_bzr_serve_inet_readonly(self):
+        # When the server is started read only, attempts to write data are
+        # rejected as 'TransportNotPossible'.
+        #
+        # This tests the 'listening on stdio' code path.
         process, transport = self.start_server_inet('sabdfl', ['--read-only'])
         self.assertRaises(errors.TransportNotPossible,
                           transport.mkdir, '~sabdfl/+junk/new-branch')
@@ -166,6 +176,10 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
     @deferToThread
     def _test_bzr_serve_inet_readwrite(self):
+        # When the server is started normally (i.e. allowing writes), we can
+        # use a transport pointing at the server to make directories, create
+        # files and so forth. These operations are then translated to the local
+        # file system.
         local_transport = get_transport(config.codehosting.branches_root)
         old_file_list = list(local_transport.iter_files_recursive())
         self.assertEqual([], old_file_list)

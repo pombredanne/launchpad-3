@@ -15,6 +15,7 @@ from canonical.codehosting import transport
 
 
 class FakeLaunchpad:
+    """Stub RPC interface to Launchpad."""
 
     def __init__(self):
         self._person_set = {
@@ -44,6 +45,7 @@ class FakeLaunchpad:
         return new_id
 
     def createBranch(self, user_id, product_id, branch_name):
+        """See IHostedBranchStorage.createBranch."""
         new_branch = dict(
             name=branch_name, user_id=user_id, product_id=product_id)
         for branch in self._branch_set.values():
@@ -52,18 +54,21 @@ class FakeLaunchpad:
         return self._insert(self._branch_set, new_branch)
 
     def fetchProductID(self, name):
+        """See IHostedBranchStorage.fetchProductID."""
         for product_id, product_info in self._product_set.iteritems():
             if product_info['name'] == name:
                 return product_id
         return None
 
     def getUser(self, loginID):
+        """See IUserDetailsStorage.getUser."""
         user_dict = self._lookup(self._person_set, loginID)
         user_dict['teams'] = [
             self._lookup(self._person_set, id) for id in user_dict['teams']]
         return user_dict
 
     def getBranchesForUser(self, personID):
+        """See IHostedBranchStorage.getBranchesForUser."""
         product_branches = {}
         for branch_id, branch in self._branch_set.iteritems():
             if branch['user_id'] != personID:

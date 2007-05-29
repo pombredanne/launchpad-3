@@ -17,19 +17,40 @@ from bzrlib.transport import (
 
 
 def branch_id_to_path(branch_id):
+    """Convert the given branch ID into NN/NN/NN/NN form, where NN is a two
+    digit hexadecimal number.
+    """
     h = "%08x" % int(branch_id)
     return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
 
 
-def split(string, splitter, num_fields):
-    tokens = string.split(splitter, num_fields - 1)
-    tokens.extend([''] * max(0, num_fields - len(tokens)))
+def split_with_padding(a_string, splitter, num_fields, padding=''):
+    """Split the given string into exactly num_fields.
+
+    If the given string doesn't have enough tokens to split into num_fields
+    fields, then the resulting list of tokens is padded with 'padding'.
+    """
+    tokens = a_string.split(splitter, num_fields - 1)
+    tokens.extend([padding] * max(0, num_fields - len(tokens)))
     return tokens
 
 
 class LaunchpadServer(Server):
+    """Bazaar Server for Launchpad branches.
+
+    See LaunchpadTransport for more information.
+    """
 
     def __init__(self, authserver, user_id, transport):
+        """
+        Construct a LaunchpadServer.
+
+        :param authserver: An xmlrpclib.ServerProxy that points to the
+            authserver.
+        :param user_id: A login ID for the user who is accessing branches.
+        :param transport: A Transport pointing to the root of where the
+            branches are actually stored.
+        """
         self.authserver = authserver
         self.user_id = user_id
         self.backing_transport = transport
@@ -46,6 +67,13 @@ class LaunchpadServer(Server):
                            branch_id)
 
     def mkdir(self, virtual_path):
+        """Make a new directory for the given virtual path.
+
+        If the request is to make a user or a product directory, fail with
+        NoSuchFile error. If the request is to make a branch directory, create
+        the branch in the database then create a matching directory on the
+        backing transport.
+        """
         path_segments = virtual_path.strip('/').split('/')
         if len(path_segments) != 3:
             raise NoSuchFile(virtual_path)
@@ -56,18 +84,32 @@ class LaunchpadServer(Server):
             self.backing_transport.mkdir('/'.join(segments))
 
     def _make_branch(self, user, product, branch):
+        """Create a branch in the database for the given user and product.
+
+        :param user: The loginID of the user who owns the new branch.
+        :param product: The name of the product to which the new branch
+            belongs.
+        :param branch: The name of the new branch.
+        :return: The database ID of the new branch.
+        """
         if not user.startswith('~'):
             raise TransportNotPossible(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
+        # XXX - this should be using 'user', not self.user_id
         user_id = self.authserver.getUser(self.user_id)['id']
+        # XXX - why does this work when product == '+junk'
         product_id = self.authserver.fetchProductID(product)
         branch_id = self.authserver.createBranch(user_id, product_id, branch)
         self._branches[(user, product, branch)] = branch_id
         return branch_id
 
     def translate_virtual_path(self, virtual_path):
-        user, product, branch, path = split(virtual_path.lstrip('/'), '/', 4)
+        """Translate an absolute virtual path into the real path on the backing
+        transport.
+        """
+        user, product, branch, path = split_with_padding(
+            virtual_path.lstrip('/'), '/', 4)
         if not user.startswith('~'):
             raise TransportNotPossible(
                 'Path must start with user or team directory: %r' % (user,))
@@ -76,21 +118,43 @@ class LaunchpadServer(Server):
         return '/'.join([branch_id_to_path(branch_id), path])
 
     def _factory(self, url):
+        """Construct a transport for the given URL. Used by the registry."""
         assert url.startswith(self.scheme)
         return LaunchpadTransport(self, url)
 
     def get_url(self):
+        """Return the URL of this server.
+
+        The URL is of the form 'lp-<object_id>:///', where 'object_id' is
+        id(self). This ensures that we can have LaunchpadServer objects for
+        different users, different backing transports and, theoretically,
+        different authservers.
+
+        See Server.get_url.
+        """
         return self.scheme
 
     def setUp(self):
+        """See Server.setUp."""
         self.scheme = 'lp-%d:///' % id(self)
         register_transport(self.scheme, self._factory)
 
     def tearDown(self):
+        """See Server.tearDown."""
         unregister_transport(self.scheme, self._factory)
 
 
 class LaunchpadTransport(Transport):
+    """Transport to map from ~user/product/branch paths to codehosting paths.
+
+    Launchpad serves its branches from URLs that look like
+    bzr+ssh://launchpad/~user/product/branch. On the filesystem, the branches
+    are stored by their id.
+
+    This transport maps from the external, 'virtual' paths to the internal
+    filesystem paths. The internal filesystem is represented by a backing
+    transport.
+    """
 
     def __init__(self, server, url):
         self.server = server
@@ -102,10 +166,14 @@ class LaunchpadTransport(Transport):
                                  relpath)
 
     def _call(self, methodname, relpath, *args, **kwargs):
+        """Call a method on the backing transport, translating relative,
+        virtual paths to filesystem paths.
+        """
         method = getattr(self.server.backing_transport, methodname)
         return method(self._translate_virtual_path(relpath), *args, **kwargs)
 
     def _translate_virtual_path(self, relpath):
+        """Translate a virtual path into a path on the backing transport."""
         try:
             return self.server.translate_virtual_path(self._abspath(relpath))
         except KeyError:
