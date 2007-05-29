@@ -404,9 +404,7 @@ class PackageUpload(SQLBase):
         """Build a summary string based on the files present in the upload."""
         summary = []
         for filename, component, section in files:
-            try:
-                self.distrorelease.distribution.getFileByName(filename)
-            except NotFoundError:
+            if self.status == PackageUploadStatus.NEW:
                 summary.append("NEW: %s" % filename)
             else:
                 summary.append(" OK: %s" % filename)
@@ -418,6 +416,13 @@ class PackageUpload(SQLBase):
     def _sendRejectionNotification(self, recipients, changes_lines, 
             summary_text):
         """Send a rejection email."""
+
+        default_recipient = "%s <%s>" % (
+            config.uploader.default_recipient_name,
+            config.uploader.default_recipient_address)
+        if not recipients:
+            recipients = [default_recipient]
+
         interpolations = {
             "SENDER": "%s <%s>" % (
                 config.uploader.default_sender_name,
@@ -426,9 +431,7 @@ class PackageUpload(SQLBase):
             "SUMMARY": summary_text,
             "CHANGESFILE": guess_encoding("".join(changes_lines)),
             "RECIPIENT": ", ".join(recipients),
-            "DEFAULT_RECIPIENT": "%s <%s>" % (
-                config.uploader.default_recipient_name,
-                config.uploader.default_recipient_address)
+            "DEFAULT_RECIPIENT": default_recipient
         }
         debug(self.logger, "Sending rejection email.")
         self._sendMail(rejection_template % interpolations)
@@ -531,9 +534,10 @@ class PackageUpload(SQLBase):
         changes, changes_lines = self._getChangesDict(changes_file_object)
 
         # "files" will contain a list of tuples of filename,component,section.
-        # If files is None, we don't need to send an email.
+        # If files is None, we don't need to send an email if this is not
+        # a rejection.
         files = self._buildUploadedFilesList()
-        if not files:
+        if not files and self.status != PackageUploadStatus.REJECTED:
             return
 
         summary = self._buildSummary(files)

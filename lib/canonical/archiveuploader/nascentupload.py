@@ -33,7 +33,7 @@ from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError)
+    NotFoundError, IDistributionSet)
 from canonical.lp.dbschema import PackagePublishingPocket
 
 
@@ -397,6 +397,12 @@ class NascentUpload:
     @property
     def is_ppa(self):
         """Whether or not the current upload is target for a PPA."""
+        # XXX julian 2007-05-29 When self.policy.distrorelease is None, this
+        # will causes a rejection for the wrong reasons (a code exception
+        # instead of a bad distro).  Bug reported as #117557.
+        if not self.policy.distrorelease:
+            # Greasy hack until above bug is fixed.
+            return False
         if self.policy.archive.id != self.policy.distrorelease.main_archive.id:
             return True
         return False
@@ -781,10 +787,41 @@ class NascentUpload:
         """Reject the current upload given the reason provided."""
         assert self.is_rejected, "The upload is not rejected."
 
+        # We need to check that the queue_root object has been fully
+        # initialised first, because policy checks or even a code exception
+        # may have caused us to bail out early and not create one.  If it
+        # doesn't exist then we can create a dummy one that contains just
+        # enough context to be able to generate a rejection email.  Nothing
+        # will end up in the DB as the transaction will get rolled back.
+
+        if not self.queue_root:
+            self.queue_root = self._createQueueEntry()
+            self.queue_root.setRejected()
+
         changes_file_object = open(self.changes.filepath, "r")
         self.queue_root.notify(summary_text=self.rejection_message,
             changes_file_object=changes_file_object, logger=self.logger)
         changes_file_object.close()
+
+    def _createQueueEntry(self):
+        """Return a PackageUpload object."""
+        distrorelease = self.policy.distrorelease
+        if not distrorelease:
+            # Upload was probably rejected with a bad distrorelease, so we
+            # can create a dummy one for the purposes of a rejection email.
+            assert self.is_rejected, (
+                "The upload is not rejected but distrorelease is None.")
+            distrorelease = getUtility(
+                IDistributionSet)['ubuntu'].currentrelease
+            return distrorelease.createQueueEntry(
+                PackagePublishingPocket.RELEASE, self.changes.filename,
+                self.changes.filecontents, distrorelease.main_archive,
+                self.changes.signingkey)
+        else:
+            return distrorelease.createQueueEntry(
+                self.policy.pocket, self.changes.filename,
+                self.changes.filecontents, self.policy.archive,
+                self.changes.signingkey)
 
     #
     # Inserting stuff in the database
@@ -797,10 +834,7 @@ class NascentUpload:
         # end of this method we cope with uploads that aren't new.
         self.logger.debug("Creating queue entry")
         distrorelease = self.policy.distrorelease
-        self.queue_root = distrorelease.createQueueEntry(
-            self.policy.pocket, self.changes.filename,
-            self.changes.filecontents, self.policy.archive,
-            self.changes.signingkey)
+        self.queue_root = self._createQueueEntry()
 
         # When binaryful and sourceful, we have a mixed-mode upload.
         # Mixed-mode uploads need special handling, and the spr here is
