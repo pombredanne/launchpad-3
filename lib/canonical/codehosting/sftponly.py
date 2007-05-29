@@ -21,15 +21,7 @@ import os
 
 
 class SubsystemOnlySession(session.SSHSession, object):
-    """A session adapter that disables every request except request_subsystem"""
-    def __getattribute__(self, name):
-        # Get out the big hammer :)
-        # (This is easier than overriding all the different request_ methods
-        # individually, or writing an ISession adapter to give the same effect.)
-        if name.startswith('request_') and name not in ('request_subsystem',
-                                                        'request_exec'):
-            raise AttributeError(name)
-        return object.__getattribute__(self, name)
+    """Session adapter that corrects a bug in Conch."""
 
     def closeReceived(self):
         # Without this, the client hangs when its finished transferring.
@@ -37,6 +29,7 @@ class SubsystemOnlySession(session.SSHSession, object):
 
 
 class SFTPOnlyAvatar(avatar.ConchUser):
+
     def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
         # Double-check that we don't get unicode -- directory names on the file
         # system are a sequence of bytes as far as we're concerned.  We don't
@@ -126,6 +119,7 @@ class SFTPOnlyAvatar(avatar.ConchUser):
     def makeFileSystem(self):
         return FileSystem(SFTPServerRoot(self))
 
+
 # XXX This is nasty.  We want a filesystem per SFTP session, not per avatar, so
 # we let the standard adapter grab a per avatar object, and immediately override
 # with the one we want it to use.
@@ -155,7 +149,7 @@ class Realm:
     def requestAvatar(self, avatarId, mind, *interfaces):
         # Fetch the user's details from the authserver
         deferred = self.authserver.getUser(avatarId)
-        
+
         # Then fetch more details: the branches owned by this user (and the
         # teams they are a member of).
         def getInitialBranches(userDict):
@@ -326,10 +320,3 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
 
     def connectionLost(self, reason):
         self.sendMirrorRequests()
-
-
-if __name__ == "__main__":
-    # Run doctests.
-    import doctest
-    doctest.testmod()
-
