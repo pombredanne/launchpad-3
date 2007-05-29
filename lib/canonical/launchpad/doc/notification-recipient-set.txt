@@ -111,7 +111,7 @@ Passing something else than an IPerson or a string is forbidden:
       ...
     AssertionError: ...
 
-== Teams as recipient ==
+== Team as recipient ==
 
 Adding a team with a preferred email address works like adding any
 other person:
@@ -156,6 +156,8 @@ be notified for he's a member of Warty Security Team, itself a member
 of Ubuntu Gnome Team:
 
     >>> warty_security_team = person_set.getByName('name20')
+    >>> print warty_security_team.displayname
+    Warty Security Team
     >>> sample_person.inTeam(warty_security_team)
     True
     >>> warty_security_team.inTeam(ubuntu_gnome_team)
