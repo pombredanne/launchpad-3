@@ -356,16 +356,15 @@ class NascentUpload:
         max = 1
         if self.sourceful:
             # When sourceful, the tools add 'source' to the architecture
-            # list in the upload. Thusly a sourceful upload with one build
-            # has two architectures listed.
-            max = 2
+            # list in the upload.
+            max = self.policy.distrorelease.architecturecount + 1
         if 'all' in considered_archs:
             # Sometimes we get 'i386 all' which would count as two archs
             # so if 'all' is present, we bump the permitted number up
             # by one.
             max += 1
         if len(considered_archs) > max:
-            self.reject("Policy permits only one build per upload.")
+            self.reject("Upload has more architetures than it is supported.")
 
     #
     # Helpers for warnings and rejections
@@ -840,7 +839,8 @@ class NascentUpload:
             # reject message rather than being swallowed up.
             self.reject("%s" % e)
             # Let's log tracebacks for uncaught exceptions ...
-            self.logger.error('Exception while accepting:\n', exc_info=True)
+            self.logger.error(
+                'Exception while accepting:\n %s' % e, exc_info=True)
             return False, self.do_reject()
 
     def do_reject(self, template=rejection_template):
@@ -976,17 +976,11 @@ class NascentUpload:
                 binary_package_file.storeInDatabase(build)
                 processed_builds.append(build)
 
-            # Perform some checks on processed build(s) if there were any.
-            # Ensure that only binaries for a single build were processed
-            # Then add a respective PackageUploadBuild entry for it
-            if len(processed_builds) > 0:
-                unique_builds = set([b.id for b in processed_builds])
-                assert len(unique_builds) == 1, (
-                    "Upload contains binaries from different builds. "
-                    "(%s)" % unique_builds)
-                # Use any (the first) IBuild stored as reference.
-                # They are all the same according the previous assertion.
-                considered_build = processed_builds[0]
+            # Store the related builds after verifying they were built
+            # from the same source.
+            for considered_build in processed_builds:
+                assert (considered_build.sourcepackagerelease.id == spr.id), (
+                    "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
 
         # PPA uploads are Auto-Accepted by default
