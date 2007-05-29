@@ -581,6 +581,14 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         for each source package name, distribution release combination.
         """
 
+    def isUploader(distribution):
+        """Return whether this person is an uploader for distribution.
+
+        Returns True if this person is an uploader for distribution, or
+        False otherwise.
+        """
+
+
     def validateAndEnsurePreferredEmail(email):
         """Ensure this person has a preferred email.
 

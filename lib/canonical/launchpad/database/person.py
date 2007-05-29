@@ -1552,6 +1552,13 @@ class Person(SQLBase, HasSpecificationsMixin):
                      'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer'])
 
+    def isUploader(self, distribution):
+        """See IPerson."""
+        for acl in distribution.uploaders:
+            if self in acl:
+                return True
+        return False
+
     @cachedproperty
     def is_ubuntero(self):
         """See IPerson."""
