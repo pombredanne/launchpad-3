@@ -56,12 +56,12 @@ the package was last published.
     >>> firefox_warty.latest_published_component.name
     u'main'
 
-It's worth nothing the returned component is the one in the latest
-publishing record, not the component where the package was latest
+It's worth noting that the returned component is the one in the latest
+publishing record, not the component where the package was last
 uploaded. After a package has been uploaded, and a SourcePackageRelease
 record has been created, the component may be changed. The
-SourcePackageRelease still has the same component as the original
-upload, though.
+SourcePackageRelease will still have the same component as the original
+upload, even though it gets changed in the publishing record.
 
     # Remove the security proxy to access the non-public
     # _getPublishingHistory method.
