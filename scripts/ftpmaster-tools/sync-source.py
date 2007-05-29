@@ -903,8 +903,10 @@ def read_current_source(distrorelease, valid_components="", arguments=None):
     # XXX FIXME: This searches all pockets of the distrorelease which
     #            is not what we want.
     if Options.all:
-        spp = distrorelease.getAllSourceReleasesByStatus(
-            dbschema.PackagePublishingStatus.PUBLISHED)
+        spp = distrorelease.getSourcePackagePublishing(
+            status=dbschema.PackagePublishingStatus.PUBLISHED,
+            pocket=dbschema.PackagePublishingPocket.RELEASE
+            )
     else:
         spp = []
         for package in arguments:
