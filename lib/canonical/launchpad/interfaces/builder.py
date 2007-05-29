@@ -128,3 +128,29 @@ class IBuilderSet(Interface):
     def getBuildersByArch(arch):
         """Return all configured builders for a given DistroArchRelease."""
 
+    def pollBuilders(logger, txn):
+        """Poll all the builders and take any immediately available actions.
+
+        Specifically this will request a reset if needed, update log tails in
+        the database, copy and process the result of builds.
+
+        :param logger: A logger to use to provide information about the polling
+            process.
+        :param txn: A zopeless transaction object which is currently used by
+            legacy code that we are in the process of removing. DO NOT add
+            additional uses of this parameter.
+        :return: A canonical.buildmaster.master.BuilddMaster instance. This is
+            temporary and once the dispatchBuilds method no longer requires
+            a used instance this return parameter will be dropped.
+        """
+
+    def dispatchBuilds(logger, buildMaster):
+        """Dispatch any pending builds that can be dispatched.
+
+        :param logger: A logger to use to provide information about the
+            dispatching process.
+        :param buildMaster: This is a canonical.buildmaster.master.BuilddMaster
+            instance which will be used to perform the dispatching as that is
+            where the detailed logic currently resides. This is being
+            refactored to remove the need for a buildMaster parameter at all.
+        """

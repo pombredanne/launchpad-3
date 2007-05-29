@@ -11,15 +11,14 @@ DROP TABLE PersonalPackageArchive;
 
 -- Create the new tables...
 CREATE TABLE Archive (
-	id SERIAL NOT NULL PRIMARY KEY,
+	id SERIAL PRIMARY KEY,
 	owner integer,
 	description text,
 	CONSTRAINT archive__owner__fk
 	  FOREIGN KEY (owner) REFERENCES Person(id)
 	);
 
-CREATE UNIQUE INDEX archive_owner_unique_idx on
-	Archive (owner) where owner is not NULL;
+CREATE UNIQUE INDEX archive__owner__key on Archive (owner);
 
 -- Drop all the views associated with publishing
 DROP VIEW PublishedPackageView;
@@ -29,15 +28,17 @@ DROP VIEW BinaryPackagePublishingHistory;
 DROP VIEW SourcePackagePublishingHistory;
 
 -- Add archive to publishing and distribution tables.
+-- NB: These are set to NOT NULL later in the patch, after
+-- initializing values.
 ALTER TABLE SecureSourcePackagePublishingHistory
     ADD COLUMN archive INTEGER;
 ALTER TABLE SecureSourcePackagePublishingHistory
-    ADD CONSTRAINT securesourcepackagepublishinghistory_archive_fk
+    ADD CONSTRAINT securesourcepackagepublishinghistory__archive__fk
     FOREIGN KEY (archive) REFERENCES archive(id);
 ALTER TABLE SecureBinaryPackagePublishingHistory
     ADD COLUMN archive INTEGER;
 ALTER TABLE SecureBinaryPackagePublishingHistory
-    ADD CONSTRAINT securebinarypackagepublishinghistory_archive_fk
+    ADD CONSTRAINT securebinarypackagepublishinghistory__archive__fk
     FOREIGN KEY (archive) REFERENCES archive(id);
 
 ALTER TABLE Distribution
@@ -237,11 +238,23 @@ SELECT binarypackagepublishing.id,
 
 -- Data migration for distribution and publishing tables
 --- Each distribution needs a main archive
-INSERT INTO ARCHIVE (id) SELECT id FROM Distribution;
+INSERT INTO Archive (id, description) SELECT id, description FROM Distribution;
+UPDATE Distribution SET main_archive = distribution.id;
 
-UPDATE Distribution
-   SET main_archive = archive.id
-  	FROM Archive WHERE archive.id = distribution.id;
+-- If we added Archives, update the sequence.
+CREATE FUNCTION reset_seq() RETURNS boolean AS
+$$
+    rv = plpy.execute("SELECT max(id) AS id FROM Archive", 1)
+    max_id = rv[0]["id"]
+    if max_id is None:
+        return False
+    plpy.execute(
+        'ALTER SEQUENCE archive_id_seq RESTART WITH %d' % int(max_id + 1), 1
+    )
+    return True
+$$ LANGUAGE plpythonu;
+SELECT reset_seq();
+DROP FUNCTION reset_seq();
 
 --- Update the publishing tables to reference this archive
 UPDATE SecureSourcePackagePublishingHistory
@@ -268,10 +281,10 @@ ALTER TABLE Distribution
     ALTER COLUMN main_archive SET NOT NULL;
 
 -- Add some useful indexes for package publishing
-CREATE INDEX securesourcepackagepublishinghistory__archive__idx
-    ON SecureSourcePackagePublishingHistory (archive);
-CREATE INDEX securebinarypackagepublishinghistory__archive__idx
-    ON SecureBinaryPackagePublishingHistory (archive);
+CREATE INDEX securesourcepackagepublishinghistory__archive__status__idx
+    ON SecureSourcepackagePublishingHistory(archive, status);
+CREATE INDEX securebinarypackagepublishinghistory__archive__status__idx
+    ON SecureBinarypackagePublishingHistory(archive, status);
 
 
 /*
@@ -288,29 +301,31 @@ ALTER TABLE distroreleasequeue_id_seq RENAME TO packageupload_id_seq;
 ALTER TABLE PackageUpload
     ALTER COLUMN id SET DEFAULT nextval('packageupload_id_seq');
 ALTER INDEX distroreleasequeue_pkey RENAME TO packageupload_pkey;
-ALTER INDEX distroreleasequeue_distrorelease_key RENAME TO packageupload_distrorelease_key;
+ALTER INDEX distroreleasequeue_distrorelease_key RENAME TO packageupload__distrorelease__key;
 ALTER TABLE PackageUpload ADD COLUMN Archive INTEGER;
-
 UPDATE PackageUpload
    SET archive = distribution.main_archive
          FROM Distribution, DistroRelease
         WHERE DistroRelease.id = PackageUpload.distrorelease
           AND Distribution.id = DistroRelease.distribution;
-
-
 ALTER TABLE PackageUpload ALTER COLUMN Archive SET NOT NULL;
 ALTER TABLE PackageUpload
-         ADD CONSTRAINT packageupload_changesfile_fk
+         ADD CONSTRAINT packageupload__changesfile__fk
             FOREIGN KEY (changesfile) REFERENCES libraryfilealias(id);
 ALTER TABLE PackageUpload
-         ADD CONSTRAINT packageupload_distrorelease_fk
+         ADD CONSTRAINT packageupload__distrorelease__fk
 	    FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
 ALTER TABLE PackageUpload
-         ADD CONSTRAINT packageupload_signing_key_fk
+         ADD CONSTRAINT packageupload__signing_key__fk
 	    FOREIGN KEY (signing_key) REFERENCES GPGKey(id);
 ALTER TABLE PackageUpload
-         ADD CONSTRAINT packageupload_archive_fk
+         ADD CONSTRAINT packageupload__archive__fk
 	    FOREIGN KEY (archive) REFERENCES archive(id);
+CREATE INDEX packageupload__changesfile__idx ON PackageUpload(changesfile);
+CREATE INDEX packageupload__distrorelease__status__idx
+    ON PackageUpload(distrorelease, status);
+CREATE INDEX packageupload__signing_key__idx
+    ON PackageUpload(signing_key);
 
 -- DistroReleaseQueueSource -> UploadQueueSource
 ALTER TABLE DistroReleaseQueueSource
@@ -324,18 +339,18 @@ ALTER TABLE PackageUploadSource
     ALTER COLUMN id SET DEFAULT nextval('packageuploadsource_id_seq');
 ALTER INDEX distroreleasequeuesource_pkey RENAME TO packageuploadsource_pkey;
 ALTER INDEX distroreleasequeuesource__distroreleasequeue__sourcepackagerele
-  RENAME TO packageuploadsource__distroreleasequeue__sourcepackagerelease;
+  RENAME TO packageuploadsource__packageupload__sourcepackagerelease__key;
 ALTER INDEX distroreleasequeuesource__sourcepackagerelease__idx
   RENAME TO packageuploadsource__sourcepackagerelease__idx;
 ALTER TABLE PackageUploadSource
-               ADD CONSTRAINT packageuploadsource_packageupload_fk
+               ADD CONSTRAINT packageuploadsource__packageupload__fk
 	          FOREIGN KEY (packageupload) REFERENCES PackageUpload(id);
 ALTER TABLE PackageUploadSource
-               ADD CONSTRAINT packageuploadsource_sourcepackagerelease_fk
+               ADD CONSTRAINT packageuploadsource__sourcepackagerelease__fk
 	          FOREIGN KEY (sourcepackagerelease)
 		   REFERENCES SourcePackageRelease(id);
 
--- DistroReleaseQueueBuild -> UploadQueueBuild
+-- DistroReleaseQueueBuild -> PackageUploadBuild
 ALTER TABLE DistroReleaseQueueBuild
     DROP CONSTRAINT distroreleasequeuebuild_build_fk;
 ALTER TABLE DistroReleaseQueueBuild
@@ -347,7 +362,7 @@ ALTER TABLE PackageUploadBuild
     ALTER COLUMN id SET DEFAULT nextval('packageuploadbuild_id_seq');
 ALTER INDEX distroreleasequeuebuild_pkey RENAME TO packageuploadbuild_pkey;
 ALTER INDEX distroreleasequeuebuild__distroreleasequeue__build__unique
-  RENAME TO packageuploadbuild__packageupload__build__unique;
+  RENAME TO packageuploadbuild__packageupload__build__key;
 ALTER INDEX distroreleasequeuebuild__build__idx
   RENAME TO packageuploadbuild__build__idx;
 ALTER TABLE PackageUploadBuild
@@ -358,7 +373,7 @@ ALTER TABLE PackageUploadBuild
        FOREIGN KEY (packageupload) REFERENCES PackageUpload(id);
 
 
--- DistroReleaseQueueCustom -> UploadQueueCustom
+-- DistroReleaseQueueCustom -> PackageUploadCustom
 ALTER TABLE DistroReleaseQueueCustom
     DROP CONSTRAINT distroreleasequeuecustom_distroreleasequeue_fk;
 ALTER TABLE DistroReleaseQueueCustom
@@ -369,38 +384,53 @@ ALTER TABLE distroreleasequeuecustom_id_seq RENAME TO packageuploadcustom_id_seq
 ALTER TABLE PackageUploadCustom
     ALTER COLUMN id SET DEFAULT nextval('packageuploadcustom_id_seq');
 ALTER INDEX distroreleasequeuecustom_pkey RENAME TO packageuploadcustom_pkey;
+CREATE INDEX packageuploadcustom__packageupload__idx
+    ON PackageUploadCustom(packageupload);
 ALTER TABLE PackageUploadCustom
     ADD CONSTRAINT packageuploadcustom_packageupload_fk
        FOREIGN KEY (packageupload) REFERENCES PackageUpload(id);
+CREATE INDEX packageuploadcustom__libraryfilealias__idx
+    ON PackageUploadCustom(libraryfilealias);
 ALTER TABLE PackageUploadCustom
     ADD CONSTRAINT packageuploadcustom_libraryfilealias_fk
        FOREIGN KEY (libraryfilealias) REFERENCES LibraryFileAlias(id);
 
 /* Miscellaneous extra archive columns */
 ALTER TABLE SourcePackageRelease ADD COLUMN upload_archive INTEGER;
-
 UPDATE SourcePackageRelease
    SET upload_archive = distribution.main_archive
          FROM Distribution, DistroRelease
         WHERE DistroRelease.id = SourcePackageRelease.uploaddistrorelease
           AND Distribution.id = DistroRelease.distribution;
-
+CREATE INDEX sourcepackagerelease__upload_archive__idx
+    ON SourcepackageRelease(upload_archive);
 ALTER TABLE SourcePackageRelease ALTER COLUMN upload_archive SET NOT NULL;
 ALTER TABLE SourcePackageRelease
-    ADD CONSTRAINT sourcepackagerelease_upload_archive_fk
+    ADD CONSTRAINT sourcepackagerelease__upload_archive__fk
        FOREIGN KEY (upload_archive) REFERENCES Archive(id);
 
-ALTER TABLE Build ADD COLUMN archive INTEGER;
+-- Tidy up some old constraints with dud names
+ALTER TABLE SourcePackageRelease DROP CONSTRAINT "$2";
+ALTER TABLE SourcePackageRelease
+    ADD CONSTRAINT sourcepackagerelease__creator__fk
+    FOREIGN KEY (creator) REFERENCES Person;
+ALTER TABLE SourcepackageRelease DROP CONSTRAINT "$3";
+ALTER TABLE SourcepackageRelease
+    ADD CONSTRAINT sourcepackagerelease__dscsigningkey
+    FOREIGN KEY (dscsigningkey) REFERENCES GPGKey;
 
+-- Build.archive
+ALTER TABLE Build ADD COLUMN archive INTEGER;
 UPDATE Build
    SET archive = distribution.main_archive
          FROM Distribution, DistroRelease, DistroArchRelease
         WHERE distribution.id = DistroRelease.distribution
           AND DistroRelease.id = DistroArchRelease.DistroRelease
 	  AND DistroArchRelease.id = Build.distroarchrelease;
+CREATE INDEX build__archive__idx ON Build(archive);
+ALTER TABLE Build ALTER COLUMN archive SET NOT NULL;
+ALTER TABLE Build ADD CONSTRAINT build__archive__fk
+    FOREIGN KEY (archive) REFERENCES Archive(id);
 
-ALTER TABLE Build
-    ADD CONSTRAINT build_archive_fk
-       FOREIGN KEY (archive) REFERENCES Archive(id);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 13, 0);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 14, 0);

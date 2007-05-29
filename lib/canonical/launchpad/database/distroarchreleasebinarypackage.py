@@ -277,6 +277,7 @@ class DistroArchReleaseBinaryPackage:
         target_dar = distrorelease[current.distroarchrelease.architecturetag]
 
         copy = SecureBinaryPackagePublishingHistory(
+            archive=current.archive,
             binarypackagerelease=current.binarypackagerelease,
             distroarchrelease=target_dar,
             component=current.component,
