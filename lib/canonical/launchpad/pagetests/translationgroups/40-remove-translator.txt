@@ -1,32 +1,18 @@
 
 Let's remove the Hoary Gnome Team, they are not really translators. We
-should be redirected to the polyglot page, with a removal message hint being
-passed.
+should be redirected to the polyglot page.
 
-  >>> print http(r"""
-  ... POST /translations/groups/polyglot/+rm HTTP/1.1
-  ... Content-Length: 31
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... remove=ab&rmform.x=3&rmform.y=8""")
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  Content-Type: text/plain
-  Location: .?removed=ab-name21
-  <BLANKLINE>
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/+groups/' +
+  ...         'polyglot/ab/+remove')
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+groups/polyglot/ab/+remove
+  >>> admin_browser.getControl('Remove').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+groups/polyglot
 
 And on that page, we should see the removal message.
 
-  >>> print http(r"""
-  ... GET /translations/groups/polyglot/?removed=ab-name21 HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...The PolyGlot Translation Group...
-  ...<p class="informational message">Hoary Gnome Team removed as translator for Abkhazian (ab).</p>
-  ...
-
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
+  ...     print tag.renderContents()
+  Removed Hoary Gnome Team as the Abkhazian translator for The PolyGlot Translation Group.

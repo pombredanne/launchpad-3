@@ -17,6 +17,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductTranslationsMenu',
     'ProductView',
+    'ProductDownloadFilesView',
     'ProductAddView',
     'ProductBrandingView',
     'ProductEditView',
@@ -52,10 +53,10 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
-    IProductSet, IProductSeries, IProject, ISourcePackage, ICountry,
+    ICountry, IProductSet, IProductSeries, IProject, ISourcePackage,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
-    IPillarNameSet, IDistribution, IHasIcon, UnexpectedFormData)
+    IPillarNameSet, IDistribution, IHasIcon, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
@@ -203,7 +204,7 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'distributions', 'packages', 'branch_add',
+        'mentorship', 'distributions', 'packages', 'files', 'branch_add',
         'series_add', 'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
@@ -242,6 +243,10 @@ class ProductOverviewMenu(ApplicationMenu):
     def packages(self):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
+
+    def files(self):
+        text = 'Download project files'
+        return Link('+download', text, icon='info')
 
     def series_add(self):
         text = 'Register a release series'
@@ -426,15 +431,16 @@ class ProductSetContextMenu(ContextMenu):
         return Link('/sprints/', 'View meetings')
 
 
-class ProductView:
+class ProductView(LaunchpadView):
 
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        self.context = context
-        self.product = context
-        self.request = request
-        self.form = request.form
+        LaunchpadView.__init__(self, context, request)
+        self.form = request.form_ng
+
+    def initialize(self):
+        self.product = self.context
         self.status_message = None
 
     def primary_translatable(self):
@@ -557,6 +563,68 @@ class ProductView:
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
 
+class ProductDownloadFilesView(LaunchpadView):
+
+    __used_for__ = IProduct
+
+    def initialize(self):
+        self.form = self.request.form
+        self.product = self.context
+        del_count = None
+        if 'delete_files' in self.form:
+            if self.request.method == 'POST':
+                del(self.form['delete_files'])
+                del_count = self.delete_files(self.form)
+            else:
+                # If there is a form submission and it is not a POST then
+                # raise an error.  This is to protect against XSS exploits.
+                raise UnsafeFormGetSubmissionError(self.form['delete_files'])
+        if del_count is not None:
+            if del_count <= 0:
+                self.request.response.addNotification(
+                    "No files were deleted.")
+            elif del_count == 1:
+                self.request.response.addNotification(
+                    "1 file has been deleted.")
+            else:
+                self.request.response.addNotification(
+                    "%d files have been deleted." %
+                    del_count)
+
+    def delete_files(self, data):
+        del_keys = [int(v) for k,v in data.items()
+                    if k.startswith('checkbox')]
+        del_count = 0
+        for series in self.product.serieslist:
+            for release in series.releases:
+                for f in release.files:
+                    if f.libraryfile.id in del_keys:
+                        release.deleteFileAlias(f.libraryfile)
+                        del_keys.remove(f.libraryfile.id)
+                        del_count += 1
+        return del_count
+
+    def file_url(self, series, release, file_):
+        """Create a download URL for the file."""
+        return "%s/+download/%s" % (canonical_url(release),
+                                    file_.libraryfile.filename)
+
+    @cachedproperty
+    def milestones(self):
+        """Compute a mapping between series and releases that are milestones."""
+        result = dict()
+        for series in self.product.serieslist:
+            result[series] = dict()
+            milestone_list = [m.name for m in series.milestones]
+            for release in series.releases:
+                if release.version in milestone_list:
+                    result[series][release] = True
+        return result
+
+    def is_milestone(self, series, release):
+        """Determine whether a release is milestone for the series."""
+        return (series in self.milestones and
+                release in self.milestones[series])
 
 class ProductBrandingView(BrandingChangeView):
 
@@ -615,7 +683,6 @@ class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
     @property
     def adapters(self):
         return {self.schema: self.context}
-
 
 class ProductAddSeriesView(LaunchpadFormView):
     """A form to add new product release series"""
@@ -742,18 +809,12 @@ class ProductSetView(LaunchpadView):
     max_results_to_display = config.launchpad.default_batch_size
 
     def initialize(self):
-        form = self.request.form
-        self.soyuz = form.get('soyuz')
-        self.rosetta = form.get('rosetta')
-        self.malone = form.get('malone')
-        self.bazaar = form.get('bazaar')
-        self.search_string = form.get('text')
-        # XXX flacoste 2007/04/27 Replace by use of getOne() once
-        # the API defined in bug #110633 is implemented.
-        if (self.search_string is not None and
-            not isinstance(self.search_string, basestring)):
-            raise UnexpectedFormData(
-                'text parameter should be a string: %s' % self.search_string)
+        form = self.request.form_ng
+        self.soyuz = form.getOne('soyuz')
+        self.rosetta = form.getOne('rosetta')
+        self.malone = form.getOne('malone')
+        self.bazaar = form.getOne('bazaar')
+        self.search_string = form.getOne('text')
         self.results = None
 
         self.searchrequested = False
@@ -764,7 +825,7 @@ class ProductSetView(LaunchpadView):
             self.soyuz is not None):
             self.searchrequested = True
 
-        if form.get('exact_name'):
+        if form.getOne('exact_name'):
             # If exact_name is supplied, we try and locate this name in
             # the ProductSet -- if we find it, bingo, redirect. This
             # argument can be optionally supplied by callers.
@@ -775,7 +836,7 @@ class ProductSetView(LaunchpadView):
                 pass
             else:
                 url = canonical_url(product)
-                if form.get('malone'):
+                if form.getOne('malone'):
                     url = url + "/+bugs"
                 self.request.response.redirect(url)
                 return
@@ -798,7 +859,7 @@ class ProductSetView(LaunchpadView):
             PillarSearchItem(
                 pillar_type=item['type'], name=item['name'],
                 displayname=item['title'], summary=item['description'],
-                icon_id=item['emblem'])
+                icon_id=item['icon'])
             for item in getUtility(IPillarNameSet).search(search_string, limit)
         ]
 
@@ -810,7 +871,7 @@ class ProductAddView(LaunchpadFormView):
 
     schema = IProduct
     field_names = ['name', 'owner', 'displayname', 'title', 'summary',
-                   'description', 'project', 'homepageurl', 
+                   'description', 'project', 'homepageurl',
                    'sourceforgeproject', 'freshmeatproject',
                    'wikiurl', 'screenshotsurl', 'downloadurl',
                    'programminglang', 'reviewed']
@@ -941,7 +1002,7 @@ class ProductShortLink(DefaultShortLink):
 
 class ProductBranchesView(BranchListingView):
     """View for branch listing for a product."""
-    
+
     extra_columns = ('author',)
 
     def _branches(self):
@@ -964,5 +1025,3 @@ class ProductBranchesView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project.')
         return message % self.context.displayname
-
-

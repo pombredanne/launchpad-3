@@ -256,10 +256,7 @@
 </td>
 <td width="25%" style="vertical-align: top;" id="amazon-links"
     tal:condition="view/is_open">
-  <tal:comment condition="nothing">
-    XXX: Disabled until we get the links for Feisty DVDs from Amazon.
-  </tal:comment>
-  <span tal:condition="nothing" tal:content="structure view/dvds_section" />
+  <span tal:content="structure view/dvds_section" />
 </td>
 </tr>
 </table>  

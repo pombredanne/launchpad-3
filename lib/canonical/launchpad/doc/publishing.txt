@@ -172,7 +172,7 @@ Generating respective "Packages" stanzas based on IArchivePublish:
  Provides: mozilla-firefox
  Depends: gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)
  Conflicts: firefox, mozilla-web-browser
- Filename: mozilla-firefox_0.9_i386.deb
+ Filename: pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb
  Size: 3
  MD5sum: 01234567890123456789012345678901
  Description: Mozilla Firefox Web Browser

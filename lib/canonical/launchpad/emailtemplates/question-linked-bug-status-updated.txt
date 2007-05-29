@@ -4,6 +4,7 @@ Bug #%(bug_id)s status changed in %(bugtask_target_name)s:
 
 %(statusexplanation)s
 %(bugtask_url)s
+"%(bugtask_title)s"
 
 --
 You received this email because you are a subscriber of
