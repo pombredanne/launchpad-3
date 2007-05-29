@@ -123,17 +123,17 @@ class NotificationRecipientSet:
         # for that email. That way, adding a person and a team containing
         # that person will preserve the rationale associated when the email
         # was first added.
-        self._person2rationale = {}
-        self._email2person = {}
+        self._personToRationale = {}
+        self._emailToPerson = {}
 
     def getEmails(self):
         """See `INotificationRecipientSet`."""
-        return sorted(self._email2person.keys())
+        return sorted(self._emailToPerson.keys())
 
     def getRecipients(self):
         """See `INotificationRecipientSet`."""
         return sorted(
-            self._person2rationale.keys(),  key=attrgetter('displayname'))
+            self._personToRationale.keys(),  key=attrgetter('displayname'))
 
     def __iter__(self):
         """See `INotificationRecipientSet`."""
@@ -142,30 +142,30 @@ class NotificationRecipientSet:
     def __contains__(self, person_or_email):
         """See `INotificationRecipientSet`."""
         if zope_isinstance(person_or_email, (str, unicode)):
-            return person_or_email in self._email2person
+            return person_or_email in self._emailToPerson
         elif IPerson.providedBy(person_or_email):
-            return person_or_email in self._person2rationale
+            return person_or_email in self._personToRationale
         else:
             return False
 
     def __nonzero__(self):
         """See `INotificationRecipientSet`."""
-        return bool(self._person2rationale)
+        return bool(self._personToRationale)
 
     def getReason(self, person_or_email):
         """See `INotificationRecipientSet`."""
         if zope_isinstance(person_or_email, basestring):
             try:
-                person = self._email2person[person_or_email]
+                person = self._emailToPerson[person_or_email]
             except KeyError:
                 raise UnknownRecipientError(person_or_email)
         elif IPerson.providedBy(person_or_email):
             person = person_or_email
         else:
             raise AssertionError(
-                'Not an IPerson or email address: %s' % person_or_email)
+                'Not an IPerson or email address: %r' % person_or_email)
         try:
-            return self._person2rationale[person]
+            return self._personToRationale[person]
         except KeyError:
             raise UnknownRecipientError(person)
             
@@ -177,30 +177,32 @@ class NotificationRecipientSet:
 
         for person in persons:
             assert IPerson.providedBy(person), (
-                'You can only add() IPerson: %s' % `person`)
-            if person in self._person2rationale:
+                'You can only add() IPerson: %r' % person)
+            # If the person already has a rationale, keep the first one.
+            if person in self._personToRationale:
                 continue
-            self._person2rationale[person] = reason, header
+            self._personToRationale[person] = reason, header
             for email in contactEmailAddresses(person):
-                if email not in self._email2person:
-                    self._email2person[email] = person
+                if email not in self._emailToPerson:
+                    self._emailToPerson[email] = person
 
     def update(self, recipient_set):
         """See `INotificationRecipientSet`."""
         for person in recipient_set:
-            if person in self._person2rationale:
+            if person in self._personToRationale:
                 continue
             reason, header = recipient_set.getReason(person)
             self.add(person, reason, header)
 
 
 class BugNotificationRecipients(NotificationRecipientSet):
-    """Or BNR. A set of emails and rationales notified for a bug change.
+    """A set of emails and rationales notified for a bug change.
 
-    Each email address registered in a BNR instance is associated to a
-    string and a header that explain why the address is being emailed.
-    For instance, if the email address is that of a distribution bug
-    contact for a bug, the string and header will make that fact clear.
+    Each email address registered in a BugNotificationRecipients is
+    associated to a string and a header that explain why the address is
+    being emailed. For instance, if the email address is that of a
+    distribution bug contact for a bug, the string and header will make
+    that fact clear.
 
     The string is meant to be rendered in the email footer. The header
     is meant to be used in an X-Launchpad-Message-Rationale header.
@@ -209,15 +211,15 @@ class BugNotificationRecipients(NotificationRecipientSet):
     which will be used, regardless of other rationales being added
     for it later. This gives us a predictable policy of preserving
     the first reason added to the registry; the callsite should
-    ensure that the manipulation of the BNR instance is done in
-    preferential order.
+    ensure that the manipulation of the BugNotificationRecipients
+    instance is done in preferential order.
 
     Instances of this class are meant to be returned by
     IBug.getBugNotificationRecipients().
     """
     implements(INotificationRecipientSet)
     def __init__(self, duplicateof=None):
-        """Constructs a new BNR instance.
+        """Constructs a new BugNotificationRecipients instance.
 
         If this bug is a duplicate, duplicateof should be used to
         specify which bug ID it is a duplicate of.
@@ -238,8 +240,11 @@ class BugNotificationRecipients(NotificationRecipientSet):
         self.duplicateof = duplicateof
 
     def _addReason(self, person, reason, header):
-        # Adds a reason (text and header) for a person. It takes care of
-        # modifying the message when the person is notified via a duplicate.
+        """Adds a reason (text and header) for a person.
+
+        It takes care of modifying the message when the person is notified
+        via a duplicate.
+        """
         if self.duplicateof is not None:
             reason = reason + " (via bug %s)" % self.duplicateof.id
             header = header + " via Bug %s" % self.duplicateof.id
