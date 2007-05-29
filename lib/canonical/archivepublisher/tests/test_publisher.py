@@ -339,7 +339,7 @@ class TestPublisher(TestNativePublishingBase):
              'Section: base',
              'Installed-Size: 100',
              'Maintainer: Foo Bar <foo@bar.com>',
-             'Architecture: i386',
+             'Architecture: all',
              'Version: 666',
              'Filename: pool/main/f/foo/foo-bin.deb',
              'Size: 18',
