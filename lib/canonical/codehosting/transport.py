@@ -54,6 +54,12 @@ class LaunchpadServer(Server):
         self.authserver = authserver
         self.user_id = user_id
         self.backing_transport = transport
+        # XXX - Instead of fetching branch information as needed, we load it
+        # all when the server is started. This mimics the behaviour of the SFTP
+        # server, and is the path of least resistance given the authserver's
+        # present API. However, in the future, we will want to get branch
+        # information as required.
+        # Jonathan Lange, 2007-05-29
         self._branches = dict(self._iter_branches())
 
     def _iter_branches(self):
@@ -78,6 +84,12 @@ class LaunchpadServer(Server):
         if len(path_segments) != 3:
             raise NoSuchFile(virtual_path)
         branch_id = self._make_branch(*path_segments)
+
+        # XXX - This should be self.backing_transport.makedirs instead.
+        # Jonathan Lange, 2007-05-29
+
+        # XXX - why does this work? shouldn't it blow up when it tries to make
+        # an already-existing directory?
         segments = []
         for segment in branch_id_to_path(branch_id).split('/'):
             segments.append(segment)
@@ -101,12 +113,21 @@ class LaunchpadServer(Server):
         # XXX - why does this work when product == '+junk'
         product_id = self.authserver.fetchProductID(product)
         branch_id = self.authserver.createBranch(user_id, product_id, branch)
+        # Maintain the local cache of branch information. Alternatively, we
+        # could do self._branches = list(self._iter_branches()).
         self._branches[(user, product, branch)] = branch_id
         return branch_id
 
     def translate_virtual_path(self, virtual_path):
         """Translate an absolute virtual path into the real path on the backing
         transport.
+
+        :raise KeyError: If path is untranslatable. This could be because the
+            path is too short (doesn't include user, product and branch), or
+            because the user, product or branch in the path don't exist.
+
+        :raise TransportNotPossible: If the path is necessarily invalid. Most
+            likely because it didn't begin with a tilde ('~').
         """
         user, product, branch, path = split_with_padding(
             virtual_path.lstrip('/'), '/', 4)
