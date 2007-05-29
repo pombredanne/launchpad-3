@@ -328,6 +328,15 @@ class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
         self.transport.mkdir('~foo/product2/banana')
         self.assertTrue(self.transport.has('~foo/product2/banana'))
 
+    def test_make_two_directories(self):
+        # Bazaar doesn't have a makedirs() facility for transports, so we need
+        # to make sure that we can make a directory on the backing transport if
+        # its parents exist and if they don't exist.
+        self.transport.mkdir('~foo/product2/banana')
+        self.transport.mkdir('~foo/product2/orange')
+        self.assertTrue(self.transport.has('~foo/product2/banana'))
+        self.assertTrue(self.transport.has('~foo/product2/orange'))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

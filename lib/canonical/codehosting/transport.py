@@ -35,6 +35,25 @@ def split_with_padding(a_string, splitter, num_fields, padding=''):
     return tokens
 
 
+def makedirs(base_transport, path, mode=None):
+    """Create 'path' on 'base_transport', even if parents of 'path' don't exist
+    yet.
+    """
+    need_to_create = []
+    transport = base_transport.clone(path)
+    while True:
+        try:
+            transport.mkdir('.', mode)
+        except NoSuchFile:
+            need_to_create.append(transport)
+        else:
+            break
+        transport = transport.clone('..')
+    while need_to_create:
+        transport = need_to_create.pop()
+        transport.mkdir('.', mode)
+
+
 class LaunchpadServer(Server):
     """Bazaar Server for Launchpad branches.
 
@@ -87,13 +106,7 @@ class LaunchpadServer(Server):
 
         # XXX - This should be self.backing_transport.makedirs instead.
         # Jonathan Lange, 2007-05-29
-
-        # XXX - why does this work? shouldn't it blow up when it tries to make
-        # an already-existing directory?
-        segments = []
-        for segment in branch_id_to_path(branch_id).split('/'):
-            segments.append(segment)
-            self.backing_transport.mkdir('/'.join(segments))
+        makedirs(self.backing_transport, branch_id_to_path(branch_id))
 
     def _make_branch(self, user, product, branch):
         """Create a branch in the database for the given user and product.
