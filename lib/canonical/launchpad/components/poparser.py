@@ -286,6 +286,14 @@ class POMessage(object):
         "1234567890abcdefghij"
         "\\klmno"
         msgstr ""
+        >>> pomsg = POMessage(
+        ...     msgid="1234567890abcdefgh\\ijklmno",
+        ...     msgstr="")
+        >>> print pomsg.__unicode__(20)
+        msgid ""
+        "1234567890abcdefgh\\"
+        "ijklmno"
+        msgstr ""
 
         '''
         if wrap_width is None:
@@ -331,7 +339,13 @@ class POMessage(object):
                             # Word is too long to fit into single line,
                             # break it carefully, watching not to break
                             # in the middle of the escape
-                            if new_block[wrap_width-1] == '\\':
+                            last_char_is_escape = (
+                                new_block[wrap_width-1] == '\\')
+                            if last_char_is_escape:
+                                if (len(new_block)>=2 and
+                                    new_block[wrap_width-2]=='\\'):
+                                    last_char_is_escape = False
+                            if last_char_is_escape:
                                 line = new_block[:wrap_width-1]
                                 new_block = new_block[wrap_width-1:]
                             else:
