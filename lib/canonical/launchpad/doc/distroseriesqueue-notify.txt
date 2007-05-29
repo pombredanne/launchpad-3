@@ -6,7 +6,7 @@ We need to be logged into the security model in order to get any further.
   >>> login('foo.bar@canonical.com')
 
 Get a packageupload object for netapplet, which has a relatively intact
-set of supporting sample data.  It has rows in distribution, distrorelease, 
+set of supporting sample data.  It has rows in distribution, distroseries, 
 sourcepackagerelease, person and a librarian entry for the changes file 
 which are all needed for successful operation of notify().
 
@@ -51,7 +51,7 @@ logger object that will extract tracebacks for the purposes of this doctest.
   ...
   DEBUG:     Recipients: Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
-  DEBUG: above if files already exist in other distroreleases.
+  DEBUG: above if files already exist in other distroseries.
   ...
   DEBUG: signer of the above package.
 
@@ -84,8 +84,8 @@ The mail body contains a list of files that were accepted:
   NEW: netapplet_1.0-1.diff.gz
   <BLANKLINE>
   ...
-  You may have gotten the distrorelease wrong.  If so, you may get warnings
-  above if files already exist in other distroreleases.
+  You may have gotten the distroseries wrong.  If so, you may get warnings
+  above if files already exist in other distroseries.
   <BLANKLINE>
   -- 
   You are receiving this email because you are the uploader, maintainer or
@@ -116,7 +116,7 @@ Now request the email:
   ...
   DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
-  DEBUG: above if files already exist in other distroreleases.
+  DEBUG: above if files already exist in other distroseries.
   ...
   DEBUG: signer of the above package.
 
@@ -139,8 +139,8 @@ The mail body contains the same list of files again:
   NEW: netapplet_1.0-1.diff.gz
   <BLANKLINE>
   ...
-  You may have gotten the distrorelease wrong.  If so, you may get warnings
-  above if files already exist in other distroreleases.
+  You may have gotten the distroseries wrong.  If so, you may get warnings
+  above if files already exist in other distroseries.
   <BLANKLINE>
   -- 
   You are receiving this email because you are the uploader, maintainer or
@@ -165,7 +165,7 @@ the case when nascent upload runs).  This example demonstrates this usage:
   ...
   DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
-  DEBUG: above if files already exist in other distroreleases.
+  DEBUG: above if files already exist in other distroseries.
   ...
   DEBUG: signer of the above package.
 
@@ -188,8 +188,8 @@ The mail body contains the same list of files again:
   NEW: netapplet_1.0-1.diff.gz
   <BLANKLINE>
   ...
-  You may have gotten the distrorelease wrong.  If so, you may get warnings
-  above if files already exist in other distroreleases.
+  You may have gotten the distroseries wrong.  If so, you may get warnings
+  above if files already exist in other distroseries.
   <BLANKLINE>
   -- 
   You are receiving this email because you are the uploader, maintainer or
