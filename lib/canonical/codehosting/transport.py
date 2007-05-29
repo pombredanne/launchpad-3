@@ -122,11 +122,12 @@ class LaunchpadServer(Server):
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
         user_id = self.authserver.getUser(user)['id']
-        # XXX - why does this work when product == '+junk'
+        # If product is '+junk', then product_id will be '', which is XML-RPC's
+        # way of saying None.
         product_id = self.authserver.fetchProductID(product)
         branch_id = self.authserver.createBranch(user_id, product_id, branch)
         # Maintain the local cache of branch information. Alternatively, we
-        # could do self._branches = list(self._iter_branches()).
+        # could do: self._branches = dict(self._iter_branches())
         self._branches[(user, product, branch)] = branch_id
         return branch_id
 

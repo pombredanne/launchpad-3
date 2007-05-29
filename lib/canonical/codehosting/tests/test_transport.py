@@ -56,6 +56,8 @@ class FakeLaunchpad:
 
     def fetchProductID(self, name):
         """See IHostedBranchStorage.fetchProductID."""
+        if name == '+junk':
+            return ''
         for product_id, product_info in self._product_set.iteritems():
             if product_info['name'] == name:
                 return product_id
