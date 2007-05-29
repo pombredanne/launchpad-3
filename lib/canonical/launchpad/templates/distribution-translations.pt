@@ -38,24 +38,17 @@
 
   <tal:block condition="view/secondary_translatable_serieses">
     <h2 tal:condition="view/translation_focus">
-      Other series of <span tal:replace="context/displayname">Ubuntu</span>
+      Other versions of <span tal:replace="context/displayname">Ubuntu</span>
     </h2>
-    <table class="listing">
-      <thead>
-        <tr>
-          <th>Series</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="distroseries view/secondary_translatable_serieses">
-          <td><a tal:attributes="href distroseries/fmt:url"
+
+    <ul>
+      <li tal:repeat="distroseries view/secondary_translatable_serieses">
+        <a tal:attributes="href distroseries/fmt:url"
                  tal:content=
                     "string: ${distroseries/version} ${distroseries/title}"
                 >5.04 The Hoary Hedgehog Release</a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+      </li>
+    </ul>
   </tal:block>
 
 </div>

@@ -26,7 +26,7 @@ class TestChrootManager(TestCase):
         """Setup the test environment and retrieve useful instances."""
         self.files_to_delete = []
         self.distribution = getUtility(IDistributionSet)['ubuntu']
-        self.distroarchseries = self.distribution.currentrelease['i386']
+        self.distroarchseries = self.distribution.currentseries['i386']
         self.pocket = PackagePublishingPocket.SECURITY
 
     def tearDown(self):

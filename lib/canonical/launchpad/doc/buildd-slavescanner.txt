@@ -24,8 +24,8 @@ We use StringIO later to simulate bits of the build slave file retrieval
 
   >>> from StringIO import StringIO
 
-First let's test a essencial part of the BuilddMaster class, the
-BuildersGroup() class, by creating an empty BuilderGroup object
+First let's test an essential part of the BuilddMaster class, the
+BuilderGroup() class, by creating an empty BuilderGroup object
 
   >>> from canonical.buildmaster.buildergroup import BuilderGroup
 

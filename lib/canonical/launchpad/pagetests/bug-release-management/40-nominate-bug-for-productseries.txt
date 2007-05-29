@@ -52,3 +52,4 @@ approved and targeted to the release.
     ...     admin_browser.contents, 'informational message'):
     ...     print tag
     <div...Targeted bug to: firefox trunk (upstream)...
+

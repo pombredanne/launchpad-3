@@ -542,7 +542,7 @@ class BuilderGroup:
         extra_args = [
             "--log-file", "%s" %  uploader_logfilename,
             "-d", "%s" % queueItem.build.distribution.name,
-            "-r", "%s" % (queueItem.build.distroseries.name +
+            "-s", "%s" % (queueItem.build.distroseries.name +
                           pocketsuffix[queueItem.build.pocket]),
             "-b", "%s" % queueItem.build.id,
             "-J", "%s" % upload_leaf,

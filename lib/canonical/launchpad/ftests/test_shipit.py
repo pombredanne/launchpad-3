@@ -81,7 +81,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         login(user_email)
         view = getView(ShipItApplication(), 'myrequest', request)
         if distroseries is not None:
-            view.release = distroseries
+            view.series = distroseries
         view.renderStandardrequestForm()
         errors = getattr(view, 'errors', None)
         self.failUnlessEqual(errors, None)

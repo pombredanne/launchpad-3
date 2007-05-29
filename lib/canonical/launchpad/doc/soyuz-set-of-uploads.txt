@@ -109,7 +109,7 @@ And then we need a way to process the uploads from the queue
   ...     if build_id is not None:
   ...         args.extend(["-b", build_id])
   ...     if series is not None:
-  ...         args.extend(["-r", series])
+  ...         args.extend(["-s", series])
   ...     args.extend([temp_dir, "--log-file", uploader_log])
   ...     process = subprocess.Popen(args)
   ...     return process.wait() == 0
@@ -197,10 +197,10 @@ process_new and simple_publish we are in a position to run the tests.
 We can also define another helper function...
 
   >>> def expect_okays(leafname, is_new=False, upload_policy='anything',
-  ...                  build_id=None, release=None, distro="ubuntutest"):
+  ...                  build_id=None, series=None, distro="ubuntutest"):
   ...     transaction.commit()
   ...     punt_upload_into_queue(leafname, distro=distro)
-  ...     assert (process_uploads(upload_policy, build_id, release),
+  ...     assert (process_uploads(upload_policy, build_id, series),
   ...             "Upload processes failed")
   ...     assert len(os.listdir(incoming_dir)) == 0, "Incoming should be empty: %s" % os.listdir(incoming_dir)
   ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty: %s" % os.listdir(rejected_dir)
