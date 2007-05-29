@@ -475,11 +475,6 @@ class POFile(SQLBase, RosettaStats):
             sequence > 0
             """ % sqlvalues(self.id)).count()
 
-    def changedInLaunchpadCount(self):
-        """See IPOFile."""
-        return self.getPOTMsgSetChangedInLaunchpad().count()
-
-
     def expireAllMessages(self):
         """See IPOFile."""
         for msgset in self.currentMessageSets():
@@ -982,17 +977,20 @@ class DummyPOFile(RosettaStats):
 
         return DummyPOMsgSet(self, potmsgset)
 
+    def emptySelectResults(self):
+        return POFile.select("1=2")
+
     def getPOMsgSetsNotInTemplate(self):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
 
     def getPOTMsgSetTranslated(self, slice=None):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
 
     def getPOTMsgSetFuzzy(self, slice=None):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
 
     def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
@@ -1000,11 +998,12 @@ class DummyPOFile(RosettaStats):
 
     def getPOTMsgSetChangedInLaunchpad(self, slice=None):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
 
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
+
 
     def hasMessageID(self, msgid):
         """See IPOFile."""
@@ -1030,10 +1029,6 @@ class DummyPOFile(RosettaStats):
 
     @property
     def fuzzy_count(self):
-        """See IPOFile."""
-        return 0
-
-    def changedInLaunchpadCount(self):
         """See IPOFile."""
         return 0
 

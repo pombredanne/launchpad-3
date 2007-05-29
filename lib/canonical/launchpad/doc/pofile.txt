@@ -29,6 +29,20 @@ True
 >>> verifyObject(IPOFile, dummy_pofile)
 True
 
+DummyPOFile returns empty SelectResults for getPOTMsgSet* methods,
+except for untranslated messages.
+
+>>> dummy_pofile.getPOTMsgSetTranslated().count()
+0
+>>> dummy_pofile.getPOTMsgSetFuzzy().count()
+0
+>>> dummy_pofile.getPOTMsgSetChangedInLaunchpad().count()
+0
+>>> dummy_pofile.getPOTMsgSetWithErrors().count()
+0
+>>> dummy_pofile.getPOTMsgSetUntranslated().count()
+23
+
 Get the set of POTMsgSets that are untranslated.
 
 >>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
@@ -610,6 +624,8 @@ Launchpad.
   >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
   >>> len(potmsgsets)
   1
+  >>> pofile_changed.updateStatistics()
+  (7, 1, 0)
 
 We make sure that submissions on untranslated strings are not considered
 'changed in Launchpad', since this method is mainly designed to help
@@ -638,15 +654,18 @@ And make sure that the count of changed in Launchpad hasn't changed.
   >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
   >>> len(potmsgsets)
   1
+  >>> pofile_changed.updateStatistics()
+  (7, 1, 1)
 
 Now, lets change translation for a message which already has a published
 translation.  First we need to find a message with active, published
 translation:
 
   >>> for pomsgset in pofile_changed:
-  ...     submission = pomsgset.getPublishedSubmission(0)
-  ...     if submission and submission.active:
-  ...         break
+  ... 	  if pomsgset.publishedcomplete and not pomsgset.publishedfuzzy:
+  ...         submission = pomsgset.getPublishedSubmission(0)
+  ...         if submission and submission.active:
+  ...             break
   >>> pomsgset is None
   False
 
@@ -660,6 +679,13 @@ And make sure that the count of messages changed in Launchpad _has_ changed:
 
   >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
   >>> len(potmsgsets)
+  2
+
+Lets check that the updatesCount() is also properly updated.
+
+  >>> pofile_changed.updateStatistics()
+  (7, 2, 1)
+  >>> pofile_changed.updatesCount()
   2
 
 = POFile Security tests =

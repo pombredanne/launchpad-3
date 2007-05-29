@@ -63,11 +63,10 @@ Now, we are going to select the amount of entries that need to be reviewed.
 
 Next, lets see entries which have changed in Launchpad.
 
-  >>> user_browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
-  ...     'evolution-2.2/es/+translate?show=changed_in_launchpad')
+  >>> user_browser.getControl('Show:').displayValue = ['changed in Launchpad']
+  >>> user_browser.getControl('Filter').click()
   >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate?show=changed_in_launchpad'
+  'http://.../evolution-2.2/es/+translate?batch=10&show=changed_in_launchpad'
 
   >>> print_shown_messages(user_browser)
   134: '<samp> </samp>caratas'

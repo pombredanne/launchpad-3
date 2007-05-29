@@ -113,12 +113,6 @@ class IPOFile(IRosettaStats):
         Return an iterator over untranslated message sets in this PO file.
         """
 
-    def changedInLaunchpadCount():
-        """
-        Return the number of messages which have been changed through Launchpad
-        in this PO file.
-        """
-
     def __iter__():
         """Return an iterator over Current IPOMessageSets in this PO file."""
 
