@@ -22,8 +22,9 @@ Users who are logged in can subscribe someone else to a bug.
 
 Make sure the other user is not already subscribed.
 
-    >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
-    >>> 'No Privileges Person' not in subs('ul')[0].renderContents()
+    >>> subscriptions = find_portlet(user_browser.contents,
+    ...     'Subscribers to bug 1')
+    >>> 'No Privileges Person' not in subscriptions.ul.renderContents()
     True
 
 Subscribe the other user to this bug.
@@ -35,6 +36,7 @@ Subscribe the other user to this bug.
 
 The other user is listed as a subscriber to this bug.
 
-    >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
-    >>> subs('ul')[0].renderContents()
+    >>> subscriptions = find_portlet(user_browser.contents,
+    ...     'Subscribers to bug 1')
+    >>> subscriptions.ul.renderContents()
     '...No Privileges Person...'
