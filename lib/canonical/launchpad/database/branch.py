@@ -389,7 +389,7 @@ class BranchSet:
             Branch.product IN %s''' % sqlvalues(product_ids),
             clauseTables = ['Product', 'ProductSeries'])
         return query.prejoin(['author'])
-            
+
     def getActiveUserBranchSummaryForProducts(self, products):
         """See IBranchSet."""
         product_ids = [product.id for product in products]
@@ -424,9 +424,11 @@ class BranchSet:
             Branch.last_scanned IS NOT NULL
             AND Branch.owner <> %d
             ''' % vcs_imports.id
-        branches = Branch.select(
-            query, orderBy=['-last_scanned', 'id'], limit=branch_count)
-        return branches.prejoin(['author', 'product'])
+        return Branch.select(
+            self._generateBranchClause(query),
+            limit=branch_count,
+            orderBy=['-last_scanned', 'id'],
+            prejoins=['author', 'product'])
 
     def getRecentlyImportedBranches(self, branch_count):
         """See IBranchSet."""
@@ -435,15 +437,19 @@ class BranchSet:
             Branch.last_scanned IS NOT NULL
             AND Branch.owner = %d
             ''' % vcs_imports.id
-        branches = Branch.select(
-            query, orderBy=['-last_scanned'], limit=branch_count)
-        return branches.prejoin(['author', 'product'])
+        return Branch.select(
+            self._generateBranchClause(query),
+            limit=branch_count,
+            orderBy=['-last_scanned', 'id'],
+            prejoins=['author', 'product'])
 
     def getRecentlyRegisteredBranches(self, branch_count):
         """See IBranchSet."""
-
-        branches = Branch.select(orderBy=['-date_created'], limit=branch_count)
-        return branches.prejoin(['author', 'product'])
+        return Branch.select(
+            self._generateBranchClause(),
+            limit=branch_count,
+            orderBy=['-date_created'],
+            prejoins=['author', 'product'])
 
     def getLastCommitForBranches(self, branches):
         """Return a map of branch id to last commit time."""
@@ -471,27 +477,32 @@ class BranchSet:
         branches = Branch.select('Branch.owner in %s' % quote(owner_ids))
         return branches.prejoin(['product'])
 
-    def _generateBranchQuery(self, query, clauseTables=None):
-        logged_in_user = getUtility(ILaunchBag).user
-        public_clause = '%s AND NOT Branch.private' % query
-        public_branches = Branch.select(
-            public_clause, clauseTables=clauseTables)
-        if logged_in_user is None:
-            return public_branches
+    def _generateBranchClause(self, query=''):
+        if len(query) > 0:
+            query = '%s AND ' % query
 
-        if clauseTables is None:
-            clauseTables = []
-        private_clause = '''%s
-            AND Branch.private
+        logged_in_user = getUtility(ILaunchBag).user
+        if logged_in_user is None:
+            return '%sNOT Branch.private' % query
+
+        clause = '''%sBranch.id IN (
+            SELECT Branch.id
+            FROM Branch
+            WHERE
+                NOT Branch.private
+
+            UNION
+
+            SELECT Branch.id
+            FROM Branch, BranchSubscription, TeamParticipation
+            WHERE
+                Branch.private
             AND Branch.id = BranchSubscription.branch
             AND BranchSubscription.person = TeamParticipation.team
-            AND TeamParticipation.person = %d''' % (query, logged_in_user.id)
-        private_tables = set(clauseTables).union(set(
-            ['BranchSubscription', 'TeamParticipation']))
-        private_branches = Branch.select(
-            private_clause, clauseTables=private_tables)
-        return public_branches.union(
-            private_branches, orderBy=Branch._defaultOrder)
+            AND TeamParticipation.person = %d)
+            ''' % (query, logged_in_user.id)
+
+        return clause
 
     def _lifecycleClause(self, lifecycle_statuses):
         lifecycle_clause = ''
@@ -505,16 +516,18 @@ class BranchSet:
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
-        subscribed_branches = self._generateBranchQuery(
-            '''Branch.id = BranchSubscription.branch
-            AND BranchSubscription.person = %s %s
-            ''' % (person.id, lifecycle_clause),
+        subscribed_branches = Branch.select(
+            self._generateBranchClause(
+                '''Branch.id = BranchSubscription.branch
+                AND BranchSubscription.person = %s %s
+                ''' % (person.id, lifecycle_clause)),
             clauseTables=['BranchSubscription'])
 
-        owner_author_branches = self._generateBranchQuery(
-            '''(Branch.owner = %s
-            OR Branch.author = %s) %s
-            ''' % (person.id, person.id, lifecycle_clause))
+        owner_author_branches = Branch.select(
+            self._generateBranchClause(
+                '''(Branch.owner = %s
+                OR Branch.author = %s) %s
+                ''' % (person.id, person.id, lifecycle_clause)))
 
         return subscribed_branches.union(
             owner_author_branches, orderBy=Branch._defaultOrder)
@@ -523,27 +536,28 @@ class BranchSet:
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
-        return self._generateBranchQuery(
-            'Branch.author = %s %s' % (person.id, lifecycle_clause))
+        return Branch.select(self._generateBranchClause(
+            'Branch.author = %s %s' % (person.id, lifecycle_clause)))
 
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None):
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
-        return self._generateBranchQuery(
+        return Branch.select(self._generateBranchClause(
             '''Branch.owner = %s AND
             (Branch.author is NULL OR
-             Branch.author != %s) %s''' %
-            (person.id, person.id, lifecycle_clause))
+            Branch.author != %s) %s''' %
+            (person.id, person.id, lifecycle_clause)))
 
     def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None):
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
-        return self._generateBranchQuery(
-            '''Branch.id = BranchSubscription.branch
-            AND BranchSubscription.person = %s %s
-            ''' % (person.id, lifecycle_clause),
+        return Branch.select(
+            self._generateBranchClause(
+                '''Branch.id = BranchSubscription.branch
+                AND BranchSubscription.person = %s %s
+                ''' % (person.id, lifecycle_clause)),
             clauseTables=['BranchSubscription'])
 
     def getBranchesForProduct(self, product, lifecycle_statuses=None):
@@ -552,7 +566,17 @@ class BranchSet:
 
         query = 'Branch.product = %s %s' % (product.id, lifecycle_clause)
 
-        return self._generateBranchQuery(query, [])
+        return Branch.select(
+            self._generateBranchClause(query))
+
+    def getLatestBranchesForProduct(self, product, quantity):
+        """See IBranchSet."""
+        assert(product is not None)
+        query = "Branch.product = %d" % product.id
+        return Branch.select(
+            self._generateBranchClause(query),
+            limit=quantity,
+            orderBy=['-date_created'])
 
 
 class BranchRelationship(SQLBase):

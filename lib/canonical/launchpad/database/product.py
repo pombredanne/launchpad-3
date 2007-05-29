@@ -14,9 +14,8 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
-from sqlobject.sqlbuilder import SQLConstant
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues, cursor
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -30,7 +29,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.database.answercontact import AnswerContact
-from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
@@ -278,10 +277,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     def getLatestBranches(self, quantity=5):
         """See IProduct."""
-        # XXX Should use Branch.date_created. See bug 38598.
-        # -- David Allouche 2006-04-11
-        return shortlist(Branch.selectBy(product=self,
-            orderBy='-id').limit(quantity))
+        return shortlist(
+            BranchSet().getLatestBranchesForProduct(self, quantity))
 
     def getPackage(self, distrorelease):
         """See IProduct."""
