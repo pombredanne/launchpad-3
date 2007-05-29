@@ -324,7 +324,7 @@ class TestNativePublishing(TestNativePublishingBase):
         """
         cprov = getUtility(IPersonSet).getByName('cprov')
         test_pool_dir = tempfile.mkdtemp()
-        test_temo_dir = tempfile.mkdtemp()
+        test_temp_dir = tempfile.mkdtemp()
         test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
 
         pub_source = self.getPubSource(
