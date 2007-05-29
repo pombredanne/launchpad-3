@@ -198,10 +198,7 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
             self.backing_transport.get_bytes('00/00/00/01/goodbye.txt'))
 
     def test_cloning_updates_base(self):
-        # Cloning a LaunchpadTransport returns a new transport with the base
-        # URL equal to the base URL of the original with the relative path
-        # appended.
-        # XXX - That's bad prose - Jonathan Lange, 2007-05-25
+        # Cloning a LaunchpadTransport maintains the base path.
         transport = get_transport(self.server.get_url())
         self.assertEqual(self.server.get_url(), transport.base)
         transport = transport.clone('~foo')
