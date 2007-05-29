@@ -3,13 +3,17 @@
 """Smart server support for the supermirror."""
 
 __metaclass__ = type
-__all__ = ['ExecOnlySession', 'RestrictedExecOnlySession']
+__all__ = [
+    'ExecOnlySession', 'RestrictedExecOnlySession', 'get_bzr_path',
+    'launch_smart_server']
 
+import os
 
 from zope.interface import implements
 
 from twisted.conch.interfaces import ISession
 from twisted.internet.process import ProcessExitedAlready
+from twisted.python import log
 
 
 class ForbiddenCommand(Exception):
@@ -56,6 +60,8 @@ class ExecOnlySession:
         used as the name of the executable, the rest are used as arguments.
         """
         executable, arguments = self.getCommandToRun(command)
+        log.msg('Running: %r, %r, %r'
+                % (executable, arguments, self.environment))
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments, env=self.environment)
 
@@ -119,3 +125,30 @@ class RestrictedExecOnlySession(ExecOnlySession):
         return ExecOnlySession.getCommandToRun(
             self, self.executed_command_template
             % {'avatarId': self.avatar.avatarId})
+
+
+def get_bzr_path():
+    import bzrlib
+    ROCKETFUEL_ROOT = os.path.dirname(
+        os.path.dirname(os.path.dirname(bzrlib.__file__)))
+    return ROCKETFUEL_ROOT + '/sourcecode/bzr/bzr'
+
+
+def launch_smart_server(avatar):
+    import sys
+    from canonical.codehosting import plugins
+    from twisted.internet import reactor
+
+    bzr_plugin_path = os.path.abspath(os.path.dirname(plugins.__file__))
+    command = (
+        "%(python)s %(bzr)s lp-serve --inet "
+        % {'python': sys.executable, 'bzr': get_bzr_path()})
+
+    environment = dict(os.environ)
+    environment['BZR_PLUGIN_PATH'] = bzr_plugin_path
+    return RestrictedExecOnlySession(
+        avatar,
+        reactor,
+        'bzr serve --inet --directory=/ --allow-writes',
+        command + ' %(avatarId)s',
+        environment=environment)

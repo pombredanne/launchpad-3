@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+import os
+import sys
 import unittest
 
 from twisted.conch.interfaces import ISession
@@ -13,7 +15,7 @@ from twisted.internet.protocol import ProcessProtocol
 from canonical.codehosting.sftponly import SFTPOnlyAvatar
 from canonical.codehosting.tests.helpers import AvatarTestCase
 
-from canonical.codehosting import smartserver
+from canonical.codehosting import smartserver, plugins
 
 
 class MockReactor:
@@ -289,10 +291,17 @@ class TestSessionIntegration(AvatarTestCase):
             isinstance(session, smartserver.RestrictedExecOnlySession),
             "ISession(avatar) doesn't adapt to ExecOnlySession. "
             "Got %r instead." % (session,))
-        executable, arguments = session.getCommandToRun('bzr serve --inet /')
-        self.assertEqual('bzr', executable)
-        self.assertEqual(['bzr', 'lp-serve', '--inet', self.avatar.avatarId],
-                         list(arguments))
+        self.assertEqual(
+            os.path.abspath(os.path.dirname(plugins.__file__)),
+            session.environment['BZR_PLUGIN_PATH'])
+
+        executable, arguments = session.getCommandToRun(
+            'bzr serve --inet --directory=/ --allow-writes')
+        self.assertEqual(sys.executable, executable)
+        self.assertEqual(
+            [sys.executable, smartserver.get_bzr_path(), 'lp-serve', '--inet',
+             self.avatar.avatarId],
+            list(arguments))
         self.assertRaises(smartserver.ForbiddenCommand,
                           session.getCommandToRun, 'rm -rf /')
 
