@@ -49,7 +49,8 @@ on-the-fly:
 
 == Mixed Security Upload ==
 
-The upload in question contain a source and its 2 builds for i386 and powerpc:
+The upload in question contains a source and its 2 builds for i386 and
+powerpc:
 
   >>> foo_mixed_upload = NascentUpload(
   ...     datadir('suite/foo_1.0-1_multi_binary/foo_1.0-1_multi.changes'),
@@ -68,7 +69,7 @@ Inspecting the files processed:
 
 Perform acceptance, creating the respective PackageUpload item and children:
 
-  >>> success, msgs = foo_mixed_upload.do_accept()
+  >>> success = foo_mixed_upload.do_accept()
   >>> foo_mixed_queue = foo_mixed_upload.queue_root
   >>> foo_mixed_queue.status.name
   'NEW'
@@ -84,7 +85,7 @@ And it is the right one:
   ...     source.sourcepackagerelease.name
   u'foo'
 
-Ensure we have the two expected builds attached to the Packageupload record:
+Ensure we have the two expected builds attached to the PackageUpload record:
 
   >>> foo_mixed_queue.builds.count()
   2
