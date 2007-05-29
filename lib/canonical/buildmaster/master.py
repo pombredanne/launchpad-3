@@ -686,12 +686,13 @@ class BuilddMaster:
                 # RELEASE pocket.
                 dist_name = queueItem.archrelease.distrorelease.name
                 ppa_archive_url = queueItem.build.archive.archive_url
-                args['archives'] = [
-                    'deb http://archive.ubuntu.com/ubuntu %s %s'
-                    % (dist_name, ogre_components),
+                ppa_source_line = (
                     'deb %s/ubuntu %s %s'
-                    % (ppa_archive_url, dist_name, ogre_components)
-                    ]
+                    % (ppa_archive_url, dist_name, ogre_components))
+                ubuntu_source_line = (
+                    'deb http://archive.ubuntu.com/ubuntu %s %s'
+                    % (dist_name, ogre_components))
+                args['archives'] = [ppa_source_line, ubuntu_source_line]
             else:
                 args['archives'] = []
 
