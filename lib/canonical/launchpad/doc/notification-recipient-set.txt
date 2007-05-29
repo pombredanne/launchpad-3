@@ -123,6 +123,8 @@ Adding a team with a preferred email address works like adding any
 other person:
 
     >>> ubuntu_team = person_set.getByName('ubuntu-team')
+    >>> print ubuntu_team.preferredemail.email
+    support@ubuntu.com
     >>> recipients.add(ubuntu_team, 'You are notified for fun.', 'Fun')
 
     >>> ubuntu_team in recipients
@@ -141,8 +143,8 @@ addresses are added to the recipients list, and this recursively.
 
     >>> recipients = NotificationRecipientSet()
     >>> ubuntu_gnome_team = person_set.getByName('name18')
-    >>> ubuntu_gnome_team.preferredemail is None
-    True
+    >>> print ubuntu_gnome_team.preferredemail
+    None
     >>> recipients.add(
     ...     ubuntu_gnome_team,
     ...     'Notified because a member of the team', 'Team')
