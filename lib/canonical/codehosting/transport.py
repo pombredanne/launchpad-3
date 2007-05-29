@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport']
 
 
-from bzrlib.errors import NoSuchFile, TransportNotPossible
+from bzrlib.errors import BzrError, NoSuchFile, TransportNotPossible
 from bzrlib import urlutils
 from bzrlib.transport import (
     register_transport,
@@ -52,6 +52,12 @@ def makedirs(base_transport, path, mode=None):
     while need_to_create:
         transport = need_to_create.pop()
         transport.mkdir('.', mode)
+
+
+class UntranslatablePath(BzrError):
+
+    _fmt = ("Could not translate %(path)s onto backing transport for "
+            "user %(user)r")
 
 
 class LaunchpadServer(Server):
@@ -151,7 +157,10 @@ class LaunchpadServer(Server):
             raise TransportNotPossible(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
-        branch_id = self._branches[(user, product, branch)]
+        try:
+            branch_id = self._branches[(user, product, branch)]
+        except KeyError:
+            raise UntranslatablePath(path=virtual_path, user=self.user_id)
         return '/'.join([branch_id_to_path(branch_id), path])
 
     def _factory(self, url):
@@ -213,7 +222,7 @@ class LaunchpadTransport(Transport):
         """Translate a virtual path into a path on the backing transport."""
         try:
             return self.server.translate_virtual_path(self._abspath(relpath))
-        except KeyError:
+        except UntranslatablePath:
             raise NoSuchFile(relpath)
 
     # Transport methods
@@ -260,7 +269,7 @@ class LaunchpadTransport(Transport):
         # XXX - ugly and unclear - jml
         try:
             path = self.server.translate_virtual_path(self._abspath(relpath))
-        except KeyError:
+        except UntranslatablePath:
             return self.server.mkdir(self._abspath(relpath))
         else:
             return self.server.backing_transport.mkdir(path, mode)
