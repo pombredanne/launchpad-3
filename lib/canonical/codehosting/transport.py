@@ -129,6 +129,7 @@ class LaunchpadServer(Server):
         :raise TransportNotPossible: If the path is necessarily invalid. Most
             likely because it didn't begin with a tilde ('~').
         """
+        # XXX - what if some berk makes a branch called '' - jml, 2007-05-29.
         user, product, branch, path = split_with_padding(
             virtual_path.lstrip('/'), '/', 4)
         if not user.startswith('~'):
