@@ -19,7 +19,7 @@ have the launchpad.Driver permission.
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> ubuntu_hoary = ubuntu.getRelease("hoary")
+    >>> ubuntu_hoary = ubuntu.getSeries("hoary")
     >>> ubuntu_hoary_nomination = bug_one.getNominationFor(ubuntu_hoary)
 
     >>> check_permission("launchpad.Driver", ubuntu_hoary_nomination.target)

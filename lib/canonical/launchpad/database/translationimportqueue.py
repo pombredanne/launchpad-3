@@ -657,7 +657,7 @@ class TranslationImportQueue:
         queries = ["TRUE"]
         if target is not None:
             if target == 'distros':
-                queries.append('distroseries IS NOT NULL')
+                queries.append('distrorelease IS NOT NULL')
             else:
                 queries.append('productseries IS NOT NULL')
         if status is not None:
@@ -679,7 +679,7 @@ class TranslationImportQueue:
         # is attached to one whose defer_translation_imports flag is not set.
         oldest_wo_dr = TranslationImportQueueEntry.selectFirst('''
             status = %s AND
-            distroseries is null''' % sqlvalues(RosettaImportStatus.APPROVED),
+            distrorelease IS NULL''' % sqlvalues(RosettaImportStatus.APPROVED),
             orderBy=['dateimported'])
 
         oldest_w_dr = TranslationImportQueueEntry.selectFirst('''

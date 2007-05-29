@@ -377,7 +377,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         """See ISourcePackage.packaging"""
         # First we look to see if there is packaging data for this
         # distroseries and sourcepackagename. If not, we look up through
-        # parent distroseriess, and when we hit Ubuntu, we look backwards in
+        # parent distroserieses, and when we hit Ubuntu, we look backwards in
         # time through Ubuntu series till we find packaging information or
         # blow past the Warty Warthog.
 

@@ -508,19 +508,19 @@ class SourcePackageHandler:
         # Check here to see if this release has ever been published in
         # the distribution, no matter what status.
         query = """
-                sourcepackagerelease.sourcepackagename = %s AND
-                sourcepackagerelease.version = %s AND
-                sourcepackagepublishinghistory.sourcepackagerelease =
-                    sourcepackagerelease.id AND
-                sourcepackagepublishinghistory.distroseries = 
-                    distroseries.id AND
-                sourcepackagepublishinghistory.archive = %s AND
-                distroseries.distribution = %s
+                SourcePackageRelease.sourcepackagename = %s AND
+                SourcePackageRelease.version = %s AND
+                SourcePackagePublishingHistory.sourcepackagerelease =
+                    SourcePackageRelease.id AND
+                SourcePackagePublishingHistory.distrorelease = 
+                    DistroRelease.id AND
+                SourcePackagePublishingHistory.archive = %s AND
+                DistroRelease.distribution = %s
                 """ % sqlvalues(sourcepackagename, version,
                                 distroseries.main_archive,
                                 distroseries.distribution)
         ret = SourcePackageRelease.select(query,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=["-SourcePackagePublishingHistory.datecreated"])
         if not ret:
             return None
@@ -642,7 +642,7 @@ class SourcePackagePublisher:
         """Query for the publishing entry"""
         ret = SecureSourcePackagePublishingHistory.select(
                 """sourcepackagerelease = %s
-                   AND distroseries = %s
+                   AND distrorelease = %s
                    AND archive = %s
                    AND status in (%s, %s)""" %
                 sqlvalues(sourcepackagerelease, self.distroseries,
@@ -803,7 +803,7 @@ class BinaryPackageHandler:
         """Ensure a build record."""
         distroarchseries = distroarchinfo['distroarchseries']
         distribution = distroarchseries.distroseries.distribution
-        clauseTables = ["Build", "DistroArchSeries", "DistroSeries"]
+        clauseTables = ["Build", "DistroArchRelease", "DistroRelease"]
 
         # XXX: this method doesn't work for real bin-only NMUs that are
         # new versions of packages that were picked up by Gina before.

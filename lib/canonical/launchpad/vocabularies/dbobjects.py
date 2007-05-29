@@ -742,7 +742,7 @@ class FilteredDistroSeriesVocabulary(SQLObjectVocabularyBase):
             serieses = self._table.selectBy(
                 distributionID=distribution.id, **kw)
             for series in sorted(serieses, key=lambda x: x.sortkey):
-                yield self.toTerm(release)
+                yield self.toTerm(series)
 
 
 class FilteredDistroArchSeriesVocabulary(SQLObjectVocabularyBase):
@@ -782,7 +782,7 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
         if launchbag.product is not None:
-            for series in launchbag.product.serieslist:
+            for series in launchbag.product.serieses:
                 yield self.toTerm(series)
 
 
@@ -1173,7 +1173,7 @@ class BugNominatableProductSeriesVocabulary(BugNominatableSeriesVocabularyBase):
 
     def _getNominatableObjects(self):
         """See BugNominatableSeriesVocabularyBase."""
-        return shortlist(self.product.serieslist)
+        return shortlist(self.product.serieses)
 
     def _queryNominatableObjectByName(self, name):
         """See BugNominatableSeriesVocabularyBase."""

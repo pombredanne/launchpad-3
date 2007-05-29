@@ -19,7 +19,7 @@
 
 <div metal:fill-slot="main">
 
-  <tal:series repeat="series context/serieslist">
+  <tal:series repeat="series context/serieses">
     
     <h2>Series &#8220;<span tal:replace="series/name">main</span>&#8221;</h2>
 

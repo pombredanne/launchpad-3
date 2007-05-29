@@ -964,7 +964,7 @@ class ShippingRequestSet:
                 FROM ShippingRequest
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
-                WHERE distroseries < %(current_series)s
+                WHERE distrorelease < %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status != %(cancelled)s);
             CREATE UNIQUE INDEX previous_series_requester__unq 
@@ -979,7 +979,7 @@ class ShippingRequestSet:
                 FROM ShippingRequest
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
-                WHERE distroseries < %(current_series)s
+                WHERE distrorelease < %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status NOT IN (%(shipped)s, %(cancelled)s)
                 EXCEPT
@@ -987,7 +987,7 @@ class ShippingRequestSet:
                 FROM ShippingRequest
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
-                WHERE distroseries < %(current_series)s
+                WHERE distrorelease < %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status = %(shipped)s);
             CREATE UNIQUE INDEX previous_series_non_recipient__unq 
@@ -1017,7 +1017,7 @@ class ShippingRequestSet:
                     SELECT recipient, SUM(quantity) AS requested_cds_per_user,
                         COUNT(DISTINCT request) AS requests
                     FROM RequestedCDs, ShippingRequest
-                    WHERE distroseries < %(current_series)s
+                    WHERE distrorelease < %(current_series)s
                         AND status != %(cancelled)s
                         AND ShippingRequest.id = RequestedCDs.request
                         AND recipient IN (
@@ -1062,7 +1062,7 @@ class ShippingRequestSet:
                         SUM(quantityapproved) AS approved_cds_per_user,
                         COUNT(DISTINCT request) AS requests
                     FROM RequestedCDs, ShippingRequest
-                    WHERE distroseries < %(current_series)s
+                    WHERE distrorelease < %(current_series)s
                         AND status = %(shipped)s
                         AND ShippingRequest.id = RequestedCDs.request
                         AND recipient IN (
@@ -1074,7 +1074,7 @@ class ShippingRequestSet:
                     -- serieses.
                     SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
                     FROM RequestedCDs, ShippingRequest
-                    WHERE distroseries < %(current_series)s
+                    WHERE distrorelease < %(current_series)s
                         AND status != %(shipped)s
                         AND ShippingRequest.id = RequestedCDs.request
                         AND recipient IN (
@@ -1114,8 +1114,8 @@ class ShippingRequestSet:
 
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
-        header1 = ['', '', 'Current Release Only', '', '',
-                  '', '', 'Previous Releases Only', '']
+        header1 = ['', '', 'Current Series Only', '', '',
+                  '', '', 'Previous Series Only', '']
         header2 = ['', 'requests', '', 'shipped', '', 'requests', '',
                    'shipped', '']
         header3 = ['# of requests', '# of people', 'avg CDs per request',
@@ -1194,7 +1194,8 @@ class RequestedCDs(SQLBase):
     request = ForeignKey(
         dbName='request', foreignKey='ShippingRequest', notNull=True)
 
-    distroseries = EnumCol(schema=ShipItDistroSeries, notNull=True)
+    distroseries = EnumCol(dbName='distrorelease',
+        schema=ShipItDistroSeries, notNull=True)
     architecture = EnumCol(schema=ShipItArchitecture, notNull=True)
     flavour = EnumCol(schema=ShipItFlavour, notNull=True)
 

@@ -85,6 +85,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     id = Int(title=_('ID'))
     # field names
     product = Choice(title=_('Project'), required=True, vocabulary='Product')
+    parent = Attribute('The structural parent of this series - the product')
     name = ProductSeriesNameField(title=_('Name'), required=True,
         description=_("The name of the series is a short, unique name "
         "that identifies it, being used in URLs. It must be all "
@@ -142,6 +143,10 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'This list is made up of any drivers or owners from this '
         'ProductSeries, the Product and if it exists, the relevant '
         'Project.')
+    bugcontact = Attribute(
+        'Currently just a reference to the Product bug contact.')
+    security_contact = Attribute(
+        'Currently just a reference to the Product security contact.')
 
     # XXX: 2006-09-05 jamesh
     # While it would be more sensible to call this ProductSeries.branch,

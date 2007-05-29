@@ -10,9 +10,9 @@ def question_to_questiontarget(question):
     return question.target
 
 
-def distroseries_to_questiontarget(distroseries):
-    """Adapts an IDistroSeries into an IQuestionTarget."""
-    return distroseries.distribution
+def series_to_questiontarget(series):
+    """Adapts an IDistroSeries or IProductSeries into an IQuestionTarget."""
+    return series.parent
 
 def sourcepackagerelease_to_questiontarget(sourcepackagerelease):
     """Adapts an ISourcePackageRelease into an IQuestionTarget."""

@@ -281,7 +281,7 @@ Make sure that we only imported one db1-compat source package.
 We check that the source package publishing override facility works:
 
     >>> for pub in SSPPH.selectBy(
-    ...     sourcepackagereleaseID=db1.id, orderBy='distroseries'):
+    ...     sourcepackagereleaseID=db1.id, orderBy='distrorelease'):
     ...     print pub.distroseries.name, pub.section.name
     hoary libs
     breezy oldlibs
@@ -404,7 +404,7 @@ We check that the binary package publishing override facility works:
     >>> db1 = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id,
     ...         version="2.1.3-7")
     >>> for pub in SecureBinaryPackagePublishingHistory.selectBy(
-    ...     binarypackagereleaseID=db1.id, orderBy='distroarchseries'):
+    ...     binarypackagereleaseID=db1.id, orderBy='distroarchrelease'):
     ...     print pub.distroarchseries.distroseries.name, pub.priority
     hoary 50
     breezy 20
@@ -546,7 +546,7 @@ that's what overrides actually do.
 
     >>> from canonical.lp.dbschema import PackagePublishingStatus
     >>> x11_pub = SSPPH.select("""sourcepackagerelease = %s
-    ...                           AND distroseries = %s
+    ...                           AND distrorelease = %s
     ...                           AND status in (%s, %s)""" %
     ...                         (x11p.id, breezy.id,
     ...                          PackagePublishingStatus.PUBLISHED,
@@ -567,7 +567,7 @@ that's what overrides actually do.
     >>> ac = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...         version="0.3.6")
     >>> ac_pub = SSPPH.select("""sourcepackagerelease = %s
-    ...                          AND distroseries = %s
+    ...                          AND distrorelease = %s
     ...                          AND status in (%s, %s)""" %
     ...                        (ac.id, breezy.id,
     ...                         PackagePublishingStatus.PUBLISHED,

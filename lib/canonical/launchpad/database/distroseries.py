@@ -145,6 +145,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             distroseries=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
+    def parent(self):
+        """See IDistroSeries."""
+        return self.distribution
+
+    @property
     def drivers(self):
         """See IDistroSeries."""
         drivers = set()
@@ -152,6 +157,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         drivers = drivers.union(self.distribution.drivers)
         drivers.discard(None)
         return sorted(drivers, key=lambda driver: driver.browsername)
+
+    @property
+    def bugcontact(self):
+        """See IDistroSeries."""
+        return self.distribution.bugcontact
+
+    @property
+    def security_contact(self):
+        """See IDistroSeries."""
+        return self.distribution.security_contact
 
     @property
     def sortkey(self):
@@ -210,13 +225,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 ''' % sqlvalues(self.distribution.id, datereleased),
                 orderBy=['-datereleased'])
         return list(results)
-
-    @property
-    def parent(self):
-        """See IDistroSeries."""
-        if self.parentseries:
-            return self.parentseries.title
-        return ''
 
     def canUploadToPocket(self, pocket):
         """See IDistroSeries."""
@@ -1192,8 +1200,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def _copy_lucille_config(self, cur):
         """Copy all lucille related configuration from our parent series."""
         cur.execute('''
-            UPDATE DistroSeries SET lucilleconfig=(
-                SELECT pdr.lucilleconfig FROM DistroSeries AS pdr
+            UPDATE DistroRelease SET lucilleconfig=(
+                SELECT pdr.lucilleconfig FROM DistroRelease AS pdr
                 WHERE pdr.id = %s)
             WHERE id = %s
             ''' % sqlvalues(self.parentseries.id, self.id))
@@ -1260,7 +1268,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         """
         # Copy the component selections
         cur.execute('''
-            INSERT INTO ComponentSelection (distroseries, component)
+            INSERT INTO ComponentSelection (distrorelease, component)
             SELECT %s AS distrorelease, cs.component AS component
             FROM ComponentSelection AS cs WHERE cs.distrorelease = %s
             ''' % sqlvalues(self.id, self.parentseries.id))
@@ -2108,7 +2116,7 @@ new imports with the information being copied.
         message, we don't have a way to figure whether the change was done in
         the parent or this distroseries, so we don't migrate that.
         """
-        if self.parent is None:
+        if self.parentseries is None:
             # We don't have a parent from where we could copy translations.
             return
 

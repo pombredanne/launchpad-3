@@ -499,7 +499,7 @@ def _build_request_for_cdimage_file_list(url):
 
 
 def _get_cdimage_file_list():
-    url = config.distributionmirrorprober.serieses_file_list_url
+    url = config.distributionmirrorprober.cdimage_file_list_url
     try:
         return urllib2.urlopen(_build_request_for_cdimage_file_list(url))
     except urllib2.URLError, e:

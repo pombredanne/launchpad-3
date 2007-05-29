@@ -266,7 +266,7 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
-    serieslist = Attribute(_("""An iterator over the ProductSeries for this
+    serieses = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
 
     development_focus = Choice(

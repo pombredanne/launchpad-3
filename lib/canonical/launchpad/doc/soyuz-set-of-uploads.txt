@@ -161,7 +161,7 @@ given upload into the published state, so here's a very simplistic publisher
   >>> from canonical.database.constants import UTC_NOW
   >>> def simple_publish(distro):
   ...     srcs_to_publish = SPPH.select("""
-  ...         SourcePackagePublishingHistory.distroseries = DistroRelease.id
+  ...         SourcePackagePublishingHistory.distrorelease = DistroRelease.id
   ...     AND DistroRelease.distribution = Distribution.id
   ...     AND Distribution.name = '%s'
   ...     AND SourcePackagePublishingHistory.status = 1""" % distro,

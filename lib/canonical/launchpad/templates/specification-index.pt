@@ -68,7 +68,7 @@
           </td>
         </tr>
         <tr tal:condition="context/goal">
-          <th>Goal:</th>
+          <th>Series goal:</th>
           <td>
             <a
               tal:condition="context/goal/required:launchpad.Driver"

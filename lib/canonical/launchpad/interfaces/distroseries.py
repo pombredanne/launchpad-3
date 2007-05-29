@@ -51,6 +51,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_("The version string for this series."))
     distribution = Int(title=_("Distribution"), required=True,
         description=_("The distribution for which this is a series."))
+    parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
     sections = Attribute("The series sections.")
     status = Choice(
@@ -75,7 +76,6 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         title=_("Changeslist"), required=True,
         description=_("The changes list address for the distroseries."),
         constraint=valid_email)
-    parent = Attribute("DistroSeries Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
     defer_translation_imports = Bool(
@@ -104,6 +104,10 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'A list of the people or teams who are drivers for this series. '
         'This list is made up of any drivers or owners from this '
         'DistroSeries, and the Distribution to which it belong.')
+    bugcontact = Attribute(
+        'Currently just a reference to the Distribution bug contact.')
+    security_contact = Attribute(
+        'Currently just a reference to the Distribution security contact.')
     messagecount = Attribute("The total number of translatable items in "
         "this series.")
     distroserieslanguages = Attribute("The set of dr-languages in this "

@@ -47,9 +47,9 @@ distribution and respective distroseriess considered in stderr.
 
   >>> print stderr
   INFO    creating lockfile
-  INFO    breezy-autotest starting
+  INFO    ubuntu breezy-autotest starting
   ...
-  INFO    ubuntutest done
+  INFO    redhat done
 
 Rollback the old transaction in order to get the modifications done by
 the external script:

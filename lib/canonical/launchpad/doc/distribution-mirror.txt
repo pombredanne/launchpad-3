@@ -549,7 +549,7 @@ doesn't contain any errors and that the number of mirrors probed is correct.
     <BLANKLINE>
     >>> print stderr
     INFO    creating lockfile
-    INFO    Probing CDImage Mirrors
+    INFO    Probing CD Image Mirrors
     INFO    Probed 4 mirrors.
     INFO    Disabling 1 mirror(s):
             http://launchpad.dev/ubuntu/+mirror/unreachable-mirror
@@ -565,7 +565,7 @@ probed again.
     <BLANKLINE>
     >>> print stderr
     INFO    creating lockfile
-    INFO    Probing CDImage Mirrors
+    INFO    Probing CD Image Mirrors
     INFO    No mirrors to probe.
     INFO    Done.
     <BLANKLINE>
@@ -578,7 +578,7 @@ official mirrors independently if they were probed recently or not.
     <BLANKLINE>
     >>> print stderr
     INFO    creating lockfile
-    INFO    Probing CDImage Mirrors
+    INFO    Probing CD Image Mirrors
     INFO    Probed 4 mirrors.
     INFO    Done.
     <BLANKLINE>
@@ -598,7 +598,7 @@ official mirrors independently if they were probed recently or not.
     >>> prober, stdout, stderr = run_prober('--content-type=cdimage --force')
     >>> print stderr
     INFO    creating lockfile
-    INFO    Probing CDImage Mirrors
+    INFO    Probing CD Image Mirrors
     INFO    Probed 4 mirrors.
     INFO    Re-enabling 1 mirror(s):
             http://launchpad.dev/ubuntu/+mirror/releases-mirror

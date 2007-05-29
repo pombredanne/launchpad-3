@@ -341,7 +341,7 @@ Let's start with putting a product in the launchbag.
 
 Firefox has the following series:
 
-    >>> for series in firefox.serieslist:
+    >>> for series in firefox.serieses:
     ...     print series.name
     1.0
     trunk
@@ -456,7 +456,7 @@ The same is true for bug two, where the bug is targeted to Hoary.
 We can get a specific term by using the release name:
 
     >>> term = serieses_vocabulary.getTermByToken('warty')
-    >>> term.value == ubuntu.getRelease('warty')
+    >>> term.value == ubuntu.getSeries('warty')
     True
 
 Trying to get a non-existant release will result in a LookupError:

@@ -193,9 +193,9 @@ We can create new products with the createProduct() method:
 
 When creating a product, a default product series is created for it:
 
-    >>> product.serieslist.count()
+    >>> product.serieses.count()
     1
-    >>> trunk = product.serieslist[0]
+    >>> trunk = product.serieses[0]
     >>> print trunk.name
     trunk
 

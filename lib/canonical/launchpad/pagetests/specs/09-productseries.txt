@@ -10,7 +10,7 @@ First we load the page to target to the series. We can see two potential
 series candidates, the "trunk" and the "1.0" series.
 
   >>> print http(r"""
-  ... GET /firefox/+spec/e4x/+setseries HTTP/1.1
+  ... GET /firefox/+spec/e4x/+setproductseries HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -26,7 +26,7 @@ Note that we use a user who DOES NOT have the "driver" role on that series,
 so the targeting should NOT be automatically approved.
 
   >>> print http(r"""
-  ... POST /firefox/+spec/svg-support/+setseries HTTP/1.1
+  ... POST /firefox/+spec/svg-support/+setproductseries HTTP/1.1
   ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=
   ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ... 
@@ -68,7 +68,7 @@ header.
 OK, we will also pitch the e4x spec to the same series:
 
   >>> print http(r"""
-  ... POST /firefox/+spec/e4x/+setseries HTTP/1.1
+  ... POST /firefox/+spec/e4x/+setproductseries HTTP/1.1
   ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206Y3Byb3Y=
   ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ... 
@@ -154,7 +154,7 @@ spec to the "trunk" series, where it will be automatically approved
 because we are an admin, then we will move it back.
 
   >>> print http(r"""
-  ... POST /firefox/+spec/svg-support/+setseries HTTP/1.1
+  ... POST /firefox/+spec/svg-support/+setproductseries HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ... 
@@ -194,7 +194,7 @@ OK, lets see if it was immediately accepted:
 And lets put it back:
 
   >>> print http(r"""
-  ... POST /firefox/+spec/svg-support/+setseries HTTP/1.1
+  ... POST /firefox/+spec/svg-support/+setproductseries HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------26999413214087432371486976730
   ... 

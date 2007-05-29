@@ -76,7 +76,7 @@ Setup BuilddMaster class:
 Check if there builders available:
 
   >>> available_builder = (
-  ...     bm._archreleases[hoary_i386]['builders'].firstAvailable(
+  ...     bm._archserieses[hoary_i386]['builders'].firstAvailable(
   ...     is_trusted=True))
   >>> available_builder.name
   u'bob'

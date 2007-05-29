@@ -1507,6 +1507,16 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the reporter widget be shown on the advanced search page?"""
         return True
 
+    def shouldShowReleaseCriticalPortlet(self):
+        """Should the page include a portlet showing release-critical bugs
+        for different series.
+        """
+        return (
+            IDistribution.providedBy(self.context) and self.context.serieses or
+            IDistroSeries.providedBy(self.context) or
+            IProduct.providedBy(self.context) and self.context.serieses or
+            IProductSeries.providedBy(self.context))
+
     def shouldShowUpstreamStatusBox(self):
         """Should the upstream status filtering widgets be shown?"""
         return not (

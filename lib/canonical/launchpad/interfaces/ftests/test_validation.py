@@ -32,26 +32,26 @@ def test_can_be_nominated_for_serieses(self):
         ...     CreateBugParams(no_priv, "New Bug", comment="New Bug."))
         >>> getUtility(IOpenLaunchBag).add(bug)
 
-        >>> can_be_nominated_for_serieses(firefox.serieslist)
+        >>> can_be_nominated_for_serieses(firefox.serieses)
         True
 
     If we nominate the bug for one of the series, the validation will
     fail for that specific series.
 
-        >>> nomination = bug.addNomination(no_priv, firefox.serieslist[0])
-        >>> can_be_nominated_for_serieses(firefox.serieslist)
+        >>> nomination = bug.addNomination(no_priv, firefox.serieses[0])
+        >>> can_be_nominated_for_serieses(firefox.serieses)
         Traceback (most recent call last):
         ...
         LaunchpadValidationError...
 
-        >>> can_be_nominated_for_serieses([firefox.serieslist[0]])
+        >>> can_be_nominated_for_serieses([firefox.serieses[0]])
         Traceback (most recent call last):
         ...
         LaunchpadValidationError...
 
     It will pass for the rest of the series, though.
 
-        >>> can_be_nominated_for_serieses(firefox.serieslist[1:])
+        >>> can_be_nominated_for_serieses(firefox.serieses[1:])
         True
 
     Of course, if we accept the nomination, the validation will still
@@ -61,7 +61,7 @@ def test_can_be_nominated_for_serieses(self):
         >>> foo_bar =  getUtility(IPersonSet).getByEmail(
         ...     'foo.bar@canonical.com')
         >>> nomination.approve(foo_bar)
-        >>> can_be_nominated_for_serieses([firefox.serieslist[0]])
+        >>> can_be_nominated_for_serieses([firefox.serieses[0]])
         Traceback (most recent call last):
         ...
         LaunchpadValidationError...
@@ -70,8 +70,8 @@ def test_can_be_nominated_for_serieses(self):
     nominated.
 
         >>> trunk_nomination = bug.addNomination(
-        ...     no_priv, firefox.serieslist[1])
-        >>> can_be_nominated_for_serieses(firefox.serieslist)
+        ...     no_priv, firefox.serieses[1])
+        >>> can_be_nominated_for_serieses(firefox.serieses)
         Traceback (most recent call last):
         ...
         LaunchpadValidationError:
@@ -80,7 +80,7 @@ def test_can_be_nominated_for_serieses(self):
     The validation will still fail if a nomination is declined.
 
         >>> trunk_nomination.decline(foo_bar)
-        >>> can_be_nominated_for_serieses([firefox.serieslist[1]])
+        >>> can_be_nominated_for_serieses([firefox.serieses[1]])
         Traceback (most recent call last):
         ...
         LaunchpadValidationError...

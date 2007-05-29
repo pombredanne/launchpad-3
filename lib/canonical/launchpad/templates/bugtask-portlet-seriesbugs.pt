@@ -1,19 +1,19 @@
-<div
-  class="portlet"
-  tal:define="release_buglistings view/release_buglistings"
->
+<div class="portlet"
+     tal:define="series_buglistings view/series_buglistings">
 
-  <h2>Release bugs</h2>
+  <h2>Release-critical bugs</h2>
 
-  <div class="portletBody portletContent">
-    <ul>
-      <li tal:repeat="release_openbugs release_buglistings">
-        <a href=""
-           tal:content="release_openbugs/title"
-           tal:attributes="href release_openbugs/url">sid</a>
-        (<span tal:replace="release_openbugs/count">2</span>)
-      </li>
-    </ul>
+  <div class="portletBody">
+    <table width="100%">
+      <tr tal:repeat="series_openbugs series_buglistings">
+        <td>
+          <a href=""
+             tal:content="series_openbugs/title"
+             tal:attributes="href series_openbugs/url">sid</a>
+        </td>
+        <td><span tal:replace="series_openbugs/count">2</span></td>
+      </tr>
+    </table>
   </div>
 
 </div>

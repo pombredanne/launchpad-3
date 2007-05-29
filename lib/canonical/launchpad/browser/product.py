@@ -143,7 +143,7 @@ class ProductSOP(StructuralObjectPresentation):
 
     def listChildren(self, num):
         # product series, most recent first
-        return list(self.context.serieslist[:num])
+        return list(self.context.serieses[:num])
 
     def listAltChildren(self, num):
         return None
@@ -509,7 +509,7 @@ class ProductView(LaunchpadView):
         distros = {}
         # first get a list of all relevant packagings
         all_packagings = []
-        for series in self.context.serieslist:
+        for series in self.context.serieses:
             for packaging in series.packagings:
                 all_packagings.append(packaging)
         # we sort it so that the packagings will always be displayed in the
@@ -542,15 +542,15 @@ class ProductView(LaunchpadView):
     def potemplatenames(self):
         potemplatenames = set([])
 
-        for series in self.context.serieslist:
+        for series in self.context.serieses:
             for potemplate in series.potemplates:
                 potemplatenames.add(potemplate.potemplatename)
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
-    def sorted_serieslist(self):
+    def sorted_serieses(self):
         """Return the series list from the product with the dev focus first."""
-        series_list = list(self.context.serieslist)
+        series_list = list(self.context.serieses)
         series_list.remove(self.context.development_focus)
         # now sort the list by name with newer versions before older
         series_list = sorted_version_numbers(series_list,
@@ -595,7 +595,7 @@ class ProductDownloadFilesView(LaunchpadView):
         del_keys = [int(v) for k,v in data.items()
                     if k.startswith('checkbox')]
         del_count = 0
-        for series in self.product.serieslist:
+        for series in self.product.serieses:
             for release in series.releases:
                 for f in release.files:
                     if f.libraryfile.id in del_keys:
@@ -613,7 +613,7 @@ class ProductDownloadFilesView(LaunchpadView):
     def milestones(self):
         """Compute a mapping between series and releases that are milestones."""
         result = dict()
-        for series in self.product.serieslist:
+        for series in self.product.serieses:
             result[series] = dict()
             milestone_list = [m.name for m in series.milestones]
             for release in series.releases:
@@ -985,7 +985,7 @@ class ProductReassignmentView(ObjectReassignmentView):
 
         """
         import_queue = getUtility(ITranslationImportQueue)
-        for series in product.serieslist:
+        for series in product.serieses:
             for entry in import_queue.getEntryByProductSeries(series):
                 if entry.importer == oldOwner:
                     entry.importer = newOwner

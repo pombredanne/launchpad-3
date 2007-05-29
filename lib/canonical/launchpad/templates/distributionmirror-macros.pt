@@ -76,7 +76,7 @@
   </tbody>
   </table>
 
-  <h2>Source mirrored</h2>
+  <h2>Source code mirrored</h2>
   <div tal:condition="not: source_serieses">
     We have found no source on this mirror. This is normal
     if we have not yet successfully verified the mirror.

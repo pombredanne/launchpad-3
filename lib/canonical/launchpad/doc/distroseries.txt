@@ -115,14 +115,14 @@ not, according the distroseries status and the upload target pocket.
 
    >>> from canonical.lp.dbschema import PackagePublishingPocket
 
-   >>> warty.releasestatus.name
+   >>> warty.status.name
    'CURRENT'
    >>> warty.canUploadToPocket(PackagePublishingPocket.RELEASE)
    False
    >>> warty.canUploadToPocket(PackagePublishingPocket.SECURITY)
    True
 
-   >>> breezy_autotest.releasestatus.name
+   >>> breezy_autotest.status.name
    'EXPERIMENTAL'
    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.RELEASE)
    True
@@ -882,7 +882,7 @@ informational.
 
  >>> distroset = getUtility(IDistributionSet)
  >>> kubuntu = distroset.getByName("kubuntu")
- >>> krunch = kubuntu.getRelease("krunch")
+ >>> krunch = kubuntu.getSeries("krunch")
  >>> from canonical.lp.dbschema import SpecificationFilter
 
 First, there should be one informational specs for krunch:
@@ -1003,7 +1003,7 @@ the distribution.
  None
  >>> print debian.owner.name
  sabdfl
- >>> sarge = debian.getRelease('sarge')
+ >>> sarge = debian.getSeries('sarge')
  >>> print sarge.driver.name
  jdub
  >>> for d in sarge.drivers:
@@ -1018,7 +1018,7 @@ on the distribution.
  >>> redhat = distroset.getByName('redhat')
  >>> print redhat.driver.name
  jblack
- >>> six = redhat.getRelease('six')
+ >>> six = redhat.getSeries('six')
  >>> print six.driver
  None
  >>> for d in six.drivers:
@@ -1030,7 +1030,7 @@ Finally, on a release where neither the distribution nor the release have a
 driver. Here, we expect the driver to be the owner of the distribution
 (because this is the "commonest fallback").
 
- >>> sid = debian.getRelease('sid')
+ >>> sid = debian.getSeries('sid')
  >>> print debian.driver
  None
  >>> print debian.owner.name

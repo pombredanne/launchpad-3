@@ -296,18 +296,18 @@ class DistributionMirror(SQLBase):
     def getSummarizedMirroredSourceSerieses(self):
         """See IDistributionMirror"""
         query = """
-            MirrorDistroSeriesSource.id IN (
-                SELECT DISTINCT ON (MirrorDistroSeriesSource.distribution_mirror,
-                                    MirrorDistroSeriesSource.distroseries)
-                       MirrorDistroSeriesSource.id
-                FROM MirrorDistroSeriesSource, DistributionMirror
-                WHERE DistributionMirror.id = 
-                            MirrorDistroSeriesSource.distribution_mirror
-                      AND DistributionMirror.id = %(mirrorid)s
-                      AND DistributionMirror.distribution = %(distribution)s
-                ORDER BY MirrorDistroSeriesSource.distribution_mirror, 
-                         MirrorDistroSeriesSource.distroseries, 
-                         MirrorDistroSeriesSource.status DESC)
+            MirrorDistroReleaseSource.id IN (
+              SELECT DISTINCT ON (MirrorDistroReleaseSource.distribution_mirror,
+                                  MirrorDistroReleaseSource.distrorelease)
+                     MirrorDistroReleaseSource.id
+              FROM MirrorDistroReleaseSource, DistributionMirror
+              WHERE DistributionMirror.id = 
+                         MirrorDistroReleaseSource.distribution_mirror
+                    AND DistributionMirror.id = %(mirrorid)s
+                    AND DistributionMirror.distribution = %(distribution)s
+              ORDER BY MirrorDistroReleaseSource.distribution_mirror, 
+                       MirrorDistroReleaseSource.distrorelease, 
+                       MirrorDistroReleaseSource.status DESC)
             """ % sqlvalues(distribution=self.distribution, mirrorid=self)
         return MirrorDistroSeriesSource.select(query)
 
@@ -583,7 +583,7 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
         notNull=True)
-    distro_arch_release = ForeignKey(
+    distro_arch_series = ForeignKey(
         dbName='distro_arch_release', foreignKey='DistroArchSeries',
         notNull=True)
     component = ForeignKey(

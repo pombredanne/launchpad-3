@@ -150,7 +150,7 @@ class VPOExportSet:
             SourcePackagePublishingHistory.archive = %s
             ''' % sqlvalues(component,
                             PackagePublishingStatus.REMOVED,
-                            release.main_archive)
+                            series.main_archive)
 
         if languagepack is not None:
             where += ''' AND

@@ -183,7 +183,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
-    serieslist = SQLMultipleJoin('ProductSeries', joinColumn='product',
+    serieses = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 
     @property

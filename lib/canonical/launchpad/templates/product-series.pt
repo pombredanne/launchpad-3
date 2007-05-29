@@ -12,7 +12,7 @@
 
     <h1><span tal:replace="context/displayname" /> Timeline</h1>
 
-    <div tal:repeat="series view/sorted_serieslist">
+    <div tal:repeat="series view/sorted_serieses">
       <div tal:define="is_focus python:context.development_focus == series"
            tal:attributes="class 
               python:is_focus and 'highlighted' or 'unhighlighted'">

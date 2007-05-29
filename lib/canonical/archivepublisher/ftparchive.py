@@ -181,7 +181,7 @@ class FTPArchiveHandler:
         # createEmptyPocketRequest; that would also allow us to replace
         # the == "" check we do there by a RELEASE match -- kiko
         for distroseries in self.distro:
-            components = self._config.componentsForRelease(distroseries.name)
+            components = self._config.componentsForSeries(distroseries.name)
             for pocket, suffix in pocketsuffix.items():
                 if not fullpublish:
                     if not self.publisher.isDirty(distroseries, pocket):
@@ -194,9 +194,9 @@ class FTPArchiveHandler:
                     self.createEmptyPocketRequest(distroseries, suffix, comp)
 
     def createEmptyPocketRequest(self, distroseries, suffix, comp):
-        """Creates empty files for a release, pocket and distroseries"""
+        """Creates empty files for a release pocket and distroseries"""
         full_distroseries_name = distroseries.name + suffix
-        arch_tags = self._config.archTagsForRelease(distroseries.name)
+        arch_tags = self._config.archTagsForSeries(distroseries.name)
 
         if suffix == "":
             # organize distroseries and component pair as
@@ -385,9 +385,9 @@ class FTPArchiveHandler:
         extra_extra_overrides = os.path.join(self._config.miscroot,
             "more-extra.override.%s.%s" % (distroseries, component))
         if not os.path.exists(extra_extra_overrides):
-            unpocketed_release = "-".join(distroseries.split('-')[:-1])
+            unpocketed_series = "-".join(distroseries.split('-')[:-1])
             extra_extra_overrides = os.path.join(self._config.miscroot,
-                "more-extra.override.%s.%s" % (unpocketed_release, component))
+                "more-extra.override.%s.%s" % (unpocketed_series, component))
         # And for the overrides we write out
         main_override = os.path.join(self._config.overrideroot,
                                      "override.%s.%s" %
@@ -543,7 +543,7 @@ class FTPArchiveHandler:
                                              dr_pocketed, component)
 
     def writeFileList(self, arch, file_names, dr_pocketed, component):
-        """Outputs a file list for a release and architecture.
+        """Outputs a file list for a series and architecture.
 
         Also outputs a debian-installer file list if necessary.
         """
@@ -595,7 +595,7 @@ class FTPArchiveHandler:
 
         Otherwise, we aim to limit our config to certain distroserieses
         and pockets. By default, we will exclude release pockets for
-        released distros, and in addition we exclude any pocket not
+        released series, and in addition we exclude any pocket not
         explicitly marked as dirty. dirty_pockets must be a nested
         dictionary of booleans, keyed by distroseries.name then pocket.
         """
@@ -607,7 +607,7 @@ class FTPArchiveHandler:
 
         # confixtext now contains a basic header. Add a dists entry for
         # each of the distroserieses we've touched
-        for distroseries_name in self._config.distroReleaseNames():
+        for distroseries_name in self._config.distroSeriesNames():
             distroseries = self.distro[distroseries_name]
             for pocket in pocketsuffix:
 
@@ -643,8 +643,8 @@ class FTPArchiveHandler:
 
         # XXX I have no idea what the code below is meant to do -- it
         # appears to be a rehash of createEmptyPocketRequests. -- kiko
-        archs = self._config.archTagsForRelease(distroseries_name)
-        comps = self._config.componentsForRelease(distroseries_name)
+        archs = self._config.archTagsForSeries(distroseries_name)
+        comps = self._config.componentsForSeries(distroseries_name)
         for comp in comps:
             comp_path = os.path.join(self._config.overrideroot,
                                      "_".join([dr_pocketed, comp, "source"]))

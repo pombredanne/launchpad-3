@@ -683,25 +683,23 @@ class BugTargetBugListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        distribution_context = IDistribution(self.context, None)
-        distroseries_context = IDistroSeries(self.context, None)
-
-        if distroseries_context:
-            distribution = distroseries_context.distribution
-        elif distribution_context:
-            distribution = distribution_context
+        if IDistribution(self.context, None):
+            serieses = self.context.serieses
+        elif IProduct(self.context, None):
+            serieses = self.context.serieses
+        elif IDistroSeries(self.context, None):
+            serieses = self.context.distribution.serieses
+        elif IProductSeries(self.context, None):
+            serieses = self.context.product.serieses
         else:
             raise AssertionError, ("series_bug_counts called with "
                                    "illegal context")
-
-        serieses = getUtility(IDistroSeriesSet).search(
-            distribution=distribution, orderBy="-datereleased")
 
         series_buglistings = []
         for series in serieses:
             series_buglistings.append(
                 dict(
-                    title=series.displayname,
+                    title=series.name,
                     url=canonical_url(series) + "/+bugs",
                     count=series.open_bugtasks.count()))
 

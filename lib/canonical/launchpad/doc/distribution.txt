@@ -171,11 +171,11 @@ Ubuntu first and the rest alphabetically:
     ...     print item.name
     ubuntu
     kubuntu
+    ubuntutest
     debian
     gentoo
     guadalinex
     redhat
-    ubuntutest
 
 
 === Searching for DistributionSourcePackages ===

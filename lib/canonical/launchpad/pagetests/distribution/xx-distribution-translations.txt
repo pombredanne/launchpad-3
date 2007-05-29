@@ -37,7 +37,7 @@ right translation focus.
 
 And the other Ubuntu distributions should be there too.
 
-  >>> 'Other releases of Ubuntu' in browser.contents
+  >>> 'Other versions of Ubuntu' in browser.contents
   True
   >>> 'Breezy Badger Autotest' in browser.contents
   True
@@ -79,7 +79,7 @@ pointing to the latest release, Hoary.
 
 And the other Ubuntu distributions should be there too.
 
-  >>> 'Other releases of Debian' in browser.contents
+  >>> 'Other versions of Debian' in browser.contents
   True
   >>> 'Sid' in browser.contents
   True

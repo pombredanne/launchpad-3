@@ -87,7 +87,7 @@ Check the error when requesting to add a chroot for an unknown suite
   1
   >>> print stderr
   DEBUG   Intitialising connetion.
-  ERROR   Suite not found: 'hoary-foo'
+  ERROR   Series not found: 'hoary-foo'
   <BLANKLINE>
 
 Remove the temporary file created by this script

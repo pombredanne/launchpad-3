@@ -130,6 +130,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             productseries=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
+    def parent(self):
+        """See IProductSeries."""
+        return self.product
+
+    @property
     def bugtargetname(self):
         """See IBugTarget."""
         return "%s %s (upstream)" % (self.product.name, self.name)
@@ -142,6 +147,16 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
         return sorted(drivers, key=lambda x: x.browsername)
+
+    @property
+    def bugcontact(self):
+        """See IProductSeries."""
+        return self.product.bugcontact
+
+    @property
+    def security_contact(self):
+        """See IProductSeries."""
+        return self.product.security_contact
 
     @property
     def series_branch(self):

@@ -377,7 +377,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 raise NotFoundError(name_or_version)
         return distroseries
 
-    def getDevelopmentReleases(self):
+    def getDevelopmentSerieses(self):
         """See IDistribution."""
         return DistroSeries.selectBy(
             distribution=self,

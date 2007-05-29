@@ -3113,7 +3113,7 @@ class MirrorContent(DBSchema):
         """)
 
     RELEASE = Item(2, """
-        Release
+        CD Image
 
         Mirror containing released installation images for a given
         distribution.
