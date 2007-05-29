@@ -28,7 +28,8 @@ from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     IBranch, IBugTask, IDistributionSourcePackage, IEmailAddressSet,
     ILanguageSet, INotificationRecipientSet, IPerson, ISourcePackage,
-    ISpecification, ITeamMembershipSet, IUpstreamBugTask)
+    ISpecification, ITeamMembershipSet, IUpstreamBugTask,
+    UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -153,15 +154,21 @@ class NotificationRecipientSet:
 
     def getReason(self, person_or_email):
         """See `INotificationRecipientSet`."""
-        if zope_isinstance(person_or_email, (str, unicode)):
-            person = self._email2person[person_or_email]
+        if zope_isinstance(person_or_email, basestring):
+            try:
+                person = self._email2person[person_or_email]
+            except KeyError:
+                raise UnknownRecipientError(person_or_email)
         elif IPerson.providedBy(person_or_email):
             person = person_or_email
         else:
             raise AssertionError(
                 'Not an IPerson or email address: %s' % person_or_email)
-        return self._person2rationale[person]
-
+        try:
+            return self._person2rationale[person]
+        except KeyError:
+            raise UnknownRecipientError(person)
+            
     def add(self, persons, reason, header):
         """See `INotificationRecipientSet`."""
 

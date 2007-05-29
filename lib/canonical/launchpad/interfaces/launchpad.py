@@ -70,6 +70,7 @@ __all__ = [
     'NameNotAvailable',
     'NotFoundError',
     'UnexpectedFormData',
+    'UnknownRecipientError',
     'UnsafeFormGetSubmissionError',
     ]
 
@@ -407,6 +408,11 @@ class IAppFrontPageSearchForm(Interface):
                    vocabulary='DistributionOrProductOrProject')
 
 
+class UnknownRecipientError(KeyError):
+    """Error raised when an email or person isn't part of the recipient set.
+    """
+
+
 class INotificationRecipientSet(Interface):
     """Represents a set of notification recipients and rationales.
 
@@ -452,8 +458,8 @@ class INotificationRecipientSet(Interface):
         :param person_or_email: An `IPerson` or email adress that is in the
             recipients list.
 
-        :raises KeyError: if the person or email isn't in the recipients
-            list.
+        :raises UnknownRecipientError: if the person or email isn't in the
+            recipients list.
         """
 
     def add(person, reason, header):
@@ -468,7 +474,7 @@ class INotificationRecipientSet(Interface):
         :param reason: The rationale message that should appear in the
             notification footer.
         :param header: The code that will appear in the
-        X-Launchpad-Message-Rationale header.
+            X-Launchpad-Message-Rationale header.
         """
 
     def update(recipient_set):

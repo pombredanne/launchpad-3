@@ -97,17 +97,18 @@ You can also ask the reason associated with an email address:
     >>> recipients.getReason('test@canonical.com')
     ('You are notified because...', 'Unknown')
 
-Requesting the reason for somebody that is not a recipient raises a KeyError:
+Requesting the reason for somebody that is not a recipient raises a
+UnknownRecipientError:
 
     >>> recipients.getReason(no_priv)
     Traceback (most recent call last):
       ...
-    KeyError: ...
+    UnknownRecipientError: ...
 
     >>> recipients.getReason('no-priv@canonical.com')
     Traceback (most recent call last):
       ...
-    KeyError: 'no-priv@canonical.com'
+    UnknownRecipientError: 'no-priv@canonical.com'
 
 Passing something else than an IPerson or a string is forbidden:
 
