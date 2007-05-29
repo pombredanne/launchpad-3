@@ -178,6 +178,27 @@ class TestExecOnlySession(AvatarTestCase):
         self.assertIdentical(self.avatar, session.avatar)
         self.assertIdentical(reactor, session.reactor)
 
+    def test_environment(self):
+        # The environment for the executed process can be specified in the
+        # ExecOnlySession constructor.
+        session = smartserver.ExecOnlySession(self.avatar, self.reactor,
+                                              environment={'FOO': 'BAR'})
+        protocol = ProcessProtocol()
+        session.execCommand(protocol, 'yes')
+        self.assertEqual({'FOO': 'BAR'}, session.environment)
+        self.assertEqual(
+            [(protocol, 'yes', ['yes'], {'FOO': 'BAR'}, None, None, None, 0,
+              None)],
+            self.reactor.log)
+
+    def test_environmentInGetAvatarAdapter(self):
+        # We can pass the environment into getAvatarAdapter so that it is used
+        # when we adapt the session.
+        adapter = smartserver.ExecOnlySession.getAvatarAdapter(
+            environment={'FOO': 'BAR'})
+        session = adapter(self.avatar)
+        self.assertEqual({'FOO': 'BAR'}, session.environment)
+
 
 class TestRestrictedExecOnlySession(AvatarTestCase):
     """Tests for RestrictedExecOnlySession.
@@ -260,18 +281,6 @@ class TestSessionIntegration(AvatarTestCase):
             'alice', self.tmpdir, self.aliceUserDict, None)
 
     def test_avatarAdaptsToRestrictedExecOnlySession(self):
-        # XXX - When we actually want to deploy the smart server on the
-        # supermirror, we should enable this test and add the following lines
-        # to sftponly.py:
-        #
-        # components.registerAdapter(
-        #     RestrictedExecOnlySession.getAvatarAdapter(
-        #         'bzr serve --inet /', 'bzr launchpad-serve %(avatarId)s'),
-        #         SFTPOnlyAvatar, ISession)
-        #
-        # Jonathan Lange, 2007-05-21
-        return
-
         # When Conch tries to adapt the supermirror avatar to ISession, it
         # adapts to a RestrictedExecOnlySession. This means that a
         # RestrictedExecOnlySession handles any requests to execute a command.
@@ -282,7 +291,7 @@ class TestSessionIntegration(AvatarTestCase):
             "Got %r instead." % (session,))
         executable, arguments = session.getCommandToRun('bzr serve --inet /')
         self.assertEqual('bzr', executable)
-        self.assertEqual(['launchpad-serve', self.avatar.avatarId],
+        self.assertEqual(['bzr', 'lp-serve', '--inet', self.avatar.avatarId],
                          list(arguments))
         self.assertRaises(smartserver.ForbiddenCommand,
                           session.getCommandToRun, 'rm -rf /')

@@ -21,15 +21,16 @@ class ExecOnlySession:
 
     implements(ISession)
 
-    def __init__(self, avatar, reactor):
+    def __init__(self, avatar, reactor, environment=None):
         self.avatar = avatar
         self.reactor = reactor
+        self.environment = environment
         self._transport = None
 
     @classmethod
-    def getAvatarAdapter(klass):
+    def getAvatarAdapter(klass, environment=None):
         from twisted.internet import reactor
-        return lambda avatar: klass(avatar, reactor)
+        return lambda avatar: klass(avatar, reactor, environment)
 
     def closed(self):
         """See ISession."""
@@ -56,7 +57,7 @@ class ExecOnlySession:
         """
         executable, arguments = self.getCommandToRun(command)
         self._transport = self.reactor.spawnProcess(
-            protocol, executable, arguments)
+            protocol, executable, arguments, env=self.environment)
 
     def getCommandToRun(self, command):
         """Return the command that will actually be run given `command`.
@@ -86,7 +87,7 @@ class RestrictedExecOnlySession(ExecOnlySession):
     """Conch session that only allows a single command to be executed."""
 
     def __init__(self, avatar, reactor, allowed_command,
-                 executed_command_template):
+                 executed_command_template, environment=None):
         """Construct a RestrictedExecOnlySession.
 
         :param avatar: See `ExecOnlySession`.
@@ -96,15 +97,17 @@ class RestrictedExecOnlySession(ExecOnlySession):
             command that will be run. '%(avatarId)s' will be replaced with the
             current avatar's id (generally a username).
         """
-        ExecOnlySession.__init__(self, avatar, reactor)
+        ExecOnlySession.__init__(self, avatar, reactor, environment)
         self.allowed_command = allowed_command
         self.executed_command_template = executed_command_template
 
     @classmethod
-    def getAvatarAdapter(klass, allowed_command, executed_command_template):
+    def getAvatarAdapter(klass, allowed_command, executed_command_template,
+                         environment=None):
         from twisted.internet import reactor
-        return lambda avatar: klass(avatar, reactor, allowed_command,
-                                    executed_command_template)
+        return lambda avatar: klass(
+            avatar, reactor, allowed_command, executed_command_template,
+            environment)
 
     def getCommandToRun(self, command):
         """As in ExecOnlySession, but only allow a particular command.
