@@ -333,11 +333,6 @@ class NascentUpload:
         Check if the declared number of architectures corresponds to the
         upload contents.
         """
-        # Currently the only check we make is that if the upload is binaryful
-        # we don't allow more than one build.
-        # XXX: dsilvers: 20051014: We'll want to refactor to remove this limit
-        # but it's not too much of a hassle for now.
-        # bug 3158
         considered_archs = [arch_name for arch_name in self.changes.architectures
                             if not arch_name.endswith("_translations")]
         max = 1
