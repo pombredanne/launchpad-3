@@ -3,7 +3,8 @@
 """Bazaar transport for the Launchpad code hosting file system."""
 
 __metaclass__ = type
-__all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport']
+__all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
+           'UntranslatablePath']
 
 
 from bzrlib.errors import BzrError, NoSuchFile, TransportNotPossible
@@ -220,16 +221,15 @@ class LaunchpadTransport(Transport):
     def _call(self, methodname, relpath, *args, **kwargs):
         """Call a method on the backing transport, translating relative,
         virtual paths to filesystem paths.
+
+        :raise NoSuchFile: If the path cannot be translated.
         """
         method = getattr(self.server.backing_transport, methodname)
         return method(self._translate_virtual_path(relpath), *args, **kwargs)
 
     def _translate_virtual_path(self, relpath):
         """Translate a virtual path into a path on the backing transport."""
-        try:
-            return self.server.translate_virtual_path(self._abspath(relpath))
-        except UntranslatablePath:
-            raise NoSuchFile(relpath)
+        return self.server.translate_virtual_path(self._abspath(relpath))
 
     # Transport methods
     def abspath(self, relpath):
@@ -272,13 +272,13 @@ class LaunchpadTransport(Transport):
         return self._call('lock_write', relpath)
 
     def mkdir(self, relpath, mode=None):
-        # XXX: JonathanLange 2007-05-29, ugly and unclear.
+        # If we can't translate the path, then perhaps we are being asked to
+        # create a new branch directory. Delegate to the server, as it knows
+        # how to deal with absolute virtual paths.
         try:
-            path = self.server.translate_virtual_path(self._abspath(relpath))
+            return self._call('mkdir', relpath, mode)
         except UntranslatablePath:
             return self.server.mkdir(self._abspath(relpath))
-        else:
-            return self.server.backing_transport.mkdir(path, mode)
 
     def put_file(self, relpath, f, mode=None):
         return self._call('put_file', relpath, f, mode)

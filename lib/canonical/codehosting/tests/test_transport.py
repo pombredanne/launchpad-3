@@ -11,7 +11,8 @@ from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryTransport
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
-from canonical.codehosting import transport
+from canonical.codehosting.transport import (
+    branch_id_to_path, LaunchpadServer, UntranslatablePath)
 from canonical.testing import BzrlibLayer
 
 
@@ -106,7 +107,7 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = MemoryTransport()
-        self.server = transport.LaunchpadServer(
+        self.server = LaunchpadServer(
             self.authserver, self.user_id, self.backing_transport)
 
     def test_construct(self):
@@ -165,7 +166,7 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = self.get_transport()
-        self.server = transport.LaunchpadServer(
+        self.server = LaunchpadServer(
             self.authserver, self.user_id, self.backing_transport)
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
@@ -230,10 +231,10 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
     def test_incomplete_path_not_found(self):
         # For a branch URL to be complete, it needs to have a person, product
         # and branch. Trying to perform operations on an incomplete URL raises
-        # NoSuchFile errors.
+        # UntranslatablePath errors.
         transport = get_transport(self.server.get_url())
         self.assertRaises(
-            errors.NoSuchFile, transport.get, '~foo')
+            UntranslatablePath, transport.get, '~foo')
 
     def test_rename(self):
         # rename needs to translate the target path as well as the source path,
@@ -263,7 +264,7 @@ class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = self.get_transport()
-        self.server = transport.LaunchpadServer(
+        self.server = LaunchpadServer(
             self.authserver, self.user_id, self.backing_transport)
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
@@ -329,7 +330,7 @@ class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
         # path on the underlying transport.
         branch_id = self.server._branches[('foo', 'bar', 'banana')]
         self.assertTrue(
-            self.backing_transport.has(transport.branch_id_to_path(branch_id)))
+            self.backing_transport.has(branch_id_to_path(branch_id)))
 
     def test_make_directory_without_prefix(self):
         # Because the user and product directories don't exist on the
