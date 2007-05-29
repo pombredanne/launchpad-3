@@ -9,7 +9,6 @@ This test will check the upload of dist-upgrade tarballs
   >>> from canonical.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
-  >>> distro_release_set = getUtility(IDistroSeriesSet)
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
 
@@ -55,11 +54,14 @@ It was not rejected.
   >>> upload.is_rejected
   False
 
-  >>> success, msgs = upload.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  >>> success = upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: signer of the above package.
 
 And all things worked.
 
@@ -240,11 +242,14 @@ manual intervention.
   DEBUG: Foo Bar (16) is an uploader for main.
   DEBUG: Finished checking upload.
 
-  >>> success, msgs = upload.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  >>> success = upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: signer of the above package.
 
 Make the just-uploaded librarian file visible:
 
@@ -304,11 +309,14 @@ files in the respective PPA location.
   DEBUG: Do verify signer ACL for PPA
   DEBUG: Finished checking upload.
 
-  >>> success, msgs = ppa_upload.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  >>> success = ppa_upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: signer of the above package.
 
   >>> transaction.commit()
   >>> ppa_upload.queue_root.realiseUpload(mock_logger)

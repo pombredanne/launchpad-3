@@ -26,15 +26,15 @@ uploaded into the system.
   >>> login('foo.bar@canonical.com')
 
   # We need to setup our test environment and create the needed objects.
-  >>> distro_release_set = getUtility(IDistroSeriesSet)
+  >>> distro_series_set = getUtility(IDistroSeriesSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> hoary = distro_release_set.queryByName(ubuntu, 'hoary')
+  >>> hoary = distro_series_set.queryByName(ubuntu, 'hoary')
 
   # Create the Dapper distro series.
-  >>> dapper = distro_release_set.new( ubuntu, 'dapper', 'Dapper', 'Dapper',
+  >>> dapper = distro_series_set.new( ubuntu, 'dapper', 'Dapper', 'Dapper',
   ...     'Dapper', 'Dapper', '06.04', hoary, hoary.owner)
 
-  # And an AMD 64 arch release.
+  # And an AMD 64 arch series.
   >>> dapper_amd64 = dapper.newArch('amd64', ProcessorFamily.get(3), True,
   ...     dapper.owner)
 
@@ -91,20 +91,25 @@ queue:
   >>> pmount_upload.is_rejected
   False
 
-  >>> success, msgs = pmount_upload.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Changes file is unsigned, adding changer as recipient
+  >>> success = pmount_upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Build ... found
+  DEBUG: Building recipients list.
+  DEBUG: Changes file is unsigned, adding changer as recipient
+  DEBUG: No recipients on email, not sending.
 
   # And all things worked.
   >>> success
   True
 
   # Ensure 'deb' is NEW and 'translation' is recognized, i.e., ACCEPTED
-  >>> print pmount_upload.getNotificationSummary()
-  NEW: pmount_0.9.7-2ubuntu2_amd64.deb
-  OK: pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz
+  # XXX julian 2007-05-27 Commented out for now because getNotificationSummary
+  # no longer exists and this content is impossible to check at the moment
+  # since no email is generated because the recipients are not LP Persons.
+  # (So why is it being checked in the first place?)
+  #>>> print pmount_upload.getNotificationSummary()
+  #NEW: pmount_0.9.7-2ubuntu2_amd64.deb
+  #OK: pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz
 
 
   # Check the import queue content, it should be empty.
@@ -140,7 +145,7 @@ An upload to the RELEASE pocket will add items to the import queue:
 An upload to the BACKPORTS pocket will not add items to the import queue:
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> dapper = distro_release_set.queryByName(ubuntu, 'dapper')
+  >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
   >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
   >>> queue_item.pocket = PackagePublishingPocket.BACKPORTS
   >>> queue_item.customfiles[0].publish()
@@ -156,7 +161,7 @@ An upload to the BACKPORTS pocket will not add items to the import queue:
 But an upload to the UPDATE pocket will add items to the import queue:
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> dapper = distro_release_set.queryByName(ubuntu, 'dapper')
+  >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
   >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
   >>> queue_item.pocket = PackagePublishingPocket.UPDATES
   >>> queue_item.customfiles[0].publish()

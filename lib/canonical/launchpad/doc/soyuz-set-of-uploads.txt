@@ -236,7 +236,7 @@ Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  ...Attempt to upload binaries specifying build 2, where they don't fit.
+  ...Attempt to upload binaries specifying build 2, where they don't fit...
   ...
 
 
@@ -264,11 +264,11 @@ Inspect the uploader log to find the rejection message.
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO       Subject: bar_1.0-3_source.changes Rejected
-  INFO       Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
-  INFO       Body:
-  INFO    Rejected:
-  INFO    MD5 sum of uploaded file does not match existent file in archive
+  DEBUG       Subject: bar_1.0-3_source.changes Rejected
+  DEBUG       Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG       Body:
+  DEBUG    Rejected:
+  DEBUG    MD5 sum of uploaded file does not match existent file in archive
   ...
   <BLANKLINE>
 
@@ -290,11 +290,11 @@ testing, as unsigned uploads are allowed.
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO       Subject: unstable_1.0-1_source.changes Rejected
-  INFO       Recipients: 
-  INFO       Body:
-  INFO    Rejected:
-  INFO    Unable to find distroseries: unstable
+  DEBUG       Subject: unstable_1.0-1_source.changes Rejected
+  DEBUG       Recipients: Celso Providelo <celso.providelo@canonical.com>
+  DEBUG       Body:
+  DEBUG   Rejected:
+  DEBUG   Unable to find distroseries: unstable
   ...
   <BLANKLINE>
 
@@ -320,8 +320,8 @@ Check the email recipient for displayname containing special chars,
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO       Subject: Accepted bar 1.0-4 (source)
-  INFO       Recipients: "Foo B. Bar" <foo.bar@canonical.com>, Celso Providelo <celso.providelo@canonical.com>
+  DEBUG       Subject: Accepted bar 1.0-4 (source)
+  DEBUG       Recipients: "Foo B. Bar" <foo.bar@canonical.com>, Celso Providelo <celso.providelo@canonical.com>
   ...
   <BLANKLINE>
 
@@ -343,18 +343,17 @@ changer and the distroseries changes maillisting.
   DEBUG   Building recipients list.
   DEBUG   Changes file is unsigned, adding changer as recipient
   DEBUG   Adding recipient: 'Celso Providelo <celso.providelo@canonical.com>'
-  DEBUG   Creating queue entry
-  DEBUG   Setting it to ACCEPTED
-  INFO    Would be sending a mail:
-  INFO       Subject: Accepted bar 1.0-5 (source)
-  INFO       Recipients: Celso Providelo <celso.providelo@canonical.com>
+  DEBUG   Sent a mail:
+  DEBUG       Subject: Accepted bar 1.0-5 (source)
+  DEBUG       Recipients: Celso Providelo <celso.providelo@canonical.com>
   ...
-  INFO    Announcing to breezy-changes@ubuntu.com
-  INFO
-  INFO    Thank you for your contribution to Ubuntu Test.
-  INFO    Would be sending a mail:
-  INFO       Subject: Accepted bar 1.0-5 (source)
-  INFO       Recipients: breezy-changes@ubuntu.com
+  DEBUG    Announcing to breezy-changes@ubuntu.com
+  DEBUG
+  DEBUG    Thank you for your contribution to Ubuntu Test.
+  ...
+  DEBUG    Sent a mail:
+  DEBUG       Subject: Accepted bar 1.0-5 (source)
+  DEBUG       Recipients: breezy-changes@ubuntu.com
   ...
   <BLANKLINE>
 
@@ -405,7 +404,7 @@ will get compared in this case (see bug #85201):
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO       Subject: Accepted bar 1:1.0-7 (source)
+  DEBUG       Subject: Accepted bar 1:1.0-7 (source)
   ...
 
   >>> expect_okays('bar_1.0-8', upload_policy='sync')
@@ -414,7 +413,7 @@ will get compared in this case (see bug #85201):
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO       Subject: Accepted bar 1:1.0-8 (source)
+  DEBUG       Subject: Accepted bar 1:1.0-8 (source)
   ...
 
 == Pocket Version Consistency ==
@@ -431,11 +430,11 @@ ubututest/breezy-RELEASE:
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO    NEW: foo_1.0-1.dsc
-  INFO     OK: foo_1.0.orig.tar.gz
-  INFO     OK: foo_1.0-1.diff.gz
+  DEBUG    NEW: foo_1.0.orig.tar.gz
+  DEBUG    NEW: foo_1.0-1.diff.gz
+  DEBUG    NEW: foo_1.0-1.dsc
   ...
-  INFO    Distribution: breezy
+  DEBUG    Distribution: breezy
   ...
 
 And its binary:
@@ -447,9 +446,9 @@ And its binary:
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO    NEW: foo_1.0-1_i386.deb
+  DEBUG    NEW: foo_1.0-1_i386.deb
   ...
-  INFO    Distribution: breezy
+  DEBUG    Distribution: breezy
   ...
 
 Set ubuntutest/breezy as the "current series" to activate post-release
@@ -473,12 +472,12 @@ Upload a newer version of source package "foo" to breezy-backports:
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO     OK: foo_2.9-1.dsc
-  INFO         -> Component: main Section: devel
-  INFO     OK: foo_2.9.orig.tar.gz
-  INFO     OK: foo_2.9-1.diff.gz
+  DEBUG     OK: foo_2.9.orig.tar.gz
+  DEBUG     OK: foo_2.9-1.diff.gz
+  DEBUG     OK: foo_2.9-1.dsc
+  DEBUG         -> Component: main Section: devel
   ...
-  INFO    Distribution: breezy-backports
+  DEBUG    Distribution: breezy-backports
   ...
 
 
@@ -507,9 +506,9 @@ found in i386/RELEASE, because it's the only one available.
   DEBUG   Checking for foo/2.9-1/powerpc binary ancestry
   DEBUG   foo: (binary) exists in i386/RELEASE
   ...
-  INFO     OK: foo_2.9-1_powerpc.deb
+  DEBUG     OK: foo_2.9-1_powerpc.deb
   ...
-  INFO    Distribution: breezy-backports
+  DEBUG    Distribution: breezy-backports
   ...
 
 
@@ -525,11 +524,11 @@ live with this inconsistency.
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO     OK: foo_2.9-2.dsc
-  INFO         -> Component: main Section: devel
-  INFO     OK: foo_2.9-2.diff.gz
+  DEBUG     OK: foo_2.9-2.diff.gz
+  DEBUG     OK: foo_2.9-2.dsc
+  DEBUG         -> Component: main Section: devel
   ...
-  INFO    Distribution: breezy-updates
+  DEBUG    Distribution: breezy-updates
   ...
 
 Same behaviour is expected for a version in SECURITY lower than that
@@ -541,11 +540,11 @@ in PROPOSED:
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO     OK: foo_2.9-4.dsc
-  INFO         -> Component: main Section: devel
-  INFO     OK: foo_2.9-4.diff.gz
+  DEBUG     OK: foo_2.9-4.diff.gz
+  DEBUG     OK: foo_2.9-4.dsc
+  DEBUG         -> Component: main Section: devel
   ...
-  INFO    Distribution: breezy-proposed
+  DEBUG    Distribution: breezy-proposed
   ...
 
   >>> expect_okays('foo_2.9-3', upload_policy='sync')
@@ -554,11 +553,11 @@ in PROPOSED:
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO     OK: foo_2.9-3.dsc
-  INFO         -> Component: main Section: devel
-  INFO     OK: foo_2.9-3.diff.gz
+  DEBUG     OK: foo_2.9-3.diff.gz
+  DEBUG     OK: foo_2.9-3.dsc
+  DEBUG         -> Component: main Section: devel
   ...
-  INFO    Distribution: breezy-security
+  DEBUG    Distribution: breezy-security
   ...
 
 However, the source upload of a smaller version than the one already
@@ -573,10 +572,10 @@ published inside the target pocket should be rejected:
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO    Rejected:
-  INFO    foo_1.0-3.dsc: Version older than that in the archive. 1.0-3 <= 2.9-2
+  
+  DEBUG    foo_1.0-3.dsc: Version older than that in the archive. 1.0-3 <= 2.9-2
   ...
-  INFO    Distribution: breezy-updates
+  DEBUG    Distribution: breezy-updates
   ...
 
 Note that the ancestry pointed in the rejection message (2.9-2) is what

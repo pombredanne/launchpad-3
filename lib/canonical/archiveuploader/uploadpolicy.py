@@ -122,7 +122,10 @@ class AbstractUploadPolicy:
                 upload.reject(
                     "PPA uploads must be signed by an 'ubuntero'.")
         else:
-            if not self.distroseries.canUploadToPocket(self.pocket):
+            # XXX julian 2005-05-29
+            # This is a greasy hack until bug #117557 is fixed.
+            if (self.distroseries and 
+                not self.distroseries.canUploadToPocket(self.pocket)):
                 upload.reject(
                     "Not permitted to upload to the %s pocket in a "
                     "series in the '%s' state." % (

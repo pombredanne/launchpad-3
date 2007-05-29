@@ -71,7 +71,7 @@ Construct an upload.
   ...     anything_policy, mock_logger_quiet)
 
   >>> ed_upload.process()
-  >>> success, msgs = ed_upload.do_accept()
+  >>> success = ed_upload.do_accept()
   >>> success
   True
 
@@ -264,7 +264,7 @@ Let's process a new upload:
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
   ...     insecure_policy, mock_logger_quiet)
   >>> bar_ok.process()
-  >>> success, msgs = bar_ok.do_accept()
+  >>> success = bar_ok.do_accept()
   >>> success
   True
 
