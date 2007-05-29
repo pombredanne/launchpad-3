@@ -12,7 +12,7 @@ from operator import attrgetter
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IKarmaActionSet, IProduct, IDistribution)
+    IDistribution, IKarmaActionSet, IProduct, IProject)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     LaunchpadView, Navigation, canonical_url)
@@ -48,12 +48,15 @@ class KarmaContextTopContributorsView(LaunchpadView):
     def initialize(self):
         context = self.context
         if IProduct.providedBy(context):
-            self.context_name = 'Product'
+            self.context_name = 'Project'
         elif IDistribution.providedBy(context):
             self.context_name = 'Distribution'
+        elif IProject.providedBy(context):
+            self.context_name = 'Project Group'
         else:
             raise AssertionError(
-                "Context is not a Product nor a Distribution: %r" % context)
+                "Context is not a Product, Project or Distribution: %r"
+                % context)
 
     def _getTopContributorsWithLimit(self, limit=None):
         results = self.context.getTopContributors(limit=limit)

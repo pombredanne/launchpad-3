@@ -4,11 +4,11 @@ with a blacklisted name, or rename an object to a blacklisted name.
 
 Try creating a project with a blacklisted name:
 
->>> admin_browser.open('http://launchpad.dev/projects/+new')
+>>> admin_browser.open('http://launchpad.dev/projectgroups/+new')
 >>> admin_browser.getControl('Name', index=0).value = 'blacklisted'
 >>> admin_browser.getControl('Display Name').value = 'Whatever'
 >>> admin_browser.getControl('Title').value = 'Whatever'
->>> admin_browser.getControl('Project Summary').value = 'Whatever'
+>>> admin_browser.getControl('Project Group Summary').value = 'Whatever'
 >>> admin_browser.getControl('Description').value = 'Whatever'
 >>> admin_browser.getControl('Add').click()
 >>> "The name 'blacklisted' has been blocked by the Launchpad administrators" \
@@ -18,7 +18,7 @@ True
 Try renaming a project to a blacklisted name:
 
 >>> admin_browser.open('http://launchpad.dev/mozilla')
->>> admin_browser.getLink('Edit Project Details').click()
+>>> admin_browser.getLink('Change details').click()
 >>> admin_browser.getControl('Name', index=0).value = 'blacklisted'
 >>> admin_browser.getControl('Change Details').click()
 >>> "The name 'blacklisted' has been blocked by the Launchpad administrators" \
@@ -37,9 +37,9 @@ True
 Same behavior for people:
 
 >>> admin_browser.open('http://launchpad.dev/~stub')
->>> admin_browser.getLink('Personal Details').click()
->>> admin_browser.getControl('Name', index=0).value = 'admin42'
->>> admin_browser.getControl('Change').click()
+>>> admin_browser.getLink('Change details').click()
+>>> admin_browser.getControl('Name', index=1).value = 'admin42'
+>>> admin_browser.getControl('Save').click()
 >>> "The name 'admin42' has been blocked" in admin_browser.contents
 True
 
@@ -54,9 +54,9 @@ We can edit the details of an object with a blacklisted name quite
 happily without generating 
 
 >>> admin_browser.open('http://launchpad.dev/~admins')
->>> admin_browser.getLink('Change Team Details').click()
+>>> admin_browser.getLink('Change details').click()
 >>> admin_browser.getControl('Display Name').value = 'Different'
->>> admin_browser.getControl('Change').click()
+>>> admin_browser.getControl('Save').click()
 >>> 'error' in admin_browser.contents
 False
 >>> "has been blocked" in admin_browser.contents

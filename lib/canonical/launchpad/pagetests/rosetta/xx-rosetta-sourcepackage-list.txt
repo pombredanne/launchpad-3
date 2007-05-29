@@ -1,0 +1,14 @@
+
+This page shows a list of PO templates contained a specific source package
+in a particular distibution release. In this case, we're asking for the
+translation overview for Evolution in Hoary.
+
+  >>> anon_browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution')
+  >>> print anon_browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution
+
+  >>> print anon_browser.contents
+  <...
+  ...evolution in Ubuntu Hoary...
+  ...Translation templates...

@@ -26,8 +26,9 @@ create a helper function that makes sure the view is set up properly.
 We don't care about the actual rendering of the page, so we override
 the index template.
 
-    >>> def get_and_setup_view(context, name, form):
-    ...     view = getView(context, name, LaunchpadTestRequest(form=form))
+    >>> def get_and_setup_view(context, name, form, method='GET'):
+    ...     view = getView(context, name, LaunchpadTestRequest(
+    ...         method=method, form=form))
     ...     view.index = lambda: u''
     ...     view.upstream_page = lambda: u''
     ...     return view
@@ -58,7 +59,7 @@ that product is required:
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': ''}
     >>> add_task_view = get_and_setup_view(
-    ...     firefox_task, '+choose-affected-product', form)
+    ...     firefox_task, '+choose-affected-product', form, method='POST')
     >>> add_task_view.initialize()
     >>> add_task_view.getWidgetError('product')
     u'Required input is missing.'
@@ -70,7 +71,7 @@ If we supply a valid product, it will redirect us to
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': 'evolution'}
     >>> add_task_view = get_and_setup_view(
-    ...     firefox_task, '+choose-affected-product', form)
+    ...     firefox_task, '+choose-affected-product', form, method='POST')
     >>> add_task_view.initialize()
     >>> add_task_view.request.response.getHeader('Location')
     'http://.../+add-affected-product?field.product=evolution'
@@ -81,7 +82,7 @@ If the validation fails, an error will be displayed.
     >>> form = {
     ...     'field.actions.continue': '', 'field.product': 'firefox'}
     >>> add_task_view = get_and_setup_view(
-    ...     firefox_task, '+choose-affected-product', form)
+    ...     firefox_task, '+choose-affected-product', form, method='POST')
     >>> add_task_view.initialize()
     >>> add_task_view.getWidgetError('product')
     u'A fix for this bug has already been requested for Mozilla Firefox'
@@ -131,7 +132,7 @@ why the product wasn't chosen automatically.
     1
     >>> for notification in add_task_view.request.response.notifications:
     ...     print notification.message
-    Please select the appropriate upstream product. This step...
+    Please select the appropriate upstream project. This step...
 
 Sometimes the distribution won't have any release, though. In that
 case, we won't prompt the user to add a link, since he can't actually
@@ -195,7 +196,7 @@ be created:
     >>> form = {
     ...     'field.actions.request_fix': '', 'field.product': 'evolution'}
     >>> add_task_view = get_and_setup_view(
-    ...     firefox_task, '+add-affected-product', form)
+    ...     firefox_task, '+add-affected-product', form, method='POST')
     >>> add_task_view.render_upstreamtask()
     SQLObjectCreatedEvent: <BugTask at ...>
     u''
@@ -223,7 +224,7 @@ as smoothly as above.
 
     >>> form['field.product'] = u'alsa-utils'
     >>> add_task_view = get_and_setup_view(
-    ...     firefox_task, '+add-affected-product', form)
+    ...     firefox_task, '+add-affected-product', form, method='POST')
     >>> add_task_view.render_upstreamtask()
     u''
 
@@ -250,7 +251,7 @@ If the user confirms, a bugtask will be added to the bug.
     >>> del form['field.actions.request_fix']
     >>> form['field.actions.confirm'] = u''
     >>> add_task_view = get_and_setup_view(
-    ...     firefox_task, '+add-affected-product', form)
+    ...     firefox_task, '+add-affected-product', form, method='POST')
     >>> add_task_view.render_upstreamtask()
     SQLObjectCreatedEvent: <BugTask at ...>
     u''
@@ -284,7 +285,7 @@ URL. If we don't enter a valid URL, we get an error message.
     >>> form['field.actions.request_fix'] = u''
     >>> form['field.bug_url'] = u'not-a-url'
     >>> add_task_view = get_and_setup_view(
-    ...     firefox_task, '+add-affected-product', form)
+    ...     firefox_task, '+add-affected-product', form, method='POST')
     >>> add_task_view.render_upstreamtask()
     u''
     >>> print add_task_view.getWidgetError('bug_url')
@@ -303,7 +304,7 @@ without any confirmation needee:
     >>> form['field.bug_url'] = (
     ...     u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')
     >>> add_task_view = get_and_setup_view(
-    ...     firefox_task, '+add-affected-product', form)
+    ...     firefox_task, '+add-affected-product', form, method='POST')
     >>> add_task_view.render_upstreamtask()
     SQLObjectCreatedEvent: <BugWatch at ...>
     SQLObjectCreatedEvent: <BugTask at ...>
@@ -346,7 +347,7 @@ its display name is returned:
     >>> form['field.bug_url'] = u''
     >>> form['field.product'] = u'alsa-utils'
     >>> add_task_view = get_and_setup_view(
-    ...     firefox_task, '+add-affected-product', form)
+    ...     firefox_task, '+add-affected-product', form, method='POST')
     >>> add_task_view.render_upstreamtask()
     u''
     >>> add_task_view.getBugTargetName()
@@ -358,7 +359,8 @@ name is returned.
     >>> del form['field.product']
     >>> form['field.distribution'] = u'debian'
     >>> form['field.sourcepackagename'] = u'evolution'
-    >>> add_task_view = get_and_setup_view(firefox_task, '+distrotask', form)
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+distrotask', form, method='POST')
     >>> add_task_view.render_distrotask()
     u''
     >>> add_task_view.getBugTargetName()

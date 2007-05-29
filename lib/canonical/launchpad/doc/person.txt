@@ -106,6 +106,20 @@ IPerson, which is the common use case when checking permissions.
     >>> lifeless.inTeam(vcs_imports) and ddaa.inTeam(vcs_imports)
     True
 
+That method can also be used to check that a given IPerson is a member of
+itself. We can do that because people and teams have TeamParticipation entries
+for themselves.
+
+    >>> ddaa.inTeam(ddaa)
+    True
+    >>> ddaa.hasParticipationEntryFor(ddaa)
+    True
+
+    >>> vcs_imports.inTeam(vcs_imports)
+    True
+    >>> vcs_imports.hasParticipationEntryFor(vcs_imports)
+    True
+
 The inTeam method is cached to avoid unnecessary database lookups - this
 was a cause of a number of timeouts
 
@@ -249,6 +263,7 @@ person uploaded (where he isn't the maintainer).
     >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
     ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
     ...            sprelease.version)
+    (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
     (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
@@ -259,20 +274,6 @@ person uploaded (where he isn't the maintainer).
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
 
-Bug contact packages
---------------------
-
-A person who chooses to receive all bugmail for a package is said to be
-a "bug contact" for that package. A package may have zero, one, or more
-bug contacts.
-
-IPerson.getBugContactPackages returns this list of packages, sorted
-alphabetically (A to Z) by package name.
-
-    >>> [package.name for package in foobar.getBugContactPackages()]
-    [u'mozilla-firefox', u'pmount']
-
-
 Translations
 ------------
 
@@ -281,8 +282,10 @@ for a Person:
 
   >>> carlos = getUtility(IPersonSet).getByName('carlos')
   >>> [pt.pofile.title for pt in carlos.translation_history]
-  [u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
+  [u'Spanish (es) translation of alsa-utils in alsa-utils trunk',
+   u'Spanish (es) translation of man in Ubuntu Hoary package "evolution"',
    u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
+   u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
    u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
 
 The IPersonSet component contains a few convenience methods to return
@@ -293,11 +296,28 @@ Person objects that have contributed translations.
   >>> [p.name for p in personset.getPOFileContributors(pofile)]
   [u'carlos', u'name16', u'tsukimi']
 
+getPOFileContributorsByDistroRelease gives the list of people that did
+contributions to templates that are current in the given IDistroRelease
+and ILanguage.
+
   >>> from canonical.launchpad.database import DistroRelease, Language
   >>> hoary = DistroRelease.selectOneBy(name="hoary")
   >>> spanish = Language.selectOneBy(code="es")
   >>> [p.name for p in personset.getPOFileContributorsByDistroRelease(hoary, spanish)]
-  [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16', u'tsukimi']
+  [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16',
+   u'name12', u'tsukimi']
+
+  # We can see that there is another translator that doesn't appear in
+  # previous list because the template he translated is not current.
+  >>> non_current_pofile = POFile.get(31)
+  >>> non_current_pofile.potemplate.iscurrent
+  False
+  >>> [p.name for p in personset.getPOFileContributors(non_current_pofile)]
+  [u'jordi']
+  >>> non_current_pofile.potemplate.distrorelease == hoary
+  True
+  >>> non_current_pofile.language == spanish
+  True
 
 
 Specification Lists
@@ -324,11 +344,16 @@ Next, Carlos has three incomplete specs *related* to him:
 
 Carlos has 2 specifications assigned to him:
 
-    >>> filter = [SpecificationFilter.ASSIGNEE]
-    >>> for spec in carlos.specifications(filter=filter):
+    >>> for spec in carlos.assigned_specs:
     ...     print spec.name
     svg-support
     extension-manager-upgrades
+
+But from these two, only one has started.
+
+    >>> [(spec.name, spec.is_started)
+    ...  for spec in carlos.assigned_specs_in_progress]
+    [(u'svg-support', True)]
 
 Just for fun, lets check the SAB. He should have one spec for which he
 is the approver.
@@ -407,6 +432,37 @@ To check if a person is an Ubuntero, use IPerson.is_ubuntero:
 
     >>> foobar.is_ubuntero
     True
+
+
+Translators for a given language
+--------------------------------
+
+We can get the list of translators that did some translation in Launchpad and
+expressed their interest for a concrete language.
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     ILanguageSet, IPersonSet, IKarmaCacheManager)
+
+  # Sample data is not complete for this test, so we need to note that another
+  # Spanish translator expressed its interest on doing Spanish translations.
+  # That other person is Foo Bar (name16).
+  >>> personset = getUtility(IPersonSet)
+  >>> foo_bar = personset.getByName('name16')
+  >>> print foo_bar.displayname
+  Foo Bar
+  >>> languageset = getUtility(ILanguageSet)
+  >>> spanish = languageset.getLanguageByCode('es')
+  >>> foo_bar.addLanguage(spanish)
+  >>> translators = personset.getTranslatorsByLanguage(spanish)
+  >>> for translator in translators:
+  ...     karma = 0
+  ...     for karma_category_cache in translator.karma_category_caches:
+  ...         if (karma_category_cache.category.name == 'translations'):
+  ...             karma = karma_category_cache.karmavalue
+  ...     print (translator.displayname, karma)
+  (u'Foo Bar', 164)
+  (u'Carlos Perell\xf3 Mar\xedn', 9)
+
 
 Branches
 --------

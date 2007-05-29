@@ -53,11 +53,18 @@ tracker
   >>> celebs.sourceforge_tracker == sf_tracker
   True
 
-We have a Support Tracker Janitor which takes care of expiring old
-support requests.
+We have an Answer Tracker Janitor which takes care of expiring old
+questions.
 
-  >>> support_tracker_janitor = personset.getByName('support-tracker-janitor')
-  >>> celebs.support_tracker_janitor == support_tracker_janitor
+  >>> answer_tracker_janitor = personset.getByName('answer-tracker-janitor')
+  >>> celebs.answer_tracker_janitor == answer_tracker_janitor
+  True
+
+We also have a Team Membership Janitor, responsible for expiring memberships
+when we reach their expiry date.
+
+  >>> team_membership_janitor = personset.getByName('team-membership-janitor')
+  >>> celebs.team_membership_janitor == team_membership_janitor
   True
 
 The Launchpad product itself.
@@ -66,6 +73,27 @@ The Launchpad product itself.
   >>> launchpad = getUtility(IProductSet).getByName('launchpad')
   >>> celebs.launchpad == launchpad
   True
+
+The landscape product.
+XXX : This should go away when we add a
+private-bugs-by-default commercial option to launchpad
+- elliot, 2007-04-18
+
+ >>> from canonical.launchpad.interfaces import IProductSet
+ >>> landscape = getUtility(IProductSet).getByName('landscape')
+ >>> celebs.landscape == landscape
+ True
+
+The redfish product.
+XXX : This should go away when we add a
+private-bugs-by-default commercial option to launchpad
+- elliot, 2007-04-18
+
+ >>> from canonical.launchpad.interfaces import IProductSet
+ >>> redfish = getUtility(IProductSet).getByName('redfish')
+ >>> celebs.redfish == redfish
+ True
+
 
   TODO: add interface verification test.
         ask debonzi to add these in general.

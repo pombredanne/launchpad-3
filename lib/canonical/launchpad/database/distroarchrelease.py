@@ -14,11 +14,12 @@ from sqlobject import (
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
 from canonical.database.constants import DEFAULT
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
     IHasBuildRecords, IBinaryPackageName, IDistroArchReleaseSet,
-    IBuildSet, IBinaryPackageNameSet, IPublishing)
+    IBuildSet, IPublishing)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
@@ -31,7 +32,7 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
-    EnumCol, PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus)
 
 class DistroArchRelease(SQLBase):
     implements(IDistroArchRelease, IHasBuildRecords, IPublishing)
@@ -87,10 +88,12 @@ class DistroArchRelease(SQLBase):
         """See IDistroArchRelease """
         query = """
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.status = %s AND
             BinaryPackagePublishingHistory.pocket = %s
             """ % sqlvalues(
                     self,
+                    self.main_archive,
                     PackagePublishingStatus.PUBLISHED,
                     PackagePublishingPocket.RELEASE
                  )
@@ -138,12 +141,13 @@ class DistroArchRelease(SQLBase):
         """Search BinaryPackages matching pattern and archtag"""
         binset = getUtility(IBinaryPackageReleaseSet)
         return binset.findByNameInDistroRelease(
-            self.distrorelease.id, pattern, self.architecturetag, fti)
+            self.distrorelease, pattern, self.architecturetag, fti)
 
     def searchBinaryPackages(self, text):
         """See IDistroArchRelease."""
         bprs = BinaryPackageRelease.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackagePublishingHistory.status != %s AND
@@ -152,6 +156,7 @@ class DistroArchRelease(SQLBase):
             (BinaryPackageRelease.fti @@ ftq(%s) OR
              BinaryPackageName.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
+                   quote(self.main_archive),
                    quote(PackagePublishingStatus.REMOVED),
                    quote(text),
                    quote_like(text)),
@@ -187,7 +192,8 @@ class DistroArchRelease(SQLBase):
             [self.id], status, name, pocket)
 
     def getReleasedPackages(self, binary_name, pocket=None,
-                            include_pending=False, exclude_pocket=None):
+                            include_pending=False, exclude_pocket=None,
+                            archive=None):
         """See IDistroArchRelease."""
         queries = []
 
@@ -198,7 +204,7 @@ class DistroArchRelease(SQLBase):
         binarypackagerelease=binarypackagerelease.id AND
         binarypackagerelease.binarypackagename=%s AND
         distroarchrelease=%s
-        """ % sqlvalues(binary_name.id, self.id))
+        """ % sqlvalues(binary_name, self))
 
         if pocket is not None:
             queries.append("pocket=%s" % sqlvalues(pocket.value))
@@ -214,6 +220,10 @@ class DistroArchRelease(SQLBase):
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
+        if archive is None:
+            archive = self.main_archive
+        queries.append("archive=%s" % sqlvalues(archive))
+
         published = BinaryPackagePublishingHistory.select(
             " AND ".join(queries),
             clauseTables = ['BinaryPackageRelease'])
@@ -227,33 +237,53 @@ class DistroArchRelease(SQLBase):
             packagepublishingstatus=PackagePublishingStatus.PUBLISHED,
             orderBy=['-id'])
 
-    def publish(self, diskpool, log, is_careful=False):
+    def getPendingPublications(self, archive, pocket, is_careful):
         """See IPublishing."""
-        # XXX: this method shares exactly the same pattern as
-        # DistroRelease.publish(); they could be factored if API was
-        # provided to return the correct publishing entries.
-        #    -- kiko, 2006-08-23
-        log.debug("Attempting to publish pending binaries for %s"
-              % self.architecturetag)
-
-        dirty_pockets = set()
-        queries = ["distroarchrelease=%s" % sqlvalues(self)]
+        queries = [
+            "distroarchrelease=%s AND archive=%s"
+            % sqlvalues(self, archive)
+            ]
 
         target_status = [PackagePublishingStatus.PENDING]
         if is_careful:
             target_status.append(PackagePublishingStatus.PUBLISHED)
-        queries.append("status in %s" % sqlvalues(target_status))
+        queries.append("status IN %s" % sqlvalues(target_status))
 
-        is_unstable = self.distrorelease.isUnstable()
+        # restrict to a specific pocket.
+        queries.append('pocket = %s' % sqlvalues(pocket))
+
+        # exclude RELEASE pocket if the distrorelease was already released,
+        # since it should not change.
+        if (not self.distrorelease.isUnstable() and
+            self.main_archive == archive):
+            queries.append(
+            'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
+
         publications = BinaryPackagePublishingHistory.select(
                     " AND ".join(queries), orderBy=["-id"])
-        for bpph in publications:
-            if not is_careful and self.distrorelease.checkLegalPocket(bpph, log):
+
+        return publications
+
+    def publish(self, diskpool, log, archive, pocket, is_careful=False):
+        """See IPublishing."""
+        log.debug("Attempting to publish pending binaries for %s"
+              % self.architecturetag)
+
+        dirty_pockets = set()
+
+        for bpph in self.getPendingPublications(archive, pocket, is_careful):
+            if not self.distrorelease.checkLegalPocket(
+                bpph, is_careful, log):
                 continue
             bpph.publish(diskpool, log)
             dirty_pockets.add((self.distrorelease.name, bpph.pocket))
 
         return dirty_pockets
+
+    @property
+    def main_archive(self):
+        return self.distrorelease.distribution.main_archive
+
 
 class DistroArchReleaseSet:
     """This class is to deal with DistroArchRelease related stuff"""

@@ -123,9 +123,9 @@ class VPOExportSet:
         if date is not None:
             join += '''
                   JOIN POMsgSet ON POMsgSet.pofile = POFile.id
-                  JOIN POSelection ON POSelection.pomsgset = POMsgSet.id
                   JOIN POSubmission ON
-                    POSubmission.id = POSelection.activesubmission'''
+                    POSubmission.pomsgset = POMsgset.id AND
+                    POSubmission.active IS TRUE'''
 
             where += ''' AND
                   POSubmission.datecreated > %s
@@ -146,8 +146,11 @@ class VPOExportSet:
             AND SourcePackageRelease.sourcepackagename =
                 POTemplate.sourcepackagename AND
             Component.name = %s AND
-            SourcePackagePublishingHistory.status != %s
-            ''' % sqlvalues(component, PackagePublishingStatus.REMOVED)
+            SourcePackagePublishingHistory.status != %s AND
+            SourcePackagePublishingHistory.archive = %s
+            ''' % sqlvalues(component,
+                            PackagePublishingStatus.REMOVED,
+                            release.main_archive)
 
         if languagepack is not None:
             where += ''' AND
@@ -202,8 +205,11 @@ class VPOExportSet:
                 SourcePackageRelease.sourcepackagename =
                     POTemplate.sourcepackagename AND
                 Component.name = %s AND
-                SourcePackagePublishingHistory.status != %s
-                ''' % sqlvalues(component, PackagePublishingStatus.REMOVED)
+                SourcePackagePublishingHistory.status != %s AND
+                SourcePackagePublishingHistory.archive = %s
+                ''' % sqlvalues(component,
+                                PackagePublishingStatus.REMOVED,
+                                release.main_archive)
 
         if languagepack is not None:
             where += ''' AND
@@ -238,9 +244,9 @@ class VPOExportSet:
                 'POFile ON POFile.id = POExport.pofile',
                 'POTemplate ON POFile.potemplate = POTemplate.id',
                 'POMsgSet ON POMsgSet.pofile = POFile.id',
-                'POSelection ON POMsgSet.id = POSelection.pomsgset',
                 'POSubmission ON '
-                    'POSubmission.id = POSelection.activesubmission',
+                    'POSubmission.pomsgset = POMsgSet.id AND'
+                    'POSubmission.active IS TRUE',
             ]
             where = '''
                  POSubmission.datecreated > %s AND

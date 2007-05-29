@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad"
 >
   <body>
@@ -25,7 +25,7 @@
           <tbody>
             <tr>
               <td class="left icon">
-                  <tal:icon replace="structure job/build/fmt:icon" />
+                  <tal:icon replace="structure job/build/image:icon" />
               </td>
               <td>
                 <a tal:attributes="href job/build/fmt:url">
@@ -37,12 +37,14 @@
               <td></td>
               <td>
                 Started
-                <tal:built content="job/buildstart/fmt:datetime" />
+                <span
+                  tal:attributes="title job/buildstart/fmt:datetime"
+                  tal:content="job/buildstart/fmt:displaydate" />
               </td>
             </tr>
           </tbody>
         </table>
-        <div class="discreet"
+        <div
           tal:condition="job/logtail"
           tal:content="structure job/logtail/fmt:text-to-html"
         >Things are crashing and burning all over the place.</div>
@@ -51,7 +53,7 @@
         <tal:builder content="context/title" /> is idle.
       </p>
 
-      <p class="discreet">Last updated <span tal:replace="view/now"/></p>
+      <p>Last updated <span tal:replace="view/now"/></p>
 
     </div>
   </body>

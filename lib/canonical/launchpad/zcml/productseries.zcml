@@ -3,7 +3,6 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:zope="http://namespaces.zope.org/zope"
-    xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
     <!-- This is class ProductSeries -->
@@ -39,6 +38,21 @@
         classes="ProductSeriesNavigation"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProductSeriesDynMenu"
+        attribute="__call__"
+        name="+menudata"
+        />
+
+    <adapter
+        provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        factory="canonical.launchpad.browser.ProductSeriesSOP"
+        permission="zope.Public"
+        />
+
     <browser:url
         for="canonical.launchpad.interfaces.IProductSeries"
         path_expression="name"
@@ -58,6 +72,11 @@
         layer="canonical.launchpad.layers.BugsLayer"
         name="+bugs"
         />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -66,10 +85,10 @@
         <browser:page
             name="+index"
             template="../templates/productseries-index.pt"
-            lp:url="/products/$Product.name/$ProductSeries.name/" />
+            />
         <browser:page
-            name="+hctstatus-core"
-            template="../templates/productseries-hctstatus-core.pt" />
+            name="+macros"
+            template="../templates/productseries-macros.pt" />
         <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt" />
@@ -92,6 +111,9 @@
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt" />
         <browser:page
+            name="+milestones"
+            template="../templates/object-milestones.pt" />
+        <browser:page
             name="+portlet-potemplates"
             template="../templates/object-portlet-potemplates.pt" />
     </browser:pages>
@@ -103,8 +125,8 @@
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/productseries-translations.pt"
-            lp:url="/products/evolution/main/+translations" />
+            template="../templates/object-translations.pt"
+            />
         <browser:page
             name="+potlist"
             facet="translations"
@@ -113,7 +135,11 @@
             name="+ubuntupkg"
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"
-            lp:url="/products/$Product.name/$ProductSeries.name/+ubuntupkg" />
+            />
+        <browser:page
+            name="+importstatus"
+            template="../templates/productseries-importstatus.pt"
+            />
     </browser:pages>
 
     <browser:page
@@ -122,7 +148,6 @@
         facet="overview"
         permission="zope.Public"
         name="+rdf"
-        lp:url="/products/$Product.name/$ProductSeries.name/+rdf"
         attribute="__call__"
         />
 
@@ -133,20 +158,7 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-edit.pt"
-        lp:url="/products/$Product.name/$ProductSeries.name/+edit"
       />
-
-    <browser:editform
-        name="+driver"
-        for="canonical.launchpad.interfaces.IProductSeries"
-        schema="canonical.launchpad.interfaces.IProductSeries"
-        fields="driver"
-        class="canonical.launchpad.browser.ProductSeriesAppointDriverView"
-        facet="overview"
-        permission="launchpad.Edit"
-        template="../templates/object-driver.pt"
-        lp:url="/$Product.name/$Series.name/+driver">
-    </browser:editform>
 
     <browser:addform
         name="+addrelease"
@@ -159,7 +171,7 @@
         facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/productrelease-add.pt"
-        lp:url="/product/$Product.name/$ProductSeries.name/+addrelease">
+        >
         <browser:widget
             field="productseries"
             class="canonical.widgets.ContextWidget" />
@@ -182,8 +194,7 @@
       keyword_arguments="name dateexpected"
       permission="launchpad.Edit"
       template="../templates/milestone-add.pt"
-      lp:url="/products/$Product.name/$Series.name/+addmilestone">
-    </browser:addform>
+      />
 
     <browser:page
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -192,7 +203,7 @@
         template="../templates/productseries-source.pt"
         facet="overview"
         permission="launchpad.EditSource"
-        lp:url="/products/$Product.name/$ProductSeries.name/+source" />
+        />
 
     <browser:editform
         name="+review"
@@ -204,7 +215,7 @@
         fields="product name"
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
-        lp:url="/products/$Product.name/$ProductSeries.name/+review">
+        >
         <browser:widget
             field="name"
             class="zope.app.form.browser.TextWidget"
@@ -232,8 +243,15 @@
         <browser:page
             name="+translations-upload"
             template="../templates/productseries-translations-upload.pt"
-            lp:url="/products/evolution/main/+translations-upload" />
+            />
     </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+filebug"
+        class="canonical.launchpad.browser.ProductSeriesFileBugRedirect"
+        permission="zope.Public"
+        />
 
   <!-- ProductSeriesSet -->
   <content class="canonical.launchpad.database.ProductSeriesSet">
@@ -246,23 +264,35 @@
     <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
   </securedutility>
 
+  <browser:url
+    for="canonical.launchpad.interfaces.IProductSeriesSet"
+    path_expression="string:series"
+    parent_utility="canonical.launchpad.interfaces.IBazaarApplication"
+    />
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.IProductSeriesSet"
-      layer="canonical.launchpad.layers.CodeLayer"
-      name="+bazaar-index" />
+    for="canonical.launchpad.interfaces.IProductSeriesSet"
+    layer="canonical.launchpad.layers.CodeLayer"
+    name="+bazaar-index" />
 
   <!-- XXX need better permissions -->
   <browser:pages
-      for="canonical.launchpad.interfaces.IProductSeriesSet"
-      permission="launchpad.AnyPerson"
-      facet="overview"
-      class="canonical.launchpad.browser.ProductSeriesSourceSetView">
+    for="canonical.launchpad.interfaces.IProductSeriesSet"
+    permission="launchpad.AnyPerson"
+    facet="branches"
+    class="canonical.launchpad.browser.ProductSeriesSourceSetView">
     <browser:page
-        name="+bazaar-index"
-        template="../templates/sources-index.pt"
-        lp:url="/bazaar/series/"
-        />
+      name="+bazaar-index"
+      template="../templates/sources-index.pt"
+      />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProductSeries"
+    name="+shortlink"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ProductSeriesShortLink"
+    attribute="__call__"
+    />
 
 </configure>

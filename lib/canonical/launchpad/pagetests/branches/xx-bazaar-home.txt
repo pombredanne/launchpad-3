@@ -1,0 +1,11 @@
+Check that the Bazaar home page works.
+
+  >>> browser.open('http://code.launchpad.dev/')
+  >>> footer = find_tag_by_id(browser.contents, 'application-footer')
+
+  >>> print extract_text(footer)
+  28 branches registered in
+  5 projects
+  3 imported branches
+  2 branches associated with bug reports
+

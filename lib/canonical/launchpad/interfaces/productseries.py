@@ -12,15 +12,15 @@ __all__ = [
 
 import re
 
-from zope.schema import  Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 
 from CVS.protocol import CVSRoot, CvsRootError
 
-from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.fields import ContentNameField, URIField
 from canonical.launchpad.interfaces import (
-    IBranch, IBugTarget, ISpecificationGoal, IHasOwner, IHasDrivers,
-    validate_url)
+    IBugTarget, ISpecificationGoal, IHasAppointedDriver, IHasOwner,
+    IHasDrivers, validate_url)
 
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -62,19 +62,12 @@ def validate_cvs_module(cvsmodule):
     if cvsmodule == 'CVS':
         raise LaunchpadValidationError('A CVS module can not be called "CVS".')
     return True
-    
+
 def validate_cvs_branch(branch):
     if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
         return True
     else:
         raise LaunchpadValidationError('Your CVS branch name is invalid.')
-
-def validate_svn_repo(repo):
-    if validate_url(repo, ["http", "https", "svn", "svn+ssh"]):
-        return True
-    else:
-        raise LaunchpadValidationError(
-            'Please give valid Subversion server details.')
 
 def validate_release_glob(value):
     if validate_url(value, ["http", "https", "ftp"]):
@@ -83,14 +76,15 @@ def validate_release_glob(value):
         raise LaunchpadValidationError('Invalid release URL pattern.')
 
 
-class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
+class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
+                     ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
     # instead of using object.id.
     id = Int(title=_('ID'))
     # field names
-    product = Choice(title=_('Product'), required=True, vocabulary='Product')
+    product = Choice(title=_('Project'), required=True, vocabulary='Product')
     name = ProductSeriesNameField(title=_('Name'), required=True,
         description=_("The name of the series is a short, unique name "
         "that identifies it, being used in URLs. It must be all "
@@ -99,7 +93,7 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
     datecreated = Datetime(title=_('Date Registered'), required=True,
         readonly=True)
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_('Product owner, either a valid Person or Team'))
+        description=_('Project owner, either a valid Person or Team'))
     driver = Choice(
         title=_("Driver"),
         description=_(
@@ -112,7 +106,7 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
     displayname = Attribute(
         'Display name, in this case we have removed the underlying '
         'database field, and this attribute just returns the name.')
-    summary = Text(title=_("Summary"), 
+    summary = Text(title=_("Summary"),
         description=_('A single paragraph introduction or overview '
         'of this series. For example: "The 2.0 series of Apache represents '
         'the current stable series, and is recommended for all new '
@@ -120,6 +114,10 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
 
     releases = Attribute("An iterator over the releases in this "
         "Series, sorted with latest release first.")
+
+    release_files = Attribute("An iterator over the release files in this "
+        "Series, sorted with latest release first.")
+
     potemplates = Attribute(
         _("Return an iterator over this productrelease's PO templates."))
     currentpotemplates = Attribute(
@@ -132,8 +130,12 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
 
-    milestones = Attribute(
-        'The milestones associated with this series.')
+    milestones = Attribute(_(
+        "The visible milestones associated with this productseries, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All milestones associated with this productseries, ordered by "
+        "date expected."))
 
     drivers = Attribute(
         'A list of the people or teams who are drivers for this series. '
@@ -146,13 +148,13 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
     # I've used this name to make sure code that works with the
     # vcs-imports branch (which used to be called branch) doesn't use
     # this attribute by accident.
-    
+
     series_branch = Choice(
         title=_('Series Branch'),
         vocabulary='Branch',
         readonly=True,
         description=_("The Bazaar branch for this series."))
-        
+
     user_branch = Choice(
         title=_('Branch'),
         vocabulary='Branch',
@@ -209,25 +211,30 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         description=_("The type of revision control used for "
         "the upstream branch of this series. Can be CVS, SVN, BK or "
         "Arch."))
-    cvsroot = TextLine(title=_("Repository root"), required=False,
+    cvsroot = TextLine(title=_("Repository"), required=False,
         constraint=validate_cvs_root,
-        description=_('Example: :pserver:anonymous@anoncvs.gnome.org:'
-                      '/cvs/gnome'))
+        description=_('The CVSROOT. '
+            'Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'))
     cvsmodule = TextLine(title=_("Module"), required=False,
-        constraint=validate_cvs_module)
+        constraint=validate_cvs_module,
+        description=_('The path to import within the repository.'
+            ' Usually, it is the name of the project.'))
     cvstarfileurl = Text(title=_("A URL where a tarball of the CVS "
         "repository can be found. This can sometimes be faster than "
         "trying to query the server for commit-by-commit data."))
-    cvsbranch = TextLine(title=_("Branch name"), required=False,
+    cvsbranch = TextLine(title=_("Branch"), required=False,
         constraint=validate_cvs_branch,
-        description=_('The branch representing the upstream codebase for '
-                      'this product series.'))
-    svnrepository = TextLine(title=_("Repository"), required=False,
-        constraint=validate_svn_repo,
-        description=_('The URL (Internet address) of the repository and '
-                      'branch to be imported, in svn:// or http(s):// '
-                      'format. This must be the correct upstream branch '
-                      'for the trunk series of Evolution.'))
+        description=_("The branch in this module."
+            " Only MAIN branches are imported."))
+    svnrepository = URIField(title=_("Branch"), required=False,
+        description=_("The URL of a Subversion branch, starting with svn:// or"
+            " http(s)://. Only trunk branches are imported."),
+        allowed_schemes=["http", "https", "svn", "svn+ssh"],
+        allow_userinfo=False, # Only anonymous access is supported.
+        allow_port=True,
+        allow_query=False,    # Query makes no sense in Subversion.
+        allow_fragment=False, # Fragment makes no sense in Subversion.
+        trailing_slash=False) # See http://launchpad.net/bugs/56357.
     # where are the tarballs released from this branch placed?
     releasefileglob = TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,
@@ -236,7 +243,7 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
                       'site to import new releases.  Example: '
                       'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz'))
     releaseverstyle = Attribute("The version numbering style for this "
-        "product series of releases.")
+        "series of releases.")
     # Key dates on the road to import happiness
     dateautotested = Attribute("The date this upstream passed automatic "
         "testing.")
@@ -256,9 +263,8 @@ class IProductSeries(IHasDrivers, IHasOwner, IBugTarget, ISpecificationGoal):
         "successfully synced the upstream RCS. The date of the currently "
         "published branch data if it is older than "
         "import_branch.last_mirrored"))
-    datepublishedsync = Attribute(_("The date of the currently published "
-        "branch data, in case import_branch.last_mirrored is older than "
-        "datelastsynced."))
+    datepublishedsync = Attribute(_("The date of the published code was last "
+        "synced, at the time of the last sync."))
 
     def syncCertified():
         """is the series source sync enabled?"""
@@ -320,7 +326,7 @@ class IProductSeriesSet(Interface):
     def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):
         """Return the ProductSeries with the given CVS details.
 
-        Return the default value if there is no ProductSeries with the 
+        Return the default value if there is no ProductSeries with the
         given details.
         """
 

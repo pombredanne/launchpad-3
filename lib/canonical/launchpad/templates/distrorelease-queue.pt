@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>
@@ -12,13 +12,12 @@
 </metal:leftportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
   <h1>Upload and build queue</h1>
 </metal:heading>
 
 <div metal:fill-slot="main"
-     tal:define="message view/performQueueAction;
-                 setup view/setupQueueList;
+     tal:define="setup view/setupQueueList;
+                 message view/performQueueAction;
                  error view/error|nothing">
 
   <p class="informational message"
@@ -82,7 +81,7 @@
              Pocket
            </th>
            <th>
-             Age
+             When
            </th>
            <th>
              Changes File
@@ -98,8 +97,6 @@
                         tal:condition="view/availableActions"/>
               </td>
   	      <td>
-                <span tal:replace="
-                      string: ${queue/displayname} (${queue/displayarchs})"/>
                 <img tal:condition="queue/containsSource"
                      alt="[Source]" src="/@@/package-source" title="Source"/>
                 <img tal:condition="queue/containsBuild"
@@ -107,9 +104,6 @@
                 <img tal:condition="queue/containsInstaller"
                      alt="[Installer]" src="/@@/ubuntu-icon"
                      title="Installer"/>
-                <img tal:condition="queue/containsTranslation"
-                     alt="[Translation]" src="/@@/translations"
-                     title="Translation"/>
                 <img tal:condition="queue/containsUpgrader"
                      alt="[Upgrader]" src="/@@/topic"
                      title="Upgrader"/>
@@ -117,14 +111,25 @@
                      alt="[Debian Description Translation Project Indexes]"
                      src="/@@/topic"
                      title="Debian Description Translation Project Indexes"/>
+                <span tal:replace="
+                      string: ${queue/displayname} (${queue/displayarchs})"/>
+                <img tal:condition="queue/containsTranslation"
+                     alt="[Translation]" src="/@@/translation-file"
+                     title="Translation"/>
               </td>
               <td tal:content="queue/displayversion">2.0.17-6</td>
               <td tal:content="queue/pocket/title">Updates</td>
-              <td tal:content="queue/datecreated/fmt:datetime">
-                2006-03-15
+              <td>
+                <span class="sortkey"
+                  tal:content="queue/datecreated/fmt:datetime" />
+                <span
+                  tal:attributes="title queue/datecreated/fmt:datetime"
+                  tal:content="queue/datecreated/fmt:approximatedate">
+                  2006-03-15
+                </span>
               </td>
               <td>[<a tal:attributes="
-                href queue/changesfile/url">view</a>]
+                href queue/changesfile/http_url">view</a>]
               </td>
            </tr>
          </tal:batch>

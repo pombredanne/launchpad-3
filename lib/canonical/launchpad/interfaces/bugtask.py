@@ -12,6 +12,7 @@ __all__ = [
     'IBugTaskSearch',
     'IAddBugTaskForm',
     'IPersonBugTaskSearch',
+    'IFrontPageBugTaskSearch',
     'IBugTaskDelta',
     'IUpstreamBugTask',
     'IDistroBugTask',
@@ -33,6 +34,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine, Tag
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
+from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 
@@ -58,14 +60,14 @@ class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
 
 
-class IBugTask(IHasDateCreated, IHasBug):
+class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     """A bug needing fixing in a particular product or package."""
 
     id = Int(title=_("Bug Task #"))
     bug = Int(title=_("Bug #"))
-    product = Choice(title=_('Product'), required=False, vocabulary='Product')
+    product = Choice(title=_('Project'), required=False, vocabulary='Product')
     productseries = Choice(
-        title=_('Product Series'), required=False, vocabulary='ProductSeries')
+        title=_('Release Series'), required=False, vocabulary='ProductSeries')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
@@ -98,7 +100,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         "bug watches represents this particular bug task, leave it as "
         "(None). Linking the remote bug watch with the task in "
         "this way means that a change in the remote bug status will change "
-        "the status of this bug task in Malone."))
+        "the status of this bug task in Launchpad."))
     date_assigned = Datetime(
         title=_("Date Assigned"),
         description=_("The date on which this task was assigned to someone."))
@@ -123,7 +125,7 @@ class IBugTask(IHasDateCreated, IHasBug):
             "datecreated and now."))
     owner = Int()
     target = Attribute("The software in which this bug should be fixed")
-    target_uses_malone = Bool(title=_("Whether the bugtask's target uses Malone "
+    target_uses_malone = Bool(title=_("Whether the bugtask's target uses Launchpad"
                               "officially"))
     targetname = Text(title=_("The short, descriptive name of the target"),
                       readonly=True)
@@ -131,6 +133,13 @@ class IBugTask(IHasDateCreated, IHasBug):
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
+    pillar = Attribute(
+        "The LP pillar (product or distribution) associated with this "
+        "task.")
+    other_affected_pillars = Attribute(
+        "The other pillars (products or distributions) affected by this bug. "
+        "This returns a list of pillars OTHER THAN the pillar associated "
+        "with this particular bug.")
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
     # allows us to compare it to the current value and see if there are any new
@@ -146,11 +155,34 @@ class IBugTask(IHasDateCreated, IHasBug):
     conjoined_slave = Attribute(
         "The generic bugtask in a conjoined relationship")
 
+    is_complete = Attribute(
+        "True or False depending on whether or not there is more work "
+        "required on this bug task.")
+
+    def subscribe(person):
+        """Subscribe this person to the underlying bug.
+
+        This method is required here so that MentorshipOffers can happen on
+        IBugTask. When we move to context-less bug presentation (where the
+        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
+        no longer useful.
+        """
+
+    def isSubscribed(person):
+        """Return True if the person is an explicit subscriber to the
+        underlying bug for this bugtask.
+
+        This method is required here so that MentorshipOffers can happen on
+        IBugTask. When we move to context-less bug presentation (where the
+        bug is at /bugs/n?task=ubuntu) then we can eliminate this if it is
+        no longer useful.
+        """
+
     def setImportanceFromDebbugs(severity):
-        """Set the Malone BugTask importance on the basis of a debbugs
+        """Set the Launchpad BugTask importance on the basis of a debbugs
         severity.  This maps from the debbugs severity values ('normal',
         'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
-        the Malone importance values, and returns the relevant Malone
+        the Launchpad importance values, and returns the relevant Launchpad 
         importance.
         """
 
@@ -166,8 +198,8 @@ class IBugTask(IHasDateCreated, IHasBug):
         """Perform a workflow transition to the given assignee.
 
         When the bugtask assignee is changed from None to an IPerson
-        object, the dateassigned is set on the task. If the assignee
-        value is set to None, dateassigned is also set to None.
+        object, the date_assigned is set on the task. If the assignee
+        value is set to None, date_assigned is also set to None.
         """
 
     def updateTargetNameCache():
@@ -191,6 +223,16 @@ class IBugTask(IHasDateCreated, IHasBug):
 
         See doc/bugmail-headers.txt for a complete explanation and more
         examples.
+        """
+
+    def getDelta(old_task):
+        """Compute the delta from old_task to this task.
+
+        old_task and this task are either both IDistroBugTask's or both
+        IUpstreamBugTask's, otherwise a TypeError is raised.
+
+        Returns an IBugTaskDelta or None if there were no changes between
+        old_task and this task.
         """
 
 
@@ -219,8 +261,8 @@ class IBugTaskSearchBase(Interface):
         required=False)
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
-    owner = Choice(
-        title=_('Reporter'), vocabulary='ValidAssignee', required=False)
+    bug_reporter = Choice(
+        title=_('Bug Reporter'), vocabulary='ValidAssignee', required=False)
     omit_dupes = Bool(
         title=_('Omit duplicate bugs'), required=False,
         default=True)
@@ -242,6 +284,10 @@ class IBugTaskSearchBase(Interface):
     status_upstream = Choice(
         title=_('Status Upstream'), required=False,
         vocabulary="AdvancedBugTaskUpstreamStatus")
+    has_cve = Bool(
+        title=_('Show only bugs associated with a CVE'), required=False)
+    bug_contact = Choice(
+        title=_('Bug contact'), vocabulary='ValidPersonOrTeam', required=False)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -272,6 +318,13 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
         title=_("Distribution"), required=False, vocabulary='Distribution')
 
 
+class IFrontPageBugTaskSearch(IBugTaskSearchBase):
+
+    scope = Choice(
+        title=u"Search Scope", required=False,
+        vocabulary="DistributionOrProductOrProject")
+
+
 class IBugTaskDelta(Interface):
     """The change made to a bug task (e.g. in an edit screen).
 
@@ -279,6 +332,7 @@ class IBugTaskDelta(Interface):
 
     Likewise, if sourcepackagename is not None, product must be None.
     """
+    targetname = Attribute("Where this change exists.")
     bugtask = Attribute("The modified IBugTask.")
     product = Attribute(
         """The change made to the IProduct of this task.
@@ -320,13 +374,14 @@ class IBugTaskDelta(Interface):
         if no change was made to the assignee.
         """)
     statusexplanation = Attribute("The new value of the status notes.")
+    bugwatch = Attribute("The bugwatch which governs this task.")
 
 
 # XXX, Brad Bollenbach, 2006-08-03: This interface should be
 # renamed. See https://launchpad.net/bugs/55089 .
 class IUpstreamBugTask(IBugTask):
     """A bug needing fixing in a product."""
-    product = Choice(title=_('Product'), required=True, vocabulary='Product')
+    product = Choice(title=_('Project'), required=True, vocabulary='Product')
 
 
 class IDistroBugTask(IBugTask):
@@ -353,7 +408,7 @@ class IDistroReleaseBugTask(IBugTask):
 class IProductSeriesBugTask(IBugTask):
     """A bug needing fixing a productseries."""
     productseries = Choice(
-        title=_("Product Series"), required=True,
+        title=_("Release Series"), required=True,
         vocabulary='ProductSeries')
 
 
@@ -417,7 +472,7 @@ class BugTaskSearchParams:
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
                  only_resolved_upstream=False, has_no_upstream_bugtask=False,
-                 tag=None, has_cve=False):
+                 tag=None, has_cve=False, bug_contact=None, bug_reporter=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -438,42 +493,31 @@ class BugTaskSearchParams:
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
         self.has_cve = has_cve
-
-        self._has_context = False
+        self.bug_contact = bug_contact
+        self.bug_reporter = bug_reporter
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
-        assert not self._has_context
         self.product = product
-        self._has_context = True
 
     def setProject(self, project):
         """Set the upstream context on which to filter the search."""
-        assert not self._has_context
         self.project = project
-        self._has_context = True
 
     def setDistribution(self, distribution):
         """Set the distribution context on which to filter the search."""
-        assert not self._has_context
         self.distribution = distribution
-        self._has_context = True
 
     def setDistributionRelease(self, distrorelease):
         """Set the distrorelease context on which to filter the search."""
-        assert not self._has_context
         self.distrorelease = distrorelease
-        self._has_context = True
 
     def setProductSeries(self, productseries):
         """Set the productseries context on which to filter the search."""
-        assert not self._has_context
         self.productseries = productseries
-        self._has_context = True
 
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
-        assert not self._has_context
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro release.
             self.distrorelease = sourcepackage.distrorelease
@@ -481,7 +525,6 @@ class BugTaskSearchParams:
             # This is a sourcepackage in a distribution.
             self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
-        self._has_context = True
 
 
 class IBugTaskSet(Interface):
@@ -504,17 +547,21 @@ class IBugTaskSet(Interface):
         (together with an optional source package).
 
         Only BugTasks that the user has access to will be returned.
-    """
+        """
 
-    def search(params):
-        """Return a set of IBugTasks.
+    def search(params, *args):
+        """Search IBugTasks with the given search parameters.
 
         Note: only use this method of BugTaskSet if you want to query
         tasks across multiple IBugTargets; otherwise, use the
         IBugTarget's searchTasks() method.
 
-        search() returns the tasks that satisfy the query specified in
-        the BugTaskSearchParams argument supplied.
+        :search_params: a BugTaskSearchParams object
+        :args: any number of BugTaskSearchParams objects
+
+        If more than one BugTaskSearchParams is given, return the union of
+        IBugTasks which match any of them, with the results ordered by the
+        orderby specified in the first BugTaskSearchParams object.
         """
 
     def createTask(bug, product=None, productseries=None, distribution=None,

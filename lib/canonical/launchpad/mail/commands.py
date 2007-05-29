@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['emailcommands', 'get_error_message']
@@ -8,17 +8,17 @@ import os.path
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
+from zope.schema import ValidationError
 
-from canonical.launchpad.pathlookup import get_object
-from canonical.launchpad.pathlookup.exceptions import PathStepNotFoundError
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IDistroRelease, IPersonSet,
-        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
-        IBugTaskEditEmailCommand, IBugSet, ILaunchBag, IBugTaskSet,
+        IBug, IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
+        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError,
-        CreateBugParams)
+        CreateBugParams, IPillarNameSet, BugTargetNotFound, IProject,
+        ISourcePackage, IProductSeries)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
@@ -104,7 +104,7 @@ class EmailCommand:
                         num_arguments_expected=self._numberOfArguments,
                         num_arguments_got=num_arguments_got))
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """Converts the string argument to Python objects.
 
         Returns a dict with names as keys, and the Python objects as
@@ -168,7 +168,7 @@ class EditEmailCommand(EmailCommand):
     def execute(self, context, current_event):
         """See IEmailCommand."""
         self._ensureNumberOfArguments()
-        args = self.convertArguments()
+        args = self.convertArguments(context)
 
         edited_fields = set()
         if ISQLObjectModifiedEvent.providedBy(current_event):
@@ -203,7 +203,7 @@ class PrivateEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         private_arg = self.string_args[0]
         if private_arg == 'yes':
@@ -213,6 +213,25 @@ class PrivateEmailCommand(EditEmailCommand):
         else:
             raise EmailProcessingError(
                 get_error_message('private-parameter-mismatch.txt'))
+
+
+class SecurityEmailCommand(EditEmailCommand):
+    """Marks a bug as security related."""
+
+    implements(IBugEditEmailCommand)
+
+    _numberOfArguments = 1
+
+    def convertArguments(self, context):
+        """See EmailCommand."""
+        [security_flag] = self.string_args
+        if security_flag == 'yes':
+            return {'security_related': True, 'private': True}
+        elif security_flag == 'no':
+            return {'security_related': False}
+        else:
+            raise EmailProcessingError(
+                get_error_message('security-parameter-mismatch.txt'))
 
 
 class SubscribeEmailCommand(EmailCommand):
@@ -311,9 +330,53 @@ class SummaryEmailCommand(EditEmailCommand):
 
         return EditEmailCommand.execute(self, bug, current_event)
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         return {'title': self.string_args[0]}
+
+
+class DuplicateEmailCommand(EditEmailCommand):
+    """Marks a bug as a duplicate of another bug."""
+
+    implements(IBugEditEmailCommand)
+    _numberOfArguments = 1
+
+    def convertArguments(self, context):
+        """See EmailCommand."""
+        [bug_id] = self.string_args
+        if bug_id == 'no':
+            # 'no' is a special value for unmarking a bug as a duplicate.
+            return {'duplicateof': None}
+        try:
+            bug = getUtility(IBugSet).getByNameOrID(bug_id)
+        except NotFoundError:
+            raise EmailProcessingError(
+                get_error_message('no-such-bug.txt', bug_id=bug_id))
+        duplicate_field = IBug['duplicateof'].bind(context)
+        try:
+            duplicate_field.validate(bug)
+        except ValidationError, error:
+            raise EmailProcessingError(error.doc())
+
+        return {'duplicateof': bug}
+
+
+class CVEEmailCommand(EmailCommand):
+    """Links a CVE to a bug."""
+
+    implements(IBugEditEmailCommand)
+
+    _numberOfArguments = 1
+
+    def execute(self, bug, current_event):
+        """See IEmailCommand."""
+        [cve_sequence] = self.string_args
+        cve = getUtility(ICveSet)[cve_sequence]
+        if cve is None:
+            raise EmailProcessingError(
+                'Launchpad can\'t find the CVE "%s".' % cve_sequence)
+        bug.linkCVE(cve, getUtility(ILaunchBag).user)
+        return bug, current_event
 
 
 class AffectsEmailCommand(EmailCommand):
@@ -321,6 +384,120 @@ class AffectsEmailCommand(EmailCommand):
 
     implements(IBugTaskEmailCommand)
     _numberOfArguments = 1
+
+    @classmethod
+    def _splitPath(cls, path):
+        """Split the path part into two.
+
+        The first part is the part before any slash, and the other is
+        the part behind the slash:
+
+            >>> AffectsEmailCommand._splitPath('foo/bar/baz')
+            ('foo', 'bar/baz')
+
+        If No slash is in the path, the other part will be empty.
+
+            >>> AffectsEmailCommand._splitPath('foo')
+            ('foo', '')
+        """
+        if '/' not in path:
+            return path, ''
+        else:
+            return tuple(path.split('/', 1))
+
+    @classmethod
+    def _normalizePath(cls, path):
+        """Normalize the path.
+
+        Previously the path had to start with either /distros/ or
+        /products/. Simply remove any such prefixes to stay backward
+        compatible.
+
+            >>> AffectsEmailCommand._normalizePath('/distros/foo/bar')
+            'foo/bar'
+            >>> AffectsEmailCommand._normalizePath('/distros/foo/bar')
+            'foo/bar'
+
+        Also remove a starting slash, since that's a common mistake.
+
+            >>> AffectsEmailCommand._normalizePath('/foo/bar')
+            'foo/bar'
+        """
+        for prefix in ['/distros/', '/products/', '/']:
+            if path.startswith(prefix):
+                path = path[len(prefix):]
+                break
+        return path
+
+    @classmethod
+    def getBugTarget(cls, path):
+        """Return the IBugTarget with the given path.
+
+        Path should be in any of the following forms:
+
+            $product
+            $product/$product_series
+            $distribution
+            $distribution/$source_package
+            $distribution/$distro_release
+            $distribution/$distro_release/$source_package
+        """
+        path = cls._normalizePath(path)
+        name, rest = cls._splitPath(path)
+        pillar = getUtility(IPillarNameSet).getByName(
+            name, ignore_inactive=True)
+        if pillar is None:
+            raise BugTargetNotFound(
+                "There is no project named '%s' registered in Launchpad." % 
+                    name)
+
+        # We can't check for IBugTarget, since Project is an IBugTarget
+        # we don't allow bugs to be filed against.
+        if IProject.providedBy(pillar):
+            products = ", ".join(product.name for product in pillar.products)
+            raise BugTargetNotFound(
+                "%s is a group of projects. To report a bug, you need to"
+                " specify which of these projects the bug applies to: %s" % (
+                    pillar.name, products))
+        assert IDistribution.providedBy(pillar) or IProduct.providedBy(pillar)
+
+        if not rest:
+            return pillar
+        # Resolve the path that is after the pillar name.
+        if IProduct.providedBy(pillar):
+            series_name, rest = cls._splitPath(rest)
+            product_series = pillar.getSeries(series_name)
+            if product_series is None:
+                raise BugTargetNotFound(
+                    "%s doesn't have a series named '%s'." % (
+                        pillar.displayname, series_name))
+            elif not rest:
+                return product_series
+        else:
+            assert IDistribution.providedBy(pillar)
+            # The next step can be either a distro release or a source
+            # package.
+            release_name, rest = cls._splitPath(rest)
+            try:
+                release = pillar.getRelease(release_name)
+            except NotFoundError:
+                package_name = release_name
+            else:
+                if not rest:
+                    return release
+                else:
+                    pillar = release
+                    package_name, rest = cls._splitPath(rest)
+            package = pillar.getSourcePackage(package_name)
+            if package is None:
+                raise BugTargetNotFound(
+                    "%s doesn't have a release or source package named '%s'."
+                    % (pillar.displayname, package_name))
+            elif not rest:
+                return package
+
+        assert rest, "This is the fallback for unexpected path components."
+        raise BugTargetNotFound("Unexpected path components: %s" % rest)
 
     def execute(self, bug):
         """See IEmailCommand."""
@@ -331,19 +508,16 @@ class AffectsEmailCommand(EmailCommand):
             raise EmailProcessingError(
                 get_error_message('affects-no-arguments.txt'))
         try:
-            bug_target = get_object(path, path_only=True)
-        except PathStepNotFoundError, error:
-            raise EmailProcessingError(
-                get_error_message(
-                    'affects-path-not-found.txt',
-                    pathstep_not_found=error.step, path=path))
+            bug_target = self.getBugTarget(path)
+        except BugTargetNotFound, error:
+            raise EmailProcessingError(unicode(error))
         event = None
-        bugtask = self.getBugTask(bug, bug_target)
+        bugtask = bug.getBugTask(bug_target)
         if (bugtask is None and
             IDistributionSourcePackage.providedBy(bug_target)):
             # If there's a distribution task with no source package, use
             # that one.
-            bugtask = self.getBugTask(bug, bug_target.distribution)
+            bugtask = bug.getBugTask(bug_target.distribution)
             if bugtask is not None:
                 bugtask_before_edit = Snapshot(
                     bugtask, providing=IDistroBugTask)
@@ -357,6 +531,56 @@ class AffectsEmailCommand(EmailCommand):
 
         return bugtask, event
 
+    def _targetBug(self, user, bug, release, sourcepackagename=None):
+        """Try to target the bug the the given distrorelease.
+
+        If the user doesn't have permission to target the bug directly,
+        only a nomination will be created.
+        """
+        product = None
+        distribution = None
+        if IDistroRelease.providedBy(release):
+            distribution = release.distribution
+            if sourcepackagename:
+                general_target = distribution.getSourcePackage(
+                    sourcepackagename)
+            else:
+                general_target = distribution
+        else:
+            assert IProductSeries.providedBy(release), (
+                "Unknown release target: %r" % release)
+            assert sourcepackagename is None, (
+                "A product series can't have a source package.")
+            product = release.product
+            general_target = product
+        general_task = bug.getBugTask(general_target)
+        if general_task is None:
+            # A release task has to have a corresponding
+            # distribution/product task.
+            general_task = getUtility(IBugTaskSet).createTask(
+                bug, user, distribution=distribution,
+                product=product, sourcepackagename=sourcepackagename)
+        if not bug.canBeNominatedFor(release):
+            # A nomination has already been created.
+            nomination = bug.getNominationFor(release)
+            # Automatically approve an existing nomination if a release
+            # manager targets it.
+            if not nomination.isApproved() and nomination.canApprove(user):
+                nomination.approve(user)
+        else:
+            nomination = bug.addNomination(target=release, owner=user)
+
+        if nomination.isApproved():
+            if sourcepackagename:
+                return bug.getBugTask(
+                    release.getSourcePackage(sourcepackagename))
+            else:
+                return bug.getBugTask(release)
+        else:
+            # We can't return a nomination, so return the
+            # distribution/product bugtask instead.
+            return general_task
+
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
         # XXX kiko: we could fix this by making createTask be a method on
@@ -365,10 +589,16 @@ class AffectsEmailCommand(EmailCommand):
         user = getUtility(ILaunchBag).user
         if IProduct.providedBy(bug_target):
             return bugtaskset.createTask(bug, user, product=bug_target)
+        elif IProductSeries.providedBy(bug_target):
+            return self._targetBug(user, bug, bug_target)
         elif IDistribution.providedBy(bug_target):
             return bugtaskset.createTask(bug, user, distribution=bug_target)
         elif IDistroRelease.providedBy(bug_target):
-            return bugtaskset.createTask(bug, user, distrorelease=bug_target)
+            return self._targetBug(user, bug, bug_target)
+        elif ISourcePackage.providedBy(bug_target):
+            return self._targetBug(
+                user, bug, bug_target.distrorelease,
+                bug_target.sourcepackagename)
         elif IDistributionSourcePackage.providedBy(bug_target):
             return bugtaskset.createTask(
                 bug, user, distribution=bug_target.distribution,
@@ -377,19 +607,6 @@ class AffectsEmailCommand(EmailCommand):
             assert False, "Not a valid bug target: %r" % bug_target
 
 
-    #XXX: This method should be moved to helpers.py or BugTaskSet.
-    #     -- Bjorn Tillenius, 2005-06-10
-    def getBugTask(self, bug, target):
-        """Returns a bug task that has the path as a target.
-
-        Returns None if no such bugtask is found.
-        """
-        for bugtask in bug.bugtasks:
-            if bugtask.target == target:
-                return bugtask
-
-        return None
-
 class AssigneeEmailCommand(EditEmailCommand):
     """Assigns someone to the bug."""
 
@@ -397,7 +614,7 @@ class AssigneeEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         person_name_or_email = self.string_args[0]
 
@@ -437,7 +654,7 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         item_name = self.string_args[0]
         dbschema = self.dbschema
@@ -494,9 +711,12 @@ class EmailCommands:
     _commands = {
         'bug': BugEmailCommand,
         'private': PrivateEmailCommand,
+        'security': SecurityEmailCommand,
         'summary': SummaryEmailCommand,
         'subscribe': SubscribeEmailCommand,
         'unsubscribe': UnsubscribeEmailCommand,
+        'duplicate': DuplicateEmailCommand,
+        'cve': CVEEmailCommand,
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,
         'status': StatusEmailCommand,

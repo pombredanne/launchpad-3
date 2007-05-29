@@ -3,7 +3,6 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:zope="http://namespaces.zope.org/zope"
-    xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
 <facet facet="translations">
@@ -28,6 +27,13 @@
         classes="POTemplateNavigation POTemplateSubsetNavigation
                  POTemplateSetNavigation"
         />
+
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IPOTemplate"
+      factory="canonical.launchpad.browser.POTemplateSOP"
+      permission="zope.Public"
+      />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOTemplate"
@@ -77,7 +83,6 @@
         permission="launchpad.Edit"
         template="../templates/potemplate-upload.pt"
         class="canonical.launchpad.browser.POTemplateView"
-        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+upload"
         />
 
     <browser:editform

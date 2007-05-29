@@ -14,6 +14,7 @@ import os.path
 import re
 import rfc822
 from xml.sax.saxutils import unescape as xml_unescape
+from datetime import datetime, timedelta
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
@@ -21,20 +22,40 @@ from zope.app import zapi
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
+import pytz
+
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
-    NoCanonicalUrl, IBugSet, NotFoundError
+    IBug,
+    IBugAttachment,
+    IBugExternalRef,
+    IBugNomination,
+    IBugSet,
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    IPerson,
+    IProduct,
+    IProject,
+    ISprint,
+    IDistribution,
+    IStructuralHeaderPresentation,
+    NotFoundError,
     )
+from canonical.launchpad.webapp.interfaces import (
+    IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
 import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
-from canonical.launchpad.webapp import canonical_url, nearest_menu
-from canonical.launchpad.webapp.url import Url
-from canonical.launchpad.webapp.publisher import get_current_browser_request
-from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.webapp import (
+    canonical_url, nearest_context_with_adapter, nearest_adapter)
+from canonical.launchpad.webapp.uri import URI
+from canonical.launchpad.webapp.publisher import (
+    get_current_browser_request, nearest)
+from canonical.launchpad.webapp.authorization import check_permission
 
 
 class TraversalError(NotFoundError):
@@ -69,21 +90,24 @@ class MenuAPI:
 
     def _nearest_menu(self, menutype):
         try:
-            return nearest_menu(self._context, menutype)
+            return nearest_adapter(self._context, menutype)
         except NoCanonicalUrl:
             return None
 
-    def _requesturl(self):
+    def _requesturi(self):
         request = self._request
         if request is None:
             return None
-        requesturlobj = Url(request.getURL(), request.get('QUERY_STRING'))
+        requesturiobj = URI(request.getURL())
         # If the default view name is being used, we will want the url
         # without the default view name.
         defaultviewname = zapi.getDefaultViewName(self._context, request)
-        if requesturlobj.pathnoslash.endswith(defaultviewname):
-            requesturlobj = Url(request.getURL(1), request.get('QUERY_STRING'))
-        return requesturlobj
+        if requesturiobj.path.rstrip('/').endswith(defaultviewname):
+            requesturiobj = URI(request.getURL(1))
+        query = request.get('QUERY_STRING')
+        if query:
+            requesturiobj = requesturiobj.replace(query=query)
+        return requesturiobj
 
     def facet(self):
         menu = self._nearest_menu(IFacetMenu)
@@ -92,8 +116,14 @@ class MenuAPI:
         else:
             menu.request = self._request
             return list(menu.iterlinks(
-                requesturl=self._requesturl(),
+                requesturi=self._requesturi(),
                 selectedfacetname=self._selectedfacetname))
+
+    def selectedfacetname(self):
+        if self._selectedfacetname is None:
+            return 'unknown'
+        else:
+            return self._selectedfacetname
 
     def application(self):
         selectedfacetname = self._selectedfacetname
@@ -105,7 +135,7 @@ class MenuAPI:
             return []
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturl=self._requesturl()))
+            return list(menu.iterlinks(requesturi=self._requesturi()))
 
     def context(self):
         menu = IContextMenu(self._context, None)
@@ -113,7 +143,7 @@ class MenuAPI:
             return  []
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturl=self._requesturl()))
+            return list(menu.iterlinks(requesturi=self._requesturi()))
 
 
 class CountAPI:
@@ -272,13 +302,14 @@ class NoneFormatter:
         'date',
         'time',
         'datetime',
+        'approximatedate',
+        'displaydate',
         'rfc822utcdatetime',
         'exactduration',
         'approximateduration',
         'pagetitle',
         'text-to-html',
         'url',
-        'icon'
         ])
 
     def __init__(self, context):
@@ -310,22 +341,145 @@ class ObjectFormatterAPI:
 
     def url(self):
         request = get_current_browser_request()
-        return canonical_url(self._context, request)
+        return canonical_url(
+            self._context, request, path_only_if_possible=True)
 
 
-class BugTaskFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IBugTask objects to a formatted string.
-
-    Used for fmt:icon.
+class ObjectImageDisplayAPI:
+    """Base class for producing the HTML that presents objects
+    as an icon, a logo, a mugshot or a set of badges.
     """
 
+    def __init__(self, context):
+        self._context = context
+
+    def default_icon_resource(self, context):
+        if IProduct.providedBy(context):
+            return '/@@/product'
+        elif IProject.providedBy(context):
+            return '/@@/project'
+        elif IPerson.providedBy(context):
+            if context.isTeam():
+                return '/@@/team'
+            else:
+                if context.is_valid_person:
+                    return '/@@/person'
+                else:
+                    return '/@@/person-inactive'
+        elif IDistribution.providedBy(context):
+            return '/@@/distribution'
+        elif ISprint.providedBy(context):
+            return '/@@/meeting'
+        return '/@@/nyet-icon'
+
+    def default_logo_resource(self, context):
+        if IProject.providedBy(context):
+            return '/@@/project-logo'
+        elif IPerson.providedBy(context):
+            if context.isTeam():
+                return '/@@/team-logo'
+            else:
+                if context.is_valid_person:
+                    return '/@@/person-logo'
+                else:
+                    return '/@@/person-inactive-logo'
+        elif IProduct.providedBy(context):
+            return '/@@/product-logo'
+        elif IDistribution.providedBy(context):
+            return '/@@/distribution-logo'
+        elif ISprint.providedBy(context):
+            return '/@@/meeting-logo'
+        return '/@@/nyet-logo'
+
+    def default_mugshot_resource(self, context):
+        if IProject.providedBy(context):
+            return '/@@/project-mugshot'
+        elif IPerson.providedBy(context):
+            if context.isTeam():
+                return '/@@/team-mugshot'
+            else:
+                if context.is_valid_person:
+                    return '/@@/person-mugshot'
+                else:
+                    return '/@@/person-inactive-mugshot'
+        elif IProduct.providedBy(context):
+            return '/@@/product-mugshot'
+        elif IDistribution.providedBy(context):
+            return '/@@/distribution-mugshot'
+        elif ISprint.providedBy(context):
+            return '/@@/meeting-mugshot'
+        return '/@@/nyet-mugshot'
+
     def icon(self):
-        """Return the appropriate <img> tag for the bugtask icon.
+        """Return the appropriate <img> tag for this object's icon."""
+        context = self._context
+        if context is None:
+            # we handle None specially and return an empty string
+            return ''
+        if IHasIcon.providedBy(context) and context.icon is not None:
+            url = context.icon.getURL()
+        else:
+            url = self.default_icon_resource(context)
+        icon = '<img alt="" width="14" height="14" src="%s" />'
+        return icon % url
 
-        The icon displayed is calculated based on the IBugTask.importance.
-        """
-        image_template = '<img alt="%s" title="%s" src="%s" />'
+    def logo(self):
+        """Return the appropriate <img> tag for this object's logo."""
+        context = self._context
+        if not IHasLogo.providedBy(context):
+            context = nearest(context, IHasLogo)
+        if context is None:
+            # we use the Launchpad logo for anything which is in no way
+            # related to a Pillar (for example, a buildfarm)
+            url = '/@@/launchpad-logo'
+        elif context.logo is not None:
+            url = context.logo.getURL()
+        else:
+            url = self.default_logo_resource(context)
+        logo = '<img alt="" width="64" height="64" src="%s" />'
+        return logo % url
 
+    def mugshot(self):
+        """Return the appropriate <img> tag for this object's mugshot."""
+        context = self._context
+        assert IHasMugshot.providedBy(context), 'No Mugshot for this item'
+        if context.mugshot is not None:
+            url = context.mugshot.getURL()
+        else:
+            url = self.default_mugshot_resource(context)
+        mugshot = """<div style="width: 200; height: 200; float: right">
+            <img alt="" width="192" height="192" src="%s" />
+            </div>"""
+        return mugshot % url
+
+    def badges(self):
+        raise NotImplementedError(
+            "Badge display not implemented for this item")
+
+
+class PillarSearchItemAPI(ObjectImageDisplayAPI):
+    """Provides image:icon for a PillarSearchItem."""
+
+    def mugshot(self):
+        raise NotImplementedError("A PillarSearchItem doesn't have a mugshot")
+
+    def logo(self):
+        raise NotImplementedError("A PillarSearchItem doesn't have a logo")
+
+
+class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IBugTask objects to a formatted string. This inherits
+    from the generic ObjectImageDisplayAPI and overrides the icon
+    presentation method.
+
+    Used for image:icon.
+    """
+
+    icon_template = (
+        '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
+
+    def icon(self):
+        # The icon displayed is dependent on the IBugTask.importance.
         if self._context.importance:
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
@@ -340,50 +494,169 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
             title = ""
             src = "/@@/bug"
 
-        icon = image_template % (alt, title, src)
+        return self.icon_template % (alt, title, src)
 
+
+    def badges(self):
+
+        badges = ''
         if self._context.bug.private:
-            icon += image_template % ("", "Private", "/@@/locked")
+            badges += self.icon_template % ("private", "Private", "/@@/locked")
 
-        return icon
+        if self._context.bug.mentoring_offers.count() > 0:
+            badges += self.icon_template % (
+                "mentoring", "Mentoring offered", "/@@/mentoring")
+
+        if self._context.bug.bug_branches.count() > 0:
+            badges += self.icon_template % (
+                "branch", "Branch exists", "/@@/branch")
+
+        if self._context.bug.specifications.count() > 0:
+            badges += self.icon_template % (
+                "blueprint", "Related to a blueprint", "/@@/blueprint")
+
+        return badges
 
 
-class MilestoneFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IMilestone objects to a formatted string.
+class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for ISpecification objects to a formatted string. This inherits
+    from the generic ObjectImageDisplayAPI and overrides the icon
+    presentation method.
 
-    Used for fmt:icon.
+    Used for image:icon.
+    """
+
+    icon_template = """
+        <img height="14" width="14" alt="%s" title="%s" src="%s" />"""
+
+    def icon(self):
+        # The icon displayed is dependent on the IBugTask.importance.
+        if self._context.priority:
+            priority = self._context.priority.title.lower()
+            alt = "(%s)" % priority
+            title = priority.capitalize()
+            if priority != 'not':
+                # The other status names do not make a lot of sense on
+                # their own, so tack on a noun here.
+                title += " priority"
+            else:
+                title += " a priority"
+            src = "/@@/blueprint-%s" % priority
+        else:
+            alt = ""
+            title = ""
+            src = "/@@/blueprint"
+
+        return self.icon_template % (alt, title, src)
+
+
+    def badges(self):
+
+        badges = ''
+        if self._context.mentoring_offers.count() > 0:
+            badges += self.icon_template % (
+                "mentoring", "Mentoring offered", "/@@/mentoring")
+
+        if self._context.branch_links.count() > 0:
+            badges += self.icon_template % (
+                "branch", "Branch is available", "/@@/branch")
+
+        if self._context.informational:
+            badges += self.icon_template % (
+                "informational", "Blueprint is purely informational",
+                "/@@/info")
+
+        return badges
+
+
+class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IKarmaCategory objects to an image.
+
+    Used for image:icon.
+    """
+
+    icons_for_karma_categories = {
+        'bugs': '/@@/bug',
+        'translations': '/@@/translation',
+        'specs': '/@@/blueprint',
+        'answers': '/@@/question'}
+
+    def icon(self):
+        icon = self.icons_for_karma_categories[self._context.name]
+        return ('<img height="14" width="14" alt="" title="%s" src="%s" />'
+                % (self._context.title, icon))
+
+
+class MilestoneImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IMilestone objects to an image.
+
+    Used for image:icon.
     """
 
     def icon(self):
         """Return the appropriate <img> tag for the milestone icon."""
-        return '<img alt="" src="/@@/milestone" />'
+        return '<img height="14" width="14" alt="" src="/@@/milestone" />'
 
 
-class BuildFormatterAPI(ObjectFormatterAPI):
-    """Adapter for IBuild objects to a formatted string.
+class BuildImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IBuild objects to an image.
 
-    Used for fmt:icon.
+    Used for image:icon.
     """
+    icon_template = """
+        <img width="14" height="14" alt="%s" title="%s" src="%s" />
+        """
+
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
-        image_template = '<img alt="%s" title="%s" src="%s" />'
-
         icon_map = {
             dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
             dbschema.BuildStatus.FULLYBUILT: "/@@/build-success",
             dbschema.BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
             dbschema.BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
             dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
-            # XXX cprov 20060321: proper icons
-            dbschema.BuildStatus.SUPERSEDED: "/@@/topic",
-            dbschema.BuildStatus.BUILDING: "/@@/progress",
+            dbschema.BuildStatus.SUPERSEDED: "/@@/build-superseded",
+            dbschema.BuildStatus.BUILDING: "/@@/build-building",
+            dbschema.BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
             }
 
         alt = '[%s]' % self._context.buildstate.name
-        title = self._context.buildstate.name
+        title = self._context.buildstate.title
         source = icon_map[self._context.buildstate]
 
-        return image_template % (alt, title, source)
+        return self.icon_template % (alt, title, source)
+
+
+class PersonFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IPerson objects to a formatted string."""
+
+    implements(ITraversable)
+
+    allowed_names = set([
+        'url',
+        ])
+
+    def traverse(self, name, furtherPath):
+        if name == 'link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.link(extra_path)
+        elif name in self.allowed_names:
+            return getattr(self, name)()
+        else:
+            raise TraversalError, name
+
+    def link(self, extra_path):
+        """Return an HTML link to the person's page containing an icon
+        followed by the person's name.
+        """
+        person = self._context
+        url = canonical_url(person)
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        image_html = ObjectImageDisplayAPI(person).icon()
+        return '<a href="%s">%s&nbsp;%s</a>' % (
+            url, image_html, person.browsername)
 
 
 class NumberFormatterAPI:
@@ -432,6 +705,55 @@ class DateTimeFormatterAPI:
         if value.tzinfo:
             value = value.astimezone(getUtility(ILaunchBag).timezone)
         return value.strftime('%Y-%m-%d')
+
+    def displaydate(self):
+        if self._datetime.tzinfo:
+            # datetime is offset-aware
+            now = datetime.now(pytz.timezone('UTC'))
+        else:
+            # datetime is offset-naive
+            now = datetime.utcnow()
+        delta = abs(now - self._datetime)
+        if delta > timedelta(1, 0, 0):
+            # far in the past or future, display the date
+            return 'on ' + self.date()
+        return self.approximatedate()
+
+    def approximatedate(self):
+        if self._datetime.tzinfo:
+            # datetime is offset-aware
+            now = datetime.now(pytz.timezone('UTC'))
+        else:
+            # datetime is offset-naive
+            now = datetime.utcnow()
+        delta = now - self._datetime
+        if abs(delta) > timedelta(1, 0, 0):
+            # far in the past or future, display the date
+            return self.date()
+        future = delta < timedelta(0, 0, 0)
+        delta = abs(delta)
+        days = delta.days
+        hours = delta.seconds / 3600
+        minutes = (delta.seconds - (3600*hours)) / 60
+        seconds = delta.seconds % 60
+        result = ''
+        comma = ''
+        if future:
+            result += 'in '
+        if days != 0:
+            result += '%d days' % days
+            comma = ', '
+        if days == 0 and hours != 0:
+            result += '%s%d hours' % (comma, hours)
+            comma = ', '
+        if days == 0 and hours == 0 and minutes != 0:
+            result += '%s%d minutes' % (comma, minutes)
+            comma = ', '
+        if days == 0 and hours == 0 and minutes == 0:
+            result += '%s%d seconds' % (comma, seconds)
+        if not future:
+            result += ' ago'
+        return result
 
     def datetime(self):
         return "%s %s" % (self.date(), self.time())
@@ -922,6 +1244,14 @@ class FormattersAPI:
     # Some allowed URI punctuation characters will be trimmed if they
     # appear at the end of the URI since they may be incidental in the
     # flow of the text.
+    #
+    # apport has at one time produced query strings containing sqaure
+    # braces (that are not percent-encoded). In RFC 2986 they seem to be
+    # allowed by section 2.2 "Reserved Characters", yet section 3.4
+    # "Query" appears to provide a strict definition of the query string
+    # that would forbid square braces. Either way, links with
+    # non-percent-encoded square braces are being used on Launchpad so
+    # it's probably best to accomodate them.
 
     # Match urls or bugs or oopses.
     _re_linkify = re.compile(r'''
@@ -959,12 +1289,12 @@ class FormattersAPI:
         )
         (?: # query
           \?
-          [%(unreserved)s:@/\?]*
+          [%(unreserved)s:@/\?\[\]]*
         )?
         (?: # fragment
           \#
           [%(unreserved)s:@/\?]*
-        )?          
+        )?
       ) |
       (?P<bug>
         \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
@@ -1088,4 +1418,171 @@ class PermissionRequiredQuery:
                     "There should be no further path segments after "
                     "required:permission")
         return check_permission(name, self.context)
+
+
+class PageMacroDispatcher:
+    """Selects a macro, while storing information about page layout.
+
+        view/macro:page
+        view/macro:page/applicationhome
+        view/macro:page/pillarindex
+        view/macro:page/freeform
+
+        view/macro:pagehas/applicationtabs
+        view/macro:pagehas/applicationborder
+        view/macro:pagehas/applicationbuttons
+        view/macro:pagehas/globalsearch
+        view/macro:pagehas/heading
+        view/macro:pagehas/pageheading
+        view/macro:pagehas/portlets
+        view/macro:pagehas/structuralheaderobject
+
+        view/macro:pagetype
+
+    """
+
+    implements(ITraversable)
+
+    master = ViewPageTemplateFile('../templates/main-template.pt')
+
+    def __init__(self, context):
+        # The context of this object is a view object.
+        self.context = context
+
+    def traverse(self, name, furtherPath):
+        if name == 'page':
+            if len(furtherPath) == 1:
+                pagetype = furtherPath.pop()
+            elif not furtherPath:
+                pagetype = 'default'
+            else:
+                raise TraversalError("Max one path segment after macro:page")
+
+            return self.page(pagetype)
+
+        if name == 'pagehas':
+            if len(furtherPath) != 1:
+                raise TraversalError(
+                    "Exactly one path segment after macro:haspage")
+
+            layoutelement = furtherPath.pop()
+            return self.haspage(layoutelement)
+
+        if name == 'pagetype':
+            return self.pagetype()
+
+        raise TraversalError()
+
+    def page(self, pagetype):
+        if pagetype not in self._pagetypes:
+            raise TraversalError('unknown pagetype: %s' % pagetype)
+        self.context.__pagetype__ = pagetype
+        return self.master.macros['master']
+
+    def haspage(self, layoutelement):
+        pagetype = getattr(self.context, '__pagetype__', None)
+        if pagetype is None:
+            pagetype = 'unset'
+        return self._pagetypes[pagetype][layoutelement]
+
+    def pagetype(self):
+        return getattr(self.context, '__pagetype__', 'unset')
+
+    class LayoutElements:
+
+        def __init__(self,
+            applicationtabs=False,
+            applicationborder=False,
+            applicationbuttons=False,
+            globalsearch=False,
+            heading=False,
+            pageheading=True,
+            portlets=False,
+            structuralheaderobject=False,
+            pagetypewasset=True
+            ):
+            self.elements = vars()
+
+        def __getitem__(self, name):
+            return self.elements[name]
+
+    _pagetypes = {
+        'unset':
+            LayoutElements(
+                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=True,
+                portlets=True,
+                structuralheaderobject=True,
+                pagetypewasset=False),
+        'default':
+            LayoutElements(
+                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=True,
+                portlets=True,
+                structuralheaderobject=True),
+        'applicationhome':
+            LayoutElements(
+                applicationborder=True,
+                applicationbuttons=True,
+                pageheading=False,
+                globalsearch=False,
+                heading=True),
+        'pillarindex':
+            LayoutElements(
+                applicationborder=True,
+                applicationbuttons=True,
+                globalsearch=False,
+                heading=True,
+                pageheading=False,
+                portlets=True),
+        'freeform':
+            LayoutElements(),
+        }
+
+
+class GotoStructuralObject:
+    """lp:structuralheaderobject, lp:structuralfooterobject
+
+    Returns None when there is no structural object.
+    """
+
+    def __init__(self, context_dict):
+        self.context = context_dict['context']
+        self.view = context_dict['view']
+        self.use_context = self._getUseContext()
+
+    def _getUseContext(self):
+        """Return the appropriate context to use.
+
+        This works around the hack in bug-related views where the context
+        is not the bugtask, but instead the bug.
+        """
+        if (IBug.providedBy(self.context) or
+            IBugAttachment.providedBy(self.context) or
+            IBugNomination.providedBy(self.context) or
+            IBugExternalRef.providedBy(self.context)):
+            return self.view.current_bugtask
+        else:
+            return self.context
+
+    @property
+    def structuralfooterobject(self):
+        # The structural object is the nearest object with a facet menu.
+        try:
+            menucontext, facetmenu = nearest_context_with_adapter(
+                self.use_context, IFacetMenu)
+        except NoCanonicalUrl:
+            return None
+        return menucontext
+
+    @property
+    def structuralheaderobject(self):
+        try:
+            headercontext, adapter = nearest_context_with_adapter(
+                self.use_context, IStructuralHeaderPresentation)
+        except NoCanonicalUrl:
+            return None
+        return headercontext
 

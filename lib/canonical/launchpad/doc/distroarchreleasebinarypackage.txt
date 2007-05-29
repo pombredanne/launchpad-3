@@ -25,7 +25,7 @@ existing builds that are in sampledata!
   >>> from canonical.launchpad.database.component import Component
   >>> from canonical.launchpad.database.section import Section
   >>> from canonical.lp import dbschema
-  >>> from canonical.database.constants import nowUTC
+  >>> from canonical.database.constants import UTC_NOW
 
   >>> main_component = Component.selectOneBy(name="main")
   >>> misc_section = Section.selectOneBy(name="base")
@@ -61,13 +61,14 @@ existing builds that are in sampledata!
   ...   priority=priority,
   ...   distroarchrelease=hoary_i386.id,
   ...   status=dbschema.PackagePublishingStatus.PUBLISHED,
-  ...   datecreated=nowUTC,
-  ...   datepublished=nowUTC,
+  ...   datecreated=UTC_NOW,
+  ...   datepublished=UTC_NOW,
   ...   pocket=dbschema.PackagePublishingPocket.RELEASE,
   ...   datesuperseded=None,
   ...   supersededby=None,
   ...   datemadepending=None,
-  ...   dateremoved=None)
+  ...   dateremoved=None,
+  ...   archive=hoary_i386.main_archive)
 
 
   >>> bpr = Build.get(8).createBinaryPackageRelease(
@@ -99,13 +100,14 @@ existing builds that are in sampledata!
   ...   priority=priority,
   ...   distroarchrelease=hoary_i386.id,
   ...   status=dbschema.PackagePublishingStatus.PUBLISHED,
-  ...   datecreated=nowUTC,
-  ...   datepublished=nowUTC,
+  ...   datecreated=UTC_NOW,
+  ...   datepublished=UTC_NOW,
   ...   pocket=dbschema.PackagePublishingPocket.RELEASE,
   ...   datesuperseded=None,
   ...   supersededby=None,
   ...   datemadepending=None,
-  ...   dateremoved=None)
+  ...   dateremoved=None,
+  ...   archive=hoary_i386.main_archive)
 
 Then, we ensure that grabbing the current release of pmount and the old release
 both are sane.

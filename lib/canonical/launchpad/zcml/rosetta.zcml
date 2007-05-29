@@ -1,7 +1,7 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com">
+    >
 
     <securedutility
         class="canonical.launchpad.systemhomes.RosettaApplication"
@@ -31,15 +31,19 @@
         facet="translations"
         permission="zope.Public"
         class="canonical.launchpad.browser.RosettaApplicationView"
-        lp:url="/translations">
+        >
         <browser:page
             name="+index"
             template="../templates/rosetta-index.pt"
-            lp:url="/translations/+index" />
+            />
         <browser:page
             name="+about"
             template="../templates/rosetta-about.pt"
-            lp:url="/translations/+about" />
+            />
+        <browser:page
+            name="+products-with-translations"
+            template="../templates/rosetta-products.pt"
+            />
         <!-- portlets -->
         <browser:page
             name="+portlet-stats"

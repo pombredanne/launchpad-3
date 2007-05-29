@@ -10,11 +10,9 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure request/@@+portlet-preflangs" />
-  <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Ubuntu Linux</h3>
   <h1>Translations</h1>
 </metal:heading>
 
@@ -50,7 +48,7 @@
       </thead>
       <tbody>
         <tr tal:repeat="distrorelease view/secondary_translatable_releases">
-          <td><a tal:attributes="href string:${distrorelease/fmt:url}/+translations"
+          <td><a tal:attributes="href distrorelease/fmt:url"
                  tal:content=
                     "string: ${distrorelease/version} ${distrorelease/title}"
                 >5.04 The Hoary Hedgehog Release</a>
@@ -61,5 +59,28 @@
   </tal:block>
 
 </div>
+
+<div metal:fill-slot="help">
+  <p>
+    These are the releases of the
+    <span tal:replace="context/displayname">Ubuntu</span> distribution that are
+    available for translation.  Pick your release and language to start
+    translating, or manage how and by whom the release should be translated.
+  </p>
+  <p>
+    If you have the access privileges to manage translation for this
+    distribution, you can appoint translators and set translation acceptance
+    policies for <span tal:replace="context/displayname">Ubuntu</span> by
+    selecting <a href="+changetranslators">Change translators</a> from the
+    Actions menu.
+  </p>
+  <ul class="info">
+    <li>
+      <a href="https://help.launchpad.net/RosettaFAQ"
+      >Frequently asked questions</a>
+    </li>
+  </ul>
+</div>
+
 </body>
 </html>

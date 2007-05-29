@@ -11,17 +11,22 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
+    'IFrontPageBugAddForm',
+    'IProjectBugAddForm',
     ]
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, Int, List, Text, TextLine
+from zope.schema import (
+    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, Title, BugField, Tag
+from canonical.launchpad.fields import (
+    ContentNameField, Title, DuplicateBug, Tag)
+from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
-from canonical.launchpad.interfaces.validation import non_duplicate_bug
+from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -31,7 +36,7 @@ class CreateBugParams:
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, assignee=None, datecreated=None,
                  security_related=False, private=False, subscribers=(),
-                 binarypackagename=None):
+                 binarypackagename=None, tags=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -48,6 +53,7 @@ class CreateBugParams:
         self.distribution = None
         self.sourcepackagename = None
         self.binarypackagename = binarypackagename
+        self.tags = tags
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -104,7 +110,7 @@ class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
 
 
-class IBug(IMessageTarget):
+class IBug(IMessageTarget, ICanBeMentored):
     """The core bug entry."""
 
     id = Int(
@@ -128,21 +134,7 @@ class IBug(IMessageTarget):
         including the steps required to reproduce it."""))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
-    duplicateof = BugField(
-        title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
-    communityscore = Int(
-        title=_('Community Score'), required=True, readonly=True, default=0)
-    communitytimestamp = Datetime(
-        title=_('Community Timestamp'), required=True, readonly=True)
-    hits = Int(
-        title=_('Hits'), required=True, readonly=True, default=0)
-    hitstimestamp = Datetime(
-        title=_('Hits Timestamp'), required=True, readonly=True)
-    activityscore = Int(
-        title=_('Activity Score'), required=True, readonly=True,
-        default=0)
-    activitytimestamp = Datetime(
-        title=_('Activity Timestamp'), required=True, readonly=True)
+    duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
     private = Bool(
         title=_("Keep bug confidential"), required=False,
         description=_("Make this bug visible only to its subscribers"),
@@ -159,6 +151,8 @@ class IBug(IMessageTarget):
         "The message that was specified when creating the bug")
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
         'ubuntu, then other distroreleases.')
+    affected_pillars = Attribute(
+        'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
@@ -169,7 +163,7 @@ class IBug(IMessageTarget):
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')
     attachments = Attribute("List of bug attachments.")
-    tickets = Attribute("List of support tickets related to this bug.")
+    questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     bug_branches = Attribute(
         "Branches associated with this bug, usually "
@@ -177,6 +171,10 @@ class IBug(IMessageTarget):
     tags = List(
         title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
+    is_complete = Attribute(
+        "True or False depending on whether this bug is considered "
+        "completely addressed. A bug is Launchpad is completely addressed "
+        "when there are no tasks that are still open for the bug.")
 
 
     def followup_subject():
@@ -215,7 +213,7 @@ class IBug(IMessageTarget):
         """
 
     def getIndirectSubscribers():
-        """A list of IPersons that are indirectly subscribed to this bug.
+        """Return IPersons that are indirectly subscribed to this bug.
 
         Indirect subscribers get bugmail, but don't have an entry in the
         BugSubscription table. This includes bug contacts, subscribers from
@@ -223,21 +221,25 @@ class IBug(IMessageTarget):
         """
 
     def getAlsoNotifiedSubscribers():
-        """A list of IPersons in the "Also notified" subscriber list.
+        """Return IPersons in the "Also notified" subscriber list.
 
         This includes bug contacts and assignees, but not subscribers
         from duplicates.
         """
 
     def getSubscribersFromDuplicates():
-        """A list of IPersons subscribed from dupes of this bug."""
+        """Return IPersons subscribed from dupes of this bug.
+        """
 
-    def notificationRecipientAddresses():
-        """Return the list of email addresses that recieve notifications.
+    def getBugNotificationRecipients(duplicateof=None):
+        """Return a complete INotificationRecipientSet instance.
 
-        If this bug is a duplicate of another bug, the CC'd list of
-        the dup target will be appended to the list of recipient
-        addresses.
+        The INotificationRecipientSet instance will contain details of
+        all recipients for bug notifications sent by this bug; this
+        includes email addresses and textual and header-ready
+        rationales. See
+        canonical.launchpad.interfaces.BugNotificationRecipients for
+        details of this implementation.
         """
 
     def addChangeNotification(text, person):
@@ -245,6 +247,14 @@ class IBug(IMessageTarget):
 
     def addCommentNotification(message):
         """Add a bug comment notification."""
+
+    def expireNotifications():
+        """Expire any pending notifications that have not been emailed.
+
+        This will mark any notifications related to this bug as having
+        been emailed.  The intent is to prevent large quantities of
+        bug mail being generated during bulk imports or changes.
+        """
 
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
@@ -288,11 +298,19 @@ class IBug(IMessageTarget):
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
 
+    def getNullBugTask(product=None, productseries=None,
+                    sourcepackagename=None, distribution=None,
+                    distrorelease=None):
+        """Create an INullBugTask and return it for the given parameters."""
+
     def addNomination(owner, target):
         """Nominate a bug for an IDistroRelease or IProductSeries.
 
         :owner: An IPerson.
         :target: An IDistroRelease or IProductSeries.
+
+        The nomination will be automatically approved, if the user has
+        permission to approve it.
 
         This method creates and returns a BugNomination. (See
         canonical.launchpad.database.bugnomination.BugNomination.)
@@ -328,6 +346,25 @@ class IBug(IMessageTarget):
         """Return the BugWatch that has the given bugtracker and remote bug.
 
         Return None if this bug doesn't have such a bug watch.
+        """
+
+    def setStatus(target, status, user):
+        """Set the status of the bugtask related to the specified target.
+
+            :target: The target of the bugtask that should be modified.
+            :status: The status the bugtask should be set to.
+            :user: The IPerson doing the change.
+
+        If a bug task was edited, emit a SQLObjectModifiedEvent and
+        return the edited bugtask.
+
+        Return None if no bugtask was edited.
+        """
+
+    def getBugTask(target):
+        """Return the bugtask with the specified target.
+
+        Return None if no such bugtask is found.
         """
 
 
@@ -372,7 +409,7 @@ class IBugAddForm(IBug):
     """Information we need to create a bug"""
     id = Int(title=_("Bug #"), required=False)
     product = Choice(
-            title=_("Product"), required=False,
+            title=_("Project"), required=False,
             description=_("""The thing you found this bug in,
             which was installed by something other than apt-get, rpm,
             emerge or similar"""),
@@ -386,13 +423,28 @@ class IBugAddForm(IBug):
             title=_("Linux Distribution"), required=True,
             description=_(
                 "Ubuntu, Debian, Gentoo, etc. You can file bugs only on "
-                "distrubutions using Malone as their primary bug "
+                "distrubutions using Launchpad as their primary bug "
                 "tracker."),
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
     comment = Text(
         title=_('Further information, steps to reproduce,'
                 ' version information, etc.'),
+        required=True)
+
+
+class IProjectBugAddForm(IBugAddForm):
+    """Create a bug for an IProject."""
+    product = Choice(
+        title=_("Project"), required=True,
+        vocabulary="ProjectProductsUsingMalone")
+
+
+class IFrontPageBugAddForm(IBugAddForm):
+    """Create a bug for any bug target."""
+
+    bugtarget = Object(
+        schema=IBugTarget, title=_("Where did you find the bug?"),
         required=True)
 
 
@@ -419,7 +471,7 @@ class IBugSet(Interface):
         """
 
     def queryByRemoteBug(bugtracker, remotebug):
-        """Find one or None bugs in Malone that have a BugWatch matching the
+        """Find one or None bugs in Launchpad that have a BugWatch matching the
         given bug tracker and remote bug id."""
 
     def createBug(bug_params):

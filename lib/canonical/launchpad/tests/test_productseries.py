@@ -15,6 +15,8 @@ from canonical.launchpad.ftests.harness import (
 from canonical.launchpad.database.productseries import (
     DatePublishedSyncError, ProductSeries, NoImportBranchError)
 from canonical.testing import ZopelessLayer
+from canonical.launchpad.interfaces import IProductSet
+from canonical.lp.dbschema import RevisionControlSystems
 
 
 class ImportdTestCase(TestCase):
@@ -92,6 +94,24 @@ class TestImportUpdated(ImportdTestCase):
         self.assertEqual(str(series.datepublishedsync), str(None))
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
 
+    def testLastSyncedIsNone(self):
+        # Make sure that importUpdated() still work when encountering the
+        # transition case where datelastsynced is None while a previous branch
+        # was successfully mirrored.
+        series = self.series()
+        series.datelastsynced = None
+        UTC = pytz.timezone('UTC')
+        series.import_branch.last_mirrored = datetime.datetime(
+            2000, 1, 2, tzinfo=UTC)
+        # In this situation, datepublishedsync SHOULD be None, but let's make
+        # sure it is cleared, just to be safe..
+        series.datepublishedsync = datetime.datetime(
+            2000, 1, 1, tzinfo=UTC)
+        series.importUpdated()
+        # use str() to work around sqlobject lazy evaluation
+        self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
+        self.assertEqual(str(series.datepublishedsync), str(None))
+
     def testLastMirroredBeforeLastSync(self):
         # If import_branch.last_mirrored is older than datelastsynced, the
         # previous sync has not been mirrored yet. The date of the currently
@@ -133,6 +153,42 @@ class TestImportUpdated(ImportdTestCase):
         self.assertEqual(
             str(series.datepublishedsync), str(date_previous_sync))
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
+
+
+class SyncIntervalTestCase(LaunchpadZopelessTestCase):
+    """When a VCS import is approved, we set the syncinterval column
+    to indicate how often the import should be updated.  Imports from
+    different revision control systems get different rates by default.
+    """
+
+    def getSampleSeries(self):
+        """Get a sample product series without any source details."""
+        product = getUtility(IProductSet).getByName('gnome-terminal')
+        series = product.getSeries('trunk')
+        self.assert_(series.rcstype is None)
+        return series
+
+    def testSyncIntervalForSvn(self):
+        """Our policy is imports from subversion should be updated
+        every 6 hours by default.
+        """
+        series = self.getSampleSeries()
+        series.rcstype = RevisionControlSystems.SVN
+        series.svnrepository = 'http://svn.example.com/hello/trunk'
+        series.certifyForSync()
+        self.assertEquals(series.syncinterval, datetime.timedelta(hours=6))
+
+    def testSyncIntervalForCvs(self):
+        """Our policy is imports from CVS should be updated
+        every 12 hours by default.
+        """
+        series = self.getSampleSeries()
+        series.rcstype = RevisionControlSystems.CVS
+        series.cvsroot = ':pserver:anonymous@cvs.example.com:/cvsroot'
+        series.cvsmodule = 'hello'
+        series.cvsbranch = 'MAIN'
+        series.certifyForSync()
+        self.assertEquals(series.syncinterval, datetime.timedelta(hours=12))
 
 
 def test_suite():

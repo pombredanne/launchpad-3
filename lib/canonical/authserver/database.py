@@ -22,7 +22,8 @@ from canonical.lp import dbschema
 from canonical.config import config
 
 from canonical.authserver.interfaces import (
-    IUserDetailsStorage, IUserDetailsStorageV2, IBranchDetailsStorage)
+    IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
+    IUserDetailsStorageV2)
 
 
 def utf8(x):
@@ -67,7 +68,7 @@ class UserDetailsStorageMixin:
                 % sqlvalues(archiveName))
             )
             authorisedKeys = transaction.fetchall()
-            
+
             # A person can also access any archive named after a validated email
             # address.
             if '--' in archiveName:
@@ -178,15 +179,15 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     # address, or a nickname, or a numeric ID), whereas personID always refers
     # to the numeric ID, which is the value found in Person.id in the database.
     implements(IUserDetailsStorage)
-    
+
     def __init__(self, connectionPool):
         """Constructor.
-        
+
         :param connectionPool: A twisted.enterprise.adbapi.ConnectionPool
         """
         self.connectionPool = connectionPool
         self.encryptor = SSHADigestEncryptor()
-    
+
     def getUser(self, loginID):
         ri = self.connectionPool.runInteraction
         return ri(self._getUserInteraction, loginID)
@@ -199,7 +200,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         except TypeError:
             # No-one found
             return {}
-        
+
         emailaddresses = self._getEmailAddresses(transaction, personID)
 
         if wikiname is None:
@@ -218,7 +219,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         ri = self.connectionPool.runInteraction
         return ri(self._authUserInteraction, loginID,
                   sshaDigestedPassword.encode('base64'))
-        
+
     def _authUserInteraction(self, transaction, loginID, sshaDigestedPassword):
         """The interaction for authUser."""
         row = self._getPerson(transaction, loginID)
@@ -231,11 +232,11 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         if passwordDigest is None:
             # The user has no password, which means they can't login.
             return {}
-        
+
         if passwordDigest.rstrip() != sshaDigestedPassword.rstrip():
             # Wrong password
             return {}
-        
+
         emailaddresses = self._getEmailAddresses(transaction, personID)
 
         if wikiname is None:
@@ -266,11 +267,11 @@ def saltFromDigest(digest):
 
 class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     """Launchpad-database backed implementation of IUserDetailsStorageV2"""
-    implements(IUserDetailsStorageV2)
-    
+    implements(IHostedBranchStorage, IUserDetailsStorageV2)
+
     def __init__(self, connectionPool):
         """Constructor.
-        
+
         :param connectionPool: A twisted.enterprise.adbapi.ConnectionPool
         """
         self.connectionPool = connectionPool
@@ -291,7 +292,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         )
         return [{'id': row[0], 'name': row[1], 'displayname': row[2]}
                 for row in transaction.fetchall()]
-    
+
     def getUser(self, loginID):
         ri = self.connectionPool.runInteraction
         return ri(self._getUserInteraction, loginID)
@@ -304,7 +305,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         except TypeError:
             # No-one found
             return {}
-        
+
         emailaddresses = self._getEmailAddresses(transaction, personID)
 
         if wikiname is None:
@@ -339,7 +340,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def authUser(self, loginID, password):
         ri = self.connectionPool.runInteraction
         return ri(self._authUserInteraction, loginID, password)
-        
+
     def _authUserInteraction(self, transaction, loginID, password):
         """The interaction for authUser."""
         row = self._getPerson(transaction, loginID)
@@ -352,7 +353,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         if not self.encryptor.validate(password, passwordDigest):
             # Wrong password
             return {}
-        
+
         emailaddresses = self._getEmailAddresses(transaction, personID)
 
         if wikiname is None:
@@ -369,6 +370,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         }
 
     def getBranchesForUser(self, personID):
+        """See IHostedBranchStorage."""
         ri = self.connectionPool.runInteraction
         return ri(self._getBranchesForUserInteraction, personID)
 
@@ -399,6 +401,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return branches
 
     def fetchProductID(self, productName):
+        """See IHostedBranchStorage."""
         ri = self.connectionPool.runInteraction
         return ri(self._fetchProductIDInteraction, productName)
 
@@ -417,6 +420,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return productID
 
     def createBranch(self, personID, productID, branchName):
+        """See IHostedBranchStorage."""
         ri = self.connectionPool.runInteraction
         return ri(self._createBranchInteraction, personID, productID,
                   branchName)
@@ -424,7 +428,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def _createBranchInteraction(self, transaction, personID, productID,
                                  branchName):
         """The interaction for createBranch."""
-        # Convert psuedo-None to real None (damn XML-RPC!)
+        # Convert pseudo-None to real None (damn XML-RPC!)
         if productID == '':
             productID = None
 
@@ -441,15 +445,30 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         )
         return branchID
 
+    def requestMirror(self, branchID):
+        """See IHostedBranchStorage."""
+        ri = self.connectionPool.runInteraction
+        return ri(self._requestMirrorInteraction, branchID)
+
+    def _requestMirrorInteraction(self, transaction, branchID):
+        """The interaction for requestMirror."""
+        transaction.execute("""
+            UPDATE Branch
+            SET mirror_request_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            WHERE id = %s
+        """ % sqlvalues(branchID))
+        # xmlrpc doesn't let us return None. True is an acceptable substitute.
+        return True
+
 
 class DatabaseBranchDetailsStorage:
     """Launchpad-database backed implementation of IUserDetailsStorage"""
 
     implements(IBranchDetailsStorage)
-    
+
     def __init__(self, connectionPool):
         """Constructor.
-        
+
         :param connectionPool: A twisted.enterprise.adbapi.ConnectionPool
         """
         self.connectionPool = connectionPool
@@ -460,7 +479,13 @@ class DatabaseBranchDetailsStorage:
 
     def _getBranchPullQueueInteraction(self, transaction):
         """The interaction for getBranchPullQueue."""
-        # XXX Andrew Bennetts 2006-06-14: 
+        # The following types of branches are included in the queue:
+        # - any branches which have not yet been mirrored
+        # - any branches that were last mirrored over 6 hours ago
+        # - any hosted branches which have requested that they be mirrored
+        # - any import branches which have been synced since their last mirror
+
+        # XXX Andrew Bennetts 2006-06-14:
         # 'vcs-imports' should not be hard-coded in this function.  Instead this
         # ought to use getUtility(LaunchpadCelebrities), but the authserver
         # currently does not setup sqlobject etc.  Even nicer would be if the
@@ -471,16 +496,56 @@ class DatabaseBranchDetailsStorage:
         # <> 'vcs-imports') so that they are always in the queue, regardless of
         # last_mirror_attempt.  This is a band-aid fix for bug #48813, but we'll
         # need to do something more scalable eventually.
+
+        # NOTE: The import-branch case is separated by testing
+        # ProductSeries.id, but the 'vcs-imports' test is still relevant to
+        # prevent obsolete vcs-imports branches that are no longer associated
+        # to a ProductSeries from being mirrored every time.
+        # -- DavidAllouche 2006-12-22
+
+        # XXX: Hosted branches (see Andrew's comment dated 2006-06-15) are
+        # mirrored if their mirror_request_time is not NULL or if they haven't
+        # been mirrored in the last 6 hours. The latter behaviour is a
+        # fail-safe and should probably be removed once we trust the
+        # mirror_request_time behavior. See test_mirror_stale_hosted_branches.
+        # -- jml, 2007-01-31
+
+        # The mirroring interval is 6 hours. we think this is a safe balance
+        # between frequency of mirroring and not hammering servers with
+        # requests to check whether mirror branches are up to date.
+
         transaction.execute(utf8("""
-            SELECT Branch.id, Branch.url, Person.name
-              FROM Branch INNER JOIN Person ON Branch.owner = Person.id
-              WHERE (last_mirror_attempt is NULL
-                     OR (%s - last_mirror_attempt > '1 day')
-                     OR (url is NULL AND Person.name <> 'vcs-imports'))
-              ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
-            """ % UTC_NOW))
+            SELECT Branch.id, Branch.name, Branch.url, Person.name,
+                   Product.name
+            FROM Branch INNER JOIN Person ON Branch.owner = Person.id
+            LEFT OUTER JOIN ProductSeries
+                ON ProductSeries.import_branch = Branch.id
+            LEFT OUTER JOIN Product
+                ON Branch.product = Product.id
+            WHERE (ProductSeries.id is NULL AND (
+                      last_mirror_attempt is NULL
+                      OR (%(utc_now)s - last_mirror_attempt > '6 hours')
+                      OR (url is NULL AND Person.name <> 'vcs-imports'
+                          AND mirror_request_time IS NOT NULL)))
+                   OR (ProductSeries.id IS NOT NULL AND (
+                      (datelastsynced IS NOT NULL
+                          AND last_mirror_attempt IS NULL)
+                       OR (datelastsynced > last_mirror_attempt)
+                       OR (datelastsynced IS NULL
+                          AND (%(utc_now)s - last_mirror_attempt > '1 day'))))
+            ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
+            """ % {'utc_now': UTC_NOW}))
         result = []
-        for (branch_id, url, owner_name) in transaction.fetchall():
+        for row in transaction.fetchall():
+            branch_id, branch_name, url, owner_name, product_name = row
+            # XXX - this logic is almost identical to that in
+            # Branch.unique_name. Ideally, they should use the same code. Also,
+            # it would be nice to guarantee that this points to a branch.
+            # Jonathan Lange, 2007-03-01
+            if product_name is None:
+                product_name = u'+junk'
+            unique_name = u'%s/%s/%s' % (owner_name, product_name, branch_name)
+
             if url is not None:
                 # This is a pull branch, hosted externally.
                 pull_url = url
@@ -492,9 +557,9 @@ class DatabaseBranchDetailsStorage:
             else:
                 # This is a push branch, hosted on the supermirror
                 # (pushed there by users via SFTP).
-                prefix = config.supermirrorsftp.branches_root
+                prefix = config.codehosting.branches_root
                 pull_url = os.path.join(prefix, split_branch_id(branch_id))
-            result.append((branch_id, pull_url))
+            result.append((branch_id, pull_url, unique_name))
         return result
 
     def startMirroring(self, branchID):
@@ -516,14 +581,15 @@ class DatabaseBranchDetailsStorage:
         """See IBranchDetailsStorage"""
         ri = self.connectionPool.runInteraction
         return ri(self._mirrorCompleteInteraction, branchID, lastRevisionID)
-    
+
     def _mirrorCompleteInteraction(self, transaction, branchID,
                                    lastRevisionID):
         """The interaction for mirrorComplete."""
         transaction.execute(utf8("""
             UPDATE Branch
               SET last_mirrored = last_mirror_attempt, mirror_failures = 0,
-                  mirror_status_message = NULL, last_mirrored_id = %s
+                  mirror_status_message = NULL, mirror_request_time = NULL,
+                  last_mirrored_id = %s
               WHERE id = %s""" % sqlvalues(lastRevisionID, branchID)))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]
@@ -533,13 +599,13 @@ class DatabaseBranchDetailsStorage:
         """See IBranchDetailsStorage"""
         ri = self.connectionPool.runInteraction
         return ri(self._mirrorFailedInteraction, branchID, reason)
-    
+
     def _mirrorFailedInteraction(self, transaction, branchID, reason):
         """The interaction for mirrorFailed."""
         transaction.execute(utf8("""
             UPDATE Branch
               SET mirror_failures = mirror_failures + 1,
-                  mirror_status_message = %s
+                  mirror_status_message = %s, mirror_request_time = NULL
               WHERE id = %s""" % sqlvalues(reason, branchID)))
         # how many rows were updated?
         assert transaction.rowcount in [0, 1]

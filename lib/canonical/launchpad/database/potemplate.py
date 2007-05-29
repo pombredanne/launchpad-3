@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces import (
     IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
     TranslationConstants, NotFoundError)
 from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.mailnotification import MailWrapper
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.webapp.snapshot import Snapshot
@@ -46,6 +47,7 @@ from canonical.launchpad.components.poimport import import_po
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 from canonical.launchpad.webapp import canonical_url
+
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
  Copyright %(copyright)s %(year)s
@@ -207,7 +209,8 @@ class POTemplate(SQLBase, RosettaStats):
         "See IPOTemplate"
         return POTemplate.select('''
             id <> %s AND
-            potemplatename = %s
+            potemplatename = %s AND
+            iscurrent = TRUE
             ''' % sqlvalues (self.id, self.potemplatename.id),
             orderBy=['datecreated'])
 
@@ -217,14 +220,16 @@ class POTemplate(SQLBase, RosettaStats):
         if self.productseries:
             return POTemplate.select('''
                 id <> %s AND
-                productseries = %s
+                productseries = %s AND
+                iscurrent = TRUE
                 ''' % sqlvalues(self.id, self.productseries.id),
                 orderBy=['id'])
         elif self.distrorelease and self.sourcepackagename:
             return POTemplate.select('''
                 id <> %s AND
                 distrorelease = %s AND
-                sourcepackagename = %s
+                sourcepackagename = %s AND
+                iscurrent = TRUE
                 ''' % sqlvalues(self.id,
                     self.distrorelease.id, self.sourcepackagename.id),
                 orderBy=['id'])
@@ -351,7 +356,7 @@ class POTemplate(SQLBase, RosettaStats):
                    quote(language_code)),
             clauseTables=['Language'],
             prejoinClauseTables=['Language'],
-            prejoins=["latestsubmission"])
+            prejoins=["last_touched_pomsgset"])
 
     def messageCount(self):
         """See IRosettaStats."""
@@ -576,8 +581,9 @@ class POTemplate(SQLBase, RosettaStats):
                 'importer': entry_to_import.importer.displayname,
                 'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
                 'elapsedtime': entry_to_import.getElapsedTimeText(),
-                'file_link': entry_to_import.content.url,
-                'import_title': self.displayname
+                'file_link': entry_to_import.content.http_url,
+                'import_title':
+                    'translation templates for %s' % self.displayname
                 }
 
             # We got an error that prevented us to import the template, we
@@ -588,11 +594,13 @@ class POTemplate(SQLBase, RosettaStats):
             template = helpers.get_email_template(template_mail)
             message = template % replacements
 
-            fromaddress = 'Rosetta SWAT Team <%s>' % (
-                config.rosetta.rosettaadmin.email)
+            fromaddress = config.rosetta.rosettaadmin.email
             toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
-            simple_sendmail(fromaddress, toaddress, subject, message)
+            simple_sendmail(fromaddress,
+                toaddress,
+                subject,
+                MailWrapper().format(message))
 
             entry_to_import.status = RosettaImportStatus.FAILED
 

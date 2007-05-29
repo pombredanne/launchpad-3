@@ -2,7 +2,10 @@
 
 __metaclass__ = type
 
-__all__ = ['TeamMembershipEditView']
+__all__ = [
+    'TeamMembershipEditView',
+    'TeamMembershipSHP',
+    ]
 
 import pytz
 import datetime
@@ -13,7 +16,19 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import TeamMembershipStatus
 
-from canonical.launchpad.interfaces import ILaunchBag, ILaunchpadCelebrities
+from canonical.launchpad.interfaces import (
+    ILaunchBag, ILaunchpadCelebrities, UnexpectedFormData)
+from canonical.launchpad.browser.launchpad import (
+    StructuralHeaderPresentation)
+
+
+class TeamMembershipSHP(StructuralHeaderPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.team.title
 
 
 class TeamMembershipEditView:
@@ -128,35 +143,41 @@ class TeamMembershipEditView:
     def processActiveMember(self):
         # This method checks the current status to ensure that we don't
         # crash because of users reposting a form.
-        if self.request.form.get('editactive') == 'Deactivate':
+        form = self.request.form
+        context = self.context
+        if form.get('deactivate'):
             if self.context.status == TeamMembershipStatus.DEACTIVATED:
                 # This branch and redirect is necessary because
                 # TeamMembership.setStatus() does not allow us to set an
                 # already-deactivated account to deactivated, causing
                 # double form posts to crash there. We instead manually
                 # ensure that the double-post is harmless.
-                self.request.response.redirect('%s/+members' %
-                                               canonical_url(self.context.team))
+                self.request.response.redirect(
+                    '%s/+members' % canonical_url(context.team))
                 return
             new_status = TeamMembershipStatus.DEACTIVATED
-        elif (self.request.form.get('admin') == 'no' and
-              self.context.status == TeamMembershipStatus.ADMIN):
-            new_status = TeamMembershipStatus.APPROVED
-        elif (self.request.form.get('admin') == 'yes' and
-              self.context.status == TeamMembershipStatus.APPROVED
-              # XXX: salgado, 2005-03-15: The clause below is a hack
-              # to make sure only the teamowner can promote a given
-              # member to admin, while we don't have a specific
-              # permission setup for this.
-              and self.userIsTeamOwnerOrLPAdmin()):
-            new_status = TeamMembershipStatus.ADMIN
+        elif form.get('change'):
+            if (form.get('admin') == "no" and
+                context.status == TeamMembershipStatus.ADMIN):
+                new_status = TeamMembershipStatus.APPROVED
+            elif (form.get('admin') == "yes" and
+                  context.status == TeamMembershipStatus.APPROVED
+                  # XXX: salgado, 2005-03-15: The clause below is a hack
+                  # to make sure only the teamowner can promote a given
+                  # member to admin, while we don't have a specific
+                  # permission setup for this.
+                  and self.userIsTeamOwnerOrLPAdmin()):
+                new_status = TeamMembershipStatus.ADMIN
+            else:
+                # No status change will happen
+                new_status = self.context.status
         else:
-            # No status change will happen
-            new_status = self.context.status
+            raise UnexpectedFormData(
+                "None of the expected actions were found.")
 
         if self._setMembershipData(new_status):
-            self.request.response.redirect('%s/+members' %
-                                           canonical_url(self.context.team))
+            self.request.response.redirect(
+                '%s/+members' % canonical_url(context.team))
 
     def processProposedMember(self):
         if self.context.status != TeamMembershipStatus.PROPOSED:
@@ -169,10 +190,13 @@ class TeamMembershipEditView:
         assert self.context.status == TeamMembershipStatus.PROPOSED
 
         action = self.request.form.get('editproposed')
-        if action == 'Decline':
+        if self.request.form.get('decline'):
             status = TeamMembershipStatus.DECLINED
-        else:
+        elif self.request.form.get('approve'):
             status = TeamMembershipStatus.APPROVED
+        else:
+            raise UnexpectedFormData(
+                "None of the expected actions were found.")
         if self._setMembershipData(status):
             self.request.response.redirect(
                 '%s/+members' % canonical_url(self.context.team))
@@ -216,8 +240,8 @@ class TeamMembershipEditView:
         team = self.context.team
         member = self.context.person
         comment = self.request.form.get('comment')
-        team.setMembershipStatus(member, status, expires,
-                                 reviewer=self.user, comment=comment)
+        team.setMembershipData(member, status, reviewer=self.user,
+                               expires=expires, comment=comment)
         return True
 
     def _getExpirationDate(self):

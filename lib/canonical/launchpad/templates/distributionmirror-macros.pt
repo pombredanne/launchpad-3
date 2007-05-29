@@ -3,9 +3,11 @@
   This macro expects the following variables defined:
     :mirrors_by_country: A list of dictionaries containing country names
                          and the list of IDistributionMirrors to be listed
+    :show_status: A boolean saying whether there should be an extra column
+                  with the mirror's status or not.
   </tal:comment>
 
-  <table class="listing">
+  <table class="listing" id="mirrors_list">
   <tbody>
     <tal:country_and_mirrors repeat="country_and_mirrors mirrors_by_country">
       <tr class="highlighted">
@@ -15,26 +17,21 @@
       </tr>
       <tr tal:repeat="mirror country_and_mirrors/mirrors">
         <td>
-          <a tal:condition="mirror/base_url"
-             tal:attributes="href mirror/base_url"
+          <a tal:attributes="href mirror/fmt:url"
              tal:content="mirror/title">Mirror Name</a>
-          <span tal:condition="not:mirror/base_url"
-                tal:content="mirror/title">Mirror Name</span>
-        </td>
-        <td><span tal:replace="mirror/speed/title" /></td>
-        <td tal:define="status mirror/getOverallStatus">
-          <span tal:replace="status/title" />
         </td>
         <td>
-          <tal:block condition="mirror/has_ftp_or_rsync_base_url">
-            Alternatives:
-            <a tal:condition="mirror/ftp_base_url"
-              tal:attributes="href mirror/ftp_base_url">ftp</a>
-            <a tal:condition="mirror/rsync_base_url"
-            tal:attributes="href mirror/rsync_base_url">rsync</a>
-          </tal:block>
+          <a tal:condition="mirror/http_base_url"
+             tal:attributes="href mirror/http_base_url">http</a>
+          <a tal:condition="mirror/ftp_base_url"
+             tal:attributes="href mirror/ftp_base_url">ftp</a>
+          <a tal:condition="mirror/rsync_base_url"
+             tal:attributes="href mirror/rsync_base_url">rsync</a>
         </td>
-        <td><a tal:attributes="href mirror/fmt:url">Details</a>
+        <td><span tal:replace="mirror/speed/title" /></td>
+        <td tal:condition="show_status"
+            tal:define="status mirror/getOverallStatus">
+          <span tal:replace="status/title" />
         </td>
       </tr>
     <tr tal:condition="not: repeat/country_and_mirrors/end" class="note">

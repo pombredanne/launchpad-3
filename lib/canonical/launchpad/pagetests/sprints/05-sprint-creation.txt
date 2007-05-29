@@ -1,3 +1,5 @@
+= Creating new sprints =
+
 We should also be able to create a new sprint. We do this off the Sprints
 +new page.
 
@@ -86,7 +88,7 @@ that time zone:
 Because this is a brand new sprint, it will have no specs, and we should see
 a warning to that effect on the page.
 
-  >>> message = 'No specifications are yet registered for discussion'
+  >>> message = 'Nobody has yet proposed any blueprints for discussion'
   >>> message in user_browser.contents
   True
 
@@ -116,3 +118,4 @@ Add a new sprint with a different timezone is also handled correctly.
   ...Ends:...
   2006-07-13 16:00:00 SAST...
   ...
+

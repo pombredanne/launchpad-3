@@ -41,7 +41,7 @@ Now, let's create a subprocess running the poppy FTP server. It won't
 call the upload processing tool. We'll do that ourselves in our test,
 so that we can control what's going on.
 
-  >>> from canonical.archivepublisher.ftests import (
+  >>> from canonical.poppy.tests import (
   ...     PoppyTestSetup, SoyuzUploadError)
   >>> poppy = PoppyTestSetup(incoming_dir)
   >>> poppy.startPoppy()
@@ -59,7 +59,7 @@ the server dies or the connection succeeds.
   ...            raise SoyuzUploadError('Server can not start.')
   ...    else:
   ...        break
-  >>> ftp.login("ubuntutest", "")
+  >>> ftp.login("anonymous", "")
   '230 Login Successful.'
   >>> ftp.cwd("/")
   '250 CWD command successful.'
@@ -69,7 +69,7 @@ Good.. let's send all packages we have in the test directory to
 the poppy server. We send each package set on a different ftp
 session.
 
-  >>> from canonical.archivepublisher.tagfiles import parse_tagfile
+  >>> from canonical.archiveuploader.tagfiles import parse_tagfile
   >>> from canonical.config import config
   >>> from cStringIO import StringIO
   >>> import glob
@@ -94,7 +94,7 @@ session.
   ...
   ...     if not ftp.sock:
   ...         assert ftp.connect("localhost", 3421).startswith("220 ")
-  ...         assert ftp.login("ubuntutest", "") == '230 Login Successful.'
+  ...         assert ftp.login("anonymous", "") == '230 Login Successful.'
   ...
   ...     tf = parse_tagfile(changes_filepath)
   ...
@@ -107,12 +107,14 @@ session.
   ...             [os.path.join(test_files_dir, line.split()[-1])
   ...              for line in tf["files"].splitlines() if line])
   ...
-  ...     sent_filenames.extend(os.path.basename(filepath)
-  ...                           for filepath in send_filepaths)
+  ...     sent_filenames.extend(
+  ...         os.path.basename(filepath) for filepath in send_filepaths)
+  ...
+  ...     ignore = ftp.cwd("ubuntutest")
   ...
   ...     for filepath in send_filepaths:
-  ...         reply = ftp.storbinary("STOR "+os.path.basename(filepath),
-  ...                                open(filepath))
+  ...         reply = ftp.storbinary(
+  ...              "STOR %s" % os.path.basename(filepath), open(filepath))
   ...         assert reply == '226 Transfer successful.'
   ...
   ...     uploads.append(send_filepaths)
@@ -125,15 +127,8 @@ what we were expecting to have uploaded.
   >>> package_names
   ['drdsl', 'etherwake']
 
-We don't want to block forever reading data from the process, since
-it's a daemon and should not die until we ask it to. So, we first
-set the stdout to non-blocking...
-
-  >>> poppy.setNonBlocking()
-
-Then, we create a set of the filenames we expect to see in the
-FTP server process output, and wait until all of them have been
-shown.
+We create a set of the filenames we expect to see in the FTP server
+process output, and wait until all of them have been shown.
 
 This is a little bit tricky because we won't simply try to read
 the process output in a blocking way, since any failure in the
@@ -141,7 +136,8 @@ FTP process would block automated tests. Instead, we define a
 timeout between output data. If the process doesn't provide new
 data in the given number seconds, we report a failure.
 
-  >>> poppy.verify_output(list(sent_filenames))
+  >>> poppy.verify_output(
+  ...     ['ubuntutest', 'ubuntutest', 'ubuntutest'])
 
 At that point we must have a bunch of directories in the upload
 base directory named <TIMESTAMP>-XXXXXX, each one as a result of
@@ -178,10 +174,11 @@ of these files match the uploaded ones.
   ...     return find_upload_dir(num)[1]
 
   >>> for i, sent_filenames in enumerate(uploads):
-  ...     upload_dir = get_upload_dir(i+1)
-  ...     assert len(os.listdir(upload_dir)) == len(sent_filenames)
+  ...     upload_dir = get_upload_dir(i + 1)
+  ...     distro_upload_dir = os.path.join(upload_dir, 'ubuntutest')
+  ...     assert len(os.listdir(distro_upload_dir)) == len(sent_filenames)
   ...     for filename in sent_filenames:
-  ...         upload_filename = os.path.join(upload_dir,
+  ...         upload_filename = os.path.join(distro_upload_dir,
   ...                                        os.path.basename(filename))
   ...         assert os.path.isfile(upload_filename)
   ...         assert get_md5(filename) == get_md5(upload_filename)
@@ -246,7 +243,7 @@ do uploads:
   >>> uploader_team = getUtility(IPersonSet).getByName("ubuntu-team")
   >>> assert uploader_team is not None
 
-  >>> uploader_team.addMember(user)
+  >>> uploader_team.addMember(user, reviewer=uploader_team.teamowner)
 
 
 Assign the loaded GPG key to the katie user.
@@ -294,7 +291,7 @@ just upload number 1.
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
   ...                             "-C", "sync", "-J", upload_dir_1_name,
   ...                             temp_dir],
-  ...                             stdout=subprocess.PIPE, 
+  ...                             stdout=subprocess.PIPE,
   ...                             stderr=subprocess.PIPE)
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
@@ -303,18 +300,19 @@ just upload number 1.
 Check the four uploads are all where we expect - number 1 in failed,
 the other three still in incoming.
 
-  >>> for i in range(0, 4):
-  ...     find_upload_dir_result(i+1)
+  >>> for i in range(4):
+  ...     find_upload_dir_result(i + 1)
   'failed'
   'incoming'
   'incoming'
   'incoming'
 
+
 Now continue with the real upload.
 
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-vv",
   ...                             "-C", "sync", temp_dir],
-  ...                             stdout=subprocess.PIPE, 
+  ...                             stdout=subprocess.PIPE,
   ...                             stderr=subprocess.PIPE)
 
   >>> stdout, stderr = process.communicate()
@@ -389,7 +387,7 @@ Same thing for etherwake:
 Check the four uploads all ended up where we expected.
 
   >>> for i in range(0, 4):
-  ...     find_upload_dir_result(i+1)
+  ...     find_upload_dir_result(i + 1)
   'failed'
   'accepted'
   'accepted'
@@ -397,27 +395,31 @@ Check the four uploads all ended up where we expected.
 
 Also check the upload folders contain all the files we uploaded.
 
+XXX cprov 20061206: hardcoded 'ubuntutest' directory is a hack see
+above around line 313.
+
   >>> for i, sent_filenames in enumerate(uploads):
-  ...     upload_dir = find_upload_dir_path(i+1)
-  ...     assert len(os.listdir(upload_dir)) == len(sent_filenames)
+  ...     upload_dir = find_upload_dir_path( i + 1)
+  ...     distro_upload_dir = os.path.join(upload_dir, 'ubuntutest')
+  ...     assert len(os.listdir(distro_upload_dir)) == len(sent_filenames)
   ...     for filename in sent_filenames:
-  ...         upload_filename = os.path.join(upload_dir,
+  ...         upload_filename = os.path.join(distro_upload_dir,
   ...                                        os.path.basename(filename))
   ...         assert os.path.isfile(upload_filename)
   ...         assert get_md5(filename) == get_md5(upload_filename)
 
 
-Now let's see if all of the valid uploads are in the DistroReleaseQueue
-marked as NEW and RELEASE.
+Now let's see if all of the valid uploads are in the Upload queue marked
+as NEW and RELEASE.
 
-  >>> from canonical.launchpad.database import DistroReleaseQueueSource
+  >>> from canonical.launchpad.database import PackageUploadSource
   >>> for name in package_names:
   ...     print name
   ...     spn = SourcePackageName.selectOneBy(name=name)
   ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
-  ...     drqs = DistroReleaseQueueSource.selectOneBy(sourcepackagereleaseID=spr.id)
-  ...     assert drqs.distroreleasequeue.status.name == 'NEW'
-  ...     assert drqs.distroreleasequeue.pocket.name == 'RELEASE'
+  ...     us = PackageUploadSource.selectOneBy(sourcepackagereleaseID=spr.id)
+  ...     assert us.packageupload.status.name == 'NEW'
+  ...     assert us.packageupload.pocket.name == 'RELEASE'
   drdsl
   etherwake
 
@@ -431,9 +433,9 @@ as NEW
 
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, QueueInconsistentStateError)
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
 
-Since we landed correct security adapters for DistroReleaseQueue,
+Since we landed correct security adapters for Upload,
 we need to perform further actions logged in as an admins, which have
 launchpad.Edit on the records:
 
@@ -445,13 +447,13 @@ launchpad.Edit on the records:
 
 Let's test IHasQueueItems.getQueueItems:
 
-  >>> new_items = release.getQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> new_items = release.getQueueItems(PackageUploadStatus.NEW)
   >>> new_items.count()
   2
 
 Querying by status and a name term:
 
-  >>> items = release.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = release.getQueueItems(PackageUploadStatus.NEW,
   ...                                    name='dr')
   >>> items.count()
   1
@@ -463,12 +465,12 @@ Querying by status and a name term:
 
 Querying by status, name and version terms:
 
-  >>> items = release.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = release.getQueueItems(PackageUploadStatus.NEW,
   ...                               name='dr', version='1.2')
   >>> items.count()
   1
 
-  >>> items = release.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = release.getQueueItems(PackageUploadStatus.NEW,
   ...                               name='dr', version='1.5')
   >>> items.count()
   0
@@ -482,19 +484,19 @@ attribute in two, as exact_name & exact_version, which might be
 a good idea, since it produce a more controllable behaviour.
 See bug # 29642
 
-  >>> items = release.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = release.getQueueItems(PackageUploadStatus.NEW,
   ...                      name='dr', version='1.2', exact_match=True)
   >>> items.count()
   0
 
-  >>> items = release.getQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = release.getQueueItems(PackageUploadStatus.NEW,
   ...          name='drdsl', version='1.2.0-0ubuntu1', exact_match=True)
   >>> items.count()
   1
 
 Using getQueueItem to inspect current NEW queue and accept them.
 
-  >>> queue_items = release.getQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> queue_items = release.getQueueItems(PackageUploadStatus.NEW)
   >>> L = []
   >>> for queue_item in queue_items:
   ...      try:

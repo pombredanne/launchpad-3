@@ -21,7 +21,8 @@ from canonical.launchpad.fields import (ContentNameField, Summary,
     Title)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces import IHasOwner, IProject
+from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -41,8 +42,21 @@ class SpecNameField(ContentNameField):
 
     def _getByName(self, name):
         if ISpecification.providedBy(self.context):
+            # the context is a spec, so we are editing the spec details and
+            # we want to know if we are change the name whether there is
+            # alread a spec with this name for the target.
             return self.context.target.getSpecification(name)
+        elif ISpecificationSet.providedBy(self.context):
+            # in the case of a form on the spec set, we need to validate at
+            # a higher level, in the form validation routine
+            return None
+        elif IProject.providedBy(self.context):
+            # the context is a Project, so we will validate this at a higher
+            # level, in the form validation routine
+            return None
         else:
+            # the context is a Product or Distro which can tell us if there
+            # are already specs with this name
             return self.context.getSpecification(name)
 
 
@@ -62,7 +76,7 @@ class SpecURLField(TextLine):
             raise LaunchpadValidationError(self.errormessage % specurl)
 
 
-class ISpecification(IHasOwner):
+class ISpecification(IHasOwner, ICanBeMentored):
     """A Specification."""
 
     name = SpecNameField(
@@ -107,11 +121,25 @@ class ISpecification(IHasOwner):
         title=_('Date Created'), required=True, readonly=True)
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
-    milestone = Choice(
-        title=_('Milestone'), required=False, vocabulary='Milestone',
-        description=_(
-            "The milestone in which we would like this feature to be "
-            "delivered."))
+    # target
+    product = Choice(title=_('Project'), required=False,
+        vocabulary='Product')
+    distribution = Choice(title=_('Distribution'), required=False,
+        vocabulary='Distribution')
+
+    target = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True,
+        vocabulary='DistributionOrProduct')
+    projecttarget = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True,
+        vocabulary='ProjectProducts')
+
+
+    # series
     productseries = Choice(title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
@@ -123,9 +151,16 @@ class ISpecification(IHasOwner):
             "Choose a release in which you would like to deliver "
             "this feature. Selecting '(no value)' will clear the goal."))
 
+    # milestone
+    milestone = Choice(
+        title=_('Milestone'), required=False, vocabulary='Milestone',
+        description=_(
+            "The milestone in which we would like this feature to be "
+            "delivered."))
+
     # nomination to a series for release management
     goal = Attribute(
-        "The product series or distro release for which this feature "
+        "The release series or distro release for which this feature "
         "is a goal.")
     goalstatus = Choice(
         title=_('Goal Acceptance'), vocabulary='SpecificationGoalStatus',
@@ -181,16 +216,6 @@ class ISpecification(IHasOwner):
         'complete. Note that complete also includes "obsolete" and '
         'superseded. Essentially, it is the state where no more work '
         'will be done on the feature.')
-
-    # other attributes
-    product = Choice(title=_('Product'), required=False,
-        vocabulary='Product')
-    distribution = Choice(title=_('Distribution'), required=False,
-        vocabulary='Distribution')
-
-    target = Field(
-        title=_("The product or distribution to which this spec belongs."),
-        readonly=True)
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
@@ -281,7 +306,7 @@ class ISpecification(IHasOwner):
     def subscription(person):
         """Return the subscription for this person to this spec, or None."""
 
-    def subscribe(person):
+    def subscribe(person, essential=False):
         """Subscribe this person to the feature specification."""
 
     def unsubscribe(person):
@@ -289,6 +314,15 @@ class ISpecification(IHasOwner):
 
     def getSubscriptionByName(name):
         """Return a subscription based on the person's name, or None."""
+
+    def isSubscribed(person):
+        """Is person subscribed to this spec?
+
+        Returns True if the user is explicitly subscribed to this spec
+        (no matter what the type of subscription), otherwise False.
+
+        If person is None, the return value is always False.
+        """
 
     # queue-related methods
     def queue(provider, requester, queuemsg=None):
@@ -330,10 +364,10 @@ class ISpecificationSet(IHasSpecifications):
 
     title = Attribute('Title')
 
-    latest_specs = Attribute(
-        "The latest 10 specifications registered in Launchpad.")
+    coming_sprints = Attribute("The next 5 sprints in the system.")
 
-    upcoming_sprints = Attribute("The next 5 sprints in the system.")
+    specification_count = Attribute(
+        "The total number of blueprints in Launchpad")
 
     def __iter__():
         """Iterate over all specifications."""

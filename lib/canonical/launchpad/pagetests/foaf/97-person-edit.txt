@@ -1,81 +1,58 @@
-Edit the personal details (name, displayname and
-timezone) of 'name16'.
+== Changing personal details ==
 
-Check the existing values:
+Foo Bar wants to check if his personal information is up to date in
+Launchpad.
 
-  >>> print http(r"""
-  ... GET /~name16/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...name="field.name" ... value="name16"...
-  ...name="field.displayname" ... value="Foo Bar"...
-  ...id="field.timezone"...
-  ...selected="selected" value="Africa/Johannesburg"...
-  ...
+    >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name16')
+    >>> browser.getLink('Change details').click()
+
+    >>> browser.getControl('Display Name').value
+    'Foo Bar'
+    >>> browser.getControl('Name', index=1).value
+    'name16'
+    >>> browser.getControl('Timezone').value
+    ['Africa/Johannesburg']
+    >>> browser.getControl(
+    ...     'Hide my email addresses from other Launchpad users').selected
+    False
 
 
-And now submit the form with the displayname changed and the option to hide
-email addresses selected. If we leave leading or trailing whitespace in the
-displayname it'll be stripped. 
+He noticed that his information is out of date and will update it.
+(If he leaves leading or trailing whitespace in the displayname it'll
+be stripped) 
 
-  >>> print http(r"""
-  ... POST /~name16/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------1686168710640211894599015137
-  ... Referer: http://localhost:9000/~name16/+edit
-  ... 
-  ... -----------------------------1686168710640211894599015137
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... name16
-  ... -----------------------------1686168710640211894599015137
-  ... Content-Disposition: form-data; name="field.displayname"
-  ... 
-  ...     Foo Bar2   
-  ... -----------------------------1686168710640211894599015137
-  ... Content-Disposition: form-data; name="field.hide_email_addresses.used"
-  ... 
-  ... 
-  ... -----------------------------1686168710640211894599015137
-  ... Content-Disposition: form-data; name="field.hide_email_addresses"
-  ... 
-  ... on
-  ... -----------------------------1686168710640211894599015137
-  ... Content-Disposition: form-data; name="field.timezone"
-  ... 
-  ... Africa/Johannesburg
-  ... -----------------------------1686168710640211894599015137
-  ... Content-Disposition: form-data; name="field.timezone-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------1686168710640211894599015137
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------1686168710640211894599015137--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  ...
-  Location: http://localhost:9000/~name16
+    >>> browser.getControl('Name', index=1).value = 'foobar'
+    >>> browser.getControl('Display Name').value = '  Foo Bar2  '
+    >>> browser.getControl(
+    ...     'Hide my email addresses from other Launchpad users').click()
+    >>> browser.getControl('Save').click()
 
+    >>> browser.url
+    'http://launchpad.dev/~foobar'
 
 Now we check to make sure the displayname was changed and stripped.
 
-  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://localhost:9000/~name16/+edit')
-  >>> browser.getControl('Display Name').value
-  'Foo Bar2'
+    >>> browser.open('http://launchpad.dev/~foobar/+edit')
+    >>> browser.getControl('Display Name').value
+    'Foo Bar2'
 
-And the email addresses are not shown on name16's home page to the
-name12 user:
+And the email addresses are not shown on Foo Bar's home page to any random
+user.
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> browser = Browser()
-  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-  >>> browser.open('http://localhost:9000/~name16/')
-  >>> 'foo.bar@canonical.com' in browser.contents
-  False
+    >>> user_browser.open('http://launchpad.dev/~foobar')
+    >>> 'foo.bar@canonical.com' in user_browser.contents
+    False
+
+He will also change his timezone:
+
+    >>> browser.getControl('Timezone').value = ['Africa/Dakar']
+    >>> browser.getControl('Save').click()
+
+    >>> browser.url
+    'http://launchpad.dev/~foobar'
+
+    >>> browser.getLink('Change details').click()
+    >>> browser.getControl('Timezone').value
+    ['Africa/Dakar']
 

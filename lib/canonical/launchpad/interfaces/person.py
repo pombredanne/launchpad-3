@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Person interfaces."""
 
@@ -16,11 +16,11 @@ __all__ = [
     'IPersonChangePassword',
     'IPersonClaim',
     'INewPerson',
+    'JoinNotAllowed',
     ]
 
 
-from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Text, TextLine)
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -28,15 +28,24 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, PasswordField, StrippedTextLine)
+    BlacklistableContentNameField,
+    IconImageUpload,
+    LogoImageUpload,
+    MugshotImageUpload,
+    PasswordField,
+    StrippedTextLine,
+    )
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.mentoringoffer import (
+    IHasMentoringOffers)
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
-from canonical.launchpad.interfaces.tickettarget import (
-    TICKET_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.launchpad import (
+    IHasLogo, IHasMugshot, IHasIcon)
+from canonical.launchpad.interfaces.questioncollection import (
+    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_gotchi, validate_new_team_email,
-    validate_new_person_email)
+    validate_new_team_email, validate_new_person_email)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
@@ -86,7 +95,8 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-class IPerson(IHasSpecifications):
+class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
+              IHasLogo, IHasMugshot, IHasIcon):
     """A Person."""
 
     id = Int(
@@ -118,23 +128,35 @@ class IPerson(IHasSpecifications):
         title=_("Homepage Content"), required=False,
         description=_(
             "The content of your home page. Edit this and it will be "
-            "displayed for all the world to see. It is NOT a wiki so you "
-            "cannot undo changes."))
-    emblem = Bytes(
-        title=_("Emblem"), required=False,
+            "displayed for all the world to see."))
+    # NB at this stage we do not allow individual people to have their own
+    # icon, only teams get that. People can however have a logo and mugshot
+    # The icon is only used for teams; that's why we use /@@/team as the
+    # default image resource.
+    icon = IconImageUpload(
+        title=_("Icon"), required=False,
+        default_image_resource='/@@/team',
         description=_(
-            "A small image, max 16x16 pixels and 8k in file size, that can "
-            "be used to refer to this team."),
-        constraint=valid_emblem)
-    gotchi = Bytes(
-        title=_("Hackergotchi"), required=False,
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
+            "that can be used to identify this team. The icon will be "
+            "displayed whenever the team name is listed - for example "
+            "in listings of bugs or on a person's membership table."))
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/person-logo',
         description=_(
-            "An image, maximum 150x150 pixels, that will be displayed on "
-            "your home page. It should be no bigger than 50k in size. "
-            "Traditionally this is a great big grinning image of your mug. "
-            "Make the most of it."),
-        constraint=valid_gotchi)
-
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to you. Traditionally this "
+            "is a logo, a small picture or a personal mascot. It should be "
+            "no bigger than 50kb in size."))
+    mugshot = MugshotImageUpload(
+        title=_("Mugshot"), required=False,
+        default_image_resource='/@@/person-mugshot',
+        description=_(
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on your home page in Launchpad. Traditionally this is a great "
+            "big picture of your grinning face. Make the most of it! It "
+            "should be no bigger than 100kb in size. "))
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
             description=_('Your address (Line 1)')
@@ -211,11 +233,14 @@ class IPerson(IHasSpecifications):
 
     # Properties of the Person object.
     karma_category_caches = Attribute(
-        'The caches of karma scores, by ' 'karma category.')
+        'The caches of karma scores, by karma category.')
     is_valid_person = Bool(
         title=_("This is an active user and not a team."), readonly=True)
     is_valid_person_or_team = Bool(
         title=_("This is an active user or a team."), readonly=True)
+    is_openid_enabled = Bool(
+        title=_("This user can use Launchpad as an OpenID provider."),
+        readonly=True)
     is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -239,7 +264,6 @@ class IPerson(IHasSpecifications):
         "author or an author different from this person.")
     subscribed_branches = Attribute(
         "Branches to which this person " "subscribes.")
-    activities = Attribute("Karma")
     myactivememberships = Attribute(
         "List of TeamMembership objects for Teams this Person is an active "
         "member of.")
@@ -248,6 +272,12 @@ class IPerson(IHasSpecifications):
         "in this team.")
     teams_participated_in = Attribute(
         "Iterable of all Teams that this person is active in, recursive")
+    teams_indirectly_participated_in = Attribute(
+        "Iterable of all the teams in which this person is and indirect "
+        "member.")
+    teams_with_icons = Attribute(
+        "Iterable of all Teams that this person is active in that have "
+        "icons")
     guessedemails = Attribute(
         "List of emails with status NEW. These email addresses probably "
         "came from a gina or POFileImporter run.")
@@ -265,7 +295,7 @@ class IPerson(IHasSpecifications):
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
-    administrators = Attribute("List of members with ADMIN status")
+    adminmembers = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
@@ -282,6 +312,9 @@ class IPerson(IHasSpecifications):
         "course, newest first.")
     assigned_specs = Attribute(
         "Specifications assigned to this person, sorted newest first.")
+    assigned_specs_in_progress = Attribute(
+        "Specifications assigned to this person whose implementation is "
+        "started but not yet completed, sorted newest first.")
     drafted_specs = Attribute(
         "Specifications being drafted by this person, sorted newest first.")
     created_specs = Attribute(
@@ -291,12 +324,15 @@ class IPerson(IHasSpecifications):
         "feedback, sorted newest first.")
     subscribed_specs = Attribute(
         "Specifications this person has subscribed to, sorted newest first.")
+    team_mentorships = Attribute(
+        "All the offers of mentoring which are relevant to this team.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
-    teamdescription = Text(title=_('Team Description'), required=False,
-                           readonly=False)
+    teamdescription = Text(
+        title=_('Team Description'), required=False, readonly=False,
+        description=_('Use plain text; URLs will be linkified'))
 
     preferredemail = TextLine(
         title=_("Preferred Email Address"),
@@ -312,20 +348,20 @@ class IPerson(IHasSpecifications):
         readonly=True)
 
     defaultmembershipperiod = Int(
-        title=_('Number of days a subscription lasts'), required=False,
+        title=_('Subscription period'), required=False,
         description=_(
             "The number of days a new subscription lasts before expiring. "
             "You can customize the length of an individual subscription when "
-            "approving it. A value of 0 means subscriptions never expire."))
+            "approving it. Leave this empty or set to 0 for subscriptions to "
+            "never expire."))
 
     defaultrenewalperiod = Int(
-        title=_('Number of days a renewed subscription lasts'),
+        title=_('Renewal period'),
         required=False,
         description=_(
-            "The number of days a subscription lasts after "
-            "being renewed. You can customize the lengths of "
-            "individual renewals. A value of 0 means "
-            "renewals last as long as new memberships."))
+            "The number of days a subscription lasts after being renewed. "
+            "You can customize the lengths of individual renewals. Leave "
+            "this empty or set to 0 for subscriptions to never expire."))
 
     defaultexpirationdate = Attribute(
         "The date, according to team's default values, in which a newly "
@@ -362,19 +398,42 @@ class IPerson(IHasSpecifications):
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
+    is_trusted_on_shipit = Bool(
+        title=_('Is this a trusted person on shipit?'))
+    unique_displayname = TextLine(
+        title=_('Return a string of the form $displayname ($name).'))
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
+    archive = Attribute(
+        "The Archive owned by this person, his PPA.")
+
     @invariant
-    def personCannotHaveEmblem(person):
-        if person.emblem is not None and not person.isTeam():
-            raise Invalid('Only teams can have an emblem.')
+    def personCannotHaveIcon(person):
+        if person.icon is not None and not person.isTeam():
+            raise Invalid('Only teams can have an icon.')
 
     def getBugContactPackages():
         """Return a list of packages for which this person is a bug contact.
 
         Returns a list of IDistributionSourcePackage's, ordered alphabetically
         (A to Z) by name.
+        """
+
+    def getBugContactOpenBugCounts(user):
+        """Return open bug counts for this bug contact's packages.
+
+            :user: The user doing the search. Private bugs that this
+                   user doesn't have access to won't be included in the
+                   count.
+
+        Returns a list of dictionaries, where each dict contains:
+
+            'package': The package the bugs are open on.
+            'open': The number of open bugs.
+            'open_critical': The number of open critical bugs.
+            'open_unassigned': The number of open unassigned bugs.
+            'open_inprogress': The number of open bugs that ar In Progress.
         """
 
     def setPreferredEmail(email):
@@ -386,8 +445,33 @@ class IPerson(IHasSpecifications):
         The product_name may be None.
         """
 
+    def findPathToTeam(team):
+        """Return the teams that cause this person to be a participant of the
+        given team.
+
+        If there is more than one path leading this person to the given team,
+        only the one with the oldest teams is returned.
+
+        This method must not be called if this person is not an indirect
+        member of the given team.
+        """
+
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
+
+    def getProjectsAndCategoriesContributedTo(limit=10):
+        """Return a list of dicts with projects and the contributions made
+        by this person on that project.
+
+        The list is limited to the :limit: projects this person is most
+        active.
+
+        The dictionaries containing the following keys:
+            - project:    The project, which is either an IProduct or an
+                          IDistribution.
+            - categories: A dictionary mapping KarmaCategory titles to
+                          the icons which represent that category.
+        """
 
     def assignKarma(action_name, product=None, distribution=None,
                     sourcepackagename=None):
@@ -402,6 +486,10 @@ class IPerson(IHasSpecifications):
     def latestKarma(quantity=25):
         """Return the latest karma actions for this person, up to the number
         given as quantity."""
+
+    def iterTopProjectsContributedTo(self, limit=10):
+        """Iterate over the top projects contributed to, up to the given limit.
+        """
 
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
@@ -436,10 +524,14 @@ class IPerson(IHasSpecifications):
         Return None otherwise.
         """
 
-    def searchTasks(search_params):
+    def searchTasks(search_params, *args):
         """Search IBugTasks with the given search parameters.
 
         :search_params: a BugTaskSearchParams object
+        :args: any number of BugTaskSearchParams objects
+
+        If more than one BugTaskSearchParams is given, return the union of
+        IBugTasks which match any of them.
 
         Return an iterable of matching results.
         """
@@ -473,9 +565,6 @@ class IPerson(IHasSpecifications):
         that case, though, all we have to do is use person.setPreferredEmail().
         """
 
-    def hasMembershipEntryFor(team):
-        """Tell if this person is a direct member of the given team."""
-
     def hasParticipationEntryFor(team):
         """Tell if this person is a direct/indirect member of the given team."""
 
@@ -507,30 +596,58 @@ class IPerson(IHasSpecifications):
 
         Teams cannot call this method because they're not allowed to
         login and thus can't 'leave' another team. Instead, they have their
-        subscription deactivated (using the setMembershipStatus() method) by
+        subscription deactivated (using the setMembershipData() method) by
         a team administrator.
         """
 
-    def addMember(person, status=TeamMembershipStatus.APPROVED, reviewer=None,
+    def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None):
-        """Add person as a member of this team.
+        """Add the given person as a member of this team.
 
-        Make sure status is either APPROVED or PROPOSED and add a
-        TeamMembership entry for this person with the given status, reviewer,
-        and reviewer comment. This method is also responsible for filling
-        the TeamParticipation table in case the status is APPROVED.
+        If the given person is already a member of this team we'll simply
+        change its membership status. Otherwise a new TeamMembership is
+        created with the given status.
+
+        The given status must be either Approved, Proposed or Admin.
+
+        The reviewer is the user who made the given person a member of this
+        team.
         """
 
-    def setMembershipStatus(person, status, expires=None, reviewer=None,
-                            comment=None):
-        """Set the status of the person's membership on this team.
+    def setMembershipData(person, status, reviewer, expires=None,
+                          comment=None):
+        """Set the attributes of the person's membership on this team.
 
-        Also set all other attributes of TeamMembership, which are <comment>,
-        <reviewer> and <dateexpires>. This method will ensure that we only
-        allow the status transitions specified in the TeamMembership spec.
-        It's also responsible for filling/cleaning the TeamParticipation
-        table when the transition requires it and setting the expiration
-        date, reviewer and reviewercomment.
+        Set the status, dateexpires, reviewer and comment, where reviewer is
+        the user responsible for this status change and comment is the comment
+        left by the reviewer for the change.
+
+        This method will ensure that we only allow the status transitions
+        specified in the TeamMembership spec. It's also responsible for
+        filling/cleaning the TeamParticipation table when the transition
+        requires it.
+        """
+
+    def getMembersByStatus(status, orderby=None):
+        """Return the people whose membership on this team match :status:.
+
+        If no orderby is provided, Person.sortingColumns is used.
+        """
+
+    def getAdministratedTeams():
+        """Return the teams that this person/team is an administrator of.
+
+        This includes teams for which the person is the owner, a direct
+        member with admin privilege, or member of a team with such
+        privileges.
+        """
+
+    def getDirectAdministrators():
+        """Return this team's administrators.
+         
+         This includes all direct members with admin rights and also
+         the team owner. Note that some other persons/teams might have admin
+         privilege by virtue of being a member of a team with admin rights.
         """
 
     def getTeamAdminsEmailAddresses():
@@ -570,6 +687,9 @@ class IPerson(IHasSpecifications):
         'Rosetta Translators', because we are member of both of them.
         """
 
+    def getLatestApprovedMembershipsForPerson(limit=5):
+        """Return the <limit> latest approved membrships for this person."""
+
     def addLanguage(language):
         """Add a language to this person's preferences.
 
@@ -596,50 +716,70 @@ class IPerson(IHasSpecifications):
         will be equal to union of all the languages known by its members.
         """
 
-    def searchTickets(search_text=None, status=TICKET_STATUS_DEFAULT_SEARCH,
-                      language=None, participation=None,
-                      needs_attention=False, sort=None):
-        """Search the person's tickets.
+    def getDirectAnswerQuestionTargets():
+        """Return a list of IQuestionTargets that a person is subscribed to.
 
-        :search_text: A string that is matched against the ticket
-        title and description. If None, the search_text is not included as
-        a filter criteria.
+        This will return IQuestionTargets that the person is registered as an
+        answer contact because he subscribed himself.
+        """
 
-        :status: A sequence of TicketStatus Items. If None or an empty
-        sequence, the status is not included as a filter criteria.
+    def getTeamAnswerQuestionTargets():
+        """Return a list of IQuestionTargets that are indirectly subscribed to.
 
-        :language: An ILanguage or a sequence of ILanguage objects to match
-        against the ticket's language. If None or an empty sequence,
-        the language is not included as a filter criteria.
+        This will return IQuestionTargets that the person or is registered
+        as an answer contact because of his membership in a team.
+        """
 
-        :participation: A list of TicketParticipation that defines the set
-        of relationship to tickets that will be searched. If None or an empty
+    def searchQuestions(search_text=None,
+                        status=QUESTION_STATUS_DEFAULT_SEARCH,
+                        language=None, sort=None, participation=None,
+                        needs_attention=None):
+        """Search the person's questions.
+
+        See IQuestionCollection for the description of the standard search
+        parameters.
+
+        :participation: A list of QuestionParticipation that defines the set
+        of relationship to questions that will be searched. If None or an empty
         sequence, all relationships are considered.
 
-        :needs_attention: If this flag is true, only tickets needing attention
-        from the person will be included. Tickets needing attention are those
+        :needs_attention: If this flag is true, only questions needing attention
+        from the person will be included. Questions needing attention are those
         owned by the person in the ANSWERED or NEEDSINFO state, as well as,
         those not owned by the person but on which the person requested for
         more information or gave an answer and that are back in the OPEN
         state.
-
-        :sort:  An attribute of TicketSort. If None, a default value is used.
-        When there is a search_text value, the default is to sort by RELEVANCY,
-        otherwise results are sorted NEWEST_FIRST.
-
-        """
-
-    def getTicketLanguages():
-        """Return a set of ILanguage used by the tickets in which this person "
-        is involved.
         """
 
 
-class ITeam(IPerson):
+class ITeam(IPerson, IHasIcon):
     """ITeam extends IPerson.
 
     The teamowner should never be None.
     """
+
+    # Logo and Mugshot are here so that they can have a description on a
+    # Team which is different to the description they have on a Person.
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/team-logo',
+        description=_(
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to the team. Traditionally this "
+            "is a logo, a small picture or a personal mascot. It should be "
+            "no bigger than 50kb in size."))
+    mugshot = MugshotImageUpload(
+        title=_("Mugshot"), required=False,
+        default_image_resource='/@@/team-mugshot',
+        description=_(
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on the team page in Launchpad. It "
+            "should be no bigger than 100kb in size. "))
+    displayname = StrippedTextLine(
+            title=_('Display Name'), required=True, readonly=False,
+            description=_(
+                "This team's name as you would like it displayed throughout "
+                "Launchpad."))
 
 
 class IPersonSet(Interface):
@@ -717,7 +857,11 @@ class IPersonSet(Interface):
         """Return people that have contributed to the specified POFile."""
 
     def getPOFileContributorsByDistroRelease(self, distrorelease, language):
-        """Return people who translated strings in distroRelease to language."""
+        """Return people who translated strings in distroRelease to language.
+
+        The people that translated only IPOTemplate objects that are not
+        current will not appear in the returned list.
+        """
 
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
@@ -806,9 +950,20 @@ class IPersonSet(Interface):
         default ordering specified in Person._defaultOrder.
         """
 
+    def latest_teams(limit=5):
+        """Return the latest teams registered, up to the limit specified."""
+
     def merge(from_person, to_person):
         """Merge a person into another."""
 
+    def getTranslatorsByLanguage(language):
+        """Return the list of translators for the given language.
+
+        :arg language: ILanguage object for which we want to get the
+            translators.
+
+        Return None if there is no translator.
+        """
 
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
@@ -861,4 +1016,8 @@ class ITeamCreation(ITeam):
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
         constraint=validate_new_team_email)
+
+
+class JoinNotAllowed(Exception):
+    """User is not allowed to join a given team."""
 

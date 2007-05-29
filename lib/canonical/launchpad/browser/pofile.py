@@ -4,15 +4,15 @@
 __metaclass__ = type
 
 __all__ = [
-    'POFileNavigation',
+    'POExportView',
+    'POFileAppMenus',
     'POFileFacets',
-    'POFileAppMenus',
-    'POFileView',
-    'POFileUploadView',
+    'POFileNavigation',
+    'POFileSOP',
     'POFileTranslateView',
-    'BaseExportView',
-    'POFileAppMenus',
-    'POExportView']
+    'POFileUploadView',
+    'POFileView',
+    ]
 
 import re
 from zope.app.form.browser import DropdownWidget
@@ -20,19 +20,16 @@ from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
 from canonical.cachedproperty import cachedproperty
-from canonical.lp.dbschema import RosettaFileFormat
-from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import (
-    IPOFile, IPOExportRequestSet, ITranslationImportQueue,
-    UnexpectedFormData, NotFoundError)
-from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
-    LaunchpadView, Navigation)
-from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.pomsgset import (
     BaseTranslationView, POMsgSetView)
+from canonical.launchpad.browser.potemplate import (
+    BaseExportView, POTemplateSOP, POTemplateFacets)
+from canonical.launchpad.interfaces import (
+    IPOFile, ITranslationImportQueue, UnexpectedFormData, NotFoundError)
+from canonical.launchpad.webapp import (
+    ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
-from canonical.launchpad import _
 
 class CustomDropdownWidget(DropdownWidget):
     def _div(self, cssClass, contents, **kw):
@@ -89,38 +86,23 @@ class POFileNavigation(Navigation):
             # information.
             return self.context.createMessageSetFromMessageSet(potmsgset)
 
-
-class POFileFacets(StandardLaunchpadFacets):
+class POFileFacets(POTemplateFacets):
     usedfor = IPOFile
-    defaultlink = 'translations'
-    enable_only = ['overview', 'translations']
 
-    def _parent_url(self):
-        """Return URL of whatever POTemplate of this POFile is attached to."""
-        potemplate = self.context.potemplate
-        if potemplate.distrorelease:
-            source_package = potemplate.distrorelease.getSourcePackage(
-                potemplate.sourcepackagename)
-            return canonical_url(source_package)
-        else:
-            return canonical_url(potemplate.productseries)
+    def __init__(self, context):
+        POTemplateFacets.__init__(self, context.potemplate)
 
-    def overview(self):
-        target = self._parent_url()
-        text = 'Overview'
-        return Link(target, text)
 
-    def translations(self):
-        target = ''
-        text = 'Translations'
-        return Link(target, text)
+class POFileSOP(POTemplateSOP):
+
+    def __init__(self, context):
+        POTemplateSOP.__init__(self, context.potemplate)
 
 
 class POFileAppMenus(ApplicationMenu):
     usedfor = IPOFile
     facet = 'translations'
-    links = ['overview', 'translate', 'switchlanguages', 'upload', 'download',
-        'viewtemplate']
+    links = ['overview', 'translate', 'upload', 'download']
 
     def overview(self):
         text = 'Overview'
@@ -130,68 +112,17 @@ class POFileAppMenus(ApplicationMenu):
         text = 'Translate'
         return Link('+translate', text, icon='languages')
 
-    def switchlanguages(self):
-        text = 'Switch Languages'
-        return Link('../', text, icon='languages')
-
     def upload(self):
-        text = 'Upload a File'
+        text = 'Upload a file'
         return Link('+upload', text, icon='edit')
 
     def download(self):
         text = 'Download'
         return Link('+export', text, icon='download')
 
-    def viewtemplate(self):
-        text = 'View Template'
-        return Link('../', text, icon='languages')
-
-
-class BaseExportView(LaunchpadView):
-    """Base class for PO export views."""
-
-    def initialize(self):
-        self.request_set = getUtility(IPOExportRequestSet)
-        self.processForm()
-
-    def processForm(self):
-        """Override in subclass."""
-        raise NotImplementedError
-
-    def nextURL(self):
-        self.request.response.addInfoNotification(_(
-            "Your request has been received. Expect to receive an email "
-            "shortly."))
-        self.request.response.redirect(canonical_url(self.context))
-
-    def validateFileFormat(self, format_name):
-        try:
-            return RosettaFileFormat.items[format_name]
-        except KeyError:
-            self.request.response.addErrorNotification(_(
-                'Please select a valid format for download.'))
-            return
-
-    def formats(self):
-        """Return a list of formats available for translation exports."""
-
-        class BrowserFormat:
-            def __init__(self, title, value):
-                self.title = title
-                self.value = value
-
-        formats = [
-            RosettaFileFormat.PO,
-            RosettaFileFormat.MO,
-        ]
-
-        for format in formats:
-            yield BrowserFormat(format.title, format.name)
-
 
 class POFileView(LaunchpadView):
     """A basic view for a POFile"""
-    __used_for__ = IPOFile
 
     @cachedproperty
     def contributors(self):
@@ -200,7 +131,6 @@ class POFileView(LaunchpadView):
 
 class POFileUploadView(POFileView):
     """A basic view for a POFile"""
-    __used_for__ = IPOFile
 
     def initialize(self):
         self.form = self.request.form
@@ -212,10 +142,10 @@ class POFileUploadView(POFileView):
             # The form was not submitted or the user is not logged in.
             return
 
-        file = self.form['file']
+        upload_file = self.form.get('file', None)
 
-        if not isinstance(file, FileUpload):
-            if file == '':
+        if not isinstance(upload_file, FileUpload):
+            if upload_file is None or upload_file == '':
                 self.request.response.addErrorNotification(
                     "Ignored your upload because you didn't select a file to"
                     " upload.")
@@ -225,15 +155,15 @@ class POFileUploadView(POFileView):
                 # forms (or perhaps it's launchpad because I never had
                 # problems with bugzilla). The fact is that some uploads don't
                 # work and we get a unicode object instead of a file-like
-                # object in "file". We show an error if we see that behaviour.
-                # For more info, look at bug #116.
+                # object in "upload_file". We show an error if we see that
+                # behaviour. For more info, look at bug #116.
                 self.request.response.addErrorNotification(
                     "The upload failed because there was a problem receiving"
                     " the data.")
             return
 
-        filename = file.filename
-        content = file.read()
+        filename = upload_file.filename
+        content = upload_file.read()
 
         if len(content) == 0:
             self.request.response.addWarningNotification(
@@ -271,7 +201,7 @@ class POFileUploadView(POFileView):
 
         self.request.response.addInfoNotification(
             'Thank you for your upload. The PO file content will be imported'
-            ' soon into Rosetta. You can track its status from the'
+            ' soon into Launchpad. You can track its status from the'
             ' <a href="%s">Translation Import Queue</a>' %
                 canonical_url(translation_import_queue))
 
@@ -287,8 +217,6 @@ class POFileTranslateView(BaseTranslationView):
     traversal is done for details about how we decide between a POFile
     or a DummyPOFile.
     """
-
-    __used_for__ = IPOFile
 
     DEFAULT_SHOW = 'all'
     DEFAULT_SIZE = 10
@@ -463,6 +391,13 @@ class POExportView(BaseExportView):
         if not format:
             return
 
+        if self.context.validExportCache():
+            # There is already a valid exported file cached in Librarian, we
+            # can serve that file directly.
+            self.request.response.redirect(self.context.exportfile.http_url)
+            return
+
+        # Register the request to be processed later with our export script.
         self.request_set.addRequest(
             self.user, pofiles=[self.context], format=format)
         self.nextURL()

@@ -1,53 +1,45 @@
 We need to login in order to add attachments.
 
-  >>> anon_browser.open('http://launchpad.dev/firefox/+bug/1')
-  >>> anon_browser.getLink('Comment/Attach File').click()
+  >>> anon_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+  >>> anon_browser.getLink('Comment or attach file').click()
   Traceback (most recent call last):
   ...
   Unauthorized:...
 
 When we're logged in we can access the page.
 
-  >>> user_browser.open('http://launchpad.dev/firefox/+bug/1')
-  >>> user_browser.getLink('Comment/Attach File').click()
+  >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+  >>> user_browser.getLink('Comment or attach file').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/firefox/+bug/1/+addcomment'
+  'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment'
 
 Let's add an attachment. First create a file-like object.
 
   >>> from cStringIO import StringIO
   >>> foo_file = StringIO('Traceback...')
 
-and proceed to add it. We're not allowed to enter a whitespace-only
-title for the attachment
-
-  >>> user_browser.getControl('Include attachment').selected = True
-  >>> user_browser.getControl('File').add_file(
-  ...   foo_file, 'text/plain', 'foo.txt')
-  >>> user_browser.getControl('Description').value = '    '
-  >>> user_browser.getControl('Comment').value = 'Added some information'
-  >>> user_browser.getControl('Save Changes').click()
-
-  >>> 'An attachment requires a description' in user_browser.contents
-  True
-
-We try again with a proper title, note that we leave some leading and
-trailing whitespace to test that we strip them:
+Leading and trailing whitespace are stripped from the description of the
+attachment.
 
   >>> foo_file.seek(0)
-  >>> user_browser.getControl('Include attachment').selected = True
-  >>> user_browser.getControl('File').add_file(
+  >>> user_browser.getControl('Attachment').add_file(
   ...   foo_file, 'text/plain', 'foo.txt')
   >>> user_browser.getControl('Description').value = '   Some information   '
+  >>> user_browser.getControl('Comment').value = 'Added some information'
   >>> user_browser.getControl('Save Changes').click()
 
 After we added the attachment, we get redirected to the bug page.
 
   >>> user_browser.url
-  'http://launchpad.dev/firefox/+bug/1'
+  'http://bugs.launchpad.dev/firefox/+bug/1'
 
 We can check that the attachment is there
+
+  >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
+  >>> for li_tag in attachments.findAll('li', 'download'):
+  ...   print li_tag.a.renderContents()
+  Some information
 
   >>> link = user_browser.getLink('Some information')
   >>> link.url
@@ -60,3 +52,26 @@ And that we stripped the leading and trailing whitespace correctly
 
   >>> '   Some information   ' in user_browser.contents
   False
+
+If no description is given it gets set to the attachment filename. It's
+also not necessary to enter a comment in order to add an attachment.
+
+  >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+  >>> user_browser.getLink('Comment or attach file').click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment'
+
+  >>> bar_file = StringIO('Traceback...')
+  >>> user_browser.getControl('Attachment').add_file(
+  ...   bar_file, 'text/plain', 'bar.txt')
+  >>> user_browser.getControl('Description').value = ''
+  >>> user_browser.getControl('Comment').value = ''
+  >>> user_browser.getControl('Save Changes').click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1'
+
+  >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
+  >>> for li_tag in attachments.findAll('li', 'download'):
+  ...   print li_tag.a.renderContents()
+  Some information
+  bar.txt

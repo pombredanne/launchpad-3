@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # Author: Robert Collins <robertc@robertcollins.net>
 #         David Allouche <david@allouche.net>
@@ -132,14 +132,14 @@ class TestGetJob(helpers.ZopelessTestCase):
 
     def testGetBuilders(self):
         '''get a builders list from the db'''
-        import importd.util
-        jobs = importd.util.jobsFromDB("slave_home",
-                                       "archive_mirror_dir",
-                                       autotest = False)
-        self.assertEqual(len(jobs), 1)
+        import importd.util # Local import to avoid circular import.
         importd_path = '/dummy/path/to/importd/package'
         push_prefix = '/dummy/prefix/to/push/branches/'
         source_repo = '/dummy/prefix/to/source/repo'
+        jobs = importd.util.jobsFromDB(
+            "slave_home", "archive_mirror_dir",
+            autotest=False, push_prefix=push_prefix)
+        self.assertEqual(len(jobs), 1)
         builders = importd.util.jobsBuilders(
             jobs, ["slavename"],
             importd_path=importd_path,

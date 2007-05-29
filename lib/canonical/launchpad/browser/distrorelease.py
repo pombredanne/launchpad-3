@@ -6,10 +6,13 @@ __metaclass__ = type
 
 __all__ = [
     'DistroReleaseNavigation',
+    'DistroReleaseDynMenu',
+    'DistroReleaseSOP',
     'DistroReleaseFacets',
     'DistroReleaseView',
     'DistroReleaseEditView',
     'DistroReleaseAddView',
+    'DistroReleaseTranslationsAdminView',
     ]
 
 from zope.component import getUtility
@@ -21,7 +24,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
-    enabled_with_permission, GetitemNavigation, stepthrough)
+    enabled_with_permission, GetitemNavigation, stepthrough,
+    LaunchpadEditFormView, action)
+from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.launchpad.interfaces import (
     IDistroReleaseLanguageSet, IDistroRelease, ICountry, IDistroReleaseSet,
@@ -29,9 +34,12 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
 
 
 class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -49,12 +57,23 @@ class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
         except IndexError:
             # Unknown language code.
             raise NotFoundError
-        drlang = self.context.getDistroReleaseLanguage(lang)
-        if drlang is not None:
-            return drlang
-        else:
-            drlangset = getUtility(IDistroReleaseLanguageSet)
-            return drlangset.getDummy(self.context, lang)
+        distroreleaselang = self.context.getDistroReleaseLanguage(lang)
+
+        if distroreleaselang is None:
+            # There is no IDistroReleaseLanguage yet for this IDistroRelease,
+            # but we still need to list it as an available language, so we
+            # generate a dummy one so users have a chance to get it in the
+            # navigation and start adding translations for it.
+            distroreleaselangset = getUtility(IDistroReleaseLanguageSet)
+            distroreleaselang = distroreleaselangset.getDummy(self.context, lang)
+
+        if (self.context.hide_all_translations and
+            not check_permission('launchpad.Admin', distroreleaselang)):
+            raise TranslationUnavailableError(
+                'Translation updates in progress.  Only admins may view'
+                ' translations for this distrorelease.')
+
+        return distroreleaselang
 
     @stepthrough('+source')
     def source(self, name):
@@ -72,6 +91,29 @@ class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return self.context.getBinaryPackage(name)
 
 
+class DistroReleaseSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return None
+
+    def getMainHeading(self):
+        return self.context.fullreleasename
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: list architectures, alphabetically
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        # XXX mpt 20061004: list releases, most recent first
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
+
+
 class DistroReleaseFacets(StandardLaunchpadFacets):
 
     usedfor = IDistroRelease
@@ -82,11 +124,11 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'support', 'packaging', 
+    links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
              'add_port', 'add_milestone', 'admin', 'builds', 'queue']
 
     def edit(self):
-        text = 'Edit Details'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -97,30 +139,30 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
-        text = 'Change Registrant'
+        text = 'Change registrant'
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def add_milestone(self):
-        text = 'Add Milestone'
+        text = 'Add milestone'
         summary = 'Register a new milestone for this release'
         return Link('+addmilestone', text, summary, icon='add')
 
     def packaging(self):
-        text = 'Upstream Links'
+        text = 'Upstream links'
         return Link('+packaging', text, icon='info')
 
     # A search link isn't needed because the distro release overview
     # has a search form.
 
-    def support(self):
-        text = 'Request Support'
-        url = canonical_url(self.context.distribution) + '/+addticket'
+    def answers(self):
+        text = 'Ask a question'
+        url = canonical_url(self.context.distribution) + '/+addquestion'
         return Link(url, text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def add_port(self):
-        text = 'Add Port'
+        text = 'Add architecture'
         return Link('+addport', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
@@ -129,12 +171,11 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         return Link('+admin', text, icon='edit')
 
     def builds(self):
-        text = 'View Builds'
+        text = 'Show builds'
         return Link('+builds', text, icon='info')
 
-    @enabled_with_permission('launchpad.AnyPerson')
     def queue(self):
-        text = 'View Uploads'
+        text = 'Show uploads'
         return Link('+queue', text, icon='info')
 
 
@@ -145,10 +186,10 @@ class DistroReleaseBugsMenu(ApplicationMenu):
     links = ['new', 'cve']
 
     def new(self):
-        return Link('+filebug', 'Report a Bug', icon='add')
+        return Link('+filebug', 'Report a bug', icon='add')
 
     def cve(self):
-        return Link('+cve', 'CVE Reports', icon='cve')
+        return Link('+cve', 'CVE reports', icon='cve')
 
 
 class DistroReleaseSpecificationsMenu(ApplicationMenu):
@@ -158,24 +199,24 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
     links = ['roadmap', 'table', 'setgoals', 'listdeclined',]
 
     def listall(self):
-        text = 'Show All'
+        text = 'List all blueprints'
         return Link('+specs?show=all', text, icon='info')
 
     def listapproved(self):
-        text = 'Show Approved'
+        text = 'List approved blueprints'
         return Link('+specs?acceptance=accepted', text, icon='info')
 
     def listproposed(self):
-        text = 'Show Proposed'
+        text = 'List proposed blueprints'
         return Link('+specs?acceptance=proposed', text, icon='info')
 
     def listdeclined(self):
-        text = 'Show Declined'
+        text = 'List declined blueprints'
         summary = 'Show the goals which have been declined'
         return Link('+specs?acceptance=declined', text, icon='info')
 
     def setgoals(self):
-        text = 'Set Goals'
+        text = 'Set release goals'
         summary = 'Approve or decline feature goals that have been proposed'
         return Link('+setgoals', text, icon='info')
 
@@ -188,6 +229,17 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
         text = 'Roadmap'
         summary = 'Show the sequence in which specs should be implemented'
         return Link('+roadmap', text, icon='info')
+
+
+class DistroReleaseTranslationsMenu(ApplicationMenu):
+
+    usedfor = IDistroRelease
+    facet = 'translations'
+    links = ['admin']
+
+    @enabled_with_permission('launchpad.TranslationsAdmin')
+    def admin(self):
+        return Link('+admin', 'Edit translation options', icon='edit')
 
 
 class DistroReleaseView(BuildRecordsView, QueueItemsView):
@@ -226,11 +278,11 @@ class DistroReleaseView(BuildRecordsView, QueueItemsView):
         currently is interested in (or which the users location and browser
         language prefs indicate might be interesting.
         """
-        drlangs = []
+        distroreleaselangs = []
         for language in self.languages:
-            drlang = self.context.getDistroReleaseLanguageOrDummy(language)
-            drlangs.append(drlang)
-        return drlangs
+            distroreleaselang = self.context.getDistroReleaseLanguageOrDummy(language)
+            distroreleaselangs.append(distroreleaselang)
+        return distroreleaselangs
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -247,21 +299,21 @@ class DistroReleaseView(BuildRecordsView, QueueItemsView):
         """
 
         # find the existing DRLanguages
-        drlangs = list(self.context.distroreleaselanguages)
+        distroreleaselangs = list(self.context.distroreleaselanguages)
 
         # make a set of the existing languages
-        existing_languages = set([drl.language for drl in drlangs])
+        existing_languages = set([drl.language for drl in distroreleaselangs])
 
         # find all the preferred languages which are not in the set of
         # existing languages, and add a dummydistroreleaselanguage for each
         # of them
-        drlangset = getUtility(IDistroReleaseLanguageSet)
+        distroreleaselangset = getUtility(IDistroReleaseLanguageSet)
         for lang in self.languages:
             if lang not in existing_languages:
-                drl = drlangset.getDummy(self.context, lang)
-                drlangs.append(drl)
+                distroreleaselang = distroreleaselangset.getDummy(self.context, lang)
+                distroreleaselangs.append(distroreleaselang)
 
-        return sorted(drlangs, key=lambda a: a.language.englishname)
+        return sorted(distroreleaselangs, key=lambda a: a.language.englishname)
 
     @cachedproperty
     def unlinked_translatables(self):
@@ -321,3 +373,29 @@ class DistroReleaseAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
+
+class DistroReleaseDynMenu(DynMenu):
+
+    def mainMenu(self):
+        for architecture in self.context.architectures:
+            yield self.makeBreadcrumbLink(architecture)
+
+
+class DistroReleaseTranslationsAdminView(LaunchpadEditFormView):
+    schema = IDistroRelease
+
+    field_names = ['hide_all_translations', 'defer_translation_imports']
+
+    def initialize(self):
+        LaunchpadEditFormView.initialize(self)
+        self.label = 'Change translation options of %s' % self.context.title
+
+    @action("Change")
+    def change_action(self, action, data):
+        self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 
 # Check for obsolete binary packages
 # Copyright (C) 2006  James Troup <james.troup@canonical.com>
@@ -205,7 +205,7 @@ def cruft_check(distrorelease):
 def add_nbs(nbs_d, source, version, package):
     # Ensure the package is still in the suite (someone may have already removed
     # it).
-    result = bpr.getByNameInDistroRelease(Options.distrorelease.id, package)
+    result = bpr.getByNameInDistroRelease(Options.distrorelease, package)
     if len(list(result)) == 0:
         return
 

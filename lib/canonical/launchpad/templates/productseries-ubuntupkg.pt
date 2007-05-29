@@ -16,7 +16,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Foo Series: main</h3>
   <h1>Ubuntu packaging</h1>
 </metal:heading>
 
@@ -34,7 +33,7 @@
     </p>
 
     <p class="informational message" tal:condition="not:request/lp:person">
-       You must log in to change the mapping from this product branch to its
+       You must log in to change the mapping from this project branch to its
        Ubuntu package.
     </p>
 
@@ -87,7 +86,13 @@
         </thead>
         <tbody>
           <tr tal:repeat="packaging view/ubuntu_history">
-            <td tal:content="packaging/datecreated/fmt:date">13-05-2004</td>
+            <td>
+              <span
+                tal:attributes="title packaging/datecreated/fmt:datetime"
+                tal:content="packaging/datecreated/fmt:approximatedate">
+                13-05-2004
+              </span>
+            </td>
             <td tal:content="packaging/distrorelease/name">hoary</td>
             <td tal:content="packaging/sourcepackagename/name">evolution</td>
             <td><span tal:condition="packaging/owner"

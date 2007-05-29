@@ -1,9 +1,9 @@
-Malone does its best to minimize duplicate bug reports. The +filebug
+Launchpad does its best to minimize duplicate bug reports. The +filebug
 page for a product starts by asking the user to see if their bug has
 already been reported.
 
     >>> user_browser.open("http://bugs.launchpad.dev/firefox")
-    >>> user_browser.getLink('Report a Bug').click()
+    >>> user_browser.getLink('Report a bug').click()
 
 If no title is entered, the user is asked to supply one.
 

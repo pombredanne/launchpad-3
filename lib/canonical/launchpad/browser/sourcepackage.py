@@ -1,16 +1,19 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
 __all__ = [
     'SourcePackageNavigation',
+    'SourcePackageSOP',
     'SourcePackageFacets',
     'SourcePackageView',
+    'linkify_changelog'
     ]
 
 # Python standard library imports
 import cgi
 import re
+from apt_pkg import ParseSrcDepends
 
 from zope.component import getUtility
 from zope.app.form.interfaces import IInputWidget
@@ -22,19 +25,19 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
-    PackageRelationship)
-from canonical.launchpad.browser.tickettarget import (
-    TicketTargetFacetMixin, TicketTargetSupportMenu)
-from canonical.launchpad.webapp.batching import BatchNavigator
+    relationship_builder)
+from canonical.launchpad.browser.questiontarget import (
+    QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    structured, GetitemNavigation, stepto, redirection)
-
-from apt_pkg import ParseSrcDepends
+    GetitemNavigation, stepto, redirection)
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -47,9 +50,17 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepto('+pots')
     def pots(self):
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(
-                   distrorelease=self.context.distrorelease,
-                   sourcepackagename=self.context.sourcepackagename)
+        sourcepackage_pots = potemplateset.getSubset(
+            distrorelease=self.context.distrorelease,
+            sourcepackagename=self.context.sourcepackagename)
+
+        if (self.context.distrorelease.hide_all_translations and
+            not check_permission('launchpad.Admin', sourcepackage_pots)):
+            raise TranslationUnavailableError(
+                'Translation updates in progress.  Only admins may view'
+                ' translations for this sourcepackage.')
+
+        return sourcepackage_pots
 
     @stepto('+filebug')
     def filebug(self):
@@ -75,31 +86,52 @@ def linkify_changelog(changelog, sourcepkgnametxt):
     return changelog
 
 
-class SourcePackageFacets(TicketTargetFacetMixin, StandardLaunchpadFacets):
+class SourcePackageSOP(StructuralObjectPresentation):
+
+    def getIntroHeading(self):
+        return self.context.distribution.displayname + ' ' + \
+               self.context.distrorelease.version + ' source package:'
+
+    def getMainHeading(self):
+        return self.context.sourcepackagename
+
+    def listChildren(self, num):
+        # XXX mpt 20061004: Versions published, earliest first
+        return []
+
+    def countChildren(self):
+        return 0
+
+    def listAltChildren(self, num):
+        return None
+
+    def countAltChildren(self):
+        raise NotImplementedError
+
+
+class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
-    enable_only = ['overview', 'bugs', 'support', 'translations']
+    enable_only = ['overview', 'bugs', 'answers', 'translations']
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['hct', 'changelog', 'builds']
-
-    def hct(self):
-        text = structured(
-            '<abbr title="Hypothetical Changeset Tool">HCT</abbr> status')
-        return Link('+hctstatus', text, icon='info')
+    links = ['packaging', 'edit_packaging', 'changelog', 'builds']
 
     def changelog(self):
-        return Link('+changelog', 'Change Log', icon='list')
+        return Link('+changelog', 'View changelog', icon='list')
 
-    def upstream(self):
-        return Link('+packaging', 'Edit Upstream Link', icon='edit')
+    def packaging(self):
+        return Link('+packaging', 'Show upstream links', icon='info')
+
+    def edit_packaging(self):
+        return Link('+edit-packaging', 'Change upstream link', icon='edit')
 
     def builds(self):
-        text = 'View Builds'
+        text = 'Show builds'
         return Link('+builds', text, icon='info')
 
 
@@ -110,19 +142,19 @@ class SourcePackageBugsMenu(ApplicationMenu):
     links = ['reportbug']
 
     def reportbug(self):
-        text = 'Report a Bug'
+        text = 'Report a bug'
         return Link('+filebug', text, icon='add')
 
 
-class SourcePackageSupportMenu(TicketTargetSupportMenu):
+class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
 
     usedfor = ISourcePackage
-    facet = 'support'
+    facet = 'answers'
 
-    links = TicketTargetSupportMenu.links + ['gethelp']
+    links = QuestionTargetAnswersMenu.links + ['gethelp']
 
     def gethelp(self):
-        return Link('+gethelp', 'Help and Support Options', icon='info')
+        return Link('+gethelp', 'Help and support options', icon='info')
 
 
 class SourcePackageTranslationsMenu(ApplicationMenu):
@@ -132,11 +164,11 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
     links = ['help', 'templates']
 
     def help(self):
-        return Link('+translate', 'How You Can Help', icon='info')
+        return Link('+translate', 'How you can help', icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
-        return Link('+potemplatenames', 'Edit Template Names', icon='edit')
+        return Link('+potemplatenames', 'Edit template names', icon='edit')
 
 
 class SourcePackageView(BuildRecordsView):
@@ -167,9 +199,9 @@ class SourcePackageView(BuildRecordsView):
                 # we need to create or update the packaging
                 self.context.setPackaging(new_ps, self.user)
                 self.productseries_widget.setRenderedValue(new_ps)
-                self.status_message = 'Upstream branch updated, thank you!'
+                self.status_message = 'Upstream link updated, thank you!'
             else:
-                self.status_message = 'Invalid upstream branch given.'
+                self.status_message = 'Invalid release series given.'
 
     def published_by_pocket(self):
         """This morfs the results of ISourcePackage.published_by_pocket into
@@ -202,37 +234,30 @@ class SourcePackageView(BuildRecordsView):
 
         return results
 
+    def _relationship_parser(self, content):
+        """Wrap the relationship_builder for SourcePackages.
+
+        Define apt_pkg.ParseSrcDep as a relationship 'parser' and
+        IDistroRelease.getBinaryPackage as 'getter'.
+        """
+        getter = self.context.distrorelease.getBinaryPackage
+        parser = ParseSrcDepends
+        return relationship_builder(content, parser=parser, getter=getter)
+
     def builddepends(self):
-        builddepends = self.context.currentrelease.builddepends
-
-        if not builddepends:
-            return []
-
-        relationships = [L[0] for L in ParseSrcDepends(builddepends)]
-        return [
-            PackageRelationship(name, signal, version)
-            for name, version, signal in relationships
-            ]
+        return self._relationship_parser(
+            self.context.currentrelease.builddepends)
 
     def builddependsindep(self):
-        builddependsindep = self.context.currentrelease.builddependsindep
-
-        if not builddependsindep:
-            return []
-
-        relationships = [L[0] for L in ParseSrcDepends(builddependsindep)]
-        return [
-            PackageRelationship(name, signal, version)
-            for name, version, signal in relationships
-            ]
+        return self._relationship_parser(
+            self.context.currentrelease.builddependsindep)
 
     def has_build_depends(self):
-        return self.context.currentrelease.builddependsindep or \
-            self.context.currentrelease.builddepends
-
-    def linkified_changelog(self):
-        return linkify_changelog(
-            self.context.changelog, self.context.sourcepackagename.name)
+        depends_indep = self.context.currentrelease.builddependsindep
+        depends = self.context.currentrelease.builddepends
+        if depends or depends_indep:
+            return True
+        return False
 
     def requestCountry(self):
         return ICountry(self.request, None)

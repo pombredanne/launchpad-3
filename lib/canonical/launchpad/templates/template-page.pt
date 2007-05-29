@@ -12,9 +12,12 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:rightportlets>
 
+<p metal:fill-slot="help-XXXX">
+  HELP TEXT HERE
+</p>
+
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context Title Here</h3>
-  <h1>Page Title Here</h1>
+  <h1>Page title here</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">

@@ -8,18 +8,20 @@
 
     <ul tal:condition="country/languages">
 
-      <li class="languages"
-          tal:repeat="lang country/languages">
-        <span tal:replace="lang/englishname" />
-      </li>
+      <li
+        class="language"
+        tal:repeat="lang country/languages"
+        tal:content="lang/englishname"
+      />
 
     </ul>
 
     <tal:block condition="not: country/languages">
       No languages are currently registered as being spoken in <span
       tal:replace="country/name">country</span>. Please
-      <a href="mailto:rosetta@launchpad.net">contact the Rosetta
-      admins</a> to correct this.
+      <a href="mailto:rosetta@launchpad.net"
+      	 tal:attributes="href string:mailto:${view/rosettaAdminEmail}">
+	 contact the Launchpad Translations admins</a> to correct this.
     </tal:block>
 
   </div>

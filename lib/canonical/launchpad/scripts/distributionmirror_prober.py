@@ -20,10 +20,30 @@ from canonical.launchpad.interfaces import (
     UnableToFetchCDImageFileList)
 from canonical.lp.dbschema import MirrorStatus
 
+
+# The requests/timeouts ratio has to be at least 3 for us to keep issuing
+# requests on a given host. (This ratio is per run, rather than held long
+# term)
+# IMPORTANT: Changing these values can cause lots of false negatives when
+# probing mirrors, so please don't change them unless you know what you're
+# doing.
+MIN_REQUEST_TIMEOUT_RATIO = 3
+MIN_REQUESTS_TO_CONSIDER_RATIO = 30
+
+# XXX: We need to get rid of these global dicts in this module. See
+# https://launchpad.net/launchpad/+bug/82201 for more details.
+# -- Guilherme Salgado, 2007-01-30
+host_requests = {}
+host_timeouts = {}
+host_semaphores = {}
+
 MAX_REDIRECTS = 3
 
-PER_HOST_REQUESTS = 1
-host_semaphores = {}
+# Number of simultaneous connections we issue on a given host
+# IMPORTANT: Don't change this unless you really know what you're doing. Using
+# a to big value can cause spurious failures on lots of mirrors and a to small
+# one can cause the prober to run for hours.
+PER_HOST_REQUESTS = 2
 
 
 class ProberProtocol(HTTPClient):
@@ -37,10 +57,10 @@ class ProberProtocol(HTTPClient):
     def makeRequest(self):
         """Request path presence via HTTP/1.1 using HEAD.
 
-        Uses factory.host and factory.path
+        Uses factory.connect_host and factory.connect_path
         """
-        self.sendCommand('HEAD', self.factory.path)
-        self.sendHeader('HOST', self.factory.host)
+        self.sendCommand('HEAD', self.factory.connect_path)
+        self.sendHeader('HOST', self.factory.connect_host)
         self.endHeaders()
         
     def handleStatus(self, version, status, message):
@@ -97,6 +117,22 @@ class ProberFactory(protocol.ClientFactory):
 
     protocol = ProberProtocol
 
+    # Details of the URL of the host in which we actually want to request the
+    # confirmation from.
+    request_scheme = None
+    request_host = None
+    request_port = None
+    request_path = None
+
+    # Details of the URL of the host in which we'll connect, which will only
+    # be different from request_* in case we have an http_proxy environment
+    # variable --in that case the scheme, host and port will be the ones
+    # extracted from http_proxy and the path will be self.url
+    connect_scheme = None
+    connect_host = None
+    connect_port = None
+    connect_path = None
+
     def __init__(self, url, timeout=config.distributionmirrorprober.timeout):
         # We want the deferred to be a private attribute (_deferred) to make
         # sure our clients will only use the deferred returned by the probe()
@@ -107,16 +143,36 @@ class ProberFactory(protocol.ClientFactory):
         self.setURL(url.encode('ascii'))
 
     def probe(self):
+        logger = logging.getLogger('distributionmirror-prober')
+        # NOTE: We don't want to issue connections to any outside host when
+        # running the mirror prober in a development machine, so we do this
+        # hack here.
+        if (self.connect_host != 'localhost' 
+            and config.distributionmirrorprober.localhost_only):
+            reactor.callLater(0, self.succeeded, '200')
+            logger.debug("Forging a successful response on %s as we've been "
+                         "told to probe only local URLs." % self.url)
+            return self._deferred
+
+        if should_skip_host(self.request_host):
+            reactor.callLater(0, self.failed, ConnectionSkipped(self.url))
+            logger.debug("Skipping %s as we've had too many timeouts on this "
+                         "host already." % self.url)
+            return self._deferred
+
         self.connect()
         self.timeoutCall = reactor.callLater(
             self.timeout, self.failWithTimeoutError)
         self._deferred.addBoth(self._cancelTimeout)
+        logger.debug('Probing %s' % self.url)
         return self._deferred
 
     def connect(self):
-        reactor.connectTCP(self.host, self.port, self)
+        host_requests[self.request_host] += 1
+        reactor.connectTCP(self.connect_host, self.connect_port, self)
 
     def failWithTimeoutError(self):
+        host_timeouts[self.request_host] += 1
         self.failed(ProberTimeout(self.url, self.timeout))
         self.connector.disconnect()
 
@@ -134,23 +190,9 @@ class ProberFactory(protocol.ClientFactory):
             self.timeoutCall.cancel()
         return result
 
-    def _parse(self, url, defaultPort=80):
-        scheme, host, path, dummy, dummy, dummy = urlparse.urlparse(url)
-        port = defaultPort
-        if ':' in host:
-            host, port = host.split(':')
-            assert port.isdigit()
-            port = int(port)
-        return scheme, host, port, path
-
     def setURL(self, url):
         self.url = url
-        proxy = os.getenv('http_proxy')
-        if proxy:
-            scheme, host, port, path = self._parse(proxy)
-            path = url
-        else:
-            scheme, host, port, path = self._parse(url)
+        scheme, host, port, path = _parse(url)
         # XXX: We don't actually know how to handle FTP responses, but we
         # expect to be behind a squid HTTP proxy with the patch at
         # http://www.squid-cache.org/bugs/show_bug.cgi?id=1758 applied. So, if
@@ -158,12 +200,30 @@ class ProberFactory(protocol.ClientFactory):
         # the sysadmins to fix squid for you.
         # -- Guilherme Salgado, 2006-09-19
         if scheme not in ('http', 'ftp'):
-            raise UnknownURLScheme(scheme)
+            raise UnknownURLScheme(url)
+
         if scheme and host:
-            self.scheme = scheme
-            self.host = host
-            self.port = port
-        self.path = path
+            self.request_scheme = scheme
+            self.request_host = host
+            self.request_port = port
+            self.request_path = path
+
+        if self.request_host not in host_requests:
+            host_requests[self.request_host] = 0
+        if self.request_host not in host_timeouts:
+            host_timeouts[self.request_host] = 0
+
+        # If the http_proxy variable is set, we want to use it as the host
+        # we're going to connect to.
+        proxy = os.getenv('http_proxy')
+        if proxy:
+            scheme, host, port, dummy = _parse(proxy)
+            path = url
+
+        self.connect_scheme = scheme
+        self.connect_host = host
+        self.connect_port = port
+        self.connect_path = path
 
 
 class RedirectAwareProberFactory(ProberFactory):
@@ -179,6 +239,11 @@ class RedirectAwareProberFactory(ProberFactory):
                 raise InfiniteLoopDetected()
             self.redirection_count += 1
 
+            logger = logging.getLogger('distributionmirror-prober')
+            logger.debug('Got redirected from %s to %s' % (self.url, url))
+            # XXX: We can't assume url to be absolute here. See
+            # https://bugs.launchpad.net/launchpad/+bug/109223 for more
+            # details.  -- Guilherme Salgado, 2007-04-23
             self.setURL(url)
         except (InfiniteLoopDetected, UnknownURLScheme), e:
             self.failed(e)
@@ -222,18 +287,27 @@ class InfiniteLoopDetected(ProberError):
         return "Infinite loop detected"
 
 
-class UnknownURLScheme(ProberError):
-
-    def __init__(self, scheme, *args):
-        ProberError.__init__(self, *args)
-        self.scheme = scheme
+class ConnectionSkipped(ProberError):
 
     def __str__(self):
-        return ("The mirror prober doesn't know how to check URLs with an "
-                "'%s' scheme." % self.scheme)
+        return ("Connection skipped because of too many timeouts on this "
+                "host. It will be retried on the next probing run.")
 
 
-class MirrorProberCallbacks(object):
+class UnknownURLScheme(ProberError):
+
+    def __init__(self, url, *args):
+        ProberError.__init__(self, *args)
+        self.url = url
+
+    def __str__(self):
+        return ("The mirror prober doesn't know how to check this kind of "
+                "URLs: %s" % self.url)
+
+
+class ArchiveMirrorProberCallbacks(object):
+
+    expected_failures = (BadResponseCode, ProberTimeout, ConnectionSkipped)
 
     def __init__(self, mirror, release, pocket, component, url, log_file):
         self.mirror = mirror
@@ -257,8 +331,8 @@ class MirrorProberCallbacks(object):
     def deleteMirrorRelease(self, failure):
         """Delete the mirror for self.release, self.pocket and self.component.
 
-        If the failure we get from twisted is not a timeout, then this failure
-        is propagated.
+        If the failure we get from twisted is not a timeout, a bad response
+        code or a connection skipped, then this failure is propagated.
         """
         self.deleteMethod(self.release, self.pocket, self.component)
         msg = ('Deleted %s of %s with url %s because: %s.\n'
@@ -266,7 +340,7 @@ class MirrorProberCallbacks(object):
                   self._getReleasePocketAndComponentDescription(), self.url,
                   failure.getErrorMessage()))
         self.log_file.write(msg)
-        failure.trap(ProberTimeout, BadResponseCode)
+        failure.trap(*self.expected_failures)
 
     def ensureMirrorRelease(self, http_status):
         """Make sure we have a mirror for self.release, self.pocket and 
@@ -291,15 +365,17 @@ class MirrorProberCallbacks(object):
         we can have an idea of when that mirror was last updated.
         """
         # The errback that's one level before this callback in the chain will
-        # return None if it gets a ProberTimeout or BadResponseCode error,
+        # return None if it gets any of self.expected_failures as the error,
         # so we need to check that here.
         if arch_or_source_mirror is None:
             return
 
+        scheme, host, port, path = _parse(self.url)
         status_url_mapping = arch_or_source_mirror.getURLsToCheckUpdateness()
-        if not status_url_mapping:
-            # We have no publishing records for self.release, self.pocket and
-            # self.component, so it's better to delete this
+        if not status_url_mapping or should_skip_host(host):
+            # Either we have no publishing records for self.release,
+            # self.pocket and self.component or we got too may timeouts from
+            # this host and thus should skip it, so it's better to delete this
             # MirrorDistroArchRelease/MirrorDistroReleaseSource than to keep
             # it with an UNKNOWN status.
             self.deleteMethod(self.release, self.pocket, self.component)
@@ -311,7 +387,14 @@ class MirrorProberCallbacks(object):
         arch_or_source_mirror.status = MirrorStatus.UNKNOWN
         for status, url in status_url_mapping.items():
             prober = ProberFactory(url)
-            deferred = prober.probe()
+            # Use one semaphore per host, to limit the numbers of simultaneous
+            # connections on a given host. Note that we don't have an overall
+            # limit of connections, since the per-host limit should be enough.
+            # If we ever need an overall limit, we can use Andrew's suggestion
+            # on https://launchpad.net/bugs/54791 to implement it.
+            semaphore = host_semaphores.setdefault(
+                prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
+            deferred = semaphore.run(prober.probe)
             deferred.addCallback(
                 self.setMirrorStatus, arch_or_source_mirror, status, url)
             deferred.addErrback(self.logError, url)
@@ -353,7 +436,7 @@ class MirrorProberCallbacks(object):
         msg = ("%s on %s of %s\n" 
                % (failure.getErrorMessage(), url,
                   self._getReleasePocketAndComponentDescription()))
-        if failure.check(ProberTimeout, BadResponseCode) is not None:
+        if failure.check(*self.expected_failures) is not None:
             self.log_file.write(msg)
         else:
             # This is not an error we expect from an HTTP server, so we log it
@@ -365,6 +448,8 @@ class MirrorProberCallbacks(object):
 
 
 class MirrorCDImageProberCallbacks(object):
+
+    expected_failures = (BadResponseCode, ProberTimeout, ConnectionSkipped)
 
     def __init__(self, mirror, distrorelease, flavour, log_file):
         self.mirror = mirror
@@ -384,7 +469,15 @@ class MirrorCDImageProberCallbacks(object):
             if success_or_failure == defer.FAILURE:
                 self.mirror.deleteMirrorCDImageRelease(
                     self.distrorelease, self.flavour)
-                response.trap(ProberTimeout, BadResponseCode)
+                if response.check(*self.expected_failures) is None:
+                    msg = ("%s on mirror %s. Check its logfile for more "
+                           "details.\n" 
+                           % (response.getErrorMessage(), self.mirror.name))
+                    # This is not an error we expect from an HTTP server, so 
+                    # we log it using the cronscript's logger and wait for 
+                    # kiko to complain about it.
+                    logger = logging.getLogger('distributionmirror-prober')
+                    logger.error(msg)
                 return None
 
         mirror = self.mirror.ensureMirrorCDImageRelease(
@@ -400,13 +493,29 @@ class MirrorCDImageProberCallbacks(object):
         return failure
 
 
+def _build_request_for_cdimage_file_list(url):
+    headers = {'Pragma': 'no-cache', 'Cache-control': 'no-cache'}
+    return urllib2.Request(url, headers=headers)
+
+
 def _get_cdimage_file_list():
     url = config.distributionmirrorprober.releases_file_list_url
     try:
-        return urllib2.urlopen(url)
+        return urllib2.urlopen(_build_request_for_cdimage_file_list(url))
     except urllib2.URLError, e:
         raise UnableToFetchCDImageFileList(
             'Unable to fetch %s: %s' % (url, e))
+
+
+def restore_http_proxy(http_proxy):
+    """Restore the http_proxy environment variable to the given value."""
+    if http_proxy is None:
+        try:
+            del os.environ['http_proxy']
+        except KeyError:
+            pass
+    else:
+        os.environ['http_proxy'] = http_proxy
 
 
 def get_expected_cdimage_paths():
@@ -445,7 +554,7 @@ def checkComplete(result, key, unchecked_keys):
     return result
 
 
-def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger,
+def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
                          host_semaphores=host_semaphores):
     """Probe an archive mirror for its contents and freshness.
 
@@ -459,9 +568,9 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger,
     all_paths = itertools.chain(packages_paths, sources_paths)
     for release, pocket, component, path in all_paths:
         url = "%s/%s" % (mirror.base_url, path)
-        callbacks = MirrorProberCallbacks(
+        callbacks = ArchiveMirrorProberCallbacks(
             mirror, release, pocket, component, url, logfile)
-        unchecked_mirrors.append(url)
+        unchecked_keys.append(url)
         prober = ProberFactory(url)
 
         # Use one semaphore per host, to limit the numbers of simultaneous
@@ -470,7 +579,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger,
         # If we ever need an overall limit, we can use Andrews's suggestion
         # on https://launchpad.net/bugs/54791 to implement it.
         semaphore = host_semaphores.setdefault(
-            prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
+            prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
         deferred = semaphore.run(prober.probe)
         deferred.addCallbacks(
             callbacks.ensureMirrorRelease, callbacks.deleteMirrorRelease)
@@ -478,18 +587,23 @@ def probe_archive_mirror(mirror, logfile, unchecked_mirrors, logger,
         deferred.addCallback(callbacks.updateMirrorStatus)
         deferred.addErrback(logger.error)
 
-        deferred.addBoth(checkComplete, url, unchecked_mirrors)
+        deferred.addBoth(checkComplete, url, unchecked_keys)
 
 
-def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger,
+def probe_release_mirror(mirror, logfile, unchecked_keys, logger,
                          host_semaphores=host_semaphores):
-    """Probe a release or release mirror for its contents.
+    """Probe a release mirror for its contents.
     
     This is done by checking the list of files for each flavour and release
     returned by get_expected_cdimage_paths(). If a mirror contains all
     files for a given release and flavour, then we consider that mirror is
     actually mirroring that release and flavour.
     """
+    # The list of files a mirror should contain will change over time and we
+    # don't want to keep records for files a mirror doesn't need to have
+    # anymore, so we delete all records before start probing. This also fixes
+    # https://launchpad.net/bugs/46662
+    mirror.deleteAllMirrorCDImageReleases()
     try:
         cdimage_paths = get_expected_cdimage_paths()
     except UnableToFetchCDImageFileList, e:
@@ -501,7 +615,7 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger,
             mirror, release, flavour, logfile)
 
         mirror_key = (release, flavour)
-        unchecked_mirrors.append(mirror_key)
+        unchecked_keys.append(mirror_key)
         deferredList = []
         for path in paths:
             url = '%s/%s' % (mirror.base_url, path)
@@ -514,13 +628,34 @@ def probe_release_mirror(mirror, logfile, unchecked_mirrors, logger,
             # If we ever need an overall limit, we can use Andrews's
             # suggestion on https://launchpad.net/bugs/54791 to implement it.
             semaphore = host_semaphores.setdefault(
-                prober.host, DeferredSemaphore(PER_HOST_REQUESTS))
+                prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
             deferred = semaphore.run(prober.probe)
             deferred.addErrback(callbacks.logMissingURL, url)
             deferredList.append(deferred)
 
         deferredList = defer.DeferredList(deferredList, consumeErrors=True)
         deferredList.addCallback(callbacks.ensureOrDeleteMirrorCDImageRelease)
-        deferredList.addCallback(checkComplete, mirror_key, unchecked_mirrors)
+        deferredList.addCallback(checkComplete, mirror_key, unchecked_keys)
 
+
+def should_skip_host(host):
+    """Return True if the requests/timeouts ratio on this host is too low."""
+    requests = host_requests[host]
+    timeouts = host_timeouts[host]
+    if timeouts == 0 or requests < MIN_REQUESTS_TO_CONSIDER_RATIO:
+        return False
+    else:
+        ratio = float(requests) / timeouts
+        return ratio < MIN_REQUEST_TIMEOUT_RATIO
+
+
+def _parse(url, defaultPort=80):
+    """Parse the given URL returning the scheme, host, port and path."""
+    scheme, host, path, dummy, dummy, dummy = urlparse.urlparse(url)
+    port = defaultPort
+    if ':' in host:
+        host, port = host.split(':')
+        assert port.isdigit()
+        port = int(port)
+    return scheme, host, port, path
 

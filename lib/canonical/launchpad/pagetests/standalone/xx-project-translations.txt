@@ -1,0 +1,115 @@
+There is a list of IProduct objects that have translations and are using
+Launchpad Translations officially from a IProject's translations page.
+
+GNOME is a good example, it has products with translations.
+
+  >>> browser.open('http://translations.launchpad.dev/gnome')
+  >>> print browser.url
+  http://translations.launchpad.dev/gnome
+
+Evolution being one with translations and being used officially
+
+  >>> evo_link = browser.getLink('Evolution')
+  >>> print evo_link.url
+  http://translations.launchpad.dev/evolution
+
+  >>> browser.open('http://translations.launchpad.dev/gnome')
+  >>> print browser.url
+  http://translations.launchpad.dev/gnome
+
+Netapplet is another product of GNOME project. It has translations, but it's not
+using Launchpad officially, so it's not in this page.
+
+  >>> browser.getLink('Network Applet')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+Let's confirm what we just stated.
+
+  >>> browser.open('http://launchpad.dev/gnome')
+  >>> print browser.url
+  http://launchpad.dev/gnome
+
+Netapplet is in fact a product belonging to GNOME project.
+
+  >>> netapplet_link = browser.getLink('Network Applet')
+  >>> netapplet_link.click()
+  >>> print browser.url
+  http://launchpad.dev/netapplet
+
+It's not using Launchpad Translations officially
+
+  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
+  ...     print tag
+  <...
+  ...Status:...
+  ...Active...
+  ...Doesn&rsquo;t use Translations...
+
+And it has translations.
+
+  >>> browser.open('http://translations.launchpad.dev/netapplet')
+  >>> print browser.url
+  http://translations.launchpad.dev/netapplet
+
+  >>> netapplet_template = browser.getLink('View Template & All Languages...')
+  >>> print netapplet_template.url
+  http://translations.launchpad.dev/netapplet/trunk/+pots/netapplet
+
+alsa-utils is a product that doesn't belong to GNOME project. It has
+translations and is using Launchpad Translations officially, and it 
+shouldn't appear in GNOME project translations page.
+
+  >>> browser.open('http://translations.launchpad.dev/gnome')
+  >>> browser.getLink('alsa-utils')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+Let's confirm what we just stated.
+
+  >>> browser.open('http://launchpad.dev/gnome')
+  >>> print browser.url
+  http://launchpad.dev/gnome
+
+alsa-utils does not belong to GNOME project.
+
+  >>> browser.getLink('alsa-utils')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+It's using Launchpad Translations officially.
+
+  >>> browser.open('http://launchpad.dev/alsa-utils')
+  >>> print browser.url
+  http://launchpad.dev/alsa-utils
+  >>> for tag in find_tags_by_class(browser.contents, 'summary'):
+  ...     print tag
+  ...     
+  <...
+  ...Status:...
+  ...Active...
+  ...Uses Translations...
+
+And it has translations.
+
+  >>> browser.open('http://translations.launchpad.dev/alsa-utils')
+  >>> print browser.url
+  http://translations.launchpad.dev/alsa-utils
+
+  >>> alsa_utils_template = browser.getLink('View Template & All Languages...')
+  >>> print alsa_utils_template.url
+  http://translations.launchpad.dev/alsa-utils/trunk/+pots/alsa-utils
+
+The translations page has also a link to the product search page to see
+whether a product is registered in Launchpad.
+
+  >>> browser.open('http://translations.launchpad.dev/gnome')
+  >>> print browser.url
+  http://translations.launchpad.dev/gnome
+  >>> browser.getLink('registered with Launchpad').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/projects
+

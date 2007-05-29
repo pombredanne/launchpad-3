@@ -5,10 +5,6 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-translations" />
-</metal:leftportlets>
-
 <div metal:fill-slot="main">
 
   <h1>Help translate
@@ -18,7 +14,7 @@
     Are you fluent in a language other than English?
     If so, you can contribute to <span tal:replace="context/title" />
     by translating it with Launchpad&#8217;s 
-    <a href="/translations/">Rosetta</a> software.
+    <a href="/translations/">Translations</a> software.
     You can translate as much as you like, whenever you like &#8212;
     all you need is a Web browser.
   </p>

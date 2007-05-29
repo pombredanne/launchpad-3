@@ -7,8 +7,6 @@ __metaclass__ = type
 __all__ = [
     'ISourcePackageFilePublishing',
     'IBinaryPackageFilePublishing',
-    'ISourcePackagePublishingView',
-    'IBinaryPackagePublishingView',
     'ISecureSourcePackagePublishingHistory',
     'ISecureBinaryPackagePublishingHistory',
     'ISourcePackagePublishingHistory',
@@ -43,19 +41,30 @@ pocketsuffix = {
 class IPublishing(Interface):
     """Ability to publish associated publishing records."""
 
-    def publish(diskpool, log, pocket, careful=False):
-        """Publish associated publishing records targeted for a given pocket.
+    def getPendingPublications(self, archive, pocket, is_careful):
+        """Return the specific group of records to be published.
 
         IDistroRelease -> ISourcePackagePublishing
         IDistroArchRelease -> IBinaryPackagePublishing
 
+        'pocket' & 'archive' are mandatory arguments, they  restrict the
+        results to the given value.
+
+        If the distroreleases is already released, it automatically refuses
+        to publish records to RELEASE pocket.
+        """
+
+    def publish(diskpool, log, archive, pocket, careful=False):
+        """Publish associated publishing records targeted for a given pocket.
+
         Require an initialised diskpool instance and a logger instance.
+        Require an 'archive' which will restrict the publications.
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
         published files.)
 
-        If the distroreleases is already released, it automatically refuses
-        to publish records to RELEASE pocket.
+        Consider records returned by the local implementation of
+        getPendingPublications.
         """
 
 class IArchivePublisher(Interface):
@@ -149,12 +158,8 @@ class IBaseSourcePackagePublishing(Interface):
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
             )
-
-
-class ISourcePackagePublishingView(IBaseSourcePackagePublishing):
-    """Source package publishing information neatened up a bit"""
-    sectionname = TextLine(
-            title=_('Section name'), required=True, readonly=True,
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
             )
 
 
@@ -210,6 +215,9 @@ class ISourcePackagePublishingBase(Interface):
             title=_('The pocket into which this entry is published'),
             required=True, readonly=True,
             )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
+            )
 
 
 class IExtendedSourcePackagePublishing(ISourcePackagePublishingBase):
@@ -261,6 +269,10 @@ class ISourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
         "Return an IDistribuitionSourcePackageRelease meta object "
         "correspondent to the supersededby attribute. if supersededby "
         "is None return None.")
+    meta_distroreleasesourcepackagerelease = Attribute(
+        "Return an IDistroReleaseSourcePackageRelease meta object "
+        "correspondent to the sourcepackagerelease attribute inside "
+        "a specific distrorelease")
 
     def publishedBinaries():
         """Return all resulted IBinaryPackagePublishingHistory.
@@ -292,18 +304,8 @@ class IBaseBinaryPackagePublishing(Interface):
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
             )
-
-
-class IBinaryPackagePublishingView(IBaseBinaryPackagePublishing):
-    """Binary package publishing information neatened up a bit"""
-    binarypackagename = TextLine(
-            title=_('Binary package name'), required=True, readonly=True,
-            )
-    sectionname = TextLine(
-            title=_('Section name'), required=True, readonly=True,
-            )
-    priority = Int(
-            title=_('Priority'), required=True, readonly=True,
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
             )
 
 
@@ -393,6 +395,10 @@ class IExtendedBinaryPackagePublishing(Interface):
                     'published set'),
             required=False, readonly=False,
             )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
+            )
+
 
 class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
     """A binary package publishing record."""

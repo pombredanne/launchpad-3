@@ -6,14 +6,14 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IShipmentSet', 'ShippingRequestPriority', 'IShipItReport',
            'IShipItReportSet', 'IShippingRequestAdmin', 'IShippingRequestEdit',
            'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
-           'IShippingRequestUser']
+           'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE']
 
 from zope.schema import Bool, Choice, Int, Datetime, TextLine
 from zope.interface import Interface, Attribute, implements
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
-from canonical.lp.dbschema import ShipItDistroRelease, ShippingRequestStatus
+from canonical.lp.dbschema import ShipItDistroRelease
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
@@ -29,6 +29,8 @@ from canonical.launchpad import _
 
 # The maximum number of requests in a single shipping run
 SOFT_MAX_SHIPPINGRUN_SIZE = 10000
+
+MAX_CDS_FOR_UNTRUSTED_PEOPLE = 5
 
 
 def _validate_positive_int(value):
@@ -49,7 +51,7 @@ class ShipItConstants:
     ubuntu_url = 'https://shipit.ubuntu.com'
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
-    current_distrorelease = ShipItDistroRelease.DAPPER
+    current_distrorelease = ShipItDistroRelease.FEISTY
     max_size_for_auto_approval = 39
 
 
@@ -163,6 +165,10 @@ class IShippingRequest(Interface):
             constraint=validate_shipit_organization,
             description=_('The Organization requesting the CDs')
             )
+    normalized_address = TextLine(
+            title=_("This request's normalized address"),
+            description=_("This request's address, city, province and "
+                          "postcode normalized and concatenated"))
 
     distrorelease = Attribute(_(
         "The ShipItDistroRelease of the CDs contained in this request"))
@@ -254,6 +260,9 @@ class IShippingRequest(Interface):
     def isAwaitingApproval():
         """Return True if this request's status is PENDING."""
 
+    def isDuplicatedAddress():
+        """Return True if this request's status is DUPLICATEDADDRESS."""
+
     def isPendingSpecial():
         """Return True if this request's status is PENDINGSPECIAL."""
 
@@ -280,6 +289,9 @@ class IShippingRequest(Interface):
         
         Only APPROVED, PENDING and PENDINGSPECIAL requests can be denied.
         """
+
+    def markAsDuplicatedAddress():
+        """Mark this request as having a duplicated address."""
 
     def markAsPendingSpecial():
         """Mark this request as pending special consideration."""
@@ -318,6 +330,16 @@ class IShippingRequest(Interface):
         quantityamd64approved, approved and whoapproved to None.
         """
 
+    def addressIsDuplicated():
+        """Return True if there is one or more requests made from another
+        user using the same address and distrorelease as this one.
+        """
+
+    def getRequestsWithSameAddressFromOtherUsers():
+        """Return all non-cancelled non-denied requests with the same address
+        and distrorelease as this one but with a different recipient.
+        """
+
 
 class IShippingRequestSet(Interface):
     """The set of all ShippingRequests"""
@@ -333,10 +355,8 @@ class IShippingRequestSet(Interface):
         information about what is a current request.
         """
 
-    def processRequestsPendingSpecial(status=ShippingRequestStatus.DENIED):
-        """Change the status of all PENDINGSPECIAL requests to :status.
-        
-        :status:  Must be either DENIED or APPROVED.
+    def processRequests(status, new_status):
+        """Change the status of requests with the given status to the new one.
 
         Also sends an email to the shipit admins listing all requests that
         were processed.
@@ -413,6 +433,16 @@ class IShippingRequestSet(Interface):
         and the first sunday prior to end_date are considered.
         """
 
+    def generateRequestDistributionReport():
+        """Generate a csv file with the distribution of requests and shipments.
+
+        For the current release, there will be 4 columns displaying the number
+        of requests/shipments and the number of users which had that exact
+        number of requests/shipments. The previous releases we do the same but
+        for requests/shipments across all releases and only include people
+        which requested the current release.
+        """
+
 
 class IRequestedCDs(Interface):
 
@@ -477,11 +507,16 @@ class IStandardShipItRequestSet(Interface):
     def new(flavour, quantityx86, quantityamd64, quantityppc, isdefault):
         """Create and return a new StandardShipItRequest."""
 
-    def getAll():
-        """Return all standard ShipIt requests."""
+    def getByFlavour(flavour, user):
+        """Return the standard ShipIt requests for the given flavour and user.
 
-    def getByFlavour(flavour):
-        """Return all standard ShipIt requests for the given flavour."""
+        If the given user is trusted in Shipit, then all options of that
+        flavour are returned. Otherwise, only the options with less than
+        MAX_CDS_FOR_UNTRUSTED_PEOPLE CDs are returned.
+
+        To find out whether a user has made contributions or not, we use the
+        is_trusted_on_shipit property of IPerson.
+        """
 
     def get(id, default=None):
         """Return the StandardShipItRequest with the given id.
@@ -492,6 +527,10 @@ class IStandardShipItRequestSet(Interface):
     def getAllGroupedByFlavour():
         """Return a dictionary mapping ShipItFlavours to the 
         StandardShipItRequests of that flavour.
+
+        This is used in the admin interface to show all StandardShipItRequests
+        to the shipit admins, so it doesn't need to check whether the user is
+        trusted on shipit or not.
         """
 
     def getByNumbersOfCDs(flavour, quantityx86, quantityamd64, quantityppc):

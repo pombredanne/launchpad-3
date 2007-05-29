@@ -5,18 +5,30 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-translations" />
-  </metal:leftportlets>
-
 <div metal:fill-slot="main">
 
-  <h1>Help and support options</h1>
+  <h1>Help for <span
+    tal:replace="context/displayname" /> </h1>
+
+
+  <h2>Ask your question!</h2>
 
   <p>
-    Soon, this page will contain support options specific to
-    <span tal:replace="context/title" />.
-    In the meantime, you can get help on Ubuntu in general from:
+    You can to post questions directly to the <a
+    tal:attributes="href
+        modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/answers/rooturl">Launchpad
+    answer</a> tracker.
+    <ul>
+        <li><a tal:attributes="href
+        string:${context/fmt:url}/+questions">Search through existing questions</a></li>
+        <li><a tal:attributes="href
+        string:${context/fmt:url}/+addquestion">Submit your question</a></li>
+    </ul>
+
+  <h2>Other support options</h2>
+
+  <p>
+    You can also get help on Ubuntu in general from:
   </p>
   <ul class="support">
     <li>
@@ -35,23 +47,16 @@
 
   <tal:needupstream condition="not: context/productseries">
   <h2>Help us help you</h2>
-  <p class="informational message" tal:condition="not: context/productseries">
-    Launchpad doesn&#8217;t know which product and series this package
+  <p class="helpwanted message" tal:condition="not: context/productseries">
+    Launchpad doesn&#8217;t know which project and series this package
     belongs to.
-    If you can, please <a href="+packaging">let us know</a>,
+    If you can, please <a href="+edit-packaging">let us know</a>,
     so we can provide you and other people with relevant help sources.
     Thanks!
   </p>
   </tal:needupstream>
 
-  <h2>Make a support request</h2>
-
-  <p>
-    You can <a href="+addticket">make a support request</a> in Launchpad,
-    and some community members might be able to help you free of charge.
-  </p>
-
 </div>
 </body>
 </html>
- 
+

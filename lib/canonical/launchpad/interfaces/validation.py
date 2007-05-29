@@ -5,19 +5,13 @@ __metaclass__ = type
 __all__ = [
     'can_be_nominated_for_releases',
     'validate_url',
-    'valid_http_url',
-    'valid_ftp_url',
-    'valid_rsync_url',
     'valid_webref',
-    'non_duplicate_bug',
+    'valid_branch_url',
     'non_duplicate_branch',
     'valid_bug_number',
     'valid_cve_sequence',
-    'valid_emblem',
-    'valid_gotchi',
     'validate_new_team_email',
     'validate_new_person_email',
-    'validate_distribution_mirror_schema',
     'validate_shipit_recipientdisplayname',
     'validate_shipit_phone',
     'validate_shipit_city',
@@ -37,7 +31,6 @@ import re
 import string
 import urllib
 from textwrap import dedent
-from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.app.form.interfaces import WidgetsError
@@ -220,7 +213,7 @@ def validate_url(url, valid_schemes):
 
 
 def valid_webref(web_ref):
-    """Returns True if web_ref is not a valid download URL, or raises a
+    """Returns True if web_ref is a valid download URL, or raises a
     LaunchpadValidationError.
 
     >>> valid_webref('http://example.com')
@@ -247,62 +240,30 @@ def valid_webref(web_ref):
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses either http, https or ftp.""")))
 
-def valid_ftp_url(url):
-    if validate_url(url, ['ftp']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid FTP URL. Please enter the full URL, including the
-            ftp:// part.""")))
+def valid_branch_url(branch_url):
+    """Returns True if web_ref is a valid download URL, or raises a
+    LaunchpadValidationError.
 
-def valid_rsync_url(url):
-    if validate_url(url, ['rsync']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid Rsync URL. Please enter the full URL, including the
-            rsync:// part.""")))
-
-def valid_http_url(url):
-    if validate_url(url, ['http']):
-        return True
-    else:
-        raise LaunchpadValidationError(_(dedent("""
-            Not a valid HTTP URL. Please enter the full URL, including the
-            http:// part.""")))
-
-def non_duplicate_bug(value):
-    """Prevent dups of dups.
-
-    Returns True if the dup target is not a duplicate /and/ if the
-    current bug doesn't have any duplicates referencing it /and/ if the
-    bug isn't a duplicate of itself, otherwise
-    return False.
+    >>> valid_branch_url('http://example.com')
+    True
+    >>> valid_branch_url('https://example.com/foo/bar')
+    True
+    >>> valid_branch_url('ftp://example.com/~ming')
+    True
+    >>> valid_branch_url('sftp://example.com//absolute/path/maybe')
+    True
+    >>> valid_branch_url('other://example.com/moo')
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: ...
     """
-
-    from canonical.launchpad.interfaces.bug import IBugSet
-    bugset = getUtility(IBugSet)
-    current_bug = getUtility(ILaunchBag).bug
-    dup_target = value
-    current_bug_has_dup_refs = bool(bugset.searchAsUser(
-        user=getUtility(ILaunchBag).user,
-        duplicateof=current_bug))
-    if current_bug == dup_target:
-        raise LaunchpadValidationError(_(dedent("""
-            You can't mark a bug as a duplicate of itself.""")))
-    elif dup_target.duplicateof is not None:
-        raise LaunchpadValidationError(_(dedent("""
-            Bug %i is already a duplicate of bug %i. You can only
-            duplicate to bugs that are not duplicates themselves.
-            """% (dup_target.id, dup_target.duplicateof.id))))
-    elif current_bug_has_dup_refs:
-        raise LaunchpadValidationError(_(dedent("""
-            There are other bugs already marked as duplicates of Bug %i.
-            These bugs should be changed to be duplicates of another bug
-            if you are certain you would like to perform this change."""
-            % current_bug.id)))
-    else:
+    if validate_url(branch_url, ['http', 'https', 'ftp', 'sftp', 'bzr+ssh']):
         return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid URL. Please enter the full URL, including the
+            scheme (for instance, http:// for a web URL), and ensure the
+            URL uses http, https, ftp, sftp, or bzr+ssh.""")))
 
 
 def non_duplicate_branch(value):
@@ -334,37 +295,6 @@ def valid_cve_sequence(value):
     else:
         raise LaunchpadValidationError(_(
             "%s is not a valid CVE number" % value))
-
-
-def _valid_image(image, max_size, max_dimensions):
-    """Check that the given image is under the given constraints.
-
-    :length: is the maximum size of the image, in bytes.
-    :dimensions: is a tuple of the form (width, height).
-    """
-    # No global import to avoid hard dependency on PIL being installed
-    import PIL.Image
-    if len(image) > max_size:
-        raise LaunchpadValidationError(_(dedent("""
-            This file exceeds the maximum allowed size in bytes.""")))
-    try:
-        image = PIL.Image.open(StringIO(image))
-    except IOError:
-        # cannot identify image type
-        raise LaunchpadValidationError(_(dedent("""
-            The file uploaded was not recognized as an image; please
-            check the file and retry.""")))
-    if image.size > max_dimensions:
-        raise LaunchpadValidationError(_(dedent("""
-            This image exceeds the maximum allowed width or height in
-            pixels.""")))
-    return True
-
-def valid_emblem(emblem):
-    return _valid_image(emblem, 9000, (16,16))
-
-def valid_gotchi(gotchi):
-    return _valid_image(gotchi, 54000, (150,150))
 
 
 def _validate_email(email):
@@ -407,26 +337,6 @@ def validate_new_person_email(email):
             "The profile you're trying to create already exists: "
             '<a href="%s">%s</a>.'), canonical_url(owner), owner.browsername)
     return True
-
-
-def validate_distribution_mirror_schema(form_values):
-    """Perform schema validation according to IDistributionMirror constraints.
-
-    This validation will take place after the values of individual widgets
-    are validated. It's necessary because we have some constraints where we
-    need to take into account the value of multiple widgets.
-
-    :form_values: A dictionary mapping IDistributionMirror attributes to the
-                  values suplied by the user.
-    """
-    errors = []
-    if not (form_values['http_base_url'] or form_values['ftp_base_url']):
-        errors.append(LaunchpadValidationError(_(
-            "All mirrors require at least an HTTP or FTP URL to be "
-            "specified.")))
-
-    if errors:
-        raise WidgetsError(errors)
 
 
 def valid_distrotask(bug, distribution, sourcepackagename=None,

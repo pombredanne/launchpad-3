@@ -12,13 +12,19 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.config import config
+
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.lp.dbschema import (
+    BuildStatus, PackagePublishingPocket)
+
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.buildqueue import BuildQueue
-from canonical.launchpad.database.queue import DistroReleaseQueueBuild
+from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
@@ -26,8 +32,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-from canonical.lp.dbschema import (
-    EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
+
 
 
 class Build(SQLBase):
@@ -52,6 +57,7 @@ class Build(SQLBase):
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
                      notNull=True)
     dependencies = StringCol(dbName='dependencies', default=None)
+    archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
 
     @property
     def buildqueue_record(self):
@@ -64,10 +70,10 @@ class Build(SQLBase):
     @property
     def changesfile(self):
         """See IBuild"""
-        queue_item = DistroReleaseQueueBuild.selectOneBy(build=self)
+        queue_item = PackageUploadBuild.selectOneBy(build=self)
         if queue_item is None:
             return None
-        return queue_item.distroreleasequeue.changesfile
+        return queue_item.packageupload.changesfile
 
     @property
     def distrorelease(self):
@@ -80,15 +86,18 @@ class Build(SQLBase):
         return self.distroarchrelease.distrorelease.distribution
 
     @property
+    def is_trusted(self):
+        """See IBuild"""
+        return self.archive == self.distribution.main_archive
+
+    @property
     def title(self):
         """See IBuild"""
         return '%s build of %s %s in %s %s %s' % (
             self.distroarchrelease.architecturetag,
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
-            self.distroarchrelease.distrorelease.distribution.name,
-            self.distroarchrelease.distrorelease.name,
-            self.pocket.name)
+            self.distribution.name, self.distrorelease.name, self.pocket.name)
 
     @property
     def was_built(self):
@@ -119,13 +128,15 @@ class Build(SQLBase):
         """See IBuild."""
         # check if the build would be properly collected if it was
         # reset. Do not reset denied builds.
-        if not self.distrorelease.canUploadToPocket(self.pocket):
+        if (self.is_trusted and not
+            self.distrorelease.canUploadToPocket(self.pocket)):
             return False
 
         failed_buildstates = [
             BuildStatus.FAILEDTOBUILD,
             BuildStatus.MANUALDEPWAIT,
             BuildStatus.CHROOTWAIT,
+            BuildStatus.FAILEDTOUPLOAD,
             ]
 
         return self.buildstate in failed_buildstates
@@ -138,7 +149,6 @@ class Build(SQLBase):
     @property
     def calculated_buildstart(self):
         """See IBuild."""
-        assert self.was_built, "value is not suitable for pending builds."
         assert self.datebuilt and self.buildduration, (
             "value is not suitable for this build record (%d)"
             % self.id)
@@ -177,13 +187,13 @@ class Build(SQLBase):
                                    architecturespecific):
         """See IBuild."""
         return BinaryPackageRelease(build=self,
-                                    binarypackagenameID=binarypackagename,
+                                    binarypackagename=binarypackagename,
                                     version=version,
                                     summary=summary,
                                     description=description,
                                     binpackageformat=binpackageformat,
-                                    componentID=component,
-                                    sectionID=section,
+                                    component=component,
+                                    section=section,
                                     priority=priority,
                                     shlibdeps=shlibdeps,
                                     depends=depends,
@@ -202,7 +212,7 @@ class Build(SQLBase):
         """See IBuild"""
         return BuildQueue(build=self)
 
-    def notify(self):
+    def notify(self, extra_info=None):
         """See IBuild"""
         if not config.builddmaster.send_build_notification:
             return
@@ -255,8 +265,16 @@ class Build(SQLBase):
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
                 self.buildduration).approximateduration()
-            buildlog_url = self.buildlog.url
+            buildlog_url = self.buildlog.http_url
             builder_url = canonical_url(self.builder)
+
+        if self.buildstate == BuildStatus.FAILEDTOUPLOAD:
+            assert extra_info is not None, (
+                'Extra information is required for FAILEDTOUPLOAD '
+                'notifications.')
+            extra_info = 'Upload log:\n%s' % extra_info
+        else:
+            extra_info = ''
 
         template = get_email_template('build-notification.txt')
         replacements = {
@@ -269,6 +287,9 @@ class Build(SQLBase):
             'builder_url': builder_url,
             'build_title': self.title,
             'build_url': canonical_url(self),
+            'source_url': canonical_url(
+                self.distributionsourcepackagerelease),
+            'extra_info': extra_info,
             }
         message = template % replacements
 
@@ -412,6 +433,17 @@ class BuildSet:
             clauseTables.append('Sourcepackagerelease')
             clauseTables.append('Sourcepackagename')
 
+        # Only pick builds from the distribution's main archive to
+        # exclude PPA builds
+        clauseTables.extend(["DistroArchRelease",
+                             "DistroRelease",
+                             "Distribution"])
+        condition_clauses.append("""
+            Build.distroarchrelease = DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = Distribution.id AND
+            Distribution.main_archive = Build.archive
+            """)
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,

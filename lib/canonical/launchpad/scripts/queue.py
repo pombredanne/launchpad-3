@@ -1,5 +1,8 @@
-# Copyright Canonical Limited 2006
+# Copyright Canonical Limited 2006-2007
 """Ftpmaster queue tool libraries."""
+
+# XXX: This should be renamed to ftpmasterqueue.py or just ftpmaster.py
+# as Launchpad contains lots of queues -- StuartBishop 20070131
 
 __metaclass__ = type
 
@@ -12,22 +15,24 @@ __all__ = [
 import os
 import sys
 import tempfile
+import errno
 from email import message_from_string
 import pytz
 from datetime import datetime
+from sha import sha
 
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    NotFoundError, IDistributionSet, IDistroReleaseQueueSet,
+    NotFoundError, IDistributionSet, IPackageUploadSet,
     IComponentSet, ISectionSet, QueueInconsistentStateError,
     IPersonSet)
 
-from canonical.archivepublisher.tagfiles import (
+from canonical.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
-from canonical.archivepublisher.template_messages import (
+from canonical.archiveuploader.template_messages import (
     announce_template, rejection_template)
-from canonical.archivepublisher.utils import (
+from canonical.archiveuploader.utils import (
     safe_fix_maintainer, ParseMaintError)
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -36,16 +41,16 @@ from canonical.launchpad.mail import sendmail
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
 from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, PackagePublishingPriority,
+    PackageUploadStatus, PackagePublishingPriority,
     PackagePublishingPocket)
 
 
 name_queue_map = {
-    "new": DistroReleaseQueueStatus.NEW,
-    "unapproved": DistroReleaseQueueStatus.UNAPPROVED,
-    "accepted": DistroReleaseQueueStatus.ACCEPTED,
-    "done": DistroReleaseQueueStatus.DONE,
-    "rejected": DistroReleaseQueueStatus.REJECTED
+    "new": PackageUploadStatus.NEW,
+    "unapproved": PackageUploadStatus.UNAPPROVED,
+    "accepted": PackageUploadStatus.ACCEPTED,
+    "done": PackageUploadStatus.DONE,
+    "rejected": PackageUploadStatus.REJECTED
     }
 
 name_priority_map = {
@@ -86,7 +91,7 @@ class QueueAction:
     """Queue Action base class.
 
     Implements a bunch of common/useful method designed to provide easy
-    DistroReleaseQueue handling.
+    PackageUpload handling.
     """
 
     def __init__(self, distribution_name, suite_name, queue, terms,
@@ -110,7 +115,7 @@ class QueueAction:
     @cachedproperty
     def size(self):
         """Return the size of the queue in question."""
-        return getUtility(IDistroReleaseQueueSet).count(
+        return getUtility(IPackageUploadSet).count(
             status=self.queue, distrorelease=self.distrorelease,
             pocket=self.pocket)
 
@@ -159,9 +164,9 @@ class QueueAction:
             self.displayUsage(FILTERMSG)
 
         if term.isdigit():
-            # retrieve DistroReleaseQueue item by id
+            # retrieve PackageUpload item by id
             try:
-                item = getUtility(IDistroReleaseQueueSet).get(int(term))
+                item = getUtility(IPackageUploadSet).get(int(term))
             except NotFoundError, info:
                 raise QueueActionError('Queue Item not found: %s' % info)
 
@@ -182,7 +187,7 @@ class QueueAction:
             self.items_size = 1
             self.term = None
         else:
-            # retrieve DistroReleaseQueue item by name/version key
+            # retrieve PackageUpload item by name/version key
             version = None
             if '/' in term:
                 term, version = term.strip().split('/')
@@ -239,9 +244,9 @@ class QueueAction:
         # We may discuss a more reasonable output format later
         # and avoid extra boring code. The IDRQ.displayname should
         # do should be enough.
-        if queue_item.sources.count() > 0:
+        if queue_item.containsSource:
             source_tag = 'S'
-        if queue_item.builds.count() > 0:
+        if queue_item.containsBuild:
             build_tag = 'B'
             displayname = "%s (%s)" % (queue_item.displayname,
                                        queue_item.displayarchs)
@@ -444,7 +449,7 @@ class QueueActionReport(QueueAction):
                                            self.distrorelease.name))
 
         for queue in name_queue_map.values():
-            size = getUtility(IDistroReleaseQueueSet).count(
+            size = getUtility(IPackageUploadSet).count(
                 status=queue, distrorelease=self.distrorelease,
                 pocket=self.pocket)
             self.display("\t%s -> %s entries" % (queue.name, size))
@@ -479,19 +484,9 @@ class QueueActionFetch(QueueAction):
         self.displayTitle('Fetching')
         self.displayRule()
         for queue_item in self.items:
-            self.display("Constructing %s" % queue_item.changesfile.filename)
-            changes_file_alias = queue_item.changesfile
-            # do not overwrite files on disk (bug # 62976)
-            if os.path.exists(queue_item.changesfile.filename):
-                raise CommandRunnerError("%s already present on disk"
-                                         % queue_item.changesfile.filename)
-            changes_file_alias.open()
-            changes_file = open(queue_item.changesfile.filename, "w")
-            changes_file.write(changes_file_alias.read())
-            changes_file.close()
-            changes_file_alias.close()
-
             file_list = []
+            file_list.append(queue_item.changesfile)
+
             for source in queue_item.sources:
                 for spr_file in source.sourcepackagerelease.files:
                     file_list.append(spr_file.libraryfile)
@@ -507,15 +502,34 @@ class QueueActionFetch(QueueAction):
             for libfile in file_list:
                 self.display("Constructing %s" % libfile.filename)
                 # do not overwrite files on disk (bug # 62976)
-                if os.path.exists(libfile.filename):
-                    raise CommandRunnerError("%s already present on disk"
-                                             % libfile.filename)
-                libfile.open()
-                out_file = open(libfile.filename, "w")
-                for chunk in filechunks(libfile):
-                    out_file.write(chunk)
-                out_file.close()
-                libfile.close()
+                try:
+                    existing_file = open(libfile.filename, "r")
+                except IOError, e:
+                    if not e.errno == errno.ENOENT:
+                        raise
+                    # File does not already exist, so read file from librarian
+                    # and write to disk.
+                    libfile.open()
+                    out_file = open(libfile.filename, "w")
+                    for chunk in filechunks(libfile):
+                        out_file.write(chunk)
+                    out_file.close()
+                    libfile.close()
+                else:
+                    # Check sha against existing file (bug #67014)
+                    existing_sha = sha()
+                    for chunk in filechunks(existing_file):
+                        existing_sha.update(chunk)
+                    existing_file.close()
+
+                    # bail out if the sha1 differs
+                    if libfile.content.sha1 != existing_sha.hexdigest():
+                        raise CommandRunnerError("%s already present on disk "
+                                                 "and differs from new file"
+                                                 % libfile.filename)
+                    else:
+                        self.display("%s already on disk and checksum "
+                                     "matches, skipping.")
 
         self.displayRule()
         self.displayBottom()
@@ -562,7 +576,7 @@ class QueueActionReject(QueueAction):
                     summary.append(
                         '%s (%s) was REJECTED'
                         % (queue_custom.libraryfilealias.filename,
-                           queue_custom.libraryfilealias.url))
+                           queue_custom.libraryfilealias.http_url))
 
                 sender, recipients = self.find_addresses_from(
                         queue_item.changesfile)
@@ -632,43 +646,57 @@ class QueueActionAccept(QueueAction):
                     summary.append(
                         '%s (%s) was ACCEPTED'
                         % (queue_custom.libraryfilealias.filename,
-                           queue_custom.libraryfilealias.url))
+                           queue_custom.libraryfilealias.http_url))
 
-                # We send a notification email only if the upload
-                # was sourceful, or had exactly one customfile and
-                # no binaries.
-                if (queue_item.sources.count()
-                    or (queue_item.builds.count() == 0
-                        and queue_item.customfiles.count() == 1)):
-                    self.sendAcceptEmail(queue_item, "\n".join(summary))
+                self.maybeSendAnnouncement(queue_item, "\n".join(summary))
 
         self.displayRule()
         self.displayBottom()
 
-    def sendAcceptEmail(self, queue_item, summary):
-        """Send an accept email.
+    def maybeSendAnnouncement(self, queue_item, summary):
+        """Build and send oppropriate annoncement email if allowed.
 
         Take the summary given, and derive the rest of the information
         for the email from the queue_item.
+
+        This method only sends email for sourceful or single custom uploads,
+        i.e., it skips binary uploads.
+
+        Usually uploaders and 'announcelist' will recieve acceptance message.
+
+        It does not include 'announcelist' as recipient for uploads to pocket
+        BACKPORTS.
+
+        It also do not send messages for source uploads targeted to section
+        'translations' ('laguage-pack-*' & 'language-support-*').
         """
-        # We only send accept emails for sourceful or single-custom
-        # uploads
-        assert(queue_item.sources.count() or
-               (queue_item.builds.count() == 0 and
-                queue_item.customfiles.count() == 1))
+        # Skip announcement for binary or mixed uploads.
+        if queue_item.containsBuild:
+            return
+
+        # Skip annoncement for source uploads targeted to 'translation'
+        # section ('laguage-pack-*' & 'language-support-*')
+        if queue_item.containsSource:
+            source = queue_item.sources[0]
+            # XXX cprov 20070228: instead of using the original section
+            # we should be aware of pre-publication overrides when we
+            # have them. See NativeSourceSync specification.
+            section_name = source.sourcepackagerelease.section.name
+            if section_name == 'translations':
+                return
 
         sender, recipients = self.find_addresses_from(
             queue_item.changesfile)
-        # only announce for acceptation if it's not for BACKPORTS
+
+        # Only include announcelist as recipient if the upload is not
+        # targeted for BACKPORTS.
         if (self.announcelist is not None and
             queue_item.pocket != PackagePublishingPocket.BACKPORTS):
             recipients.append(self.announcelist)
 
         queue_item.changesfile.open()
-        # XXX cprov 20060221: guess_encoding breaks the
-        # GPG signature.
-        changescontent = guess_encoding(
-            queue_item.changesfile.read())
+        # XXX cprov 20060221: guess_encoding breaks the GPG signature.
+        changescontent = guess_encoding(queue_item.changesfile.read())
         queue_item.changesfile.close()
 
         replacements = {
@@ -791,8 +819,8 @@ class QueueActionOverride(QueueAction):
         overridden = None
         for queue_item in self.items:
             for build in queue_item.builds:
-                # Different than DistroReleaseQueueSources
-                # DistroReleaseQueueBuild points to a Build, that can,
+                # Different than PackageUploadSources
+                # PackageUploadBuild points to a Build, that can,
                 # and usually does, point to multiple BinaryPackageReleases.
                 # So we need to carefully select the requested package to be
                 # overridden

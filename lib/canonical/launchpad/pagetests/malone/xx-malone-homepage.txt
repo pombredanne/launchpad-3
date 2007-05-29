@@ -1,0 +1,9 @@
+Say hello to Bugs. :)
+
+  >>> browser.open('http://bugs.launchpad.dev/')
+  >>> browser.url
+  'http://bugs.launchpad.dev/'
+  >>> print browser.contents
+  <!DOCTYPE...
+  ...Bug tracking...
+  ...

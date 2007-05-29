@@ -1,0 +1,66 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-bugs" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+      <div>
+        <img alt="" src="/@@/question" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
+  <h1 tal:condition="not: view/subscription">Subscribe to question</h1>
+  <h1 tal:condition="view/subscription">Unsubscribe from question</h1>
+
+
+  <p>
+    Subscribing to a question makes it show up on
+    <a tal:attributes="href string:/~${request/lp:person/name}/+questions"
+    >your Answers page</a>.
+  </p>
+
+  <form action="."
+        tal:attributes="action request/URL"
+        method="post">
+
+    <div class="actions">
+      <input tal:condition="not: view/subscription"
+             type="submit"
+             name="subscribe"
+             value="Subscribe" />
+      <input tal:condition="view/subscription"
+             type="submit"
+             name="subscribe"
+             value="Unsubscribe" />
+    </div>
+  </form>
+
+</div>
+
+<metal:help fill-slot="help">
+  <p>You can subscribe yourself to this question. When subscribed, you'll
+    receive by email all future messages added to the question.
+  </p>
+  <p>You can use the <emph>Subscribed</emph> report in the <emph>Answers</emph>
+    facet of your profile to see all the questions to which you are subscribed.
+  </p>
+  <p>If you are already subscribed to the question, you can unsubscribe
+    yourself from this page.
+  </p>
+</metal:help>
+</body>
+</html>
