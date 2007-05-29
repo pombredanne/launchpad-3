@@ -11,8 +11,7 @@ from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryTransport
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
-from canonical.codehosting.transport import (
-    branch_id_to_path, LaunchpadServer, UntranslatablePath)
+from canonical.codehosting.transport import branch_id_to_path, LaunchpadServer
 from canonical.testing import BzrlibLayer
 
 
@@ -231,10 +230,19 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
     def test_incomplete_path_not_found(self):
         # For a branch URL to be complete, it needs to have a person, product
         # and branch. Trying to perform operations on an incomplete URL raises
-        # UntranslatablePath errors.
+        # an error. Which kind of error is not particularly important.
         transport = get_transport(self.server.get_url())
         self.assertRaises(
-            UntranslatablePath, transport.get, '~foo')
+            errors.NoSuchFile, transport.get, '~foo')
+
+    def test_complete_non_existent_path_not_found(self):
+        # Bazaar looks for files inside a branch directory before it looks for
+        # the branch itself. If the branch doesn't exist, any files it asks for
+        # are not found. i.e. we raise NoSuchFile
+        transport = get_transport(self.server.get_url())
+        self.assertRaises(
+            errors.NoSuchFile,
+            transport.get, '~foo/bar/new-branch/.bzr/branch-format')
 
     def test_rename(self):
         # rename needs to translate the target path as well as the source path,
@@ -271,10 +279,11 @@ class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
         self.transport = get_transport(self.server.get_url())
 
     def test_make_invalid_user_directory(self):
-        # TransportNotPossible is raised when one performs an operation on a
-        # path that isn't of the form '~user/...'.
+        # The top-level directory must always be of the form '~user'. However,
+        # sometimes a transport will ask to look at files that aren't of that
+        # form. In that case, we raise NoSuchFile.
         self.assertRaises(
-            errors.TransportNotPossible, self.transport.mkdir, 'apple')
+            errors.NoSuchFile, self.transport.mkdir, 'apple')
 
     def test_make_valid_user_directory(self):
         # Making a top-level directory is not supported by the Launchpad

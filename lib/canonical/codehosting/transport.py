@@ -25,7 +25,7 @@ def branch_id_to_path(branch_id):
     return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
 
 
-def split_with_padding(a_string, splitter, num_fields, padding=''):
+def split_with_padding(a_string, splitter, num_fields, padding=None):
     """Split the given string into exactly num_fields.
 
     If the given string doesn't have enough tokens to split into num_fields
@@ -159,7 +159,7 @@ class LaunchpadServer(Server):
         # branch name is the empty string. (Mapping '' to '+junk' happens
         # in _iter_branches). 'user' is checked later.
         user, product, branch, path = split_with_padding(
-            virtual_path.lstrip('/'), '/', 4)
+            virtual_path.lstrip('/'), '/', 4, padding='')
         if not user.startswith('~'):
             raise TransportNotPossible(
                 'Path must start with user or team directory: %r' % (user,))
@@ -228,8 +228,17 @@ class LaunchpadTransport(Transport):
         return method(self._translate_virtual_path(relpath), *args, **kwargs)
 
     def _translate_virtual_path(self, relpath):
-        """Translate a virtual path into a path on the backing transport."""
-        return self.server.translate_virtual_path(self._abspath(relpath))
+        """Translate a virtual path into a path on the backing transport.
+
+        :raise NoSuchFile: If there is not way to map the given relpath to the
+            backing transport.
+
+        :return: A valid path on the backing transport.
+        """
+        try:
+            return self.server.translate_virtual_path(self._abspath(relpath))
+        except (UntranslatablePath, TransportNotPossible):
+            raise NoSuchFile(relpath)
 
     # Transport methods
     def abspath(self, relpath):
@@ -277,7 +286,7 @@ class LaunchpadTransport(Transport):
         # how to deal with absolute virtual paths.
         try:
             return self._call('mkdir', relpath, mode)
-        except UntranslatablePath:
+        except NoSuchFile:
             return self.server.mkdir(self._abspath(relpath))
 
     def put_file(self, relpath, f, mode=None):
