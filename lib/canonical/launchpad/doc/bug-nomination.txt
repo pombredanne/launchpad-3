@@ -1,5 +1,4 @@
-Bug Nomination
-==============
+= Bug Nomination =
 
 Any logged-in user can nominate a bug to be fixed in a specific
 distribution or product series. Nominations are created by
@@ -140,8 +139,8 @@ This method also accepts a target argument, for further filtering.
     >>> [nomination.target.bugtargetname for nomination in nominations]
     [u'Ubuntu Grumpy', u'Ubuntu Hoary']
 
-Nomination Status
------------------
+
+== Nomination Status ==
 
 A nomination is created with an initial status of "Nominated".
 Internally this state is called PROPOSED, but in the UI we display it
@@ -201,8 +200,8 @@ nomination can approve or decline it.
 
     >>> login("no-priv@canonical.com")
 
-Approving a nomination
-----------------------
+
+== Approving a nomination ==
 
 When a nomination is approved, the appropriate bugtask(s) are created on
 the target of the nomination and the status is set to APPROVED.
@@ -331,8 +330,7 @@ nomination will be automatically approved.
     thunderbird (Ubuntu)
 
 
-Declining a nomination
-----------------------
+== Declining a nomination ==
 
 Declining a nomination simply sets its status to DECLINED. No tasks are
 created.
@@ -362,8 +360,8 @@ created.
     >>> ubuntu_breezy_autotest_nomination.date_decided
     datetime...
 
-Automatic targeting of new source packages
-------------------------------------------
+
+== Automatic targeting of new source packages ==
 
 If a another distribution task is added, and nomination for that
 distribution's serieses already exists, the nominations will be valid
@@ -404,8 +402,8 @@ automatically.
     evolution (Ubuntu)
     ...
 
-Changing the Source Package of a Targeted Bugtask
--------------------------------------------------
+
+== Changing the Source Package of a Targeted Bugtask ==
 
 The nomination model requires that a generic distribution task exists
 for each distroseries task. This causes some problem when renaming the
@@ -473,8 +471,8 @@ The same is done if the distribution task's source package is changed.
     thunderbird (Ubuntu Warty)
     thunderbird (Ubuntu)
 
-Bug Nomination Set
-------------------
+
+== Bug Nomination Set ==
 
 IBugNominationSet is used to fetch bug nominations by ID. This is useful
 mainly in traversal code.
@@ -491,8 +489,8 @@ If a nomination is not found, a NotFoundError is raised.
       ...
     NotFoundError: ...
 
-Error Handling
---------------
+
+== Error Handling ==
 
 Trying to nominate a bug for a series for which it's already nominated
 or targeted raises a NominationError.

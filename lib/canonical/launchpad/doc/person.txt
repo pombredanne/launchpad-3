@@ -1,5 +1,4 @@
-Person
-======
+= Person =
 
 The Person class is overloaded to represent both people and teams. Let's
 log in as Robert Collins to ensure we have the privileges to do what
@@ -25,8 +24,7 @@ Verify that foobar (a Person object) correctly implements IPerson.
     >>> verifyObject(IPerson, foobar)
     True
 
-The IPersonSet component
-------------------------
+== The IPersonSet utility ==
 
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
@@ -96,19 +94,116 @@ And now with the same name of a existing account
     >>> lifeless.teamowner is None
     True
 
-An IPerson has an inTeam method to allow us to easily check if a
-person is a member of a team. It accepts an object implementing
-IPerson, which is the common use case when checking permissions.
+=== Ubunteros ===
 
+Anybody who signed the last version of Ubuntu's Code of Conduct is considered
+an Ubuntero.  To list all Ubunteros, use IPersonSet.getUbunteros():
+
+    >>> [p.name for p in personset.getUbunteros()]
+    [u'name16']
+
+To check if a person is an Ubuntero, use IPerson.is_ubuntero:
+
+    >>> foobar.is_ubuntero
+    True
+
+== Teams ==
+
+As we said above, the Person class is overloaded to represent teams so
+we may have Person objects which are, in fact, teams. To find out
+whether a given object is a person or a team we can use the isTeam()
+method of IPerson or check if the object provides the ITeam interface.
+
+    >>> from canonical.launchpad.interfaces import ITeam
     >>> ddaa = personset.getByName('ddaa')
+    >>> ddaa.isTeam()
+    False
+    >>> ITeam.providedBy(ddaa)
+    False
+
+    >>> landscape_devs = personset.getByName('landscape-developers')
+    >>> landscape_devs.isTeam()
+    True
+    >>> ITeam.providedBy(landscape_devs)
+    True
+
+=== Team members ===
+
+The relationship between a person and a team is stored in TeamMemberships
+table. TeamMemberships have a status (which can be any item of
+TeamMembershipStatus) and represent the current state of the relationship
+between that person and that team. Only TeamMembershipStatus with an ADMIN
+or APPROVED status are considered active.
+
+    >>> [member.displayname for member in landscape_devs.approvedmembers]
+    [u'Guilherme Salgado']
+    >>> [member.displayname for member in landscape_devs.adminmembers]
+    [u'Sample Person']
+
+The IPerson.activemembers property will always include all approved and admin
+members of that team.
+
+    >>> [member.displayname for member in landscape_devs.activemembers]
+    [u'Guilherme Salgado', u'Sample Person']
+
+TeamMemberships with a PROPOSED or INVITED status represent a person/team
+which has proposed himself as a member or which has been invited to join
+the team.
+
+    >>> [member.displayname for member in landscape_devs.proposedmembers]
+    [u'Foo Bar']
+    >>> [member.displayname for member in landscape_devs.invited_members]
+    [u'Launchpad Developers']
+
+Similarly, we have IPerson.pendingmembers which includes both invited and
+proposed members.
+
+    >>> [member.displayname for member in landscape_devs.pendingmembers]
+    [u'Foo Bar', u'Launchpad Developers']
+
+Finally, we have EXPIRED and DEACTIVATED TeamMemberships, which represent
+former (inactive) members of a team.
+
+    >>> [member.displayname for member in landscape_devs.expiredmembers]
+    [u'Karl Tilbury']
+    >>> [member.displayname for member in landscape_devs.deactivatedmembers]
+    [u'No Privileges Person']
+
+We can get a list of all inactive members of a team with the
+IPerson.inactivemembers property.
+
+    >>> [member.displayname for member in landscape_devs.inactivemembers]
+    [u'Karl Tilbury', u'No Privileges Person']
+
+We can also iterate over the TeamMemberships themselves, which is useful
+when we want to display details about them rather than just the member.
+
+    >>> [(membership.person.displayname, membership.status.name)
+    ...  for membership in landscape_devs.getActiveMemberships()]
+    [(u'Guilherme Salgado', 'APPROVED'), (u'Sample Person', 'ADMIN')]
+    >>> [(membership.person.displayname, membership.status.name)
+    ...  for membership in landscape_devs.getInvitedMemberships()]
+    [(u'Launchpad Developers', 'INVITED')]
+    >>> [(membership.person.displayname, membership.status.name)
+    ...  for membership in landscape_devs.getProposedMemberships()]
+    [(u'Foo Bar', 'PROPOSED')]
+    >>> [(membership.person.displayname, membership.status.name)
+    ...  for membership in landscape_devs.getInactiveMemberships()]
+    [(u'Karl Tilbury', 'EXPIRED'), (u'No Privileges Person', 'DEACTIVATED')]
+
+An IPerson has an inTeam method to allow us to easily check if a
+person is a member (directly or through other teams) of a team. It
+accepts an object implementing IPerson, which is the common use case
+when checking permissions.
+
     >>> ddaa.is_valid_person
     True
     >>> lifeless.inTeam(vcs_imports) and ddaa.inTeam(vcs_imports)
     True
 
 That method can also be used to check that a given IPerson is a member of
-itself. We can do that because people and teams have TeamParticipation entries
-for themselves.
+itself. We can do that because people and teams have TeamParticipation
+entries for themselves.
 
     >>> ddaa.inTeam(ddaa)
     True
@@ -134,28 +229,33 @@ was a cause of a number of timeouts
     >>> lifeless.inTeam(vcs_imports)
     True
 
-If a Person is not a Team then the Person object will not provide the
-ITeam interface.
+=== Email notifications to teams ===
 
-    >>> from canonical.launchpad.interfaces import ITeam
-    >>> ITeam.providedBy(lifeless)
-    False
+If a team has a contact email address, all notifications we send to the
+team will go to that address.
 
-If a Person is a Team then the Person will provide the ITeam interface.
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> ubuntu_team.preferredemail.email
+    u'support@ubuntu.com'
+    >>> contactEmailAddresses(ubuntu_team)
+    set(['support@ubuntu.com'])
 
-    >>> ITeam.providedBy(vcs_imports)
+On the other hand, if a team doesn't have a contact email address, all
+notifications we send to the team will go to the preferred email of
+each direct member of that team.
+
+    >>> vcs_imports.preferredemail is None
     True
+    >>> sorted(member.preferredemail.email
+    ...        for member in vcs_imports.activemembers)
+    [u'david.allouche@canonical.com', u'foo.bar@canonical.com',
+     u'robertc@robertcollins.net']
+    >>> sorted(contactEmailAddresses(vcs_imports))
+    ['david.allouche@canonical.com', 'foo.bar@canonical.com',
+     'robertc@robertcollins.net']
 
-If a team doesn't have a contact email address, all notifications we send to
-the team will go to the preferred email of each member.
 
-    >>> contactEmailAddresses(vcs_imports)
-    set(['david.allouche@canonical.com', 'robertc@robertcollins.net',
-         'foo.bar@canonical.com'])
-
-
-Renaming persons
-----------------
+== Renaming persons ==
 
 All persons have a unique name in launchpad, so to allow them to change their
 names, we must make sure that name is not already in use by someone else.
@@ -184,8 +284,7 @@ But you can't use Mark's name, of course. ;)
     person or team...
 
 
-Searching
----------
+== Searching ==
 
 You can search based on a person's name or displayname, or any of the email
 addresses that belongs to a person using the methods provided by IPersonSet.
@@ -238,8 +337,7 @@ Searching only for Teams based on their names or email addresses:
     (u'Ubuntu Translators', u'ubuntu-translators', [])
 
 
-Packages related to a person
-----------------------------
+== Packages related to a person ==
 
 To obtain the packages a person is related to, we can use the
 latestMaintainedPackages() and latestUploadedButNotMaintainedPackages()
@@ -274,8 +372,7 @@ person uploaded (where he isn't the maintainer).
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
 
-Translations
-------------
+== Translations ==
 
 The IPerson interface offers a way of returning POFileTranslator records
 for a Person:
@@ -320,8 +417,7 @@ and ILanguage.
   True
 
 
-Specification Lists
--------------------
+== Specification Lists ==
 
 We should be able to generate lists of specifications for people based on
 certain criteria:
@@ -419,19 +515,6 @@ Reset firefox so we don't mess up later tests.
 
     >>> firefox.active = True
     >>> flush_database_updates()
-
-Ubunteros
----------
-
-To list all Ubunteros, use IPersonSet.getUbunteros():
-
-    >>> [p.name for p in personset.getUbunteros()]
-    [u'name16']
-
-To check if a person is an Ubuntero, use IPerson.is_ubuntero:
-
-    >>> foobar.is_ubuntero
-    True
 
 
 Translators for a given language

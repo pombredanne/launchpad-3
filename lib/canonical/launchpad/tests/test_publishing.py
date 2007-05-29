@@ -55,8 +55,9 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         self.config = Config(self.ubuntutest)
         self.config.setupArchiveDirs()
         self.pool_dir = self.config.poolroot
+        self.temp_dir = self.config.temproot
         self.logger = FakeLogger()
-        self.disk_pool = DiskPool(self.pool_dir, self.logger)
+        self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def addMockFile(self, filename, filecontent='nothing'):
         """Add a mock file in Librarian.
@@ -323,7 +324,8 @@ class TestNativePublishing(TestNativePublishingBase):
         """
         cprov = getUtility(IPersonSet).getByName('cprov')
         test_pool_dir = tempfile.mkdtemp()
-        test_disk_pool = DiskPool(test_pool_dir, self.logger)
+        test_temp_dir = tempfile.mkdtemp()
+        test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc",
@@ -340,6 +342,7 @@ class TestNativePublishing(TestNativePublishingBase):
 
         # remove locally created dir
         shutil.rmtree(test_pool_dir)
+        shutil.rmtree(test_temp_dir)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
