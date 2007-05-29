@@ -104,7 +104,7 @@ class LaunchpadServer(Server):
         the branch in the database then create a matching directory on the
         backing transport.
         """
-        path_segments = virtual_path.strip('/').split('/')
+        path_segments = virtual_path.lstrip('/').split('/')
         if len(path_segments) != 3:
             raise NoSuchFile(virtual_path)
         branch_id = self._make_branch(*path_segments)
@@ -140,19 +140,23 @@ class LaunchpadServer(Server):
         """Translate an absolute virtual path into the real path on the backing
         transport.
 
-        :raise KeyError: If path is untranslatable. This could be because the
-            path is too short (doesn't include user, product and branch), or
-            because the user, product or branch in the path don't exist.
+        :raise UntranslatablePath: If path is untranslatable. This could be
+            because the path is too short (doesn't include user, product and
+            branch), or because the user, product or branch in the path don't
+            exist.
 
         :raise TransportNotPossible: If the path is necessarily invalid. Most
             likely because it didn't begin with a tilde ('~').
-        """
-        # XXX: JonathanLange 2007-05-29, what if some berk makes a branch
-        # called ''?
 
+        :return: The equivalent real path on the backing transport.
+        """
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.
+
+        # We can safely pad with '' because we can guarantee that no product or
+        # branch name is the empty string. (Mapping '' to '+junk' happens
+        # in _iter_branches). 'user' is checked later.
         user, product, branch, path = split_with_padding(
             virtual_path.lstrip('/'), '/', 4)
         if not user.startswith('~'):
