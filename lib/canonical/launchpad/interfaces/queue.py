@@ -111,6 +111,8 @@ class IPackageUpload(Interface):
         "wheter or not this upload contains upgrader images")
     containsDdtp = Attribute(
         "wheter or not this upload contains DDTP images")
+    isPPA = Attribute(
+        "Return True if this PackageUpload is a PPA upload.")
 
     def setNew():
         """Set queue state to NEW."""
@@ -158,6 +160,27 @@ class IPackageUpload(Interface):
 
         This should be used when you can't wait until the transaction is
         committed to have some updates actually written to the database.
+        """
+
+    def notify(announce_list=None, summary_text=None, 
+        changes_file_object=None, logger=None):
+        """Notify by email when there is a new distroreleasequeue entry.
+
+        This will send new, accept, announce and rejection messages as
+        appropriate.
+
+        :param announce_list: The email address of the distro announcements
+
+        :param summary_text: Any additional text to append to the auto-
+            generated summary.  This is also the only text used if there is
+            a rejection message generated.
+
+        :param changes_file_object: An open file object pointing at the
+            changes file.  Current, only nascentupload need supply this
+            as the transaction is not committed to the DB at that point so
+            data needs to be obtained from the changes file.
+
+        :param logger: Specify a logger object if required.  Mainly for tests.
         """
 
 
