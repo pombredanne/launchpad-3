@@ -15,7 +15,8 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database import BugTask
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IMessageSet, IPersonSet, IProductSet, BugNotificationRecipients)
+    IBug, IBugSet, IMessageSet, IPersonSet, IProductSet)
+from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.scripts.bugnotification import get_email_notifications
 
 

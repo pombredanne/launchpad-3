@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroSeries,
     IProductSeries, IProductSeriesBugTask, NominationError,
     NominationSeriesObsoleteError, IProduct, IDistribution,
-    UNRESOLVED_BUGTASK_STATUSES, BugNotificationRecipients,
+    UNRESOLVED_BUGTASK_STATUSES,
     ISourcePackage)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -51,6 +51,7 @@ from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import (
     BugAttachmentType, DistroSeriesStatus, BugTaskStatus)
@@ -275,7 +276,7 @@ class Bug(SQLBase):
                 Person.id = BugSubscription.person AND
                 BugSubscription.bug = %d""" % self.id,
                 orderBy="displayname", clauseTables=["BugSubscription"]))
-        if recipients:
+        if recipients is not None:
             for subscriber in subscribers:
                 recipients.addDirectSubscriber(subscriber)
         return subscribers
@@ -338,7 +339,7 @@ class Bug(SQLBase):
             # Assignees are indirect subscribers.
             if bugtask.assignee:
                 also_notified_subscribers.add(bugtask.assignee)
-                if recipients:
+                if recipients is not None:
                     recipients.addAssignee(bugtask.assignee)
 
             # Bug contacts are indirect subscribers.
@@ -351,7 +352,7 @@ class Bug(SQLBase):
 
                 if distribution.bugcontact:
                     also_notified_subscribers.add(distribution.bugcontact)
-                    if recipients:
+                    if recipients is not None:
                         recipients.addDistroBugContact(distribution.bugcontact,
                                                       distribution)
 
@@ -360,7 +361,7 @@ class Bug(SQLBase):
                         bugtask.sourcepackagename)
                     for pbc in sourcepackage.bugcontacts:
                         also_notified_subscribers.add(pbc.bugcontact)
-                        if recipients:
+                        if recipients is not None:
                             recipients.addPackageBugContact(pbc.bugcontact,
                                                            sourcepackage)
             else:
@@ -371,11 +372,11 @@ class Bug(SQLBase):
                     product = bugtask.productseries.product
                 if product.bugcontact:
                     also_notified_subscribers.add(product.bugcontact)
-                    if recipients:
+                    if recipients is not None:
                         recipients.addUpstreamBugContact(product.bugcontact, product)
                 else:
                     also_notified_subscribers.add(product.owner)
-                    if recipients:
+                    if recipients is not None:
                         recipients.addUpstreamRegistrant(product.owner, product)
 
         # Direct subscriptions always take precedence over indirect
