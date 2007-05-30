@@ -3,11 +3,12 @@
 """Common helpers for codehosting tests."""
 
 __metaclass__ = type
-__all__ = ['AvatarTestCase']
+__all__ = ['AvatarTestCase', 'TwistedBzrlibLayer']
 
 import os
 import shutil
 
+from canonical.testing import TwistedLayer, BzrlibLayer
 from canonical.tests.test_twisted import TwistedTestCase
 
 
@@ -41,3 +42,7 @@ class AvatarTestCase(TwistedTestCase):
         # twisted.trial.unittest.TestCase.mktemp outside the trial test runner.
         tmpdir_root = self.tmpdir.split(os.sep, 1)[0]
         shutil.rmtree(tmpdir_root)
+
+
+class TwistedBzrlibLayer(TwistedLayer, BzrlibLayer):
+    """Use the Twisted reactor and Bazaar's temporary directory logic."""
