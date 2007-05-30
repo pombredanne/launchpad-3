@@ -139,6 +139,67 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         from canonical.archivepublisher.ftparchive import FTPArchiveHandler
         FTPArchiveHandler(self._logger, self._config, self._dp,
                    self._distribution, set())
+                  
+    def testGetSourcesForOverride(self):
+        """canonical.archivepublisher.Publisher.getSourcesForOverride 
+        should work.
+        
+        FTPArchiveHandler.getSourcesForOverride should be returning 
+        SourcePackagePublishingHistory rows that match the distrorelease,
+        its main_archive, the supplied pocket and have a status of PUBLISHED.
+        """
+        from canonical.archivepublisher.ftparchive import FTPArchiveHandler
+        fa = FTPArchiveHandler(self._logger, self._config, self._dp,
+                        self._distribution, set())
+        ubuntuwarty = getUtility(IDistributionSet)['ubuntu']['warty']
+        spphs = fa.getSourcesForOverride(
+            ubuntuwarty, PackagePublishingPocket.RELEASE)
+
+        # For the above query, we are depending on the sample data to 
+        # contain five rows of SourcePackagePublishghistory data.
+        expectedSources = [
+            ('mozilla-firefox','0.9'),
+            ('netapplet','0.99.6-1'),
+            ('alsa-utils', '1.0.8-1ubuntu1'),
+            ('alsa-utils', '1.0.9a-4'), 
+            ('cdrkit', '1.0')
+            ]
+        actualSources = [
+            (spph.sourcepackagerelease.name, spph.sourcepackagerelease.version)
+            for spph in spphs]
+
+        self.assertEqual(expectedSources, actualSources)
+
+    def testGetBinariesForOverride(self):
+        """canonical.archivepublisher.Publisher.getBinariesForOverride 
+        should work.
+        
+        FTPArchiveHandler.getBinariesForOverride should be returning
+        BinaryPackagePublishingHistory rows that match the distrorelease,
+        its main_archive, the supplied pocket and have a status of PUBLISHED.
+        """
+        from canonical.archivepublisher.ftparchive import FTPArchiveHandler
+        fa = FTPArchiveHandler(self._logger, self._config, self._dp,
+                        self._distribution, set())
+        ubuntuwarty = getUtility(IDistributionSet)['ubuntu']['warty']
+        bpphs = fa.getBinariesForOverride(
+            ubuntuwarty, PackagePublishingPocket.RELEASE)
+
+        # The above query depends on the sample data containing six rows
+        # of BinaryPackagePublishingHistory with these IDs:
+        expectedBinaries = [
+            ('mozilla-firefox', '0.9'),
+            ('pmount', '0.1-1'),
+            ('linux-2.6.12', '2.6.12.20'),
+            ('pmount', '2:1.9-1'),
+            ('at', '3.14156'),
+            ('cdrkit', '1.0')
+            ]
+        actualBinaries = [
+            (bpph.binarypackagerelease.name, bpph.binarypackagerelease.version)
+            for bpph in bpphs]
+
+        self.assertEqual(expectedBinaries, actualBinaries)
 
     def testPublishOverrides(self):
         """canonical.archivepublisher.Publisher.publishOverrides should work"""
