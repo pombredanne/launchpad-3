@@ -23,11 +23,11 @@
 
 <div metal:fill-slot="main">
 
-    <tal:is-admin condition="context/required:launchpad.Admin">
+    <tal:is-owner-or-admin condition="context/required:launchpad.Edit">
       <div condition="context/whiteboard" class="highlighted" id="whiteboard">
         <p tal:content="context/whiteboard">Whiteboard goes here.</p>
       </div>
-    </tal:is-admin>
+    </tal:is-owner-or-admin>
 
     <p id="status">
       <strong>

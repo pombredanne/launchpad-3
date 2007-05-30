@@ -79,7 +79,8 @@ distribution owner.
     Unauthorized...
  
 Now one of the mirror administrators goes and make this an official mirror,
-leaving a comment on the whiteboard (which is only visible to mirror admins).
+leaving a comment on the whiteboard (which is visible to mirror admins and to
+the mirror owner, but can only be edited by mirror admins).
  
     # XXX: matsubara 2006-05-18: We need to reset the Browser object to
     # reset the headers.  https://launchpad.net/launchpad/+bug/45226
