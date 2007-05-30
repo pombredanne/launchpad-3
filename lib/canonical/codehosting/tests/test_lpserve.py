@@ -25,7 +25,7 @@ from canonical.tests.test_twisted import TwistedTestCase
 
 from canonical.codehosting import plugins
 from canonical.codehosting.plugins import lpserve
-from canonical.codehosting.tests.test_acceptance import deferToThread
+from canonical.codehosting.tests.helpers import deferToThread
 from canonical.codehosting.tests.helpers import TwistedBzrlibLayer
 from canonical.config import config
 from canonical.launchpad.daemons.authserver import AuthserverService

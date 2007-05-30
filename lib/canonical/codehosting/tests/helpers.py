@@ -7,9 +7,12 @@ __all__ = ['AvatarTestCase', 'TwistedBzrlibLayer']
 
 import os
 import shutil
+import threading
 
 from canonical.testing import TwistedLayer, BzrlibLayer
 from canonical.tests.test_twisted import TwistedTestCase
+
+from twisted.internet import defer, threads
 
 
 class AvatarTestCase(TwistedTestCase):
@@ -46,3 +49,18 @@ class AvatarTestCase(TwistedTestCase):
 
 class TwistedBzrlibLayer(TwistedLayer, BzrlibLayer):
     """Use the Twisted reactor and Bazaar's temporary directory logic."""
+
+
+def deferToThread(f):
+    """Run the given callable in a separate thread and return a Deferred which
+    fires when the function completes.
+    """
+    def decorated(*args, **kwargs):
+        d = defer.Deferred()
+        def runInThread():
+            return threads._putResultInDeferred(d, f, args, kwargs)
+
+        t = threading.Thread(target=runInThread)
+        t.start()
+        return d
+    return decorated

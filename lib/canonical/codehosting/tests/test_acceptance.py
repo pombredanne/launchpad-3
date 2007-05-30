@@ -27,7 +27,6 @@ from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
 from twisted.conch.ssh import keys
-from twisted.internet import defer, threads
 from twisted.python.util import sibpath
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -39,23 +38,9 @@ from canonical.launchpad.daemons.sftp import SFTPService
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.codehosting.sftponly import (
     BazaarFileTransferServer, SFTPOnlyAvatar)
+from canonical.codehosting.tests.helpers import deferToThread
 from canonical.database.sqlbase import sqlvalues
 from canonical.testing import TwistedLayer
-
-
-def deferToThread(f):
-    """Run the given callable in a separate thread and return a Deferred which
-    fires when the function completes.
-    """
-    def decorated(*args, **kwargs):
-        d = defer.Deferred()
-        def runInThread():
-            return threads._putResultInDeferred(d, f, args, kwargs)
-
-        t = threading.Thread(target=runInThread)
-        t.start()
-        return d
-    return decorated
 
 
 class TestSFTPService(SFTPService):
