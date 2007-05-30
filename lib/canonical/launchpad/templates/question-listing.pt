@@ -45,7 +45,7 @@
       <input tal:replace="structure view/search_action/render" />
 
       <div id="testcheck" tal:condition="view/show_language_checkboxes">
-        <label>Language</label> (<a href="/+editmylanguages">change your preferred languages</a>)
+        <label>Language</label> (<a href="/+editmylanguages">Change your preferred languages</a>)
         <tal:languages replace="structure view/widgets/languages" />
       </div>
       

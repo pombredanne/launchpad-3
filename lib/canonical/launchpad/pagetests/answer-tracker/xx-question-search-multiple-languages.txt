@@ -104,8 +104,10 @@ form with the same language search options as the anonymous user.
     True
 
 Users that have configured their preferred languages may choose to
-see questions for all languages, their preferred languages, or
-their preferred languages and English (the site's language).
+see questions for any, some, all, or none of their languages by
+toggling the check box for each of their preferred languages. In
+this example, Carlos speaks two languages, and Answers adds
+English to the list of languages.
 
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
@@ -119,8 +121,8 @@ their preferred languages and English (the site's language).
     >>> browser.getControl(name='field.languages').options
     ['en', 'es', 'ca']
 
-By choosing the preferred languages option, the user can exclude
-all other languages including English from the questions displayed.
+By unchecking a checkbox, Carlos can exclude English questions from
+the search results.
 
     >>> browser.getControl(name='field.languages').value = ['es', 'ca']
     >>> browser.getControl('Search').click()
