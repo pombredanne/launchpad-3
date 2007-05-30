@@ -20,14 +20,14 @@ He discovers that there are no questions on the Kubuntu Answers page:
     >>> from BeautifulSoup import BeautifulSoup
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions for Kubuntu with the requested statuses.
-    
+
 The same is true for Projects that do not have Products.
 
     >>> browser.open('http://launchpad.dev/aaa')
     >>> browser.getLink('Answers').click()
     >>> print browser.title
     Questions for the Test Project
-    
+
     >>> from BeautifulSoup import BeautifulSoup
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions for the Test Project with the requested statuses.
@@ -136,8 +136,8 @@ The Answer Tracker main page permits the user to jump to a question by
 submitting the question's id in the text input field with the 'Find
 Answers' button.
 
-Average Joe learns than he might find the solution to his Firefox 
-problem from someone on IRC. He is told to read question 9 on the 
+Average Joe learns than he might find the solution to his Firefox
+problem from someone on IRC. He is told to read question 9 on the
 Launchpad Answer Tracker. He visits the main page and enters '9'
 to jump to the question.
 
@@ -148,37 +148,37 @@ to jump to the question.
     >>> locators = find_tags_by_class(browser.contents, 'main')
     >>> print backslashreplace(browser.title)
     mozilla-firefox in ubuntu question #9: ...
-    
-While reading the Ubuntu forums for a solution to his problem, 
+
+While reading the Ubuntu forums for a solution to his problem,
 Average Joe finds some unlinked text that refers to how to
 get extensions to work. He copies the text ' #6 ' from the page
 and pastes it into the main page of the Answer Tracker to read
 the answer.
-    
+
     >>> browser.open('http://answers.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = ' #6 '
     >>> browser.getControl('Find Answers').click()
     >>> print backslashreplace(browser.title)
     Mozilla Firefox question #6: ...
-    
+
 The Answer Tracker cannot identify Question ids within text. Average
 Joe finds a reference to question 8 in a blog. He copies 'question 8'
 and pastes it into the text field on the Answer Tracker main page. He
 is shown search results instead of the question.
-    
+
     >>> browser.open('http://answers.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = 'question 8'
     >>> browser.getControl('Find Answers').click()
     >>> print browser.title
     Questions matching "question 8"
-    
+
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions matching "question 8" with the requested statuses.
-    
-        
+
+
 == Searching Questions ==
 
-Browsing is fine when the number of questions is small, but searching 
+Browsing is fine when the number of questions is small, but searching
 is more convenient as the number of questions grow larger.
 
 This time, it's Firefox that brings Average Joe to the Ubuntu Answer
@@ -789,7 +789,7 @@ of those searches.
     >>> portlet.find(name='a', text='Unsupported')
     u'Unsupported'
 
-Each product and distro can have questions asked in languages that 
+Each product and distro can have questions asked in languages that
 none of the Answer Contacts speak.
 
     >>> browser.getLink('Unsupported').click()

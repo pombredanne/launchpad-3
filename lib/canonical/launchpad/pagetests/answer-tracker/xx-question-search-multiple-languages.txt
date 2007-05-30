@@ -9,7 +9,8 @@ preferred languages are listed and searched.
 For example, a user who isn't logged in will only see questions written
 in English, in one of the language configured in his browser,
 or inferred from GeoIP information. In this example, only English
-questions will be shown.
+questions will be shown when the user has not provided language 
+information.
 
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
 
@@ -31,18 +32,22 @@ questions will be shown.
     Installation failed
 
 The questions match the Person's preferred language settings, or in
-the case of the anonymous user, the prefferred languages in the 
-request made by the browser
+the case of the anonymous user, the preferred languages in the
+request made by the browser.
 
-    >>> anon_browser.getControl('All Languages').selected
-    False
     >>> anon_browser.getControl('English (en)').selected
     True
 
-If the user selects the 'All Languages' option, then all questions,
-whatever the language they are written in are displayed:
+If the user unselects all the language options, then all questions,
+whatever the language they are written in are displayed.   
 
-    >>> anon_browser.getControl('All Languages').selected = True
+    # Note that the test site is configured with the languages of
+    # South Africa, but there are no test questions in those languages.
+    >>> anon_browser.getControl('English (en)').selected = False
+    >>> anon_browser.getControl('Zulu (zu)').selected = False
+    >>> anon_browser.getControl('Sotho, Southern (st)').selected = False
+    >>> anon_browser.getControl('Xhosa (xh)').selected = False
+    >>> anon_browser.getControl('Afrikaans (af)').selected = False
     >>> anon_browser.getControl('Search').click()
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> for question in soup.fetch('td', 'question'):
@@ -61,18 +66,16 @@ whatever the language they are written in are displayed:
     'Slow system'
     'Installation failed'
 
-But if the user configures his browser to accept Spanish, then all
-languages will be displayed and the 'All Languages' control will
-not appear:
+But if the user configures his browser to accept Spanish, then English
+and Spanish language questions will be displayed:
 
     >>> anon_browser.addHeader('Accept-Language', 'es')
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
-
-    >>> anon_browser.getControl('All Languages')
-    Traceback (most recent call last):
-      ...
-    LookupError...
-
+    >>> anon_browser.getControl('English (en)').selected
+    True
+    >>> anon_browser.getControl('Spanish (es)').selected
+    True
+    
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> for question in soup.fetch('td', 'question'):
     ...     question.first('a').renderContents()
@@ -90,42 +93,35 @@ not appear:
     'Slow system'
     'Installation failed'
 
-
 == Authenticated searching ==
 
 Authenticated users without preferred languages will see a search
 form with the same language search options as the anonymous user.
 
     >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
-    >>> user_browser.getControl('All Languages').selected
-    False
     >>> user_browser.getControl('English (en)').selected
     True
-    
+
 Users that have configured their preferred languages may choose to
 see questions for all languages, their preferred languages, or
 their preferred languages and English (the site's language).
 
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
-    >>> browser.getControl('All Languages').selected
-    False
     >>> language_control = browser.getControl(name='field.languages')
     >>> for label in language_control.displayOptions:
-    ...     # \xa0 appears regardless of creating the labels as 
-    ...     # unicode or ascii, and changine the encoding during
-    ...     # print or assignment operations.
-    ...     label
-    '\xa0All Languages'
-    '\xa0English (en), Spanish (es), Catalan (ca)'
-    '\xa0Spanish (es), Catalan (ca)'
+    ...     # print the label without the leading non-breaking space.
+    ...     label[1:]
+    'English (en)'
+    'Spanish (es)'
+    'Catalan (ca)'
     >>> browser.getControl(name='field.languages').options
-    ['All', 'Preferred', 'User']
-    
-By choosing the preferred languages option, the user can exclude 
+    ['en', 'es', 'ca']
+
+By choosing the preferred languages option, the user can exclude
 all other languages including English from the questions displayed.
 
-    >>> browser.getControl(name='field.languages').value = ['User']
+    >>> browser.getControl(name='field.languages').value = ['es', 'ca']
     >>> browser.getControl('Search').click()
     >>> content = find_main_content(browser.contents)
     >>> for question in content.fetch('td', 'question'):

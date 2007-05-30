@@ -31,7 +31,7 @@
 <div metal:fill-slot="main"
      tal:define="questions view/searchResults">
 
-  <div id="question-search-form">
+  <div>
     <form method="get" id="question-search-form" action=""
           tal:attributes="action request/URL">
 
@@ -44,11 +44,10 @@
 
       <input tal:replace="structure view/search_action/render" />
 
-      <span tal:condition="view/show_languages_radio">
-        <br /><label>Languages</label>
-        <br /><tal:languages replace="structure view/widgets/languages" />
-        <br />(<a href="/+editmylanguages">change your preferred languages</a>)
-      </span>
+      <div id="testcheck" tal:condition="view/show_language_checkboxes">
+        <label>Language</label> (<a href="/+editmylanguages">change your preferred languages</a>)
+        <tal:languages replace="structure view/widgets/languages" />
+      </div>
       
       <tal:status define="widget nocall:view/widgets/status|nothing"
                   condition="nocall: widget">

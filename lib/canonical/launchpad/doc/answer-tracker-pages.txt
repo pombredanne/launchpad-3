@@ -377,8 +377,8 @@ outside of the comment workflow.
 
 == QuestionEditView ==
 
-QuestionEditView available through '+edit' is used to edit most 
-question fields. It can be used to edit the question title and 
+QuestionEditView available through '+edit' is used to edit most
+question fields. It can be used to edit the question title and
 description and also its metadata like language, assignee,
 distribution, source package, product and whiteboard.
 
@@ -691,7 +691,7 @@ can tweak the search and filter the results:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Solved', 'Open'],
     ...     'field.search_text': 'firefox',
-    ...     'field.languages': 'Preferred',
+    ...     'field.languages': ['en'],
     ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
@@ -705,7 +705,7 @@ search parameters to use in the getDefaultFilter() method:
     >>> from canonical.lp.dbschema import QuestionStatus
     >>> MyCustomSearchQuestionsView.default_filter = {
     ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID],
-    ...     'languages':'Preferred'}
+    ...     'languages' : search_view.user_support_languages}
     >>> search_view_harness.submit('', {})
 
 In this example, only the solved and invalid questions are listed by
@@ -731,7 +731,7 @@ criteria.
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Solved'],
     ...     'field.search_text': 'firefox',
-    ...     'field.languages': 'Preferred',
+    ...     'field.languages': ['en'],
     ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
@@ -765,7 +765,7 @@ It works also with user submitted values:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Expired'],
     ...     'field.search_text': '',
-    ...     'field.languages': 'Preferred',
+    ...     'field.languages': ['en'],
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
     Expired questions for Ubuntu
@@ -775,7 +775,7 @@ It works also with user submitted values:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Open', 'Answered'],
     ...     'field.search_text': 'evolution',
-    ...     'field.languages': 'Preferred',
+    ...     'field.languages': ['en'],
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
     Questions matching "evolution" for Ubuntu
