@@ -112,7 +112,7 @@ Although, an admin can see the same page.
   >>> print admin_browser.url
   http://translations.launchpad.dev/ubuntu/hoary/+lang/es
 
-Translation pages for source packages is also unavailable.
+Translation pages for source packages are also unavailable.
 
   >>> user_browser.open(
   ...     'http://translations.launchpad.dev/ubuntu/hoary/+sources/evolution/'

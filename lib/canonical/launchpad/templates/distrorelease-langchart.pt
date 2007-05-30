@@ -2,8 +2,8 @@
   <p>
     Translation status for <tal:distrorelease replace="context/displayname" />
     is not available because we are updating translations in bulk. You will
-    be able to see the status once the process finish. Try again in several
-    hours.
+    be able to see the status once the process is finished. Try again in
+    several hours.
   </p>
   <p>
     We apologise for the inconvenience.
