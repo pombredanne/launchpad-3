@@ -28,7 +28,7 @@ Here's a very simple TunableLoop.  It receives a list of timings to simulate
 for its iterations (it finishes when the list runs out), and for every
 iteration, prints out what happened to its chunk size parameter.
 
-    >>> time_goal = 10.0
+    >>> goal_seconds = 10.0
     >>> def print_change(last_chunk_size, new_chunk_size):
     ...     if last_chunk_size is None:
     ...         print "start"
@@ -52,7 +52,7 @@ iteration, prints out what happened to its chunk size parameter.
     ...             print "done"
     ...         return done
     ...
-    ...     def perform(self, chunk_size):
+    ...     def performChunk(self, chunk_size):
     ...         print_change(self.last_chunk_size, chunk_size)
     ...         self.last_chunk_size = chunk_size
 
@@ -76,7 +76,7 @@ subclass the LoopTuner.
 If there's nothing to do, nothing happens.
 
     >>> body = PlannedLoop([])
-    >>> loop = TestTuner(body, time_goal, 100)
+    >>> loop = TestTuner(body, goal_seconds, 100)
     >>> loop.run()
     start
     done
@@ -91,7 +91,7 @@ per iteration until it nears the ideal time per iteration.  Due to practical
 variations, it keeps oscillating a bit.
 
     >>> body = PlannedLoop([5, 7, 8, 9, 10, 11, 10, 9, 10, 9, 10, 11, 10])
-    >>> loop = TestTuner(body, time_goal, 100)
+    >>> loop = TestTuner(body, goal_seconds, 100)
     >>> loop.run()
     start
     increased
@@ -116,7 +116,7 @@ If our iterations consistently exceed their time goal, we stay stuck at the
 minimum chunk size.
 
     >>> body = PlannedLoop([15, 11, 16, 20, 14, 15, 10, 12, 15])
-    >>> loop = TestTuner(body, time_goal, 100)
+    >>> loop = TestTuner(body, goal_seconds, 100)
     >>> loop.run()
     start
     same
@@ -139,7 +139,7 @@ is suddenly very slow, the algorithm compensates for that so that if the drop
 in performance was a fluke, the next chunk falls well short of its time goal.
 
     >>> body = PlannedLoop([5, 7, 8, 9, 10, 11, 9, 20, 7, 10, 10])
-    >>> loop = TestTuner(body, time_goal, 100)
+    >>> loop = TestTuner(body, goal_seconds, 100)
     >>> loop.run()
     start
     increased
@@ -181,7 +181,7 @@ This variant of the LoopTuner simulates an overridable cost function:
     ...             print "done"
     ...         return done
     ...
-    ...     def perform(self, chunk_size):
+    ...     def performChunk(self, chunk_size):
     ...         print_change(self.last_chunk_size, chunk_size)
     ...         self.last_chunk_size = chunk_size
     ...         self.iteration += 1
@@ -222,8 +222,8 @@ out not to affect performance at all.  Chunk size is capped to stop it from
 spinning into infinity in that case, or if for some reason execution time
 should turn out to vary inversely with chunk size.
 
-    >>> body = CostedLoop((lambda c: time_goal/2), 20)
-    >>> loop = CostedTuner(body, time_goal, 100, 1000)
+    >>> body = CostedLoop((lambda c: goal_seconds/2), 20)
+    >>> loop = CostedTuner(body, goal_seconds, 100, 1000)
     >>> loop.run()
     start
     increased
@@ -248,7 +248,7 @@ If cost function is purely linear with zero overhead, we approach our time
 goal asymptotically.  In principle we never quite get there.
 
     >>> body = CostedLoop((lambda c: c/20), 10)
-    >>> loop = CostedTuner(body, time_goal, 100)
+    >>> loop = CostedTuner(body, goal_seconds, 100)
     >>> loop.run()
     start
     increased
@@ -259,9 +259,9 @@ goal asymptotically.  In principle we never quite get there.
     increased
     done
 
-    >>> body.computeCost() < time_goal
+    >>> body.computeCost() < goal_seconds
     True
-    >>> body.computeCost() > time_goal*0.9
+    >>> body.computeCost() > goal_seconds*0.9
     True
 
 
@@ -271,8 +271,8 @@ Here's a variant with a relatively flat linear cost function (25 units of work
 per second), plus a large constant overhead of half the time goal.  It does
 not achieve equilibrium in 10 iterations:
 
-    >>> body = CostedLoop((lambda c: time_goal/2+c/25), 10)
-    >>> loop = CostedTuner(body, time_goal, 100)
+    >>> body = CostedLoop((lambda c: goal_seconds/2+c/25), 10)
+    >>> loop = CostedTuner(body, goal_seconds, 100)
     >>> loop.run()
     start
     increased
@@ -281,12 +281,12 @@ not achieve equilibrium in 10 iterations:
     ...
     increased
     done
-    >>> body.computeCost() < time_goal
+    >>> body.computeCost() < goal_seconds
     True
 
 But once again it does get pretty close:
 
-    >>> body.computeCost() > time_goal*0.9
+    >>> body.computeCost() > goal_seconds*0.9
     True
 
 
@@ -306,7 +306,7 @@ If the cost function is highly regular and predictable, the oscillation will
 be a neat alternation of oversized and undersized chunks.
 
     >>> body = CostedLoop((lambda c: pow(1.2, c)), 50)
-    >>> loop = CostedTuner(body, time_goal, 1)
+    >>> loop = CostedTuner(body, goal_seconds, 1)
     >>> loop.run()
     start
     increased
@@ -330,7 +330,7 @@ With more extreme exponential behaviour, the overshoot increases but the
 effect remains the same:
 
     >>> body = CostedLoop((lambda c: pow(3, c)), 50)
-    >>> loop = CostedTuner(body, time_goal, 1)
+    >>> loop = CostedTuner(body, goal_seconds, 1)
     >>> loop.run()
     start
     increased

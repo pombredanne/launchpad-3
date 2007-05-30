@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-__all__ = ['LoopTuner', 'TunableLoop' ]
+__all__ = ['LoopTuner', 'TunableLoop']
 
 
 import logging
@@ -20,16 +20,16 @@ class TunableLoop:
         Once this returns True, the LoopTuner will no longer touch this
         object.
         """
-        return True
+        raise NotImplementedError
 
-    def perform(self, chunk_size):
+    def performChunk(self, chunk_size):
         """Perform an iteration of the loop.
 
         The chunk_size parameter says (in some way you define) how much work
         the LoopTuner believes you should try to do in this iteration in order
         to get as close as possible to your time goal.
         """
-        pass
+        raise NotImplementedError
 
 
 class LoopTuner:
@@ -59,7 +59,7 @@ class LoopTuner:
     spikes and troughs in processing speed.
     """
 
-    def __init__(self, operation, time_goal, minimum_chunk_size=1,
+    def __init__(self, operation, goal_seconds, minimum_chunk_size=1,
             maximum_chunk_size=1000000000):
         """Initialize a loop, to be run to completion at most once.
 
@@ -68,16 +68,21 @@ class LoopTuner:
         operation: an object implementing the loop body.  It should support at
         least the interface of the TunableLoop class.
 
-        time_goal: the ideal number of seconds for any one iteration to take.
-            The algorithm will vary chunk size in order to stick close to this
-            ideal.
+        goal_seconds: the ideal number of seconds for any one iteration to
+            take.  The algorithm will vary chunk size in order to stick close
+            to this ideal.
 
         minimum_chunk_size: the smallest chunk size that is reasonable.  The
             tuning algorithm will never let chunk size sink below this value.
+
+        maximum_chunk_size: the largest allowable chunk size.  A maximum is
+            needed even if the TunableLoop ignores chunk size for whatever
+            reason, since reaching floating-point infinity would seriously
+            break the algorithm's arithmetic.
         """
 
         self.operation = operation
-        self.time_goal = float(time_goal)
+        self.goal_seconds = float(goal_seconds)
         self.minimum_chunk_size = minimum_chunk_size
         self.maximum_chunk_size = maximum_chunk_size
 
@@ -89,7 +94,7 @@ class LoopTuner:
         start_time = self._time()
         last_clock = start_time
         while not self.operation.isDone():
-            self.operation.perform(chunk_size)
+            self.operation.performChunk(chunk_size)
 
             new_clock = self._time()
             time_taken = new_clock - last_clock
@@ -99,9 +104,9 @@ class LoopTuner:
 
             total_size += chunk_size
 
-            # Adjust parameter value to approximate time_goal.  The new
+            # Adjust parameter value to approximate goal_seconds.  The new
             # value is the average of two numbers: the previous value, and an
-            # estimate of how many rows would take us to exactly time_goal
+            # estimate of how many rows would take us to exactly goal_seconds
             # seconds.
             # The weight in this estimate of any given historic measurement
             # decays exponentially with an exponent of 1/2.  This softens the
@@ -109,8 +114,8 @@ class LoopTuner:
             # Set a reasonable minimum for time_taken, just in case we get
             # weird values for whatever reason and destabilize the
             # algorithm.
-            time_taken = max(self.time_goal/10, time_taken)
-            chunk_size *= (1 + self.time_goal/time_taken)/2
+            time_taken = max(self.goal_seconds/10, time_taken)
+            chunk_size *= (1 + self.goal_seconds/time_taken)/2
             chunk_size = max(chunk_size, self.minimum_chunk_size)
             chunk_size = min(chunk_size, self.maximum_chunk_size)
             iteration += 1

@@ -42,7 +42,7 @@ class PouringLoop(TunableLoop):
     def isDone(self):
         return self.lowest_id > self.highest_id
 
-    def perform(self, batch_size):
+    def performChunk(self, batch_size):
         """Loop body: pour rows with ids up to "next" over to to_table."""
         batch_size = int(batch_size)
         next = self.lowest_id + batch_size
@@ -156,7 +156,7 @@ class MultiTableCopy:
     """
     # XXX: JeroenVermeulen 2007-05-24, More quoting, fewer assumptions!
 
-    def __init__(self, name, tables, time_per_batch=4,
+    def __init__(self, name, tables, seconds_per_batch=4.0,
             minimum_batch_size=1000):
         """Define a MultiTableCopy, including an in-order list of tables.
 
@@ -177,7 +177,7 @@ class MultiTableCopy:
         self.name = name
         self.tables = tables
         self.lower_tables = [t.lower() for t in self.tables]
-        self.time_per_batch = time_per_batch
+        self.seconds_per_batch = seconds_per_batch
         self.minimum_batch_size = minimum_batch_size
         self.last_extracted_table = None
 
@@ -450,7 +450,8 @@ class MultiTableCopy:
         # five seconds or so each; we aim for four just to be sure.
 
         pourer = PouringLoop(holding_table, table, ztm)
-        LoopTuner(pourer, self.time_per_batch, self.minimum_batch_size).run()
+        LoopTuner(
+            pourer, self.seconds_per_batch, self.minimum_batch_size).run()
 
     def _checkExtractionOrder(self, source_table):
         """Verify order in which tables are extracted against tables list.
