@@ -183,7 +183,12 @@ class NotificationRecipientSet:
                 continue
             self._personToRationale[person] = reason, header
             for email in contactEmailAddresses(person):
-                if email not in self._emailToPerson:
+                old_person = self._emailToPerson.get(email)
+                # Only associate this email to the person, if there was
+                # no association or if the previous one was to a team and
+                # the newer one is to a person.
+                if (old_person is None
+                    or (old_person.isTeam() and not person.isTeam())):
                     self._emailToPerson[email] = person
 
     def update(self, recipient_set):
