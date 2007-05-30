@@ -34,11 +34,12 @@ from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.codehosting import sftponly
 from canonical.codehosting.tests.test_acceptance import (
     SFTPTestCase, SSHKeyMixin, deferToThread)
-from canonical.testing import TwistedLayer
+from canonical.codehosting.tests.helpers import TwistedBzrlibLayer
 
 
 class SFTPTests(SFTPTestCase):
-    layer = TwistedLayer
+
+    layer = TwistedBzrlibLayer
 
     @deferToThread
     def _test_rmdir_branch(self):

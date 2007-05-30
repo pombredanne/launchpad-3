@@ -17,9 +17,6 @@ import bzrlib.branch
 from bzrlib.tests import TestCaseWithMemoryTransport
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
-# XXX -- Unused, but needed to work-around bug in bzr 0.11
-# Jonathan Lange, 2007-03-22
-##from bzrlib.tests import blackbox
 from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
 from bzrlib.transport import get_transport
 from bzrlib.transport import sftp, ssh
@@ -38,9 +35,9 @@ from canonical.launchpad.daemons.sftp import SFTPService
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.codehosting.sftponly import (
     BazaarFileTransferServer, SFTPOnlyAvatar)
-from canonical.codehosting.tests.helpers import deferToThread
+from canonical.codehosting.tests.helpers import (
+    deferToThread, TwistedBzrlibLayer)
 from canonical.database.sqlbase import sqlvalues
-from canonical.testing import TwistedLayer
 
 
 class TestSFTPService(SFTPService):
@@ -235,12 +232,6 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
 
         shutil.rmtree(self.userHome)
         shutil.rmtree(self.server.root)
-        # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
-        # is "a little bogus".  Because we aren't using the bzr test runner, we
-        # have to manually clean up the test????.tmp dirs.
-        shutil.rmtree(TestCaseWithMemoryTransport.TEST_ROOT)
-        TestCaseWithMemoryTransport.TEST_ROOT = None
-        signal.signal(signal.SIGCHLD, self._oldSigChld)
 
     def getTransport(self, path=None):
         """Get a paramiko transport pointing to `path` on the base server."""
@@ -319,7 +310,8 @@ class AcceptanceTests(SFTPTestCase):
     initial implementation of bzr support, converted from the English at
     https://launchpad.canonical.com/SupermirrorTaskList
     """
-    layer = TwistedLayer
+
+    layer = TwistedBzrlibLayer
 
     def setUp(self):
         super(AcceptanceTests, self).setUp()
