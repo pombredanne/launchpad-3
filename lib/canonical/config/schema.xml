@@ -632,7 +632,7 @@ k            </description>
                 mirrors.
             </description>
         </key>
-        <key name="releases_file_list_url" datatype="string"
+        <key name="cdimage_file_list_url" datatype="string"
              default="http://releases.ubuntu.com/.manifest">
             <description>
                 The URL to the file containing the list of ISO images that a

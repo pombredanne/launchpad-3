@@ -134,12 +134,12 @@ why the product wasn't chosen automatically.
     ...     print notification.message
     Please select the appropriate upstream project. This step...
 
-Sometimes the distribution won't have any release, though. In that
+Sometimes the distribution won't have any series, though. In that
 case, we won't prompt the user to add a link, since he can't actually
 add one.
 
     >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
-    >>> gentoo.currentrelease is None
+    >>> gentoo.currentseries is None
     True
     >>> gentoo_thunderbird = gentoo.getSourcePackage('thunderbird')
     >>> thunderbird_bug = gentoo_thunderbird.createBug(create_params)

@@ -13,7 +13,7 @@ from zope.interface import Interface, Attribute, implements
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
-from canonical.lp.dbschema import ShipItDistroRelease
+from canonical.lp.dbschema import ShipItDistroSeries
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
@@ -51,7 +51,7 @@ class ShipItConstants:
     ubuntu_url = 'https://shipit.ubuntu.com'
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
-    current_distrorelease = ShipItDistroRelease.FEISTY
+    current_distroseries = ShipItDistroSeries.FEISTY
     max_size_for_auto_approval = 39
 
 
@@ -170,8 +170,8 @@ class IShippingRequest(Interface):
             description=_("This request's address, city, province and "
                           "postcode normalized and concatenated"))
 
-    distrorelease = Attribute(_(
-        "The ShipItDistroRelease of the CDs contained in this request"))
+    distroseries = Attribute(_(
+        "The ShipItDistroSeries of the CDs contained in this request"))
     recipient_email = Attribute(_("The recipient's email address."))
     shipment = Int(title=_(
         "The request's Shipment or None if the request wasn't shipped yet."),
@@ -332,12 +332,12 @@ class IShippingRequest(Interface):
 
     def addressIsDuplicated():
         """Return True if there is one or more requests made from another
-        user using the same address and distrorelease as this one.
+        user using the same address and distroseries as this one.
         """
 
     def getRequestsWithSameAddressFromOtherUsers():
         """Return all non-cancelled non-denied requests with the same address
-        and distrorelease as this one but with a different recipient.
+        and distroseries as this one but with a different recipient.
         """
 
 
@@ -364,7 +364,7 @@ class IShippingRequestSet(Interface):
 
     def exportRequestsToFiles(
             priority, ztm,
-            distrorelease=ShipItConstants.current_distrorelease):
+            distroseries=ShipItConstants.current_distroseries):
         """Export all approved, unshipped and non-cancelled into CSV files.
 
         Group approved, unshipped and non-cancelled requests into one or more
@@ -391,7 +391,7 @@ class IShippingRequestSet(Interface):
         """
 
     def getUnshippedRequestsIDs(
-            priority, distrorelease=ShipItConstants.current_distrorelease):
+            priority, distroseries=ShipItConstants.current_distroseries):
         """Return the ID of all requests that are eligible for shipping.
 
         These are approved requests that weren't shipped yet.
@@ -403,31 +403,31 @@ class IShippingRequestSet(Interface):
         Return the default value if there's no ShippingRequest with this id.
         """
 
-    def search(status=None, flavour=None, distrorelease=None,
+    def search(status=None, flavour=None, distroseries=None,
                recipient_text=None, include_cancelled=False):
         """Search for requests that match the given arguments."""
 
-    def generateShipmentSizeBasedReport(current_release_only=False):
+    def generateShipmentSizeBasedReport(current_series_only=False):
         """Generate a csv file with the size of shipments and the number of
         shipments of that size.
 
-        If current_release_only is True, then include only requests for CDs of
-        ShipItConstants.current_distrorelease.
+        If current_series_only is True, then include only requests for CDs of
+        ShipItConstants.current_distroseries.
         """
 
-    def generateCountryBasedReport(current_release_only=False):
+    def generateCountryBasedReport(current_series_only=False):
         """Generate a csv file with statiscs about orders placed by country.
 
-        If current_release_only is True, then include only requests for CDs of
-        ShipItConstants.current_distrorelease.
+        If current_series_only is True, then include only requests for CDs of
+        ShipItConstants.current_distroseries.
         """
 
     def generateWeekBasedReport(
-            start_date, end_date, only_current_distrorelease=False):
+            start_date, end_date, only_current_distroseries=False):
         """Generate a csv file with statistics about orders placed by week.
 
-        If only_current_distrorelease is True, then the requests included will
-        be limited to those for CDs of ShipItConstants.current_distrorelease.
+        If only_current_distroseries is True, then the requests included will
+        be limited to those for CDs of ShipItConstants.current_distroseries.
 
         Only the orders placed between the first monday prior to start_date
         and the first sunday prior to end_date are considered.
@@ -436,18 +436,18 @@ class IShippingRequestSet(Interface):
     def generateRequestDistributionReport():
         """Generate a csv file with the distribution of requests and shipments.
 
-        For the current release, there will be 4 columns displaying the number
+        For the current series, there will be 4 columns displaying the number
         of requests/shipments and the number of users which had that exact
-        number of requests/shipments. The previous releases we do the same but
-        for requests/shipments across all releases and only include people
-        which requested the current release.
+        number of requests/shipments. The previous series we do the same but
+        for requests/shipments across all series and only include people
+        which requested the current series.
         """
 
 
 class IRequestedCDs(Interface):
 
     request = Int(title=_('The ShippingRequest'), required=True, readonly=True)
-    distrorelease = Int(title=_('Distro Release'), required=True, readonly=True)
+    distroseries = Int(title=_('Series'), required=True, readonly=True)
     flavour = Choice(title=_('Distro Flavour'), required=True, readonly=True,
                      vocabulary='ShipItFlavour')
     architecture = Int(title=_('Architecture'), required=True, readonly=True)

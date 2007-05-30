@@ -53,7 +53,7 @@ translatable for that product:
 
 We can also see how many translatables it has:
 
-But for a52dec, where we have no translatable release or Ubuntu package, the
+But for a52dec, where we have no translatable series or Ubuntu package, the
 primary_translatable is nonexistent:
 
     >>> print a52dec.primary_translatable
@@ -104,7 +104,7 @@ The packaging table allows us to list source and distro source packages
 related to a certain upstream:
 
    >>> alsa = productset.getByName('alsa-utils')
-   >>> [(sp.name, sp.distrorelease.name) for sp in alsa.sourcepackages]
+   >>> [(sp.name, sp.distroseries.name) for sp in alsa.sourcepackages]
    [(u'alsa-utils', u'sid'), (u'alsa-utils', u'warty')]
    >>> [(sp.name, sp.distribution.name) for sp in alsa.distrosourcepackages]
    [(u'alsa-utils', u'debian'), (u'alsa-utils', u'ubuntu')]
@@ -193,9 +193,9 @@ We can create new products with the createProduct() method:
 
 When creating a product, a default product series is created for it:
 
-    >>> product.serieslist.count()
+    >>> product.serieses.count()
     1
-    >>> trunk = product.serieslist[0]
+    >>> trunk = product.serieses[0]
     >>> print trunk.name
     trunk
 

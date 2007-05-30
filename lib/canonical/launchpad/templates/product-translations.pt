@@ -47,7 +47,7 @@
             <abbr>PO</abbr> template for one of its release series.
           </p>
           <ul>
-            <li tal:repeat="series context/serieslist">
+            <li tal:repeat="series context/serieses">
               <a
                 tal:attributes=
                   "href string:${series/fmt:url}/+translations-upload"

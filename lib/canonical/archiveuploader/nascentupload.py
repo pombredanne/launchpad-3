@@ -120,13 +120,13 @@ class NascentUpload:
         self.logger.debug("Beginning processing.")
 
         try:
-            self.policy.setDistroReleaseAndPocket(self.changes.suite_name)
+            self.policy.setDistroSeriesAndPocket(self.changes.suite_name)
         except NotFoundError:
             self.reject(
-                "Unable to find distrorelease: %s" % self.changes.suite_name)
+                "Unable to find distroseries: %s" % self.changes.suite_name)
 
         # We need to process changesfile addresses at this point because
-        # we depend on an already initialised policy (distrorelease
+        # we depend on an already initialised policy (distroseries
         # and pocket set) to have proper person 'creation rationale'.
         self.run_and_collect_errors(self.changes.processAddresses)
 
@@ -391,13 +391,13 @@ class NascentUpload:
     @property
     def is_ppa(self):
         """Whether or not the current upload is target for a PPA."""
-        # XXX julian 2007-05-29 When self.policy.distrorelease is None, this
+        # XXX julian 2007-05-29 When self.policy.distroseries is None, this
         # will causes a rejection for the wrong reasons (a code exception
         # instead of a bad distro).  Bug reported as #117557.
-        if not self.policy.distrorelease:
+        if not self.policy.distroseries:
             # Greasy hack until above bug is fixed.
             return False
-        if self.policy.archive.id != self.policy.distrorelease.main_archive.id:
+        if self.policy.archive.id != self.policy.distroseries.main_archive.id:
             return True
         return False
 
@@ -548,7 +548,7 @@ class NascentUpload:
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
         for pocket in lookup_pockets:
-            candidates = self.policy.distrorelease.getPublishedReleases(
+            candidates = self.policy.distroseries.getPublishedReleases(
                 source_name, include_pending=True, pocket=pocket,
                 archive=self.policy.archive)
             if candidates:
@@ -564,7 +564,7 @@ class NascentUpload:
 
         This method may raise NotFoundError if it is dealing with an
         uploaded file targeted to an architecture not present in the
-        distrorelease in context. So callsites needs to be aware.
+        distroseries in context. So callsites needs to be aware.
         """
         binary_name = getUtility(
             IBinaryPackageNameSet).queryByName(uploaded_file.package)
@@ -573,7 +573,7 @@ class NascentUpload:
             return None
 
         if uploaded_file.architecture == "all":
-            arch_indep = self.policy.distrorelease.nominatedarchindep
+            arch_indep = self.policy.distroseries.nominatedarchindep
             archtag = arch_indep.architecturetag
         else:
             archtag = uploaded_file.architecture
@@ -581,7 +581,7 @@ class NascentUpload:
         # XXX cprov 20070213: it raises NotFoundError for unknown
         # architectures. For now, it is treated in find_and_apply_overrides().
         # But it should be refactored ASAP.
-        dar = self.policy.distrorelease[archtag]
+        dar = self.policy.distroseries[archtag]
 
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
@@ -597,7 +597,7 @@ class NascentUpload:
                 continue
 
             # Try the other architectures...
-            dars = self.policy.distrorelease.architectures
+            dars = self.policy.distroseries.architectures
             other_dars = [other_dar for other_dar in dars
                           if other_dar.id != dar.id]
             for other_dar in other_dars:
@@ -659,7 +659,7 @@ class NascentUpload:
         Override target component, section and priority.
         """
         self.logger.debug("%s: (binary) exists in %s/%s" % (
-            uploaded_file.package, override.distroarchrelease.architecturetag,
+            uploaded_file.package, override.distroarchseries.architecturetag,
             override.pocket.name))
 
         uploaded_file.component_name = override.component.name
@@ -802,20 +802,20 @@ class NascentUpload:
 
     def _createQueueEntry(self):
         """Return a PackageUpload object."""
-        distrorelease = self.policy.distrorelease
-        if not distrorelease:
-            # Upload was probably rejected with a bad distrorelease, so we
+        distroseries = self.policy.distroseries
+        if not distroseries:
+            # Upload was probably rejected with a bad distroseries, so we
             # can create a dummy one for the purposes of a rejection email.
             assert self.is_rejected, (
-                "The upload is not rejected but distrorelease is None.")
-            distrorelease = getUtility(
-                IDistributionSet)['ubuntu'].currentrelease
-            return distrorelease.createQueueEntry(
+                "The upload is not rejected but distroseries is None.")
+            distroseries = getUtility(
+                IDistributionSet)['ubuntu'].currentseries
+            return distroseries.createQueueEntry(
                 PackagePublishingPocket.RELEASE, self.changes.filename,
-                self.changes.filecontents, distrorelease.main_archive,
+                self.changes.filecontents, distroseries.main_archive,
                 self.changes.signingkey)
         else:
-            return distrorelease.createQueueEntry(
+            return distroseries.createQueueEntry(
                 self.policy.pocket, self.changes.filename,
                 self.changes.filecontents, self.policy.archive,
                 self.changes.signingkey)
@@ -830,7 +830,7 @@ class NascentUpload:
         # Queue entries are created in the NEW state by default; at the
         # end of this method we cope with uploads that aren't new.
         self.logger.debug("Creating queue entry")
-        distrorelease = self.policy.distrorelease
+        distroseries = self.policy.distroseries
         self.queue_root = self._createQueueEntry()
 
         # When binaryful and sourceful, we have a mixed-mode upload.

@@ -176,9 +176,9 @@ To go thru all code paths, the export should have requests for distributions
 and products.
 
   # We need to request again some files.
-  >>> ca.potemplate.distrorelease is None
+  >>> ca.potemplate.distroseries is None
   False
-  >>> cs.potemplate.distrorelease is None
+  >>> cs.potemplate.distroseries is None
   False
   >>> request_set.addRequest(person, None, [ca, cs])
   >>> product_template = potemplate.get(1)

@@ -2,12 +2,12 @@ Test to add a product series
 
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev/firefox')
-  >>> browser.getLink('Register a release series').click()
+  >>> browser.getLink('Register a series').click()
   >>> print browser.url
   http://launchpad.dev/firefox/+addseries
 
   >>> print find_main_content(browser.contents).find('h1').renderContents()
-  Register another release series
+  Register another series
 
 After checking that the page +addseries is there, we try to add a new series.
 
@@ -37,14 +37,14 @@ Now we are redirected to the Overview page of the product series we just added
   Bazaar Branch:
   Mozilla Firefox 0.9.2
 
-Now we test if we can edit the new added release series. First we check if we
+Now we test if we can edit the new added series. First we check if we
 can reach the +edit page.
 
   >>> browser.getLink('Change details').click()
   >>> browser.url
   'http://launchpad.dev/firefox/stable/+edit'
 
-Then we edit the information about the release series. First we try to use a
+Then we edit the information about the series. First we try to use a
 name already in use and a branch for a product other than Firefox:
 
   >>> browser.getControl('Name').value = '1.0'

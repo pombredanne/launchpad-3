@@ -605,7 +605,7 @@ Attach the first version of the file.
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, first_pofile_content, False, rosetta_experts,
     ...     sourcepackagename=pofile.potemplate.sourcepackagename,
-    ...     distrorelease=pofile.potemplate.distrorelease,
+    ...     distroseries=pofile.potemplate.distroseries,
     ...     productseries=pofile.potemplate.productseries)
     >>> transaction.commit()
 
@@ -623,7 +623,7 @@ Attach the second version of the file.
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, second_pofile_content, False, jordi,
     ...     sourcepackagename=pofile.potemplate.sourcepackagename,
-    ...     distrorelease=pofile.potemplate.distrorelease,
+    ...     distroseries=pofile.potemplate.distroseries,
     ...     productseries=pofile.potemplate.productseries)
     >>> transaction.commit()
 
@@ -681,15 +681,15 @@ queue.
 
 
 Imports so far have been associated with a product series.  We can also submit
-translations for a distrorelease.
+translations for a distroseries.
 
-    >>> from canonical.launchpad.interfaces import IDistroReleaseSet
-    >>> warty = getUtility(IDistroReleaseSet).get(1)
+    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
+    >>> warty = getUtility(IDistroSeriesSet).get(1)
     >>> print warty.name
     warty
     >>> firefox_name = SourcePackageName.byName('mozilla-firefox')
     >>> subset = POTemplateSubset(sourcepackagename=firefox_name,
-    ...     distrorelease=warty)
+    ...     distroseries=warty)
     >>> ptn = getUtility(IPOTemplateNameSet).new('firefox-warty', 'ForWarty')
     >>> potemplate = subset.new(
     ...     potemplatename=ptn,
@@ -706,7 +706,7 @@ Nevertheless, we submit an import request for warty, and it is approved:
 
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     potemplate.path, potemplate_contents, True, potemplate.owner,
-    ...     sourcepackagename=firefox_name, distrorelease=warty,
+    ...     sourcepackagename=firefox_name, distroseries=warty,
     ...     potemplate=potemplate)
     >>> transaction.commit()
     >>> entry.status = RosettaImportStatus.APPROVED
