@@ -3,6 +3,7 @@
 This story describes some common use cases about using the browsing and
 searching features of the Answer Tracker.
 
+
 == When Nobody Uses the Answer Tracker ==
 
 Average Joe has recently installed Kubuntu. He has a problem with his
@@ -221,6 +222,7 @@ He clicks on the link to read the question description.
     >>> browser.title
     'mozilla-firefox in ubuntu question #3:...Firefox is slow...'
 
+
 == Controlling the Sort Order ==
 
 That question isn't exactly what Average Joe was looking for. Now, he'd
@@ -262,6 +264,7 @@ selects the 'oldest first' sort order.
 == Common Reports ==
 
 In the actions menu, we find links to some common reports.
+
 
 === Open Questions ===
 
@@ -325,6 +328,7 @@ he enters 'Evolution' as a keyword and hits the search button.
 
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no answered questions matching "Evolution" for Ubuntu.
+
 
 === My questions ===
 
@@ -390,6 +394,7 @@ informing him of this fact is displayed.
     ...     sample_person_browser.contents).first('p').renderContents()
     You didn't ask any questions about gnomebaker.
 
+
 === Need attention ===
 
 A user can often forget which questions need his attention. For
@@ -438,6 +443,7 @@ informing him of this fact is displayed.
     >>> print find_main_content(
     ...     sample_person_browser.contents).first('p').renderContents()
     No questions need your attention for gnomebaker.
+
 
 == Person Reports ==
 
@@ -502,6 +508,7 @@ questions to a particular status:
 The actions menu contains links to listing that contain only a specific
 type of involvement.
 
+
 === Assigned ===
 
 The assigned report only lists the questions to which the person is
@@ -526,6 +533,7 @@ answerer.
     ...     print question.first('a').renderContents()
     mailto: problem in webpage
 
+
 === Commented ===
 
 The report available under the 'Commented' link displays all the
@@ -543,6 +551,7 @@ questions commented on by the person.
     Installation of Java Runtime Environment for Mozilla
     Newly installed plug-in doesn't seem to be used
 
+
 === Asked ===
 
 The 'Asked' link displays a listing containing all the questions
@@ -556,6 +565,7 @@ asked by the person.
     ...     print question.first('a').renderContents()
     Slow system
     Firefox loses focus and gets stuck
+
 
 === Need attention ===
 
@@ -571,6 +581,7 @@ the attention of that person.
     Continue playing after shutdown
     Slow system
 
+
 === Subscribed ===
 
 Foo Bar can find all the questions to which he is subscribed by
@@ -583,6 +594,7 @@ visiting the 'Subscribed' link in the 'Answers' facet.
     >>> for question in questions.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     Slow system
+
 
 == Browsing and Searching Questions in a Project ==
 
@@ -641,6 +653,7 @@ The same standard reports than on regular QuestionTarget are available:
     >>> print user_browser.title
     Questions needing your attention for the Mozilla Project
 
+
 == Searching All Questions ==
 
 It is possible from the Answer Tracker front page to search among all
@@ -693,6 +706,7 @@ display all questions asked in Launchpad with the selected statuses.
     Firefox loses focus and gets stuck          Mozilla Firefox
     Problem showing the SVG demo on W3C site    Mozilla Firefox
     Firefox cannot render Bank Site             Mozilla Firefox
+
 
 == Searching in a Selected Project ==
 
@@ -777,6 +791,7 @@ And also with products:
     >>> anon_browser.getControl('Find Answers').click()
     >>> print anon_browser.title
     Questions matching "plugins" for Mozilla Firefox
+
 
 == Popular searches ==
 
