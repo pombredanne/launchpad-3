@@ -242,7 +242,7 @@ class FTPArchiveHandler:
     # Override Generation
     #
 
-    def getSourcesForOverride(self, distrorelease, pocket):
+    def getSourcesForOverrides(self, distrorelease, pocket):
         """Return SelectResults containing SourcePackagePublishingHistory."""
         return SourcePackagePublishingHistory.select(
             """
@@ -257,7 +257,7 @@ class FTPArchiveHandler:
             prejoins=["sourcepackagerelease.sourcepackagename"],
             orderBy="id")
 
-    def getBinariesForOverride(self, distrorelease, pocket):
+    def getBinariesForOverrides(self, distrorelease, pocket):
         """Return SelectResults containing BinaryPackagePublishingHistory."""
         return BinaryPackagePublishingHistory.select(
             """
@@ -285,8 +285,8 @@ class FTPArchiveHandler:
                     if not self.publisher.isAllowed(distrorelease, pocket):
                         continue
 
-                spphs = getSourcesForOverride(distrorelease, pocket)
-                bpphs = getBinariesForOverride(distrorelease, pocket)
+                spphs = getSourcesForOverrides(distrorelease, pocket)
+                bpphs = getBinariesForOverrides(distrorelease, pocket)
                 self.publishOverrides(spphs, bpphs)
 
     def publishOverrides(self, source_publications, binary_publications):
