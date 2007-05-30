@@ -19,7 +19,7 @@
 
   <permission id="launchpad.Admin" title="Administer something" />
 
-  <!-- There are some fields related with translations that need to be set
+  <!-- There are some translation-related fields that need to be set
   by Translation admins (aka Rosetta Admins) but we don't want to give
   them launchpad.Admin rights because they should not be able to change other
   details for those objects, for instance, IDistroRelease.name. -->

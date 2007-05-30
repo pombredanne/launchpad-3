@@ -239,7 +239,7 @@ class DistroReleaseTranslationsMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):
-        return Link('+admin', 'Edit translation options', icon='edit')
+        return Link('+admin', 'Admin translation options', icon='edit')
 
 
 class DistroReleaseView(BuildRecordsView, QueueItemsView):
@@ -396,6 +396,4 @@ class DistroReleaseTranslationsAdminView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
 
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
+        self.next_url = canonical_url(self.context)

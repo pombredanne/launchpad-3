@@ -110,10 +110,13 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this release.")
     hide_all_translations = Bool(
-        title=u'Hide all translations', required=True,
+        title=u'Hide translations for this release', required=True,
         description=(
-            u"Hide all this distro releases's translations from the UI."
-            "Admins will still be able to see them."),
+            u"You may hide all translation for this distribution release so"
+             " that only Launchpad administrators will be able to see them."
+             " For example, you should hide these translations while they are"
+             " being imported from a previous release so that translators"
+             " will not be confused by imports that are in progress."),
         default=True)
 
     # related joins

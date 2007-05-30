@@ -402,7 +402,7 @@ distrorelease_search = ContextDisplayName('Search packages in %s')
 
 distrorelease_translations = ContextTitle('Translations of %s in Launchpad')
 
-distrorelease_translationsadmin = ContextTitle('Admin translation options of %s')
+distrorelease_translationsadmin = ContextTitle('Admin translation options for %s')
 
 distrorelease_builds = ContextTitle('Builds for %s')
 
