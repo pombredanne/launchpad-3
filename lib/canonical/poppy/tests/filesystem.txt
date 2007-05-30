@@ -313,13 +313,13 @@ names
 
 The `names` command returns a sequence of the names in the `path`.
 
-    >>> ufs.names(".")
-    ['testfile', 'testdir']
+    >>> sorted(ufs.names("."))
+    ['testdir', 'testfile']
 
 `path` is normalized before used.
 
-    >>> ufs.names("some-directory/..") # -> "."
-    ['testfile', 'testdir']
+    >>> sorted(ufs.names("some-directory/..")) # -> "."
+    ['testdir', 'testfile']
 
 'path' under the server root is not allowed:
 
@@ -335,8 +335,8 @@ the given `filter` function returns True for it.
     >>> ufs.names(".", always_false_filter)
     []
 
-    >>> ufs.names(".", always_true_filter)
-    ['testfile', 'testdir']
+    >>> sorted(ufs.names(".", always_true_filter))
+    ['testdir', 'testfile']
 
     >>> for i in [ "foo", "bar", "baz", "bat" ]:
     ...     x = open(os.path.join(rootpath, i), 'w')
