@@ -142,8 +142,8 @@ class MultiTableCopy:
 
         Return value is properly quoted for use as an SQL identifier.
         """
-        return str(
-            quoteIdentifier(self.getRawHoldingTableName(tablename, suffix)))
+        raw_name = self.getRawHoldingTableName(tablename, suffix)
+        return str(quoteIdentifier(raw_name))
 
     def pointsToTable(self, source_table, foreign_key):
         """Name of table that source_table.foreign_key refers to.
@@ -304,15 +304,15 @@ class MultiTableCopy:
         # If there are any holding tables to be poured into their source
         # tables, there must at least be one for the last table that
         # pourHoldingTables() processes.
-        if not postgresql.have_table(
-                cur, self.getRawHoldingTableName(self.tables[-1])):
+        last_holding_table = self.getRawHoldingTableName(self.tables[-1])
+        if not postgresql.have_table(cur, last_holding_table):
             return False
 
         # If the first table in our list also still exists, and it still has
         # its new_id column, then the pouring process had not begun yet.
         # Assume the data was not ready for pouring.
-        if postgresql.table_has_column(
-                cur, self.getRawHoldingTableName(self.tables[0]), 'new_id'):
+        first_holding_table = self.getRawHoldingTableName(self.tables[0])
+        if postgresql.table_has_column(cur, first_holding_table, 'new_id'):
             logging.info(
                 "Previous run aborted too early for recovery; redo all")
             return False
