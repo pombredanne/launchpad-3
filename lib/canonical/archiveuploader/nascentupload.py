@@ -760,8 +760,10 @@ class NascentUpload:
             # very small, and at some point the script infrastructure will
             # only send emails when the script exits successfully.
             changes_file_object = open(self.changes.filepath, "r")
-            self.queue_root.notify(announce_list=self.policy.announcelist, 
-                changes_file_object=changes_file_object, logger=self.logger)
+            self.queue_root.notify(
+                announce_list=self.policy.announcelist,
+                changes_file_object=changes_file_object,
+                logger=self.logger)
             changes_file_object.close()
             return True
 
@@ -873,6 +875,10 @@ class NascentUpload:
             # Store the related builds after verifying they were built
             # from the same source.
             for considered_build in processed_builds:
+                attached_builds = [build.build.id
+                                   for build in self.queue_root.builds]
+                if considered_build.id in attached_builds:
+                    continue
                 assert (considered_build.sourcepackagerelease.id == spr.id), (
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)

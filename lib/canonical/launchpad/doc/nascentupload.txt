@@ -394,6 +394,7 @@ The upload will be rejected.
 
   >>> success = ed_src_dup.do_accept()
   ERROR: Exception while accepting:
+  This sourcepackagerelease is already accepted in hoary.
   <BLANKLINE>
   Traceback...
   ...
