@@ -1,7 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Acceptance tests for Supermirror SFTP server's bzr support.
-"""
+"""Acceptance tests for Supermirror SFTP server's bzr support."""
 
 __metaclass__ = type
 
@@ -523,8 +522,3 @@ def test_suite():
     for test in iter_suite_tests(unittest.makeSuite(AcceptanceTests)):
         suite.addTests(adapter.adapt(test))
     return suite
-
-
-# Be paranoid since we trash directories as part of this.
-assert config.default_section == 'testrunner', \
-        'Imported dangerous test harness outside of the test runner'
