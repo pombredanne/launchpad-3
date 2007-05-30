@@ -34,6 +34,7 @@ Several views are used to handle the various operations on a question.
     ...     stub.test_emails = []
     ...     return notifications
 
+
 == QuestionSubscriptionView ==
 
 This view is used to subscribe and unsubscribe from a question.
@@ -73,6 +74,7 @@ These two actions didn't generate any notification mails:
 
     >>> len(pop_notifications())
     0
+
 
 == QuestionWorkflowView ==
 
@@ -277,6 +279,7 @@ the SOLVED state.
     # Clear all notifications.
     >>> notifications = pop_notifications()
 
+
 == QuestionMakeBugView ==
 
 The QuestionMakeBugView is used to handle the creation of a bug from a
@@ -328,6 +331,7 @@ If the question already has bugs linked to it, no new bug can be created.
     ...     print n.message
     You cannot create a bug report...
 
+
 == BugLinkView and BugsUnlinkView ==
 
 Linking bug (+linkbug) to the question is managed through the BugLinkView.
@@ -335,6 +339,7 @@ Unlinking bugs from the question is managed through the BugsUnlinkView.
 See 'buglinktarget-pages.txt' for their documentation. The notifications
 sent along linking and unlinking bugs can be found in
 'answer-tracker-notifications.txt'.
+
 
 == QuestionRejectView ==
 
@@ -353,6 +358,7 @@ question.
     You have rejected this question.
     >>> print firefox_question.status.title
     Invalid
+
 
 == QuestionChangeStatusView ==
 
@@ -374,6 +380,7 @@ outside of the comment workflow.
 
     # Clear the notification.
     >>> notifications = pop_notifications()
+
 
 == QuestionEditView ==
 
@@ -485,6 +492,7 @@ a distribution question:
     # Clear out the pending notifications.
     >>> notifications = pop_notifications()
 
+
 == The QuestionLanguage vocabulary ==
 
 The QuestionLanguageVocabularyFactory is an IContextSourceBinder which
@@ -574,6 +582,7 @@ by the previous rules.
     # Clean up.
     >>> question_three.language = getUtility(ILanguageSet)['en']
 
+
 == UserSupportLanguagesMixin ==
 
 The UserSupportLanguagesMixin can be used by views that needs to
@@ -635,6 +644,7 @@ excluded:
     >>> view = UserSupportLanguagesView(None, request)
     >>> sorted(language.code for language in view.user_support_languages)
     [u'cy', u'en', u'ja']
+
 
 == SearchQuestionsView ==
 
@@ -783,6 +793,7 @@ It works also with user submitted values:
     There are no questions matching "evolution" for Ubuntu with the
     requested statuses.
 
+
 == QuestionCollectionOpenCountView ==
 
 There is a helper view that is available on all IQuestionCollection
@@ -793,6 +804,7 @@ states on that target.
     ...     firefox, '+open_questions_count', LaunchpadTestRequest())
     >>> view()
     u'4'
+
 
 == QuestionSOP ==
 
