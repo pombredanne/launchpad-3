@@ -70,8 +70,8 @@ class PackageUploadQueue:
 
     implements(IPackageUploadQueue)
 
-    def __init__(self, distrorelease, status):
-        self.distrorelease = distrorelease
+    def __init__(self, distroseries, status):
+        self.distroseries = distroseries
         self.status = status
 
 
@@ -85,8 +85,8 @@ class PackageUpload(SQLBase):
                      default=PackageUploadStatus.NEW,
                      schema=PackageUploadStatus)
 
-    distrorelease = ForeignKey(dbName="distrorelease",
-                               foreignKey='DistroRelease')
+    distroseries = ForeignKey(dbName="distrorelease",
+                               foreignKey='DistroSeries')
 
     pocket = EnumCol(dbName='pocket', unique=False, notNull=True,
                      schema=PackagePublishingPocket)
@@ -152,11 +152,11 @@ class PackageUpload(SQLBase):
         """See IPackageUpload."""
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks for 'ubuntu' main distro.
-        if self.archive.id == self.distrorelease.distribution.main_archive.id:
-            assert self.distrorelease.canUploadToPocket(self.pocket), (
+        if self.archive.id == self.distroseries.distribution.main_archive.id:
+            assert self.distroseries.canUploadToPocket(self.pocket), (
                 "Not permitted acceptance in the %s pocket in a "
-                "release in the '%s' state." % (
-                self.pocket.name, self.distrorelease.releasestatus.name))
+                "series in the '%s' state." % (
+                self.pocket.name, self.distroseries.status.name))
 
         if self.status == PackageUploadStatus.ACCEPTED:
             raise QueueInconsistentStateError(
@@ -165,11 +165,11 @@ class PackageUpload(SQLBase):
         for source in self.sources:
             # If two queue items have the same (name, version) pair,
             # then there is an inconsistency.  Check the accepted & done
-            # queue items for each distro release for such duplicates
+            # queue items for each distro series for such duplicates
             # and raise an exception if any are found.
             # See bug #31038 & #62976 for details.
-            for distrorelease in self.distrorelease.distribution:
-                if distrorelease.getQueueItems(
+            for distroseries in self.distroseries.distribution:
+                if distroseries.getQueueItems(
                     status=[PackageUploadStatus.ACCEPTED,
                             PackageUploadStatus.DONE],
                     name=source.sourcepackagerelease.name,
@@ -177,7 +177,7 @@ class PackageUpload(SQLBase):
                     archive=self.archive, exact_match=True).count() > 0:
                     raise QueueInconsistentStateError(
                         'This sourcepackagerelease is already accepted in %s.'
-                        % distrorelease.name)
+                        % distroseries.name)
 
             # if something goes wrong we will raise an exception
             # (QueueSourceAcceptError) before setting any value.
@@ -276,7 +276,7 @@ class PackageUpload(SQLBase):
         for queue_source in self.sources:
             archs.append('source')
         for queue_build in self.builds:
-            archs.append(queue_build.build.distroarchrelease.architecturetag)
+            archs.append(queue_build.build.distroarchseries.architecturetag)
         for queue_custom in self.customfiles:
             archs.append(queue_custom.customformat.title)
         return ",".join(archs)
@@ -309,11 +309,11 @@ class PackageUpload(SQLBase):
             "Can not publish a non-ACCEPTED queue record (%s)" % self.id)
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
-        if self.archive.id == self.distrorelease.distribution.main_archive.id:
-            assert self.distrorelease.canUploadToPocket(self.pocket), (
+        if self.archive.id == self.distroseries.distribution.main_archive.id:
+            assert self.distroseries.canUploadToPocket(self.pocket), (
                 "Not permitted to publish to the %s pocket in a "
-                "release in the '%s' state." % (
-                self.pocket.name, self.distrorelease.releasestatus.name))
+                "series in the '%s' state." % (
+                self.pocket.name, self.distroseries.status.name))
 
         # In realising an upload we first load all the sources into
         # the publishing tables, then the binaries, then we attempt
@@ -349,7 +349,7 @@ class PackageUpload(SQLBase):
 
     def isPPA(self):
         """See IPackageUpload."""
-        return self.archive.id != self.distrorelease.main_archive.id
+        return self.archive.id != self.distroseries.main_archive.id
 
     def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""
@@ -446,8 +446,8 @@ class PackageUpload(SQLBase):
             "CHANGES": self.changesfile.filename,
             "SUMMARY": summarystring,
             "CHANGESFILE": guess_encoding("".join(changes_lines)),
-            "DISTRO": self.distrorelease.distribution.title,
-            "DISTRORELEASE": self.distrorelease.name,
+            "DISTRO": self.distroseries.distribution.title,
+            "DISTROSERIES": self.distroseries.name,
             "ANNOUNCE": announce_list,
             "SOURCE": self.displayname,
             "VERSION": self.displayversion,
@@ -513,7 +513,7 @@ class PackageUpload(SQLBase):
 
     def notify(self, announce_list=None, summary_text=None,
                changes_file_object=None, logger=None):
-        """See `IDistroReleaseQueue`."""
+        """See `IDistroSeriesQueue`."""
 
         self.logger = logger
 
@@ -575,12 +575,12 @@ class PackageUpload(SQLBase):
 
             maintainer = self._emailToPerson(changes['maintainer'])
             if (maintainer and maintainer != signer and
-                    maintainer.isUploader(self.distrorelease.distribution)):
+                    maintainer.isUploader(self.distroseries.distribution)):
                 debug(self.logger, "Adding maintainer to recipients")
                 candidate_recipients.append(maintainer)
 
             if (changer and changer != signer and 
-                    changer.isUploader(self.distrorelease.distribution)):
+                    changer.isUploader(self.distroseries.distribution)):
                 debug(self.logger, "Adding changed-by to recipients")
                 candidate_recipients.append(changer)
         else:
@@ -618,7 +618,7 @@ class PackageUpload(SQLBase):
         """Return True if the person is an uploader to the package's distro."""
         debug(self.logger, "Attempting to decide if %s is an uploader." % (
             person.displayname))
-        uploader = person.isUploader(self.distrorelease.distribution)
+        uploader = person.isUploader(self.distroseries.distribution)
         debug(self.logger, "Decision: %s" % uploader)
         return uploader
 
@@ -648,30 +648,30 @@ class PackageUploadBuild(SQLBase):
 
     def checkComponentAndSection(self):
         """See IPackageUploadBuild."""
-        distrorelease = self.packageupload.distrorelease
+        distroseries = self.packageupload.distroseries
         for binary in self.build.binarypackages:
-            if binary.component not in distrorelease.components:
+            if binary.component not in distroseries.components:
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
-                    % (binary.component.name, distrorelease.name))
-            if binary.section not in distrorelease.sections:
+                    % (binary.component.name, distroseries.name))
+            if binary.section not in distroseries.sections:
                 raise QueueBuildAcceptError(
                     'Section "%s" is not allowed in %s' % (binary.section.name,
-                                                           distrorelease.name))
+                                                           distroseries.name))
 
     def publish(self, logger=None):
         """See IPackageUploadBuild."""
         # Determine the build's architecturetag
-        build_archtag = self.build.distroarchrelease.architecturetag
-        # Determine the target arch release.
+        build_archtag = self.build.distroarchseries.architecturetag
+        # Determine the target arch series.
         # This will raise NotFoundError if anything odd happens.
-        target_dar = self.packageupload.distrorelease[build_archtag]
+        target_dar = self.packageupload.distroseries[build_archtag]
         debug(logger, "Publishing build to %s/%s/%s" % (
-            target_dar.distrorelease.distribution.name,
-            target_dar.distrorelease.name,
+            target_dar.distroseries.distribution.name,
+            target_dar.distroseries.name,
             build_archtag))
-        # And get the other distroarchreleases
-        other_dars = set(self.packageupload.distrorelease.architectures)
+        # And get the other distroarchseriess
+        other_dars = set(self.packageupload.distroseries.architectures)
         other_dars = other_dars - set([target_dar])
         # First up, publish everything in this build into that dar.
         published_binaries = []
@@ -691,7 +691,7 @@ class PackageUploadBuild(SQLBase):
                 # binaries here? bug 3408
                 sbpph = SecureBinaryPackagePublishingHistory(
                     binarypackagerelease=binary,
-                    distroarchrelease=each_target_dar,
+                    distroarchseries=each_target_dar,
                     component=binary.component,
                     section=binary.section,
                     priority=binary.priority,
@@ -723,33 +723,33 @@ class PackageUploadSource(SQLBase):
 
     def checkComponentAndSection(self):
         """See IPackageUploadSource."""
-        distrorelease = self.packageupload.distrorelease
+        distroseries = self.packageupload.distroseries
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
 
-        if component not in distrorelease.components:
+        if component not in distroseries.components:
             raise QueueSourceAcceptError(
                 'Component "%s" is not allowed in %s' % (component.name,
-                                                         distrorelease.name))
+                                                         distroseries.name))
 
-        if section not in distrorelease.sections:
+        if section not in distroseries.sections:
             raise QueueSourceAcceptError(
                 'Section "%s" is not allowed in %s' % (section.name,
-                                                       distrorelease.name))
+                                                       distroseries.name))
 
     def publish(self, logger=None):
         """See IPackageUploadSource."""
-        # Publish myself in the distrorelease pointed at by my queue item.
+        # Publish myself in the distroseries pointed at by my queue item.
         # XXX: dsilvers: 20051020: What do we do here to support embargoed
         # sources? bug 3408
         debug(logger, "Publishing source %s/%s to %s/%s" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
-            self.packageupload.distrorelease.distribution.name,
-            self.packageupload.distrorelease.name))
+            self.packageupload.distroseries.distribution.name,
+            self.packageupload.distroseries.name))
 
         return SecureSourcePackagePublishingHistory(
-            distrorelease=self.packageupload.distrorelease,
+            distroseries=self.packageupload.distroseries,
             sourcepackagerelease=self.sourcepackagerelease,
             component=self.sourcepackagerelease.component,
             section=self.sourcepackagerelease.section,
@@ -788,8 +788,8 @@ class PackageUploadCustom(SQLBase):
         # so marked.
         debug(logger, "Publishing custom %s to %s/%s" % (
             self.packageupload.displayname,
-            self.packageupload.distrorelease.distribution.name,
-            self.packageupload.distrorelease.name))
+            self.packageupload.distroseries.distribution.name,
+            self.packageupload.distroseries.name))
 
         name = "publish_" + self.customformat.name
         method = getattr(self, name, None)
@@ -811,7 +811,7 @@ class PackageUploadCustom(SQLBase):
     @property
     def archive_config(self):
         """See IPackageUploadCustom."""
-        distribution = self.packageupload.distrorelease.distribution
+        distribution = self.packageupload.distroseries.distribution
         archive = self.packageupload.archive
         return archive.getPubConfig(distribution)
 
@@ -823,7 +823,7 @@ class PackageUploadCustom(SQLBase):
         """
         temp_filename = self.temp_filename()
         full_suite_name = "%s%s" % (
-            self.packageupload.distrorelease.name,
+            self.packageupload.distroseries.name,
             pocketsuffix[self.packageupload.pocket])
         try:
             action_method(
@@ -916,14 +916,14 @@ class PackageUploadSet:
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
 
-    def count(self, status=None, distrorelease=None, pocket=None):
+    def count(self, status=None, distroseries=None, pocket=None):
         """See IPackageUploadSet."""
         clauses = []
         if status:
             clauses.append("status=%s" % sqlvalues(status))
 
-        if distrorelease:
-            clauses.append("distrorelease=%s" % sqlvalues(distrorelease))
+        if distroseries:
+            clauses.append("distrorelease=%s" % sqlvalues(distroseries))
 
         if pocket:
             clauses.append("pocket=%s" % sqlvalues(pocket))

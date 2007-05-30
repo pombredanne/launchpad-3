@@ -144,7 +144,7 @@ class BuildRecordsView(LaunchpadView):
     It retrieves the UI build_state selector action and setup a proper
     batched list with the requested results. See further UI details in
     template/builds-list.pt and callsite details in Builder, Distribution,
-    DistroRelease, DistroArchRelease and SourcePackage view classes.
+    DistroSeries, DistroArchSeries and SourcePackage view classes.
     """
     __used_for__ = IHasBuildRecords
 
