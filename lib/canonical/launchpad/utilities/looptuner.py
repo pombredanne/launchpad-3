@@ -81,7 +81,6 @@ class LoopTuner:
         self.minimum_chunk_size = minimum_chunk_size
         self.maximum_chunk_size = maximum_chunk_size
 
-
     def run(self):
         """Run the loop to completion."""
         chunk_size = self.minimum_chunk_size
@@ -95,8 +94,8 @@ class LoopTuner:
             new_clock = self._time()
             time_taken = new_clock - last_clock
             last_clock = new_clock
-            logging.info("Iteration %d (size %.1f): %.3f seconds" % (
-                            iteration, chunk_size, time_taken))
+            logging.info("Iteration %d (size %.1f): %.3f seconds" %
+                         (iteration, chunk_size, time_taken))
 
             total_size += chunk_size
 
