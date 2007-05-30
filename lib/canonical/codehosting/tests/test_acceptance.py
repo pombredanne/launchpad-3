@@ -210,19 +210,6 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         # Undo setUp.
         self.server.stopService()
 
-        # XXX: spiv 2006-02-09: manually break cycles in uncollectable garbage
-        # caused by the server shutting down while paramiko clients still have
-        # connections to it.  This bug has been fixed in upstream paramiko, so
-        # soon this will be unnecessary.
-        gc.collect()
-        obj = None
-        for obj in gc.garbage:
-            if getattr(obj, 'auth_handler', None) is not None:
-                obj.auth_handler = None
-        del obj
-        del gc.garbage[:]
-        gc.collect()
-
         os.environ['HOME'] = self.realHome
         self.authserver.stopService()
         # XXX spiv 2006-04-27: We need to do bzrlib's tear down first, because
