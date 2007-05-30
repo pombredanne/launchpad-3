@@ -5,8 +5,8 @@ This test will check the upload of dist-upgrade tarballs
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.tests import (
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> distro_release_set = getUtility(IDistroReleaseSet)
@@ -55,11 +55,14 @@ It was not rejected.
   >>> upload.is_rejected
   False
 
-  >>> success, msgs = upload.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  >>> success = upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: signer of the above package.
 
 And all things worked.
 
@@ -175,9 +178,9 @@ Cleanup the mess:
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> queue_item = breezy_autotest.getQueueItems(
-  ...      status=DistroReleaseQueueStatus.ACCEPTED)[0]
+  ...      status=PackageUploadStatus.ACCEPTED)[0]
   >>> queue_item.customfiles[0].libraryfilealias.filename
   u'dist-upgrader_20060302.0120_all.tar.gz'
 
@@ -240,11 +243,14 @@ manual intervention.
   DEBUG: Foo Bar (16) is an uploader for main.
   DEBUG: Finished checking upload.
 
-  >>> success, msgs = upload.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  >>> success = upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: signer of the above package.
 
 Make the just-uploaded librarian file visible:
 
@@ -277,3 +283,54 @@ Remove the directory to keep the test working.
   >>> import shutil
   >>> shutil.rmtree(target_dir)
 
+
+== Dist Upgrader to PPA ==
+
+Custom uploads for PPAs should works as expected, i.e, publish its
+files in the respective PPA location.
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPersonSet, IArchiveSet)
+
+  >>> foobar_archive = getUtility(IArchiveSet).new(
+  ...     owner=getUtility(IPersonSet).getByName('name16'))
+
+  >>> insecure_policy.archive = foobar_archive
+
+  >>> ppa_upload = NascentUpload(
+  ...     datadir('dist-upgrader/dist-upgrader_20060302.0120_all.changes'),
+  ...     insecure_policy, mock_logger)
+  DEBUG: Verifying signature on dist-upgrader_20060302.0120_all.changes
+
+  >>> ppa_upload.process()
+  DEBUG: Beginning processing.
+  DEBUG: Verifying the changes file.
+  DEBUG: Verifying files in upload.
+  DEBUG: Single Custom Upload detected.
+  DEBUG: Do verify signer ACL for PPA
+  DEBUG: Finished checking upload.
+
+  >>> success = ppa_upload.do_accept()
+  DEBUG: Creating queue entry
+  DEBUG: Setting it to ACCEPTED
+  DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: signer of the above package.
+
+  >>> transaction.commit()
+  >>> ppa_upload.queue_root.realiseUpload(mock_logger)
+  DEBUG: Publishing custom dist-upgrader_20060302.0120_all.tar.gz to ubuntutest/breezy-autotest
+
+  >>> ppa_root = config.personalpackagearchive.root
+  >>> ppa_dir = os.path.join(ppa_root, 'name16')
+  >>> target_dir = os.path.join(ppa_dir, upgrade_dir)
+  >>> content = sorted(os.listdir(target_dir))
+  >>> content
+  ['20060302.0120', 'current']
+
+Remove the directory to keep the test working.
+
+  >>> import shutil
+  >>> shutil.rmtree(target_dir)

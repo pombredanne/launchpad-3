@@ -22,6 +22,8 @@ __all__ = [
     'QuestionWorkflowView',
     ]
 
+import re
+
 from operator import attrgetter
 
 from zope.app.form.browser import TextAreaWidget, TextWidget
@@ -44,15 +46,15 @@ from canonical.launchpad.event import (
 from canonical.launchpad.helpers import is_english_variant, request_languages
 
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IAnswersFrontPageSearchForm, ILanguageSet,
-    ILaunchpadStatisticSet, IProject, IQuestion, IQuestionAddMessageForm, 
-    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget, 
+    CreateBugParams, IAnswersFrontPageSearchForm, IBug, ILanguageSet,
+    ILaunchpadStatisticSet, IProject, IQuestion, IQuestionAddMessageForm,
+    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget,
     UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
-    GeneralFormView, LaunchpadView, action, LaunchpadFormView,
-    LaunchpadEditFormView, custom_widget)
+    LaunchpadView, action, LaunchpadFormView, LaunchpadEditFormView,
+    custom_widget, safe_action)
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
@@ -84,6 +86,7 @@ class QuestionSetView(LaunchpadFormView):
         """The error message for the scope widget."""
         return self.getWidgetError('scope')
 
+    @safe_action
     @action('Find Answers', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
@@ -145,10 +148,9 @@ class QuestionSubscriptionView(LaunchpadView):
             self.context, providing=providedBy(self.context))
         modified_fields = set()
 
-        form = self.request.form
         response = self.request.response
-        # establish if a subscription form was posted
-        newsub = form.get('subscribe', None)
+        # Establish if a subscription form was posted.
+        newsub = self.request.form.get('subscribe', None)
         if newsub is not None:
             if newsub == 'Subscribe':
                 self.context.subscribe(self.user)
@@ -188,8 +190,8 @@ class QuestionLanguageVocabularyFactory:
     def __init__(self, view):
         """Create a QuestionLanguageVocabularyFactory.
 
-        :param view: The view that provides the request used to determine the 
-        user languages. The view contains the Product widget selected by the 
+        :param view: The view that provides the request used to determine the
+        user languages. The view contains the Product widget selected by the
         user in the case where a question is asked in the context of a Project.
         """
         self.view = view
@@ -206,12 +208,12 @@ class QuestionLanguageVocabularyFactory:
 
         # Insert English as the first element, to make it the default one.
         languages.insert(0, getUtility(ILanguageSet)['en'])
-        
+
         # The vocabulary indicates which languages are supported.
         if context is not None and not IProject.providedBy(context):
             question_target = IQuestionTarget(context)
             supported_languages = question_target.getSupportedLanguages()
-        elif (IProject.providedBy(context) and 
+        elif (IProject.providedBy(context) and
                 self.view.question_target is not None):
             # Projects do not implement IQuestionTarget--the user must
             # choose a product while asking a question.
@@ -270,7 +272,7 @@ class QuestionSupportLanguageMixin:
             key=attrgetter('englishname'))
 
     def createLanguageField(self):
-        """Create a field with a special vocabulary to edit a question language.
+        """Create a field with a vocabulary to edit a question language.
 
         :param the_form: The form that will use this field.
         :return: A form.Fields instance containing the language field.
@@ -296,7 +298,8 @@ class QuestionSupportLanguageMixin:
         will only be displayed one time, except if the user changes the
         request language to another unsupported value.
         """
-        if self.chosen_language in self.question_target.getSupportedLanguages():
+        if (self.chosen_language in
+            self.question_target.getSupportedLanguages()):
             return False
 
         old_chosen_language = self.request.form.get('chosen_language')
@@ -450,8 +453,7 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     """View for editing a Question."""
     schema = IQuestion
     label = 'Edit question'
-    field_names = ["title", "description", "target", "priority", "assignee", 
-                   "whiteboard"]
+    field_names = ["title", "description", "target", "assignee", "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)
@@ -464,7 +466,7 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
         """
         LaunchpadEditFormView.setUpFields(self)
 
-        self.form_fields = self.form_fields.omit("distribution", 
+        self.form_fields = self.form_fields.omit("distribution",
             "sourcepackagename", "product")
 
         # Add the language field with a vocabulary specialized for display
@@ -486,11 +488,15 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class QuestionMakeBugView(GeneralFormView):
+class QuestionMakeBugView(LaunchpadFormView):
     """Browser class for adding a bug from a question."""
 
+    schema = IBug
+
+    field_names = ['title', 'description']
+
     def initialize(self):
-        """Initiaize the view when a Bug may be reported for this Question."""
+        """Initialize the view when a Bug may be reported for the Question."""
         question = self.context
         if question.bugs:
             # we can't make a bug when we have linked bugs
@@ -499,6 +505,7 @@ class QuestionMakeBugView(GeneralFormView):
                   'that already has bugs linked to it.'))
             self.request.response.redirect(canonical_url(question))
             return
+        LaunchpadFormView.initialize(self)
 
     @property
     def initial_values(self):
@@ -507,26 +514,15 @@ class QuestionMakeBugView(GeneralFormView):
         return {'title': '',
                 'description': question.description}
 
-    def process_form(self):
-        """Process the form per the request."""
-        # Override GeneralFormView.process_form because we don't
-        # want form validation when the cancel button is clicked
-        question = self.context
-        if self.request.method == 'GET':
-            self.process_status = ''
-            return ''
-        if 'cancel' in self.request.form:
-            self.request.response.redirect(canonical_url(question))
-            return ''
-        return GeneralFormView.process_form(self)
-
-    def process(self, title, description):
+    @action(_('Create Bug Report'), name='create')
+    def create_action(self, action, data):
         """Create a Bug from a Question."""
         question = self.context
 
-        unmodifed_question = Snapshot(question, providing=providedBy(question))
+        unmodifed_question = Snapshot(
+            question, providing=providedBy(question))
         params = CreateBugParams(
-            owner=self.user, title=title, comment=description)
+            owner=self.user, title=data['title'], comment=data['description'])
         bug = question.target.createBug(params)
         question.linkBug(bug)
         bug.subscribe(question.owner)
@@ -535,11 +531,7 @@ class QuestionMakeBugView(GeneralFormView):
         notify(bug_added_event)
         self.request.response.addNotification(
             _('Thank you! Bug #$bugid created.', mapping={'bugid': bug.id}))
-        self._nextURL = canonical_url(bug)
-
-    def submitted(self):
-        """Return True when the form was submitted."""
-        return 'create' in self.request
+        self.next_url = canonical_url(bug)
 
 
 class QuestionRejectView(LaunchpadFormView):
@@ -655,7 +647,7 @@ class QuestionWorkflowView(LaunchpadFormView):
     @action(_('I Solved the Problem on My Own'), name="selfanswer",
             condition=canSelfAnswer)
     def selfanswer_action(self, action, data):
-        """Action called when the owner provides the solution to his problem."""
+        """Action called when the owner provides the solution."""
         self.context.giveAnswer(self.user, data['message'])
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for sharing your solution.'), data)
@@ -821,6 +813,8 @@ class SearchAllQuestionsView(SearchQuestionsView):
     """View that searches among all questions posted on Launchpad."""
 
     display_target_column = True
+    # Match contiguous digits, optionally prefixed with a '#'.
+    id_pattern = re.compile('^#?(\d+)$')
 
     @property
     def pageheading(self):
@@ -840,6 +834,24 @@ class SearchAllQuestionsView(SearchQuestionsView):
                      mapping=dict(search_text=self.search_text))
         else:
             return _('There are no questions with the requested statuses.')
+
+    @safe_action
+    @action(_('Search'), name='search')
+    def search_action(self, action, data):
+        """Action executed when the user clicked the 'Find Answers' button.
+
+        Saves the user submitted search parameters in an instance
+        attribute and redirects to questions when the term is a question id.
+        """
+        super(SearchAllQuestionsView, self).search_action.success(data)
+
+        if not self.search_text:
+            return
+        id_matches = SearchAllQuestionsView.id_pattern.match(self.search_text)
+        if id_matches is not None:
+            question = getUtility(IQuestionSet).get(id_matches.group(1))
+            if question is not None:
+                self.request.response.redirect(canonical_url(question))
 
 
 class QuestionSOP(StructuralObjectPresentation):

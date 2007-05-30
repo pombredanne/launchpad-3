@@ -15,7 +15,7 @@
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       Use this page to register a project, so that you can
-      track translations, bugs, specifications or bounties for it.
+      track translations, bugs or specifications for it.
     </div>
 
   </div>
