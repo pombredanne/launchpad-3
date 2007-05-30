@@ -37,19 +37,19 @@ class RosettaApplicationView:
         return helpers.request_languages(self.request)
 
     @property
-    def ubuntu_translationrelease(self):
+    def ubuntu_translationseries(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        release = ubuntu.translation_focus
-        if release is None:
-            return ubuntu.currentrelease
+        series = ubuntu.translation_focus
+        if series is None:
+            return ubuntu.currentseries
         else:
-            return release
+            return series
 
     def ubuntu_languages(self):
         langs = []
-        release = self.ubuntu_translationrelease
+        series = self.ubuntu_translationseries
         for language in self.languages:
-            langs.append(release.getDistroReleaseLanguageOrDummy(language))
+            langs.append(series.getDistroSeriesLanguageOrDummy(language))
         return langs
 
     def requestCountry(self):

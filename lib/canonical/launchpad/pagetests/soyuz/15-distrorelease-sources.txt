@@ -1,19 +1,19 @@
-= DistroRelease Source Package Pages =
+= DistroSeries Source Package Pages =
 
 In Launchpad, SourcePackageReleases are directly attached to a
-DistroRelease by a publication record (see doc/publishing.txt).
+DistroSeries by a publication record (see doc/publishing.txt).
 
-A SourcePackage, or better named DistroReleaseSourcePackage, is a
+A SourcePackage, or better named DistroSeriesSourcePackage, is a
 collection of SourcePackageReleases once published in a given
-DistroRelease.
+DistroSeries.
 
 SourcePackages are available through the web UI after traversing
-through a DistroRelease and SourceName. The URL schema is:
+through a DistroSeries and SourceName. The URL schema is:
 
 $LP/ubuntu/$DISTRORELEASE/+source/$SOURCENAME
 
-A SourcePackageRelease once published in a DistroRelease is
-represented by a DistroReleaseSourcePackageRelease and easily reached
+A SourcePackageRelease once published in a DistroSeries is
+represented by a DistroSeriesSourcePackageRelease and easily reached
 by traversing a SourcePackage instance with a valid version, like:
 
 $LP/ubuntu/$DISTRORELEASE/+source/$SOURCENAME/$VERSION
@@ -47,7 +47,7 @@ Let's have a look at the firefox DistributionSourcePackage.
 
 There we can see the entire publishing history for the source and
 links to the pages with more specific (useful) information. By
-clicking in the 'target' distrorelease we will get to the
+clicking in the 'target' distroseries we will get to the
 SourcePackage page:
 
   >>> browser.getLink("warty").click()
@@ -120,14 +120,14 @@ source in a specfic architecture:
   </div>
 
 Let's check the link to the binary package built on i386 architecture,
-a DistroArchReleaseBinaryPackage:
+a DistroArchSeriesBinaryPackage:
 
   >>> browser.getLink("i386").click()
   >>> browser.url
   'http://localhost/ubuntu/warty/i386/mozilla-firefox'
 
 More information about this page can be found at
-17-distroarchrelease-binpackages.txt.
+17-distroarchseries-binpackages.txt.
 
 Move back to the SourcePackage page to continue the tests:
 
@@ -158,7 +158,7 @@ source in question are provided is this page:
 
 
 The '+changelog' page provides an aggregation of the changelogs for
-SourcePackageReleases published in this DistroRelease.
+SourcePackageReleases published in this DistroSeries.
 
 The text is generated automatically by appending:
 
@@ -188,7 +188,7 @@ Back to the SourcePackage page:
   ...     'http://localhost/ubuntu/warty/+source/mozilla-firefox')
 
 We can visit a specific published release of "mozilla-firefox", this
-page is provided by an DistroReleaseSourcePackageRelease instance:
+page is provided by an DistroSeriesSourcePackageRelease instance:
 
   >>> browser.getLink("mozilla-firefox 0.9").click()
   >>> browser.url

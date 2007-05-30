@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet,
     IDistributionSourcePackage,
     IDistroBugTask,
-    IDistroReleaseBugTask,
+    IDistroSeriesBugTask,
     ILaunchpadCelebrities,
     INullBugTask,
     IProductSeriesBugTask,
@@ -73,7 +73,7 @@ def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
 
           - products first, followed by their productseries tasks
-          - distro tasks, followed by their distrorelease tasks
+          - distro tasks, followed by their distroseries tasks
           - ubuntu first among the distros
     """
     if bugtask.product:
@@ -91,11 +91,11 @@ def bugtask_sort_key(bugtask):
     else:
         distribution_name = None
 
-    if bugtask.distrorelease:
-        distrorelease_name = bugtask.distrorelease.version
-        distribution_name = bugtask.distrorelease.distribution.name
+    if bugtask.distroseries:
+        distroseries_name = bugtask.distroseries.version
+        distribution_name = bugtask.distroseries.distribution.name
     else:
-        distrorelease_name = None
+        distroseries_name = None
 
     if bugtask.sourcepackagename:
         sourcepackage_name = bugtask.sourcepackagename.name
@@ -108,7 +108,7 @@ def bugtask_sort_key(bugtask):
 
     return (
         bugtask.bug.id, distribution_name, product_name, productseries_name,
-        distrorelease_name, sourcepackage_name)
+        distroseries_name, sourcepackage_name)
 
 
 class BugTaskDelta:
@@ -162,12 +162,12 @@ class BugTaskMixin:
                     self.sourcepackagename)
             else:
                 return self.distribution
-        elif self.distrorelease:
+        elif self.distroseries:
             if self.sourcepackagename:
-                return self.distrorelease.getSourcePackage(
+                return self.distroseries.getSourcePackage(
                     self.sourcepackagename)
             else:
-                return self.distrorelease
+                return self.distroseries
         else:
             raise AssertionError("Unable to determine bugtask target")
 
@@ -189,7 +189,7 @@ class BugTaskMixin:
         elif self.distribution is not None:
             return self.distribution
         else:
-            return self.distrorelease.distribution
+            return self.distroseries.distribution
 
     @property
     def other_affected_pillars(self):
@@ -247,13 +247,13 @@ class NullBugTask(BugTaskMixin):
 
     def __init__(self, bug, product=None, productseries=None,
                  sourcepackagename=None, distribution=None,
-                 distrorelease=None):
+                 distroseries=None):
         self.bug = bug
         self.product = product
         self.productseries = productseries
         self.sourcepackagename = sourcepackagename
         self.distribution = distribution
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
 
         # Mark the task with the correct interface, depending on its
         # context.
@@ -261,8 +261,8 @@ class NullBugTask(BugTaskMixin):
             alsoProvides(self, IUpstreamBugTask)
         elif self.distribution:
             alsoProvides(self, IDistroBugTask)
-        elif self.distrorelease:
-            alsoProvides(self, IDistroReleaseBugTask)
+        elif self.distroseries:
+            alsoProvides(self, IDistroSeriesBugTask)
 
         # Set a bunch of attributes to None, because it doesn't make
         # sense for these attributes to have a value when there is no
@@ -322,8 +322,8 @@ class BugTask(SQLBase, BugTaskMixin):
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
-    distrorelease = ForeignKey(
-        dbName='distrorelease', foreignKey='DistroRelease',
+    distroseries = ForeignKey(
+        dbName='distrorelease', foreignKey='DistroSeries',
         notNull=False, default=None)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
@@ -394,10 +394,10 @@ class BugTask(SQLBase, BugTaskMixin):
         """See IBugTask."""
         conjoined_master = None
         if (IDistroBugTask.providedBy(self) and
-            self.distribution.currentrelease is not None):
-            current_release = self.distribution.currentrelease
+            self.distribution.currentseries is not None):
+            current_series = self.distribution.currentseries
             for bt in shortlist(self.bug.bugtasks):
-                if (bt.distrorelease == current_release and
+                if (bt.distroseries == current_series and
                     bt.sourcepackagename == self.sourcepackagename):
                     conjoined_master = bt
                     break
@@ -419,10 +419,10 @@ class BugTask(SQLBase, BugTaskMixin):
     def conjoined_slave(self):
         """See IBugTask."""
         conjoined_slave = None
-        if IDistroReleaseBugTask.providedBy(self):
-            distribution = self.distrorelease.distribution
-            if self.distrorelease != distribution.currentrelease:
-                # Only current release tasks are conjoined.
+        if IDistroSeriesBugTask.providedBy(self):
+            distribution = self.distroseries.distribution
+            if self.distroseries != distribution.currentseries:
+                # Only current series tasks are conjoined.
                 return None
             sourcepackagename = self.sourcepackagename
             for bt in shortlist(self.bug.bugtasks):
@@ -473,19 +473,19 @@ class BugTask(SQLBase, BugTaskMixin):
     def _syncSourcePackages(self, prev_sourcepackagename):
         """Synchronize changes to source packages with other distrotasks.
 
-        If one distroreleasetask's source package is changed, all the
-        other distroreleasetasks with the same distribution and source
+        If one distroseriestask's source package is changed, all the
+        other distroseriestasks with the same distribution and source
         package has to be changed, as well as the corresponding
         distrotask.
         """
-        if self.distrorelease is not None:
-            distribution = self.distrorelease.distribution
+        if self.distroseries is not None:
+            distribution = self.distroseries.distribution
         else:
             distribution = self.distribution
         if distribution is not None:
             for bugtask in self.related_tasks:
-                if bugtask.distrorelease:
-                    related_distribution = bugtask.distrorelease.distribution
+                if bugtask.distroseries:
+                    related_distribution = bugtask.distroseries.distribution
                 else:
                     related_distribution = bugtask.distribution
                 if (related_distribution == distribution and
@@ -557,8 +557,8 @@ class BugTask(SQLBase, BugTaskMixin):
             alsoProvides(self, IUpstreamBugTask)
         elif self.productseriesID is not None:
             alsoProvides(self, IProductSeriesBugTask)
-        elif self.distroreleaseID is not None:
-            alsoProvides(self, IDistroReleaseBugTask)
+        elif self.distroseriesID is not None:
+            alsoProvides(self, IDistroSeriesBugTask)
         elif self.distributionID is not None:
             # If nothing else, this is a distro task.
             alsoProvides(self, IDistroBugTask)
@@ -572,8 +572,8 @@ class BugTask(SQLBase, BugTaskMixin):
             root_target = self.product
         elif IProductSeriesBugTask.providedBy(self):
             root_target = self.productseries.product
-        elif IDistroReleaseBugTask.providedBy(self):
-            root_target = self.distrorelease.distribution
+        elif IDistroSeriesBugTask.providedBy(self):
+            root_target = self.distroseries.distribution
         elif IDistroBugTask.providedBy(self):
             root_target = self.distribution
         else:
@@ -747,14 +747,14 @@ class BugTask(SQLBase, BugTaskMixin):
                 {'distroname': self.distribution.name,
                  'sourcepackagename': sourcepackagename_value,
                  'componentname': component})
-        elif IDistroReleaseBugTask.providedBy(self):
+        elif IDistroSeriesBugTask.providedBy(self):
             header_value = ((
                 'distribution=%(distroname)s; '
-                'distrorelease=%(distroreleasename)s; '
+                'distroseries=%(distroseriesname)s; '
                 'sourcepackage=%(sourcepackagename)s; '
                 'component=%(componentname)s;') %
-                {'distroname': self.distrorelease.distribution.name,
-                 'distroreleasename': self.distrorelease.name,
+                {'distroname': self.distroseries.distribution.name,
+                 'distroseriesname': self.distroseries.name,
                  'sourcepackagename': sourcepackagename_value,
                  'componentname': component})
         else:
@@ -782,8 +782,8 @@ class BugTask(SQLBase, BugTaskMixin):
                 changes["product"]["new"] = self.product
         elif ((IDistroBugTask.providedBy(old_task) and
                IDistroBugTask.providedBy(self)) or
-              (IDistroReleaseBugTask.providedBy(old_task) and
-               IDistroReleaseBugTask.providedBy(self))):
+              (IDistroSeriesBugTask.providedBy(old_task) and
+               IDistroSeriesBugTask.providedBy(self))):
             if old_task.sourcepackagename != self.sourcepackagename:
                 changes["sourcepackagename"] = {}
                 changes["sourcepackagename"]["old"] = old_task.sourcepackagename
@@ -940,7 +940,7 @@ class BugTaskSet:
             'importance': params.importance,
             'product': params.product,
             'distribution': params.distribution,
-            'distrorelease': params.distrorelease,
+            'distrorelease': params.distroseries,
             'productseries': params.productseries,
             'milestone': params.milestone,
             'assignee': params.assignee,
@@ -1031,14 +1031,14 @@ class BugTaskSet:
         if params.component:
             clauseTables += ["SourcePackagePublishingHistory",
                              "SourcePackageRelease"]
-            distrorelease = None
+            distroseries = None
             if params.distribution:
-                distrorelease = params.distribution.currentrelease
-            elif params.distrorelease:
-                distrorelease = params.distrorelease
-            assert distrorelease, (
+                distroseries = params.distribution.currentseries
+            elif params.distroseries:
+                distroseries = params.distroseries
+            assert distroseries, (
                 "Search by component requires a context with a distribution "
-                "or distrorelease")
+                "or distroseries")
 
             if zope_isinstance(params.component, any):
                 component_ids = sqlvalues(*params.component.query_values)
@@ -1054,7 +1054,7 @@ class BugTaskSet:
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.component IN %s AND
             SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(distrorelease, distrorelease.main_archive,
+            """ % sqlvalues(distroseries, distroseries.main_archive,
                             component_ids, PackagePublishingStatus.PUBLISHED)])
 
         if params.pending_bugwatch_elsewhere:
@@ -1214,7 +1214,7 @@ class BugTaskSet:
         return joins
 
     def createTask(self, bug, owner, product=None, productseries=None,
-                   distribution=None, distrorelease=None,
+                   distribution=None, distroseries=None,
                    sourcepackagename=None,
                    status=IBugTask['status'].default,
                    importance=IBugTask['importance'].default,
@@ -1235,7 +1235,7 @@ class BugTaskSet:
             elif distribution and distribution.security_contact:
                 bug.subscribe(distribution.security_contact)
 
-        assert (product or productseries or distribution or distrorelease), (
+        assert (product or productseries or distribution or distroseries), (
             'Got no bugtask target')
 
         non_target_create_params = dict(
@@ -1249,7 +1249,7 @@ class BugTaskSet:
             product=product,
             productseries=productseries,
             distribution=distribution,
-            distrorelease=distrorelease,
+            distroseries=distroseries,
             sourcepackagename=sourcepackagename,
             **non_target_create_params)
 
@@ -1260,8 +1260,8 @@ class BugTaskSet:
                 nomination for nomination in bug.getNominations(distribution)
                 if nomination.isApproved()]
             for nomination in accepted_nominations:
-                accepted_release_task = BugTask(
-                    distrorelease=nomination.distrorelease,
+                accepted_series_task = BugTask(
+                    distroseries=nomination.distroseries,
                     sourcepackagename=sourcepackagename,
                     **non_target_create_params)
 
@@ -1325,7 +1325,7 @@ class BugTaskSet:
         # Bug ID is unique within bugs on a product or source package.
         if (params.product or
             (params.distribution and params.sourcepackagename) or
-            (params.distrorelease and params.sourcepackagename)):
+            (params.distroseries and params.sourcepackagename)):
             in_unique_context = True
         else:
             in_unique_context = False

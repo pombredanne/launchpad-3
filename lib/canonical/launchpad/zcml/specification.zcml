@@ -211,14 +211,14 @@
   </browser:editform>
 
   <browser:generalform
-    name="+setrelease"
+    name="+setdistroseries"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationGoalProposeView"
-    label="Target to a distribution release"
-    fields="distrorelease whiteboard"
-    keyword_arguments="distrorelease whiteboard"
+    label="Target to a distribution series"
+    fields="distroseries whiteboard"
+    keyword_arguments="distroseries whiteboard"
     permission="launchpad.Edit"
-    template="../templates/specification-distrorelease.pt">
+    template="../templates/specification-distroseries.pt">
     <browser:widget
       field="whiteboard"
       class="zope.app.form.browser.TextAreaWidget"
@@ -226,7 +226,7 @@
   </browser:generalform>
 
   <browser:generalform
-    name="+setseries"
+    name="+setproductseries"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationGoalProposeView"
     label="Target to a product series"

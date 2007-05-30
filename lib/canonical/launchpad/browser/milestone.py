@@ -92,7 +92,7 @@ class MilestoneView(LaunchpadView):
 class MilestoneAddView:
     def create(self, name, dateexpected=None):
         """We will use the newMilestone method on the ProductSeries or
-        Distrorelease context to make the milestone."""
+        DistroSeries context to make the milestone."""
         return self.context.newMilestone(name, dateexpected=dateexpected)
 
     def add(self, content):

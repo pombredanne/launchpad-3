@@ -30,11 +30,11 @@ methods some other objects to create a task, so lets get the utilities we need
 to access those other objects:
 
     >>> from canonical.launchpad.interfaces import (IBugSet, IPersonSet,
-    ...     IProductSet, IDistributionSet, IDistroReleaseSet,
+    ...     IProductSet, IDistributionSet, IDistroSeriesSet,
     ...     ISourcePackageNameSet)
     >>> productset = getUtility(IProductSet)
     >>> distroset = getUtility(IDistributionSet)
-    >>> distoreleaseset = getUtility(IDistroReleaseSet)
+    >>> distoseriesset = getUtility(IDistroSeriesSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> bugset = getUtility(IBugSet)
     >>> personset = getUtility(IPersonSet)
@@ -75,18 +75,18 @@ Next, we need to grab some values to provide for importance and status.
     >>> IDistroBugTask.providedBy(distro_task)
     True
 
-  ii. Distro Release -- a bug that has to be fixed in a specific distro
-  release. These tasks are used for release management and backporting.
+  ii. Distro Series -- a bug that has to be fixed in a specific distro
+  series. These tasks are used for release management and backporting.
 
-    >>> warty = distoreleaseset.get(1)
-    >>> distro_release_task = bugtaskset.createTask(
-    ...     bug=bug_one, distrorelease=warty, owner=sabdfl,
+    >>> warty = distoseriesset.get(1)
+    >>> distro_series_task = bugtaskset.createTask(
+    ...     bug=bug_one, distroseries=warty, owner=sabdfl,
     ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
-    >>> distro_release_task.distrorelease == warty
+    >>> distro_series_task.distroseries == warty
     True
 
-    >>> from canonical.launchpad.interfaces import IDistroReleaseBugTask
-    >>> IDistroReleaseBugTask.providedBy(distro_release_task)
+    >>> from canonical.launchpad.interfaces import IDistroSeriesBugTask
+    >>> IDistroSeriesBugTask.providedBy(distro_series_task)
     True
 
 XXX: Brad Bollenbach, 2005-02-24: See the bottom of this file for a chunk of
@@ -439,9 +439,9 @@ The "target" of an IBugTask is one of the following things:
     >>> distro_task.target == ubuntu
     True
 
-  * a distrorelease
+  * a distroseries
 
-    >>> distro_release_task.target == warty
+    >>> distro_series_task.target == warty
     True
 
   * a distribution sourcepackage
@@ -460,18 +460,18 @@ The "target" of an IBugTask is one of the following things:
     >>> got_target.sourcepackagename == expected_target.sourcepackagename
     True
 
-  * a distrorelease sourcepackage
+  * a distroseries sourcepackage
 
     >>> from canonical.launchpad.database import SourcePackage
     >>> from canonical.launchpad.interfaces import ISourcePackage
-    >>> distro_release_sp_task = bugtaskset.get(16)
+    >>> distro_series_sp_task = bugtaskset.get(16)
     >>> expected_target = SourcePackage(
-    ...     distrorelease=distro_release_sp_task.distrorelease,
-    ...     sourcepackagename=distro_release_sp_task.sourcepackagename)
-    >>> got_target = distro_release_sp_task.target
-    >>> ISourcePackage.providedBy(distro_release_sp_task.target)
+    ...     distroseries=distro_series_sp_task.distroseries,
+    ...     sourcepackagename=distro_series_sp_task.sourcepackagename)
+    >>> got_target = distro_series_sp_task.target
+    >>> ISourcePackage.providedBy(distro_series_sp_task.target)
     True
-    >>> got_target.distrorelease == expected_target.distrorelease
+    >>> got_target.distroseries == expected_target.distroseries
     True
     >>> got_target.sourcepackagename == expected_target.sourcepackagename
     True
@@ -483,7 +483,7 @@ task. It concatenates the display names of the distribution,
     >>> bugtask.targetname
     u'mozilla-firefox (Ubuntu)'
 
-distro release, or product;
+distro series, or product;
 
     >>> bugtask = bugtaskset.get(2)
     >>> bugtask.targetname
@@ -513,8 +513,8 @@ Let's login and try again.
     >>> login('jeff.waugh@ubuntulinux.com')
     >>> upstream_task.transitionToStatus(STATUS_FIXRELEASED)
 
-Distro and Distro Release Bug Tasks
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Distro and Distro Series Bug Tasks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Any logged-in user can edit tasks filed on distros as long as the bug
 is not marked private. So, as an anonymous user, we can edit anything:
@@ -525,7 +525,7 @@ is not marked private. So, as an anonymous user, we can edit anything:
       ...
     Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
-    >>> distro_release_task.transitionToAssignee(sample_person)
+    >>> distro_series_task.transitionToAssignee(sample_person)
     Traceback (most recent call last):
       ...
     Unauthorized: (..., 'transitionToAssignee', 'launchpad.Edit')
@@ -537,12 +537,12 @@ But once authenticated:
 We can edit the task:
 
     >>> distro_task.transitionToStatus(STATUS_FIXRELEASED)
-    >>> distro_release_task.transitionToAssignee(sample_person)
+    >>> distro_series_task.transitionToAssignee(sample_person)
 
 Conjoined Bug Tasks
 -------------------
 
-A bugtask open on the current development release for a distro is kept
+A bugtask open on the current development series for a distro is kept
 in sync with the "generic" bugtask for that distro, because they
 represent the same piece of work. The same is true for product and
 productseries tasks, when the productseries task is targeted to the
@@ -572,54 +572,54 @@ package.
     >>> ubuntu_bug = ubuntu.createBug(params)
     >>> generic_ubuntu_task = ubuntu_bug.bugtasks[0]
 
-First, we'll target the bug for the current Ubuntu release, Hoary. Note
-that the synched attributes are copied when the release- and
-series-specific tasks are created. We'll set non-default attribute
-values for each generic task to demonstrate.
+First, we'll target the bug for the current Ubuntu series, Hoary. Note
+that the synched attributes are copied when the series-specific tasks are
+created. We'll set non-default attribute values for each generic task to
+demonstrate.
 
-    >>> print ubuntu.currentrelease.name
+    >>> print ubuntu.currentseries.name
     hoary
 
-    >>> ubuntu_edgy_milestone = ubuntu.currentrelease.newMilestone("knot1")
+    >>> ubuntu_edgy_milestone = ubuntu.currentseries.newMilestone("knot1")
 
     >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.INPROGRESS)
     >>> generic_netapplet_task.transitionToAssignee(sample_person)
     >>> generic_netapplet_task.milestone = ubuntu_edgy_milestone
     >>> generic_netapplet_task.importance = BugTaskImportance.CRITICAL
 
-    >>> current_release_ubuntu_task = bugtaskset.createTask(
+    >>> current_series_ubuntu_task = bugtaskset.createTask(
     ...     bug=ubuntu_bug, owner=launchbag.user,
-    ...     distrorelease=ubuntu.currentrelease)
+    ...     distroseries=ubuntu.currentseries)
 
-    >>> current_release_netapplet_task = bugtaskset.createTask(
+    >>> current_series_netapplet_task = bugtaskset.createTask(
     ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
-    ...     distrorelease=ubuntu.currentrelease,
+    ...     distroseries=ubuntu.currentseries,
     ...     sourcepackagename=ubuntu_netapplet.sourcepackagename)
 
 (The attributes were synched with the generic task.)
 
-    >>> print current_release_netapplet_task.status.title
+    >>> print current_series_netapplet_task.status.title
     In Progress
-    >>> print current_release_netapplet_task.assignee.displayname
+    >>> print current_series_netapplet_task.assignee.displayname
     Sample Person
-    >>> print current_release_netapplet_task.milestone.name
+    >>> print current_series_netapplet_task.milestone.name
     knot1
-    >>> print current_release_netapplet_task.importance.title
+    >>> print current_series_netapplet_task.importance.title
     Critical
 
-    >>> current_release_netapplet_task.date_assigned == (
+    >>> current_series_netapplet_task.date_assigned == (
     ...     generic_netapplet_task.date_assigned)
     True
 
-    >>> current_release_netapplet_task.date_confirmed == (
+    >>> current_series_netapplet_task.date_confirmed == (
     ...     generic_netapplet_task.date_confirmed)
     True
 
-    >>> current_release_netapplet_task.date_inprogress == (
+    >>> current_series_netapplet_task.date_inprogress == (
     ...     generic_netapplet_task.date_inprogress)
     True
 
-    >>> current_release_netapplet_task.date_closed == (
+    >>> current_series_netapplet_task.date_closed == (
     ...     generic_netapplet_task.date_closed)
     True
 
@@ -639,29 +639,29 @@ We'll also add some product and productseries tasks.
     ...     productseries=alsa_utils.getSeries("trunk"))
 
 A conjoined bugtask involves a master and slave in the conjoined
-relationship. The slave is the generic product or distribution task;
-the master is the release- or series-specific task. These tasks are
-accessed through the conjoined_master and conjoined_slave properties.
+relationship. The slave is the generic product or distribution task; the
+master is the series-specific task. These tasks are accessed through the
+conjoined_master and conjoined_slave properties.
 
-    >>> current_release_netapplet_task.conjoined_slave == (
+    >>> current_series_netapplet_task.conjoined_slave == (
     ...     generic_netapplet_task)
     True
-    >>> current_release_netapplet_task.conjoined_master is None
+    >>> current_series_netapplet_task.conjoined_master is None
     True
 
     >>> generic_netapplet_task.conjoined_slave is None
     True
     >>> generic_netapplet_task.conjoined_master == (
-    ...     current_release_netapplet_task)
+    ...     current_series_netapplet_task)
     True
 
-    >>> current_release_ubuntu_task.conjoined_slave == (
+    >>> current_series_ubuntu_task.conjoined_slave == (
     ...     generic_ubuntu_task)
     True
-    >>> current_release_ubuntu_task.conjoined_master is None
+    >>> current_series_ubuntu_task.conjoined_master is None
     True
     >>> generic_ubuntu_task.conjoined_master == (
-    ...     current_release_ubuntu_task)
+    ...     current_series_ubuntu_task)
     True
     >>> generic_ubuntu_task.conjoined_slave is None
     True
@@ -678,7 +678,7 @@ accessed through the conjoined_master and conjoined_slave properties.
     ...     devel_focus_alsa_utils_task)
     True
 
-A distrorelease/productseries task that isn't the current development
+A distroseries/productseries task that isn't the current development
 focus, doesn't have any conjoined masters or slaves.
 
     >>> alsa_utils_stable = alsa_utils.newSeries(
@@ -693,23 +693,23 @@ focus, doesn't have any conjoined masters or slaves.
     >>> stable_netapplet_task.conjoined_slave is None
     True
 
-    >>> warty = ubuntu.getRelease('warty')
-    >>> warty == ubuntu.currentrelease
+    >>> warty = ubuntu.getSeries('warty')
+    >>> warty == ubuntu.currentseries
     False
     >>> warty_netapplet_task = bugtaskset.createTask(
     ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
-    ...     distrorelease=warty,
+    ...     distroseries=warty,
     ...     sourcepackagename=ubuntu_netapplet.sourcepackagename)
     >>> warty_netapplet_task.conjoined_master is None
     True
     >>> warty_netapplet_task.conjoined_slave is None
     True
 
-If a distribution doesn't have a current release, its tasks don't have a
+If a distribution doesn't have a current series, its tasks don't have a
 conjoined master or slave.
 
     >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
-    >>> gentoo.currentrelease is None
+    >>> gentoo.currentseries is None
     True
 
     >>> gentoo_netapplet_task = bugtaskset.createTask(
@@ -733,25 +733,25 @@ require extra privileges.)
 
     >>> print generic_netapplet_task.status.title
     In Progress
-    >>> print current_release_netapplet_task.status.title
+    >>> print current_series_netapplet_task.status.title
     In Progress
     >>> generic_netapplet_task.date_closed is None
     True
-    >>> current_release_netapplet_task.date_closed is None
+    >>> current_series_netapplet_task.date_closed is None
     True
 
-    >>> current_release_netapplet_task.transitionToStatus(
+    >>> current_series_netapplet_task.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED)
 
     >>> print generic_netapplet_task.status.title
     Fix Released
-    >>> print current_release_netapplet_task.status.title
+    >>> print current_series_netapplet_task.status.title
     Fix Released
 
     >>> generic_netapplet_task.date_closed
     datetime.datetime...
     >>> generic_netapplet_task.date_closed == (
-    ...     current_release_netapplet_task.date_closed)
+    ...     current_series_netapplet_task.date_closed)
     True
 
 2. Assignee
@@ -784,14 +784,14 @@ require extra privileges.)
 
     >>> print generic_netapplet_task.importance.title
     Critical
-    >>> print current_release_netapplet_task.importance.title
+    >>> print current_series_netapplet_task.importance.title
     Critical
 
-    >>> current_release_netapplet_task.importance = BugTaskImportance.MEDIUM
+    >>> current_series_netapplet_task.importance = BugTaskImportance.MEDIUM
 
     >>> print generic_netapplet_task.importance.title
     Medium
-    >>> print current_release_netapplet_task.importance.title
+    >>> print current_series_netapplet_task.importance.title
     Medium
 
 4. Milestone
@@ -816,15 +816,15 @@ require extra privileges.)
 
     >>> print generic_netapplet_task.sourcepackagename.name
     netapplet
-    >>> print current_release_netapplet_task.sourcepackagename.name
+    >>> print current_series_netapplet_task.sourcepackagename.name
     netapplet
 
-    >>> current_release_netapplet_task.sourcepackagename = (
+    >>> current_series_netapplet_task.sourcepackagename = (
     ...     ubuntu_pmount.sourcepackagename)
 
     >>> print generic_netapplet_task.sourcepackagename.name
     pmount
-    >>> print current_release_netapplet_task.sourcepackagename.name
+    >>> print current_series_netapplet_task.sourcepackagename.name
     pmount
 
 The generic tasks are not directly editable.
@@ -844,46 +844,46 @@ The generic tasks are not directly editable.
 
 A conjoined relationship can be broken, though. If the development
 task (i.e the conjoined master) is Rejected, it means that the bug is
-deferred to the next release. In this case the development task should
+deferred to the next series. In this case the development task should
 be Rejected, while the generic task keeps the value it had before,
 allowing it to stay open.
 
 First let's change the status from Fix Released, since it doesn't make
 sense to reject such a task.
 
-    >>> current_release_netapplet_task.transitionToStatus(
+    >>> current_series_netapplet_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED)
     >>> print generic_netapplet_task.status.title
     Confirmed
-    >>> print current_release_netapplet_task.status.title
+    >>> print current_series_netapplet_task.status.title
     Confirmed
     >>> generic_netapplet_task.date_closed is None
     True
-    >>> current_release_netapplet_task.date_closed is None
+    >>> current_series_netapplet_task.date_closed is None
     True
 
 
-Now, if we reject the current release task, the generic task will still
+Now, if we reject the current series task, the generic task will still
 be confirmed.
 
-    >>> current_release_netapplet_task.transitionToStatus(
+    >>> current_series_netapplet_task.transitionToStatus(
     ...     BugTaskStatus.REJECTED)
 
     >>> print generic_netapplet_task.status.title
     Confirmed
-    >>> print current_release_netapplet_task.status.title
+    >>> print current_series_netapplet_task.status.title
     Rejected
 
     >>> generic_netapplet_task.date_closed is None
     True
-    >>> current_release_netapplet_task.date_closed is None
+    >>> current_series_netapplet_task.date_closed is None
     False
 
 And the bugtasks are no longer conjoined:
 
     >>> generic_netapplet_task.conjoined_master is None
     True
-    >>> current_release_netapplet_task.conjoined_slave is None
+    >>> current_series_netapplet_task.conjoined_slave is None
     True
 
 Null Bug Tasks
@@ -919,7 +919,7 @@ like these, use the NullBugTask object.
     True
     >>> null_bugtask.distribution is None
     True
-    >>> null_bugtask.distrorelease is None
+    >>> null_bugtask.distroseries is None
     True
     >>> null_bugtask.milestone is None
     True
@@ -956,8 +956,8 @@ two more examples:
     >>> IDistroBugTask.providedBy(ubuntu_null_bugtask)
     True
 
-    >>> warty_null_bugtask = bug_one.getNullBugTask(distrorelease=warty)
-    >>> IDistroReleaseBugTask.providedBy(warty_null_bugtask)
+    >>> warty_null_bugtask = bug_one.getNullBugTask(distroseries=warty)
+    >>> IDistroSeriesBugTask.providedBy(warty_null_bugtask)
     True
 
 Bug Privacy
@@ -1150,8 +1150,8 @@ Sorting Bug Tasks
 Bug tasks need to sort in a very particular order. We want product tasks
 first, then ubuntu tasks, then other distro-related tasks. In the
 distro-related tasks we want a distribution-task first, then
-distrorelease-tasks for that same distribution. The distrorelease tasks
-should be sorted by distrorelease version.
+distroseries-tasks for that same distribution. The distroseries tasks
+should be sorted by distroseries version.
 
 Phew.
 
@@ -1257,9 +1257,9 @@ higher up in the file (under the explanation about creating tasks), but I can't
 figure out how to reset the connection properly after an IntegrityError is
 raised. ARGH.
 
-Note that a task filed on a specific distro release does *not* have its
+Note that a task filed on a specific distro series does *not* have its
 distribution column set. In fact, a task must have exactly one of its product,
-distribution or distrorelease fields set, otherwise the database integrity
+distribution or distroseries fields set, otherwise the database integrity
 constraints will be violated.
 
 note that DatabaseError is a superclass of both IntegrityError and
@@ -1268,7 +1268,7 @@ ProgrammingError
     >>> from psycopg import DatabaseError
     >>> import sys
     >>> try: bad_task = bugtaskset.createTask(
-    ...     bug=bug_one, distribution=ubuntu, distrorelease=warty,
+    ...     bug=bug_one, distribution=ubuntu, distroseries=warty,
     ...     owner=sabdfl, status=STATUS_UNCONFIRMED,
     ...     importance=IMPORTANCE_MEDIUM)
     ... except DatabaseError: print sys.exc_value
