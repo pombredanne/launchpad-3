@@ -4,21 +4,19 @@
 
 __metaclass__ = type
 
-import unittest
-import tempfile
-import os
-import signal
-import shutil
 import gc
+import os
+import shutil
+import signal
+import tempfile
 import threading
+import unittest
 
 import bzrlib.branch
-from bzrlib.tests import TestCaseWithMemoryTransport
+from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
-from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
-from bzrlib.transport import get_transport
-from bzrlib.transport import sftp, ssh
+from bzrlib.transport import get_transport, sftp, ssh
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
@@ -26,17 +24,15 @@ from twisted.conch.ssh import keys
 from twisted.python.util import sibpath
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.config import config
-from canonical.database.sqlbase import cursor, commit
-from canonical.launchpad import database
-from canonical.launchpad.daemons.authserver import AuthserverService
-from canonical.launchpad.daemons.sftp import SFTPService
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.codehosting.sftponly import (
     BazaarFileTransferServer, SFTPOnlyAvatar)
 from canonical.codehosting.tests.helpers import (
     deferToThread, TwistedBzrlibLayer)
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import cursor, commit, sqlvalues
+from canonical.launchpad import database
+from canonical.launchpad.daemons.authserver import AuthserverService
+from canonical.launchpad.daemons.sftp import SFTPService
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
 
 class TestSFTPService(SFTPService):
@@ -45,24 +41,24 @@ class TestSFTPService(SFTPService):
 
     This class, TestSFTPOnlyAvatar and TestBazaarFileTransferServer work
     together to provide a threading event which is set when the first
-    connecting client closes its connection to the SFTP server.
+    connecting XXX client closes its connection to the SFTP server.
     """
 
-    _connectionLostEvent = None
-    _connectionMadeEvent = None
+    _connection_lost_event = None
+    _connection_made_event = None
     avatar = None
 
     def getConnectionLostEvent(self):
-        return self._connectionLostEvent
+        return self._connection_lost_event
 
     def getConnectionMadeEvent(self):
-        return self._connectionMadeEvent
+        return self._connection_made_event
 
     def setConnectionLostEvent(self, event):
-        self._connectionLostEvent = event
+        self._connection_lost_event = event
 
     def setConnectionMadeEvent(self, event):
-        self._connectionMadeEvent = event
+        self._connection_made_event = event
 
     def makeRealm(self):
         realm = SFTPService.makeRealm(self)
@@ -165,19 +161,19 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         self.addCleanup(lambda: shutil.rmtree(self.branches_root))
 
     def setUpFakeHome(self):
-        userHome = os.path.abspath(tempfile.mkdtemp())
-        os.makedirs(os.path.join(userHome, '.ssh'))
+        user_home = os.path.abspath(tempfile.mkdtemp())
+        os.makedirs(os.path.join(user_home, '.ssh'))
         shutil.copyfile(
             sibpath(__file__, 'id_dsa'),
-            os.path.join(userHome, '.ssh', 'id_dsa'))
+            os.path.join(user_home, '.ssh', 'id_dsa'))
         shutil.copyfile(
             sibpath(__file__, 'id_dsa.pub'),
-            os.path.join(userHome, '.ssh', 'id_dsa.pub'))
-        os.chmod(os.path.join(userHome, '.ssh', 'id_dsa'), 0600)
-        realHome, os.environ['HOME'] = os.environ['HOME'], userHome
+            os.path.join(user_home, '.ssh', 'id_dsa.pub'))
+        os.chmod(os.path.join(user_home, '.ssh', 'id_dsa'), 0600)
+        real_home, os.environ['HOME'] = os.environ['HOME'], user_home
         def tearDownFakeHome():
-            os.environ['HOME'] = realHome
-            shutil.rmtree(userHome)
+            os.environ['HOME'] = real_home
+            shutil.rmtree(user_home)
         self.addCleanup(tearDownFakeHome)
 
     def setUpSignalHandling(self):
@@ -244,7 +240,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         sftp.clear_connection_cache()
         gc.collect()
 
-    def run_and_wait_for_ssh_session_close(self, func, *args, **kwargs):
+    def runAndWaitForSSHDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all SFTP connections, and wait for the
         server to acknowledge the end of the session.
         """
@@ -278,17 +274,17 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-        self.run_and_wait_for_ssh_session_close(
+        self.runAndWaitForSSHDisconnect(
             self.run_bzr_captured, ['push', remote_url], retcode=None)
 
-    def get_last_revision(self, remote_url):
+    def getLastRevision(self, remote_url):
         """Get the last revision at the given URL.
 
         Do NOT run this method in the main thread! It does a blocking read from
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-        return self.run_and_wait_for_ssh_session_close(
+        return self.runAndWaitForSSHDisconnect(
             lambda: bzrlib.branch.Branch.open(remote_url).last_revision())
 
 
@@ -324,7 +320,7 @@ class AcceptanceTests(SFTPTestCase):
         """
         remote_url = self.server_base + '~testuser/+junk/test-branch'
         self.push(remote_url)
-        remote_revision = self.get_last_revision(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(self.local_branch.last_revision(),
                          remote_revision)
 
@@ -341,14 +337,14 @@ class AcceptanceTests(SFTPTestCase):
         # Initial push.
         remote_url = self.server_base + '~testuser/+junk/test-branch'
         self.push(remote_url)
-        remote_revision = self.get_last_revision(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(remote_revision, 'rev1')
         # Add a single revision to the local branch.
         tree = WorkingTree.open(self.local_branch.base)
         tree.commit('Empty commit', rev_id='rev2')
         # Push the new revision.
         self.push(remote_url)
-        remote_revision = self.get_last_revision(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(remote_revision, 'rev2')
 
     def test_bzr_push_again(self):
@@ -366,15 +362,15 @@ class AcceptanceTests(SFTPTestCase):
         should fail.
         """
         # Cannot push branches to products that don't exist
-        self._test_missing_parent_directory(
+        self._testMissingParentDirectory(
             '~testuser/product-that-does-not-exist/hello')
 
         # Teams do not have +junk products
-        self._test_missing_parent_directory('~testteam/+junk/hello')
+        self._testMissingParentDirectory('~testteam/+junk/hello')
 
         # Cannot push to team directories that the user isn't a member of --
         # they cannot see them at all.
-        self._test_missing_parent_directory('~not-my-team/real-product/hello')
+        self._testMissingParentDirectory('~not-my-team/real-product/hello')
 
         # XXX spiv 2006-01-11: what about lp-incompatible branch dir names (e.g.
         # capital Letters) -- Are they disallowed or accepted?  If accepted,
@@ -384,10 +380,10 @@ class AcceptanceTests(SFTPTestCase):
     def test_2_namespace_restrictions(self):
         return self._test_2_namespace_restrictions()
 
-    def _test_missing_parent_directory(self, relpath):
+    def _testMissingParentDirectory(self, relpath):
         transport = self.getTransport(relpath).clone('..')
         self.assertRaises((NoSuchFile, PermissionDenied),
-                          self.run_and_wait_for_ssh_session_close,
+                          self.runAndWaitForSSHDisconnect,
                           transport.mkdir, 'hello')
 
     @deferToThread
@@ -415,7 +411,7 @@ class AcceptanceTests(SFTPTestCase):
         LaunchpadZopelessTestSetup().txn.commit()
 
         self.push(remote_url)
-        remote_revision = self.get_last_revision(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
         # Assign to a different product in the database. This is
@@ -427,11 +423,11 @@ class AcceptanceTests(SFTPTestCase):
 
         self.assertRaises(
             NotBranchError,
-            self.run_and_wait_for_ssh_session_close,
+            self.runAndWaitForSSHDisconnect,
             bzrlib.branch.Branch.open,
             self.server_base + '~testuser/+junk/renamed-branch')
 
-        remote_revision = self.get_last_revision(
+        remote_revision = self.getLastRevision(
             self.server_base + '~testuser/firefox/renamed-branch')
         self.assertEqual(remote_revision,
                          self.local_branch.last_revision())
@@ -444,7 +440,7 @@ class AcceptanceTests(SFTPTestCase):
         LaunchpadZopelessTestSetup().txn.commit()
 
         server_base = self.server_base.replace('testuser', 'renamed-user')
-        remote_revision = self.get_last_revision(
+        remote_revision = self.getLastRevision(
             server_base + '~renamed-user/firefox/renamed-branch')
         self.assertEqual(remote_revision,
                          self.local_branch.last_revision())
@@ -494,7 +490,7 @@ class AcceptanceTests(SFTPTestCase):
     def _test_push_team_branch(self):
         remote_url = self.server_base + '~testteam/firefox/a-new-branch'
         self.push(remote_url)
-        remote_revision = self.get_last_revision(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
         # Check that the pushed branch looks right
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
