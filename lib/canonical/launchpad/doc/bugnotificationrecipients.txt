@@ -12,7 +12,6 @@ action:
 
   >>> from canonical.launchpad.database import Bug, Distribution, Product
   >>> bug_one = Bug.get(1)
-  >>> bug_two = Bug.get(2)
   >>> recipients = bug_one.getBugNotificationRecipients()
 
 The instance of BugNotificationRecipients we get back correctly
@@ -127,6 +126,7 @@ additional step is involved. A BugNotificationRecipients instance is
 created, annotating that it represents a master bug (of which we are a
 duplicate of).
 
+  >>> bug_two = Bug.get(2)
   >>> recipients = BugNotificationRecipients(duplicateof=bug_two)
 
   >>> foo_bar = personset.getByEmail("foo.bar@canonical.com")

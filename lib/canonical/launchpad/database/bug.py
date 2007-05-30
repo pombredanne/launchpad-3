@@ -275,7 +275,7 @@ class Bug(SQLBase):
                 Person.id = BugSubscription.person AND
                 BugSubscription.bug = %d""" % self.id,
                 orderBy="displayname", clauseTables=["BugSubscription"]))
-        if recipients:
+        if recipients is not None:
             for subscriber in subscribers:
                 recipients.addDirectSubscriber(subscriber)
         return subscribers
@@ -338,7 +338,7 @@ class Bug(SQLBase):
             # Assignees are indirect subscribers.
             if bugtask.assignee:
                 also_notified_subscribers.add(bugtask.assignee)
-                if recipients:
+                if recipients is not None:
                     recipients.addAssignee(bugtask.assignee)
 
             # Bug contacts are indirect subscribers.
@@ -351,7 +351,7 @@ class Bug(SQLBase):
 
                 if distribution.bugcontact:
                     also_notified_subscribers.add(distribution.bugcontact)
-                    if recipients:
+                    if recipients is not None:
                         recipients.addDistroBugContact(distribution.bugcontact,
                                                       distribution)
 
@@ -360,7 +360,7 @@ class Bug(SQLBase):
                         bugtask.sourcepackagename)
                     for pbc in sourcepackage.bugcontacts:
                         also_notified_subscribers.add(pbc.bugcontact)
-                        if recipients:
+                        if recipients is not None:
                             recipients.addPackageBugContact(pbc.bugcontact,
                                                            sourcepackage)
             else:
@@ -371,11 +371,11 @@ class Bug(SQLBase):
                     product = bugtask.productseries.product
                 if product.bugcontact:
                     also_notified_subscribers.add(product.bugcontact)
-                    if recipients:
+                    if recipients is not None:
                         recipients.addUpstreamBugContact(product.bugcontact, product)
                 else:
                     also_notified_subscribers.add(product.owner)
-                    if recipients:
+                    if recipients is not None:
                         recipients.addUpstreamRegistrant(product.owner, product)
 
         # Direct subscriptions always take precedence over indirect
