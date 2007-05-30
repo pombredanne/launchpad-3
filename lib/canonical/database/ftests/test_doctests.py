@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 import unittest
-from zope.testing.doctest import DocFileSuite, DocTestSuite
+from zope.testing.doctest import DocFileSuite
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 
 from canonical.testing import DatabaseLayer, LaunchpadLayer

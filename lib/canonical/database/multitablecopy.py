@@ -8,7 +8,7 @@ import logging
 import time
 
 from canonical.database import postgresql
-from canonical.database.sqlbase import (cursor, quoteIdentifier)
+from canonical.database.sqlbase import cursor, quoteIdentifier
 
 
 class MultiTableCopy:
@@ -16,7 +16,7 @@ class MultiTableCopy:
 
     This allows data from a combination of tables, possibly with foreign-key
     references between them, to be copied to a set of corresponding "holding
-    tables;" processed and modified there; and then be inserted back to the
+    tables"; processed and modified there; and then be inserted back to the
     original tables.  The holding tables are created on demand and dropped
     upon completion.
 
@@ -120,16 +120,15 @@ class MultiTableCopy:
         """
         self.name = name
         self.tables = tables
-        self.lower_tables = [t.lower() for t in self.tables]
+        self.lower_tables = [table.lower() for table in self.tables]
         self.time_goal = time_goal
         self.last_extracted_table = None
 
-
     def dropHoldingTables(self):
         """Drop any holding tables that may exist for this MultiTableCopy."""
-        postgresql.drop_tables(cursor(),
-            [self.getHoldingTableName(t) for t in self.tables])
-
+        postgresql.drop_tables(
+            cursor(),
+            [self.getHoldingTableName(table) for table in self.tables])
 
     def getRawHoldingTableName(self, tablename, suffix=''):
         """Name for a holding table, but without quotes.  Use with care."""
@@ -138,7 +137,6 @@ class MultiTableCopy:
         return "temp_%s_holding_%s%s" % (
             str(tablename), str(self.name), suffix)
 
-
     def getHoldingTableName(self, tablename, suffix=''):
         """Name for a holding table to hold data being copied in tablename.
 
@@ -146,7 +144,6 @@ class MultiTableCopy:
         """
         return str(
             quoteIdentifier(self.getRawHoldingTableName(tablename, suffix)))
-
 
     def pointsToTable(self, source_table, foreign_key):
         """Name of table that source_table.foreign_key refers to.
@@ -159,7 +156,6 @@ class MultiTableCopy:
         """
         return foreign_key
 
-
     def extractToHoldingTable(self,
             source_table,
             joins=None,
@@ -168,11 +164,11 @@ class MultiTableCopy:
         """Extract (selected) rows from source_table into a holding table.
 
         The holding table gets an additional new_id column with identifiers in
-        the seqid sequence; the name seqid defaults to the original table name
-        in lower case, with "_seq_id" appended.  Apart from this extra column,
-        indexes, and constraints, the holding table is schematically identical
-        to source_table.  A unique index is created for the original id
-        column.
+        the seqid sequence.  The name seqid defaults to the original table
+        name in lower case, with "_seq_id" appended.  Apart from this extra
+        column, indexes, and constraints, the holding table is schematically
+        identical to source_table.  A unique index is created for the original
+        id column.
 
         There is a special facility for redirecting foreign keys to other
         tables copied in the same way.  The joins argument can pass a list of
@@ -210,8 +206,8 @@ class MultiTableCopy:
 
         starttime = time.time()
 
-        cur = self._selectToHolding(source_table, joins, where_clause,
-            holding_table, id_sequence)
+        cur = self._selectToHolding(
+            source_table, joins, where_clause, holding_table, id_sequence)
 
         if len(joins) > 0:
             self._retargetForeignKeys(holding_table, joins, cur)
@@ -220,7 +216,6 @@ class MultiTableCopy:
         self._indexIdColumn(holding_table, source_table, cur)
 
         logging.info('...Extracted in %.3f seconds' % (time.time()-starttime))
-
 
     def _selectToHolding(self, source_table, joins, where_clause,
             holding_table, id_sequence):
@@ -263,13 +258,10 @@ class MultiTableCopy:
             CREATE TABLE %s AS
             SELECT %s, nextval('%s'::regclass) AS new_id
             FROM %s
-            %s''' % (holding_table,
-                      ', '.join(select),
-                      id_sequence,
-                      ', '.join(from_list),
-                      where_text))
+            %s'''
+            % (holding_table, ', '.join(select), id_sequence,
+               ', '.join(from_list), where_text))
         return cur
-
 
     def _indexIdColumn(self, holding_table, source_table, cur):
         """Index id column on holding table.
@@ -284,7 +276,6 @@ class MultiTableCopy:
             ON %s (id)
         ''' % (self.getHoldingTableName(source_table, 'id'), holding_table))
 
-
     def _retargetForeignKeys(self, holding_table, joins, cur):
         """Replace foreign keys in new holding table.
 
@@ -292,17 +283,15 @@ class MultiTableCopy:
         in their respective "new_" variants, then drop those "new_" columns we
         added from the holding table.
         """
-        fkupdates = ['%s = new_%s' % (j.lower(), j.lower()) for j in joins]
-        updatestr = ', '.join(fkupdates)
-        logging.info("Redirecting foreign keys: %s" % updatestr)
-        cur.execute("UPDATE %s SET %s" % (holding_table, updatestr))
+        fk_updates = ['%s = new_%s' % (j.lower(), j.lower()) for j in joins]
+        updates = ', '.join(fk_updates)
+        logging.info("Redirecting foreign keys: %s" % updates)
+        cur.execute("UPDATE %s SET %s" % (holding_table, updates))
         for j in joins:
             column = j.lower()
             logging.info("Dropping foreign-key column %s" % column)
-            cur.execute('''
-                ALTER TABLE %s DROP COLUMN new_%s''' % (holding_table,
-                                                        column))
-
+            cur.execute("ALTER TABLE %s DROP COLUMN new_%s"
+                        % (holding_table, column))
 
     def hasRecoverableHoldingTables(self):
         """Do we have holding tables with recoverable data from previous run?
@@ -315,23 +304,21 @@ class MultiTableCopy:
         # If there are any holding tables to be poured into their source
         # tables, there must at least be one for the last table that
         # pourHoldingTables() processes.
-        if not postgresql.have_table(cur,
-                self.getRawHoldingTableName(self.tables[-1])):
+        if not postgresql.have_table(
+                cur, self.getRawHoldingTableName(self.tables[-1])):
             return False
 
         # If the first table in our list also still exists, and it still has
         # its new_id column, then the pouring process had not begun yet.
         # Assume the data was not ready for pouring.
-        if postgresql.table_has_column(cur,
-                self.getRawHoldingTableName(self.tables[0]),
-                'new_id'):
+        if postgresql.table_has_column(
+                cur, self.getRawHoldingTableName(self.tables[0]), 'new_id'):
             logging.info(
                 "Previous run aborted too early for recovery; redo all")
             return False
 
         logging.info("Recoverable data found")
         return True
-
 
     def pourHoldingTables(self, ztm=None):
         """Pour data from holding tables back into source tables.
@@ -342,21 +329,20 @@ class MultiTableCopy:
         Batch sizes are dynamically adjusted to meet the stated time goal.
         """
 
-        if self.last_extracted_table is not None and (
+        if (self.last_extracted_table is not None and
                 self.last_extracted_table != len(self.tables)-1):
             raise AssertionError(
-                "Not safe to pour: last table '%s' was not extracted" %
-                    self.tables[-1])
+                "Not safe to pour: last table '%s' was not extracted"
+                % self.tables[-1])
 
         cur = self._commit(ztm)
 
-        # Don't let postgres revert to slow sequential scans while we pour
+        # Don't let postgres revert to slow sequential scans while we pour.
         postgresql.allow_sequential_scans(cur, False)
 
-        # Main loop: for each of the source tables involved in copying
-        # translations from our parent distrorelease, see if there's a
-        # matching holding table; prepare it, pour it back into the source
-        # table, and drop.
+        # Main loop: for each of the source tables being copied, see if
+        # there's a matching holding table.  If so, prepare it, pour it back
+        # into the source table, and drop.
         for table in self.tables:
             holding_table_unquoted = self.getRawHoldingTableName(table)
 
@@ -368,22 +354,21 @@ class MultiTableCopy:
                 continue
 
             holding_table = self.getHoldingTableName(table)
-            logging.info("Pouring %s back into %s..." %
-                (holding_table, table))
+            logging.info("Pouring %s back into %s..."
+                         % (holding_table, table))
 
             tablestarttime = time.time()
 
-            has_new_id = postgresql.table_has_column(cur,
-                holding_table_unquoted, 'new_id')
+            has_new_id = postgresql.table_has_column(
+                cur, holding_table_unquoted, 'new_id')
 
             cur = self._pourTable(holding_table, table, has_new_id, ztm, cur)
 
             logging.info(
-                "Pouring %s took %.3f seconds." %
-                    (holding_table, time.time()-tablestarttime))
+                "Pouring %s took %.3f seconds."
+                % (holding_table, time.time()-tablestarttime))
 
             postgresql.drop_tables(cur, holding_table)
-
 
     def _pourTable(self, holding_table, table, has_new_id, ztm, cur):
         """Pour contents of a holding table back into its source table.
@@ -396,8 +381,7 @@ class MultiTableCopy:
             # previous run, no harm in doing it again)
             cur.execute("UPDATE %s SET id=new_id" % holding_table)
             # Restore table to original schema
-            cur.execute("ALTER TABLE %s DROP COLUMN new_id" %
-                holding_table)
+            cur.execute("ALTER TABLE %s DROP COLUMN new_id" % holding_table)
             logging.info("...rearranged ids...")
 
         # Now pour holding table's data into its source table.  This is
@@ -415,7 +399,7 @@ class MultiTableCopy:
         lowest_id, highest_id = cur.fetchall()[0]
 
         if lowest_id is None:
-            # Table is empty.  Drop it and move on.
+            # Table is empty.
             logging.info("Table is already empty.")
             return cur
 
@@ -435,7 +419,7 @@ class MultiTableCopy:
         while lowest_id <= highest_id:
             next = lowest_id + batch_size
 
-            batchstarttime = time.time()
+            batch_start_time = time.time()
             logging.info("Moving %d ids: %d-%d..." % (
                 batch_size, lowest_id, next))
 
@@ -445,18 +429,16 @@ class MultiTableCopy:
 
             lowest_id = next
 
-            time_taken = time.time() - batchstarttime
+            time_taken = time.time() - batch_start_time
 
-            batch_size = self._adjustBatchSize(time_taken, batch_size,
-                min_batch_size)
+            batch_size = self._adjustBatchSize(
+                time_taken, batch_size, min_batch_size)
 
             logging.info("...batch done in %.3f seconds (%d%%)." % (
                 time_taken,
                 100*(total_rows + lowest_id - highest_id)/total_rows))
 
-        cur = self._commit(ztm, cur)
-        return cur
-
+        return self._commit(ztm, cur)
 
     def _adjustBatchSize(self, time_taken, batch_size, min_batch_size):
         """Adjust batch size for pouring to approximate time_goal.
@@ -478,16 +460,14 @@ class MultiTableCopy:
         batch_size = batch_size*(1 + self.time_goal/time_taken)/2
         return max(batch_size, min_batch_size)
 
-
     def _pourBatch(self, table, holding_table, next, cur):
         """Pour rows with ids up to "next" from holding_table to table.
 
         Rows are atomically inserted in one table and deleted from the other.
         """
-        cur.execute("INSERT INTO %s ( SELECT * FROM %s WHERE id <= %d)" %
-            (table, holding_table, next))
+        cur.execute("INSERT INTO %s (SELECT * FROM %s WHERE id <= %d)"
+                    % (table, holding_table, next))
         cur.execute("DELETE FROM %s WHERE id <= %d" % (holding_table, next))
-
 
     def _checkExtractionOrder(self, source_table):
         """Verify order in which tables are extracted against tables list.
@@ -505,8 +485,7 @@ class MultiTableCopy:
             # Can't skip the first table!
             if table_number > 0:
                 raise AssertionError(
-                    "Can't extract: skipped first table '%s'" %
-                        self.tables[0])
+                    "Can't extract: skipped first table '%s'" % self.tables[0])
         else:
             if table_number < self.last_extracted_table:
                 raise AssertionError(
@@ -541,13 +520,11 @@ class MultiTableCopy:
                 "Foreign key '%s' refers to table '%s' "
                 "which is not being copied" % (fk, referenced_table))
 
-
-
     def _commit(self, ztm, cur=None):
         """If we have a transaction, commit it and offer replacement cursor.
 
-        Use this as "cur = self._commit(cur)" to commit a transaction, restart
-        it, and replace cur with a cursor that lives within the new
+        Use this as "cur = self._commit(ztm, cur)" to commit a transaction,
+        restart it, and replace cur with a cursor that lives within the new
         transaction.
         """
         if ztm is None:

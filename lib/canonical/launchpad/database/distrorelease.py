@@ -10,7 +10,6 @@ __all__ = [
     ]
 
 import logging
-import time
 from cStringIO import StringIO
 
 from zope.interface import implements
@@ -24,8 +23,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.database.multitablecopy import MultiTableCopy
 from canonical.database.sqlbase import (cursor, flush_database_caches,
-    flush_database_updates, quote_like, quote, quoteIdentifier, SQLBase,
-    sqlvalues)
+    flush_database_updates, quote_like, quote, SQLBase, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
@@ -88,8 +86,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
 
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey='Distribution', notNull=True)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=True)
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     title = StringCol(notNull=True)
@@ -110,8 +108,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     nominatedarchindep = ForeignKey(
         dbName='nominatedarchindep',foreignKey='DistroArchRelease',
         notNull=False, default=None)
-    datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
-        default=None)
+    datelastlangpack = UtcDateTimeCol(
+        dbName='datelastlangpack', notNull=False, default=None)
     messagecount = IntCol(notNull=True, default=0)
     binarycount = IntCol(notNull=True, default=DEFAULT)
     sourcecount = IntCol(notNull=True, default=DEFAULT)
@@ -292,8 +290,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def potemplates(self):
         result = POTemplate.selectBy(distrorelease=self)
         result = result.prejoin(['potemplatename'])
-        return sorted(result,
-            key=lambda x: (-x.priority, x.potemplatename.name))
+        return sorted(
+            result, key=lambda x: (-x.priority, x.potemplatename.name))
 
     # XXX: this is expensive and shouldn't be a property
     #   -- kiko, 2006-06-14
@@ -301,8 +299,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def currentpotemplates(self):
         result = POTemplate.selectBy(distrorelease=self, iscurrent=True)
         result = result.prejoin(['potemplatename'])
-        return sorted(result,
-            key=lambda x: (-x.priority, x.potemplatename.name))
+        return sorted(
+            result, key=lambda x: (-x.priority, x.potemplatename.name))
 
     @property
     def fullreleasename(self):
@@ -558,8 +556,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             Packaging.productseries = NULL AND
             POTemplate.sourcepackagename = SourcePackageName.id AND
             POTemplate.distrorelease = %s""" % sqlvalues(self.id)
-        linked_but_no_productseries = SourcePackageName.select(query,
-            clauseTables=['POTemplate', 'Packaging'], orderBy=['name'])
+        linked_but_no_productseries = SourcePackageName.select(
+            query, clauseTables=['POTemplate', 'Packaging'], orderBy=['name'])
         result = unlinked.union(linked_but_no_productseries)
         return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
             spn in result]
@@ -610,8 +608,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         queries.append("archive=%s" % sqlvalues(archive))
 
         published = SourcePackagePublishingHistory.select(
-            " AND ".join(queries),
-            clauseTables = ['SourcePackageRelease'])
+            " AND ".join(queries), clauseTables = ['SourcePackageRelease'])
 
         return shortlist(published)
 
@@ -625,8 +622,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def getSourcesPublishedForAllArchives(self):
         """See IDistroRelease."""
-        queries = ['distrorelease=%s AND status=%s AND archive=%s' %
-                   sqlvalues(self, PackagePublishingStatus.PUBLISHED,
+        queries = ['distrorelease=%s AND status=%s AND archive=%s'
+                    % sqlvalues(self, PackagePublishingStatus.PUBLISHED,
                              self.main_archive)]
         if not self.isUnstable():
             queries.append(
@@ -662,8 +659,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         if component:
             clause += (
-                " AND SourcePackagePublishingHistory.component=%s" %
-                sqlvalues(component)
+                " AND SourcePackagePublishingHistory.component=%s"
+                % sqlvalues(component)
                 )
 
         orderBy = ['SourcePackageName.name']
@@ -801,8 +798,8 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(self, self.main_archive,
-                            PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(
+                self, self.main_archive, PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchRelease',
@@ -1003,8 +1000,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         if not status:
             assert not version and not exact_match
             return PackageUpload.select(
-                " AND ".join(default_clauses),
-                orderBy=['-id'])
+                " AND ".join(default_clauses), orderBy=['-id'])
 
         if not isinstance(status, list):
             status = [status]
@@ -1015,8 +1011,7 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
         if not name:
             assert not version and not exact_match
             return PackageUpload.select(
-                " AND ".join(default_clauses),
-                orderBy=['-id'])
+                " AND ".join(default_clauses), orderBy=['-id'])
 
         source_where_clauses = default_clauses + ["""
             packageupload.id = packageuploadsource.packageupload
@@ -1269,7 +1264,6 @@ class DistroRelease(SQLBase, BugTargetBase, HasSpecificationsMixin):
             FROM SectionSelection AS ss WHERE ss.distrorelease = %s
             ''' % sqlvalues(self.id, self.parentrelease.id))
 
-
     def _copyActiveTranslationsToNewRelease(self, ztm, copier):
         """We're a new release; inherit translations from parent.
 
@@ -1389,7 +1383,6 @@ new imports with the information being copied.
 
         # Now pour the holding tables back into the originals
         copier.pourHoldingTables(ztm)
-
 
     def _copyActiveTranslationsAsUpdate(self):
         """Receive active, updated translations from parent release.
@@ -1727,7 +1720,6 @@ new imports with the information being copied.
             pofile = POFile.get(pofile_id)
             pofile.updateStatistics()
 
-
     def _copy_active_translations(self, ztm):
         """Copy active translations from the parent into this one.
 
@@ -1767,7 +1759,6 @@ new imports with the information being copied.
         else:
             # Incremental copy of updates from parent distrorelease
             self._copyActiveTranslationsAsUpdate()
-
 
     def copyMissingTranslationsFromParent(self, ztm=None):
         """See IDistroRelease."""
@@ -1839,16 +1830,16 @@ new imports with the information being copied.
         if (self.isUnstable() and
             publication.pocket != PackagePublishingPocket.RELEASE):
             log.error("Tried to publish %s (%s) into a non-release "
-                      "pocket on unstable release %s, skipping" %
-                      (publication.displayname, publication.id,
-                       self.displayname))
+                      "pocket on unstable release %s, skipping"
+                      % (publication.displayname, publication.id,
+                         self.displayname))
             return False
         if (not self.isUnstable() and
             publication.pocket == PackagePublishingPocket.RELEASE):
             log.error("Tried to publish %s (%s) into release pocket "
-                      "on stable release %s, skipping" %
-                      (publication.displayname, publication.id,
-                       self.displayname))
+                      "on stable release %s, skipping"
+                      % (publication.displayname, publication.id,
+                         self.displayname))
             return False
 
         return True
@@ -1856,7 +1847,6 @@ new imports with the information being copied.
     @property
     def main_archive(self):
         return self.distribution.main_archive
-
 
     def getFirstEntryToImport(self):
         """See IHasTranslationImports."""
