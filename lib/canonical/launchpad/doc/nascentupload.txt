@@ -10,13 +10,13 @@ We need to be logged into the security model in order to get any further
   >>> login('foo.bar@canonical.com')
 
 For the purpose of this test, hoary needs to be an open (development)
-distrorelease so that we can upload to it.
+distroseries so that we can upload to it.
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
-  >>> from canonical.lp.dbschema import DistributionReleaseStatus
-  >>> hoary.releasestatus = DistributionReleaseStatus.DEVELOPMENT
+  >>> from canonical.lp.dbschema import DistroSeriesStatus
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
 
 A NascentUpload is a collection of files in a directory. They
 represent what may turn out to be an acceptable upload to a launchpad
@@ -27,16 +27,16 @@ managed archive.
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> buildd_policy = getPolicy(
-  ...     name='buildd', distro='ubuntu', distrorelease='hoary', buildid=1)
+  ...     name='buildd', distro='ubuntu', distroseries='hoary', buildid=1)
 
   >>> sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distrorelease='hoary')
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
 
   >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntu', distrorelease='hoary')
+  ...     name='insecure', distro='ubuntu', distroseries='hoary')
 
   >>> anything_policy = getPolicy(
-  ...     name='anything', distro='ubuntu', distrorelease='hoary')
+  ...     name='anything', distro='ubuntu', distroseries='hoary')
 
 == Constructing a NascentUpload object ==
 
@@ -205,7 +205,7 @@ XXX cprov 20070404: we need to a policy that accepts unsigned
 changesfiles and binary, source and mixed uploads ...
 
   >>> modified_buildd_policy = getPolicy(
-  ...     name='buildd', distro='ubuntu', distrorelease='hoary', buildid=1)
+  ...     name='buildd', distro='ubuntu', distroseries='hoary', buildid=1)
   >>> modified_buildd_policy.can_upload_source = True
   >>> modified_buildd_policy.can_upload_mixed = True
 
@@ -243,7 +243,7 @@ XXX cprov 20070404: we need a policy that accepts mixed uploads to
 RELEASE pocket ...
 
   >>> modified_insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntu', distrorelease='hoary')
+  ...     name='insecure', distro='ubuntu', distroseries='hoary')
   >>> modified_insecure_policy.can_upload_binaries = True
   >>> modified_insecure_policy.can_upload_mixed = True
 
@@ -371,7 +371,7 @@ all the consistency checks.
 
 However there is another candidate, submitted before and not yet
 published in the archive, which provides the same source package name
-and source package version for the distrorelease in question.
+and source package version for the distroseries in question.
 
   >>> ed_src_dup = NascentUpload(
   ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
@@ -429,7 +429,7 @@ need unsigned changes and binaries uploads (same as security, but also
 accepts non-security uploads)
 
   >>> modified_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distrorelease='hoary')
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
   >>> modified_sync_policy.can_upload_binaries = True
 
   >>> ed_bin = NascentUpload(
@@ -485,7 +485,7 @@ We will try to simulate this procedure for a source upload that
 produces multiple binaries using sync policy:
 
   >>> sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distrorelease='hoary')
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
 
 Upload new source 'multibar', step 1:
 
@@ -539,7 +539,7 @@ At this point slave-scanner moves the upload to the appropriate path
 the 'buildd' upload policy and the build record id.
 
   >>> buildd_policy = getPolicy(
-  ...     name='buildd', distro='ubuntu', distrorelease='hoary',
+  ...     name='buildd', distro='ubuntu', distroseries='hoary',
   ...     buildid=multibar_build.id)
 
   >>> multibar_bin_upload = NascentUpload(
@@ -596,11 +596,11 @@ Chuck it all away again:
 And this time, try an upload to -updates, it'll have to be signed etc because
 we're using the insecure policy to check everything in it end-to-end. We have
 to set hoary to CURRENT in order to do this because we're not allowed
-to upload to -UPDATES in a DEVELOPMENT release.
+to upload to -UPDATES in a DEVELOPMENT series.
 
-  >>> hoary.releasestatus = DistributionReleaseStatus.CURRENT
+  >>> hoary.status = DistroSeriesStatus.CURRENT
 
-Note that the policy do not have fixed distrorelease, it will be
+Note that the policy do not have fixed distroseries, it will be
 overridden by the changesfile:
 
   >>> norelease_sync_policy = getPolicy(
@@ -627,7 +627,7 @@ unapproved.
 
 And pop it back to development now that we're done
 
-  >>> hoary.releasestatus = DistributionReleaseStatus.DEVELOPMENT
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
 
 Check the uploader behaviour against a missing orig.tar.gz file,
       bug # 30741.
@@ -770,7 +770,7 @@ Pre-depends on a newer version of dpkg. NascentUploadFile enforces
 that constraint.
 
   >>> binary_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distrorelease='hoary')
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
   >>> binary_sync_policy.can_upload_binaries = True
   >>> binary_sync_policy.can_upload_mixed = True
 
@@ -826,7 +826,7 @@ respective binary:
 We will use a modified Sync upload policy to upload unsigned binaries:
 
   >>> binary_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distrorelease='hoary')
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
   >>> binary_sync_policy.can_upload_binaries = True
   >>> binary_sync_policy.can_upload_mixed = True
 

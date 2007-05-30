@@ -1,5 +1,5 @@
 This page shows a list of PO templates contained within all source packages
-for the distrorelease that is the translation focus for a given distribution.
+for the distroseries that is the translation focus for a given distribution.
 
   >>> browser.open('http://translations.launchpad.dev/ubuntu')
   >>> browser.url
@@ -37,7 +37,7 @@ right translation focus.
 
 And the other Ubuntu distributions should be there too.
 
-  >>> 'Other releases of Ubuntu' in browser.contents
+  >>> 'Other versions of Ubuntu' in browser.contents
   True
   >>> 'Breezy Badger Autotest' in browser.contents
   True
@@ -79,7 +79,7 @@ pointing to the latest release, Hoary.
 
 And the other Ubuntu distributions should be there too.
 
-  >>> 'Other releases of Debian' in browser.contents
+  >>> 'Other versions of Debian' in browser.contents
   True
   >>> 'Sid' in browser.contents
   True

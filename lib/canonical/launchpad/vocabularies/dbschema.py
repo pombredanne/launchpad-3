@@ -24,7 +24,7 @@ __all__ = [
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
     'CveStatusVocabulary',
-    'DistributionReleaseStatusVocabulary',
+    'DistroSeriesStatusVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
     'MirrorContentVocabulary',
@@ -86,7 +86,7 @@ BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS,
             dbschema.BugTrackerType.SOURCEFORGE])
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
-DistributionReleaseStatusVocabulary = vocab_factory(dbschema.DistributionReleaseStatus)
+DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 MirrorContentVocabulary = vocab_factory(dbschema.MirrorContent)

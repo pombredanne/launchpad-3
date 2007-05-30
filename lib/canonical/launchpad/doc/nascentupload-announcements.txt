@@ -11,14 +11,14 @@ AUTO-APPROVED, UNAPPROVED) and its destination pocket:
    sent after the upload gets reviewed by archive-admin at queue time).
 
  * AUTO-APPROVED to RELEASE (via insecure): submitter set receives an
-   'acceptance' warning and the target distrorelease changeslist
+   'acceptance' warning and the target distroseries changeslist
    address receives an 'announcement' message.
 
  * AUTO-APPROVED to BACKPORTS (via sync): submitter set receives an
    'acceptance' warning ('announcement' is skipped).
 
  * AUTO-APPROVED sources to SECURITY (via security): submitter set
-   receives an 'acceptance' warning and the target distrorelease
+   receives an 'acceptance' warning and the target distroseries
    changeslist address receives an 'announcement' message.
 
  * AUTO-APPROVED binaries to SECURITY (via security): submitter set
@@ -42,14 +42,14 @@ Helper functions to examine emails that were sent:
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
 
 For the purpose of this test, hoary needs to be an open (development)
-distrorelease so that we can upload to it. Also adjust 'changeslist'
+distroseries so that we can upload to it. Also adjust 'changeslist'
 address:
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.lp.dbschema import DistributionReleaseStatus
+  >>> from canonical.lp.dbschema import DistroSeriesStatus
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
-  >>> hoary.releasestatus = DistributionReleaseStatus.DEVELOPMENT
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
   >>> hoary.changeslist = "hoary-announce@lists.ubuntu.com"
 
 NEW source upload to RELEASE pocket via 'sync' policy (it presents
@@ -61,7 +61,7 @@ unsigned changes):
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distrorelease='hoary')
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
 
   >>> netapplet_src = NascentUpload(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
@@ -78,7 +78,7 @@ unsigned changes):
   DEBUG: NEW: bar_1.0-1.diff.gz
   DEBUG: NEW: bar_1.0-1.dsc
   ...
-  DEBUG: above if files already exist in other distroreleases.
+  DEBUG: above if files already exist in other distroseries.
   ...
   DEBUG: -- 
   DEBUG: You are receiving this email because you are the uploader, maintainer or
@@ -105,7 +105,7 @@ NEW binary upload to RELEASE pocket via 'sync' policy (we need to
 override sync policy to allow binary uploads):
 
   >>> modified_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distrorelease='hoary')
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
   >>> modified_sync_policy.can_upload_binaries = True
 
   >>> netapplet_src = NascentUpload(
@@ -117,7 +117,7 @@ override sync policy to allow binary uploads):
   >>> result = netapplet_src.do_accept()
   DEBUG: Creating queue entry
   ...
-  DEBUG: above if files already exist in other distroreleases.
+  DEBUG: above if files already exist in other distroseries.
   ...
   DEBUG: -- 
   DEBUG: You are receiving this email because you are the uploader, maintainer or
@@ -139,7 +139,7 @@ this series *known* in hoary:
 NEW source uploads for 'translations' section via sync policy:
 
   >>> modified_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distrorelease='hoary')
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
 
   >>> lang_pack = NascentUpload(
   ...     datadir('language-packs/language-pack-pt_1.0-1_source.changes'),
@@ -170,7 +170,7 @@ Accept and publish this series:
 AUTO_APPROVED source uploads for 'translations' section:
 
   >>> modified_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distrorelease='hoary')
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
 
   >>> lang_pack = NascentUpload(
   ...     datadir('language-packs/language-pack-pt_1.0-2_source.changes'),
@@ -196,7 +196,7 @@ Again, no messages were generated since this upload is targeted for
 
 Release hoary, enable uploads to post-release pockets:
 
-  >>> hoary.releasestatus = DistributionReleaseStatus.CURRENT
+  >>> hoary.status = DistroSeriesStatus.CURRENT
 
 
 Import the test keys to use 'insecure' policy.
@@ -208,8 +208,8 @@ Import the test keys to use 'insecure' policy.
 UNAPPROVED source uploads for 'translations' section via insecure:
 
   >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntu', distrorelease=None)
-  >>> insecure_policy.setDistroReleaseAndPocket('hoary-updates')
+  ...     name='insecure', distro='ubuntu', distroseries=None)
+  >>> insecure_policy.setDistroSeriesAndPocket('hoary-updates')
 
   >>> lang_pack = NascentUpload(
   ...     datadir('language-packs/language-pack-pt_1.0-3_source.changes'),
@@ -240,8 +240,8 @@ UNAPPROVED message was also skipped for an upload targeted to
 AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
 
   >>> modified_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distrorelease=None)
-  >>> modified_sync_policy.setDistroReleaseAndPocket('hoary-backports')
+  ...     name='sync', distro='ubuntu', distroseries=None)
+  >>> modified_sync_policy.setDistroSeriesAndPocket('hoary-backports')
 
   >>> netapplet_src = NascentUpload(
   ...     datadir('suite/bar_1.0-4/bar_1.0-4_source.changes'),
@@ -288,8 +288,8 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
 
 
   >>> security_policy = getPolicy(
-  ...     name='security', distro='ubuntu', distrorelease=None)
-  >>> security_policy.setDistroReleaseAndPocket('hoary-security')
+  ...     name='security', distro='ubuntu', distroseries=None)
+  >>> security_policy.setDistroSeriesAndPocket('hoary-security')
 
   >>> netapplet_src = NascentUpload(
   ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
@@ -338,8 +338,8 @@ checks:
 AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
 
   >>> security_policy = getPolicy(
-  ...     name='security', distro='ubuntu', distrorelease=None)
-  >>> security_policy.setDistroReleaseAndPocket('hoary-security')
+  ...     name='security', distro='ubuntu', distroseries=None)
+  >>> security_policy.setDistroSeriesAndPocket('hoary-security')
 
   >>> netapplet_bin = NascentUpload(
   ...     datadir('suite/bar_1.0-2_binary/bar_1.0-2_i386.changes'),

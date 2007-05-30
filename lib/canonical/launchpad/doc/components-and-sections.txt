@@ -1,7 +1,7 @@
      Components and Sections
      ^^^^^^^^^^^^^^^^^^^^^^^
 
-Component refers to a group of packages within a DistroRelease that
+Component refers to a group of packages within a DistroSeries that
 are related by their need, shipment condition and/or license.
 
 Zope auxiliary test toolchain:
