@@ -39,7 +39,7 @@ from canonical.launchpad.browser.queue import QueueItemsView
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
 
 class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -62,14 +62,14 @@ class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
         if distroreleaselang is None:
             # There is no IDistroReleaseLanguage yet for this IDistroRelease,
             # but we still need to list it as an available language, so we
-            # generate a dummy one so users have a chance to get it in the
+            # generate a dummy one so users have a chance to get to it in the
             # navigation and start adding translations for it.
             distroreleaselangset = getUtility(IDistroReleaseLanguageSet)
             distroreleaselang = distroreleaselangset.getDummy(self.context, lang)
 
         if (self.context.hide_all_translations and
             not check_permission('launchpad.Admin', distroreleaselang)):
-            raise TranslationUnavailableError(
+            raise TranslationUnavailable(
                 'Translation updates in progress.  Only admins may view'
                 ' translations for this distrorelease.')
 
@@ -384,7 +384,7 @@ class DistroReleaseDynMenu(DynMenu):
 class DistroReleaseTranslationsAdminView(LaunchpadEditFormView):
     schema = IDistroRelease
 
-    field_names = ['hide_all_translations']
+    field_names = ['hide_all_translations', 'defer_translation_imports']
 
     def initialize(self):
         LaunchpadEditFormView.initialize(self)

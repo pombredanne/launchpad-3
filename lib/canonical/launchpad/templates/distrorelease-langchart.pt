@@ -1,8 +1,9 @@
 <tal:hide-translations condition="context/hide_all_translations">
   <p>
-    Translations for <tal:distrorelease replace="context/displayname" />
-    is not available due to automatic translation updates. You will be able
-    to reach it once the process finish. Try again in a few hours.
+    Translation status for <tal:distrorelease replace="context/displayname" />
+    is not available because we are updating translations in bulk. You will
+    be able to see the status once the process finish. Try again in several
+    hours.
   </p>
   <p>
     We apologise for the inconvenience.

@@ -53,6 +53,7 @@ class IDistroArchRelease(IHasOwner):
     processors = Attribute(
         "The group of Processors for this Distroarchrelease.processorfamily."
         )
+    main_archive = Attribute('Main Archive')
 
     def updatePackageCount():
         """Update the cached binary package count for this distro arch
@@ -78,7 +79,7 @@ class IDistroArchRelease(IHasOwner):
         matching the given text."""
 
     def getReleasedPackages(binary_name, pocket=None, include_pending=False,
-                            exclude_pocket=None):
+                            exclude_pocket=None, archive=None):
         """Get the publishing records for the given binary package name.
 
         The 'name' passed in should either be a BinaryPackageName instance
@@ -94,6 +95,9 @@ class IDistroArchRelease(IHasOwner):
         records, those packages that will get published in the next publisher
         run (it's only useful when we need to know if a given package is
         known during a publisher run, mostly in pre-upload checks)
+
+        If 'archive' is not specified consider publication in the main_archive,
+        otherwise respect the given value.
         """
 
     def __getitem__(name):

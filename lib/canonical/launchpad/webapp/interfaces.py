@@ -15,7 +15,7 @@ from zope.security.interfaces import Forbidden
 from canonical.launchpad import _
 
 
-class TranslationUnavailableError(Forbidden):
+class TranslationUnavailable(Forbidden):
     """Translation objects are unavailable."""
 
 

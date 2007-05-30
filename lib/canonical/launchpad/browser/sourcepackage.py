@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -56,7 +56,7 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
         if (self.context.distrorelease.hide_all_translations and
             not check_permission('launchpad.Admin', sourcepackage_pots)):
-            raise TranslationUnavailableError(
+            raise TranslationUnavailable(
                 'Translation updates in progress.  Only admins may view'
                 ' translations for this sourcepackage.')
 

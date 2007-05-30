@@ -77,6 +77,12 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
+    defer_translation_imports = Bool(
+        title = _("Defer translation imports"),
+        description = _("Suspends any translation imports for this release"),
+        default = True,
+        required = True
+        )
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the release")
     currentpotemplates = Attribute("The set of potemplates in the release "
@@ -122,6 +128,8 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     # other properties
     previous_releases = Attribute("Previous distroreleases from the same "
         "distribution.")
+
+    main_archive = Attribute('Main Archive')
 
     def isUnstable():
         """Return True if in unstable (or "development") phase, False otherwise.
@@ -196,7 +204,8 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
-                             include_pending=False, exclude_pocket=None):
+                             include_pending=False, exclude_pocket=None,
+                             archive=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
 
@@ -210,11 +219,15 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         records, those packages that will get published in the next publisher
         run (it's only useful when we need to know if a given package is
         known during a publisher run, mostly in pre-upload checks)
+
+        If 'archive' is not specified consider publication in the main_archive,
+        otherwise respect the given value.
         """
 
-    def getAllReleasesByStatus(status):
-        """Return all sourcepackages in a given published_status for this
-        DistroRelease.
+    def getSourcesPublishedForAllArchives():
+        """Return all sourcepackage published across all the archives.
+
+        Return a SelectResult of SourcePackagePublishingHistory.
         """
 
     def publishedBinaryPackages(component=None):
@@ -239,7 +252,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         builddependsindep, architecturehintlist, component, creator, urgency,
         changelog, dsc, dscsigningkey, section, manifest,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-        dsc_binaries, dateuploaded=None):
+        dsc_binaries, archive, dateuploaded=None):
         """Create an uploads SourcePackageRelease
 
         Set this distrorelease set to be the uploadeddistrorelease.
@@ -267,7 +280,8 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
          * dsc_standards_version: string, DSC standards version field
          * dsc_format: string, DSC format version field
          * dsc_binaries:  string, DSC binaries field
-
+         * archive: IArchive to where the upload was targeted
+         * dateuploaded: optional datetime, if omitted assumed nowUTC
         """
 
     def getComponentByName(name):
@@ -292,7 +306,7 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     def getBinaryPackagePublishing(
         name=None, version=None, archtag=None, sourcename=None, orderBy=None,
-        pocket=None, component=None):
+        pocket=None, component=None, archive=None):
         """Get BinaryPackagePublishings in a DistroRelease.
 
         Can optionally restrict the results by name, version,
@@ -300,12 +314,19 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
         If sourcename is passed, only packages that are built from
         source packages by that name will be returned.
+        If archive is passed, restricted the results to the given archive,
+        if it is suppressed the results will be restricted to the distribtion
+        'main_archive'.
         """
 
-    def getSourcePackagePublishing(status, pocket, component=None):
+    def getSourcePackagePublishing(status, pocket, component=None,
+                                   archive=None):
         """Return a selectResult of ISourcePackagePublishing.
 
         According status and pocket.
+        If archive is passed, restricted the results to the given archive,
+        if it is suppressed the results will be restricted to the distribtion
+        'main_archive'.
         """
 
     def removeOldCacheItems(log):
@@ -339,9 +360,10 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def createQueueEntry(pocket, changesfilename, changesfilecontent,
-                         signingkey=None):
-        """Create a queue item attached to this distrorelease and the given
-        pocket.
+                         archive, signingkey=None):
+        """Create a queue item attached to this distrorelease.
+
+        Create a new records respecting the given pocket and archive.
 
         The default state is NEW, sorted sqlobject declaration, any
         modification should be performed via Queue state-machine.
@@ -388,11 +410,15 @@ class IDistroRelease(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
           in the initialisation of a derivative.
         """
 
-    def copyMissingTranslationsFromParent():
+    def copyMissingTranslationsFromParent(ztm=None):
         """Copy any translation done in parent that we lack.
 
         If there is another translation already added to this one, we ignore
         the one from parent.
+
+        If a transaction manager ztm is passed, it may be used for
+        intermediate commits to break up large copying jobs into palatable
+        smaller chunks.
         """
 
 class IDistroReleaseSet(Interface):

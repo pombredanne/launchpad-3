@@ -8,10 +8,11 @@
     <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
     <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <allow interface="canonical.launchpad.interfaces.IHasQueueItems"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <allow interface="canonical.launchpad.interfaces.IPublishing"/>
     <require
         permission="launchpad.TranslationsAdmin"
-        set_attributes="hide_all_translations"
+        set_attributes="hide_all_translations defer_translation_imports"
         />
     <!-- NB: check with SABDFL before modifying these, there is potential to
          make a huge mess if these get changed and Soyuz has to republish
