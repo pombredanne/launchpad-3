@@ -23,7 +23,7 @@ class MockFile:
 
     def open(self):
         self.loc = 0
-    
+
     def read(self, chunksize):
         end_chunk = self.loc + chunksize
         chunk = self.contents[self.loc:end_chunk]
@@ -59,8 +59,8 @@ class PoolTestingFile:
 
     def checkIsFile(self, component):
         return self.checkExists(component) and not self.checkIsLink(component)
-    
-        
+
+
 class TestPoolification(unittest.TestCase):
 
     def testPoolificationOkay(self):
@@ -77,10 +77,12 @@ class TestPoolification(unittest.TestCase):
 class TestPool(unittest.TestCase):
     def setUp(self):
         self.pool_path = mkdtemp()
-        self.pool = DiskPool(self.pool_path, FakeLogger())
+        self.temp_path = mkdtemp()
+        self.pool = DiskPool(self.pool_path, self.temp_path, FakeLogger())
 
     def tearDown(self):
         shutil.rmtree(self.pool_path)
+        shutil.rmtree(self.temp_path)
 
     def testSimpleAdd(self):
         """Adding a new file should work."""
@@ -88,7 +90,7 @@ class TestPool(unittest.TestCase):
         result = foo.addToPool("main")
         self.assertEqual(self.pool.results.FILE_ADDED, result)
         self.assertTrue(foo.checkIsFile("main"))
-        
+
     def testSimpleSymlink(self):
         """Adding a file twice should result in a symlink."""
         foo = PoolTestingFile(self.pool, "foo", "foo-1.0.deb")
@@ -112,7 +114,7 @@ class TestPool(unittest.TestCase):
         foo = PoolTestingFile(self.pool, "foo", "foo-1.0.deb")
         foo.addToPool("main")
         foo.addToPool("universe")
-        
+
         size = foo.removeFromPool("universe")
         self.assertFalse(foo.checkExists("universe"))
         self.assertEqual(31, size)
@@ -121,7 +123,7 @@ class TestPool(unittest.TestCase):
         """Removing a file with no symlinks removes it."""
         foo = PoolTestingFile(self.pool, "foo", "foo-1.0.deb")
         foo.addToPool("main")
-        
+
         size = foo.removeFromPool("main")
         self.assertFalse(foo.checkExists("universe"))
         self.assertEqual(3, size)

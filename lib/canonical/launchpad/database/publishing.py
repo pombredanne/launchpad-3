@@ -102,7 +102,7 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True)
 
-    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
+    distroseriesname = StringCol(dbName='distroreleasename', unique=False,
                                   notNull=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
@@ -146,7 +146,7 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True, immutable=True)
 
-    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
+    distroseriesname = StringCol(dbName='distroreleasename', unique=False,
                                   notNull=True, immutable=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
@@ -185,7 +185,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
                                       dbName='sourcepackagerelease')
-    distrorelease = ForeignKey(foreignKey='DistroRelease',
+    distroseries = ForeignKey(foreignKey='DistroSeries',
                                dbName='distrorelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
@@ -230,7 +230,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
-    distroarchrelease = ForeignKey(foreignKey='DistroArchRelease',
+    distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
                                    dbName='distroarchrelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
@@ -327,7 +327,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
-    distrorelease = ForeignKey(foreignKey='DistroRelease',
+    distroseries = ForeignKey(foreignKey='DistroSeries',
         dbName='distrorelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
@@ -358,8 +358,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.status=%s
             """ % sqlvalues(self.sourcepackagerelease,
-                            self.distrorelease,
-                            self.distrorelease.main_archive,
+                            self.distroseries,
+                            self.distroseries.main_archive,
                             PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
@@ -385,21 +385,21 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def meta_sourcepackage(self):
         """see ISourcePackagePublishingHistory."""
-        return self.distrorelease.getSourcePackage(
+        return self.distroseries.getSourcePackage(
             self.sourcepackagerelease.sourcepackagename
             )
 
     @property
     def meta_sourcepackagerelease(self):
         """see ISourcePackagePublishingHistory."""
-        return self.distrorelease.distribution.getSourcePackageRelease(
+        return self.distroseries.distribution.getSourcePackageRelease(
             self.sourcepackagerelease
             )
 
     @property
-    def meta_distroreleasesourcepackagerelease(self):
+    def meta_distroseriessourcepackagerelease(self):
         """see ISourcePackagePublishingHistory."""
-        return self.distrorelease.getSourcePackageRelease( 
+        return self.distroseries.getSourcePackageRelease( 
             self.sourcepackagerelease 
             )
 
@@ -408,7 +408,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """see ISourcePackagePublishingHistory."""
         if not self.supersededby:
             return None
-        return self.distrorelease.distribution.getSourcePackageRelease(
+        return self.distroseries.distribution.getSourcePackageRelease(
             self.supersededby
             )
 
@@ -418,7 +418,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         release = self.sourcepackagerelease
         name = release.sourcepackagename.name
         return "%s %s in %s" % (name, release.version,
-                                self.distrorelease.name)
+                                self.distroseries.name)
 
     def buildIndexStanzaFields(self):
         """See IArchivePublisher"""
@@ -454,7 +454,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
-    distroarchrelease = ForeignKey(foreignKey='DistroArchRelease',
+    distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
                                    dbName='distroarchrelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
@@ -472,14 +472,14 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
     @property
-    def distroarchreleasebinarypackagerelease(self):
+    def distroarchseriesbinarypackagerelease(self):
         """See IBinaryPackagePublishingHistory."""
         # import here to avoid circular import
-        from canonical.launchpad.database.distroarchreleasebinarypackagerelease \
-            import DistroArchReleaseBinaryPackageRelease
+        from canonical.launchpad.database.distroarchseriesbinarypackagerelease \
+            import DistroArchSeriesBinaryPackageRelease
 
-        return DistroArchReleaseBinaryPackageRelease(
-            self.distroarchrelease,
+        return DistroArchSeriesBinaryPackageRelease(
+            self.distroarchseries,
             self.binarypackagerelease)
 
     @property
@@ -503,10 +503,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See IArchiveFilePublisherBase."""
         release = self.binarypackagerelease
         name = release.binarypackagename.name
-        distrorelease = self.distroarchrelease.distrorelease
+        distroseries = self.distroarchseries.distroseries
         return "%s %s in %s %s" % (name, release.version,
-                                   distrorelease.name,
-                                   self.distroarchrelease.architecturetag)
+                                   distroseries.name,
+                                   self.distroarchseries.architecturetag)
 
     def buildIndexStanzaFields(self):
         """See IArchivePublisher"""
@@ -530,14 +530,21 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_description = (
             '%s\n %s'% (bpr.summary, '\n '.join(bpr.description.splitlines())))
 
+        # Dealing with architecturespecific field.
+        # Present 'all' in every archive index for architecture
+        # independent binaries.
+        if bpr.architecturespecific:
+            architecture = bpr.build.distroarchseries.architecturetag
+        else:
+            architecture = 'all'
+
         fields = IndexStanzaFields()
         fields.append('Package', bpr.name)
         fields.append('Priority', self.priority.title)
         fields.append('Section', self.section.name)
         fields.append('Installed-Size', bpr.installedsize)
         fields.append('Maintainer', spr.dsc_maintainer_rfc822)
-        fields.append(
-            'Architecture', bpr.build.distroarchrelease.architecturetag)
+        fields.append('Architecture', architecture)
         fields.append('Version', bpr.version)
         fields.append('Replaces', bpr.replaces)
         fields.append('Suggests', bpr.suggests)

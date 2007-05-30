@@ -35,7 +35,7 @@ Try doing a base language pack export.
     >>> logger = FakeLogger()
     >>> export_language_pack(
     ...     distribution_name='ubuntu',
-    ...     release_name='hoary',
+    ...     series_name='hoary',
     ...     component='main',
     ...     update=False,
     ...     force_utf8=True,

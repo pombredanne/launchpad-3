@@ -32,7 +32,7 @@ cache:
   1
 
 Normal operation produces INFO level information about the
-distribution and respective distroreleases considered in stderr.
+distribution and respective distroseriess considered in stderr.
 
   >>> import subprocess
   >>> import sys
@@ -47,9 +47,9 @@ distribution and respective distroreleases considered in stderr.
 
   >>> print stderr
   INFO    creating lockfile
-  INFO    breezy-autotest starting
+  INFO    ubuntu breezy-autotest starting
   ...
-  INFO    ubuntutest done
+  INFO    redhat done
 
 Rollback the old transaction in order to get the modifications done by
 the external script:

@@ -20,10 +20,10 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
-    IDistroBugTask, IDistroReleaseBugTask, ILibraryFileAliasSet,
-    IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroRelease,
+    IDistroBugTask, IDistroSeriesBugTask, ILibraryFileAliasSet,
+    IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroSeries,
     IProductSeries, IProductSeriesBugTask, NominationError,
-    NominationReleaseObsoleteError, IProduct, IDistribution,
+    NominationSeriesObsoleteError, IProduct, IDistribution,
     UNRESOLVED_BUGTASK_STATUSES, BugNotificationRecipients,
     ISourcePackage)
 from canonical.launchpad.helpers import shortlist
@@ -53,7 +53,7 @@ from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import (
-    BugAttachmentType, DistributionReleaseStatus, BugTaskStatus)
+    BugAttachmentType, DistroSeriesStatus, BugTaskStatus)
 
 _bug_tag_query_template = """
         SELECT %(columns)s FROM %(tables)s WHERE
@@ -343,11 +343,11 @@ class Bug(SQLBase):
 
             # Bug contacts are indirect subscribers.
             if (IDistroBugTask.providedBy(bugtask) or
-                IDistroReleaseBugTask.providedBy(bugtask)):
+                IDistroSeriesBugTask.providedBy(bugtask)):
                 if bugtask.distribution is not None:
                     distribution = bugtask.distribution
                 else:
-                    distribution = bugtask.distrorelease.distribution
+                    distribution = bugtask.distroseries.distribution
 
                 if distribution.bugcontact:
                     also_notified_subscribers.add(distribution.bugcontact)
@@ -592,24 +592,24 @@ class Bug(SQLBase):
 
     def getNullBugTask(self, product=None, productseries=None,
                     sourcepackagename=None, distribution=None,
-                    distrorelease=None):
+                    distroseries=None):
         """See IBug."""
         return NullBugTask(bug=self, product=product,
                            productseries=productseries, 
                            sourcepackagename=sourcepackagename,
                            distribution=distribution,
-                           distrorelease=distrorelease)
+                           distroseries=distroseries)
 
     def addNomination(self, owner, target):
         """See IBug."""
-        distrorelease = None
+        distroseries = None
         productseries = None
-        if IDistroRelease.providedBy(target):
-            distrorelease = target
-            target_displayname = target.fullreleasename
-            if target.releasestatus == DistributionReleaseStatus.OBSOLETE:
-                raise NominationReleaseObsoleteError(
-                    "%s is an obsolete release" % target_displayname)
+        if IDistroSeries.providedBy(target):
+            distroseries = target
+            target_displayname = target.fullseriesname
+            if target.status == DistroSeriesStatus.OBSOLETE:
+                raise NominationSeriesObsoleteError(
+                    "%s is an obsolete series" % target_displayname)
         else:
             assert IProductSeries.providedBy(target)
             productseries = target
@@ -620,7 +620,7 @@ class Bug(SQLBase):
                 "This bug cannot be nominated for %s" % target_displayname)
 
         nomination = BugNomination(
-            owner=owner, bug=self, distrorelease=distrorelease,
+            owner=owner, bug=self, distroseries=distroseries,
             productseries=productseries)
         if nomination.canApprove(owner):
             nomination.approve(owner)
@@ -633,13 +633,13 @@ class Bug(SQLBase):
         except NotFoundError:
             # No nomination exists. Let's see if the bug is already
             # directly targeted to this nomination_target.
-            if IDistroRelease.providedBy(nomination_target):
-                target_getter = operator.attrgetter("distrorelease")
+            if IDistroSeries.providedBy(nomination_target):
+                target_getter = operator.attrgetter("distroseries")
             elif IProductSeries.providedBy(nomination_target):
                 target_getter = operator.attrgetter("productseries")
             else:
                 raise AssertionError(
-                    "Expected IDistroRelease or IProductSeries target. "
+                    "Expected IDistroSeries or IProductSeries target. "
                     "Got %r." % nomination_target)
 
             for task in self.bugtasks:
@@ -657,8 +657,8 @@ class Bug(SQLBase):
 
     def getNominationFor(self, nomination_target):
         """See IBug."""
-        if IDistroRelease.providedBy(nomination_target):
-            filter_args = dict(distroreleaseID=nomination_target.id)
+        if IDistroSeries.providedBy(nomination_target):
+            filter_args = dict(distroseriesID=nomination_target.id)
         else:
             filter_args = dict(productseriesID=nomination_target.id)
 
@@ -688,8 +688,8 @@ class Bug(SQLBase):
         elif IDistribution.providedBy(target):
             filtered_nominations = []
             for nomination in shortlist(nominations):
-                if (nomination.distrorelease and
-                    nomination.distrorelease.distribution == target):
+                if (nomination.distroseries and
+                    nomination.distroseries.distribution == target):
                     filtered_nominations.append(nomination)
             nominations = filtered_nominations
 
@@ -713,11 +713,11 @@ class Bug(SQLBase):
             if IProductSeries.providedBy(target):
                 bugtask = self.getBugTask(target.product)
             elif ISourcePackage.providedBy(target):
-                current_distro_release = target.distribution.currentrelease
-                current_package = current_distro_release.getSourcePackage(
+                current_distro_series = target.distribution.currentseries
+                current_package = current_distro_series.getSourcePackage(
                     target.sourcepackagename.name)
                 if self.getBugTask(current_package) is not None:
-                    # The bug is targeted to the current release, don't
+                    # The bug is targeted to the current series, don't
                     # fall back on the general distribution task.
                     return None
                 distro_package = target.distribution.getSourcePackage(

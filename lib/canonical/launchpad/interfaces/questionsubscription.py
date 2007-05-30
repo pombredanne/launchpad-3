@@ -9,7 +9,6 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from canonical.launchpad import _
 
 class IQuestionSubscription(Interface):
     """A subscription for a person to a question."""

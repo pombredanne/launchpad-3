@@ -137,10 +137,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             # The Rosetta Expert decided to change the path of the file.
             # Before accepting such change, we should check first whether is
             # already another entry with that path in the same context
-            # (sourcepackagename/distrorelease or productseries).
+            # (sourcepackagename/distroseries or productseries).
             pofile_set = getUtility(IPOFileSet)
             existing_pofile = pofile_set.getPOFileByPathAndOrigin(
-                path, self.context.productseries, self.context.distrorelease,
+                path, self.context.productseries, self.context.distroseries,
                 self.context.sourcepackagename)
             if existing_pofile is None:
                 # There is no other pofile in the given path for this context,
@@ -168,11 +168,11 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 sourcepackagename.id != self.context.sourcepackagename.id):
                 # Got another sourcepackagename from the form, we will use it.
                 potemplate_subset = potemplate_set.getSubset(
-                    distrorelease=self.context.distrorelease,
+                    distroseries=self.context.distroseries,
                     sourcepackagename=sourcepackagename)
             else:
                 potemplate_subset = potemplate_set.getSubset(
-                    distrorelease=self.context.distrorelease,
+                    distroseries=self.context.distroseries,
                     sourcepackagename=self.context.sourcepackagename)
         else:
             potemplate_subset = potemplate_set.getSubset(

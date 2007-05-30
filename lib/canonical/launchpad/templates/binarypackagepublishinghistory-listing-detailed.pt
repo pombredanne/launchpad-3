@@ -1,6 +1,6 @@
 <b>
-  <span tal:replace="context/distroarchrelease/distrorelease/name">hoary</span>
-  <span tal:replace="context/distroarchrelease/architecturetag">i386</span>
+  <span tal:replace="context/distroarchseries/distroseries/name">hoary</span>
+  <span tal:replace="context/distroarchseries/architecturetag">i386</span>
   <span tal:replace="context/pocket/title">pocket</span></b>:
 <span tal:replace="context/status/title">Published</span>
 version <span tal:replace="context/binarypackagerelease/version">1.1-2</span>
