@@ -8,7 +8,7 @@ __all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IComponentSet)
+    IDistributionSet, IComponentSet, ILaunchpadCelebrities)
 
 from canonical.lp.dbschema import (
     PackagePublishingPocket, DistributionReleaseStatus)
@@ -196,12 +196,31 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         """Insecure policy allows PPA upload."""
         return False
 
+    def checkIsSignerUbuntero(self, upload):
+        """Reject the upload if the upload signer is not an 'ubuntero'."""
+        if not upload.changes.signer.is_ubuntero:
+            upload.reject(
+                "PPA uploads must be signed by an 'ubuntero'.")
+
+    def checkIsSignerBetaTester(self, upload):
+        """Reject the upload if the upload signer is not a 'beta-tester'.
+
+        For being a 'beta-tester' a person must be a valid member of
+        launchpad-beta-tester team/celebrity.
+        """
+        beta_testers = getUtility(
+            ILaunchpadCelebrities).launchpad_beta_testers
+        if not upload.changes.signer.inTeam(beta_testers):
+            upload.reject(
+                "PPA is only allowed for members of "
+                "launchpad-beta-testers team.")
+
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now."""
         if upload.is_ppa:
-            if not upload.changes.signer.is_ubuntero:
-                upload.reject(
-                    "PPA uploads must be signed by an 'ubuntero'.")
+            # XXX cprov 20070530: check disabled during PPA-beta period.
+            #self.checkIsSignerUbuntero(upload)
+            self.checkIsSignerBetaTester(upload)
         else:
             if self.pocket == PackagePublishingPocket.SECURITY:
                 upload.reject(
