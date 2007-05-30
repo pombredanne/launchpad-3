@@ -229,13 +229,17 @@ REJECT
   If you don't understand why your files were rejected, or if the
   override file requires editing, reply to this email.
   <BLANKLINE>
+  -- 
+  You are receiving this email because you are the uploader, maintainer or
+  signer of the above package.
+  <BLANKLINE>
   ---------------------------------------------------------------------------
                                                                 1/6 total
   DRY RUN requested, not committing.
   <BLANKLINE>
 
 
-Also works for rejecting DistroReleaseQueueBuilds (issue mentioned in
+Also works for rejecting PackageUploadBuilds (issue mentioned in
 bug #57662)
 
   >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
@@ -265,6 +269,10 @@ bug #57662)
   <BLANKLINE>
   If you don't understand why your files were rejected, or if the
   override file requires editing, reply to this email.
+  <BLANKLINE>
+  -- 
+  You are receiving this email because you are the uploader, maintainer or
+  signer of the above package.
   <BLANKLINE>
   ---------------------------------------------------------------------------
                                                                  1/6 total

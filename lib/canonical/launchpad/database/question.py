@@ -23,9 +23,9 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IDistribution, IDistributionSourcePackage, 
+    IBugLinkTarget, IDistribution, IDistributionSourcePackage,
     InvalidQuestionStateError, ILanguage, ILanguageSet, ILaunchpadCelebrities,
-    IMessage, IPerson, IProduct, IQuestion, IQuestionSet, IQuestionTarget, 
+    IMessage, IPerson, IProduct, IQuestion, IQuestionSet, IQuestionTarget,
     ISourcePackage, QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
@@ -103,7 +103,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     status = EnumCol(
         schema=QuestionStatus, notNull=True, default=QuestionStatus.OPEN)
     priority = EnumCol(
-        schema=QuestionPriority, notNull=True, default=QuestionPriority.NORMAL)
+        schema=QuestionPriority, notNull=True,
+        default=QuestionPriority.NORMAL)
     assignee = ForeignKey(
         dbName='assignee', notNull=False, foreignKey='Person', default=None)
     answerer = ForeignKey(
@@ -150,7 +151,7 @@ class Question(SQLBase, BugLinkTargetMixin):
                 self.sourcepackagename.name)
         else:
             return self.distribution
-            
+
     def _settarget(self, question_target):
         """See IQuestion.target."""
         assert IQuestionTarget.providedBy(question_target), (
@@ -196,7 +197,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     # Workflow methods
 
     # The lifecycle of a question is documented in
-    # https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    # https://help.launchpad.net/QuestionLifeCycle, so remember
     # to update that document for any pertinent changes.
     @notify_question_modified()
     def setStatus(self, user, new_status, comment, datecreated=None):
@@ -213,8 +214,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
         return self._newMessage(
             user, comment, datecreated=datecreated,
-            action=QuestionAction.SETSTATUS, new_status=new_status,
-            update_question_dates=False)
+            action=QuestionAction.SETSTATUS, new_status=new_status)
 
     @notify_question_modified()
     def addComment(self, user, comment, datecreated=None):
@@ -468,7 +468,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             msg = Message(
                 owner=owner, rfc822msgid=make_msgid('lpquestions'),
                 subject=subject, datecreated=datecreated)
-            chunk = MessageChunk(message=msg, content=content, sequence=1)
+            MessageChunk(message=msg, content=content, sequence=1)
 
         tktmsg = QuestionMessage(
             question=self, message=msg, action=action, new_status=new_status)
@@ -576,7 +576,7 @@ class QuestionSearch:
     """
 
     def __init__(self, search_text=None, needs_attention_from=None, sort=None,
-                 status=QUESTION_STATUS_DEFAULT_SEARCH, language=None, 
+                 status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
                  product=None, distribution=None, sourcepackagename=None,
                  project=None):
         self.search_text = search_text
@@ -640,10 +640,11 @@ class QuestionSearch:
         """Create the joins needed to select constraints on the messages by a
         particular person."""
         joins = [
-            ('LEFT OUTER JOIN QuestionMessage '
-             'ON QuestionMessage.question = Question.id'),
-            ('LEFT OUTER JOIN Message ON QuestionMessage.message = Message.id '
-             'AND Message.owner = %s' % sqlvalues(person))]
+            ("""LEFT OUTER JOIN QuestionMessage
+                ON QuestionMessage.question = Question.id"""),
+            ("""LEFT OUTER JOIN Message
+                ON QuestionMessage.message = Message.id
+                AND Message.owner = %s""" % sqlvalues(person))]
         if self.project:
             joins.extend(self.getProductJoins())
 
@@ -710,7 +711,7 @@ class QuestionSearch:
         return []
 
     def getOrderByClause(self):
-        """Return the ORDER BY clause to use to order this search's results."""
+        """Return the ORDER BY clause to use for this search's results."""
         sort = self.sort
         if sort is None:
             if self.search_text:
@@ -759,18 +760,19 @@ class QuestionTargetSearch(QuestionSearch):
     Used to implement IQuestionTarget.searchQuestions().
     """
 
-    def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
+    def __init__(self, search_text=None,
+                 status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
-                 needs_attention_from=None, unsupported_target=None,  
-                 project=None, product=None, distribution=None, 
+                 needs_attention_from=None, unsupported_target=None,
+                 project=None, product=None, distribution=None,
                  sourcepackagename=None):
         assert (product is not None or distribution is not None or
             project is not None), ("Missing a product, distribution or "
                                    "project context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
-            needs_attention_from=needs_attention_from, sort=sort, 
-            project=project, product=product, 
+            needs_attention_from=needs_attention_from, sort=sort,
+            project=project, product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
         if owner:
@@ -785,10 +787,10 @@ class QuestionTargetSearch(QuestionSearch):
         if self.owner:
             constraints.append('Question.owner = %s' % self.owner.id)
         if self.unsupported_target is not None:
-            langs = [str(lang.id) 
+            langs = [str(lang.id)
                      for lang in (
                         self.unsupported_target.getSupportedLanguages())]
-            constraints.append('Question.language NOT IN (%s)' % 
+            constraints.append('Question.language NOT IN (%s)' %
                                ', '.join(langs))
 
         return constraints

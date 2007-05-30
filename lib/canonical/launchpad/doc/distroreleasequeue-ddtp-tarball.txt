@@ -27,17 +27,21 @@ For further info about DDTP see:
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.tests import (
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
 Login as an admin (or ubuntutest.archive_admin if we have one), since
-we need to access and modify DistroReleaseQueue records and other tables.
+we need to access and modify PackageUpload records and other tables.
 
   >>> login('foo.bar@canonical.com')
+
+Set the email address for announcements:
+
+  >>> breezy_autotest.changeslist = 'test@example.com'
 
 First, test the rejection of a missapplied changesfile name, which
 doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
@@ -75,14 +79,18 @@ It was not rejected.
   >>> upload.is_rejected
   False
 
-  >>> success, msgs = upload.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  >>> success = upload.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
-
-  >>> print upload.rejection_message
-
+  DEBUG: Building recipients list.
+  DEBUG: Adding recipient: 'Foo Bar <foo.bar@canonical.com>'
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: signer of the above package.
+  DEBUG: Sent a mail:
+  DEBUG:     Subject: Accepted translations_main_20060728.tar.gz - (raw-ddtp-tarball)
+  DEBUG:     Recipients: test@example.com
+  ...
 
 
 And all things worked.
@@ -142,9 +150,9 @@ Cleanup the mess:
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> queue_item = breezy_autotest.getQueueItems(
-  ...      status=DistroReleaseQueueStatus.ACCEPTED)[0]
+  ...      status=PackageUploadStatus.ACCEPTED)[0]
   >>> queue_item.customfiles[0].libraryfilealias.filename
   u'translations_main_20060728.tar.gz'
 
@@ -208,7 +216,7 @@ language indexes or adding new ones:
   >>> upload.process()
   >>> upload.is_rejected
   False
-  >>> success, msgs = upload.do_accept()
+  >>> success = upload.do_accept()
   >>> success
   True
 
@@ -241,7 +249,7 @@ Create a hard link to "bn" package file.
 Retrieve and publish new custom upload:
 
   >>> queue_item = breezy_autotest.getQueueItems(
-  ...      status=DistroReleaseQueueStatus.ACCEPTED)[0]
+  ...      status=PackageUploadStatus.ACCEPTED)[0]
 
   >>> queue_item.realiseUpload()
 

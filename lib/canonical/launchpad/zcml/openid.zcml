@@ -1,0 +1,39 @@
+<configure xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser">
+
+    <browser:page
+        layer="canonical.launchpad.layers.OpenIdLayer"
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        permission="zope.Public"
+        name="+openid"
+        class="canonical.launchpad.browser.openidserver.OpenIdView"
+        />
+
+    <content class="canonical.launchpad.database.OpenIdAuthorization">
+        <allow
+            interface="canonical.launchpad.interfaces.IOpenIdAuthorization"
+            />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.OpenIdAuthorizationSet"
+        provides="canonical.launchpad.interfaces.IOpenIdAuthorizationSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IOpenIdAuthorizationSet"
+            />
+    </securedutility>
+
+    <utility
+        provides="canonical.launchpad.interfaces.ILaunchpadOpenIdStoreFactory"
+        component="canonical.launchpad.database.openidserver.LaunchpadOpenIdStore">
+    </utility>
+
+    <browser:page
+        for="openid.server.server.ProtocolError"
+        name="index.html"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.openidserver.ProtocolErrorView"
+        />
+
+</configure>
+

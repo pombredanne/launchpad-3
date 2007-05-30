@@ -7,6 +7,7 @@ __all__ = [
     'SourcePackageSOP',
     'SourcePackageFacets',
     'SourcePackageView',
+    'linkify_changelog'
     ]
 
 # Python standard library imports
@@ -24,18 +25,19 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
-    PackageRelationship, relationship_builder)
+    relationship_builder)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    structured, GetitemNavigation, stepto, redirection)
+    GetitemNavigation, stepto, redirection)
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -48,9 +50,17 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepto('+pots')
     def pots(self):
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(
-                   distrorelease=self.context.distrorelease,
-                   sourcepackagename=self.context.sourcepackagename)
+        sourcepackage_pots = potemplateset.getSubset(
+            distrorelease=self.context.distrorelease,
+            sourcepackagename=self.context.sourcepackagename)
+
+        if (self.context.distrorelease.hide_all_translations and
+            not check_permission('launchpad.Admin', sourcepackage_pots)):
+            raise TranslationUnavailableError(
+                'Translation updates in progress.  Only admins may view'
+                ' translations for this sourcepackage.')
+
+        return sourcepackage_pots
 
     @stepto('+filebug')
     def filebug(self):
@@ -228,9 +238,9 @@ class SourcePackageView(BuildRecordsView):
         """Wrap the relationship_builder for SourcePackages.
 
         Define apt_pkg.ParseSrcDep as a relationship 'parser' and
-        IDistroRelease.getSourcePackage as 'getter'.
+        IDistroRelease.getBinaryPackage as 'getter'.
         """
-        getter = self.context.distrorelease.getSourcePackage
+        getter = self.context.distrorelease.getBinaryPackage
         parser = ParseSrcDepends
         return relationship_builder(content, parser=parser, getter=getter)
 
@@ -248,10 +258,6 @@ class SourcePackageView(BuildRecordsView):
         if depends or depends_indep:
             return True
         return False
-
-    def linkified_changelog(self):
-        return linkify_changelog(
-            self.context.changelog, self.context.sourcepackagename.name)
 
     def requestCountry(self):
         return ICountry(self.request, None)

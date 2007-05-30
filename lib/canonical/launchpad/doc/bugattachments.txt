@@ -98,12 +98,13 @@ attachment needs to handle that:
     >>> login('test@canonical.com')
     >>> filecontent = StringIO('')
     >>> filecontent.filename = 'foo.bar'
-    >>> add_request = LaunchpadTestRequest(form={
-    ...     'field.subject': u'Title',
-    ...     'field.comment': u'Some comment.',
-    ...     'field.filecontent': filecontent,
-    ...     'field.patch': u'',
-    ...     'field.actions.save': 'Save Changes'})
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.comment': u'Some comment.',
+    ...           'field.filecontent': filecontent,
+    ...           'field.patch': u'',
+    ...           'field.actions.save': 'Save Changes'})
 
 Note that the +addcomment-form view is actually registered on a "bug in
 context", i.e. an IBugTask, so let's grab the first bugtask on bug_one
@@ -128,14 +129,15 @@ upload it:
 
     >>> filecontent = StringIO('x'*1025)
     >>> filecontent.filename = 'foo.txt'
-    >>> add_request = LaunchpadTestRequest(form={
-    ...     'field.subject': u'Title',
-    ...     'field.comment': u'Some comment.',
-    ...     'field.include_attachment': 'on',
-    ...     'field.filecontent': filecontent,
-    ...     'field.attachment_description': 'blah',
-    ...     'field.patch': u'',
-    ...     'field.actions.save' : 'Save Changes'})
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.comment': u'Some comment.',
+    ...           'field.include_attachment': 'on',
+    ...           'field.filecontent': filecontent,
+    ...           'field.attachment_description': 'blah',
+    ...           'field.patch': u'',
+    ...           'field.actions.save' : 'Save Changes'})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
     >>> add_comment_view.initialize()
     >>> len(add_comment_view.errors)
@@ -149,14 +151,15 @@ means no limit:
     >>> from canonical.config import config
     >>> old_max_bug_attachment_size = config.launchpad.max_bug_attachment_size
     >>> config.launchpad.max_bug_attachment_size = 0
-    >>> add_request = LaunchpadTestRequest(form={
-    ...     'field.subject': u'Title',
-    ...     'field.comment': u'Some comment.',
-    ...     'field.include_attachment': 'on',
-    ...     'field.filecontent': filecontent,
-    ...     'field.attachment_description': 'blah',
-    ...     'field.patch': u'',
-    ...     'field.actions.save' : 'Save Changes'})
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.comment': u'Some comment.',
+    ...           'field.include_attachment': 'on',
+    ...           'field.filecontent': filecontent,
+    ...           'field.attachment_description': 'blah',
+    ...           'field.patch': u'',
+    ...           'field.actions.save' : 'Save Changes'})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
     >>> add_comment_view.initialize()
     Attachment added: u'foo.txt'
@@ -165,10 +168,12 @@ means no limit:
 
 The request must contain either a comment or an attachment or both, but it
 must have at least one.
-    >>> add_request = LaunchpadTestRequest(form={
-    ...     'field.subject': u'Title',
-    ...     'field.patch': u'',
-    ...     'field.actions.save': 'Save Changes'})
+
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.patch': u'',
+    ...           'field.actions.save': 'Save Changes'})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
     >>> add_comment_view.initialize()
     >>> len(add_comment_view.errors)
@@ -180,12 +185,13 @@ If the request contains no attachment description the filename should be used.
     
     >>> filecontent = StringIO("No, sir. That's one bonehead name, but that ain't me any more.")
     >>> filecontent.filename = 'RA.txt'
-    >>> add_request = LaunchpadTestRequest(form={
-    ...     'field.subject': u'Title',
-    ...     'field.comment': u'Some comment.',
-    ...     'field.filecontent': filecontent,
-    ...     'field.patch': u'',
-    ...     'field.actions.save': 'Save Changes'})
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.comment': u'Some comment.',
+    ...           'field.filecontent': filecontent,
+    ...           'field.patch': u'',
+    ...           'field.actions.save': 'Save Changes'})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
     >>> add_comment_view.initialize()
     Attachment added: u'RA.txt'
@@ -207,14 +213,15 @@ attachment was added.
 Let's try uploading a file with some weird characters in them:
 
     >>> filecontent.filename = u'fo\xf6 bar'
-    >>> add_request = LaunchpadTestRequest(form={
-    ...     'field.subject': u'Title',
-    ...     'field.comment': u'Some comment.',
-    ...     'field.include_attachment': 'on',
-    ...     'field.filecontent': filecontent,
-    ...     'field.attachment_description': 'blah',
-    ...     'field.patch': u'',
-    ...     'field.actions.save' : 'Save Changes'})
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.comment': u'Some comment.',
+    ...           'field.include_attachment': 'on',
+    ...           'field.filecontent': filecontent,
+    ...           'field.attachment_description': 'blah',
+    ...           'field.patch': u'',
+    ...           'field.actions.save' : 'Save Changes'})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
     >>> len(add_comment_view.errors)
     0
@@ -232,14 +239,15 @@ We do this since otherwise it won't be possible to download the file
 from the librarian.
 
     >>> filecontent.filename = u'foo/bar/baz'
-    >>> add_request = LaunchpadTestRequest(form={
-    ...     'field.subject': u'Title',
-    ...     'field.comment': u'Some comment.',
-    ...     'field.include_attachment': 'on',
-    ...     'field.filecontent': filecontent,
-    ...     'field.attachment_description': 'blah',
-    ...     'field.patch': u'',
-    ...     'field.actions.save' : 'Save Changes'})
+    >>> add_request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': u'Title',
+    ...           'field.comment': u'Some comment.',
+    ...           'field.include_attachment': 'on',
+    ...           'field.filecontent': filecontent,
+    ...           'field.attachment_description': 'blah',
+    ...           'field.patch': u'',
+    ...           'field.actions.save' : 'Save Changes'})
     >>> add_comment_view = getView(bugtask, '+addcomment-form', add_request)
     >>> add_comment_view.initialize()
     Attachment added: u'foo-bar-baz'

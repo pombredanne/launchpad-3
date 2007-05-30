@@ -446,10 +446,9 @@ The method returns the IQuestionMessage recording the change:
     >>> print question.status.name
     INVALID
 
-The status change doesn't update the datelastresponse nor the
-datelastquery attributes:
+The status change updates the datelastresponse attribute:
 
-    >>> question.datelastresponse is None
+    >>> question.datelastresponse == now_plus_one_hour
     True
     >>> question.datelastquery == old_datelastquery
     True

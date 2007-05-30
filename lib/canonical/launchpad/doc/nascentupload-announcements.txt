@@ -33,6 +33,14 @@ We need to be logged into the security model in order to get any further
 
   >>> login('foo.bar@canonical.com')
 
+Helper functions to examine emails that were sent:
+
+  >>> import email
+  >>> from canonical.launchpad.mail import stub
+  >>> def by_to_addrs(a, b):
+  ...     return cmp(a[1], b[1])
+  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+
 For the purpose of this test, hoary needs to be an open (development)
 distrorelease so that we can upload to it. Also adjust 'changeslist'
 address:
@@ -44,13 +52,12 @@ address:
   >>> hoary.releasestatus = DistributionReleaseStatus.DEVELOPMENT
   >>> hoary.changeslist = "hoary-announce@lists.ubuntu.com"
 
-
 NEW source upload to RELEASE pocket via 'sync' policy (it presents
-the same behaviour than using insecure policy, apart of allowing
+the same behaviour than using insecure policy, apart from allowing
 unsigned changes):
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.tests import (
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
   ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
   >>> sync_policy = getPolicy(
@@ -62,17 +69,26 @@ unsigned changes):
   >>> netapplet_src.process()
 
   >>> netapplet_src.logger = mock_logger
-  >>> result, msgs = netapplet_src.do_accept()
-  DEBUG: Building recipients list.
-  ...
+  >>> result = netapplet_src.do_accept()
   DEBUG: Creating queue entry
+  ...
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: NEW: bar_1.0.orig.tar.gz
+  DEBUG: NEW: bar_1.0-1.diff.gz
+  DEBUG: NEW: bar_1.0-1.dsc
+  ...
+  DEBUG: above if files already exist in other distroreleases.
+  ...
+  DEBUG: -- 
+  DEBUG: You are receiving this email because you are the uploader, maintainer or
+  DEBUG: signer of the above package.
 
-  >>> len(msgs)
-  1
+There is only one email generated:
 
-  >>> import email
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>']
+  >>> [notification] = pop_notifications()
+  >>> notification['To']
+  'Daniel Silverstone <daniel.silverstone@canonical.com>'
 
 Let's ACCEPT bar sources in order to make the next uploads of this
 series *known* in hoary:
@@ -98,14 +114,20 @@ override sync policy to allow binary uploads):
   >>> netapplet_src.process()
 
   >>> netapplet_src.logger = mock_logger
-  >>> result, msgs = netapplet_src.do_accept()
-  DEBUG: Building recipients list.
-  ...
+  >>> result = netapplet_src.do_accept()
   DEBUG: Creating queue entry
+  ...
+  DEBUG: above if files already exist in other distroreleases.
+  ...
+  DEBUG: -- 
+  DEBUG: You are receiving this email because you are the uploader, maintainer or
+  DEBUG: signer of the above package.
 
-We simply ignores messages generated at this step because they are not
+We simply ignore messages generated at this step because they are not
 going to exist in production. We simply need this binary to be published
-in other test other features in post-release pockets.
+in order to test other features in post-release pockets.
+
+   >>> ignore = pop_notifications()
 
 Let's accept & publish bar binary in order to make the next uploads of
 this series *known* in hoary:
@@ -125,19 +147,18 @@ NEW source uploads for 'translations' section via sync policy:
   >>> lang_pack.process()
 
   >>> lang_pack.logger = mock_logger
-  >>> result, msgs = lang_pack.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Changes file is unsigned, adding changer as recipient
+  >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
   >>> lang_pack.queue_root.status.name
   'NEW'
 
-No messages were generated since this upload is targeted for
+No messages were generated since this upload is targeted for the
 'translation' section:
 
-  >>> len(msgs)
+  >>> transaction.commit()
+  >>> len(stub.test_emails)
   0
 
 Accept and publish this series:
@@ -157,9 +178,7 @@ AUTO_APPROVED source uploads for 'translations' section:
   >>> lang_pack.process()
 
   >>> lang_pack.logger = mock_logger
-  >>> result, msgs = lang_pack.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Changes file is unsigned, adding changer as recipient
+  >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
@@ -170,7 +189,8 @@ AUTO_APPROVED source uploads for 'translations' section:
 Again, no messages were generated since this upload is targeted for
 'translation' section:
 
-  >>> len(msgs)
+  >>> transaction.commit()
+  >>> len(stub.test_emails)
   0
 
 
@@ -201,9 +221,7 @@ UNAPPROVED source uploads for 'translations' section via insecure:
 
 
   >>> lang_pack.logger = mock_logger
-  >>> result, msgs = lang_pack.do_accept()
-  DEBUG: Building recipients list.
-  ...
+  >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to UNAPPROVED
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
@@ -214,7 +232,8 @@ UNAPPROVED source uploads for 'translations' section via insecure:
 UNAPPROVED message was also skipped for an upload targeted to
 'translation' section:
 
-  >>> len(msgs)
+  >>> transaction.commit()
+  >>> len(stub.test_emails)
   0
 
 
@@ -230,17 +249,33 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   >>> netapplet_src.process()
 
   >>> netapplet_src.logger = mock_logger
-  >>> result, msgs = netapplet_src.do_accept()
+  >>> result = netapplet_src.do_accept()
+  DEBUG: Creating queue entry
+  DEBUG: Setting it to ACCEPTED
   DEBUG: Building recipients list.
   ...
-  DEBUG: Setting it to ACCEPTED
   DEBUG: Skipping announcement, it is a BACKPORT.
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: Accepted:
+  DEBUG: OK: bar_1.0.orig.tar.gz
+  DEBUG: OK: bar_1.0-4.diff.gz
+  DEBUG: OK: bar_1.0-4.dsc
+  DEBUG:      -> Component: main Section: devel
+  ...
+  DEBUG: Announcing to hoary-announce@lists.ubuntu.com
+  DEBUG:
+  DEBUG: Thank you for your contribution to Ubuntu Linux.
+  ...
+  DEBUG: -- 
+  DEBUG: You are receiving this email because you are the uploader, maintainer or
+  DEBUG: signer of the above package.
 
-  >>> len(msgs)
-  1
+There is one email generated:
 
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Celso Providelo <celso.providelo@canonical.com>']
+  >>> [notification] = pop_notifications()
+  >>> notification['To']
+  'Celso Providelo <celso.providelo@canonical.com>'
 
 Remove orig.tar.gz pumped from librarian to disk during the upload
 checks:
@@ -262,15 +297,31 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   >>> netapplet_src.process()
 
   >>> netapplet_src.logger = mock_logger
-  >>> result, msgs = netapplet_src.do_accept()
+  >>> result = netapplet_src.do_accept()
+  DEBUG: Creating queue entry
+  DEBUG: Setting it to ACCEPTED
   DEBUG: Building recipients list.
   ...
-  DEBUG: Setting it to ACCEPTED
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: Accepted:
+  DEBUG: OK: bar_1.0.orig.tar.gz
+  DEBUG: OK: bar_1.0-2.diff.gz
+  DEBUG: OK: bar_1.0-2.dsc
+  DEBUG:      -> Component: main Section: devel
+  ...
+  DEBUG: Announcing to hoary-announce@lists.ubuntu.com
+  ...
+  DEBUG: -----END PGP SIGNATURE-----
+  DEBUG:
+  DEBUG:
 
+  >>> import operator
+  >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
   >>> len(msgs)
   2
 
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
+  >>> [message['To'] for message in msgs]
   ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
 
 Let's publish security bar sources in order to allow its binaries to
@@ -296,14 +347,25 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
   >>> netapplet_bin.process()
 
   >>> netapplet_bin.logger = mock_logger
-  >>> result, msgs = netapplet_bin.do_accept()
+  >>> result = netapplet_bin.do_accept()
+  DEBUG: Creating queue entry
+  DEBUG: Setting it to ACCEPTED
   DEBUG: Building recipients list.
   ...
-  DEBUG: Setting it to ACCEPTED
   DEBUG: Skipping announcement, it is a binary upload to SECURITY.
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: Accepted:
+  DEBUG: OK: bar_1.0-2_i386.deb
+  ...
+  DEBUG: Thank you for your contribution to Ubuntu Linux.
+  ...
+  DEBUG: -- 
+  DEBUG: You are receiving this email because you are the uploader, maintainer or
+  DEBUG: signer of the above package.
 
-  >>> len(msgs)
-  1
+One email generated:
 
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>']
+  >>> [notification] = pop_notifications()
+  >>> notification['To']
+  'Daniel Silverstone <daniel.silverstone@canonical.com>'
