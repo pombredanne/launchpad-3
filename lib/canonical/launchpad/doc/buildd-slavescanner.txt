@@ -952,7 +952,7 @@ builds for post-release pockets:
   >>> bm.startBuild(real_buildergroup, a_builder, bqItem3)
   Traceback (most recent call last):
   ...
-  AssertionError: i386 build of mozilla-firefox 0.9 in ubuntu hoary SECURITY (8) can not be built for pocket SECURITY: invalid pocket due to the release status of hoary.
+  AssertionError: i386 build of mozilla-firefox 0.9 in ubuntu hoary SECURITY (8) can not be built for pocket SECURITY: invalid pocket due to the series status of hoary.
 
 == Builder Status Handler ==
 

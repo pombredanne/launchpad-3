@@ -109,19 +109,19 @@ class BuildQueue(SQLBase):
         # in the state handling methods.
         state = self.build.buildstate.name
 
-        dar = self.build.distroarchrelease
-        distroname = dar.distrorelease.distribution.name
-        distroreleasename = dar.distrorelease.name
+        dar = self.build.distroarchseries
+        distroname = dar.distroseries.distribution.name
+        distroseriesname = dar.distroseries.name
         archname = dar.architecturetag
 
         # logfilename format:
-        # buildlog_<DISTRIBUTION>_<DISTRORELEASE>_<ARCHITECTURE>_\
+        # buildlog_<DISTRIBUTION>_<DISTROSeries>_<ARCHITECTURE>_\
         # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
         # as:
         # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
         # it fix request from bug # 30617
         return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
-            distroname, distroreleasename, archname, sourcename, version, state
+            distroname, distroseriesname, archname, sourcename, version, state
             ))
 
     def updateBuild_IDLE(self, build_id, build_status, logtail,
