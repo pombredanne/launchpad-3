@@ -151,7 +151,7 @@ class BuilddMaster:
                              distroarchseries.distroseries.name,
                              distroarchseries.architecturetag))
 
-        # check ARCHRELEASE across available pockets
+        # check ARCHSERIES across available pockets
         for pocket in dbschema.PackagePublishingPocket.items:
             if distroarchseries.getChroot(pocket):
                 # Fill out the contents
@@ -684,7 +684,7 @@ class BuilddMaster:
                 # XXX cprov 20070523: it should be suite name, but it
                 # is just fine for PPAs since they are only built in
                 # RELEASE pocket.
-                dist_name = queueItem.archrelease.distrorelease.name
+                dist_name = queueItem.archseries.distroseries.name
                 ppa_archive_url = queueItem.build.archive.archive_url
                 ppa_source_line = (
                     'deb %s/ubuntu %s %s'
