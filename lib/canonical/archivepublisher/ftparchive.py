@@ -268,8 +268,8 @@ class FTPArchiveHandler:
                     """
                     BinaryPackagePublishingHistory.distroarchrelease =
                     DistroArchRelease.id AND
-                    BinaryPackagePublishingHistory.archive = %s AND
                     DistroArchRelease.distrorelease = %s AND
+                    BinaryPackagePublishingHistory.archive = %s AND
                     BinaryPackagePublishingHistory.pocket = %s AND
                     BinaryPackagePublishingHistory.status = %s
                     """ % sqlvalues(distrorelease,
