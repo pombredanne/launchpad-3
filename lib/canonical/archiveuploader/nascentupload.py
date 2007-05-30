@@ -339,7 +339,7 @@ class NascentUpload:
         if self.sourceful:
             # When sourceful, the tools add 'source' to the architecture
             # list in the upload.
-            max = self.policy.distrorelease.architecturecount + 1
+            max = self.policy.distroseries.architecturecount + 1
         if 'all' in considered_archs:
             # Sometimes we get 'i386 all' which would count as two archs
             # so if 'all' is present, we bump the permitted number up
