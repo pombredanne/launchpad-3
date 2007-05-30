@@ -40,14 +40,14 @@ class ITranslationImportQueueEntry(Interface):
         required=True)
 
     productseries = Choice(
-        title=_("Release Series"),
+        title=_("Series"),
         required=False,
         vocabulary="ProductSeries")
 
-    distrorelease = Choice(
-        title=_("Distribution Release"),
+    distroseries = Choice(
+        title=_("Series"),
         required=False,
-        vocabulary="DistroRelease")
+        vocabulary="DistroSeries")
 
     sourcepackagename = Choice(
         title=_("Source Package Name"),
@@ -145,7 +145,7 @@ class ITranslationImportQueue(Interface):
         """Iterate over all entries in the queue that need review."""
 
     def addOrUpdateEntry(path, content, is_published, importer,
-        sourcepackagename=None, distrorelease=None, productseries=None,
+        sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, pofile=None):
         """Return a new or updated entry of the import queue.
 
@@ -156,17 +156,17 @@ class ITranslationImportQueue(Interface):
         :arg importer: is the person that did the import.
         :arg sourcepackagename: is the link of this import with source
             package.
-        :arg distrorelease: is the link of this import with a distribution.
+        :arg distroseries: is the link of this import with a distribution.
         :arg productseries: is the link of this import with a product branch.
         :arg potemplate: is the link of this import with an IPOTemplate.
         :arg pofile: is the link of this import with an IPOFile.
 
-        sourcepackagename + distrorelease and productseries are exclusive, we
+        sourcepackagename + distroseries and productseries are exclusive, we
         must have only one combination of them.
         """
 
     def addOrUpdateEntriesFromTarball(content, is_published, importer,
-        sourcepackagename=None, distrorelease=None, productseries=None,
+        sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None):
         """Add all .po or .pot files from the tarball at :content:.
 
@@ -176,11 +176,11 @@ class ITranslationImportQueue(Interface):
         :arg importer: is the person that did the import.
         :arg sourcepackagename: is the link of this import with source
             package.
-        :arg distrorelease: is the link of this import with a distribution.
+        :arg distroseries: is the link of this import with a distribution.
         :arg productseries: is the link of this import with a product branch.
         :arg potemplate: is the link of this import with an IPOTemplate.
 
-        sourcepackagename + distrorelease and productseries are exclusive, we
+        sourcepackagename + distroseries and productseries are exclusive, we
         must have only one combination of them.
 
         Return the number of files attached.
@@ -209,15 +209,15 @@ class ITranslationImportQueue(Interface):
         """Return the first entry of the queue ready to be imported."""
 
     def getEntriesWithPOTExtension(
-        distrorelease=None, sourcepackagename=None, productseries=None):
+        distroseries=None, sourcepackagename=None, productseries=None):
         """Return all entries with the '.pot' extension in the path field.
 
-        distrorelease, sourcepackagename and productseries can be used for
+        distroseries, sourcepackagename and productseries can be used for
         filtering purposes.
         """
 
     def getPillarObjectsWithApprovedImports():
-        """Return list of Product's and DistroRelease's with pending imports.
+        """Return list of Product's and DistroSeries's with pending imports.
 
         All returned items must implement IHasTranslationImports."""
 
@@ -292,7 +292,7 @@ class IEditTranslationImportQueueEntry(Interface):
 class IHasTranslationImports(Interface):
     """A set of files to be imported into Rosetta.
 
-    Implemented separately for a distrorelease or product, allowing a single
+    Implemented separately for a distroseries or product, allowing a single
     queue per each.
     """
 

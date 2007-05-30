@@ -133,7 +133,7 @@ class IBuilder(IHasOwner):
             file.
         """
 
-    def checkCanBuildForDistroArchRelease(distro_arch_release):
+    def checkCanBuildForDistroArchSeries(distro_arch_series):
         """Check that the slave is able to compile for the supplied distro_arch_release.
 
         This will query the builder to determine its actual architecture (as
@@ -257,7 +257,7 @@ class IBuilderSet(Interface):
         """Return all configured builders."""
 
     def getBuildersByArch(arch):
-        """Return all configured builders for a given DistroArchRelease."""
+        """Return all configured builders for a given DistroArchSeries."""
 
     def pollBuilders(logger, txn):
         """Poll all the builders and take any immediately available actions.

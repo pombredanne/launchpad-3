@@ -33,10 +33,7 @@ class ITeamMembership(Interface):
     status= Int(title=_("If Membership was approved or not"), required=True,
                 readonly=True)
 
-    # Properties
     statusname = Attribute("Status Name")
-    is_admin = Attribute("True if the person is an admin of the team.")
-    is_owner = Attribute("True if the person is the team owner.")
 
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
@@ -77,47 +74,11 @@ class ITeamMembershipSet(Interface):
         filling the TeamParticipation table.
         """
 
-    def getActiveMemberships(team, orderBy=None):
-        """Return all active TeamMemberships for the given team.
-
-        Active memberships are the ones with status APPROVED or ADMIN.
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in TeamMembership._defaultOrder.
-        """
-
-    def getInactiveMemberships(team, orderBy=None):
-        """Return all inactive TeamMemberships for the given team.
-
-        Inactive memberships are the ones with status EXPIRED or DEACTIVATED.
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in TeamMembership._defaultOrder.
-        """
-
-    def getProposedMemberships(team, orderBy=None):
-        """Return all proposed TeamMemberships for the given team.
-
-        Proposed memberships are the ones with status PROPOSED.
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in TeamMembership._defaultOrder.
-        """
-
     def getByPersonAndTeam(personID, team, default=None):
         """Return the TeamMembership object for the given person and team.
 
         If there's no TeamMembership for this person in this team, return the
         default value.
-        """
-
-    def getTeamMembersCount(team):
-        """Return the number of members this team have.
-
-        This includes active, inactive and proposed members.
         """
 
 

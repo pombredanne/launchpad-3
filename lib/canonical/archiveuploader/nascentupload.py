@@ -33,7 +33,7 @@ from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError)
+    NotFoundError, IDistributionSet)
 from canonical.lp.dbschema import PackagePublishingPocket
 
 
@@ -120,13 +120,13 @@ class NascentUpload:
         self.logger.debug("Beginning processing.")
 
         try:
-            self.policy.setDistroReleaseAndPocket(self.changes.suite_name)
+            self.policy.setDistroSeriesAndPocket(self.changes.suite_name)
         except NotFoundError:
             self.reject(
-                "Unable to find distrorelease: %s" % self.changes.suite_name)
+                "Unable to find distroseries: %s" % self.changes.suite_name)
 
         # We need to process changesfile addresses at this point because
-        # we depend on an already initialised policy (distrorelease
+        # we depend on an already initialised policy (distroseries
         # and pocket set) to have proper person 'creation rationale'.
         self.run_and_collect_errors(self.changes.processAddresses)
 
@@ -200,19 +200,6 @@ class NascentUpload:
             if uploaded_file.new:
                 return True
         return False
-
-    @property
-    def sender(self):
-        """RFC822 sender header specified in LP configuration."""
-        return "%s <%s>" % (
-            config.uploader.default_sender_name,
-            config.uploader.default_sender_address)
-
-    @property
-    def default_recipient(self):
-        """RFC822 default recipient specified in LP configuration. """
-        return "%s <%s>" % (config.uploader.default_recipient_name,
-                            config.uploader.default_recipient_address)
 
     #
     # Overall consistency checks
@@ -410,7 +397,13 @@ class NascentUpload:
     @property
     def is_ppa(self):
         """Whether or not the current upload is target for a PPA."""
-        if self.policy.archive.id != self.policy.distrorelease.main_archive.id:
+        # XXX julian 2007-05-29 When self.policy.distroseries is None, this
+        # will causes a rejection for the wrong reasons (a code exception
+        # instead of a bad distro).  Bug reported as #117557.
+        if not self.policy.distroseries:
+            # Greasy hack until above bug is fixed.
+            return False
+        if self.policy.archive.id != self.policy.distroseries.main_archive.id:
             return True
         return False
 
@@ -561,7 +554,7 @@ class NascentUpload:
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
         for pocket in lookup_pockets:
-            candidates = self.policy.distrorelease.getPublishedReleases(
+            candidates = self.policy.distroseries.getPublishedReleases(
                 source_name, include_pending=True, pocket=pocket,
                 archive=self.policy.archive)
             if candidates:
@@ -577,7 +570,7 @@ class NascentUpload:
 
         This method may raise NotFoundError if it is dealing with an
         uploaded file targeted to an architecture not present in the
-        distrorelease in context. So callsites needs to be aware.
+        distroseries in context. So callsites needs to be aware.
         """
         binary_name = getUtility(
             IBinaryPackageNameSet).queryByName(uploaded_file.package)
@@ -586,7 +579,7 @@ class NascentUpload:
             return None
 
         if uploaded_file.architecture == "all":
-            arch_indep = self.policy.distrorelease.nominatedarchindep
+            arch_indep = self.policy.distroseries.nominatedarchindep
             archtag = arch_indep.architecturetag
         else:
             archtag = uploaded_file.architecture
@@ -594,7 +587,7 @@ class NascentUpload:
         # XXX cprov 20070213: it raises NotFoundError for unknown
         # architectures. For now, it is treated in find_and_apply_overrides().
         # But it should be refactored ASAP.
-        dar = self.policy.distrorelease[archtag]
+        dar = self.policy.distroseries[archtag]
 
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
@@ -610,7 +603,7 @@ class NascentUpload:
                 continue
 
             # Try the other architectures...
-            dars = self.policy.distrorelease.architectures
+            dars = self.policy.distroseries.architectures
             other_dars = [other_dar for other_dar in dars
                           if other_dar.id != dar.id]
             for other_dar in other_dars:
@@ -672,7 +665,7 @@ class NascentUpload:
         Override target component, section and priority.
         """
         self.logger.debug("%s: (binary) exists in %s/%s" % (
-            uploaded_file.package, override.distroarchrelease.architecturetag,
+            uploaded_file.package, override.distroarchseries.architecturetag,
             override.pocket.name))
 
         uploaded_file.component_name = override.component.name
@@ -758,79 +751,25 @@ class NascentUpload:
         """
         if self.is_rejected:
             self.reject("Alas, someone called do_accept when we're rejected")
-            return False, self.do_reject()
+            self.do_reject()
+            return False
         try:
-            interpolations = {
-                "MAINTAINERFROM": self.sender,
-                "SENDER": self.sender,
-                "CHANGES": self.changes.filename,
-                "SUMMARY": self.getNotificationSummary(),
-                "CHANGESFILE": guess_encoding(self.changes.filecontents),
-                "DISTRO": self.policy.distro.title,
-                "DISTRORELEASE": self.policy.distrorelease.name,
-                "ANNOUNCE": self.policy.announcelist,
-                "SOURCE": self.changes.source,
-                "VERSION": self.changes.version,
-                "ARCH": self.changes.architecture_line,
-                }
+            maintainerfrom = None
             if self.changes.signer:
-                interpolations['MAINTAINERFROM'] = self.changes.changed_by[
-                    'rfc2047']
-
-            recipients = self.getRecipients()
-
-            interpolations['RECIPIENT'] = ", ".join(recipients)
-            interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
+                maintainerfrom = self.changes.changed_by['rfc2047']
 
             self.storeObjectsInDatabase()
 
-            # NEW, Auto-APPROVED and UNAPPROVED source uploads targeted to
-            # section 'translations' should not generate any emails.
-            if (self.sourceful and
-                self.changes.dsc.section_name == 'translations'):
-                self.logger.debug(
-                    "Skipping acceptance and announcement, it is a language-"
-                    "package upload.")
-                return True, []
-
-            # Unknown uploads receives *NEW* message.
-            if self.is_new:
-                return True, [new_msg % interpolations]
-
-            # PPA uploads receive acceptance message.
-            if self.is_ppa:
-                return True, [accept_msg % interpolations]
-
-            # Known uploads
-
-            # UNAPPROVED uploads coming from 'insecure' policy only sends
-            # acceptance message.
-            if not self.policy.autoApprove(self):
-                interpolations["SUMMARY"] += (
-                    "\nThis upload awaits approval by a distro manager\n")
-                return True, [accept_msg % interpolations]
-
-            # Auto-APPROVED uploads to BACKPORTS skips announcement.
-            # usually processed with 'sync' policy
-            if self.policy.pocket == PackagePublishingPocket.BACKPORTS:
-                self.logger.debug(
-                    "Skipping announcement, it is a BACKPORT.")
-                return True, [accept_msg % interpolations]
-
-            # Auto-APPROVED binary uploads to SECURITY skips announcement.
-            # usually processed with 'security' policy
-            if (self.policy.pocket == PackagePublishingPocket.SECURITY
-                and self.binaryful):
-                self.logger.debug(
-                    "Skipping announcement, it is a binary upload to SECURITY.")
-                return True, [accept_msg % interpolations]
-
-            # Fallback, all the rest comming from 'insecure', 'secure',
-            # and 'sync' policies should send acceptance & announcement
-            # messages.
-            return True, [
-                accept_msg % interpolations,
-                announce_msg % interpolations]
+            # Send the email.
+            # There is also a small corner case here where the DB transaction
+            # may fail yet this email will be sent.  The chances of this are
+            # very small, and at some point the script infrastructure will
+            # only send emails when the script exits successfully.
+            changes_file_object = open(self.changes.filepath, "r")
+            self.queue_root.notify(announce_list=self.policy.announcelist, 
+                changes_file_object=changes_file_object, logger=self.logger)
+            changes_file_object.close()
+            return True
 
         except (SystemExit, KeyboardInterrupt):
             raise
@@ -841,85 +780,48 @@ class NascentUpload:
             self.reject("%s" % e)
             # Let's log tracebacks for uncaught exceptions ...
             self.logger.error('Exception while accepting:\n', exc_info=True)
-            return False, self.do_reject()
+            self.do_reject()
+            return False
 
     def do_reject(self, template=rejection_template):
         """Reject the current upload given the reason provided."""
         assert self.is_rejected, "The upload is not rejected."
 
-        interpolations = {
-            "SENDER": self.sender,
-            "CHANGES": self.changes.filename,
-            "SUMMARY": self.rejection_message,
-            "CHANGESFILE": guess_encoding(self.changes.filecontents)
-            }
-        recipients = self.getRecipients()
-        interpolations['RECIPIENT'] = ", ".join(recipients)
-        interpolations['DEFAULT_RECIPIENT'] = self.default_recipient
-        outgoing_msg = template % interpolations
+        # We need to check that the queue_root object has been fully
+        # initialised first, because policy checks or even a code exception
+        # may have caused us to bail out early and not create one.  If it
+        # doesn't exist then we can create a dummy one that contains just
+        # enough context to be able to generate a rejection email.  Nothing
+        # will end up in the DB as the transaction will get rolled back.
 
-        return [outgoing_msg]
+        if not self.queue_root:
+            self.queue_root = self._createQueueEntry()
+            self.queue_root.setRejected()
 
-    def getRecipients(self):
-        """Return a list of recipients including every address we trust."""
-        recipients = []
-        self.logger.debug("Building recipients list.")
-        changer = self.changes.changed_by['person']
+        changes_file_object = open(self.changes.filepath, "r")
+        self.queue_root.notify(summary_text=self.rejection_message,
+            changes_file_object=changes_file_object, logger=self.logger)
+        changes_file_object.close()
 
-        if self.changes.signer:
-            # Note that self.changes.maintainer is only available for
-            # signed uploads.
-            maintainer = self.changes.maintainer['person']
-            recipients.append(self.changes.signer_address['person'])
-
-            if (maintainer != self.changes.signer and
-                self.is_person_in_keyring(maintainer)):
-                self.logger.debug("Adding maintainer to recipients")
-                recipients.append(maintainer)
-
-            if (changer != self.changes.signer and changer != maintainer
-                and self.is_person_in_keyring(changer)):
-                self.logger.debug("Adding changed-by to recipients")
-                recipients.append(changer)
+    def _createQueueEntry(self):
+        """Return a PackageUpload object."""
+        distroseries = self.policy.distroseries
+        if not distroseries:
+            # Upload was probably rejected with a bad distroseries, so we
+            # can create a dummy one for the purposes of a rejection email.
+            assert self.is_rejected, (
+                "The upload is not rejected but distroseries is None.")
+            distroseries = getUtility(
+                IDistributionSet)['ubuntu'].currentseries
+            return distroseries.createQueueEntry(
+                PackagePublishingPocket.RELEASE, self.changes.filename,
+                self.changes.filecontents, distroseries.main_archive,
+                self.changes.signingkey)
         else:
-            # Only autosync policy allow unsigned changes
-            # We rely on the person running sync-tool about the identity
-            # of the changer.
-            self.logger.debug(
-                "Changes file is unsigned, adding changer as recipient")
-            recipients.append(changer)
-
-        valid_recipients = []
-        for person in recipients:
-            if person is None or person.preferredemail is None:
-                # We should only actually send mail to people that are
-                # registered Launchpad user with preferred email; this
-                # is a sanity check to avoid spamming the innocent.  Not
-                # that we do that sort of thing.
-                #
-                # In particular, people that were created because of
-                # policy.create_people won't get emailed. That's life.
-                continue
-            recipient = format_address(person.displayname,
-                                       person.preferredemail.email)
-            self.logger.debug("Adding recipient: '%s'" % recipient)
-            valid_recipients.append(recipient)
-        return valid_recipients
-
-    def getNotificationSummary(self):
-        """List the files and build the notification summary as needed."""
-        summary = []
-        for uploaded_file in self.changes.files:
-            if uploaded_file.new:
-                summary.append("NEW: %s" % uploaded_file.filename)
-            else:
-                summary.append(" OK: %s" % uploaded_file.filename)
-                if isinstance(uploaded_file, DSCFile):
-                    summary.append("     -> Component: %s Section: %s" % (
-                        uploaded_file.component.name,
-                        uploaded_file.section.name))
-
-        return "\n".join(summary)
+            return distroseries.createQueueEntry(
+                self.policy.pocket, self.changes.filename,
+                self.changes.filecontents, self.policy.archive,
+                self.changes.signingkey)
 
     #
     # Inserting stuff in the database
@@ -931,11 +833,8 @@ class NascentUpload:
         # Queue entries are created in the NEW state by default; at the
         # end of this method we cope with uploads that aren't new.
         self.logger.debug("Creating queue entry")
-        distrorelease = self.policy.distrorelease
-        self.queue_root = distrorelease.createQueueEntry(
-            self.policy.pocket, self.changes.filename,
-            self.changes.filecontents, self.policy.archive,
-            self.changes.signingkey)
+        distroseries = self.policy.distroseries
+        self.queue_root = self._createQueueEntry()
 
         # When binaryful and sourceful, we have a mixed-mode upload.
         # Mixed-mode uploads need special handling, and the spr here is

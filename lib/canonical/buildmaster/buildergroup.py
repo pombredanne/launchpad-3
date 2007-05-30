@@ -71,7 +71,7 @@ class BuilderGroup:
         self.logger.info('Checking %s' % builder.name)
         try:
             builder.checkSlaveAlive()
-            builder.checkCanBuildForDistroArchRelease(arch)
+            builder.checkCanBuildForDistroArchSeries(arch)
         # catch only known exceptions
         except (ValueError, TypeError, xmlrpclib.Fault,
                 socket.error, BuildDaemonError), reason:
@@ -276,10 +276,10 @@ class BuilderGroup:
         """
         self.logger.debug("Processing successful build %s" % buildid)
         # Explode before collect a binary that is denied in this
-        # distrorelease/pocket
+        # distroseries/pocket
         build = queueItem.build
-        if build.archive == build.distrorelease.main_archive:
-            assert build.distrorelease.canUploadToPocket(build.pocket), (
+        if build.archive == build.distroseries.main_archive:
+            assert build.distroseries.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
                 % (build.title, build.id,
                    build.pocket.name))
@@ -324,7 +324,7 @@ class BuilderGroup:
         extra_args = [
             "--log-file", "%s" %  uploader_logfilename,
             "-d", "%s" % queueItem.build.distribution.name,
-            "-r", "%s" % (queueItem.build.distrorelease.name +
+            "-s", "%s" % (queueItem.build.distroseries.name +
                           pocketsuffix[queueItem.build.pocket]),
             "-b", "%s" % queueItem.build.id,
             "-J", "%s" % upload_leaf,
@@ -374,11 +374,12 @@ class BuilderGroup:
         original_slave = queueItem.builder.slave
         flush_database_updates()
         clear_current_connection_cache()
-        # XXX: This is forced on us by sqlobject refreshing the builder object during the
-        # transaction cache clearing; that is forced on us by using a different
-        # process to do the upload, but as that process runs in the same unix
-        # account, it is simply double handling and we would be better off to
-        # do it within this process. Robert Collins, Celso Providelo 20070526.
+        # XXX: This is forced on us by sqlobject refreshing the builder
+        # object during the transaction cache clearing; that is forced
+        # on us by using a different process to do the upload, but as
+        # that process runs in the same unix account, it is simply double
+        # handling and we would be better off to do it within this process.
+        # Robert Collins, Celso Providelo 20070526.
         queueItem.builder.setSlaveForTesting(removeSecurityProxy(original_slave))
 
         # Retrive the up-to-date build record and perform consistency

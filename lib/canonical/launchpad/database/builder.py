@@ -28,7 +28,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotResetHost,
-    IBuildQueueSet, IBuildSet, IBuilder, IBuilderSet, IDistroArchReleaseSet,
+    IBuildQueueSet, IBuildSet, IBuilder, IBuilderSet, IDistroArchSeriesSet,
     IHasBuildRecords, NotFoundError,
     ProtocolVersionMismatch)
 from canonical.launchpad.webapp import urlappend
@@ -116,11 +116,11 @@ class Builder(SQLBase):
             """ % (self.name, self.url, url, info)
             raise BuildDaemonError(message)
 
-    def checkCanBuildForDistroArchRelease(self, distro_arch_release):
+    def checkCanBuildForDistroArchSeries(self, distro_arch_series):
         """See IBuilder."""
         # XXX: This function currently depends on the operating system specific
         # details of the build slave to return a processor-family-name (the
-        # architecturetag) which matches the distro_arch_release. In reality,
+        # architecturetag) which matches the distro_arch_series. In reality,
         # we should be checking the processor itself (e.g. amd64) as that is
         # what the distro policy is set from, the architecture tag is both
         # distro specific and potentially different for radically different
@@ -132,11 +132,11 @@ class Builder(SQLBase):
         # we can only understand one version of slave today:
         if builder_vers != '1.0':
             raise ProtocolVersionMismatch("Protocol version mismatch")
-        # check the slave arch-tag against the distro_arch_release.
-        if builder_arch != distro_arch_release.architecturetag:
+        # check the slave arch-tag against the distro_arch_series.
+        if builder_arch != distro_arch_series.architecturetag:
             raise BuildDaemonError(
                 "Architecture tag mismatch: %s != %s"
-                % (builder_arch, distro_arch_release.architecturetag))
+                % (builder_arch, distro_arch_series.architecturetag))
 
     def checkSlaveAlive(self):
         """See IBuilder."""
@@ -203,27 +203,27 @@ class Builder(SQLBase):
             assert build_queue_item.is_trusted, \
                 "attempt to build untrusted item on a trusted-only builder."
         # ensure build has the need chroot
-        chroot = build_queue_item.archrelease.getChroot(
+        chroot = build_queue_item.archseries.getChroot(
             build_queue_item.build.pocket)
         if chroot is None:
             logger.debug("Missing CHROOT for %s/%s/%s/%s",
-                build_queue_item.build.distrorelease.distribution.name,
-                build_queue_item.build.distrorelease.name,
-                build_queue_item.build.distroarchrelease.architecturetag,
+                build_queue_item.build.distroseries.distribution.name,
+                build_queue_item.build.distroseries.name,
+                build_queue_item.build.distroarchseries.architecturetag,
                 build_queue_item.build.pocket.name)
             raise CannotBuild
         # The main distribution has policies prevent uploads to some pockets
-        # (e.g. security) during different parts of the distribution release
+        # (e.g. security) during different parts of the distribution series
         # lifecycle. These do not apply to PPA builds (which are untrusted).
         if build_queue_item.is_trusted:
             build = build_queue_item.build
             # XXX: not an explicit CannotBuild exception yet because the callers
             # have not been audited - Robert Collins 20070526.
-            assert build.distrorelease.canUploadToPocket(build.pocket), (
+            assert build.distroseries.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
-                "to the release status of %s."
+                "to the series status of %s."
                 % (build.title, build.id, build.pocket.name,
-                   build.distrorelease.name))
+                   build.distroseries.name))
         # If we are building untrusted source reset the entire machine.
         if not self.trusted:
             self.resetSlaveHost(logger)
@@ -240,13 +240,13 @@ class Builder(SQLBase):
         args["ogrecomponent"] = build_queue_item.component_name
         # turn 'arch_indep' ON only if build is archindep or if
         # the specific architecture is the nominatedarchindep for
-        # this distrorelease (in case it requires any archindep source)
+        # this distroseries (in case it requires any archindep source)
         # XXX: there is no point in checking if archhintlist ==
         # 'all' here, because it's redundant with the check for
         # isNominatedArchIndep. -- kiko, 2006-08-31
         args['arch_indep'] = (
             build_queue_item.archhintlist == 'all' or
-            build_queue_item.archrelease.isNominatedArchIndep)
+            build_queue_item.archseries.isNominatedArchIndep)
 
         if not build_queue_item.is_trusted:
             # Add the urls for the current published archives to the build
@@ -449,10 +449,10 @@ class BuilderSet(object):
         buildMaster = BuilddMaster(logger, txn)
 
         logger.info("Setting Builders.")
-        # Put every distroarchrelease we can find into the build master.
-        for archrelease in getUtility(IDistroArchReleaseSet):
-            buildMaster.addDistroArchRelease(archrelease)
-            buildMaster.setupBuilders(archrelease)
+        # Put every distroarchseries we can find into the build master.
+        for archseries in getUtility(IDistroArchSeriesSet):
+            buildMaster.addDistroArchSeries(archseries)
+            buildMaster.setupBuilders(archseries)
 
         logger.info("Scanning Builders.")
         # Scan all the pending builds, update logtails and retrieve

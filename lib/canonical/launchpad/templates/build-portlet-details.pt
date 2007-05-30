@@ -15,14 +15,14 @@
     <a tal:content="context/distribution/name"
        tal:attributes="href context/distribution/fmt:url">
       ubuntu</a>
-    <a tal:content="context/distrorelease/name"
-       tal:attributes="href context/distrorelease/fmt:url">
+    <a tal:content="context/distroseries/name"
+       tal:attributes="href context/distroseries/fmt:url">
       hoary
     </a>
     <br />
 
     <b>Architecture:</b>
-    <span tal:replace="context/distroarchrelease/architecturetag">
+    <span tal:replace="context/distroarchseries/architecturetag">
       i386
     </span>
     <br />

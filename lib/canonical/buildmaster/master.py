@@ -64,14 +64,14 @@ version_relation_map = {
 }
 
 
-def determineArchitecturesToBuild(pubrec, legal_archreleases,
-                                  distrorelease, pas_verify=None):
-    """Return a list of DistroArchReleases for which this publication
+def determineArchitecturesToBuild(pubrec, legal_archserieses,
+                                  distroseries, pas_verify=None):
+    """Return a list of DistroArchSeries for which this publication
     should build.
 
     This function answers the question: given a publication, what
     architectures should we build it for? It takes a set of legal
-    distroarchreleases and the distribution release for which we are
+    distroarchserieses and the distribution series for which we are
     buiilding, and optionally a BuildDaemonPackagesArchSpecific
     instance.
     """
@@ -79,13 +79,13 @@ def determineArchitecturesToBuild(pubrec, legal_archreleases,
     assert hint_string
 
     legal_arch_tags = set(arch.architecturetag 
-                          for arch in legal_archreleases)
+                          for arch in legal_archserieses)
 
     if hint_string == 'any':
         package_tags = legal_arch_tags
     elif hint_string == 'all':
-        nominated_arch = distrorelease.nominatedarchindep
-        assert nominated_arch in legal_archreleases
+        nominated_arch = distroseries.nominatedarchindep
+        assert nominated_arch in legal_archserieses
         package_tags = set([nominated_arch.architecturetag])
     else:
         my_archs = hint_string.split()
@@ -107,9 +107,9 @@ def determineArchitecturesToBuild(pubrec, legal_archreleases,
     else:
         build_tags = package_tags
 
-    sorted_archreleases = sorted(legal_archreleases,
+    sorted_archserieses = sorted(legal_archserieses,
                                  key=operator.attrgetter('architecturetag'))
-    return [arch for arch in sorted_archreleases
+    return [arch for arch in sorted_archserieses
             if arch.architecturetag in build_tags]
 
 
@@ -125,7 +125,7 @@ class BuilddMaster:
         self._logger = logger
         self._tm = tm
         self.librarian = getUtility(ILibrarianClient)
-        self._archreleases = {}
+        self._archserieses = {}
         # apt_pkg requires InitSystem to get VersionCompare working properly
         apt_pkg.InitSystem()
         self._logger.info("Buildd Master has been initialised")
@@ -133,110 +133,110 @@ class BuilddMaster:
     def commit(self):
         self._tm.commit()
 
-    def addDistroArchRelease(self, distroarchrelease):
-        """Setting up a workable DistroArchRelease for this session."""
-        self._logger.info("Adding DistroArchRelease %s/%s/%s"
-                          % (distroarchrelease.distrorelease.distribution.name,
-                             distroarchrelease.distrorelease.name,
-                             distroarchrelease.architecturetag))
+    def addDistroArchSeries(self, distroarchseries):
+        """Setting up a workable DistroArchSeries for this session."""
+        self._logger.info("Adding DistroArchSeries %s/%s/%s"
+                          % (distroarchseries.distroseries.distribution.name,
+                             distroarchseries.distroseries.name,
+                             distroarchseries.architecturetag))
 
         # check ARCHRELEASE across available pockets
         for pocket in dbschema.PackagePublishingPocket.items:
-            if distroarchrelease.getChroot(pocket):
+            if distroarchseries.getChroot(pocket):
                 # Fill out the contents
-                self._archreleases.setdefault(distroarchrelease, {})
+                self._archserieses.setdefault(distroarchseries, {})
 
-    def setupBuilders(self, archrelease):
-        """Setting up a group of builder slaves for a given DistroArchRelease.
+    def setupBuilders(self, archseries):
+        """Setting up a group of builder slaves for a given DistroArchSeries.
 
         Use the annotation utility to store a BuilderGroup instance
-        keyed by the the DistroArchRelease.processorfamily in the
+        keyed by the the DistroArchSeries.processorfamily in the
         global registry 'notes' and refer to this 'note' in the private
-        attribute '_archrelease' keyed by the given DistroArchRelease
+        attribute '_archseries' keyed by the given DistroArchSeries
         and the label 'builders'. This complicated arrangement enables us
         to share builder slaves between different DistroArchRelases since
         their processorfamily values are the same (compatible processors).
         """
-        # Determine the builders for this distroarchrelease...
-        if archrelease not in self._archreleases:
+        # Determine the builders for this distroarchseries...
+        if archseries not in self._archserieses:
             # Avoid entering in the huge loop if we don't find at least
             # one architecture for which we can build on.
             self._logger.debug(
                 "Chroot missing for %s/%s/%s, skipping"
-                % (archrelease.distrorelease.distribution.name,
-                   archrelease.distrorelease.name,
-                   archrelease.architecturetag))
+                % (archseries.distroseries.distribution.name,
+                   archseries.distroseries.name,
+                   archseries.architecturetag))
             return
 
         # query the global annotation registry and verify if
         # we have already done the builder checks for the
         # processor family in question. if it's already done
-        # simply refer to that information in the _archreleases
+        # simply refer to that information in the _archserieses
         # attribute.
-        if 'builders' not in notes[archrelease.processorfamily]:
+        if 'builders' not in notes[archseries.processorfamily]:
 
             # setup a BuilderGroup object
-            info = "builders.%s" % archrelease.processorfamily.name
+            info = "builders.%s" % archseries.processorfamily.name
             builderGroup = BuilderGroup(self.getLogger(info), self._tm)
 
-            # check the available slaves for this archrelease
-            builderGroup.checkAvailableSlaves(archrelease)
+            # check the available slaves for this archseries
+            builderGroup.checkAvailableSlaves(archseries)
 
             # annotate the group of builders for the
-            # DistroArchRelease.processorfamily in question and the
+            # DistroArchSeries.processorfamily in question and the
             # label 'builders'
-            notes[archrelease.processorfamily]["builders"] = builderGroup
+            notes[archseries.processorfamily]["builders"] = builderGroup
 
         # consolidate the annotation for the architecture release
         # in the private attribute _archreleases
-        self._archreleases[archrelease]["builders"] = \
-            notes[archrelease.processorfamily]["builders"]
+        self._archserieses[archseries]["builders"] = \
+            notes[archseries.processorfamily]["builders"]
 
-    def createMissingBuilds(self, distrorelease):
+    def createMissingBuilds(self, distroseries):
         """Ensure that each published package is completly built."""
-        self._logger.debug("Processing %s" % distrorelease.name)
-        # Do not create builds for distroreleases with no nominatedarchindep
+        self._logger.debug("Processing %s" % distroseries.name)
+        # Do not create builds for distroserieses with no nominatedarchindep
         # they can't build architecture independent packages properly.
-        if not distrorelease.nominatedarchindep:
+        if not distroseries.nominatedarchindep:
             self._logger.debug(
-                "No nominatedarchindep for %s, skipping" % distrorelease.name)
+                "No nominatedarchindep for %s, skipping" % distroseries.name)
             return
 
         # listify to avoid hitting this MultipleJoin multiple times
-        distrorelease_architectures = list(distrorelease.architectures)
-        if not distrorelease_architectures:
+        distroseries_architectures = list(distroseries.architectures)
+        if not distroseries_architectures:
             self._logger.debug(
                 "No architectures defined for %s, skipping"
-                % distrorelease.name)
+                % distroseries.name)
             return
 
-        registered_arch_ids = set(dar.id for dar in self._archreleases.keys())
-        release_arch_ids = set(dar.id for dar in distrorelease_architectures)
-        legal_arch_ids = release_arch_ids.intersection(registered_arch_ids)
-        legal_archs = [dar for dar in distrorelease_architectures
+        registered_arch_ids = set(dar.id for dar in self._archserieses.keys())
+        series_arch_ids = set(dar.id for dar in distroseries_architectures)
+        legal_arch_ids = series_arch_ids.intersection(registered_arch_ids)
+        legal_archs = [dar for dar in distroseries_architectures
                        if dar.id in legal_arch_ids]
         if not legal_archs:
             self._logger.debug(
-                "Chroots missing for %s, skipping" % distrorelease.name)
+                "Chroots missing for %s, skipping" % distroseries.name)
             return
 
         legal_arch_tags = " ".join(a.architecturetag for a in legal_archs)
         self._logger.info("Supported architectures: %s" % legal_arch_tags)
 
         pas_verify = BuildDaemonPackagesArchSpecific(
-            config.builddmaster.root, distrorelease)
+            config.builddmaster.root, distroseries)
 
-        sources_published = distrorelease.getSourcesPublishedForAllArchives()
+        sources_published = distroseries.getSourcesPublishedForAllArchives()
         self._logger.info(
             "Found %d source(s) published." % sources_published.count())
 
         # XXX cprov 20050831: Entering this loop with no supported
         # architecture results in a corruption of the persistent DBNotes
-        # instance for self._archreleases, it ends up empty. Bug 2070.
+        # instance for self._archserieses, it ends up empty. Bug 2070.
         # XXX: I have no idea what celso is talking about above. -- kiko
         for pubrec in sources_published:
             build_archs = determineArchitecturesToBuild(
-                            pubrec, legal_archs, distrorelease, pas_verify)
+                            pubrec, legal_archs, distroseries, pas_verify)
             self._createMissingBuildsForPublication(pubrec, build_archs)
 
         self.commit()
@@ -247,26 +247,26 @@ class BuilddMaster:
                    pubrec.sourcepackagerelease.version,
                    pubrec.sourcepackagerelease.architecturehintlist))
         assert pubrec.sourcepackagerelease.architecturehintlist
-        for archrelease in build_archs:
-            if not archrelease.processors:
+        for archseries in build_archs:
+            if not archseries.processors:
                 self._logger.debug(
                     "No processors defined for %s: skipping %s"
-                    % (archrelease.title, header))
+                    % (archseries.title, header))
                 return
             if pubrec.sourcepackagerelease.getBuildByArch(
-                archrelease, pubrec.archive):
+                archseries, pubrec.archive):
                 # verify this build isn't already present for this
-                # distroarchrelease
+                # distroarchseries
                 continue
 
             self._logger.debug(
                 header + "Creating %s (%s)"
-                % (archrelease.architecturetag, pubrec.pocket.title))
+                % (archseries.architecturetag, pubrec.pocket.title))
 
             pubrec.sourcepackagerelease.createBuild(
-                distroarchrelease=archrelease,
+                distroarchseries=archseries,
                 pocket=pubrec.pocket,
-                processor=archrelease.default_processor,
+                processor=archseries.default_processor,
                 archive=pubrec.archive)
 
 
@@ -275,7 +275,7 @@ class BuilddMaster:
         self._logger.info("Scanning for build queue entries that are missing")
 
         buildset = getUtility(IBuildSet)
-        builds = buildset.getPendingBuildsForArchSet(self._archreleases)
+        builds = buildset.getPendingBuildsForArchSet(self._archserieses)
 
         if not builds:
             return
@@ -284,7 +284,7 @@ class BuilddMaster:
             if not build.buildqueue_record:
                 name = build.sourcepackagerelease.name
                 version = build.sourcepackagerelease.version
-                tag = build.distroarchrelease.architecturetag
+                tag = build.distroarchseries.architecturetag
                 self._logger.debug(
                     "Creating buildqueue record for %s (%s) on %s"
                     % (name, version, tag))
@@ -302,7 +302,7 @@ class BuilddMaster:
             % queueItems.count())
 
         for job in queueItems:
-            proc = job.archrelease.processorfamily
+            proc = job.archseries.processorfamily
             try:
                 builders = notes[proc]["builders"]
             except KeyError:
@@ -319,7 +319,7 @@ class BuilddMaster:
         """Score Build Job according several fields
 
         Generate a Score index according some job properties:
-        * distribution release component
+        * distribution series component
         * sourcepackagerelease urgency
         """
         if now is None:
@@ -381,7 +381,7 @@ class BuilddMaster:
         # to be built first.
         if job.builddependsindep:
             depindep_score, missing_deps = self._scoreAndCheckDependencies(
-                job.builddependsindep, job.archrelease)
+                job.builddependsindep, job.archseries)
             # sum dependency score
             score += depindep_score
 
@@ -389,8 +389,8 @@ class BuilddMaster:
         job.lastscore = score
         self._logger.debug(msg + " = %d" % job.lastscore)
 
-    def _scoreAndCheckDependencies(self, dependencies_line, archrelease):
-        """Check dependencies line within a distroarchrelease.
+    def _scoreAndCheckDependencies(self, dependencies_line, archseries):
+        """Check dependencies line within a distroarchseries.
 
         Return tuple containing the designed score points related to
         satisfied/unsatisfied dependencies and a line containing the
@@ -427,7 +427,7 @@ class BuilddMaster:
                 self._logger.warn("DEP FORMAT ERROR: '%s'" % token[0])
                 return 0, dependencies_line
 
-            dep_candidate = archrelease.findDepCandidateByName(name)
+            dep_candidate = archseries.findDepCandidateByName(name)
 
             if dep_candidate:
                 # use apt_pkg function to compare versions
@@ -446,8 +446,8 @@ class BuilddMaster:
             # append missing token
             self._logger.warn(
                 "MISSING DEP: %r in %s %s"
-                % (token, archrelease.distrorelease.name,
-                   archrelease.architecturetag))
+                % (token, archseries.distroseries.name,
+                   archseries.architecturetag))
             missing_deps.append(token)
             score -= SCORE_UNSATISFIEDDEP
 
@@ -470,7 +470,7 @@ class BuilddMaster:
         empty dependencies.
         """
         # Get the missing dependency fields
-        arch_ids = [arch.id for arch in self._archreleases]
+        arch_ids = [arch.id for arch in self._archserieses]
         status = dbschema.BuildStatus.MANUALDEPWAIT
         bqset = getUtility(IBuildSet)
         candidates = bqset.getBuildsByArchIds(arch_ids, status=status)
@@ -488,16 +488,16 @@ class BuilddMaster:
             # XXX cprov 20060606: This iteration/check should be provided
             # by IBuild.
 
-            if not build.distrorelease.canUploadToPocket(build.pocket):
-                # skip retries for not allowed in distrorelease/pocket
+            if not build.distroseries.canUploadToPocket(build.pocket):
+                # skip retries for not allowed in distroseries/pocket
                 self._logger.debug('SKIPPED: %s can not build in %s/%s'
-                                   % (build.title, build.distrorelease.name,
+                                   % (build.title, build.distroseries.name,
                                       build.pocket.name))
                 continue
 
             if build.dependencies:
                 dep_score, remaining_deps = self._scoreAndCheckDependencies(
-                    build.dependencies, build.distroarchrelease)
+                    build.dependencies, build.distroarchseries)
                 # store new missing dependencies
                 build.dependencies = remaining_deps
                 if len(build.dependencies):
@@ -516,7 +516,7 @@ class BuilddMaster:
         # Get the current build job candidates
         bqset = getUtility(IBuildQueueSet)
         candidates = bqset.calculateCandidates(
-            self._archreleases, state=dbschema.BuildStatus.NEEDSBUILD)
+            self._archserieses, state=dbschema.BuildStatus.NEEDSBUILD)
         if not candidates:
             return
 
@@ -531,14 +531,14 @@ class BuilddMaster:
                 jobs.append(job)
                 self.scoreBuildQueueEntry(job)
             else:
-                distro = job.archrelease.distrorelease.distribution
-                distrorelease = job.archrelease.distrorelease
-                archtag = job.archrelease.architecturetag
+                distro = job.archseries.distroseries.distribution
+                distroseries = job.archseries.distroseries
+                archtag = job.archseries.architecturetag
                 # remove this entry from the database.
                 job.destroySelf()
                 self._logger.debug("Eliminating build of %s/%s/%s/%s/%s due "
                                    "to lack of source files"
-                                   % (distro.name, distrorelease.name,
+                                   % (distro.name, distroseries.name,
                                       archtag, job.name, job.version))
             # commit every cycle to ensure it won't be lost.
             self.commit()
@@ -559,7 +559,7 @@ class BuilddMaster:
         """
         bqset = getUtility(IBuildQueueSet)
         candidates = bqset.calculateCandidates(
-            self._archreleases, state=dbschema.BuildStatus.NEEDSBUILD)
+            self._archserieses, state=dbschema.BuildStatus.NEEDSBUILD)
         if not candidates:
             return {}
 
@@ -568,7 +568,7 @@ class BuilddMaster:
         result = {}
 
         for job in candidates:
-            job_proc = job.archrelease.processorfamily
+            job_proc = job.archseries.processorfamily
             result.setdefault(job_proc, []).append(job)
 
         for job_proc in result:
