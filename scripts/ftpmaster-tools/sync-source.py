@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/env python
 
 # "Sync" a source package by generating an upload
 # Copyright (C) 2005, 2006  Canonical Software Ltd. <james.troup@canonical.com>
@@ -21,27 +21,34 @@ import re
 import shutil
 import stat
 import string
+import sys
 import tempfile
 import time
 import urllib
+
+sys.path.insert(0, "/srv/launchpad.net/codelines/current/scripts/ftpmaster-tools")
+sys.path.insert(0, "/srv/launchpad.net/codelines/current/lib")
+
+
 import apt_pkg
+
+import dak_utils
 
 import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import cursor
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts,logger, logger_options)
-from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet)
+from canonical.database.sqlbase import (sqlvalues, cursor)
+from canonical.launchpad.scripts import (execute_zcml_for_scripts,
+                                         logger, logger_options)
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.database.publishing import SourcePackageFilePublishing
 from canonical.librarian.client import LibrarianClient
+from canonical.launchpad.interfaces import (IDistributionSet,
+                                            IPersonSet)
 from canonical.lp import (dbschema, initZopeless)
-from contrib.glock import GlobalLock
-from canonical.launchpad.scripts.ftpmaster import (
-    SyncSource, SyncSourceError)
 
-import dak_utils
+from contrib.glock import GlobalLock
 
 ################################################################################
 
@@ -70,7 +77,7 @@ origins = {
               },
     "security": { "name": "Security",
                 "url": "http://security.debian.org/debian-security/",
-                "default suite": "sarge/updates",
+                "default suite": "etch/updates",
                 "default component": "main",
                 "dsc": "must be signed and valid"
               },
@@ -436,6 +443,13 @@ origins = {
         "dsc": "can be unsigned"
     },
 
+    "telepathy.freedesktop.org-debian": { "name": "telepathy.freedesktop.org-debian",
+	"url": "http://telepathy.freedesktop.org/debian/",
+	"default suite": "sid",
+	"default component": "",
+	"dsc": "can be unsigned"
+    },
+
 ####################################
 
 "ftp.mowgli.ch-pub-debian": { "name": "ftp.mowgli.ch-pub-debian",
@@ -564,14 +578,241 @@ origins = {
         "dsc": "can be unsigned"
 },
 
+    "www.pcxperience.org-apt-debian": { "name": "www.pcxperience.org-apt-debian",
+        "url": "http://www.pcxperience.org/apt/debian/",
+        "default suite": "unstable",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "ftp.berlios.de-pub-gift-fasttrack": { "name": "ftp.berlios.de-pub-gift-fasttrack",
+        "url": "ftp://ftp.berlios.de/pub/gift-fasttrack/",
+        "default suite": "unstable",
+        "default component": "main",
+        "dsc": "can be unsigned"
+    },
+
+    "www.webalice.it-hayarms-debian": { "name": "www.webalice.it-hayarms-debian",
+        "url": "http://www.webalice.it/hayarms/debian/",
+        "default suite": "unstable",
+        "default component": "non-free",
+        "dsc": "can be unsigned"
+    },
+
+    "users.adelphia.net-%7edavid.everly": { "name": "users.adelphia.net-%7Edavid.everly",
+        "url": "http://users.adelphia.net/~david.everly/",
+        "default suite": "emilda/sarge",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "debian.thk-systems.de-debian": { "name": "debian.thk-systems.de-debian",
+        "url": "http://debian.thk-systems.de/debian/",
+        "default suite": "unstable",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "www.adebenham.com-debian": { "name": "www.adebenham.com-debian",
+        "url": "http://www.adebenham.com/debian/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "eric.lavar.de-comp-linux-debian": { "name": "eric.lavar.de-comp-linux-debian",
+        "url": "http://eric.lavar.de/comp/linux/debian/",
+        "default suite": "unstable",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "eric.lavar.de-comp-linux-debian": { "name": "eric.lavar.de-comp-linux-debian",
+        "url": "http://eric.lavar.de/comp/linux/debian/",
+        "default suite": "experimental",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "einsteinmg.dyndns.org-debian": { "name": "einsteinmg.dyndns.org-debian",
+        "url": "http://einsteinmg.dyndns.org/debian/",
+        "default suite": "unstable",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "www.toastfreeware.priv.at-debian": { "name": "www.toastfreeware.priv.at-debian",
+        "url": "http://www.toastfreeware.priv.at/debian/",
+        "default suite": "unstable",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "www.riteh.hr-%7evedranf-debian-unstable": { "name": "www.riteh.hr-%7Evedranf-debian-unstable",
+        "url": "http://www.riteh.hr/~vedranf/debian_unstable/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "ftp.unixdev.net-pub-debian-udev": { "name": "ftp.unixdev.net-pub-debian-udev",
+        "url": "http://ftp.unixdev.net/pub/debian-udev/",
+        "default suite": "unixdev",
+        "default component": "main",
+        "dsc": "can be unsigned"
+    },
+
+    "ftp.unixdev.net-pub-debian-udev": { "name": "ftp.unixdev.net-pub-debian-udev",
+        "url": "http://ftp.unixdev.net/pub/debian-udev/",
+        "default suite": "unixdev",
+        "default component": "non-free",
+        "dsc": "can be unsigned"
+    },
+
+    "packages.kirya.net": { "name": "packages.kirya.net",
+        "url": "http://packages.kirya.net/",
+        "default suite": "unstable",
+        "default component": "main",
+        "dsc": "can be unsigned"
+    },
+
+    "packages.kirya.net": { "name": "packages.kirya.net",
+        "url": "http://packages.kirya.net/",
+        "default suite": "unstable",
+        "default component": "contrib",
+        "dsc": "can be unsigned"
+    },
+
+    "packages.kirya.net": { "name": "packages.kirya.net",
+        "url": "http://packages.kirya.net/",
+        "default suite": "unstable",
+        "default component": "non-free",
+        "dsc": "can be unsigned"
+    },
+
+    "repos.knio.it": { "name": "repos.knio.it",
+        "url": "http://repos.knio.it/",
+        "default suite": "unstable",
+        "default component": "main",
+        "dsc": "can be unsigned"
+    },
+
+    "repos.knio.it": { "name": "repos.knio.it",
+        "url": "http://repos.knio.it/",
+        "default suite": "unstable",
+        "default component": "contrib",
+        "dsc": "can be unsigned"
+    },
+
+    "repos.knio.it": { "name": "repos.knio.it",
+        "url": "http://repos.knio.it/",
+        "default suite": "unstable",
+        "default component": "non-free",
+        "dsc": "can be unsigned"
+    },
+
+    "www.wakhok.ac.jp-%7efujimura-debian": { "name": "www.wakhok.ac.jp-%7Efujimura-debian",
+        "url": "http://www.wakhok.ac.jp/~fujimura/debian/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "www.eto.to-deb": { "name": "www.eto.to-deb",
+        "url": "http://www.eto.to/deb/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "y-imai.good-day.net-debian": { "name": "y-imai.good-day.net-debian",
+        "url": "http://y-imai.good-day.net/debian/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "people.realnode.com-%7emnordstr": { "name": "people.realnode.com-%7Emnordstr",
+        "url": "http://people.realnode.com/~mnordstr/",
+        "default suite": "package",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "rapid.dotsrc.org": { "name": "rapid.dotsrc.org",
+        "url": "http://rapid.dotsrc.org/",
+        "default suite": "unstable",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "debian-eclipse.wfrag.org-debian": { "name": "debian-eclipse.wfrag.org-debian",
+        "url": "http://debian-eclipse.wfrag.org/debian/",
+        "default suite": "sid",
+        "default component": "main",
+        "dsc": "can be unsigned"
+    },
+
+    "debian-eclipse.wfrag.org-debian": { "name": "debian-eclipse.wfrag.org-debian",
+        "url": "http://debian-eclipse.wfrag.org/debian/",
+        "default suite": "sid",
+        "default component": "non-free",
+        "dsc": "can be unsigned"
+    },
+
+    "www.stanchina.net-%7eflavio-debian": { "name": "www.stanchina.net-%7Eflavio-debian",
+        "url": "http://www.stanchina.net/~flavio/debian/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "kibi.dyndns.org-packages": { "name": "kibi.dyndns.org-packages",
+        "url": "http://kibi.dyndns.org/packages/",
+        "default suite": "",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "download.gna.org-wormux-debs": { "name": "download.gna.org-wormux-debs",
+        "url": "http://download.gna.org/wormux/debs/",
+        "default suite": "dapper",
+        "default component": "",
+        "dsc": "can be unsigned"
+    },
+
+    "apt.alittletooquiet.net-staging": { "name": "apt.alittletooquiet.net-staging",
+        "url": "http://apt.alittletooquiet.net/staging/",
+        "default suite": "dapper",
+        "default component": "main",
+        "dsc": "can be unsigned"
+    },
+
+    "www.debian-multimedia.org": { "name": "www.debian-multimedia.org",
+        "url": "http://www.debian-multimedia.org/",
+        "default suite": "unstable",
+        "default component": "main",
+        "dsc": "can be unsigned",
+    },
+
+    "repository.maemo.org": { "name": "Maemo",
+	"url": "http://repository.maemo.org/",
+	"default suite": "bora",
+	"default component": "free",
+	"dsc": "can be unsigned",
+    },
+
 ########################################
 
     }
 
-whoami = "Ubuntu Archive Auto-Sync <katie@jackass.ubuntu.com>"
-
 ################################################################################
 
+def md5sum_file(filename):
+    file_handle = open(filename)
+    md5sum = apt_pkg.md5sum(file_handle)
+    file_handle.close()
+    return md5sum
 
 ################################################################################
 
@@ -592,8 +833,8 @@ def sign_changes(changes, dsc):
     filehandle.write(changes)
     filehandle.close()
 
-    sane_version = dak_utils.re_no_epoch.sub('', dsc["version"])
-    output_filename = "%s_%s_source.changes" % (dsc["source"], sane_version)
+    output_filename = "%s_%s_source.changes" % (dsc["source"],
+                                                dak_utils.re_no_epoch.sub('', dsc["version"]))
 
     cmd = "gpg --no-options --batch --no-tty --secret-keyring=%s --keyring=%s --default-key=0x%s --output=%s --clearsign %s" % (secret_keyring, pub_keyring, keyid, output_filename, temp_filename)
     (result, output) = commands.getstatusoutput(cmd)
@@ -607,7 +848,7 @@ def sign_changes(changes, dsc):
 ################################################################################
 
 def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
-                     priority, description, requires_orig, requested_by,
+                     priority, description, have_orig_tar_gz, requested_by,
                      origin):
     """Generate a .changes as a string"""
 
@@ -636,7 +877,7 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
     changes += changelog
     changes += "Files: \n"
     for filename in dsc_files:
-        if filename.endswith(".orig.tar.gz") and requires_orig:
+        if filename.endswith(".orig.tar.gz") and have_orig_tar_gz:
             continue
         changes += " %s %s %s %s %s\n" % (dsc_files[filename]["md5sum"],
                                           dsc_files[filename]["size"],
@@ -822,9 +1063,9 @@ def check_dsc(dsc, current_sources, current_binaries):
             # override a main binary package
             if current_component == "main" and source_component != "main":
                 if not Options.forcemore:
-                    dak_utils.fubar("%s is in main but it's source (%s) is not." % (binary, source))
+                    dak_utils.fubar("%s is in main but its source (%s) is not." % (binary, source))
                 else:
-                    dak_utils.warn("%s is in main but it's source (%s) is not - continuing anyway." % (binary, source))
+                    dak_utils.warn("%s is in main but its source (%s) is not - continuing anyway." % (binary, source))
 
             # Check that a source package is not trying to override an
             # ubuntu-modified binary package
@@ -839,7 +1080,7 @@ def check_dsc(dsc, current_sources, current_binaries):
 ########################################
 
 def import_dsc(dsc_filename, suite, previous_version, signing_rules,
-               requires_orig, requested_by, origin, current_sources,
+               have_orig_tar_gz, requested_by, origin, current_sources,
                current_binaries):
     dsc = dak_utils.parse_changes(dsc_filename, signing_rules)
     dsc_files = dak_utils.build_file_list(dsc, is_a_dsc=1)\
@@ -849,43 +1090,40 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     # Add the .dsc itself to dsc_files so it's listed in the Files: field
     dsc_base_filename = os.path.basename(dsc_filename)
     dsc_files.setdefault(dsc_base_filename, {})
-    dsc_files[dsc_base_filename]["md5sum"] = SyncSource.generateMD5Sum(dsc_filename)
+    dsc_files[dsc_base_filename]["md5sum"] = md5sum_file(dsc_filename)
     dsc_files[dsc_base_filename]["size"] = os.stat(dsc_filename)[stat.ST_SIZE]
 
     (old_cwd, tmpdir) = extract_source(dsc_filename)
     
     # Get the upstream version
-    version_minus_epoch = dak_utils.re_no_epoch.sub('', dsc["version"])
-    if re_strip_revision.search(version_minus_epoch):
-        base_version = re_strip_revision.sub('', version_minus_epoch)
-    else:
-        base_version = version_minus_epoch
-
+    upstr_version = dak_utils.re_no_epoch.sub('', dsc["version"])
+    if re_strip_revision.search(upstr_version):
+        upstr_version = re_strip_revision.sub('', upstr_version)
+ 
     # Ensure the changelog file exists
-    changelog_filename = "%s-%s/debian/changelog" % (dsc["source"], base_version)
+    changelog_filename = "%s-%s/debian/changelog" % (dsc["source"], upstr_version)
 
     # Parse it and then adapt it for .changes
     (changelog, urgency, closes) = parse_changelog(changelog_filename, previous_version)
     changelog = fix_changelog(changelog)
 
     # Parse the control file
-    control_filename = "%s-%s/debian/control" % (dsc["source"], base_version)
+    control_filename = "%s-%s/debian/control" % (dsc["source"], upstr_version)
     (section, priority, description) = parse_control(control_filename)
 
     cleanup_source(tmpdir, old_cwd, dsc)
 
     changes = generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
-                               section, priority, description, requires_orig,
+                               section, priority, description, have_orig_tar_gz,
                                requested_by, origin)
 
     # XXX Soyuz wants an unsigned changes
     #sign_changes(changes, dsc)
-    output_filename = (
-        "%s_%s_source.changes" % (dsc["source"], version_minus_epoch))
+    output_filename = "%s_%s_source.changes" % (dsc["source"],
+                                                dak_utils.re_no_epoch.sub('', dsc["version"]))
 
     filehandle = open(output_filename, 'w')
-    # XXX The additional '\n' is to work around a bug in parsing
-    #     unsigned changes with our forked copy of parse_changes
+    # XXX The Soyuz .changes parser requires the extra '\n'
     filehandle.write(changes+'\n')
     filehandle.close()
 
@@ -974,9 +1212,8 @@ SELECT bpn.name, bpr.version, c.name
        securebinarypackagepublishinghistory sbpph, distroarchrelease dar
  WHERE bpr.binarypackagename = bpn.id AND sbpph.binarypackagerelease = bpr.id
    AND sbpph.component = c.id AND sbpph.distroarchrelease = dar.id
-   AND sbpph.status = %s AND sbppd.archive = %s AND dar.id in (%s)""" \
-             % (dbschema.PackagePublishingStatus.PUBLISHED,
-                distrorelease.main_archive, dar_ids)
+   AND sbpph.status = %s AND dar.id in (%s)""" \
+             % (dbschema.PackagePublishingStatus.PUBLISHED, dar_ids)
     cur.execute(query)
     print "Getting binaries for %s..." % (distrorelease.name)
     for (pkg, version, component) in cur.fetchall():
@@ -1026,32 +1263,74 @@ def read_Sources(filename, origin):
     return S
 
 ################################################################################
-def add_source(pkg, Sources, previous_version, suite, requested_by,
-               origin, current_sources, current_binaries):
+
+def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
+               current_sources, current_binaries):
     print " * Trying to add %s..." % (pkg)
 
     # Check it's in the Sources file
     if not Sources.has_key(pkg):
         dak_utils.fubar("%s doesn't exist in the Sources file." % (pkg))
+        
+    have_orig_tar_gz = False
 
-    # Download the source
+    # Fetch the source
     files = Sources[pkg]["files"]
+    for filename in files:
+        # First see if we can find the source in the librarian
+        query = """
+SELECT DISTINCT ON (LibraryFileContent.sha1,
+                    LibraryFileContent.filesize)
+            LibraryFileAlias.id
+       FROM SourcePackageFilePublishing, LibraryFileAlias, LibraryFileContent
+       WHERE LibraryFileAlias.id = SourcePackageFilePublishing.libraryfilealias
+         AND LibraryFileContent.id = LibraryFileAlias.content
+          AND SourcePackageFilePublishing.libraryfilealiasfilename = %s
+          """ % sqlvalues(filename)
+        cur = cursor()
+        cur.execute(query)
+        results = cur.fetchall()
+        if results:
+            if not filename.endswith("orig.tar.gz"):
+                dak_utils.fubar("%s (from %s) is in the DB but isn't an "
+                                "orig.tar.gz.  (Probably published in an older release)" % (filename, pkg))
+            if len(results) > 1:
+                dak_utils.fubar("%s (from %s) returns multiple IDs (%s) for "
+                                "orig.tar.gz.  Help?" % (filename, pkg,
+                                                         results))
+            have_orig_tar_gz = filename
+            print "  - <%s: already in distro - downloading from librarian>" \
+                  % (filename)
+            output_file = open(filename, 'w')
+            librarian_input = Library.getFileByAlias(results[0][0])
+            output_file.write(librarian_input.read())
+            output_file.close()
+            continue
 
-    # local debug function to be passed to SyncSource
-    def local_debug(message):
-        print message
+        # Download the file
+        download_f = "%s%s" % (origin["url"], files[filename]["remote filename"])
+        if not os.path.exists(filename):
+            print "  - <%s: downloading from %s>" % (filename, origin["url"])
+            sys.stdout.flush()
+            urllib.urlretrieve(download_f, filename)
+        else:
+            print "  - <%s: cached>" % (filename)
 
-    # Use the SyncSource helper class.
-    sync_source = SyncSource(
-        files=files, origin=origin, debug=local_debug,
-        downloader=urllib.urlretrive)
+        # Check md5sum and size match Source
+        actual_md5sum = md5sum_file(filename)
+        expected_md5sum = files[filename]["md5sum"]
+        if actual_md5sum != expected_md5sum:
+            dak_utils.fubar("%s: md5sum check failed (%s [actual] vs. %s [expected])." \
+                        % (filename, actual_md5sum, expected_md5sum))
+        actual_size = os.stat(filename)[stat.ST_SIZE]
+        expected_size = int(files[filename]["size"])
+        if actual_size != expected_size:
+            dak_utils.fubar("%s: size mismatch (%s [actual] vs. %s [expected])." \
+                        % (filename, actual_size, expected_size))
 
-    try:
-        orig_filename = sync_source.fetchLibrarianFiles()
-        dsc_filename = sync_source.fetchSyncFiles()
-        sync_source.checkDownloadedFiles()
-    except SyncSourceError, info:
-        dak_utils.fubar(info)
+        # Remember the name of the .dsc file
+        if filename.endswith(".dsc"):
+            dsc_filename = os.path.abspath(filename)
 
     if origin["dsc"] == "must be signed and valid":
         signing_rules = 1
@@ -1059,17 +1338,13 @@ def add_source(pkg, Sources, previous_version, suite, requested_by,
         signing_rules = 0
     else:
         signing_rules = -1
-
-    # if the orig was found in librarian, it got fetched on disk, but it's
-    # not necessary and won't be included in the changesfile, so
-    # it *can/should* be removed.
-    if orig_filename:
-        os.unlink(orig_filename)
-
-    requires_orig = orig_filename is None
+    
     import_dsc(dsc_filename, suite, previous_version, signing_rules,
-               requires_orig, requested_by, origin, current_sources,
+               have_orig_tar_gz, requested_by, origin, current_sources,
                current_binaries)
+
+    if have_orig_tar_gz:
+        os.unlink(have_orig_tar_gz)
 
 ################################################################################
 
@@ -1105,11 +1380,11 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
             stat_blacklisted += 1
             continue
         
-        if pkg in [ "mozilla-thunderbird", "ncmpc", "ocrad", "gnuradio-core",
-                    "gtk-smooth-engine", "libant1.6-java", "glade", "devilspie" ]:
-            print "[BROKEN] %s_%s" % (pkg, dest_version)
-            stat_broken += 1
-            continue
+#        if pkg in [ "mozilla-thunderbird", "ncmpc", "ocrad", "gnuradio-core",
+#                    "gtk-smooth-engine", "libant1.6-java", "glade", "devilspie" ]:
+#            print "[BROKEN] %s_%s" % (pkg, dest_version)
+#            stat_broken += 1
+#            continue
 
         source_version = Sources[pkg]["version"]
         if apt_pkg.VersionCompare(dest_version, source_version) < 0:
@@ -1184,11 +1459,11 @@ def options_setup():
 
     # Options controlling where to sync packages to:
 
-    parser.add_option("-c", "--in-component", dest="target_component",
+    parser.add_option("-c", "--in-component", dest="incomponent",
                       help="limit syncs to packages in COMPONENT")
-    parser.add_option("-d", "--to-distro", dest="target_distro",
+    parser.add_option("-d", "--to-distro", dest="todistro",
                       help="sync to DISTRO")
-    parser.add_option("-s", "--to-suite", dest="target_suite",
+    parser.add_option("-s", "--to-suite", dest="tosuite",
                       help="sync to SUITE (aka distrorelease)")
 
     # Options controlling where to sync packages from:
@@ -1206,10 +1481,6 @@ def options_setup():
     # Defaults
     if not Options.todistro:
         Options.todistro = "ubuntu"
-
-    # XXX FIXME: use distro.currentrelease
-    if not Options.tosuite:
-        Options.tosuite = "dapper"
 
     if not Options.fromdistro:
         Options.fromdistro = "debian"
@@ -1230,46 +1501,34 @@ def options_setup():
 ################################################################################
 
 def objectize_options():
-    """Parse given options.
+    # Convert 'todistro', 'tosuite' and 'incomponent' to objects rather than strings
 
-    Convert 'target_distro', 'target_suite' and 'target_component' to objects
-    rather than strings.
-    """
-    Options.target_distro = getUtility(IDistributionSet)[Options.target_distro]
+    Options.todistro = getUtility(IDistributionSet)[Options.todistro]
 
-    if not Options.target_suite:
-        Options.target_suite = Options.target_distro.currentrelease.name
-    Options.target_suite = Options.target_distro.getRelease(Options.target_suite)
+    if not Options.tosuite:
+        Options.tosuite = Options.todistro.currentrelease.name
+    Options.tosuite = Options.todistro.getRelease(Options.tosuite)
 
-    valid_components = (
-        dict([(c.name,c) for c in Options.target_suite.components]))
-    if (Options.target_component and
-        Options.target_component not in valid_components):
-        dak_utils.fubar(
-            "%s is not a valid component for %s/%s."
-            % (Options.target_component, Options.target_distro.name,
-               Options.target_suite.name))
-    Options.target_component = valid_components[Options.target_component]
+    valid_components = dict([(c.name,c) for c in Options.tosuite.components])
+    if Options.incomponent:
+        if Options.incomponent not in valid_components:
+            dak_utils.fubar("%s is not a valid component for %s/%s."
+                            % (Options.incomponent, Options.todistro.name,
+                               Options.tosuite.name))
+        Options.incomponent = valid_components[Options.incomponent]
 
     # Fix up Options.requestor
-    if Options.requestor:
-        PersonSet = getUtility(IPersonSet)
-        person = PersonSet.getByName(Options.requestor)
-        if not person:
-            dak_utils.fubar("Unknown LaunchPad user id '%s'."
-                            % (Options.requestor))
-        Options.requestor = "%s <%s>" % (person.displayname,
-                                         person.preferredemail.email)
-        # XXX cprov 20061113: is it ensuring RFC-822 sentence is
-        # ASCII ? Don't we support unicodes ?
-        Options.requestor = str(Options.requestor)
-    else:
-        if Options.action and not Options.all:
-            dak_utils.fubar(
-                "Need -a/--all or an argument for -b/--requested-by.")
-        else:
-            Options.requestor = whoami
+    if not Options.requestor:
+	Options.requestor = "katie"
 
+    PersonSet = getUtility(IPersonSet)
+    person = PersonSet.getByName(Options.requestor)
+    if not person:
+	dak_utils.fubar("Unknown LaunchPad user id '%s'."
+			% (Options.requestor))
+    Options.requestor = "%s <%s>" % (person.displayname,
+				     person.preferredemail.email)
+    Options.requestor = Options.requestor.encode("ascii", "replace")
 
 ########################################
 
@@ -1297,11 +1556,15 @@ def init():
 
     # Blacklist
     Blacklisted = {}
-    # XXX de-hardcode me harder
+    # XXX
     blacklist_file = open("/srv/launchpad.net/dak/sync-blacklist.txt")
     for line in blacklist_file:
+        try:
+            line = line[:line.index("#")]
+        except ValueError:
+            pass
         line = line.strip()
-        if not line or line[0] == "#":
+        if not line:
             continue
         Blacklisted[line] = ""
     blacklist_file.close()
@@ -1317,9 +1580,8 @@ def main():
     origin["component"] = Options.fromcomponent
 
     Sources = read_Sources("Sources", origin)
-    Suite = read_current_source(
-        Options.target_suite, Options.target_component, arguments)
-    current_binaries = read_current_binaries(Options.target_suite)
+    Suite = read_current_source(Options.tosuite, Options.incomponent, arguments)
+    current_binaries = read_current_binaries(Options.tosuite)
     do_diff(Sources, Suite, origin, arguments, current_binaries)
 
 ################################################################################
