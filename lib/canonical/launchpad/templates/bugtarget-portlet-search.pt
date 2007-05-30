@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h2 tal:content="string:Search ${context/targetname} bugs"
+  <h2 tal:content="string:Search ${context/bugtargetdisplayname} bugs"
   >Search Mozilla Firefox bugs</h2>
   <div class="portletBody portletContent"
        tal:define="bugs_url string:${context/target/fmt:url}/+bugs">

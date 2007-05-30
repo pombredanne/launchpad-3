@@ -30,6 +30,9 @@
                            bug_subscribers is_complete
                            isMentor canMentor isSubscribed" />
         <require
+            permission="zope.Public"
+            attributes="bugtargetname bugtargetdisplayname" />
+        <require
             permission="launchpad.View"
             attributes="product productseries sourcepackagename distribution
                         distrorelease milestone status statusexplanation

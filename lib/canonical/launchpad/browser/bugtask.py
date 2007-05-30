@@ -1742,7 +1742,7 @@ class BugTargetTextView(LaunchpadView):
 
 def _by_targetname(bugtask):
     """Normalize the bugtask.targetname, for sorting."""
-    return re.sub(r"\W", "", bugtask.targetname)
+    return re.sub(r"\W", "", bugtask.bugtargetdisplayname)
 
 class BugTasksAndNominationsView(LaunchpadView):
     """Browser class for rendering the bugtasks and nominations table."""
@@ -1929,9 +1929,11 @@ class BugTaskSOP(StructuralObjectPresentation):
     def getMainHeading(self):
         bugtask = self.context
         if INullBugTask.providedBy(bugtask):
-            return 'Bug #%s is not in %s' % (bugtask.bug.id, bugtask.targetname)
+            return 'Bug #%s is not in %s' % (
+                bugtask.bug.id, bugtask.bugtargetdisplayname)
         else:
-            return 'Bug #%s in %s' % (bugtask.bug.id, bugtask.targetname)
+            return 'Bug #%s in %s' % (
+                bugtask.bug.id, bugtask.bugtargetdisplayname)
 
     def listChildren(self, num):
         return []

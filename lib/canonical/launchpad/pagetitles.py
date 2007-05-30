@@ -54,10 +54,10 @@ class BugTaskPageTitle:
         # BugTaskSOP.getMainHeading, and should perhaps be factored out.
         if INullBugTask.providedBy(context):
             return smartquote('Bug #%s is not in %s: "%s"') % (
-                context.bug.id, context.targetname, context.bug.title)
+                context.bug.id, context.bugtargetdisplayname, context.bug.title)
         else:
             return smartquote('Bug #%s in %s: "%s"') % (
-                context.bug.id, context.targetname, context.bug.title)
+                context.bug.id, context.bugtargetdisplayname, context.bug.title)
 
 
 class SubstitutionHelper:

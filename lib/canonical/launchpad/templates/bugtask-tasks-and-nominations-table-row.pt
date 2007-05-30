@@ -30,7 +30,7 @@
            tal:condition="view/shouldShowProductIcon" />
       <a
         tal:attributes="href context/target/fmt:url"
-        tal:content="context/targetname"
+        tal:content="context/bugtargetdisplayname"
       />
     </td>
 

@@ -12,14 +12,14 @@
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
     You are not the bug assignee nor the maintainer of
-    <tal:context replace="context/targetname">project</tal:context>,
+    <tal:context replace="context/bugtargetdisplayname">project</tal:context>,
     and therefore cannot edit this bug's status.
   </p>
   <table class="summary">
     <tr>
       <th>Affecting:</th>
       <td><a tal:attributes="href context/target/fmt:url"
-             tal:content="context/target/displayname">Ubuntu Linux</a></td>
+             tal:content="context/target/bugtargetdisplayname">Ubuntu</a></td>
     </tr>
     <tr>
       <th>Filed here by:</th>
