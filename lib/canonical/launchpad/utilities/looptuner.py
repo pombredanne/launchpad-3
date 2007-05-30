@@ -2,34 +2,11 @@
 
 __metaclass__ = type
 
-__all__ = ['LoopTuner', 'TunableLoop']
+__all__ = ['LoopTuner']
 
 
 import logging
 import time
-
-class TunableLoop:
-    """Base class for self-tuning loop bodies to be driven by LoopTuner.
-
-    To construct a self-tuning batched loop, define your loop body as a
-    derivative of TunableLoop and pass an instance to your LoopTuner.
-    """
-    def isDone(self):
-        """Is this loop finished?
-
-        Once this returns True, the LoopTuner will no longer touch this
-        object.
-        """
-        raise NotImplementedError
-
-    def performChunk(self, chunk_size):
-        """Perform an iteration of the loop.
-
-        The chunk_size parameter says (in some way you define) how much work
-        the LoopTuner believes you should try to do in this iteration in order
-        to get as close as possible to your time goal.
-        """
-        raise NotImplementedError
 
 
 class LoopTuner:
@@ -49,14 +26,14 @@ class LoopTuner:
     well, and on the other hand, it will still end up taking too much time per
     batch when the system slows down for whatever reason.
 
-    Instead, define your loop body in a subclass of TunableLoop; parameterize
-    it on the number of steps per batch; say how much time you'd like to spend
-    per batch; and pass it to a LoopTuner.  The LoopTuner will execute your
-    loop, dynamically tuning its batch-size parameter to stay close to your
-    time goal.  If things go faster than expected, it will ask your loop body
-    to do more work for the next batch.  If a batch takes too much time, the
-    next batch will be smaller.  There is also some cushioning for one-off
-    spikes and troughs in processing speed.
+    Instead, define your loop body in an ITunableLoop; parameterize it on the
+    number of steps per batch; say how much time you'd like to spend per
+    batch; and pass it to a LoopTuner.  The LoopTuner will execute your loop,
+    dynamically tuning its batch-size parameter to stay close to your time
+    goal.  If things go faster than expected, it will ask your loop body to do
+    more work for the next batch.  If a batch takes too much time, the next
+    batch will be smaller.  There is also some cushioning for one-off spikes
+    and troughs in processing speed.
     """
 
     def __init__(self, operation, goal_seconds, minimum_chunk_size=1,
@@ -65,8 +42,8 @@ class LoopTuner:
 
         Parameters:
 
-        operation: an object implementing the loop body.  It should support at
-        least the interface of the TunableLoop class.
+        operation: an object implementing the loop body.  It should support
+        the ITunableLoop interface.
 
         goal_seconds: the ideal number of seconds for any one iteration to
             take.  The algorithm will vary chunk size in order to stick close
@@ -76,7 +53,7 @@ class LoopTuner:
             tuning algorithm will never let chunk size sink below this value.
 
         maximum_chunk_size: the largest allowable chunk size.  A maximum is
-            needed even if the TunableLoop ignores chunk size for whatever
+            needed even if the ITunableLoop ignores chunk size for whatever
             reason, since reaching floating-point infinity would seriously
             break the algorithm's arithmetic.
         """
@@ -94,7 +71,7 @@ class LoopTuner:
         start_time = self._time()
         last_clock = start_time
         while not self.operation.isDone():
-            self.operation.performChunk(chunk_size)
+            self.operation(chunk_size)
 
             new_clock = self._time()
             time_taken = new_clock - last_clock

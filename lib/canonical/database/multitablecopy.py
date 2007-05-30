@@ -7,16 +7,21 @@ __all__ = [ 'MultiTableCopy' ]
 import logging
 import time
 
+from zope.interface import implements
+
 from canonical.database import postgresql
 from canonical.database.sqlbase import cursor, quoteIdentifier
-from canonical.launchpad.utilities.looptuner import LoopTuner, TunableLoop
+from canonical.launchpad.interfaces.looptuner import ITunableLoop
+from canonical.launchpad.utilities.looptuner import LoopTuner
 
 
-class PouringLoop(TunableLoop):
+class PouringLoop:
     """Loop body to pour data from holding tables back into source tables.
 
     Used by MultiTableCopy internally to tell LoopTuner what to do.
     """
+    implements(ITunableLoop)
+
     def __init__(self, from_table, to_table, ztm=None):
         self.from_table = from_table
         self.to_table = to_table
@@ -42,7 +47,7 @@ class PouringLoop(TunableLoop):
     def isDone(self):
         return self.lowest_id > self.highest_id
 
-    def performChunk(self, batch_size):
+    def __call__(self, batch_size):
         """Loop body: pour rows with ids up to "next" over to to_table."""
         batch_size = int(batch_size)
         next = self.lowest_id + batch_size
@@ -360,15 +365,15 @@ class MultiTableCopy:
         # If there are any holding tables to be poured into their source
         # tables, there must at least be one for the last table that
         # pourHoldingTables() processes.
-        if not postgresql.have_table(
-                cur, self.getRawHoldingTableName(self.tables[-1])):
+        last_holding_table = self.getRawHoldingTableName(self.tables[-1])
+        if not postgresql.have_table(cur, last_holding_table):
             return False
 
         # If the first table in our list also still exists, and it still has
         # its new_id column, then the pouring process had not begun yet.
         # Assume the data was not ready for pouring.
-        if postgresql.table_has_column(
-                cur, self.getRawHoldingTableName(self.tables[0]), 'new_id'):
+        first_holding_table = self.getRawHoldingTableName(self.tables[0])
+        if postgresql.table_has_column(cur, first_holding_table, 'new_id'):
             logging.info(
                 "Previous run aborted too early for recovery; redo all")
             return False
@@ -385,8 +390,10 @@ class MultiTableCopy:
         Batch sizes are dynamically adjusted to meet the stated time goal.
         """
 
-        if (self.last_extracted_table is not None and
-                self.last_extracted_table != len(self.tables)-1):
+        if self.last_extracted_table is None:
+            if not self.hasRecoverableHoldingTables():
+                raise AssertionError("Can't pour: no tables extracted")
+        elif self.last_extracted_table != len(self.tables) - 1:
             raise AssertionError(
                 "Not safe to pour: last table '%s' was not extracted"
                 % self.tables[-1])
