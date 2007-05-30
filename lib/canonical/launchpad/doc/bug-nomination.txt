@@ -329,6 +329,121 @@ nomination will be automatically approved.
     thunderbird (Ubuntu Warty)
     thunderbird (Ubuntu)
 
+    >>> login("foo.bar@canonical.com")
+    >>> ubuntu_warty.driver = None
+
+
+=== Permissions to approve ===
+
+Since approving a nomination can affect release planning, not everyone
+is allowed to do it. For large projects, like distributions, it's not
+suitable to restrict approving nominations to only release managers,
+instead anyone that can upload a package may approve a nomination.
+
+    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+    >>> from canonical.launchpad.database import (
+    ...     Component, DistroComponentUploader)
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> main_uploaders = getUtility(IPersonSet).newTeam(
+    ...     foo_bar, 'main-uploaders', 'main uploaders',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> main = Component.byName('main')
+    >>> distro_main_uploader_record = DistroComponentUploader.selectOneBy(
+    ...     distribution=ubuntu, component=main)
+    >>> distro_main_uploader_record.uploader = main_uploaders
+
+For a bug nominated to a package from the 'main' component in Ubuntu,
+only those people that are allowed to upload to 'main' are allowed to
+approve the nomination.
+
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_hoary = ubuntu.getRelease('hoary')
+    >>> hoary_evolution = ubuntu_hoary.getSourcePackage('evolution')
+    >>> hoary_evolution.latest_published_component.name
+    u'main'
+    >>> bug_params = CreateBugParams(
+    ...     owner=foo_bar, title='Test bug', comment='Test bug.')
+    >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
+    >>> main_bug = ubuntu_evolution.createBug(bug_params)
+    >>> hoary_main_nomination = main_bug.addNomination(no_priv, ubuntu_hoary)
+
+
+    >>> no_priv.inTeam(main_uploaders)
+    False
+    >>> hoary_main_nomination.canApprove(no_priv)
+    False
+
+    >>> no_priv.join(main_uploaders)
+    >>> no_priv.inTeam(main_uploaders)
+    True
+    >>> hoary_main_nomination.canApprove(no_priv)
+    True
+
+Only uploaders to the relevant component are allowed to approve it. For
+example, people who are allowed only to upload to 'universe' may not
+approve 'main' nominations.
+
+    >>> universe_uploaders = getUtility(IPersonSet).newTeam(
+    ...     foo_bar, 'universe-uploaders', 'universe uploaders',
+    ...     subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+    >>> universe = Component.byName('universe')
+    >>> distro_universe_uploader_record = DistroComponentUploader.selectOneBy(
+    ...     distribution=ubuntu, component=universe)
+    >>> distro_universe_uploader_record.uploader = universe_uploaders
+
+    >>> no_priv.leave(main_uploaders)
+    >>> no_priv.join(universe_uploaders)
+    >>> no_priv.inTeam(main_uploaders)
+    False
+    >>> no_priv.inTeam(universe_uploaders)
+    True
+    >>> hoary_main_nomination.canApprove(no_priv)
+    False
+
+If the bug is targeted to source packages in more than one component,
+anyone that can upload to any of the components may approve the
+nomination. This is because a nomination is tied to a release only, not
+to source packages.
+
+    >>> hoary_cnews = ubuntu_hoary.getSourcePackage('cnews')
+    >>> hoary_cnews.latest_published_component.name
+    u'universe'
+    >>> universe_task = getUtility(IBugTaskSet).createTask(
+    ...     bug=main_bug, owner=foo_bar, distribution=ubuntu,
+    ...     sourcepackagename=hoary_cnews.sourcepackagename)
+    >>> hoary_main_nomination.canApprove(no_priv)
+    True
+
+Drivers may approve nominations as well.
+
+    >>> no_priv.leave(universe_uploaders)
+    >>> hoary_main_nomination.canApprove(no_priv)
+    False
+    >>> ubuntu_hoary.driver = no_priv
+    >>> hoary_main_nomination.canApprove(no_priv)
+    True
+    >>> ubuntu_hoary.driver = None
+
+    >>> hoary_main_nomination.canApprove(no_priv)
+    False
+    >>> ubuntu.driver = no_priv
+    >>> hoary_main_nomination.canApprove(no_priv)
+    True
+    >>> ubuntu.driver = None
+
+If a bug isn't targeted to a specific source package, any uploader can
+approve a nomination.
+
+    >>> bug = ubuntu.createBug(bug_params)
+    >>> hoary_nomination = bug.addNomination(no_priv, ubuntu_hoary)
+    >>> hoary_nomination.canApprove(no_priv)
+    False
+    >>> no_priv.join(universe_uploaders)
+    >>> hoary_nomination.canApprove(no_priv)
+    True
+
 
 == Declining a nomination ==
 

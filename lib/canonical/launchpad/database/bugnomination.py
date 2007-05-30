@@ -111,6 +111,30 @@ class BugNomination(SQLBase):
         for driver in self.target.drivers:
             if person.inTeam(driver):
                 return True
+
+        if self.distrorelease is not None:
+            # For distributions anyone that can upload to the
+            # distribution may approve nominations.
+            bug_components = set()
+            distribution = self.distrorelease.distribution
+            for bugtask in self.bug.bugtasks:
+                if (bugtask.distribution == distribution
+                    and bugtask.sourcepackagename is not None):
+                    source_package = self.distrorelease.getSourcePackage(
+                        bugtask.sourcepackagename)
+                    bug_components.add(
+                        source_package.latest_published_component)
+            if len(bug_components) == 0:
+                # If the bug isn't targeted to a source package, allow
+                # any uploader to approve the nomination.
+                bug_components = set(
+                    upload_component.component
+                    for upload_component in distribution.uploaders)
+            for upload_component in distribution.uploaders:
+                if (upload_component.component in bug_components and
+                    person.inTeam(upload_component.uploader)):
+                    return True
+
         return False
 
 class BugNominationSet:
