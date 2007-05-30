@@ -1,0 +1,188 @@
+= Debian Installer Custom Uploads =
+
+Debian Installer uploads are treated as one of the Soyuz "custom"
+types.
+
+They come from buildd as result of the 'debian-installer' source
+build. This binary upload usually contains:
+
+ * The debian-installer binaries (DEB)
+ * The debian-installer translation (TAR.GZ, custom ROSETTA_TRANSLATIONS)
+ * The debian-installer special archive files (TAR.GZ, custom DEBIAN_INSTALLER)
+
+We have a special processor to publish debian-installer special archive
+file contents.
+
+The debian-installer filename should be something like:
+
+<BASE>_<VERSION>_<ARCH>.tar.gz
+
+Where:
+
+ * BASE: base name (usually 'debian-installer-images')
+
+ * VERSION: encoded version (something like '20061102ubuntu14')
+   * if the version string contains '.0.' we assume it is a
+     'daily-installer', otherwise, it is a normal 'installer'
+
+ * ARCH: targeted architecture tag ('i386', 'amd64', etc)
+
+The contents are extracted in the archive, respecting its type
+('installer' or 'daily-installer'), in the following path:
+
+ * <ARCHIVE>/dists/<SUITE>/main/<TYPE>-<ARCH>/
+
+
+Let's try one test upload and verify the results of its publication.
+In order to keep the tests simple we will upload only the
+debian-installer tarball, despite the fact that it's very unlikely to
+happen in production:
+
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
+  >>> login('foo.bar@canonical.com')
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
+  ...     datadir, getPolicy, mock_logger, mock_logger_quiet)
+
+  >>> anything_policy = getPolicy(
+  ...     name='anything', distro='ubuntutest', distroseries=None)
+  >>> anything_policy.setDistroSeriesAndPocket('hoary-test')
+
+Set the email address for annoucements emails:
+
+  >>> anything_policy.distroseries.changeslist = 'announce@example.com'
+
+  >>> upload = NascentUpload(
+  ...     datadir(
+  ...       'debian-installer/debian-installer_20070214ubuntu1_i386.changes'),
+  ...     anything_policy, mock_logger_quiet)
+  >>> upload.process()
+  >>> success = upload.do_accept()
+  >>> success
+  True
+
+Upload was successfully 'processed' and 'accepted'. Two email messages
+were generated (acceptance and announcement). Inspect the queue (IDRQ)
+information we find out that it contains one custom upload.
+
+  >>> upload.queue_root.status.name
+  'ACCEPTED'
+
+Make librarian files available for publication:
+
+  >>> import transaction
+  >>> transaction.commit()
+
+  >>> from canonical.launchpad.mail import stub
+  >>> len(stub.test_emails)
+  2
+  >>> upload.queue_root.customfiles.count()
+  1
+
+Let's force an error simulating a conflict in archive:
+
+  >>> import os
+  >>> archive_path = "/var/tmp/archive/"
+  >>> installer_path = os.path.join(
+  ...     archive_path, "ubuntutest/dists/hoary-test/main/installer-i386")
+
+  >>> os.makedirs(os.path.join(installer_path, '20070214ubuntu1'))
+
+Try to publish the custom upload, but it will be skipped due the disk
+conflict and the queue item will remain in ACCEPTED
+
+  >>> upload.queue_root.realiseUpload(mock_logger)
+  DEBUG: Publishing custom debian-installer-images_20070214ubuntu1_i386.tar.gz to ubuntutest/hoary-test
+  ERROR: Queue item ignored: installer build i386 for architecture 20070214ubuntu1 already exists
+  >>> upload.queue_root.status.name
+  'ACCEPTED'
+
+Let's remove the conflicted directory from disk and expect it to work
+next time:
+
+  >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
+
+The upload task requires that the umask be 022, otherwise things will end up
+with the wrong permission.
+
+  >>> old_mask = os.umask(002)
+  >>> upload.queue_root.realiseUpload(mock_logger_quiet)
+  ERROR: Queue item ignored: Bad umask; expected 022, got 002
+
+Reset the umask, remove any residual directories, and try again.
+
+  >>> os.rmdir(os.path.join(installer_path, '20070214ubuntu1'))
+  >>> print '%03o' % os.umask(old_mask)
+  002
+
+Process (publish) the custom upload:
+
+  >>> upload.queue_root.realiseUpload(mock_logger_quiet)
+  >>> upload.queue_root.status.name
+  'DONE'
+
+The current debian-installer directory (20070214ubuntu1) and a link to
+the last version (we only have the one we uploaded) should be
+presented:
+
+  >>> sorted(os.listdir(installer_path))
+  ['20070214ubuntu1', 'current']
+
+As a consistency check, let's verify one of the files inside the
+tarball:
+
+  >>> the_file = ("current/images/netboot/ubuntu-installer/i386/"
+  ...             "pxelinux.cfg.serial-9600/default")
+  >>> the_file_path = os.path.join(installer_path, the_file)
+  >>> print open(the_file_path).read()
+  hey
+
+Also check if the symbolic link included in the installer tarball
+looks sane:
+
+  >>> the_link = "current/images/netboot/foo"
+  >>> the_link_path = os.path.join(installer_path, the_link)
+  >>> os.readlink(the_link_path)
+  'ubuntu-installer/i386/pxelinux.cfg.serial-9600/default'
+
+  >>> the_dir_link = "current/images/netboot/link_to_dir"
+  >>> the_dir_link_path = os.path.join(installer_path, the_dir_link)
+  >>> os.readlink(the_dir_link_path)
+  'ubuntu-installer/i386/pxelinux.cfg.serial-9600/'
+
+Check permissions on the created directories to satisfy the
+publication path. They are created with os.makedirs() and forced to
+set permission '0755' instead of the default '0777' (see further
+details in bug #107068):
+
+  >>> oct(os.stat(installer_path).st_mode & 0777)
+  '0755'
+
+  >>> the_path = os.path.join(installer_path, os.pardir)
+  >>> oct(os.stat(the_path).st_mode & 0777)
+  '0755'
+
+Check permissions of created files and directories:
+
+  >>> the_file = ("current/images/netboot/ubuntu-installer/i386/"
+  ...             "pxelinux.cfg.serial-9600/default")
+  >>> the_file_path = os.path.join(installer_path, the_file)
+  >>> oct(os.stat(the_file_path).st_mode & 0777)
+  '0644'
+
+  >>> the_dir = ("current/images/netboot/ubuntu-installer/i386/"
+  ...            "pxelinux.cfg.serial-9600/")
+  >>> the_dir_path = os.path.join(installer_path, the_dir)
+  >>> oct(os.stat(the_dir_path).st_mode & 0777)
+  '0755'
+
+
+Remove local archive contents:
+
+  >>> import shutil
+  >>> shutil.rmtree(archive_path)

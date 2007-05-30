@@ -13,7 +13,7 @@ as many requests as they want.
 Let's see the two pending requests we have for Feisty CDs.
 
   >>> browser.getControl(name='statusfilter').value = ['PENDING']
-  >>> browser.getControl(name='releasefilter').value = ['FEISTY']
+  >>> browser.getControl(name='seriesfilter').value = ['FEISTY']
   >>> browser.getControl('Show').click()
   >>> print browser.contents
   <!DOCTYPE...
@@ -100,7 +100,7 @@ ones with an address that has been used by other people already.
   >>> browser.url
   'http://shipit.ubuntu.dev/requests'
   >>> browser.getControl(name='statusfilter').value = ['DUPLICATEDADDRESS']
-  >>> browser.getControl(name='releasefilter').value = ['FEISTY']
+  >>> browser.getControl(name='seriesfilter').value = ['FEISTY']
   >>> browser.getControl('Show').click()
   >>> print extract_text(find_tag_by_id(browser.contents, 'results-body'))
   20 Somebody Else (mark@hbd.com) 2006-02-01 Bermuda 8 0

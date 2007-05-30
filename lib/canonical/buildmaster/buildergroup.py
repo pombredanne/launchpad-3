@@ -239,7 +239,7 @@ class BuilderGroup:
         pocket and return the Librarian file identifier for it, return None
         if it wasn't found or wasn't able to calculate.
         """
-        chroot = build_candidate.archrelease.getChroot(pocket)
+        chroot = build_candidate.archseries.getChroot(pocket)
         if chroot:
             return chroot.content.sha1
 
@@ -251,7 +251,7 @@ class BuilderGroup:
         # PPA builds are not submitted to the main distribution policies.
         build = queueItem.build
         if build.is_trusted:
-            assert build.distrorelease.canUploadToPocket(build.pocket), (
+            assert build.distroseries.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
                 % (build.title, build.id, build.pocket.name))
 
@@ -287,9 +287,9 @@ class BuilderGroup:
         # in the state handling methods.
         state = queueItem.build.buildstate.name
 
-        dar = queueItem.build.distroarchrelease
-        distroname = dar.distrorelease.distribution.name
-        distroreleasename = dar.distrorelease.name
+        dar = queueItem.build.distroarchseries
+        distroname = dar.distroseries.distribution.name
+        distroseriesname = dar.distroseries.name
         archname = dar.architecturetag
 
         # logfilename format:
@@ -299,7 +299,7 @@ class BuilderGroup:
         # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
         # it fix request from bug # 30617
         logfilename = ('buildlog_%s-%s-%s.%s_%s_%s.txt'
-                       % (distroname, distroreleasename,
+                       % (distroname, distroseriesname,
                           archname, sourcename, version, state))
 
         return self.getFileFromSlave(slave, logfilename,
@@ -496,10 +496,10 @@ class BuilderGroup:
         """
         self.logger.debug("Processing successful build %s" % buildid)
         # Explode before collect a binary that is denied in this
-        # distrorelease/pocket
+        # distroseries/pocket
         build = queueItem.build
-        if build.archive == build.distrorelease.main_archive:
-            assert build.distrorelease.canUploadToPocket(build.pocket), (
+        if build.archive == build.distroseries.main_archive:
+            assert build.distroseries.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
                 % (build.title, build.id,
                    build.pocket.name))
@@ -543,7 +543,7 @@ class BuilderGroup:
         extra_args = [
             "--log-file", "%s" %  uploader_logfilename,
             "-d", "%s" % queueItem.build.distribution.name,
-            "-r", "%s" % (queueItem.build.distrorelease.name +
+            "-s", "%s" % (queueItem.build.distroseries.name +
                           pocketsuffix[queueItem.build.pocket]),
             "-b", "%s" % queueItem.build.id,
             "-J", "%s" % upload_leaf,
