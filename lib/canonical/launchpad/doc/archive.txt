@@ -73,13 +73,13 @@ None, so they won't get created:
 
 Usual methods from Publisher Configuration are preserved:
 
-  >>> pubconfig.distroReleaseNames()
+  >>> pubconfig.distroSeriesNames()
   ['breezy-autotest', 'hoary-test']
 
-  >>> pubconfig.archTagsForRelease('breezy-autotest')
+  >>> pubconfig.archTagsForSeries('breezy-autotest')
   []
 
-  >>> pubconfig.componentsForRelease('breezy-autotest')
+  >>> pubconfig.componentsForSeries('breezy-autotest')
   ['main', 'restricted', 'universe', 'multiverse']
 
 

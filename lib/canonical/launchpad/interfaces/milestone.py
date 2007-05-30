@@ -13,7 +13,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Choice, Int, Date, Bool
 
 from canonical.launchpad.interfaces.productseries import IProductSeries
-from canonical.launchpad.interfaces.distrorelease import IDistroRelease
+from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField
 from canonical.launchpad.validators.name import name_validator
@@ -30,7 +30,7 @@ class MilestoneNameField(ContentNameField):
             milestone = self.context.target.getMilestone(name)
         elif IProductSeries.providedBy(self.context):
             milestone = self.context.product.getMilestone(name)
-        elif IDistroRelease.providedBy(self.context):
+        elif IDistroSeries.providedBy(self.context):
             milestone = self.context.distribution.getMilestone(name)
         else:
             raise AssertionError, 'Editing a milestone from a weird place.'
@@ -42,8 +42,8 @@ class MilestoneNameField(ContentNameField):
 
 
 class IMilestone(Interface):
-    """A milestone, or a targeting point for bugs and other release-related
-    items that need coordination.
+    """A milestone, or a targeting point for bugs and other
+    release-management items that need coordination.
     """
     id = Int(title=_("Id"))
     name = MilestoneNameField(
@@ -60,15 +60,15 @@ class IMilestone(Interface):
         description=_("The distribution to which this milestone belongs."),
         vocabulary="Distribution")
     productseries = Choice(
-        title=_("Release Series"),
-        description=_("The release series for which this is a milestone."),
+        title=_("Series"),
+        description=_("The series for which this is a milestone."),
         vocabulary="FilteredProductSeries",
         required=False) # for now
-    distrorelease = Choice(
-        title=_("Distribution Release"),
+    distroseries = Choice(
+        title=_("Series"),
         description=_(
-            "The distribution release for which this is a milestone."),
-        vocabulary="FilteredDistroRelease",
+            "The series for which this is a milestone."),
+        vocabulary="FilteredDistroSeries",
         required=False) # for now
     dateexpected = Date(title=_("Date Targeted"), required=False,
         description=_("Example: 2005-11-24"))
@@ -76,7 +76,7 @@ class IMilestone(Interface):
         "milestone should be shown in web forms for bug targeting."))
     target = Attribute("The product or distribution of this milestone.")
     series_target = Attribute(
-        'The productseries or distrorelease of this milestone.')
+        'The productseries or distroseries of this milestone.')
     displayname = Attribute("A displayname for this milestone, constructed "
         "from the milestone name.")
     title = Attribute("A milestone context title for pages.")

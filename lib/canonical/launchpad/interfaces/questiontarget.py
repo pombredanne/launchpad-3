@@ -15,7 +15,7 @@ import sets
 
 from zope.component import getUtility
 from zope.interface import Interface
-from zope.schema import Bool, Choice, List, Set, TextLine
+from zope.schema import Choice, List, Set, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.language import ILanguageSet

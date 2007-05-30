@@ -24,11 +24,11 @@ Distributions and DistributionSourcePackages.
     >>> verifyObject(IQuestionTarget, evolution_in_ubuntu)
     True
 
-Altough Distribution releases do not implement the IQuestionTarget
+Altough Distribution series do not implement the IQuestionTarget
 interface, it is possible to adapt one to it. (The adapter is actually
-the distrorelease's distribution.)
+the distroseries's distribution.)
 
-    >>> ubuntu_warty = ubuntu.getRelease('warty')
+    >>> ubuntu_warty = ubuntu.getSeries('warty')
     >>> IQuestionTarget.providedBy(ubuntu_warty)
     False
     >>> questiontarget = IQuestionTarget(ubuntu_warty)
@@ -48,7 +48,7 @@ IQuestionTarget.
 SourcePackages are also QuestionTargets.
 XXX sinzui 2007-04-24. #108240 SourcePackages should not be QuestionTargets
 
-    >>> evolution_in_hoary = ubuntu.currentrelease.getSourcePackage('evolution')
+    >>> evolution_in_hoary = ubuntu.currentseries.getSourcePackage('evolution')
     >>> questiontarget = IQuestionTarget(evolution_in_hoary)
     >>> verifyObject(IQuestionTarget, questiontarget)
     True

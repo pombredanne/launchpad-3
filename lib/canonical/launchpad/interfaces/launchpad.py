@@ -104,7 +104,7 @@ class ILaunchpadCelebrities(Interface):
     team_membership_janitor = Attribute("The Team Membership Janitor.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
-    ubuntu_release_mirror = Attribute("The main release mirror for Ubuntu.")
+    ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
 
 
 class ICrowd(Interface):
@@ -159,8 +159,8 @@ class IRosettaApplication(ILaunchpadApplication):
     def featured_products():
         """Return a sample of all the translatable products."""
 
-    def translatable_distroreleases():
-        """Return a list of the distroreleases in launchpad for which
+    def translatable_distroseriess():
+        """Return a list of the distroseriess in launchpad for which
         translations can be done.
         """
 
@@ -287,7 +287,7 @@ class IHasDrivers(Interface):
     """An object that has drivers.
 
     Drivers have permission to approve bugs and features for specific
-    distribution releases and product series.
+    series.
     """
     drivers = Attribute("A list of drivers")
 
