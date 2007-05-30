@@ -48,7 +48,6 @@ class TestSFTPService(SFTPService):
     connecting client closes its connection to the SFTP server.
     """
 
-    root = '/tmp/sftp-test'
     _connectionLostEvent = None
     _connectionMadeEvent = None
     avatar = None
@@ -65,13 +64,6 @@ class TestSFTPService(SFTPService):
     def setConnectionMadeEvent(self, event):
         self._connectionMadeEvent = event
 
-    def setUpRoot(self):
-        if os.path.isdir(self.root):
-            shutil.rmtree(self.root)
-        os.makedirs(self.root, 0700)
-        shutil.copytree(sibpath(__file__, 'keys'),
-                        os.path.join(self.root, 'keys'))
-
     def makeRealm(self):
         realm = SFTPService.makeRealm(self)
         realm.avatarFactory = self.makeAvatar
@@ -81,10 +73,6 @@ class TestSFTPService(SFTPService):
         self.avatar = TestSFTPOnlyAvatar(self, avatarId, homeDirsRoot,
                                          userDict, launchpad)
         return self.avatar
-
-    def makeService(self):
-        self.setUpRoot()
-        return SFTPService.makeService(self)
 
 
 class TestSFTPOnlyAvatar(SFTPOnlyAvatar):
@@ -166,58 +154,72 @@ class SSHKeyMixin:
 
 class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
 
-    def setUp(self):
-        # Install the default SIGCHLD handler so that read() calls don't get
-        # EINTR errors when child processes exit.
-        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-        super(SFTPTestCase, self).setUp()
+    branches_root = '/tmp/sftp-test'
 
-        self.prepareTestUser()
+    def setUpBranchesRoot(self):
+        if os.path.isdir(self.branches_root):
+            shutil.rmtree(self.branches_root)
+        os.makedirs(self.branches_root, 0700)
+        shutil.copytree(sibpath(__file__, 'keys'),
+                        os.path.join(self.branches_root, 'keys'))
+        self.addCleanup(lambda: shutil.rmtree(self.branches_root))
 
-        # Point $HOME at a test ssh config and key.
-        self.userHome = os.path.abspath(tempfile.mkdtemp())
-        os.makedirs(os.path.join(self.userHome, '.ssh'))
+    def setUpFakeHome(self):
+        userHome = os.path.abspath(tempfile.mkdtemp())
+        os.makedirs(os.path.join(userHome, '.ssh'))
         shutil.copyfile(
             sibpath(__file__, 'id_dsa'),
-            os.path.join(self.userHome, '.ssh', 'id_dsa'))
+            os.path.join(userHome, '.ssh', 'id_dsa'))
         shutil.copyfile(
             sibpath(__file__, 'id_dsa.pub'),
-            os.path.join(self.userHome, '.ssh', 'id_dsa.pub'))
-        os.chmod(os.path.join(self.userHome, '.ssh', 'id_dsa'), 0600)
-        self.realHome = os.environ['HOME']
-        os.environ['HOME'] = self.userHome
+            os.path.join(userHome, '.ssh', 'id_dsa.pub'))
+        os.chmod(os.path.join(userHome, '.ssh', 'id_dsa'), 0600)
+        realHome, os.environ['HOME'] = os.environ['HOME'], userHome
+        def tearDownFakeHome():
+            os.environ['HOME'] = realHome
+            shutil.rmtree(userHome)
+        self.addCleanup(tearDownFakeHome)
 
-        # XXX spiv 2005-01-13:
-        # Force bzrlib to use paramiko (because OpenSSH doesn't respect $HOME)
+    def setUpSignalHandling(self):
+        oldSigChld = signal.getsignal(signal.SIGCHLD)
+        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+        self.addCleanup(lambda: signal.signal(signal.SIGCHLD, oldSigChld))
+
+    def forceParamiko(self):
         _old_vendor_manager = ssh._ssh_vendor_manager._cached_ssh_vendor
         def restore_vendor_manager():
             ssh._ssh_vendor_manager._cached_ssh_vendor = _old_vendor_manager
         self.addCleanup(restore_vendor_manager)
         ssh._ssh_vendor_manager._cached_ssh_vendor = ssh.ParamikoVendor()
 
+    def setUp(self):
+        super(SFTPTestCase, self).setUp()
+
+        # Install the default SIGCHLD handler so that read() calls don't get
+        # EINTR errors when child processes exit.
+        self.setUpSignalHandling()
+
+        self.prepareTestUser()
+
+        # Point $HOME at a test ssh config and key.
+        self.setUpFakeHome()
+
+        # Force bzrlib to use paramiko (because OpenSSH doesn't respect $HOME)
+        self.forceParamiko()
+
         # Start authserver.
         self.authserver = AuthserverService()
         self.authserver.startService()
+        self.addCleanup(self.authserver.stopService)
+
+        # Set up the branch storage location on the filesystem.
+        self.setUpBranchesRoot()
 
         # Start the SFTP server
         self.server = TestSFTPService()
         self.server.startService()
         self.server_base = 'sftp://testuser@localhost:22222/'
-
-    def tearDown(self):
-        # Undo setUp.
-        self.server.stopService()
-
-        os.environ['HOME'] = self.realHome
-        self.authserver.stopService()
-        # XXX spiv 2006-04-27: We need to do bzrlib's tear down first, because
-        # LaunchpadZopelessTestSetup's tear down will remove bzrlib's logging
-        # handlers, causing it to blow up.  See bug #41697.
-        super(SFTPTestCase, self).tearDown()
-
-        shutil.rmtree(self.userHome)
-        shutil.rmtree(self.server.root)
+        self.addCleanup(self.server.stopService)
 
     def getTransport(self, path=None):
         """Get a paramiko transport pointing to `path` on the base server."""
@@ -228,7 +230,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         self.addCleanup(transport._sftp.sock.transport.close)
         return transport
 
-    def closeAllConnections(self):
+    def closeAllSFTPConnections(self):
         """Closes all open bzrlib SFTP connections.
 
         bzrlib doesn't provide a facility for closing sftp connections. The
@@ -242,7 +244,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         sftp.clear_connection_cache()
         gc.collect()
 
-    def run_and_wait_for_sftp_session_close(self, func, *args, **kwargs):
+    def run_and_wait_for_ssh_session_close(self, func, *args, **kwargs):
         """Run the given function, close all SFTP connections, and wait for the
         server to acknowledge the end of the session.
         """
@@ -256,7 +258,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
             try:
                 result = func(*args, **kwargs)
             finally:
-                self.closeAllConnections()
+                self.closeAllSFTPConnections()
                 # done.wait() can block forever if func() never actually
                 # connects, so only wait if we are sure that the client
                 # connected.
@@ -276,7 +278,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-        self.run_and_wait_for_sftp_session_close(
+        self.run_and_wait_for_ssh_session_close(
             self.run_bzr_captured, ['push', remote_url], retcode=None)
 
     def get_last_revision(self, remote_url):
@@ -286,7 +288,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-        return self.run_and_wait_for_sftp_session_close(
+        return self.run_and_wait_for_ssh_session_close(
             lambda: bzrlib.branch.Branch.open(remote_url).last_revision())
 
 
@@ -385,7 +387,7 @@ class AcceptanceTests(SFTPTestCase):
     def _test_missing_parent_directory(self, relpath):
         transport = self.getTransport(relpath).clone('..')
         self.assertRaises((NoSuchFile, PermissionDenied),
-                          self.run_and_wait_for_sftp_session_close,
+                          self.run_and_wait_for_ssh_session_close,
                           transport.mkdir, 'hello')
 
     @deferToThread
@@ -425,7 +427,7 @@ class AcceptanceTests(SFTPTestCase):
 
         self.assertRaises(
             NotBranchError,
-            self.run_and_wait_for_sftp_session_close,
+            self.run_and_wait_for_ssh_session_close,
             bzrlib.branch.Branch.open,
             self.server_base + '~testuser/+junk/renamed-branch')
 
