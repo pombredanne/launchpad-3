@@ -191,7 +191,8 @@ class TestPublisher(TestNativePublishingBase):
 
         test_archive = getUtility(IArchiveSet).new()
         test_pool_dir = tempfile.mkdtemp()
-        test_disk_pool = DiskPool(test_pool_dir, self.logger)
+        test_temp_dir = tempfile.mkdtemp()
+        test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
 
         publisher = Publisher(
             self.logger, self.config, test_disk_pool, self.ubuntutest,
@@ -339,7 +340,7 @@ class TestPublisher(TestNativePublishingBase):
              'Section: base',
              'Installed-Size: 100',
              'Maintainer: Foo Bar <foo@bar.com>',
-             'Architecture: i386',
+             'Architecture: all',
              'Version: 666',
              'Filename: pool/main/f/foo/foo-bin.deb',
              'Size: 18',

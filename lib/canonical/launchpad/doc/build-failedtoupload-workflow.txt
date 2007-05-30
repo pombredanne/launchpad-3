@@ -168,7 +168,7 @@ right target location, they are passed via process-upload command-line:
   >>> cdrkit_bin_upload.process()
   >>> cdrkit_bin_upload.is_rejected
   False
-  >>> success, msgs = cdrkit_bin_upload.do_accept()
+  >>> success = cdrkit_bin_upload.do_accept()
   >>> cdrkit_bin_upload.queue_root.status.name
   'NEW'
 

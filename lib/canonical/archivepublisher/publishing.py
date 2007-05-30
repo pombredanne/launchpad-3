@@ -71,7 +71,8 @@ def _getDiskPool(pubconf, log):
     pubconf.setupArchiveDirs()
 
     log.debug("Preparing on-disk pool representation.")
-    dp = DiskPool(pubconf.poolroot, logging.getLogger("DiskPool"))
+    dp = DiskPool(pubconf.poolroot, pubconf.temproot,
+                  logging.getLogger("DiskPool"))
     # Set the diskpool's log level to INFO to suppress debug output
     dp.logger.setLevel(logging.INFO)
 

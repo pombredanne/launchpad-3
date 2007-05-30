@@ -530,14 +530,21 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_description = (
             '%s\n %s'% (bpr.summary, '\n '.join(bpr.description.splitlines())))
 
+        # Dealing with architecturespecific field.
+        # Present 'all' in every archive index for architecture
+        # independent binaries.
+        if bpr.architecturespecific:
+            architecture = bpr.build.distroarchrelease.architecturetag
+        else:
+            architecture = 'all'
+
         fields = IndexStanzaFields()
         fields.append('Package', bpr.name)
         fields.append('Priority', self.priority.title)
         fields.append('Section', self.section.name)
         fields.append('Installed-Size', bpr.installedsize)
         fields.append('Maintainer', spr.dsc_maintainer_rfc822)
-        fields.append(
-            'Architecture', bpr.build.distroarchrelease.architecturetag)
+        fields.append('Architecture', architecture)
         fields.append('Version', bpr.version)
         fields.append('Replaces', bpr.replaces)
         fields.append('Suggests', bpr.suggests)
