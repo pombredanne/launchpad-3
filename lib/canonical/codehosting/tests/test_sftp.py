@@ -32,12 +32,12 @@ from canonical.config import config
 from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.codehosting import sftponly
 from canonical.codehosting.tests.test_acceptance import (
-    SFTPTestCase, SSHKeyMixin, deferToThread)
+    SSHTestCase, SSHKeyMixin, deferToThread)
 from canonical.codehosting.tests.helpers import (
     TwistedLayer, TwistedBzrlibLayer)
 
 
-class SFTPTests(SFTPTestCase):
+class SFTPTests(SSHTestCase):
 
     layer = TwistedBzrlibLayer
 
@@ -320,7 +320,7 @@ class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
 
 
 class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
-    """Tests for the SFTP server authentication mechanism.
+    """Tests for the SSH server authentication mechanism.
 
     PublicKeyFromLaunchpadChecker accepts the SSH authentication information
     and contacts the authserver to determine if the given details are valid.
@@ -381,7 +381,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
             creds, 'No such Launchpad account: no-such-user')
 
     def test_noKeys(self):
-        # When you sign into an existing account with no SSH keys, the SFTP
+        # When you sign into an existing account with no SSH keys, the SSH
         # server should inform you that the account has no keys.
         creds = SSHPrivateKey('lifeless', 'ssh-dss', self.public_key,
                               self.sigData, self.signature)

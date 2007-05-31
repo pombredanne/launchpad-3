@@ -35,13 +35,13 @@ from canonical.launchpad.daemons.sftp import SFTPService
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
 
-class TestSFTPService(SFTPService):
-    """SFTP service that uses the the TestSFTPOnlyAvatar and installs the test
-    keys in a place that the SFTP server can find them.
+class TestSSHService(SFTPService):
+    """SSH service that uses the the TestSFTPOnlyAvatar and installs the test
+    keys in a place that the SSH server can find them.
 
     This class, TestSFTPOnlyAvatar and TestBazaarFileTransferServer work
     together to provide a threading event which is set when the first
-    connecting XXX client closes its connection to the SFTP server.
+    connecting XXX client closes its connection to the SSH server.
     """
 
     _connection_lost_event = None
@@ -72,7 +72,8 @@ class TestSFTPService(SFTPService):
 
 
 class TestSFTPOnlyAvatar(SFTPOnlyAvatar):
-    """SFTP avatar that uses the TestBazaarFileTransferServer."""
+    """SSH avatar that uses the TestBazaarFileTransferServer."""
+
     def __init__(self, service, avatarId, homeDirsRoot, userDict, launchpad):
         SFTPOnlyAvatar.__init__(self, avatarId, homeDirsRoot, userDict,
                                 launchpad)
@@ -148,7 +149,7 @@ class SSHKeyMixin:
             data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
 
 
-class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
+class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
 
     branches_root = '/tmp/sftp-test'
 
@@ -189,7 +190,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         ssh._ssh_vendor_manager._cached_ssh_vendor = ssh.ParamikoVendor()
 
     def setUp(self):
-        super(SFTPTestCase, self).setUp()
+        super(SSHTestCase, self).setUp()
 
         # Install the default SIGCHLD handler so that read() calls don't get
         # EINTR errors when child processes exit.
@@ -211,8 +212,8 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         # Set up the branch storage location on the filesystem.
         self.setUpBranchesRoot()
 
-        # Start the SFTP server
-        self.server = TestSFTPService()
+        # Start the SSH server
+        self.server = TestSSHService()
         self.server.startService()
         self.server_base = 'sftp://testuser@localhost:22222/'
         self.addCleanup(self.server.stopService)
@@ -288,7 +289,7 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
             lambda: bzrlib.branch.Branch.open(remote_url).last_revision())
 
 
-class AcceptanceTests(SFTPTestCase):
+class AcceptanceTests(SSHTestCase):
     """Acceptance tests for the Launchpad codehosting service's Bazaar support.
 
     Originally converted from the English at
