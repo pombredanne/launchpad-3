@@ -285,8 +285,8 @@ class FTPArchiveHandler:
                     if not self.publisher.isAllowed(distroseries, pocket):
                         continue
 
-                spphs = getSourcesForOverrides(distroseries, pocket)
-                bpphs = getBinariesForOverrides(distroseries, pocket)
+                spphs = self.getSourcesForOverrides(distroseries, pocket)
+                bpphs = self.getBinariesForOverrides(distroseries, pocket)
                 self.publishOverrides(spphs, bpphs)
 
     def publishOverrides(self, source_publications, binary_publications):
