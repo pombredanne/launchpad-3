@@ -348,7 +348,7 @@ person uploaded (where he isn't the maintainer).
 
     >>> sabdfl = personset.getByName('sabdfl')
     >>> for sprelease in sabdfl.latestMaintainedPackages():
-    ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
+    ...     print (sprelease.name, sprelease.uploaddistroseries.fullseriesname,
     ...            sprelease.version)
     (u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
     (u'pmount', u'Ubuntu Hoary', u'0.1-2')
@@ -359,7 +359,7 @@ person uploaded (where he isn't the maintainer).
     (u'evolution', u'Ubuntu Hoary', u'1.0')
 
     >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
-    ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
+    ...     print (sprelease.name, sprelease.uploaddistroseries.fullseriesname,
     ...            sprelease.version)
     (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
     (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
@@ -394,14 +394,14 @@ Person objects that have contributed translations.
   >>> [p.name for p in personset.getPOFileContributors(pofile)]
   [u'carlos', u'name16', u'tsukimi']
 
-getPOFileContributorsByDistroRelease gives the list of people that did
-contributions to templates that are current in the given IDistroRelease
+getPOFileContributorsByDistroSeries gives the list of people that did
+contributions to templates that are current in the given IDistroSeries
 and ILanguage.
 
-  >>> from canonical.launchpad.database import DistroRelease, Language
-  >>> hoary = DistroRelease.selectOneBy(name="hoary")
+  >>> from canonical.launchpad.database import DistroSeries, Language
+  >>> hoary = DistroSeries.selectOneBy(name="hoary")
   >>> spanish = Language.selectOneBy(code="es")
-  >>> [p.name for p in personset.getPOFileContributorsByDistroRelease(hoary, spanish)]
+  >>> [p.name for p in personset.getPOFileContributorsByDistroSeries(hoary, spanish)]
   [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16',
    u'name12', u'tsukimi']
 
@@ -412,7 +412,7 @@ and ILanguage.
   False
   >>> [p.name for p in personset.getPOFileContributors(non_current_pofile)]
   [u'jordi']
-  >>> non_current_pofile.potemplate.distrorelease == hoary
+  >>> non_current_pofile.potemplate.distroseries == hoary
   True
   >>> non_current_pofile.language == spanish
   True
@@ -552,4 +552,24 @@ Branches
 --------
 
 ** See branch.txt for API related to branches.
+
+
+= Uploaders =
+
+We can ascertain whether a person is an uploader to a distribution.  An 
+uploader is someone with rights to upload packages.
+
+'cprov' is an uploader to Ubuntu:
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> cprov.isUploader(ubuntu)
+  True
+
+'kiko' is not an uploader to Ubuntu:
+
+  >>> kiko = getUtility(IPersonSet).getByName('kiko')
+  >>> kiko.isUploader(ubuntu)
+  False
 

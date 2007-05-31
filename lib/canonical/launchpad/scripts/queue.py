@@ -116,11 +116,11 @@ class QueueAction:
     def size(self):
         """Return the size of the queue in question."""
         return getUtility(IPackageUploadSet).count(
-            status=self.queue, distrorelease=self.distrorelease,
+            status=self.queue, distroseries=self.distroseries,
             pocket=self.pocket)
 
     def setDefaultContext(self):
-        """Set default distribuiton, distrorelease, announcelist."""
+        """Set default distribuiton, distroseries, announcelist."""
         # if not found defaults to 'ubuntu'
         distroset = getUtility(IDistributionSet)
         try:
@@ -129,22 +129,22 @@ class QueueAction:
             self.distribution = distroset['ubuntu']
 
         if self.suite_name:
-            # defaults to distro.currentrelease if passed distrorelease is
+            # defaults to distro.currentseries if passed distroseries is
             # misapplied or not found.
             try:
-                self.distrorelease, self.pocket = (
-                    self.distribution.getDistroReleaseAndPocket(
+                self.distroseries, self.pocket = (
+                    self.distribution.getDistroSeriesAndPocket(
                     self.suite_name))
             except NotFoundError, info:
                 raise QueueActionError('Context not found: "%s/%s"'
                                        % (self.distribution.name,
                                           self.suite_name))
         else:
-            self.distrorelease = self.distribution.currentrelease
+            self.distroseries = self.distribution.currentseries
             self.pocket = PackagePublishingPocket.RELEASE
 
         if not self.announcelist:
-            self.announcelist = self.distrorelease.changeslist
+            self.announcelist = self.distroseries.changeslist
 
 
     def initialize(self):
@@ -174,14 +174,14 @@ class QueueAction:
                 raise QueueActionError(
                     'Item %s is in queue %s' % (item.id, item.status.name))
 
-            if (item.distrorelease != self.distrorelease or
+            if (item.distroseries != self.distroseries or
                 item.pocket != self.pocket):
                 raise QueueActionError(
                     'Item %s is in %s/%s-%s not in %s/%s-%s'
-                    % (item.id, item.distrorelease.distribution.name,
-                       item.distrorelease.name, item.pocket.name,
-                       self.distrorelease.distribution.name,
-                       self.distrorelease.name, self.pocket.name))
+                    % (item.id, item.distroseries.distribution.name,
+                       item.distroseries.name, item.pocket.name,
+                       self.distroseries.distribution.name,
+                       self.distroseries.name, self.pocket.name))
 
             self.items = [item]
             self.items_size = 1
@@ -192,7 +192,7 @@ class QueueAction:
             if '/' in term:
                 term, version = term.strip().split('/')
 
-            self.items = self.distrorelease.getQueueItems(
+            self.items = self.distroseries.getQueueItems(
                 status=self.queue, name=term, version=version,
                 exact_match=self.exact_match, pocket=self.pocket)
             self.items_size = self.items.count()
@@ -271,7 +271,7 @@ class QueueAction:
             for bpr in queue_build.build.binarypackages:
                 if only and only != bpr.name:
                     continue
-                dar = queue_build.build.distroarchrelease
+                dar = queue_build.build.distroarchseries
                 binarypackagename = bpr.binarypackagename.name
                 # inspect the publication history of each binary
                 darbp = dar.getBinaryPackage(binarypackagename)
@@ -354,7 +354,7 @@ class QueueAction:
 
     def find_addresses_from(self, changesfile):
         """Given a libraryfilealias which is a changes file, find a
-        set of permitted recipients for the current distrorelease.
+        set of permitted recipients for the current distroseries.
         """
         full_set = set()
         recipient_addresses = []
@@ -446,11 +446,11 @@ class QueueActionReport(QueueAction):
     def run(self):
         """Display the queues size."""
         self.display("Report for %s/%s" % (self.distribution.name,
-                                           self.distrorelease.name))
+                                           self.distroseries.name))
 
         for queue in name_queue_map.values():
             size = getUtility(IPackageUploadSet).count(
-                status=queue, distrorelease=self.distrorelease,
+                status=queue, distroseries=self.distroseries,
                 pocket=self.pocket)
             self.display("\t%s -> %s entries" % (queue.name, size))
 

@@ -24,8 +24,8 @@ We use StringIO later to simulate bits of the build slave file retrieval
 
   >>> from StringIO import StringIO
 
-First let's test a essencial part of the BuilddMaster class, the
-BuildersGroup() class, by creating an empty BuilderGroup object
+First let's test an essential part of the BuilddMaster class, the
+BuilderGroup() class, by creating an empty BuilderGroup object
 
   >>> from canonical.buildmaster.buildergroup import BuilderGroup
 
@@ -263,7 +263,7 @@ following states: FAILEDTOBUILD and CHROOTWAIT
   ...         self.dependencies = None
   ...         tmp_build = getUtility(IBuildSet).getByBuildID(7)
   ...         self.archive = tmp_build.archive
-  ...         self.distroarchrelease = tmp_build.distroarchrelease
+  ...         self.distroarchseries = tmp_build.distroarchseries
   ...         self.sourcepackagerelease = tmp_build.sourcepackagerelease
   ...         self.pocket = tmp_build.pocket
   ...         self.title = 'Mock Build'
@@ -271,11 +271,11 @@ following states: FAILEDTOBUILD and CHROOTWAIT
   ...         self.is_trusted = tmp_build.is_trusted
   ...         self.binarypackages = ['one', 'two', 'three']
   ...     @property
-  ...     def distrorelease(self):
-  ...         return self.distroarchrelease.distrorelease
+  ...     def distroseries(self):
+  ...         return self.distroarchseries.distroseries
   ...     @property
   ...     def distribution(self):
-  ...         return self.distroarchrelease.distrorelease.distribution
+  ...         return self.distroarchseries.distroseries.distribution
   ...     def notify(self, extra_info=None):
   ...         self.notification_sent = True
 
@@ -294,7 +294,7 @@ following states: FAILEDTOBUILD and CHROOTWAIT
   ...         self.component_name = "main"
   ...         self.archhintlist = ""
   ...         self.is_trusted = build.is_trusted
-  ...         self.archrelease = build.distroarchrelease
+  ...         self.archseries = build.distroarchseries
   ...         self.version = build.sourcepackagerelease.version
   ...     def destroySelf(self):
   ...         pass
@@ -355,7 +355,7 @@ Let's check the procedures to verify/collect running build process:
   >>> bqItem4.build.buildstate.title
   'Dependency wait'
 
-  WAITING - CHROOTFAIL -> the Chroot for this distrorelease is damage, nor
+  WAITING - CHROOTFAIL -> the Chroot for this distroseries is damage, nor
   builder, but right state stored in Build entry:
 
   >>> bqItem5 = MockBuildQueue(3, builder5, MockBuild(3))
@@ -533,14 +533,14 @@ scanned it)
 
 
 The Builddmaster should crash when collecting builds which are denied in
-the given distrorelease/pocket. Anytime it happens we need to manually
+the given distroseries/pocket. Anytime it happens we need to manually
 investigate why this build end up built. (should never happen in real
 cases, and even so should be refused when we try to upload it.)
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> bqItem12 = MockBuildQueue(10, builder10, MockBuild(10))
   >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
-  >>> bqItem12.build.distroarchrelease = warty['i386']
+  >>> bqItem12.build.distroarchseries = warty['i386']
   >>> buildergroup.updateBuild(bqItem12, librarian)
   Traceback (most recent call last):
   ...
@@ -625,7 +625,7 @@ Remove build upload results root
 
   >>> bm = BuilddMaster(logging.getLogger(), local_transaction)
 
-Retrive a known DistroArchrelease
+Retrive a known DistroArchSeries
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
@@ -637,39 +637,39 @@ Create a totally bogus CHROOT
   >>> from canonical.launchpad.database import PocketChroot
   >>> pocket = dbschema.PackagePublishingPocket.RELEASE
   >>> chroot = LibraryFileAlias.get(1)
-  >>> p = PocketChroot(distroarchreleaseID=hoary_i386.id,
+  >>> p = PocketChroot(distroarchseriesID=hoary_i386.id,
   ...                  pocket=pocket, chroot=chroot)
 
 
 As we do when building the BuildQueue entries we need to recognise
-all available distroarchreleases and figure out which slave builder
+all available distroarchseriess and figure out which slave builder
 is able to build stuff properly for that one.
 
 
-Initialiase the BuildMaster with all available distroarchreleases.
+Initialiase the BuildMaster with all available distroarchseriess.
 Because the sampledata builders are busy we issue and warning stating that.
 
-  >>> from canonical.launchpad.interfaces import IDistroArchReleaseSet
-  >>> for dar in sorted(getUtility(IDistroArchReleaseSet),
-  ...                   key=lambda dar: (dar.distrorelease.distribution.name,
-  ...                                    dar.distrorelease.name,
+  >>> from canonical.launchpad.interfaces import IDistroArchSeriesSet
+  >>> for dar in sorted(getUtility(IDistroArchSeriesSet),
+  ...                   key=lambda dar: (dar.distroseries.distribution.name,
+  ...                                    dar.distroseries.name,
   ...                                    dar.architecturetag)):
-  ...     bm.addDistroArchRelease(dar)
+  ...     bm.addDistroArchSeries(dar)
   ...     bm.setupBuilders(dar)
   WARNING:root.builders.x86:No builders are available
 
-Inspect private attribute _archrelease contents. Remember
-archrelease was fetched in the beginning of the test.
+Inspect private attribute _archseries contents. Remember
+archseries was fetched in the beginning of the test.
 
-  >>> len(bm._archreleases)
+  >>> len(bm._archserieses)
   1
 
 It should be hoary/x86:
 
-  >>> bm._archreleases.keys()[0].title
+  >>> bm._archserieses.keys()[0].title
   u'The Hoary Hedgehog Release for i386 (x86)'
 
-  >>> real_buildergroup = bm._archreleases[hoary_i386]['builders']
+  >>> real_buildergroup = bm._archserieses[hoary_i386]['builders']
 
   >>> real_buildergroup.firstAvailable() is None
   True
@@ -738,8 +738,8 @@ goes nothing.
 Initialize BuildQueue missing attributes for building:
 
   >>> bqItem3.version = 'Demo'
-  >>> bqItem3.archrelease = hoary_i386
-  >>> bqItem3.build.archive = bqItem3.build.distroarchrelease.main_archive
+  >>> bqItem3.archseries = hoary_i386
+  >>> bqItem3.build.archive = bqItem3.build.distroarchseries.main_archive
 
 
 Request a Mock slave build process, see OkSlave() class implementation
@@ -753,7 +753,7 @@ When there is no chroot it should not alter the buildstate:
 
   >>> from canonical.lp.dbschema import PackagePublishingPocket
   >>> PocketChroot.selectBy(
-  ...     distroarchrelease=bqItem3.archrelease,
+  ...     distroarchseries=bqItem3.archseries,
   ...     pocket=PackagePublishingPocket.SECURITY).count()
   0
 
@@ -770,11 +770,11 @@ Check if builddmaster stops before starting building a denied build, for
 this we will create the previous missing CHROOT for
 ubuntu/hoary/i386/SECURITY
 
-  >>> p = PocketChroot(distroarchreleaseID=hoary_i386.id,
+  >>> p = PocketChroot(distroarchseriesID=hoary_i386.id,
   ...                  pocket=PackagePublishingPocket.SECURITY,
   ...                  chroot=LibraryFileAlias.get(2))
 
-  >>> hoary_i386.distrorelease.releasestatus.name
+  >>> hoary_i386.distroseries.status.name
   'DEVELOPMENT'
 
 Since hoary is in development, we should not be able to dispatch

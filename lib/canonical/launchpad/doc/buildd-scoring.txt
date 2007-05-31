@@ -40,12 +40,12 @@ BuildQueue entries.
   ...    title = 'No title yet'
 
   >>> class MockBuildQueue:
-  ...     def __init__(self, name, urgency, component_name, archrelease,
+  ...     def __init__(self, name, urgency, component_name, archseries,
   ...                  created, builddependsindep, manual=False):
   ...         self.name = name
   ...         self.urgency = urgency
   ...         self.component_name = component_name
-  ...         self.archrelease = archrelease
+  ...         self.archseries = archseries
   ...         self.lastscore = 0
   ...         self.created = created
   ...         self.builddependsindep = builddependsindep

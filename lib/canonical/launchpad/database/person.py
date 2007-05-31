@@ -709,14 +709,14 @@ class Person(SQLBase, HasSpecificationsMixin):
         min_entries = MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT
         return Karma.selectBy(person=self).count() >= min_entries
 
-    def shippedShipItRequestsOfCurrentRelease(self):
+    def shippedShipItRequestsOfCurrentSeries(self):
         """See IPerson."""
         query = '''
             ShippingRequest.recipient = %s
             AND ShippingRequest.id = RequestedCDs.request
             AND RequestedCDs.distrorelease = %s
             AND ShippingRequest.shipment IS NOT NULL
-            ''' % sqlvalues(self.id, ShipItConstants.current_distrorelease)
+            ''' % sqlvalues(self.id, ShipItConstants.current_distroseries)
         return ShippingRequest.select(
             query, clauseTables=['RequestedCDs'], distinct=True,
             orderBy='-daterequested')
@@ -1520,16 +1520,16 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def latestMaintainedPackages(self):
         """See IPerson."""
-        return self._latestReleaseQuery()
+        return self._latestSeriesQuery()
 
     def latestUploadedButNotMaintainedPackages(self):
         """See IPerson."""
-        return self._latestReleaseQuery(uploader_only=True)
+        return self._latestSeriesQuery(uploader_only=True)
 
-    def _latestReleaseQuery(self, uploader_only=False):
+    def _latestSeriesQuery(self, uploader_only=False):
         # Issues a special query that returns the most recent
         # sourcepackagereleases that were maintained/uploaded to
-        # distribution releases by this person.
+        # distribution series by this person.
         if uploader_only:
             extra = """sourcepackagerelease.creator = %d AND
                        sourcepackagerelease.maintainer != %d""" % (
@@ -1551,6 +1551,13 @@ class Person(SQLBase, HasSpecificationsMixin):
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer'])
+
+    def isUploader(self, distribution):
+        """See IPerson."""
+        for acl in distribution.uploaders:
+            if self in acl:
+                return True
+        return False
 
     @cachedproperty
     def is_ubuntero(self):
@@ -1827,7 +1834,7 @@ class PersonSet:
             orderBy=["Person.displayname", "Person.name"])
         return contributors
 
-    def getPOFileContributorsByDistroRelease(self, distrorelease, language):
+    def getPOFileContributorsByDistroSeries(self, distroseries, language):
         """See IPersonSet."""
         contributors = Person.select("""
             POFileTranslator.person = Person.id AND
@@ -1836,7 +1843,7 @@ class PersonSet:
             POFile.potemplate = POTemplate.id AND
             POTemplate.distrorelease = %s AND
             POTemplate.iscurrent = TRUE"""
-                % sqlvalues(language, distrorelease),
+                % sqlvalues(language, distroseries),
             clauseTables=["POFileTranslator", "POFile", "POTemplate"],
             distinct=True,
             # See comment in getPOFileContributors about how we can't
