@@ -19,6 +19,7 @@ from bzrlib.tests.repository_implementations.test_repository import (
 from bzrlib.transport import get_transport, sftp, ssh
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
+from bzrlib.repository import RepositoryTestProviderAdapter
 
 from twisted.conch.ssh import keys
 from twisted.python.util import sibpath
@@ -472,11 +473,28 @@ class AcceptanceTests(SSHTestCase):
 
     @deferToThread
     def test_push_team_branch(self):
-        remote_url = self.server_base + '~testteam/firefox/a-new-branch'
+        remote_url = self.getTransportURL('~testteam/firefox/a-new-branch')
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
         # Check that the pushed branch looks right
         self.assertEqual(remote_revision, self.local_branch.last_revision())
+
+
+class CodeHostingTestProviderAdapter(RepositoryTestProviderAdapter):
+
+    # XXX: JonathanLange 2007-05-31, Should I be using composition instead of
+    # inheritance here?
+
+    def __init__(self, transport_server, transport_readonly_server, formats,
+                 base_urls, vfs_transport_factory=None):
+        RepositoryTestProviderAdapter.__init__(
+            self, transport_server, transport_readonly_server, formats,
+            vfs_transport_factory)
+        self._base_urls = base_urls
+
+    def adapt(self, test):
+        result = RepositoryTestProviderAdapter.adapt(self, test)
+        return result
 
 
 def test_suite():
@@ -485,20 +503,19 @@ def test_suite():
     #
     # We do this so that we can be sure that users can host various different
     # formats without any trouble.
-    from bzrlib.repository import (
-        format_registry, RepositoryTestProviderAdapter)
+    from bzrlib.repository import format_registry
     from bzrlib.repofmt.weaverepo import RepositoryFormat6
     from bzrlib.tests import default_transport, iter_suite_tests
     supported_formats = [RepositoryFormat6()]
     supported_formats.extend([
         format_registry.get(k) for k in format_registry.keys()])
-    adapter = RepositoryTestProviderAdapter(
+    adapter = CodeHostingTestProviderAdapter(
         default_transport,
         # None here will cause a readonly decorator to be created
         # by the TestCaseWithTransport.get_readonly_transport method.
         None,
-        [(format, format._matchingbzrdir) for format in
-         supported_formats])
+        [(format, format._matchingbzrdir) for format in supported_formats],
+        ['sftp://%s@localhost:22222'])
 
     suite = unittest.TestSuite()
     for test in iter_suite_tests(unittest.makeSuite(AcceptanceTests)):
