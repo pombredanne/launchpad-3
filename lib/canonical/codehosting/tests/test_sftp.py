@@ -140,6 +140,21 @@ class SFTPTests(SFTPTestCase):
         return self._test_rename_directory_to_existing_directory_fails()
 
     @deferToThread
+    def _test_rename_directory_to_empty_directory_succeeds(self):
+        # 'rename dir1 dir2' succeeds if 'dir2' is empty. Not sure we want this
+        # behaviour, but it's worth documenting.
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        transport.mkdir('branch/.bzr/dir1')
+        transport.mkdir('branch/.bzr/dir2')
+        transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
+        self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
+
+    def test_rename_directory_to_existing_directory_fails(self):
+        return self._test_rename_directory_to_empty_directory_succeeds()
+
+    @deferToThread
     def _test_rename_directory_succeeds(self):
         # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
         transport = self.getTransport('~testuser/+junk')
