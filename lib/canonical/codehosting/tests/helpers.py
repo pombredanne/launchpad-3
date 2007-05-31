@@ -13,11 +13,14 @@ from canonical.testing import TwistedLayer, BzrlibLayer
 from canonical.tests.test_twisted import TwistedTestCase
 
 from twisted.internet import defer, threads
+from twisted.python.util import mergeFunctionMetadata
 
 
 class AvatarTestCase(TwistedTestCase):
     """Base class for tests that need an SFTPOnlyAvatar with some basic sample
-    data."""
+    data.
+    """
+
     def setUp(self):
         self.tmpdir = self.mktemp()
         os.mkdir(self.tmpdir)
@@ -63,4 +66,4 @@ def deferToThread(f):
         t = threading.Thread(target=runInThread)
         t.start()
         return d
-    return decorated
+    return mergeFunctionMetadata(f, decorated)

@@ -289,9 +289,9 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
 
 
 class AcceptanceTests(SFTPTestCase):
-    """
-    These are the agreed acceptance tests for the Supermirror SFTP system's
-    initial implementation of bzr support, converted from the English at
+    """Acceptance tests for the Launchpad codehosting service's Bazaar support.
+
+    Originally converted from the English at
     https://launchpad.canonical.com/SupermirrorTaskList
     """
 
@@ -308,7 +308,7 @@ class AcceptanceTests(SFTPTestCase):
         tree.commit('Added foo', rev_id='rev1')
 
     @deferToThread
-    def _test_1_bzr_sftp(self):
+    def test_bzr_sftp(self):
         """
         The bzr client should be able to read and write to the Supermirror SFTP
         server just like another other SFTP server.  This means that actions
@@ -324,11 +324,8 @@ class AcceptanceTests(SFTPTestCase):
         self.assertEqual(self.local_branch.last_revision(),
                          remote_revision)
 
-    def test_1_bzr_sftp(self):
-        return self._test_1_bzr_sftp()
-
     @deferToThread
-    def _test_bzr_push_again(self):
+    def test_bzr_push_again(self):
         """Pushing to an existing branch must work.
 
         test_1_bzr_sftp tests that the initial push works. Here we test that
@@ -347,11 +344,8 @@ class AcceptanceTests(SFTPTestCase):
         remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(remote_revision, 'rev2')
 
-    def test_bzr_push_again(self):
-        return self._test_bzr_push_again()
-
     @deferToThread
-    def _test_2_namespace_restrictions(self):
+    def test_namespace_restrictions(self):
         """
         The namespace restrictions described in
         SupermirrorFilesystemHierarchy should be enforced. So operations
@@ -377,9 +371,6 @@ class AcceptanceTests(SFTPTestCase):
         # what will that branch's Branch.name be in the database?  Probably just
         # disallow, and try to have a tolerable error.
 
-    def test_2_namespace_restrictions(self):
-        return self._test_2_namespace_restrictions()
-
     def _testMissingParentDirectory(self, relpath):
         transport = self.getTransport(relpath).clone('..')
         self.assertRaises((NoSuchFile, PermissionDenied),
@@ -387,7 +378,7 @@ class AcceptanceTests(SFTPTestCase):
                           transport.mkdir, 'hello')
 
     @deferToThread
-    def _test_3_db_rename_branch(self):
+    def test_db_rename_branch(self):
         """
         Branches should be able to be renamed in the Launchpad webapp, and
         those renames should be immediately reflected in subsequent SFTP
@@ -445,21 +436,8 @@ class AcceptanceTests(SFTPTestCase):
         self.assertEqual(remote_revision,
                          self.local_branch.last_revision())
 
-    def test_3_db_rename_branch(self):
-        return self._test_3_db_rename_branch()
-
-
-    # Test 4: URL for mirroring
-    #    There should be an API that can generate a URL for a branch for
-    #    copy-to-mirror script to use. For example, for a branch with a database
-    #    ID of 0xabcdef12, the URL may be something like
-    #    `/srv/codehosting/branches/ab/cd/ef/12`.
-    # This is covered by
-    # canonical.launchpad.ftests.test_branchpulllist.test_branch_pull_render
-
-
     @deferToThread
-    def _test_5_mod_rewrite_data(self):
+    def test_mod_rewrite_data(self):
         """
         A mapping file for use with Apache's mod_rewrite should be generated
         correctly.
@@ -483,24 +461,21 @@ class AcceptanceTests(SFTPTestCase):
         # If we get this far, the branch has been correctly inserted into the
         # database.
 
-    def test_5_mod_rewrite_data(self):
-        return self._test_5_mod_rewrite_data()
-
     @deferToThread
-    def _test_push_team_branch(self):
+    def test_push_team_branch(self):
         remote_url = self.server_base + '~testteam/firefox/a-new-branch'
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
         # Check that the pushed branch looks right
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
-    def test_push_team_branch(self):
-        return self._test_push_team_branch()
-
 
 def test_suite():
     # Construct a test suite that runs AcceptanceTests with several different
     # repository formats.
+    #
+    # We do this so that we can be sure that users can host various different
+    # formats without any trouble.
     from bzrlib.repository import (
         format_registry, RepositoryTestProviderAdapter)
     from bzrlib.repofmt.weaverepo import RepositoryFormat6
