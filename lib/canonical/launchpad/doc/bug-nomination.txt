@@ -333,7 +333,7 @@ nomination will be automatically approved.
     >>> ubuntu_warty.driver = None
 
 
-=== Permissions to approve ===
+=== Permissions to approve a nomination ===
 
 Since approving a nomination can affect release planning, not everyone
 is allowed to do it. For large projects, like distributions, it's not
@@ -368,7 +368,6 @@ approve the nomination.
     >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
     >>> main_bug = ubuntu_evolution.createBug(bug_params)
     >>> hoary_main_nomination = main_bug.addNomination(no_priv, ubuntu_hoary)
-
 
     >>> no_priv.inTeam(main_uploaders)
     False
