@@ -53,16 +53,6 @@ class TeamMembership(SQLBase):
         """See ITeamMembership"""
         return self.status.title
 
-    @property
-    def is_admin(self):
-        """See ITeamMembership"""
-        return self.status in [TeamMembershipStatus.ADMIN]
-
-    @property
-    def is_owner(self):
-        """See ITeamMembership"""
-        return self.person.id == self.team.teamowner.id
-
     def isExpired(self):
         """See ITeamMembership"""
         return self.status == TeamMembershipStatus.EXPIRED
@@ -86,7 +76,7 @@ class TeamMembership(SQLBase):
         subject = 'Launchpad: %s team membership about to expire' % team.name
 
         admins_names = []
-        admins = team.getEffectiveAdministrators()
+        admins = team.getDirectAdministrators()
         assert admins.count() >= 1
         if admins.count() == 1:
             admin = admins[0]
@@ -124,28 +114,34 @@ class TeamMembership(SQLBase):
 
     def setStatus(self, status, reviewer, reviewercomment=None):
         """See ITeamMembership"""
-        assert status != self.status, (
-            'New status (%s) is the same as the current one.' % status.name)
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
         expired = TeamMembershipStatus.EXPIRED
         declined = TeamMembershipStatus.DECLINED
         deactivated = TeamMembershipStatus.DEACTIVATED
         proposed = TeamMembershipStatus.PROPOSED
+        invited = TeamMembershipStatus.INVITED
+        invitation_declined = TeamMembershipStatus.INVITATION_DECLINED
 
         # Flush the cache used by the Person.inTeam method
         self.person._inTeam_cache = {}
 
-        # Make sure the transition from the current status to the given status
+        # Make sure the transition from the current status to the given one
         # is allowed. All allowed transitions are in the TeamMembership spec.
-        if self.status in [admin, approved]:
-            assert status in [admin, approved, expired, deactivated]
-        elif self.status in [deactivated, expired]:
-            assert status in [proposed, approved]
-        elif self.status in [proposed]:
-            assert status in [approved, admin, declined]
-        elif self.status in [declined]:
-            assert status in [proposed, approved]
+        state_transition = {
+            admin: [approved, expired, deactivated],
+            approved: [admin, expired, deactivated],
+            deactivated: [proposed, approved, invited],
+            expired: [proposed, approved, invited],
+            proposed: [approved, admin, declined],
+            declined: [proposed, approved],
+            invited: [approved, invitation_declined],
+            invitation_declined: [invited, approved, admin]}
+        assert self.status in state_transition, (
+            "Unknown status: %s" % self.status.name)
+        assert status in state_transition[self.status], (
+            "Bad state trasition from %s to %s"
+            % (self.status.name, status.name))
 
         old_status = self.status
         self.status = status
@@ -157,16 +153,14 @@ class TeamMembership(SQLBase):
             # Inactive member has become active; update datejoined
             self.datejoined = datetime.now(pytz.timezone('UTC'))
 
-        self.syncUpdate()
-
         if status in [admin, approved]:
             _fillTeamParticipation(self.person, self.team)
         else:
-            assert status in [proposed, declined, deactivated, expired]
             _cleanTeamParticipation(self.person, self.team)
 
         # When a member proposes himself, a more detailed notification is
-        # sent to the team admins; that's why we don't send anything here.
+        # sent to the team admins by a subscriber of JoinTeamEvent; that's
+        # why we don't send anything here.
         if self.person == self.reviewer and self.status == proposed:
             return
 
@@ -202,8 +196,6 @@ class TeamMembership(SQLBase):
         else:
             comment = ""
 
-        subject = ('Launchpad: Membership change: %(member)s in %(team)s'
-                   % {'member': self.person.name, 'team': self.team.name})
         replacements = {
             'member_name': member.unique_displayname,
             'team_name': team.unique_displayname,
@@ -212,9 +204,29 @@ class TeamMembership(SQLBase):
             'reviewer_name': reviewer_name,
             'comment': comment}
 
+        template_name = 'membership-statuschange'
+        subject = ('Launchpad: Membership change: %(member)s in %(team)s'
+                   % {'member': member.name, 'team': team.name})
+        if new_status == TeamMembershipStatus.EXPIRED:
+            template_name = 'membership-expired'
+            subject = (
+                'Launchpad: %s expired from %s' % (member.name, team.name))
+        elif (new_status == TeamMembershipStatus.APPROVED and
+              old_status != TeamMembershipStatus.ADMIN):
+            subject = 'Launchpad: %s added to %s' % (member.name, team.name)
+            if old_status == TeamMembershipStatus.INVITED:
+                template_name = 'membership-invitation-accepted'
+        elif new_status == TeamMembershipStatus.INVITATION_DECLINED:
+            subject = ('Launchpad: %s decline invitation to join %s'
+                       % (member.name, team.name))
+            template_name = 'membership-invitation-declined'
+        else:
+            # Use the default template and subject.
+            pass
+
         if admins_emails:
             admins_template = get_email_template(
-                'membership-statuschange-impersonal.txt')
+                "%s-impersonal.txt" % template_name)
             admins_msg = MailWrapper().format(admins_template % replacements)
             simple_sendmail(from_addr, admins_emails, subject, admins_msg)
 
@@ -222,9 +234,9 @@ class TeamMembership(SQLBase):
         # won't have a single email address to send this notification to.
         if member_email and self.reviewer != member:
             if member.isTeam():
-                template = 'membership-statuschange-impersonal.txt'
+                template = '%s-impersonal.txt' % template_name
             else:
-                template = 'membership-statuschange-personal.txt'
+                template = '%s-personal.txt' % template_name
             member_template = get_email_template(template)
             member_msg = MailWrapper().format(member_template % replacements)
             simple_sendmail(from_addr, member_email, subject, member_msg)
@@ -243,7 +255,8 @@ class TeamMembershipSet:
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
-        assert status in [proposed, approved, admin]
+        invited = TeamMembershipStatus.INVITED
+        assert status in [proposed, approved, admin, invited]
         tm = TeamMembership(
             person=person, team=team, status=status, dateexpires=dateexpires,
             reviewer=reviewer, reviewercomment=reviewercomment)
@@ -268,41 +281,6 @@ class TeamMembershipSet:
                  % sqlvalues(when, TeamMembershipStatus.ADMIN,
                              TeamMembershipStatus.APPROVED))
         return TeamMembership.select(query)
-
-    def getTeamMembersCount(self, team):
-        """See ITeamMembershipSet"""
-        return TeamMembership.selectBy(team=team).count()
-
-    def _getMembershipsByStatuses(self, team, statuses, orderBy=None):
-        if orderBy is None:
-            orderBy = self._defaultOrder
-        clauses = []
-        for status in statuses:
-            clauses.append("TeamMembership.status = %s" % sqlvalues(status))
-        clauses = " OR ".join(clauses)
-        query = ("(%s) AND Person.id = TeamMembership.person AND "
-                 "TeamMembership.team = %d" % (clauses, team.id))
-        return TeamMembership.select(query, clauseTables=['Person'],
-                                     orderBy=orderBy)
-
-    def getActiveMemberships(self, team, orderBy=None):
-        """See ITeamMembershipSet"""
-        statuses = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
-        return self._getMembershipsByStatuses(
-            team, statuses, orderBy=orderBy)
-
-    def getInactiveMemberships(self, team, orderBy=None):
-        """See ITeamMembershipSet"""
-        statuses = [TeamMembershipStatus.EXPIRED,
-                    TeamMembershipStatus.DEACTIVATED]
-        return self._getMembershipsByStatuses(
-            team, statuses, orderBy=orderBy)
-
-    def getProposedMemberships(self, team, orderBy=None):
-        """See ITeamMembershipSet"""
-        statuses = [TeamMembershipStatus.PROPOSED]
-        return self._getMembershipsByStatuses(
-            team, statuses, orderBy=orderBy)
 
 
 class TeamParticipation(SQLBase):
@@ -342,11 +320,7 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
     each superteam of <team>.
     """
     for subteam in team.getSubTeams():
-        # There's no need to worry for the case where person == subteam because
-        # a team doesn't have a teamparticipation entry for itself and then a
-        # call to team.hasParticipationEntryFor(team) will always return
-        # False.
-        if person.hasParticipationEntryFor(subteam):
+        if person.hasParticipationEntryFor(subteam) and person != subteam:
             # This is an indirect member of the given team, so we must not
             # remove his participation entry for that team.
             return

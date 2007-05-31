@@ -1,110 +1,125 @@
-  >>> from canonical.launchpad.helpers import backslashreplace
+Only Rosetta experts and Launchpad administrators can create translation
+groups.  Unprivileged users do not have access to the group creation page.
 
-See if we can add a new Translation Group. First, load the +new page without
-any login credentials.
-
-  >>> print http(r"""
-  ... GET /translations/groups/+new HTTP/1.1
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: 0
-  Content-Type: text/plain
-  Location: .../translations/groups/+new/+login
+  >>> anon_browser.open(
+  ...     'http://translations.launchpad.dev/+groups/+new')
+  Traceback (most recent call last):
   ...
-  <BLANKLINE>
+  Unauthorized...
 
-OK, best we try again, with a login!
+Same for a regular, unprivileged user.
 
-  >>> print http(r"""
-  ... GET /translations/groups/+new HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
+  >>> user_browser.open(
+  ...     'http://translations.launchpad.dev/+groups/+new')
+  Traceback (most recent call last):
   ...
-          <h1>Create a new translation group</h1>
-  ...
+  Unauthorized...
 
-We test if the name validator is working.
+OK, best we try again, with administrator rights!
 
-  >>> print http(r"""
-  ... POST /translations/groups/+new HTTP/1.1
-  ... Content-Length: 784
-  ... Content-Type: multipart/form-data; boundary=---------------------------159720819458754421291687237
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... -----------------------------159720819458754421291687237
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... PolYglot
-  ... -----------------------------159720819458754421291687237
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... The PolyGlot Translation Group
-  ... -----------------------------159720819458754421291687237
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... The PolyGlots are a well organised translation group that handles the work of translating a number of Ubuntu and upstream projects. It consists of a large number of translation teams, each specialising in their own language.
-  ... -----------------------------159720819458754421291687237
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------159720819458754421291687237--
-  ... """)
-  HTTP/1.1 200 Ok 
-  ...
-  ...Invalid name 'PolYglot'...
-  ...
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/+groups/+new')
+  >>> print find_main_content(
+  ...     admin_browser.contents).first('h1').renderContents()
+  Add a new Translation Group
 
+Translation group names must meet certain conditions.  For example, they may
+not contain any upper-case letters.
 
-Cool, we get the page to create a translation group. Let's go ahead and POST
-the form to create a new group, called the "polyglot" translation group.
+  >>> admin_browser.getControl('Name').value='PolYglot'
+  >>> admin_browser.getControl('Title').value='The PolyGlot Translation Group'
+  >>> admin_browser.getControl('Summary').value = "The PolyGlots are a well organised translation group that handles the work of translating a number of Ubuntu and upstream projects. It consists of a large number of translation teams, each specialising in their own language."
+  >>> admin_browser.getControl('Add').click()
+  >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+  ...     print message.renderContents()
+  There is 1 error.
+  Invalid name 'PolYglot'. Names must start with a letter or
+  number and be lowercase. The characters <samp>+</samp>,
+  <samp>-</samp> and <samp>.</samp> are also allowed after the
+  first character.
 
-  >>> print http(r"""
-  ... POST /translations/groups/+new HTTP/1.1
-  ... Content-Length: 784
-  ... Content-Type: multipart/form-data; boundary=---------------------------159720819458754421291687237
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... -----------------------------159720819458754421291687237
-  ... Content-Disposition: form-data; name="field.name"
-  ... 
-  ... polyglot
-  ... -----------------------------159720819458754421291687237
-  ... Content-Disposition: form-data; name="field.title"
-  ... 
-  ... The PolyGlot Translation Group
-  ... -----------------------------159720819458754421291687237
-  ... Content-Disposition: form-data; name="field.summary"
-  ... 
-  ... The PolyGlots are a well organised translation group that handles the work of translating a number of Ubuntu and upstream projects. It consists of a large number of translation teams, each specialising in their own language.
-  ... -----------------------------159720819458754421291687237
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------159720819458754421291687237--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: polyglot
-  <BLANKLINE>
-  ...
+Neither we can use the name of an already existing group like
+testing-translation-team.
 
-OK, we created it and got redirected to the page for that group. That's nice
-and clean. Let's view it.
+  >>> browser.open('http://translations.launchpad.dev/+groups')
+  >>> print browser.url
+  http://translations.launchpad.dev/+groups
+  >>> print browser.getLink('Just a testing team').url
+  http://translations.launchpad.dev/+groups/testing-translation-team
 
-  >>> print backslashreplace(str(http(r"""
-  ... GET /translations/groups/polyglot HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)))
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-      <title>\u201cThe PolyGlot Translation Group\u201d...
-  ...
+  >>> admin_browser.getControl('Name').value = 'testing-translation-team'
+  >>> admin_browser.getControl('Add').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+groups/+new
+  >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+  ...     print message.renderContents()
+  There is 1 error.
+  There is already a translation group with such name
+
+The same request will be accepted if the group is given a saner name, such as
+just "polyglot" (no upper-case letters).
+
+  >>> admin_browser.getControl('Name').value='polyglot'
+  >>> admin_browser.getControl('Add').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+groups/polyglot
+
+After creating a translation group, the user automatically ends up a that
+group's page.
+
+  >>> admin_browser.url
+  'http://translations.launchpad.dev/+groups/polyglot'
+  >>> admin_browser.title
+  '...The PolyGlot Translation Group...'
+
+A Rosetta administrator is also allowed to create groups.
+
+  >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/+groups/+new')
+  >>> browser.getControl('Name').value='monolingua'
+  >>> browser.getControl('Title').value='Single-language Translators'
+  >>> browser.getControl('Summary').value = "Since each of us only speaks one language, we work out software translations through drawings and hand signals."
+  >>> browser.getControl('Add').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/+groups/monolingua
+
+  >>> browser.title
+  '...Single-language Translators...'
+
+By default, when a group is created, the creator is its owner.
+
+  >>> for t in find_tags_by_class(browser.contents, 'link'):
+  ...     print t.renderContents()
+  Jordi Mallach
+
+The Rosetta administrator assigns ownership of the group to Sample Person.
+
+  >>> browser.getLink('Reassign').click()
+  >>> browser.url
+  'http://translations.launchpad.dev/+groups/monolingua/+reassign'
+
+  >>> browser.getControl(name='field.owner').value = 'name12'
+  >>> browser.getControl('Change Registrant').click()
+  >>> browser.url
+  'http://translations.launchpad.dev/+groups/monolingua/'
+
+The Rosetta administrator is still able to administer this group:
+
+  >>> browser.getLink('Appoint')
+  <...+appoint'>
+
+But Sample Person is now listed as its owner:
+
+  >>> for t in find_tags_by_class(browser.contents, 'link'):
+  ...     print t.renderContents()
+  Sample Person
+
+That means that Sample Person is allowed to administer "his" group.
+
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/translations/groups/monolingua/')
+  >>> browser.getLink('Appoint')
+  <...+appoint'>
 

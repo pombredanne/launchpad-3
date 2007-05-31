@@ -9,7 +9,6 @@ __all__ = [
     'TeamEditView',
     'TeamEmailView',
     'TeamMemberAddView',
-    'TeamMembersView',
     ]
 
 from zope.event import notify
@@ -20,13 +19,14 @@ from zope.component import getUtility
 from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
 
+from canonical.launchpad import _
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadEditFormView)
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet,
-    ITeam, ITeamMembershipSet)
+    ITeam, ITeamMember)
 
 
 class TeamEditView(LaunchpadEditFormView):
@@ -186,23 +186,6 @@ class TeamAddView(AddView):
         return team
 
 
-class TeamMembersView:
-
-    def allMembersCount(self):
-        return getUtility(ITeamMembershipSet).getTeamMembersCount(self.context)
-
-    def activeMemberships(self):
-        return getUtility(ITeamMembershipSet).getActiveMemberships(self.context)
-
-    def proposedMemberships(self):
-        return getUtility(ITeamMembershipSet).getProposedMemberships(
-            self.context)
-
-    def inactiveMemberships(self):
-        return getUtility(ITeamMembershipSet).getInactiveMemberships(
-            self.context)
-
-
 class ProposedTeamMembersEditView:
 
     def __init__(self, context, request):
@@ -241,43 +224,47 @@ class TeamBrandingView(BrandingChangeView):
     field_names = ['icon', 'logo', 'mugshot']
 
 
-class TeamMemberAddView(AddView):
+class TeamMemberAddView(LaunchpadFormView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-        self.alreadyMember = None
-        self.addedMember = None
-        added = self.request.get('added')
-        notadded = self.request.get('notadded')
-        if added:
-            self.addedMember = getUtility(IPersonSet).get(added)
-        elif notadded:
-            self.alreadyMember = getUtility(IPersonSet).get(notadded)
-        AddView.__init__(self, context, request)
+    schema = ITeamMember
+    label = "Select the new member"
 
-    def nextURL(self):
-        if self.addedMember:
-            return '+addmember?added=%d' % self.addedMember.id
-        elif self.alreadyMember:
-            return '+addmember?notadded=%d' % self.alreadyMember.id
-        else:
-            return '+addmember'
+    def validate(self, data):
+        """Verify new member.
 
-    def createAndAdd(self, data):
-        team = self.context
-        approved = TeamMembershipStatus.APPROVED
+        This checks that the new member has some active members and is not
+        already an active team member.
+        """
+        newmember = data.get('newmember')
+        error = None
+        if newmember is not None:
+            if newmember.isTeam() and not newmember.activemembers:
+                error = _("You can't add a team that doesn't have any active"
+                          " members.")
+            elif newmember in self.context.activemembers:
+                error = _("%s (%s) is already a member of %s." % (
+                    newmember.browsername, newmember.name,
+                    self.context.browsername))
 
+        if error:
+            self.setFieldError("newmember", error)
+
+    @action(u"Add Member", name="add")
+    def add_action(self, action, data):
+        """Add the new member to the team."""
         newmember = data['newmember']
         # If we get to this point with the member being the team itself,
         # it means the ValidTeamMemberVocabulary is broken.
-        assert newmember != team, newmember
+        assert newmember != self.context, (
+            "Can't add team to itself: %s" % newmember)
 
-        if newmember in team.activemembers:
-            self.alreadyMember = newmember
-            return
-
-        team.addMember(newmember, reviewer=self.user, status=approved)
-        self.addedMember = newmember
+        self.context.addMember(newmember, reviewer=self.user,
+                               status=TeamMembershipStatus.APPROVED)
+        if newmember.isTeam():
+            msg = "%s has been invited to join this team." % (
+                  newmember.unique_displayname)
+        else:
+            msg = "%s has been added as a member of this team." % (
+                  newmember.unique_displayname)
+        self.request.response.addInfoNotification(msg)
 

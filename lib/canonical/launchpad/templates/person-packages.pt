@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>
@@ -74,19 +74,19 @@
   </tal:comment>
   <tr tal:repeat="sourcepackagerelease sourcepackagereleases">
   <tal:block define="spr sourcepackagerelease;
-                     distrorelease spr/uploaddistrorelease">
+                     distroseries spr/uploaddistroseries">
     <td>
-      <a tal:attributes="href string:${distrorelease/distribution/fmt:url}/+source/${spr/name}"
+      <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}"
          tal:content="spr/sourcepackagename/name">
       </a>
     </td>
     <td>
-      <a tal:attributes="href string:${distrorelease/fmt:url}/+source/${spr/name}"
-         tal:content="distrorelease/fullreleasename">
+      <a tal:attributes="href string:${distroseries/fmt:url}/+source/${spr/name}"
+         tal:content="distroseries/fullseriesname">
       </a>
     </td>
     <td>
-      <a tal:attributes="href string:${distrorelease/distribution/fmt:url}/+source/${spr/name}/${spr/version}"
+      <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}/${spr/version}"
          tal:content="spr/version">
       </a>
     </td>
@@ -102,7 +102,7 @@
       <tal:block condition="not: spr/needs_building">
           <tal:block repeat="build spr/failed_builds">
              <a tal:attributes="href build/fmt:url"
-                tal:content="build/distroarchrelease/architecturetag" />
+                tal:content="build/distroarchseries/architecturetag" />
           </tal:block>
           <tal:block condition="not: spr/failed_builds">
              None

@@ -1,4 +1,5 @@
-<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="rosetta">
+<html metal:use-macro="view/macro:page/applicationhome"
+      i18n:domain="launchpad">
   <body>
     <h1 metal:fill-slot="heading">Software translations</h1>
     <div metal:fill-slot="main">
@@ -23,22 +24,22 @@
                           language. Translators use this simple web
                           interface to contribute translations in a
                           wiki-style of collaboration.
-                          <a href="/+tour">Learn more&#8230;</a>
+                          <a href="/+about">Learn more&#8230;</a>
                         </p>
                         <div class="three column left">
 
                             <h2>Translatable operating systems</h2>
-                            <ul class="distrorelease">
-                              <li tal:repeat="distrorelease context/translatable_distroreleases">
-                                <a tal:attributes="href string:/${distrorelease/distribution/name}/${distrorelease/name}/+translations">
-                                  <tal:distroname replace="distrorelease/distribution/displayname" />
+                            <ul class="distroseries">
+                              <li tal:repeat="distroseries context/translatable_distroseriess">
+                                <a tal:attributes="href string:/${distroseries/distribution/name}/${distroseries/name}/+translations">
+                                  <tal:distroname replace="distroseries/distribution/displayname" />
                                   <tal:version
-                                    condition="distrorelease/version"
-                                    replace="distrorelease/version"
+                                    condition="distroseries/version"
+                                    replace="distroseries/version"
                                   />
                                   <tal:codename
-                                    condition="not:distrorelease/version"
-                                    replace="distrorelease/title"
+                                    condition="not:distroseries/version"
+                                    replace="distroseries/title"
                                   />
                                 </a>
                               </li>
@@ -83,10 +84,12 @@
     </div><!--main-->
     <div metal:fill-slot="help">
       <p>
-        Read more <a href="+about">about Rosetta</a>, a Web-based system for
-        translating open source software into any language. All you need to
-        start translating is a Web browser, a good knowledge of the
-        application you are translating, and a knowledge of English.
+        Launchpad's translation application, codenamed
+        <a href="+about">Launchpad Translations</a>, helps you translate open source software
+        into any human language through the Web.  All you need to start
+        translating is a Web browser, a good knowledge of the application you
+        are translating, and a working knowledge of both English and your
+        target language.
       </p>
       <ul class="info">
         <li>
@@ -97,4 +100,3 @@
     </div>
   </body>
 </html>
-

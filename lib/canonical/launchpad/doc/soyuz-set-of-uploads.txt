@@ -49,15 +49,15 @@ Import public keyring into current LPDB.
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
-Having set up that infrastructure we need to prepare a breezy distrorelease
+Having set up that infrastructure we need to prepare a breezy distroseries
 for the ubuntutest distribution.
 
   >>> from canonical.launchpad.database import Distribution
-  >>> from canonical.launchpad.database import DistroReleaseSet
+  >>> from canonical.launchpad.database import DistroSeriesSet
   >>> ubuntu = Distribution.byName('ubuntu')
   >>> breezy_autotest = ubuntu['breezy-autotest']
   >>> ubuntutest = Distribution.byName('ubuntutest')
-  >>> drs = DistroReleaseSet()
+  >>> drs = DistroSeriesSet()
   >>> breezy = drs.new(
   ...     ubuntutest, 'breezy', 'Breezy Badger', 'The Breezy Badger',
   ...     'Black and White', 'Someone', '5.10', breezy_autotest,
@@ -68,6 +68,11 @@ for the ubuntutest distribution.
   >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
   >>> breezy.initialiseFromParent()
 
+Add disk content for file inherited from ubuntu/breezy-autotest:
+
+  >>> from canonical.librarian.ftests.harness import fillLibrarianFile
+  >>> fillLibrarianFile(54)
+
 Commit all that so that the scripts can see it.
 
   >>> import transaction
@@ -77,13 +82,10 @@ Now that the infrastructure is ready, we prepare a set of useful methods.
 
 Firstly, we need a way to copy a test upload into the queue
 
-  >>> from canonical.archivepublisher.tests import datadir
+  >>> from canonical.archiveuploader.tests import datadir
   >>> def punt_upload_into_queue(leaf, distro):
-  ...     inc_dir = os.path.join(incoming_dir, leaf)
-  ...     os.mkdir(inc_dir)
-  ...     f = open(inc_dir + ".distro", "w")
-  ...     f.write(distro)
-  ...     f.close()
+  ...     inc_dir = os.path.join(incoming_dir, leaf, distro)
+  ...     os.makedirs(inc_dir)
   ...     for file_leaf in os.listdir(datadir(os.path.join("suite", leaf))):
   ...         os.system("cp %s %s" %
   ...             (datadir(os.path.join("suite", leaf, file_leaf)), inc_dir))
@@ -97,7 +99,7 @@ And then we need a way to process the uploads from the queue
 
   >>> from canonical.config import config
   >>> import subprocess, sys
-  >>> def process_uploads(upload_policy, build_id, release):
+  >>> def process_uploads(upload_policy, build_id, series):
   ...     # reset previous log content if it exists
   ...     if os.path.exists(uploader_log):
   ...         open(uploader_log, 'w').write('')
@@ -106,8 +108,8 @@ And then we need a way to process the uploads from the queue
   ...             upload_policy]
   ...     if build_id is not None:
   ...         args.extend(["-b", build_id])
-  ...     if release is not None:
-  ...         args.extend(["-r", release])
+  ...     if series is not None:
+  ...         args.extend(["-s", series])
   ...     args.extend([temp_dir, "--log-file", uploader_log])
   ...     process = subprocess.Popen(args)
   ...     return process.wait() == 0
@@ -115,7 +117,7 @@ And then we need a way to process the uploads from the queue
 And we need a way to process the accepted queue
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.ftests import syncUpdate
@@ -124,9 +126,9 @@ And we need a way to process the accepted queue
 
   >>> def process_accepted(distro):
   ...     distribution = getUtility(IDistributionSet)[distro]
-  ...     for release in distribution:
-  ...         items = release.getQueueItems(
-  ...            status=DistroReleaseQueueStatus.ACCEPTED)
+  ...     for series in distribution.serieses:
+  ...         items = series.getQueueItems(
+  ...            status=PackageUploadStatus.ACCEPTED)
   ...         for item in items:
   ...             item.realiseUpload()
   ...             syncUpdate(item)
@@ -135,16 +137,16 @@ And we need a way to process the accepted queue
 If an upload of ours ends up in the NEW queue, we need a way to process
 it into the accepted queue
 
-  >>> def process_new(distro, release):
+  >>> def process_new(distro, series):
   ...     distribution = getUtility(IDistributionSet)[distro]
-  ...     if release is None:
-  ...         release = "breezy"
-  ...     dr, pocket = distribution.getDistroReleaseAndPocket(release)
-  ...     items = dr.getQueueItems(status=DistroReleaseQueueStatus.NEW)
+  ...     if series is None:
+  ...         series = "breezy"
+  ...     dr, pocket = distribution.getDistroSeriesAndPocket(series)
+  ...     items = dr.getQueueItems(status=PackageUploadStatus.NEW)
   ...     for item in items:
   ...         item.setAccepted()
   ...         syncUpdate(item)
-  ...     items = dr.getQueueItems(status=DistroReleaseQueueStatus.UNAPPROVED)
+  ...     items = dr.getQueueItems(status=PackageUploadStatus.UNAPPROVED)
   ...     for item in items:
   ...         item.setAccepted()
   ...         syncUpdate(item)
@@ -195,16 +197,16 @@ process_new and simple_publish we are in a position to run the tests.
 We can also define another helper function...
 
   >>> def expect_okays(leafname, is_new=False, upload_policy='anything',
-  ...                  build_id=None, release=None, distro="ubuntutest"):
+  ...                  build_id=None, series=None, distro="ubuntutest"):
   ...     transaction.commit()
   ...     punt_upload_into_queue(leafname, distro=distro)
-  ...     assert (process_uploads(upload_policy, build_id, release),
+  ...     assert (process_uploads(upload_policy, build_id, series),
   ...             "Upload processes failed")
   ...     assert len(os.listdir(incoming_dir)) == 0, "Incoming should be empty: %s" % os.listdir(incoming_dir)
   ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty: %s" % os.listdir(rejected_dir)
   ...     assert len(os.listdir(failed_dir)) == 0, "Failed should be empty: %s" % os.listdir(failed_dir)
   ...     if is_new:
-  ...         process_new(distro=distro, release=release)
+  ...         process_new(distro=distro, series=series)
   ...     process_accepted(distro=distro)
   ...     assert (simple_publish(distro=distro),
   ...             "Should publish at least one item")
@@ -234,7 +236,7 @@ Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  ...Attempt to upload binaries specifying build 2, where they don't fit.
+  ...Attempt to upload binaries specifying build 2, where they don't fit...
   ...
 
 
@@ -242,7 +244,6 @@ Remove that failed upload.
 
   >>> import shutil
   >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-2_binary'))
-  >>> os.remove(os.path.join(rejected_dir, 'bar_1.0-2_binary.distro'))
 
 ...and try it again without the bogus build id.
 
@@ -263,11 +264,11 @@ Inspect the uploader log to find the rejection message.
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO       Subject: bar_1.0-3_source.changes Rejected
-  INFO       Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
-  INFO       Body:
-  INFO    Rejected:
-  INFO    MD5 sum of uploaded file does not match existent file in archive
+  DEBUG       Subject: bar_1.0-3_source.changes Rejected
+  DEBUG       Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  DEBUG       Body:
+  DEBUG    Rejected:
+  DEBUG    MD5 sum of uploaded file does not match existent file in archive
   ...
   <BLANKLINE>
 
@@ -275,9 +276,8 @@ Remove rejected uploads.
 
   >>> import shutil
   >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-3'))
-  >>> os.remove(os.path.join(rejected_dir, 'bar_1.0-3.distro'))
 
-Check the rejection (instead of failure) of an upload to a release or
+Check the rejection (instead of failure) of an upload to a series or
 pocket which does not exist. We use the security upload policy for easier
 testing, as unsigned uploads are allowed.
 
@@ -290,11 +290,11 @@ testing, as unsigned uploads are allowed.
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO       Subject: unstable_1.0-1_source.changes Rejected
-  INFO       Recipients: 
-  INFO       Body:
-  INFO    Rejected:
-  INFO    Unable to find distrorelease: unstable
+  DEBUG       Subject: unstable_1.0-1_source.changes Rejected
+  DEBUG       Recipients: Celso Providelo <celso.providelo@canonical.com>
+  DEBUG       Body:
+  DEBUG   Rejected:
+  DEBUG   Unable to find distroseries: unstable
   ...
   <BLANKLINE>
 
@@ -302,7 +302,6 @@ Remove rejected uploads.
 
   >>> import shutil
   >>> shutil.rmtree(os.path.join(rejected_dir, 'unstable_1.0-1'))
-  >>> os.remove(os.path.join(rejected_dir, 'unstable_1.0-1.distro'))
 
 Force weird behavior with rfc2047 sentences containing '.' on
 bar_1.0-4, which caused bug # 41102.
@@ -321,8 +320,8 @@ Check the email recipient for displayname containing special chars,
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO       Subject: Accepted bar 1.0-4 (source)
-  INFO       Recipients: "Foo B. Bar" <foo.bar@canonical.com>, Celso Providelo <celso.providelo@canonical.com>
+  DEBUG       Subject: Accepted bar 1.0-4 (source)
+  DEBUG       Recipients: "Foo B. Bar" <foo.bar@canonical.com>, Celso Providelo <celso.providelo@canonical.com>
   ...
   <BLANKLINE>
 
@@ -334,7 +333,7 @@ Revert changes:
 
 Check if we forcibly add the changer as recipient for "sync" uploads,
 which contains unsigned changesfile. Ensure it sends email to the
-changer and the distrorelease changes maillisting.
+changer and the distroseries changes maillisting.
 
   >>> expect_okays('bar_1.0-5', upload_policy='sync')
   >>> print open(uploader_log).read()
@@ -344,18 +343,17 @@ changer and the distrorelease changes maillisting.
   DEBUG   Building recipients list.
   DEBUG   Changes file is unsigned, adding changer as recipient
   DEBUG   Adding recipient: 'Celso Providelo <celso.providelo@canonical.com>'
-  DEBUG   Creating queue entry
-  DEBUG   Setting it to ACCEPTED
-  INFO    Would be sending a mail:
-  INFO       Subject: Accepted bar 1.0-5 (source)
-  INFO       Recipients: Celso Providelo <celso.providelo@canonical.com>
+  DEBUG   Sent a mail:
+  DEBUG       Subject: Accepted bar 1.0-5 (source)
+  DEBUG       Recipients: Celso Providelo <celso.providelo@canonical.com>
   ...
-  INFO    Announcing to breezy-changes@ubuntu.com
-  INFO
-  INFO    Thank you for your contribution to Ubuntu Test.
-  INFO    Would be sending a mail:
-  INFO       Subject: Accepted bar 1.0-5 (source)
-  INFO       Recipients: breezy-changes@ubuntu.com
+  DEBUG    Announcing to breezy-changes@ubuntu.com
+  DEBUG
+  DEBUG    Thank you for your contribution to Ubuntu Test.
+  ...
+  DEBUG    Sent a mail:
+  DEBUG       Subject: Accepted bar 1.0-5 (source)
+  DEBUG       Recipients: breezy-changes@ubuntu.com
   ...
   <BLANKLINE>
 
@@ -406,7 +404,7 @@ will get compared in this case (see bug #85201):
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO       Subject: Accepted bar 1:1.0-7 (source)
+  DEBUG       Subject: Accepted bar 1:1.0-7 (source)
   ...
 
   >>> expect_okays('bar_1.0-8', upload_policy='sync')
@@ -415,7 +413,7 @@ will get compared in this case (see bug #85201):
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO       Subject: Accepted bar 1:1.0-8 (source)
+  DEBUG       Subject: Accepted bar 1:1.0-8 (source)
   ...
 
 == Pocket Version Consistency ==
@@ -432,11 +430,11 @@ ubututest/breezy-RELEASE:
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO    NEW: foo_1.0-1.dsc
-  INFO     OK: foo_1.0.orig.tar.gz
-  INFO     OK: foo_1.0-1.diff.gz
+  DEBUG    NEW: foo_1.0.orig.tar.gz
+  DEBUG    NEW: foo_1.0-1.diff.gz
+  DEBUG    NEW: foo_1.0-1.dsc
   ...
-  INFO    Distribution: breezy
+  DEBUG    Distribution: breezy
   ...
 
 And its binary:
@@ -448,16 +446,16 @@ And its binary:
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO    NEW: foo_1.0-1_i386.deb
+  DEBUG    NEW: foo_1.0-1_i386.deb
   ...
-  INFO    Distribution: breezy
+  DEBUG    Distribution: breezy
   ...
 
-Set ubuntutest/breezy as the "current release" to activate post-release
+Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
 
-  >>> from canonical.lp.dbschema import DistributionReleaseStatus
-  >>> breezy.releasestatus = DistributionReleaseStatus.CURRENT
+  >>> from canonical.lp.dbschema import DistroSeriesStatus
+  >>> breezy.status = DistroSeriesStatus.CURRENT
   >>> syncUpdate(breezy)
   >>> transaction.commit()
 
@@ -474,17 +472,17 @@ Upload a newer version of source package "foo" to breezy-backports:
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO     OK: foo_2.9-1.dsc
-  INFO         -> Component: main Section: devel
-  INFO     OK: foo_2.9.orig.tar.gz
-  INFO     OK: foo_2.9-1.diff.gz
+  DEBUG     OK: foo_2.9.orig.tar.gz
+  DEBUG     OK: foo_2.9-1.diff.gz
+  DEBUG     OK: foo_2.9-1.dsc
+  DEBUG         -> Component: main Section: devel
   ...
-  INFO    Distribution: breezy-backports
+  DEBUG    Distribution: breezy-backports
   ...
 
 
 In order to verify if the binary ancestry lookup algorithm works we
-will need to build a new DistroArchRelease for powerpc in
+will need to build a new DistroArchSeries for powerpc in
 ubuntutest/breezy.
 
   >>> from canonical.launchpad.database import (
@@ -495,7 +493,7 @@ ubuntutest/breezy.
   >>> powerpc_dar = breezy.newArch('powerpc', powerpc_pf, True, breezy.owner)
 
 
-After having the respective DistroArchRelease in place we will submit a
+After having the respective DistroArchSeries in place we will submit a
 binary upload for the last source in BACKPORTS. The ancestry should be
 found in i386/RELEASE, because it's the only one available.
 
@@ -508,9 +506,9 @@ found in i386/RELEASE, because it's the only one available.
   DEBUG   Checking for foo/2.9-1/powerpc binary ancestry
   DEBUG   foo: (binary) exists in i386/RELEASE
   ...
-  INFO     OK: foo_2.9-1_powerpc.deb
+  DEBUG     OK: foo_2.9-1_powerpc.deb
   ...
-  INFO    Distribution: breezy-backports
+  DEBUG    Distribution: breezy-backports
   ...
 
 
@@ -526,11 +524,11 @@ live with this inconsistency.
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO     OK: foo_2.9-2.dsc
-  INFO         -> Component: main Section: devel
-  INFO     OK: foo_2.9-2.diff.gz
+  DEBUG     OK: foo_2.9-2.diff.gz
+  DEBUG     OK: foo_2.9-2.dsc
+  DEBUG         -> Component: main Section: devel
   ...
-  INFO    Distribution: breezy-updates
+  DEBUG    Distribution: breezy-updates
   ...
 
 Same behaviour is expected for a version in SECURITY lower than that
@@ -542,11 +540,11 @@ in PROPOSED:
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO     OK: foo_2.9-4.dsc
-  INFO         -> Component: main Section: devel
-  INFO     OK: foo_2.9-4.diff.gz
+  DEBUG     OK: foo_2.9-4.diff.gz
+  DEBUG     OK: foo_2.9-4.dsc
+  DEBUG         -> Component: main Section: devel
   ...
-  INFO    Distribution: breezy-proposed
+  DEBUG    Distribution: breezy-proposed
   ...
 
   >>> expect_okays('foo_2.9-3', upload_policy='sync')
@@ -555,11 +553,11 @@ in PROPOSED:
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO     OK: foo_2.9-3.dsc
-  INFO         -> Component: main Section: devel
-  INFO     OK: foo_2.9-3.diff.gz
+  DEBUG     OK: foo_2.9-3.diff.gz
+  DEBUG     OK: foo_2.9-3.dsc
+  DEBUG         -> Component: main Section: devel
   ...
-  INFO    Distribution: breezy-security
+  DEBUG    Distribution: breezy-security
   ...
 
 However, the source upload of a smaller version than the one already
@@ -568,16 +566,16 @@ published inside the target pocket should be rejected:
   >>> expect_okays('foo_1.0-3', upload_policy='sync')
   Traceback (most recent call last):
   ...
-  AssertionError: Rejected should be empty: ['foo_1.0-3', 'foo_1.0-3.distro']
+  AssertionError: Rejected should be empty: ['foo_1.0-3']
 
   >>> print open(uploader_log).read()
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  INFO    Rejected:
-  INFO    foo_1.0-3.dsc: Version older than that in the archive. 1.0-3 <= 2.9-2
+  
+  DEBUG    foo_1.0-3.dsc: Version older than that in the archive. 1.0-3 <= 2.9-2
   ...
-  INFO    Distribution: breezy-updates
+  DEBUG    Distribution: breezy-updates
   ...
 
 Note that the ancestry pointed in the rejection message (2.9-2) is what
@@ -586,13 +584,12 @@ we expect.
 Remove rejected upload:
 
   >>> shutil.rmtree(os.path.join(rejected_dir, 'foo_1.0-3'))
-  >>> os.remove(os.path.join(rejected_dir, 'foo_1.0-3.distro'))
 
 
 Set ubuntutest/breezy to 'experimental' state again to not affect the
 rest of the test:
 
-  >>> breezy.releasestatus = DistributionReleaseStatus.EXPERIMENTAL
+  >>> breezy.status = DistroSeriesStatus.EXPERIMENTAL
   >>> flush_database_updates()
   >>> transaction.commit()
 
@@ -601,18 +598,18 @@ rest of the test:
 
 Perform a staged (source-first) security upload, simulating a run of
 the buildd-queuebuilder inbetween, to verify fix for bug 53437. To be
-allowed a security upload, we need to use a released distrorelease,
+allowed a security upload, we need to use a released distroseries,
 eg ubuntu/warty.
 
   >>> from canonical.launchpad.database.section import (
   ...     Section, SectionSelection)
   >>> warty = ubuntu['warty']
   >>> devel = Section.selectOneBy(name="devel")
-  >>> ss = SectionSelection(distrorelease=warty, section=devel)
+  >>> ss = SectionSelection(distroseries=warty, section=devel)
   >>> transaction.commit()
 
   >>> expect_okays('baz_1.0-1', is_new=True, upload_policy="security",
-  ...     release="warty-security", distro="ubuntu")
+  ...     series="warty-security", distro="ubuntu")
 
 Check there's a SourcePackageRelease with no build.
 
@@ -632,8 +629,9 @@ can see it. This simulates the buildd-queuebuilder having run inbetween
 the source and binary uploads.
 
   >>> warty_i386 = ubuntu['warty']['i386']
+  >>> main_archive = ubuntu.main_archive
   >>> build = spr.createBuild(warty_i386, PackagePublishingPocket.SECURITY,
-  ...                         status=BuildStatus.NEEDSBUILD)
+  ...                         main_archive, status=BuildStatus.NEEDSBUILD)
   >>> transaction.commit()
 
 Check build created
@@ -641,10 +639,11 @@ Check build created
   >>> len(list(Build.selectBy(sourcepackagereleaseID=spr_id)))
   1
 
-Upload the binary
+Upload the i386 binary:
 
-  >>> expect_okays('baz_1.0-1_binary', is_new=True, upload_policy="security",
-  ...     distro="ubuntu", release="warty-security")
+  >>> expect_okays(
+  ...     'baz_1.0-1_single_binary', is_new=True, upload_policy="security",
+  ...     distro="ubuntu", series="warty-security")
 
 Should still just have one build, and it should now be FULLYBUILT.
 
@@ -683,9 +682,8 @@ First a couple helpers.
   ...     script = os.path.join(config.root, "scripts", "publish-distro.py")
   ...     args = [sys.executable, script, "-vv", "-d", "ubuntutest"]
   ...     args.extend(extra_args)
-  ...     process = subprocess.Popen(args,
-  ...                            stdout=subprocess.PIPE,
-  ...                            stderr=subprocess.PIPE)
+  ...     process = subprocess.Popen(
+  ...          args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   ...     stdout, stderr = process.communicate()
   ...     return (process.returncode, stdout, stderr)
 

@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
   <body>
@@ -19,38 +19,34 @@
     <div metal:fill-slot="main">
 
       <tal:notloggedin condition="not:request/lp:person">
-        <div>You are browsing</div>
+        <div>
+          <a tal:attributes="href context/potemplate/fmt:url"
+             tal:content="context/potemplate/title">
+            evolution 2.10 template
+          </a>
+        </div>
         <h1>
-          <tal:productseries
-            condition="exists:context/potemplate/productseries/displayname"
-            tal:replace="context/potemplate/productseries/displayname"
-          />
-          <tal:sourcepackage
-            condition="exists:context/potemplate/sourcepackagename"
-            replace="context/potemplate/sourcepackagename"
-          />
-          in
-          <tal:language replace="context/language/englishname" />
+          Browsing
+          <tal:language replace="context/language/englishname">
+            Spanish
+          </tal:language>
+          translation
         </h1>
       </tal:notloggedin>
       <tal:loggedin condition="request/lp:person">
-        <div>You are translating</div>
+        <div>
+          <a tal:attributes="href context/potemplate/fmt:url"
+             tal:content="context/potemplate/title">
+            evolution 2.10 template
+          </a>
+        </div>
         <h1>
-          <tal:productseries
-            condition="exists:context/potemplate/productseries/displayname"
-            tal:replace="context/potemplate/productseries/displayname"
-          />
-          <tal:sourcepackage
-            condition="exists:context/potemplate/sourcepackagename"
-            replace="context/potemplate/sourcepackagename"
-          />
-          in
-          <tal:language replace="context/language/englishname" />
+          Translating into
+          <tal:language replace="context/language/englishname">
+            Spanish
+          </tal:language>
         </h1>
       </tal:loggedin>
-      <div class="discreet">
-        Template: <tal:template replace="context/title" />
-      </div>
 
       <tal:havepluralforms condition="view/has_plural_form_information">
 
@@ -178,6 +174,8 @@
             </table>
 
           </form>
+          <!-- Paging doodads. -->
+          <tal:navigation replace="structure view/batchnav/@@+navigation-links-lower" />
         </tal:block>
         <p class="discreet">
           Translation status:

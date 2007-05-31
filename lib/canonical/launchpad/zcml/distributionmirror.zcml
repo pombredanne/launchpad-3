@@ -93,25 +93,25 @@
         <allow interface="canonical.launchpad.interfaces.IDistributionMirrorSet" />
     </securedutility>
 
-    <!-- MirrorDistroArchRelease -->
-    <content class="canonical.launchpad.database.MirrorDistroArchRelease">
-        <allow interface="canonical.launchpad.interfaces.IMirrorDistroArchRelease" />
+    <!-- MirrorDistroArchSeries -->
+    <content class="canonical.launchpad.database.MirrorDistroArchSeries">
+        <allow interface="canonical.launchpad.interfaces.IMirrorDistroArchSeries" />
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IMirrorDistroArchRelease" />
+            set_schema="canonical.launchpad.interfaces.IMirrorDistroArchSeries" />
     </content>
 
-    <!-- MirrorDistroReleaseSource -->
-    <content class="canonical.launchpad.database.MirrorDistroReleaseSource">
-        <allow interface="canonical.launchpad.interfaces.IMirrorDistroReleaseSource" />
+    <!-- MirrorDistroSeriesSource -->
+    <content class="canonical.launchpad.database.MirrorDistroSeriesSource">
+        <allow interface="canonical.launchpad.interfaces.IMirrorDistroSeriesSource" />
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IMirrorDistroReleaseSource" />
+            set_schema="canonical.launchpad.interfaces.IMirrorDistroSeriesSource" />
     </content>
 
-    <!-- MirrorCDImageDistroRelease -->
-    <content class="canonical.launchpad.database.MirrorCDImageDistroRelease">
-        <allow interface="canonical.launchpad.interfaces.IMirrorCDImageDistroRelease" />
+    <!-- MirrorCDImageDistroSeries -->
+    <content class="canonical.launchpad.database.MirrorCDImageDistroSeries">
+        <allow interface="canonical.launchpad.interfaces.IMirrorCDImageDistroSeries" />
     </content>
 
     <!-- MirrorProbeRecord -->

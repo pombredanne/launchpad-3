@@ -4,16 +4,16 @@ __metaclass__ = type
 __all__ = ['start_launchpad']
 
 
-import sys
 import os
+import sys
 import atexit
 import signal
 import subprocess
-from zope.app.server.main import main
 
 from canonical.config import config
-
+from canonical.launchpad.mailman.monkeypatches import monkey_patch
 from canonical.pidfile import make_pidfile, pidfile_path
+from zope.app.server.main import main
 
 
 ROCKETFUEL_ROOT = None
@@ -24,7 +24,18 @@ def make_abspath(path):
     return os.path.abspath(os.path.join(ROCKETFUEL_ROOT, *path.split('/')))
 
 
-class TacFile(object):
+class Service(object):
+    @property
+    def should_launch(self):
+        """Return true if this service should be launched."""
+        return False
+
+    def launch(self):
+        """Launch the service, but do not block."""
+        raise NotImplementedError
+
+
+class TacFile(Service):
 
     def __init__(self, name, tac_filename, configuration, pre_launch=None):
         """Create a TacFile object.
@@ -44,12 +55,13 @@ class TacFile(object):
         else:
             self.pre_launch = pre_launch
 
-    def shouldLaunch(self):
-        return self.config.launch
+    @property
+    def should_launch(self):
+        return self.config is not None and self.config.launch
 
     def launch(self):
-        # Don't run the server if it wasn't asked for. 
-        if not self.config.launch:
+        # Don't run the server if it wasn't asked for.
+        if not self.should_launch:
             return
 
         self.pre_launch()
@@ -93,6 +105,42 @@ class TacFile(object):
         atexit.register(stop_process)
 
 
+class MailmanService(Service):
+    @property
+    def should_launch(self):
+        return config.mailman is not None and config.mailman.launch
+
+    def launch(self):
+        # Don't run the server if it wasn't asked for.
+        if not self.should_launch:
+            return
+
+        # Add the directory containing the Mailman package to our sys.path.
+        # We also need the Mailman bin directory so we can run some of
+        # Mailman's command line scripts.
+        mailman_path = config.mailman.build.prefix
+        mailman_bin  = os.path.join(mailman_path, 'bin')
+
+        # Monkey-patch the installed Mailman 2.1 tree.
+        monkey_patch(mailman_path, config)
+
+        # Start the Mailman master qrunner.  If that succeeds, then set things
+        # up so that it will be stopped when runlaunchpad.py exits.
+        def stop_mailman():
+            # Ignore any errors
+            code = subprocess.call(('./mailmanctl', 'stop'), cwd=mailman_bin)
+            if retcode:
+                print >> sys.stderr, 'mailmanctl did not stop cleanly:', code
+                # There's no point in calling sys.exit() since we're already
+                # exiting!
+
+        code = subprocess.call(('./mailmanctl', 'start'), cwd=mailman_bin)
+        if code:
+            print >> sys.stderr, 'mailmanctl did not start cleanly'
+            sys.exit(code)
+        atexit.register(stop_mailman)
+
+
 def prepare_for_librarian():
     if not os.path.isdir(config.librarian.server.root):
         os.makedirs(config.librarian.server.root, 0700)
@@ -105,7 +153,8 @@ SERVICES = {
                               config.buildsequencer),
     'authserver': TacFile('authserver', 'daemons/authserver.tac',
                           config.authserver),
-    'sftp': TacFile('sftp', 'daemons/sftp.tac', config.supermirrorsftp)
+    'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
+    'mailman': MailmanService(),
     }
 
 
@@ -130,7 +179,7 @@ def get_services_to_run(requested_services):
     If names are given, then only run the services matching those names.
     """
     if len(requested_services) == 0:
-        return [svc for svc in SERVICES.values() if svc.shouldLaunch()]
+        return [svc for svc in SERVICES.values() if svc.should_launch]
     return [SERVICES[name] for name in requested_services]
 
 
@@ -156,8 +205,8 @@ def start_launchpad(argv=list(sys.argv)):
     TWISTD_SCRIPT = make_abspath('sourcecode/twisted/bin/twistd')
 
     # Disgusting hack to use our extended config file schema rather than the
-    # Z3 one. TODO: Add command line options or other to Z3 to enable overriding
-    # this -- StuartBishop 20050406
+    # Z3 one. TODO: Add command line options or other to Z3 to enable
+    # overriding this -- StuartBishop 20050406
     from zdaemon.zdoptions import ZDOptions
     ZDOptions.schemafile = make_abspath('lib/canonical/config/schema.xml')
 
@@ -174,4 +223,3 @@ def start_launchpad(argv=list(sys.argv)):
     # Create a new compressed +style-slimmer.css from style.css in +icing.
     make_css_slimmer()
     main(argv)
-

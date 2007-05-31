@@ -375,6 +375,13 @@ Person's supported IQuestionTargets:
     >>> no_priv.inTeam(translator_team)
     False
     >>> translator_team.addMember(landscape_team, carlos)
+
+    # We need to accept the invitation sent by the addMember() call in
+    # order to make landscape_team an actual member of translator_team.
+    >>> login(landscape_team.teamowner.preferredemail.email)
+    >>> landscape_team.acceptInvitationToBeMemberOf(
+    ...     translator_team, comment='something')
+
     >>> no_priv.hasParticipationEntryFor(translator_team)
     True
     >>> evolution_package = ubuntu.getSourcePackage('evolution')

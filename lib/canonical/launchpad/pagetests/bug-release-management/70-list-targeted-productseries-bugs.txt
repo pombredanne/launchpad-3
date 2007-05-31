@@ -3,10 +3,7 @@ the productseries' bug page, in order to see a list of all bugs
 targeted to it.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/firefox/1.0')
-    >>> anon_browser.getLink('Bugs').click()
-    >>> anon_browser.url
-    'http://bugs.launchpad.dev/firefox/1.0/'
+    ...     'http://launchpad.dev/firefox/1.0/+bugs')
 
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)

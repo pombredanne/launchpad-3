@@ -3,7 +3,7 @@ Your question #%(question_id)s on %(target_name)s changed:
 
 %(body)s
 
-_______________________________________________________________________
+-- 
 If you're still having this problem, you can reopen your question either
 by replying to this email or by going to the following page and
 entering more information about your problem:

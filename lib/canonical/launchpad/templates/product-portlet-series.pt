@@ -7,7 +7,7 @@
   <div class="portletBody portletContent">
 
   <ul>
-    <li tal:repeat="series context/serieslist"
+    <li tal:repeat="series context/serieses"
         class="product">
       <a tal:attributes="href series/fmt:url"
          tal:content="series/displayname">Evolution MAIN</a>

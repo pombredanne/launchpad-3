@@ -14,9 +14,9 @@
         <li>
           <a href="/people/+me/+addbranch">
             <img
-              alt="Register a branch"
-              src="/+icing/but-lrg-registerabranch.gif"
-            />
+               alt="Register a branch"
+               src="/+icing/but-lrg-registerabranch.gif"
+               />
           </a>
         </li>
         <li>
@@ -47,7 +47,7 @@
                           version control system &mdash; and can convert many
                           <abbr>CVS</abbr> and <abbr>SVN</abbr> projects,
                           so you can use Bazaar with those too.
-                          <a href="/+tour">Learn more&#8230;</a>
+                          <a href="/+about">Learn more&#8230;</a>
                         </p>
 
                         <div class="columns">

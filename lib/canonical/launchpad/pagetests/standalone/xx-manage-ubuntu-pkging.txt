@@ -99,7 +99,7 @@ Trying to add a Source Package with an non-existent name should fail graciously.
 
 
 Now let's post to it. We'll lie and say it's the mozilla source package in
-the current ubuntu distrorelease.
+the current ubuntu distroseries.
 
   >>> print http(r"""
   ... POST /thunderbird/trunk/+ubuntupkg HTTP/1.1

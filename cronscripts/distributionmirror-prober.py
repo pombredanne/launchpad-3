@@ -5,6 +5,7 @@
 
 import _pythonpath
 
+import os
 from StringIO import StringIO
 
 from twisted.internet import reactor
@@ -20,11 +21,11 @@ from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.scripts.distributionmirror_prober import (
-    get_expected_cdimage_paths, probe_archive_mirror, probe_release_mirror)
+    get_expected_cdimage_paths, probe_archive_mirror, probe_cdimage_mirror)
 
 
 class DistroMirrorProber(LaunchpadScript):
-    usage = ('%prog --content-type=(archive|release) [--force] '
+    usage = ('%prog --content-type=(archive|cdimage) [--force] '
              '[--no-owner-notification]')
 
     def _sanity_check_mirror(self, mirror):
@@ -64,13 +65,20 @@ class DistroMirrorProber(LaunchpadScript):
         if self.options.content_type == 'archive':
             probe_function = probe_archive_mirror
             content_type = MirrorContent.ARCHIVE
-        elif self.options.content_type == 'release':
-            probe_function = probe_release_mirror
+        elif self.options.content_type == 'cdimage':
+            probe_function = probe_cdimage_mirror
             content_type = MirrorContent.RELEASE
         else:
             raise LaunchpadScriptFailure(
                 'Wrong value for argument --content-type: %s'
                 % self.options.content_type)
+
+        orig_proxy = os.environ.get('http_proxy')
+        if config.distributionmirrorprober.use_proxy:
+            os.environ['http_proxy'] = config.launchpad.http_proxy
+            self.logger.debug("Using %s as proxy." % os.environ['http_proxy'])
+        else:
+            self.logger.debug("Not using any proxy.")
 
         # Using a script argument to control a config variable is not a great
         # idea, but to me this seems better than passing the no_remote_hosts
@@ -119,6 +127,8 @@ class DistroMirrorProber(LaunchpadScript):
         else:
             self.logger.info('No mirrors to probe.')
 
+        disabled_mirrors = []
+        reenabled_mirrors = []
         # Now that we finished probing all mirrors, we check if any of these
         # mirrors appear to have no content mirrored, and, if so, mark them as
         # disabled and notify their owners.
@@ -129,20 +139,29 @@ class DistroMirrorProber(LaunchpadScript):
             if mirror.shouldDisable(expected_iso_images_count):
                 if mirror.enabled:
                     mirror.disable(notify_owner)
-                    self.logger.info('Disabled %s' % canonical_url(mirror))
+                    disabled_mirrors.append(canonical_url(mirror))
             else:
                 # Ensure the mirror is enabled, so that it shows up on public
                 # mirror listings.
                 if not mirror.enabled:
                     mirror.enabled = True
-                    self.logger.info('Enabled %s' % canonical_url(mirror))
+                    reenabled_mirrors.append(canonical_url(mirror))
 
+        if disabled_mirrors:
+            self.logger.info(
+                'Disabling %s mirror(s): %s'
+                % (len(disabled_mirrors), ", ".join(disabled_mirrors)))
+        if reenabled_mirrors:
+            self.logger.info(
+                'Re-enabling %s mirror(s): %s'
+                % (len(reenabled_mirrors), ", ".join(reenabled_mirrors)))
         # XXX: This should be done in LaunchpadScript.lock_and_run() when the
         # isolation used is AUTOCOMMIT_ISOLATION. Also note that replacing
         # this with a flush_database_updates() doesn't have the same effect,
         # it seems.
         # -- Guilherme Salgado, 2007-04-03
         self.txn.commit()
+
         self.logger.info('Done.')
 
 

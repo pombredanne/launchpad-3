@@ -39,9 +39,9 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchBag, IMaloneApplication
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IMaloneApplication, IPerson)
 from canonical.launchpad.webapp import smartquote
-from canonical.launchpad.webapp.authorization import check_permission
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
@@ -164,7 +164,7 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 
-def bug_nominate_for_release(context, view):
+def bug_nominate_for_series(context, view):
     return view.label
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
@@ -248,7 +248,7 @@ bugtracker_index = ContextTitle(smartquote('Bug tracker "%s"'))
 
 bugtrackers_add = 'Register an external bug tracker'
 
-bugtrackers_index = 'Bug trackers registered in Malone'
+bugtrackers_index = 'Bug trackers registered in Launchpad'
 
 build_buildlog = ContextTitle('Build log for %s')
 
@@ -292,6 +292,10 @@ calendar_view_day = calendar_view
 calendar_view_week = calendar_view
 calendar_view_month = calendar_view
 calendar_view_year = calendar_view
+
+canbementored_mentoringoffer = 'Offer to mentor this work'
+
+canbementored_retractmentoring = 'Retract offer of mentorship'
 
 codeofconduct_admin = 'Administer Codes of Conduct'
 
@@ -344,7 +348,7 @@ distribution_mirrors = ContextTitle("Mirrors of %s")
 
 distribution_newmirror = ContextTitle("Register a new mirror for %s")
 
-distribution_releases = ContextTitle("%s releases")
+distribution_series = ContextTitle("%s version history")
 
 distribution_translations = ContextDisplayName('Translating %s')
 
@@ -367,46 +371,48 @@ distributionsourcepackage_manage_bugcontacts = ContextTitle('Bug contacts for %s
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
-distroarchrelease_admin = ContextTitle('Administer %s')
+distroarchseries_admin = ContextTitle('Administer %s')
 
-distroarchrelease_index = ContextTitle('%s in Launchpad')
+distroarchseries_index = ContextTitle('%s in Launchpad')
 
-distroarchrelease_builds = ContextTitle('%s builds')
+distroarchseries_builds = ContextTitle('%s builds')
 
-distroarchrelease_search = ContextTitle(
+distroarchseries_search = ContextTitle(
     smartquote("Search %s's binary packages"))
 
-distroarchreleasebinarypackage_index = ContextTitle('%s')
+distroarchseriesbinarypackage_index = ContextTitle('%s')
 
-distroarchreleasebinarypackagerelease_index = ContextTitle('%s')
+distroarchseriesbinarypackagerelease_index = ContextTitle('%s')
 
-distrorelease_addport = ContextTitle('Add a port of %s')
+distroseries_addport = ContextTitle('Add a port of %s')
 
-distrorelease_bugs = ContextTitle('Bugs in %s')
+distroseries_bugs = ContextTitle('Bugs in %s')
 
-distrorelease_cvereport = ContextDisplayName('CVE report for %s')
+distroseries_cvereport = ContextDisplayName('CVE report for %s')
 
-distrorelease_edit = ContextTitle('Edit details of %s')
+distroseries_edit = ContextTitle('Edit details of %s')
 
-def distrorelease_index(context, view):
+def distroseries_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
 
-distrorelease_packaging = ContextDisplayName('Mapping packages to upstream '
+distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
     'for %s')
 
-distrorelease_search = ContextDisplayName('Search packages in %s')
+distroseries_search = ContextDisplayName('Search packages in %s')
 
-distrorelease_translations = ContextTitle('Translations of %s in Rosetta')
+distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
-distrorelease_builds = ContextTitle('Builds for %s')
+distroseries_translationsadmin = ContextTitle('Admin translation options of %s')
 
-distrorelease_queue = ContextTitle('Queue for %s')
+distroseries_builds = ContextTitle('Builds for %s')
 
-distroreleasebinarypackage_index = ContextTitle('%s')
+distroseries_queue = ContextTitle('Queue for %s')
 
-distroreleaselanguage_index = ContextTitle('%s')
+distroseriesbinarypackage_index = ContextTitle('%s')
 
-distroreleasesourcepackagerelease_index = ContextTitle('%s')
+distroserieslanguage_index = ContextTitle('%s')
+
+distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
 
@@ -420,19 +426,23 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
+def hasmentoringoffers_mentoring(context, view):
+    if IPerson.providedBy(context):
+        if context.teamowner is None:
+            return 'Mentoring offered by %s' % context.title
+        else:
+            return ('Mentoring available for newcomers to %s'  %
+                    context.displayname)
+    else:
+        return 'Mentoring available in %s' % context.displayname
+
+def hasspecifications_specs(context, view):
+    if IPerson.providedBy(context):
+        return "Blueprints involving %s" % context.title
+    else:
+        return "Blueprints for %s" % context.title
+
 hassprints_sprints = ContextTitle("Events related to %s")
-
-people_adminrequestmerge = 'Merge Launchpad accounts'
-
-people_mergerequest_sent = 'Merge request sent'
-
-people_newperson = 'Create a new Launchpad profile'
-
-people_newteam = 'Register a new team in Launchpad'
-
-people_requestmerge_multiple = 'Merge Launchpad accounts'
-
-people_requestmerge = 'Merge Launchpad accounts'
 
 karmaaction_index = 'Karma actions'
 
@@ -489,11 +499,15 @@ launchpad_requestexpired = 'Error: Timeout'
 
 launchpad_search = 'Search projects in Launchpad'
 
+launchpad_translationunavailable= 'Translation page is not available'
+
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
 launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 # launchpad_widget_macros doesn't need a title.
+
+launchpadstatisticset_index = 'Launchpad statistics'
 
 logintoken_claimprofile = 'Claim Launchpad profile'
 
@@ -515,7 +529,7 @@ logintoken_validateteamemail = 'Confirm e-mail address'
 
 # main_template has the code to insert one of these titles.
 
-malone_about = 'About Malone'
+malone_about = 'About Launchpad Bugs'
 
 malone_distros_index = 'Report a bug about a distribution'
 
@@ -558,6 +572,8 @@ marketing_translations_about = "About Translations"
 
 marketing_translations_faq = "FAQs about Translations"
 
+mentoringofferset_success = "Successful mentorships over the past year."
+
 # messagechunk_snippet is a fragment
 
 # messages_index is a redirect
@@ -587,18 +603,40 @@ object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
 
+object_translations = ContextTitle('Translation templates for %s')
+
 oops = 'Oops!'
+
+def openid_decide(context, view):
+    return 'Authenticate to %s' % view.openid_request.trust_root
+
+openid_index = 'Launchpad OpenID Server'
+
+def openid_invalid_identity(context, view):
+    return 'Invalid OpenID identity %s' % view.openid_request.identity
 
 def package_bugs(context, view):
     return 'Bugs in %s' % context.name
 
 people_index = 'People and teams in Launchpad'
 
+people_adminrequestmerge = 'Merge Launchpad accounts'
+
 def people_list(context, view):
     return view.header
 
+people_mergerequest_sent = 'Merge request sent'
+
+people_newperson = 'Create a new Launchpad profile'
+
+people_newteam = 'Register a new team in Launchpad'
+
+people_requestmerge = 'Merge Launchpad accounts'
+
+people_requestmerge_multiple = 'Merge Launchpad accounts'
+
 person_answer_contact_for = ContextDisplayName(
-    'Projects for which %s is an answer contact')    
+    'Projects for which %s is an answer contact')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
@@ -640,9 +678,11 @@ def person_index(context, view):
     if context.is_valid_person_or_team:
         return '%s in Launchpad' % context.displayname
     else:
-        return "%s's contributions to Free Software" % context.displayname
+        return "%s does not use Launchpad" % context.displayname
 
 person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
+
+person_mentoringoffers = ContextTitle('Mentoring offered by %s')
 
 person_packages = ContextDisplayName('Packages maintained by %s')
 
@@ -651,6 +691,8 @@ person_packagebugs = ContextDisplayName("%s's package bug reports")
 person_packagebugs_overview = person_packagebugs
 
 person_packagebugs_search = person_packagebugs
+
+person_participation = ContextTitle("Team partipation by %s")
 
 person_review = ContextDisplayName("Review %s")
 
@@ -662,21 +704,19 @@ person_translations = ContextDisplayName('Translations made by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
-pofile_edit = 'Rosetta: Edit PO file details'
-# XXX mpt 20051209: This should be more context-sensitive
+pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
-pofile_export = ContextTitle('%s file exports')
+pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
 
-def pofile_index(context, view):
-    return 'Rosetta: %s in %s' % (
-        context.potemplate.title, context.language.englishname)
+pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
+
+pofile_translate = ContextTitle(smartquote('Edit "%s"'))
 
 def pofile_translate(context, view):
-    return 'Translating %s into %s with Rosetta' % (
-        context.potemplate.displayname,
-        context.language.englishname)
+    return 'Translating %s into %s' % (
+        context.potemplate.displayname, context.language.englishname)
 
-pofile_upload = ContextTitle('%s upload in Rosetta')
+pofile_upload = ContextTitle(smartquote('Upload file for "%s"'))
 
 # portlet_* are portlets
 
@@ -699,27 +739,27 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
 def pomsgset_translate(context, view):
-    return 'Translating %s into %s with Rosetta' % (
-        context.pofile.potemplate.displayname,
-        context.pofile.language.englishname)
+    return smartquote('Edit "%s"' % context.pofile.title)
 
 # potemplate_chart is a fragment
 
-potemplate_edit = ContextTitle(smartquote('Edit "%s" in Rosetta'))
+potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))
 
-potemplate_index = ContextTitle(smartquote('"%s" in Rosetta'))
+potemplate_index = ContextTitle(smartquote('Translation status for "%s"'))
 
-potemplate_upload = ContextTitle(smartquote('"%s" upload in Rosetta'))
+potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
-potemplate_export = ContextTitle(smartquote('Export translations of "%s"'))
+potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-potemplatename_add = 'Add a new template name to Rosetta'
+potemplatename_add = 'Add a new template name to Launchpad'
 
-potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Rosetta'))
+potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Launchpad'))
 
-potemplatename_index = ContextTitle(smartquote('"%s" in Rosetta'))
+potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
+
+ppa_list = 'Personal Package Archive List'
 
 product_add = 'Register a project in Launchpad'
 
@@ -746,13 +786,17 @@ product_new = 'Register a project in Launchpad'
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
+product_files = ContextDisplayName('%s project files')
+
 product_series = ContextDisplayName('%s timeline')
 
-product_translations = ContextTitle('Translations of %s in Rosetta')
+product_translations = ContextTitle('Translations of %s in Launchpad')
 
 product_translators = ContextTitle('Set translation group for %s')
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
+
+productrelease_file_add = ContextDisplayName('Add a file to %s')
 
 productrelease_admin = ContextTitle('Administer %s in Launchpad')
 
@@ -768,13 +812,11 @@ productseries_packaging = ContextDisplayName('Packaging of %s in distributions')
 
 productseries_source = 'Import a stable or development branch to Bazaar'
 
-productseries_translations = ContextTitle('Translation templates for %s')
-
 productseries_translations_upload = 'Request new translations upload'
 
 productseries_ubuntupkg = 'Ubuntu source package'
 
-project_add = 'Register a project with Launchpad'
+project_add = 'Register a project group with Launchpad'
 
 project_index = ContextTitle('%s in Launchpad')
 
@@ -782,13 +824,13 @@ project_branches = ContextTitle('Bazaar branches for %s')
 
 project_bugs = ContextTitle('Bugs in %s')
 
-project_edit = ContextTitle('%s project details')
+project_edit = ContextTitle('%s project group details')
 
 project_filebug_search = bugtarget_filebug_advanced
 
-project_interest = 'Rosetta: Project not translatable'
+project_interest = 'Launchpad Translations: Project group not translatable'
 
-project_rosetta_index = ContextTitle('Rosetta: %s')
+project_rosetta_index = ContextTitle('Launchpad Translations: %s')
 
 project_specs = ContextTitle('Blueprints for %s')
 
@@ -796,11 +838,11 @@ project_translations = ContextTitle('Translatable projects for %s')
 
 project_translators = ContextTitle('Set translation group for %s')
 
-projects_index = 'Projects registered in Launchpad'
+projects_index = 'Project groups registered in Launchpad'
 
-projects_request = 'Rosetta: Request a project'
+projects_request = 'Launchpad Translations: Request a project group'
 
-projects_search = 'Search for projects in Launchpad'
+projects_search = 'Search for project groups in Launchpad'
 
 rdf_index = "Launchpad RDF"
 
@@ -817,7 +859,7 @@ registry_index = 'Project and group registration in Launchpad'
 
 products_all = 'Upstream projects registered in Launchpad'
 
-projects_all = 'Projects registered in Launchpad'
+projects_all = 'Project groups registered in Launchpad'
 
 registry_review = 'Review Launchpad items'
 
@@ -827,11 +869,11 @@ remotebug_index = ContextTitle('%s')
 
 root_index = 'Launchpad'
 
-rosetta_about = 'About Rosetta'
+rosetta_about = 'About Launchpad Translations'
 
 rosetta_index = 'Launchpad Translations'
 
-rosetta_products = 'Products with Translations in Launchpad'
+rosetta_products = 'Projects with Translations in Launchpad'
 
 product_branch_add = ContextDisplayName('Register a new %s branch')
 
@@ -931,21 +973,18 @@ sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 sourcepackage_packaging = ContextTitle('%s upstream links')
 
 def sourcepackage_index(context, view):
-    return '%s source packages' % context.distrorelease.title
+    return '%s source packages' % context.distroseries.title
 
 sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
-
-sourcepackage_translations = ContextTitle(
-    'Rosetta translation templates for %s')
 
 sourcepackagenames_index = 'Source package name set'
 
 sourcepackagerelease_index = ContextTitle('Source package %s')
 
 def sourcepackages(context, view):
-    return '%s source packages' % context.distrorelease.title
+    return '%s source packages' % context.distroseries.title
 
 sourcepackages_comingsoon = 'Coming soon'
 
@@ -965,7 +1004,7 @@ specification_new = 'Register a proposal as a blueprint in Launchpad'
 
 specification_unlinkbugs = 'Remove links to bug reports'
 
-specification_retargeting = 'Attach blueprint to a different project or distribution'
+specification_retargeting = 'Attach blueprint to a different project'
 
 specification_superseding = 'Mark blueprint as superseded by another'
 
@@ -981,7 +1020,7 @@ specification_people = 'Change blueprint assignee, drafter, and reviewer'
 
 specification_priority = 'Change blueprint priority'
 
-specification_distrorelease = ('Target blueprint to a distribution release')
+specification_distroseries = ('Target blueprint to a distribution release')
 
 specification_productseries = 'Target blueprint to a series'
 
@@ -1045,6 +1084,8 @@ sprint_settopics = ContextTitle('Review topics proposed for discussion at %s')
 
 sprint_workload = ContextTitle('Workload at %s')
 
+sprints_all = 'All sprints and meetings registered in Launchpad'
+
 sprints_index = 'Meetings and sprints registered in Launchpad'
 
 sprintspecification_decide = 'Consider spec for sprint agenda'
@@ -1063,9 +1104,11 @@ team_edit = 'Edit team information'
 
 team_editemail = ContextDisplayName('%s contact e-mail address')
 
+team_editproposed = ContextBrowsername('Proposed members of %s')
+
 team_index = ContextBrowsername(smartquote('"%s" team in Launchpad'))
 
-team_editproposed = ContextBrowsername('Proposed members of %s')
+team_invitations = ContextBrowsername("Invitations sent to %s")
 
 team_join = ContextBrowsername('Join %s')
 
@@ -1078,6 +1121,12 @@ team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
 def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (
         context.person.browsername, context.team.browsername)
+
+def teammembership_invitation(context, view):
+    return "Make %s a member of %s" % (
+        context.person.browsername, context.team.browsername)
+
+team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
 
 team_newpoll = ContextTitle('New poll for team %s')
 
@@ -1095,17 +1144,34 @@ template_new = 'EXAMPLE NEW TITLE'
 
 temporaryblobstorage_storeblob = 'Store a BLOB temporarily in Launchpad'
 
-translationgroup_index = ContextTitle(smartquote('"%s" Rosetta translation group'))
+translationgroup_index = ContextTitle(smartquote('"%s" Launchpad translation group'))
+
+translationgroup_add = 'Add a new translation group to Launchpad'
 
 translationgroup_appoint = ContextTitle(
     smartquote('Appoint a new translator to "%s"'))
 
-translationgroups_index = 'Rosetta translation groups'
+translationgroup_edit = ContextTitle(smartquote(
+    'Edit "%s" translation group details'))
+
+translationgroup_reassignment = ContextTitle(smartquote(
+    'Change the owner of "%s" translation group'))
+
+translationgroups_index = 'Launchpad translation groups'
 
 translationimportqueueentry_index = 'Translation import queue entry'
 
 translationimportqueue_index = 'Translation import queue'
 
 translationimportqueue_blocked = 'Translation import queue - Blocked'
+
+def translator_edit(context, view):
+    return "Edit %s translator for %s" % (
+        context.language.englishname, context.translationgroup.title)
+
+def translator_remove(context, view):
+    return "Remove %s as the %s translator for %s" % (
+        context.translator.displayname, context.language.englishname,
+        context.translationgroup.title)
 
 unauthorized = 'Error: Not authorized'

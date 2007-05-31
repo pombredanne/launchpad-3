@@ -119,7 +119,7 @@ class TestRepoType(unittest.TestCase):
 
 class sampleData:
     package_import_id = 15
-    package_import_distrorelease_id = 3 # ubuntu hoary
+    package_import_distroseries_id = 3 # ubuntu hoary
     package_job_name = 'pkg-ubuntu-hoary-evolution-1.0'
     cvs_job_id = 3 # this is ProductSeries.id 3 for the evolution
     cvs_job_name = 'gnome-evolution-trunk'
@@ -132,14 +132,14 @@ class TestGetJob(helpers.ZopelessTestCase):
 
     def testGetBuilders(self):
         '''get a builders list from the db'''
-        import importd.util
-        jobs = importd.util.jobsFromDB("slave_home",
-                                       "archive_mirror_dir",
-                                       autotest = False)
-        self.assertEqual(len(jobs), 1)
+        import importd.util # Local import to avoid circular import.
         importd_path = '/dummy/path/to/importd/package'
         push_prefix = '/dummy/prefix/to/push/branches/'
         source_repo = '/dummy/prefix/to/source/repo'
+        jobs = importd.util.jobsFromDB(
+            "slave_home", "archive_mirror_dir",
+            autotest=False, push_prefix=push_prefix)
+        self.assertEqual(len(jobs), 1)
         builders = importd.util.jobsBuilders(
             jobs, ["slavename"],
             importd_path=importd_path,
@@ -151,11 +151,11 @@ class TestGetJob(helpers.ZopelessTestCase):
     def testGetPackageJob(self):
         '''get a usable package job from the db'''
         from canonical.launchpad.database import (
-            SourcePackageRelease, DistroRelease)
+            SourcePackageRelease, DistroSeries)
         pkgid = sampleData.package_import_id
-        drid = sampleData.package_import_distrorelease_id
+        drid = sampleData.package_import_distroseries_id
         spr = SourcePackageRelease.get(pkgid)
-        dr = DistroRelease.get(drid)
+        dr = DistroSeries.get(drid)
         job = CopyJob().from_sourcepackagerelease(spr, dr)
         self.assertEqual(job.TYPE, 'sourcerer')
         self.assertEqual(job.RCS, 'package')

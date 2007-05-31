@@ -165,12 +165,12 @@ We have 16 requests, and two of them are cancelled
    (5, u'ddaa'), (6, u'cprov'), (7, u'debonzi'), (12, u'jdub'),
    (13, u'shipit-admins'), (14, u'jblack'), (15, u'ddaa'),
    (16, u'jordi'), (17, u'jblack'), (18, u'ddaa'), (19, u'shipit-admins'),
-   (20L, u'name16')]
+   (20, u'sabdfl'), (21L, u'name16')]
 
   >>> cancelled = ShippingRequestStatus.CANCELLED
   >>> sorted((shipreq.id, shipreq.recipient.name) 
   ...        for shipreq in requestset.search(status=cancelled))
-  [(6, u'cprov'), (20L, u'name16')]
+  [(6, u'cprov'), (21L, u'name16')]
 
 Two of them are pending review, because their recipients asked for extra CDs.
 
@@ -197,7 +197,7 @@ And finally, four of them are already shipped.
 
 
 It's also possible to search for requests containing CDs of a given flavour or
-of a given distrorelease (or both, obviously).
+of a given distroseries (or both, obviously).
 
   >>> kubuntu = ShipItFlavour.KUBUNTU
   >>> [(shipreq.recipient.displayname , shipreq.id)
@@ -206,26 +206,27 @@ of a given distrorelease (or both, obviously).
    (u'Daniel Henrique Debonzi', 7), (u'Jordi Mallach', 16),
    (u'James Blackwell', 17), (u'ShipIt Administrators', 19)]
 
-  >>> from canonical.lp.dbschema import ShipItDistroRelease
-  >>> feisty = ShipItDistroRelease.FEISTY
+  >>> from canonical.lp.dbschema import ShipItDistroSeries
+  >>> feisty = ShipItDistroSeries.FEISTY
   >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distrorelease=feisty)]
+  ...  for shipreq in requestset.search(distroseries=feisty)]
   [(u'Robert Collins', 4), (u'No Privileges Person', 1),
-   (u'Celso Providelo', 6), (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
+   (u'Celso Providelo', 6), (u'Mark Shuttleworth', 20),
+   (u'Helge Kreutzmann', 3), (u'David Allouche', 5),
    (u'Daniel Henrique Debonzi', 7), (u'David Allouche', 18),
    (u'Jordi Mallach', 16), (u'Jeff Waugh', 12),
    (u'ShipIt Administrators', 13), (u'James Blackwell', 17),
-   (u'Stuart Bishop', 2), (u'Foo Bar', 20L)]
+   (u'Stuart Bishop', 2), (u'Foo Bar', 21L)]
 
   >>> edubuntu = ShipItFlavour.EDUBUNTU
   >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distrorelease=feisty, flavour=edubuntu)]
+  ...  for shipreq in requestset.search(distroseries=feisty, flavour=edubuntu)]
   [(u'David Allouche', 18), (u'Jordi Mallach', 16),
    (u'ShipIt Administrators', 13)]
 
-  >>> edgy = ShipItDistroRelease.EDGY
+  >>> edgy = ShipItDistroSeries.EDGY
   >>> [(shipreq.recipient.displayname , shipreq.id)
-  ...  for shipreq in requestset.search(distrorelease=edgy)]
+  ...  for shipreq in requestset.search(distroseries=edgy)]
   [(u'ShipIt Administrators', 19)]
 
 
@@ -320,7 +321,18 @@ priority requests.
   ...         for idx in range(len(fields)):
   ...             format = "%%%ds" % longest_heading
   ...             heading = format % headings[idx]
-  ...             print "%s: %s" % (heading, fields[idx])
+  ...             value = fields[idx]
+  ...             try:
+  ...                 float(value)
+  ...                 try:
+  ...                     int(value)
+  ...                 except ValueError:
+  ...                     # This is a numeric value and is not an integer, so
+  ...                     # we'll round it to two decimal places.
+  ...                     value = "%.4s" % value
+  ...             except ValueError:
+  ...                 pass
+  ...             print "%s: %s" % (heading, value)
 
   >>> pprint_csv(run.csvfile.read())
   ------------------------------------------------------------ Line 1
@@ -385,12 +397,12 @@ based on shipit data.
 One of the reports we can generate gives us information about orders shipped
 to each country.
 
-The generateCountryBasedReport() method accepts a current_release_only
+The generateCountryBasedReport() method accepts a current_series_only
 argument that, if True, will include only requests of
-ShipItConstants.current_distrorelease.
+ShipItConstants.current_distroseries.
 
   >>> csv_file = requestset.generateCountryBasedReport(
-  ...     current_release_only=False)
+  ...     current_series_only=False)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
                           Country: Bermuda
@@ -541,7 +553,7 @@ ShipItConstants.current_distrorelease.
                         Continent: North America
 
   >>> csv_file = requestset.generateCountryBasedReport(
-  ...     current_release_only=True)
+  ...     current_series_only=True)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
                           Country: Bermuda
@@ -674,12 +686,12 @@ ShipItConstants.current_distrorelease.
 There's another report which gives us the number of shipments of all shipment
 sizes we had.
 
-The generateShipmentSizeBasedReport() method accepts a current_release_only
+The generateShipmentSizeBasedReport() method accepts a current_series_only
 argument that, if True, will include only requests of
-ShipItConstants.current_distrorelease.
+ShipItConstants.current_distroseries.
 
   >>> csv_file = requestset.generateShipmentSizeBasedReport(
-  ...     current_release_only=False)
+  ...     current_series_only=False)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
         Number of CDs: 1
@@ -698,7 +710,7 @@ ShipItConstants.current_distrorelease.
   Number of Shipments: 2
 
   >>> csv_file = requestset.generateShipmentSizeBasedReport(
-  ...     current_release_only=True)
+  ...     current_series_only=True)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
         Number of CDs: 1
@@ -715,12 +727,12 @@ ShipItConstants.current_distrorelease.
 
 
 There's also a report of requests by week, which can be tweaked to report only
-requests for CDs of the current distrorelease or all requests.
+requests for CDs of the current distroseries or all requests.
 
   >>> start_date = date(2006, 2, 24)
   >>> end_date = date(2006, 4, 3)
   >>> csv_file = requestset.generateWeekBasedReport(
-  ...     start_date, end_date, only_current_distrorelease=True)
+  ...     start_date, end_date, only_current_distroseries=True)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
                               Year: 2006
@@ -834,7 +846,7 @@ requests for CDs of the current distrorelease or all requests.
   >>> start_date = date(2005, 5, 1)
   >>> end_date = date(2005, 5, 23)
   >>> csv_file = requestset.generateWeekBasedReport(
-  ...     start_date, end_date, only_current_distrorelease=True)
+  ...     start_date, end_date, only_current_distroseries=True)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
                               Year: 2005
@@ -910,7 +922,7 @@ requests for CDs of the current distrorelease or all requests.
         Edubuntu Requested Mac CDs: 0
 
   >>> csv_file = requestset.generateWeekBasedReport(
-  ...     start_date, end_date, only_current_distrorelease=False)
+  ...     start_date, end_date, only_current_distroseries=False)
   >>> pprint_csv(csv_file.read())
   ------------------------------------------------------------ Line 1
                               Year: 2005
@@ -984,6 +996,53 @@ requests for CDs of the current distrorelease or all requests.
          Edubuntu Requested PC CDs: 0
   Edubuntu Requested 64-bit PC CDs: 0
         Edubuntu Requested Mac CDs: 0
+
+
+To help identifying if we're reaching new users with every series, we have a
+report which shows the distribution of requests. Both for the current series
+and to the previous one.
+
+  >>> csv_file = requestset.generateRequestDistributionReport()
+
+  # Skip the first two lines since they have headers which are supposed to
+  # span across multiple columns, screwing our pprint_csv() function.
+  >>> header1, header2, content = csv_file.read().split('\n', 2)
+  >>> print header1
+  "","","Current Series Only","","","","","Previous Series Only",""
+  >>> print header2
+  "","requests","","shipped","","requests","","shipped",""
+  >>> pprint_csv(content)
+  ------------------------------------------------------------ Line 1
+         # of requests: 0
+           # of people: 0 (0.0%)
+   avg CDs per request: 0
+           # of people: 0 (0.0%)
+  avg CDs per shipment: 0
+           # of people: 8 (80.0%)
+   avg CDs per request: 0.0
+           # of people: 8 (80.0%)
+  avg CDs per shipment: 0.0
+  ------------------------------------------------------------ Line 2
+         # of requests: 1
+           # of people: 9 (90.0%)
+   avg CDs per request: 7.66
+           # of people: 7 (87.5%)
+  avg CDs per shipment: 7.28
+           # of people: 2 (20.0%)
+   avg CDs per request: 24.0
+           # of people: 2 (20.0%)
+  avg CDs per shipment: 24.0
+  ------------------------------------------------------------ Line 3
+         # of requests: 2
+           # of people: 1 (10.0%)
+   avg CDs per request: 1.5
+           # of people: 1 (12.5%)
+  avg CDs per shipment: 1.5
+           # of people: 0 (0.0%)
+   avg CDs per request: 0
+           # of people: 0 (0.0%)
+  avg CDs per shipment: 0
+
 
 All these reports are generated periodically and stored in the Librarian by
 the shipit-reports cronscript.

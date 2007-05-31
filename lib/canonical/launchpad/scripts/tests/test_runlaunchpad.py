@@ -69,7 +69,7 @@ class ServersToStart(unittest.TestCase):
         self.configs = [config.librarian.server,
                         config.buildsequencer,
                         config.authserver,
-                        config.supermirrorsftp]
+                        config.codehosting]
         self.old_launch_values = [conf.launch for conf in self.configs]
         new_launch_values = [True, False, False, False]
         for conf, launch_value in zip(self.configs, new_launch_values):
@@ -85,8 +85,13 @@ class ServersToStart(unittest.TestCase):
         """When no service is explicitly requested, start services based on the
         config.launch property.
         """
-        services = get_services_to_run([])
-        self.assertEqual([SERVICES['librarian']], services)
+        services = sorted(get_services_to_run([]))
+        expected = [SERVICES['librarian']]
+        # Mailman may or may not be asked to run.
+        if config.mailman.launch:
+            expected.append(SERVICES['mailman'])
+        expected = sorted(expected)
+        self.assertEqual(expected, services)
 
     def test_explicit_request_overrides(self):
         """Only start those services which are explictly requested, ignoring

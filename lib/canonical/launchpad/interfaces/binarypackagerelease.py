@@ -55,7 +55,7 @@ class IBinaryPackageRelease(Interface):
         "built.")
 
     def lastversions():
-        """Return the SUPERSEDED BinaryPackages in a DistroRelease
+        """Return the SUPERSEDED BinaryPackages in a DistroSeries
            that comes from the same SourcePackage"""
 
     def addFile(file):
@@ -63,10 +63,10 @@ class IBinaryPackageRelease(Interface):
         and attach the provided library file alias (file).
         """
 
-    def publish(priority, status, pocket, embargo, distroarchrelease=None):
+    def publish(priority, status, pocket, embargo, distroarchseries=None):
         """Publish this BinaryPackageRelease according the given parameters.
 
-        The optional distroarchrelease argument defaults to the one choosen
+        The optional distroarchseries argument defaults to the one choosen
         originally for the build record (helps on derivative procedures).
         """
 
@@ -80,11 +80,11 @@ class IBinaryPackageRelease(Interface):
 class IBinaryPackageReleaseSet(Interface):
     """A set of binary packages"""
     
-    def findByNameInDistroRelease(distroreleaseID, pattern,
+    def findByNameInDistroSeries(distroseries, pattern,
                                   archtag=None, fti=False):
         """Returns a set of binarypackagereleases that matchs pattern
-        inside a distrorelease"""
+        inside a distroseries"""
 
-    def getByNameInDistroRelease(distroreleaseID, name):
-        """Get an BinaryPackageRelease in a DistroRelease by its name"""
+    def getByNameInDistroSeries(distroseries, name):
+        """Get an BinaryPackageRelease in a DistroSeries by its name"""
 

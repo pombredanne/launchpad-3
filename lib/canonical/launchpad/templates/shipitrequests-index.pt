@@ -33,8 +33,8 @@
     <tr>
       <th>with:</th>
       <td>
-        <select name="releasefilter">
-          <option tal:repeat="option view/release_options"
+        <select name="seriesfilter">
+          <option tal:repeat="option view/series_options"
                   tal:attributes="
                     value option/name;
                     selected option/is_selected"
@@ -110,7 +110,7 @@
             <th>status</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="results-body">
           <tal:block repeat="shipitrequest shipitrequests">
             <tr tal:define="
               bg python: shipitrequest.highpriority and '#ff6666' or None;

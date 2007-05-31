@@ -8,6 +8,11 @@ screen-scraping tools:
   http://effbot.org/zone/sandbox-sourceforge.htm
 """
 
+# XXX: 20070110 jamesh
+# It would be good to change this code so that it generates an XML
+# dump suitable for use with the bug-import.py script.  This would
+# reduce the number of bug importers we need to manage.
+
 __metaclass__ = type
 
 __all__ = [
@@ -299,11 +304,11 @@ class TrackerImporter:
 
         # pick a series to attach the milestone.  Pick 'trunk' or
         # 'main' if they exist.  Otherwise pick the first.
-        for series in self.product.serieslist:
+        for series in self.product.serieses:
             if series.name in ['trunk', 'main']:
                 break
         else:
-            series = self.product.serieslist[0]
+            series = self.product.serieses[0]
 
         return series.newMilestone(name)
 

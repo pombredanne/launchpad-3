@@ -26,95 +26,120 @@ class ImportProcess:
         # Get the queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        while True:
-            # Execute the imports until we stop having entries to import.
+        # Get the list of each product or distroseries with pending imports
+        importqueues = (
+            translation_import_queue.getPillarObjectsWithApprovedImports() )
+        queues_empty = (len(importqueues) == 0)
 
-            # Get the top element from the queue.
-            entry_to_import = translation_import_queue.getFirstEntryToImport()
+        while not queues_empty:
+            queues_empty = True
+            for queue in importqueues:
+                entry_to_import = queue.getFirstEntryToImport()
+                if entry_to_import is None:
+                    continue
+                elif queues_empty:
+                    queues_empty = False
 
-            if entry_to_import is None:
-                # Execute the auto approve algorithm to save Rosetta experts
-                # some work when possible.
-                # We know there could be corner cases when an 'optimistic
-                # approval' could import a .po file to the wrong IPOFile (but
-                # the right language) but we take the risk due the amount of
-                # work it will save us. It would be only a problem if for a
-                # given productseries/sourcepackage we have two potemplates on
-                # the same directory with two sets of .po files too and for
-                # some reason, one of the .pot files has not been added to the
-                # queue so we would import both the wrong set of .po files to
-                # that template. This is not a big issue due the low amount of
-                # common msgid that both templates will share and specially
-                # because it's not a common layout on the free software world.
-                if translation_import_queue.executeOptimisticApprovals(self.ztm):
-                    self.logger.info(
-                        'The automatic approval system approved some entries.'
-                        )
+                assert entry_to_import.import_into is not None, (
+                    "Broken entry, it's Approved but lacks the place where it"
+                    " should be imported! Look at the top of the import queue")
 
-                removed_entries = translation_import_queue.cleanUpQueue()
-                if removed_entries > 0:
-                    self.logger.info('Removed %d entries from the queue.' %
-                        removed_entries)
+                # Do the import.
+                title = '[Unknown Title]'
+                try:
+                    title = entry_to_import.import_into.title
+                    self.logger.info('Importing: %s' % title)
+                    entry_to_import.import_into.importFromQueue(self.logger)
+                except KeyboardInterrupt:
+                    self.ztm.abort()
+                    raise
+                except:
+                    # If we have any exception, log it, abort the transaction and
+                    # set the status to FAILED.
+                    self.logger.error('Got an unexpected exception while'
+                                      ' importing %s' % title, exc_info=1)
+                    # We are going to abort the transaction, need to save the id
+                    # of this entry to update its status.
+                    failed_entry_id = entry_to_import.id
+                    self.ztm.abort()
+                    # Get the needed objects to set the failed entry status as
+                    # FAILED.
+                    self.ztm.begin()
+                    translation_import_queue = getUtility(
+                        ITranslationImportQueue)
+                    entry_to_import = translation_import_queue[failed_entry_id]
+                    entry_to_import.status = RosettaImportStatus.FAILED
                     self.ztm.commit()
+                    self.ztm.begin()
+                    # Go to process next entry.
+                    continue
 
-                # We need to block entries automatically to save Rosetta
-                # experts some work when a complete set of .po files and a
-                # .pot file should not be imported into the system.
-                # We have the same corner case as with the previous approval
-                # method, but in this case it's a matter of change the status
-                # back from blocked to needs review or approve it directly so
-                # no data will be lost and the amount of work saved is high.
-                blocked_entries = (
-                    translation_import_queue.executeOptimisticBlock(self.ztm))
-                if blocked_entries > 0:
-                    self.logger.info('Blocked %d entries from the queue.' %
-                        blocked_entries)
+                # As soon as the import is done, we commit the transaction
+                # so it's not lost.
+                try:
                     self.ztm.commit()
-                # Exit the loop.
-                break
+                    self.ztm.begin()
+                except KeyboardInterrupt:
+                    self.ztm.abort()
+                    raise
+                except:
+                    # If we have any exception, we log it and abort the
+                    # transaction.
+                    self.logger.error('We got an unexpected exception while'
+                                      ' committing the transaction', exc_info=1)
+                    self.ztm.abort()
+                    self.ztm.begin()
 
-            assert entry_to_import.import_into is not None, (
-                "Broken entry, it's Approved but lacks the place where it"
-                " should be imported! Look at the top of the import queue")
+class AutoApproveProcess:
+    """Attempt to approve some PO/POT imports without human intervention."""
+    def __init__(self, ztm, logger):
+        self.ztm = ztm
+        self.logger = logger
 
-            # Do the import.
-            title = '[Unknown Title]'
-            try:
-                title = entry_to_import.import_into.title
-                self.logger.info('Importing: %s' % title)
-                entry_to_import.import_into.importFromQueue(self.logger)
-            except KeyboardInterrupt:
-                self.ztm.abort()
-                raise
-            except:
-                # If we have any exception, log it, abort the transaction and
-                # set the status to FAILED.
-                self.logger.error('Got an unexpected exception while'
-                                  ' importing %s' % title, exc_info=1)
-                # We are going to abort the transaction, need to save the id
-                # of this entry to update its status.
-                failed_entry_id = entry_to_import.id
-                self.ztm.abort()
-                # Get the needed objects to set the failed entry status as
-                # FAILED.
-                translation_import_queue = getUtility(ITranslationImportQueue)
-                entry_to_import = translation_import_queue[failed_entry_id]
-                entry_to_import.status = RosettaImportStatus.FAILED
-                self.ztm.commit()
-                # Go to process next entry.
-                continue
+    def run(self):
+        """Attempt to approve requests without human intervention.
 
-            # As soon as the import is done, we commit the transaction
-            # so it's not lost.
-            try:
-                self.ztm.commit()
-            except KeyboardInterrupt:
-                self.ztm.abort()
-                raise
-            except:
-                # If we have any exception, we log it and abort the
-                # transaction.
-                self.logger.error('We got an unexpected exception while'
-                                  ' committing the transaction', exc_info=1)
-                self.ztm.abort()
+        Look for entries in translation_import_queue that look like they can
+        be approved automatically.
+
+        Also, detect requests that should be blocked, and block them in their
+        entirety (with all their .pot and .po files); and purges completed or
+        removed entries from the queue.
+        """
+
+        translation_import_queue = getUtility(ITranslationImportQueue)
+
+        # There may be corner cases where an 'optimistic approval' could
+        # import a .po file to the wrong IPOFile (but the right language).
+        # The savings justify that risk.  The problem can only occur where,
+        # for a given productseries/sourcepackage, we have two potemplates in
+        # the same directory, each with its own set of .po files, and for some
+        # reason one of the .pot files has not been added to the queue.  Then
+        # we would import both sets of .po files to that template.  This is
+        # not a big issue because the two templates will rarely share an
+        # identical msgid, and especially because it's not a very common
+        # layout in the free software world.
+        if translation_import_queue.executeOptimisticApprovals(self.ztm):
+            self.logger.info(
+                'The automatic approval system approved some entries.')
+
+        removed_entries = translation_import_queue.cleanUpQueue()
+        if removed_entries > 0:
+            self.logger.info('Removed %d entries from the queue.' %
+                removed_entries)
+            self.ztm.commit()
+            self.ztm.begin()
+
+        # We need to block entries automatically to save Rosetta experts some
+        # work when a complete set of .po files and a .pot file should not be
+        # imported into the system.  We have the same corner case as with the
+        # previous approval method, but in this case it's a matter of changing
+        # the status back from "blocked" to "needs review," or approving it
+        # directly so no data will be lost and a lot of work is saved.
+        blocked_entries = (
+            translation_import_queue.executeOptimisticBlock(self.ztm))
+        if blocked_entries > 0:
+            self.logger.info('Blocked %d entries from the queue.' %
+                blocked_entries)
+            self.ztm.commit()
 

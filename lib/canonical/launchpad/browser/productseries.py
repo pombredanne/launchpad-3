@@ -16,6 +16,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesSourceSetView',
            'ProductSeriesReviewView',
            'ProductSeriesShortLink',
+           'ProductSeriesFileBugRedirect',
            'get_series_branch_error']
 
 import cgi
@@ -257,7 +258,7 @@ class ProductSeriesView(LaunchpadView):
         # let's find out what source package is associated with this
         # productseries in the current release of ubuntu
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.curr_ubuntu_release = ubuntu.currentrelease
+        self.curr_ubuntu_series = ubuntu.currentseries
         self.setUpPackaging()
 
         # Check the form submission.
@@ -300,18 +301,18 @@ class ProductSeriesView(LaunchpadView):
         self.curr_ubuntu_package = None
         self.curr_ubuntu_pkgname = ''
         try:
-            cr = self.curr_ubuntu_release
+            cr = self.curr_ubuntu_series
             self.curr_ubuntu_package = self.context.getPackage(cr)
             cp = self.curr_ubuntu_package
             self.curr_ubuntu_pkgname = cp.sourcepackagename.name
         except NotFoundError:
             pass
-        ubuntu = self.curr_ubuntu_release.distribution
+        ubuntu = self.curr_ubuntu_series.distribution
         self.ubuntu_history = self.context.getPackagingInDistribution(ubuntu)
 
     def setCurrentUbuntuPackage(self):
         """Set the Packaging record for this product series in the current
-        Ubuntu distrorelease to be for the source package name that is given
+        Ubuntu distroseries to be for the source package name that is given
         in the form.
         """
         form = self.form
@@ -336,8 +337,8 @@ class ProductSeriesView(LaunchpadView):
             self.has_errors = True
             return
         # set the packaging record for this productseries in the current
-        # ubuntu release. if none exists, one will be created
-        self.context.setPackaging(self.curr_ubuntu_release, spn, self.user)
+        # ubuntu series. if none exists, one will be created
+        self.context.setPackaging(self.curr_ubuntu_series, spn, self.user)
         self.setUpPackaging()
 
     def requestCountry(self):
@@ -388,7 +389,7 @@ class ProductSeriesView(LaunchpadView):
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be'
-                ' reviewed soon by an admin and then imported into Rosetta.'
+                ' reviewed soon by an admin and then imported into Launchpad.'
                 ' You can track its status from the <a href="%s">Translation'
                 ' Import Queue</a>' %
                     canonical_url(translation_import_queue_set))
@@ -403,7 +404,7 @@ class ProductSeriesView(LaunchpadView):
                 self.request.response.addInfoNotification(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be reviewed soon by an admin and then imported'
-                    ' into Rosetta. You can track its status from the'
+                    ' into Launchpad. You can track its status from the'
                     ' <a href="%s">Translation Import Queue</a>' % (
                         num,
                         canonical_url(translation_import_queue_set)))
@@ -756,3 +757,10 @@ class ProductSeriesDynMenu(DynMenu):
         for release in self.context.releases:
             yield self.makeLink(release.title, context=release)
 
+
+class ProductSeriesFileBugRedirect(LaunchpadView):
+    """Redirect to the product's +filebug page."""
+
+    def initialize(self):
+        filebug_url = "%s/+filebug" % canonical_url(self.context.product)
+        self.request.response.redirect(filebug_url)

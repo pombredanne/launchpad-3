@@ -27,7 +27,10 @@ schema: build
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-check_launchpad_on_merge: build dbfreeze_check check importdcheck hctcheck
+check_launchpad_on_merge: build dbfreeze_check check importdcheck
+    # should normally also do: hctcheck check_sourcecode_dependencies
+
+check_sourcecode_dependencies:
 	# Use the check_for_launchpad rule which runs tests over a smaller
 	# set of libraries, for performance and reliability reasons.
 	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
@@ -35,7 +38,8 @@ check_launchpad_on_merge: build dbfreeze_check check importdcheck hctcheck
 
 dbfreeze_check:
 	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
-	    grep database/schema/ | grep -v pending | wc -l` -eq 0 ]
+	    grep database/schema/ | grep -v pending | grep -v security.cfg | \
+	    wc -l` -eq 0 ]
 
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]
@@ -99,6 +103,10 @@ build:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 
+mailman_instance: build
+	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
+		 $(PYTHON) -t buildmailman.py
+
 runners:
 	echo "#!/bin/sh" > bin/runzope;
 	echo "exec $(PYTHON) $(STARTSCRIPT) -C $(CONFFILE)" >> bin/runzope;
@@ -131,7 +139,7 @@ run: inplace stop bzr_version_info
 run_all: inplace stop bzr_version_info
 	rm -f thread*.request
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp \
+		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman \
 		 -C $(CONFFILE)
 
 bzr_version_info:

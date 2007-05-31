@@ -8,6 +8,11 @@
     <script type="text/javascript" src="/+icing/FormatAndColor.js"></script>
     <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
   </metal:block>
+  <metal:portlets fill-slot="portlets">
+    <tal:releasecriticalbugs
+      tal:condition="view/shouldShowReleaseCriticalPortlet"
+      tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+  </metal:portlets>
   <body>
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="search_url string:+bugs;
@@ -21,15 +26,20 @@
           <script type="text/javascript"
                tal:content="structure view/getChartJavascript">
           </script>
-        <div id="bugs-chart" class="two column left" height="200" width="200">
-          <noscript>
-          <ul>
-            <li tal:repeat="bug_count view/bug_count_items"
-                tal:content="string:${bug_count/count} ${bug_count/label} bugs">
-              12 Unconfirmed bugs
-            </li>
-          </ul>
-          </noscript>
+        <div class="two column left">
+          <div id="bugs-chart" height="200" width="200">
+            <noscript>
+            <ul>
+              <li tal:repeat="bug_count view/bug_count_items"
+                  tal:content="string:${bug_count/count} ${bug_count/label} bugs">
+                12 Unconfirmed bugs
+              </li>
+            </ul>
+            </noscript>
+          </div>
+          <div>
+            &raquo; <a href="+bugs">Show all open bugs</a>
+          </div>
         </div>
         <div class="two column right">
           <h2>Key contacts</h2>
@@ -46,7 +56,7 @@
                   >John Smith</a>
                 </td>
               </tr>
-              <tr tal:define="bugcontact context/bugcontact|context/distribution/bugcontact">
+              <tr tal:define="bugcontact context/bugcontact">
                 <th>Bug contact:</th>
                 <td>
                   <tal:none condition="not:bugcontact"
@@ -58,7 +68,7 @@
                   >Bob Johnson</a>
                 </td>
               </tr>
-              <tr tal:define="securitycontact context/security_contact|context/distribution/security_contact">
+              <tr tal:define="securitycontact context/security_contact">
                 <th>Security contact:</th>
                 <td>
                   <tal:none condition="not:securitycontact"
@@ -109,4 +119,3 @@
     </div><!-- main -->
   </body>
 </html>
-<!-- 1-0 in-progress Needs pie chart (bug 74718), CVE count (bug 79034), fixed-elsewhere count (bug 79035). -->

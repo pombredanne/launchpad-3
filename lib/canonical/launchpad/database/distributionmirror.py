@@ -3,9 +3,9 @@
 """Module docstring goes here."""
 
 __metaclass__ = type
-__all__ = ['DistributionMirror', 'MirrorDistroArchRelease',
-           'MirrorDistroReleaseSource', 'MirrorProbeRecord',
-           'DistributionMirrorSet', 'MirrorCDImageDistroRelease']
+__all__ = ['DistributionMirror', 'MirrorDistroArchSeries',
+           'MirrorDistroSeriesSource', 'MirrorProbeRecord',
+           'DistributionMirrorSet', 'MirrorCDImageDistroSeries']
 
 from datetime import datetime, timedelta, MINYEAR
 import pytz
@@ -31,9 +31,9 @@ from canonical.lp.dbschema import (
     BinaryPackageFileType)
 
 from canonical.launchpad.interfaces import (
-    IDistributionMirror, IMirrorDistroReleaseSource, IMirrorDistroArchRelease,
+    IDistributionMirror, IMirrorDistroSeriesSource, IMirrorDistroArchSeries,
     IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL, pocketsuffix,
-    IDistroRelease, IDistroArchRelease, IMirrorCDImageDistroRelease,
+    IDistroSeries, IDistroArchSeries, IMirrorCDImageDistroSeries,
     ILaunchpadCelebrities)
 from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.files import (
@@ -126,7 +126,7 @@ class DistributionMirror(SQLBase):
         # was found).
         # -- Guilherme Salgado, 2006-08-16
         if self.content == MirrorContent.RELEASE:
-            if self.cdimage_releases:
+            if self.cdimage_serieses:
                 return MirrorStatus.UP
             else:
                 return MirrorStatus.UNKNOWN
@@ -135,9 +135,9 @@ class DistributionMirror(SQLBase):
             # mirrors (binary and source) for this distribution mirror.
             query = ("distribution_mirror = %s AND status != %s" 
                      % sqlvalues(self, MirrorStatus.UNKNOWN))
-            arch_mirror = MirrorDistroArchRelease.selectFirst(
+            arch_mirror = MirrorDistroArchSeries.selectFirst(
                 query, orderBy='-status')
-            source_mirror = MirrorDistroReleaseSource.selectFirst(
+            source_mirror = MirrorDistroSeriesSource.selectFirst(
                 query, orderBy='-status')
             if arch_mirror is None and source_mirror is None:
                 # No content.
@@ -147,7 +147,7 @@ class DistributionMirror(SQLBase):
             elif source_mirror is not None and arch_mirror is None:
                 return source_mirror.status
             else:
-                # Arch and Source Release mirror
+                # Arch and Source mirror
                 if source_mirror.status > arch_mirror.status:
                     return source_mirror.status
                 else:
@@ -166,13 +166,13 @@ class DistributionMirror(SQLBase):
         if self.content == MirrorContent.RELEASE:
             if expected_file_count is None:
                 raise AssertionError(
-                    'For release mirrors we need to know the '
+                    'For series mirrors we need to know the '
                     'expected_file_count in order to tell if it should '
                     'be disabled or not.')
-            if expected_file_count > self.cdimage_releases.count():
+            if expected_file_count > self.cdimage_serieses.count():
                 return True
         else:
-            if not (self.source_releases or self.arch_releases):
+            if not (self.source_serieses or self.arch_serieses):
                 return True
         return False
 
@@ -214,109 +214,109 @@ class DistributionMirror(SQLBase):
         """See IDistributionMirror"""
         return MirrorProbeRecord(distribution_mirror=self, log_file=log_file)
 
-    def deleteMirrorDistroArchRelease(self, distro_arch_release, pocket,
+    def deleteMirrorDistroArchSeries(self, distro_arch_series, pocket,
                                       component):
         """See IDistributionMirror"""
-        mirror = MirrorDistroArchRelease.selectOneBy(
-            distribution_mirror=self, distro_arch_release=distro_arch_release,
+        mirror = MirrorDistroArchSeries.selectOneBy(
+            distribution_mirror=self, distro_arch_series=distro_arch_series,
             pocket=pocket, component=component)
         if mirror is not None:
             mirror.destroySelf()
 
-    def ensureMirrorDistroArchRelease(self, distro_arch_release, pocket,
+    def ensureMirrorDistroArchSeries(self, distro_arch_series, pocket,
                                       component):
         """See IDistributionMirror"""
-        assert IDistroArchRelease.providedBy(distro_arch_release)
-        mirror = MirrorDistroArchRelease.selectOneBy(
+        assert IDistroArchSeries.providedBy(distro_arch_series)
+        mirror = MirrorDistroArchSeries.selectOneBy(
             distribution_mirror=self,
-            distro_arch_release=distro_arch_release, pocket=pocket,
+            distro_arch_series=distro_arch_series, pocket=pocket,
             component=component)
         if mirror is None:
-            mirror = MirrorDistroArchRelease(
+            mirror = MirrorDistroArchSeries(
                 pocket=pocket, distribution_mirror=self,
-                distro_arch_release=distro_arch_release,
+                distro_arch_series=distro_arch_series,
                 component=component)
         return mirror
 
-    def ensureMirrorDistroReleaseSource(self, distrorelease, pocket, component):
+    def ensureMirrorDistroSeriesSource(self, distroseries, pocket, component):
         """See IDistributionMirror"""
-        assert IDistroRelease.providedBy(distrorelease)
-        mirror = MirrorDistroReleaseSource.selectOneBy(
-            distribution_mirror=self, distrorelease=distrorelease,
+        assert IDistroSeries.providedBy(distroseries)
+        mirror = MirrorDistroSeriesSource.selectOneBy(
+            distribution_mirror=self, distroseries=distroseries,
             pocket=pocket, component=component)
         if mirror is None:
-            mirror = MirrorDistroReleaseSource(
-                distribution_mirror=self, distrorelease=distrorelease,
+            mirror = MirrorDistroSeriesSource(
+                distribution_mirror=self, distroseries=distroseries,
                 pocket=pocket, component=component)
         return mirror
 
-    def deleteMirrorDistroReleaseSource(self, distrorelease, pocket, component):
+    def deleteMirrorDistroSeriesSource(self, distroseries, pocket, component):
         """See IDistributionMirror"""
-        mirror = MirrorDistroReleaseSource.selectOneBy(
-            distribution_mirror=self, distrorelease=distrorelease,
+        mirror = MirrorDistroSeriesSource.selectOneBy(
+            distribution_mirror=self, distroseries=distroseries,
             pocket=pocket, component=component)
         if mirror is not None:
             mirror.destroySelf()
 
-    def ensureMirrorCDImageRelease(self, distrorelease, flavour):
+    def ensureMirrorCDImageSeries(self, distroseries, flavour):
         """See IDistributionMirror"""
-        mirror = MirrorCDImageDistroRelease.selectOneBy(
-            distribution_mirror=self, distrorelease=distrorelease,
+        mirror = MirrorCDImageDistroSeries.selectOneBy(
+            distribution_mirror=self, distroseries=distroseries,
             flavour=flavour)
         if mirror is None:
-            mirror = MirrorCDImageDistroRelease(
-                distribution_mirror=self, distrorelease=distrorelease,
+            mirror = MirrorCDImageDistroSeries(
+                distribution_mirror=self, distroseries=distroseries,
                 flavour=flavour)
         return mirror
 
-    def deleteMirrorCDImageRelease(self, distrorelease, flavour):
+    def deleteMirrorCDImageSeries(self, distroseries, flavour):
         """See IDistributionMirror"""
-        mirror = MirrorCDImageDistroRelease.selectOneBy(
-            distribution_mirror=self, distrorelease=distrorelease,
+        mirror = MirrorCDImageDistroSeries.selectOneBy(
+            distribution_mirror=self, distroseries=distroseries,
             flavour=flavour)
         if mirror is not None:
             mirror.destroySelf()
 
-    def deleteAllMirrorCDImageReleases(self):
+    def deleteAllMirrorCDImageSerieses(self):
         """See IDistributionMirror"""
-        for mirror in self.cdimage_releases:
+        for mirror in self.cdimage_serieses:
             mirror.destroySelf()
 
     @property
-    def cdimage_releases(self):
+    def cdimage_serieses(self):
         """See IDistributionMirror"""
-        return MirrorCDImageDistroRelease.selectBy(
+        return MirrorCDImageDistroSeries.selectBy(
             distribution_mirror=self)
 
     @property
-    def source_releases(self):
+    def source_serieses(self):
         """See IDistributionMirror"""
-        return MirrorDistroReleaseSource.selectBy(distribution_mirror=self)
+        return MirrorDistroSeriesSource.selectBy(distribution_mirror=self)
 
-    def getSummarizedMirroredSourceReleases(self):
+    def getSummarizedMirroredSourceSerieses(self):
         """See IDistributionMirror"""
         query = """
             MirrorDistroReleaseSource.id IN (
-                SELECT DISTINCT ON (MirrorDistroReleaseSource.distribution_mirror,
-                                    MirrorDistroReleaseSource.distrorelease)
-                       MirrorDistroReleaseSource.id
-                FROM MirrorDistroReleaseSource, DistributionMirror
-                WHERE DistributionMirror.id = 
-                            MirrorDistroReleaseSource.distribution_mirror
-                      AND DistributionMirror.id = %(mirrorid)s
-                      AND DistributionMirror.distribution = %(distribution)s
-                ORDER BY MirrorDistroReleaseSource.distribution_mirror, 
-                         MirrorDistroReleaseSource.distrorelease, 
-                         MirrorDistroReleaseSource.status DESC)
+              SELECT DISTINCT ON (MirrorDistroReleaseSource.distribution_mirror,
+                                  MirrorDistroReleaseSource.distrorelease)
+                     MirrorDistroReleaseSource.id
+              FROM MirrorDistroReleaseSource, DistributionMirror
+              WHERE DistributionMirror.id = 
+                         MirrorDistroReleaseSource.distribution_mirror
+                    AND DistributionMirror.id = %(mirrorid)s
+                    AND DistributionMirror.distribution = %(distribution)s
+              ORDER BY MirrorDistroReleaseSource.distribution_mirror, 
+                       MirrorDistroReleaseSource.distrorelease, 
+                       MirrorDistroReleaseSource.status DESC)
             """ % sqlvalues(distribution=self.distribution, mirrorid=self)
-        return MirrorDistroReleaseSource.select(query)
+        return MirrorDistroSeriesSource.select(query)
 
     @property
-    def arch_releases(self):
+    def arch_serieses(self):
         """See IDistributionMirror"""
-        return MirrorDistroArchRelease.selectBy(distribution_mirror=self)
+        return MirrorDistroArchSeries.selectBy(distribution_mirror=self)
 
-    def getSummarizedMirroredArchReleases(self):
+    def getSummarizedMirroredArchSerieses(self):
         """See IDistributionMirror"""
         query = """
             MirrorDistroArchRelease.id IN (
@@ -332,36 +332,36 @@ class DistributionMirror(SQLBase):
                          MirrorDistroArchRelease.distro_arch_release, 
                          MirrorDistroArchRelease.status DESC)
             """ % sqlvalues(distribution=self.distribution, mirrorid=self)
-        return MirrorDistroArchRelease.select(query)
+        return MirrorDistroArchSeries.select(query)
 
     def getExpectedPackagesPaths(self):
         """See IDistributionMirror"""
         paths = []
-        for release in self.distribution.releases:
+        for series in self.distribution.serieses:
             for pocket, suffix in pocketsuffix.items():
-                for component in release.components:
-                    for arch_release in release.architectures:
+                for component in series.components:
+                    for arch_series in series.architectures:
                         # XXX: This hack is a cheap attempt to try and avoid
                         # https://launchpad.net/bugs/54791 from biting us.
                         # -- Guilherme Salgado, 2006-08-01
-                        if arch_release.architecturetag in ('hppa', 'ia64'):
+                        if arch_series.architecturetag in ('hppa', 'ia64'):
                             continue
 
                         path = ('dists/%s%s/%s/binary-%s/Packages.gz'
-                                % (release.name, suffix, component.name,
-                                   arch_release.architecturetag))
-                        paths.append((arch_release, pocket, component, path))
+                                % (series.name, suffix, component.name,
+                                   arch_series.architecturetag))
+                        paths.append((arch_series, pocket, component, path))
         return paths
 
     def getExpectedSourcesPaths(self):
         """See IDistributionMirror"""
         paths = []
-        for release in self.distribution.releases:
+        for series in self.distribution.serieses:
             for pocket, suffix in pocketsuffix.items():
-                for component in release.components:
+                for component in series.components:
                     path = ('dists/%s%s/%s/source/Sources.gz'
-                            % (release.name, suffix, component.name))
-                    paths.append((release, pocket, component, path))
+                            % (series.name, suffix, component.name))
+                    paths.append((series, pocket, component, path))
         return paths
 
 
@@ -407,7 +407,7 @@ class DistributionMirrorSet:
                 ILaunchpadCelebrities).ubuntu_archive_mirror
         elif mirror_type == MirrorContent.RELEASE:
             main_mirror = getUtility(
-                ILaunchpadCelebrities).ubuntu_release_mirror
+                ILaunchpadCelebrities).ubuntu_cdimage_mirror
         else:
             raise AssertionError("Unknown mirror type: %s" % mirror_type)
         assert main_mirror is not None, 'Main mirror was not found'
@@ -459,12 +459,12 @@ class DistributionMirrorSet:
         return DistributionMirror.selectOneBy(rsync_base_url=url)
 
 
-class _MirrorReleaseMixIn:
-    """A class containing some commonalities between MirrorDistroArchRelease
-    and MirrorDistroReleaseSource.
+class _MirrorSeriesMixIn:
+    """A class containing some commonalities between MirrorDistroArchSeries
+    and MirrorDistroSeriesSource.
 
     This class is not meant to be used alone. Instead, both
-    MirrorDistroReleaseSource and MirrorDistroArchRelease should inherit from
+    MirrorDistroSeriesSource and MirrorDistroArchSeries should inherit from
     it and override the methods and attributes that say so.
     """
 
@@ -472,7 +472,7 @@ class _MirrorReleaseMixIn:
     # mirror is; we use published files to assess whether a certain level is
     # fulfilled by a mirror. The map is used in combination with a special
     # status UP that maps to the latest published file for that distribution
-    # release, component and pocket: if that file is found, we consider the
+    # series, component and pocket: if that file is found, we consider the
     # distribution to be up to date; if it is not found we then look through
     # the rest of the map to try and determine at what level the mirror is.
     status_times = [
@@ -501,7 +501,7 @@ class _MirrorReleaseMixIn:
         raise NotImplementedError
 
     def getURLsToCheckUpdateness(self, when=None):
-        """See IMirrorDistroReleaseSource or IMirrorDistroArchRelease."""
+        """See IMirrorDistroSeriesSource or IMirrorDistroArchSeries."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
 
@@ -557,25 +557,25 @@ class _MirrorReleaseMixIn:
         return urls
 
 
-class MirrorCDImageDistroRelease(SQLBase):
-    """See IMirrorCDImageDistroRelease"""
+class MirrorCDImageDistroSeries(SQLBase):
+    """See IMirrorCDImageDistroSeries"""
 
-    implements(IMirrorCDImageDistroRelease)
+    implements(IMirrorCDImageDistroSeries)
     _table = 'MirrorCDImageDistroRelease'
     _defaultOrder = 'id'
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
         notNull=True)
-    distrorelease = ForeignKey(
-        dbName='distrorelease', foreignKey='DistroRelease', notNull=True)
+    distroseries = ForeignKey(
+        dbName='distrorelease', foreignKey='DistroSeries', notNull=True)
     flavour = StringCol(notNull=True)
 
 
-class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
-    """See IMirrorDistroArchRelease"""
+class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
+    """See IMirrorDistroArchSeries"""
 
-    implements(IMirrorDistroArchRelease)
+    implements(IMirrorDistroArchSeries)
     _table = 'MirrorDistroArchRelease'
     _defaultOrder = [
         'distro_arch_release', 'component', 'pocket', 'status', 'id']
@@ -583,8 +583,8 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
         notNull=True)
-    distro_arch_release = ForeignKey(
-        dbName='distro_arch_release', foreignKey='DistroArchRelease',
+    distro_arch_series = ForeignKey(
+        dbName='distro_arch_release', foreignKey='DistroArchSeries',
         notNull=True)
     component = ForeignKey(
         dbName='component', foreignKey='Component', notNull=True)
@@ -605,9 +605,11 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
             SecureBinaryPackagePublishingHistory.pocket = %s 
             AND SecureBinaryPackagePublishingHistory.component = %s 
             AND SecureBinaryPackagePublishingHistory.distroarchrelease = %s
+            AND SecureBinaryPackagePublishingHistory.archive = %s
             AND SecureBinaryPackagePublishingHistory.status = %s
-            """ % sqlvalues(self.pocket, self.component.id, 
-                            self.distro_arch_release.id,
+            """ % sqlvalues(self.pocket, self.component, 
+                            self.distro_arch_series,
+                            self.distro_arch_series.main_archive,
                             PackagePublishingStatus.PUBLISHED)
 
         if deb_only:
@@ -639,18 +641,18 @@ class MirrorDistroArchRelease(SQLBase, _MirrorReleaseMixIn):
         return urlappend(base_url, full_path)
 
 
-class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
-    """See IMirrorDistroReleaseSource"""
+class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
+    """See IMirrorDistroSeriesSource"""
 
-    implements(IMirrorDistroReleaseSource)
+    implements(IMirrorDistroSeriesSource)
     _table = 'MirrorDistroReleaseSource'
     _defaultOrder = ['distrorelease', 'component', 'pocket', 'status', 'id']
 
     distribution_mirror = ForeignKey(
         dbName='distribution_mirror', foreignKey='DistributionMirror',
         notNull=True)
-    distrorelease = ForeignKey(
-        dbName='distrorelease', foreignKey='DistroRelease',
+    distroseries = ForeignKey(
+        dbName='distrorelease', foreignKey='DistroSeries',
         notNull=True)
     component = ForeignKey(
         dbName='component', foreignKey='Component', notNull=True)
@@ -664,9 +666,11 @@ class MirrorDistroReleaseSource(SQLBase, _MirrorReleaseMixIn):
             SecureSourcePackagePublishingHistory.pocket = %s 
             AND SecureSourcePackagePublishingHistory.component = %s 
             AND SecureSourcePackagePublishingHistory.distrorelease = %s
+            AND SecureSourcePackagePublishingHistory.archive = %s
             AND SecureSourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(self.pocket, self.component.id, 
-                            self.distrorelease.id,
+            """ % sqlvalues(self.pocket, self.component, 
+                            self.distroseries,
+                            self.distroseries.main_archive,
                             PackagePublishingStatus.PUBLISHED)
 
         if time_interval is not None:

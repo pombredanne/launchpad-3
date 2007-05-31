@@ -70,13 +70,19 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductSeries"
         layer="canonical.launchpad.layers.BugsLayer"
-        name="+bugs"
+        name="+bugs-index"
         />
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductSeries"
         name="+translations"
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
+
+    <adapter
+      for="canonical.launchpad.interfaces.IProductSeries"
+      provides="canonical.launchpad.interfaces.IQuestionTarget"
+      factory="canonical.launchpad.components.question.series_to_questiontarget"
+      />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -125,7 +131,7 @@
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/productseries-translations.pt"
+            template="../templates/object-translations.pt"
             />
         <browser:page
             name="+potlist"
@@ -228,8 +234,8 @@
         class="canonical.launchpad.browser.PackagingAddView"
         schema="canonical.launchpad.interfaces.IPackaging"
         label="Add distribution packaging record"
-        fields="distrorelease sourcepackagename packaging"
-        keyword_arguments="distrorelease sourcepackagename packaging"
+        fields="distroseries sourcepackagename packaging"
+        keyword_arguments="distroseries sourcepackagename packaging"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-packaging.pt" >
@@ -245,6 +251,40 @@
             template="../templates/productseries-translations-upload.pt"
             />
     </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+filebug"
+        class="canonical.launchpad.browser.ProductSeriesFileBugRedirect"
+        permission="zope.Public"
+        />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProductSeries"
+    name="+bugs-index"
+    class="canonical.launchpad.browser.BugTargetBugsView"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/bugtarget-bugs.pt"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProductSeries"
+    class="canonical.launchpad.browser.BugTargetBugListingView"
+    facet="bugs"
+    permission="zope.Public">
+    <browser:page
+      name="+portlet-bugtasklist-seriesbugs"
+      template="../templates/bugtask-portlet-seriesbugs.pt"
+      />
+  </browser:pages>
+
+  <browser:page
+    name="+ask-a-question-button"
+    for="canonical.launchpad.interfaces.IProductSeries"
+    class="canonical.launchpad.browser.AskAQuestionButtonView"
+    permission="zope.Public"
+    />
 
   <!-- ProductSeriesSet -->
   <content class="canonical.launchpad.database.ProductSeriesSet">

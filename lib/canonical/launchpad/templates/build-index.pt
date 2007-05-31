@@ -34,6 +34,18 @@
           </tr>
 
           <tr>
+            <th>Archive:</th>
+            <td tal:condition="not: context/is_trusted">
+              <a tal:attributes="href context/archive/archive_url">
+               <span tal:replace="context/archive/owner/displayname"/> PPA
+              </a>
+            </td>
+            <td tal:condition="context/is_trusted">
+               <i><span tal:replace="context/distribution/name"/> archive</i>
+            </td>
+          </tr>
+
+          <tr>
             <th>Status:</th>
             <td>
               <span tal:replace="context/buildstate/title" />
@@ -78,7 +90,6 @@
 
           </tal:not_built>
 
-          <tal:built condition="context/was_built">
             <tr>
               <th>Started:</th>
               <td tal:condition="context/buildduration">
@@ -127,7 +138,6 @@
                 <i>not available</i>
               </td>
             </tr>
-          </tal:built>
 
         </tbody>
       </table>

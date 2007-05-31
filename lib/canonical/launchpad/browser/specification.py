@@ -35,8 +35,16 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
-    IDistribution, ILaunchBag, IPersonSet, IProduct, ISpecification,
-    ISpecificationBranch, ISpecificationSet, NotFoundError)
+    IDistribution,
+    ILaunchBag,
+    IPersonSet,
+    IProduct,
+    IProject,
+    ISpecification,
+    ISpecificationBranch,
+    ISpecificationSet,
+    NotFoundError,
+    )
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -46,7 +54,8 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
-    stepthrough, stepto)
+    safe_action, stepthrough, stepto)
+from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -96,6 +105,7 @@ class SpecificationContextMenu(ContextMenu):
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'linkbranch',
+             'offermentoring', 'retractmentoring',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
              'retarget']
@@ -135,9 +145,9 @@ class SpecificationContextMenu(ContextMenu):
         if self.context.goal is not None:
             text = 'Modify goal'
         if self.context.distribution is not None:
-            link = '+setrelease'
+            link = '+setdistroseries'
         elif self.context.product is not None:
-            link = '+setseries'
+            link = '+setproductseries'
         else:
             raise AssertionError(
                 'Unknown target on specification "%s".' % self.context.name)
@@ -147,6 +157,21 @@ class SpecificationContextMenu(ContextMenu):
     def status(self):
         text = 'Change status'
         return Link('+status', text, icon='edit')
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def offermentoring(self):
+        text = 'Offer mentorship'
+        user = getUtility(ILaunchBag).user
+        enabled = self.context.canMentor(user)
+        return Link('+mentor', text, icon='add', enabled=enabled)
+
+    def retractmentoring(self):
+        text = 'Retract mentorship'
+        user = getUtility(ILaunchBag).user
+        enabled = (self.context.isMentor(user) and
+                   not self.context.is_complete and
+                   user)
+        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def subscribeanother(self):
         text = 'Subscribe someone else'
@@ -211,7 +236,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+linkbranch', text, icon='add')
 
 
-class SpecificationView(LaunchpadView):
+class SpecificationView(LaunchpadView, CanBeMentoredView):
 
     __used_for__ = ISpecification
 
@@ -276,22 +301,22 @@ class SpecificationGoalProposeView(GeneralFormView):
     def initial_values(self):
         return {
             'productseries': self.context.productseries,
-            'distrorelease': self.context.distrorelease,
+            'distroseries': self.context.distroseries,
             'whiteboard': self.context.whiteboard,
             }
 
-    def process(self, productseries=None, distrorelease=None,
+    def process(self, productseries=None, distroseries=None,
         whiteboard=None):
-        # this can accept either distrorelease or productseries but the menu
+        # this can accept either distroseries or productseries but the menu
         # system will only link to the relevant page for that type of spec
         # target (distro or upstream)
-        if productseries and distrorelease:
-            return 'Please choose a series OR a release, not both.'
+        if productseries and distroseries:
+            return 'Please choose a product OR distro series, not both.'
         goal = None
         if productseries is not None:
             goal = productseries
-        if distrorelease is not None:
-            goal = distrorelease
+        if distroseries is not None:
+            goal = distroseries
         self.context.whiteboard = whiteboard
         self.context.proposeGoal(goal, self.user)
         # Now we want to auto-approve the goal if the person making
@@ -303,9 +328,9 @@ class SpecificationGoalProposeView(GeneralFormView):
 
 
 class SpecificationGoalDecideView(LaunchpadView):
-    """View used to allow the drivers of a series or distrorelease to accept
-    or decline the spec as a goal for that release. Typically they would use
-    the multi-select goalset view on their series or release, but it's also
+    """View used to allow the drivers of a series to accept
+    or decline the spec as a goal for that series. Typically they would use
+    the multi-select goalset view on their series, but it's also
     useful for them to have this one-at-a-time view on the spec itself.
     """
 
@@ -787,15 +812,18 @@ class SpecificationNewView(LaunchpadFormView):
 
     @property
     def field_names(self):
-        """This form is used sometimes on an IProduct or IDistribution to
-        get a new spec for them, and also on ISpecificationSet as a
-        system-wide "new spec" form. We need slightly different field names
-        in each case, so we make field_names a property.
+        """This form is used sometimes on an IProject, IProduct or
+        IDistribution to get a new spec for them, and also on
+        ISpecificationSet as a system-wide "new spec" form. We need slightly
+        different field names in each case, so we make field_names a
+        property.
         """
         field_names = ['name', 'title', 'specurl', 'summary', 'status',
                        'assignee', 'drafter', 'approver']
         if ISpecificationSet.providedBy(self.context):
             field_names.insert(0, 'target')
+        elif IProject.providedBy(self.context):
+            field_names.insert(0, 'projecttarget')
         return field_names
 
     def validate(self, data):
@@ -810,6 +838,9 @@ class SpecificationNewView(LaunchpadFormView):
             self.setFieldError('name',
                 'Please provide a name for this blueprint')
         target = data.get('target')
+        projecttarget = data.get('projecttarget')
+        if projecttarget is not None:
+            target = projecttarget
         if target is None:
             self.setFieldError('target',
                 'Please select a valid project.')
@@ -817,8 +848,8 @@ class SpecificationNewView(LaunchpadFormView):
             name = name.strip().lower()
             if target.getSpecification(name) is not None:
                 self.setFieldError('name',
-                    'There is already a blueprint with this name. Please '
-                    'try another.')
+                    'There is already a blueprint with this name for %s. '
+                    'Please try another name.' % target.displayname)
 
     @action(_('Register Blueprint'), name='register')
     def register_action(self, action, data):
@@ -828,6 +859,9 @@ class SpecificationNewView(LaunchpadFormView):
         # determine product or distribution as target
         product = distribution = None
         target = data.get('target', None)
+        projecttarget = data.get('projecttarget', None)
+        if projecttarget is not None:
+            target = projecttarget
         if target is None:
             target = self.context
         if IProduct.providedBy(target):
@@ -883,6 +917,7 @@ class SpecificationLinkBranchView(LaunchpadFormView):
 class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     """View for the Blueprints index page."""
 
+    @safe_action
     @action('Find blueprints', name="search")
     def search_action(self, action, data):
         """Redirect to the proper search page based on the scope widget."""
@@ -900,7 +935,7 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
 class SpecificationSHP(StructuralHeaderPresentation):
 
     def getIntroHeading(self):
-        return "Blueprint in %s" % cgi.escape(self.context.target.title)
+        return "Blueprint for %s" % cgi.escape(self.context.target.title)
 
     def getMainHeading(self):
         return self.context.title
