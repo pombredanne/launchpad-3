@@ -17,7 +17,11 @@ class BugSubscriptionAddView(SQLObjectAddView):
         SQLObjectAddView.__init__(self, context, request)
 
     def create(self, person):
-        return self.context.bug.subscribe(person)
+        subscription = self.context.bug.subscribe(person)
+        self.request.response.addInfoNotification(
+            '%(name)s has been subscribed to this bug.',
+            name=person.displayname)
+        return subscription
 
     def nextURL(self):
         return self._next_url
