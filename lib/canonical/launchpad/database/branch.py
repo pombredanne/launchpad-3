@@ -420,27 +420,29 @@ class BranchSet:
     def getRecentlyChangedBranches(self, branch_count, visible_by_user=None):
         """See IBranchSet."""
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        query = '''
+        query = ('''
             Branch.last_scanned IS NOT NULL
             AND Branch.owner <> %d
-            ''' % vcs_imports.id
+            '''
+            % vcs_imports.id)
         return Branch.select(
             self._generateBranchClause(query, visible_by_user),
             limit=branch_count,
-            orderBy=['-last_scanned', 'id'],
+            orderBy=['-last_scanned', '-id'],
             prejoins=['author', 'product'])
 
     def getRecentlyImportedBranches(self, branch_count, visible_by_user=None):
         """See IBranchSet."""
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        query = '''
+        query = ('''
             Branch.last_scanned IS NOT NULL
             AND Branch.owner = %d
-            ''' % vcs_imports.id
+            '''
+            % vcs_imports.id)
         return Branch.select(
             self._generateBranchClause(query, visible_by_user),
             limit=branch_count,
-            orderBy=['-last_scanned', 'id'],
+            orderBy=['-last_scanned', '-id'],
             prejoins=['author', 'product'])
 
     def getRecentlyRegisteredBranches(self, branch_count, visible_by_user=None):
@@ -448,7 +450,7 @@ class BranchSet:
         return Branch.select(
             self._generateBranchClause('', visible_by_user),
             limit=branch_count,
-            orderBy=['-date_created'],
+            orderBy=['-date_created', '-id'],
             prejoins=['author', 'product'])
 
     def getLastCommitForBranches(self, branches):
@@ -464,7 +466,8 @@ class BranchSet:
             LEFT OUTER JOIN Revision
             ON Branch.last_scanned_id = Revision.revision_id
             WHERE Branch.id IN %s
-            """ % quote(branch_ids))
+            """
+            % quote(branch_ids))
         commits = dict(cur.fetchall())
         return dict([(branch, commits.get(branch.id, None))
                      for branch in branches])
@@ -478,28 +481,39 @@ class BranchSet:
         return branches.prejoin(['product'])
 
     def _generateBranchClause(self, query, visible_by_user):
+        # If the visible_by_user is a member of the Launchpad admins team,
+        # then don't filter the results at all.
+        lp_admins = getUtility(ILaunchpadCelebrities).admin
+        if visible_by_user is not None and visible_by_user.inTeam(lp_admins):
+            return query
+
         if len(query) > 0:
             query = '%s AND ' % query
 
+        # Non logged in people can only see public branches.
         if visible_by_user is None:
             return '%sNOT Branch.private' % query
 
-        clause = '''%sBranch.id IN (
-            SELECT Branch.id
-            FROM Branch
-            WHERE
-                NOT Branch.private
+        # Logged in people can see public branches (first part of the union)
+        # and all branches they are subscribed to (second part).
+        clause = ('''
+            %sBranch.id IN (
+                SELECT Branch.id
+                FROM Branch
+                WHERE
+                    NOT Branch.private
 
-            UNION
+                UNION
 
-            SELECT Branch.id
-            FROM Branch, BranchSubscription, TeamParticipation
-            WHERE
-                Branch.private
-            AND Branch.id = BranchSubscription.branch
-            AND BranchSubscription.person = TeamParticipation.team
-            AND TeamParticipation.person = %d)
-            ''' % (query, visible_by_user.id)
+                SELECT Branch.id
+                FROM Branch, BranchSubscription, TeamParticipation
+                WHERE
+                    Branch.private
+                AND Branch.id = BranchSubscription.branch
+                AND BranchSubscription.person = TeamParticipation.team
+                AND TeamParticipation.person = %d)
+            '''
+            % (query, visible_by_user.id))
 
         return clause
 
@@ -518,7 +532,7 @@ class BranchSet:
             'person': person.id,
             'lifecycle_clause': self._lifecycleClause(lifecycle_statuses)
             }
-        query = '''
+        query = ('''
             Branch.id in (
                 SELECT Branch.id
                 FROM Branch, BranchSubscription
@@ -535,7 +549,8 @@ class BranchSet:
                 OR Branch.author = %(person)s
                 )
             %(lifecycle_clause)s
-            ''' % query_params
+            '''
+            % query_params)
 
         return Branch.select(
             self._generateBranchClause(query, visible_by_user))
@@ -552,10 +567,12 @@ class BranchSet:
                                       visible_by_user=None):
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        query = ('Branch.owner = %s AND '
-                 '(Branch.author is NULL OR '
-                 'Branch.author != %s) %s'
-                 % (person.id, person.id, lifecycle_clause))
+        query = ('''
+            Branch.owner = %s AND
+            (Branch.author is NULL OR
+            Branch.author != %s) %s
+            '''
+            % (person.id, person.id, lifecycle_clause))
         return Branch.select(
             self._generateBranchClause(query, visible_by_user))
 
@@ -563,9 +580,11 @@ class BranchSet:
                                       visible_by_user=None):
         """See IBranchSet."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        query = ('Branch.id = BranchSubscription.branch '
-                 'AND BranchSubscription.person = %s %s'
-                 % (person.id, lifecycle_clause))
+        query = ('''
+            Branch.id = BranchSubscription.branch
+            AND BranchSubscription.person = %s %s
+            '''
+            % (person.id, lifecycle_clause))
         return Branch.select(
             self._generateBranchClause(query, visible_by_user),
             clauseTables=['BranchSubscription'])

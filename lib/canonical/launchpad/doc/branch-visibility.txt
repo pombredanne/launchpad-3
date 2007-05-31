@@ -147,3 +147,67 @@ branch.
     >>> access.checkAuthenticated(ddaa)
     False
 
+
+== BranchSet restricted queries ==
+
+Any of the BranchSet queries that are used to populate user viewable
+branch listings have an optional parameter called `visible_by_user`.
+This parameter is used to restrict the result set to those branches
+that would be visible by that user.  If the parameter is None, then
+only the public branches are returned.
+
+Since we are printing out general private branch details, we log
+in a member of the Launchpad admin team so there are no permission
+errors.
+
+    >>> login('mark@hbd.com')
+
+The syncUpdate call is necessary to make sure the database has
+the private flag set correctly for the branch.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(branch)
+
+    >>> branch_set = getUtility(IBranchSet)
+
+Anonymous users see just the public branches.
+
+    >>> for branch in branch_set.getRecentlyRegisteredBranches(3):
+    ...     print branch.unique_name, branch.private
+    ~sabdfl/+junk/testdoc False
+    ~name12/gnome-terminal/scanned False
+    ~name12/gnome-terminal/mirrored False
+
+David is not in eligible to see any of the private branches.
+
+    >>> for branch in branch_set.getRecentlyRegisteredBranches(3, ddaa):
+    ...     print branch.unique_name, branch.private
+    ~sabdfl/+junk/testdoc False
+    ~name12/gnome-terminal/scanned False
+    ~name12/gnome-terminal/mirrored False
+
+No Privileges Person sees his new private junk branch and other public branches.
+
+    >>> for branch in branch_set.getRecentlyRegisteredBranches(3, no_priv_person):
+    ...     print branch.unique_name, branch.private
+    ~sabdfl/+junk/testdoc False
+    ~name12/gnome-terminal/scanned False
+    ~name12/gnome-terminal/mirrored False
+
+Mark as a Launchpad admin can see all the private branches.
+
+    >>> for branch in branch_set.getRecentlyRegisteredBranches(3, sabdfl):
+    ...     print branch.unique_name, branch.private
+    ~no-priv/+junk/test-branch True
+    ~name12/landscape/feature-x True
+    ~landscape-developers/landscape/trunk True
+
+Sample Person as the author of the Landscape branches sees those,
+but not the private branch owned by No Privileges Person.
+
+    >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> for branch in branch_set.getRecentlyRegisteredBranches(3, sample_person):
+    ...     print branch.unique_name, branch.private
+    ~name12/landscape/feature-x True
+    ~landscape-developers/landscape/trunk True
+    ~sabdfl/+junk/testdoc False
