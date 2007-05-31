@@ -34,7 +34,7 @@ The questions match the languages inferred from by GeoIP
 (127.0.0.1 is mapped to South Africa in the test suite.) The language
 control shows the intersection of the the user's languages and the
 languages of the target's questions. In this example:
-('af', 'en', 'st', 'xh', 'zu') & ('en', 'es') = (en)
+set(['af', 'en', 'st', 'xh', 'zu']) & set(['en', 'es']) == set(en).
 
     >>> sorted(anon_browser.getControl(name='field.languages').options)
     ['en']
@@ -63,7 +63,7 @@ the anonymous user will see a Spanish question.
     'Installation failed'
 
 When the project has no questions to search, we do not show the
-language controls
+language controls.
 
     >>> anon_browser.open('http://launchpad.dev/kubuntu/+questions')
     >>> anon_browser.getControl(name='field.languages')
@@ -77,9 +77,9 @@ language controls
 
 When the project has questions in only one language, and that language
 is among the users' languages, the language controls are not displayed.
-Gnome Applets only has English questions. When the anonymous user
-makes a request from a GeoIP that has no languages mapped, we assume
-he speaks the default language of English.
+The mozilla-firefox sourcepackage only has English questions. When the
+anonymous user makes a request from a GeoIP that has no languages
+mapped, we assume he speaks the default language of English.
 
     >>> anon_browser.addHeader('X_FORWARDED_FOR', '172.16.1.1')
     >>> anon_browser.open(
@@ -120,22 +120,23 @@ and Spanish language questions will be displayed:
 == Authenticated searching ==
 
 Authenticated users without preferred languages are assumed to have
-the languages determined by their GeoIP, and what their browser sends
-in the Accept-Languages request, just as with anonymous users. In
-this example, No Privileges Person does not have preferred languages,
-nor is his browser configured with a language; we use GeoIP rules.
-As with the anonymous user, the intersection of the GeoIP languages
-and the target's question languages is 'en'.
+the languages determined by what their browser sends in the
+Accept-Languages request, or by their GeoIP, just as with anonymous
+users. In this example, No Privileges Person does not have preferred
+languages, nor is his browser configured with a language; we use GeoIP
+rules. As with the anonymous user, the intersection of the GeoIP
+languages and the target's question languages is 'en'.
 
     >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> sorted(user_browser.getControl(name='field.languages').options)
     ['en']
 
-When the GeoIP and project languages are just English, we do not
-show the language controls.
+When the project languages are just English, and the user speaks
+that language, we do not show the language controls.
 
     >>> user_browser.addHeader('X_FORWARDED_FOR', '172.16.1.1')
-    >>> user_browser.open('http://launchpad.dev/applets/+questions')
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+questions')
     >>> user_browser.getControl(name='field.languages')
     Traceback (most recent call last):
       ...

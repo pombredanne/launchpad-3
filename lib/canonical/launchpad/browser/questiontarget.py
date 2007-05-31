@@ -330,9 +330,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         if 'languages' in self.search_params:
             self.search_params['language'] = self.search_params['languages']
         else:
-            # The languages param is not required when the user only
-            # speaks English. By default, search matches questions to
-            # the user's languages.
+            # The languages param is not required when the user speaks the
+            # only language that the target's questions are asked in.
+            # By default, search matches questions to the user's languages.
             self.search_params['language'] = set(self.user_support_languages)
 
         # Remove the 'languages' param since it is only used by the view.
