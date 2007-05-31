@@ -157,8 +157,7 @@ class SSHCodeHostingServer(CodeHostingServer):
     def get_url(self, user=None):
         if user is None:
             user = self.authserver.testUser
-        return '%s://%s@localhost:%s/' % (
-            self._schema, user, config.codehosting.port)
+        return '%s://%s@localhost:22222/' % (self._schema, user)
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all SFTP connections, and wait for the

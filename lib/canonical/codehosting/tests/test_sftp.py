@@ -32,7 +32,7 @@ from canonical.config import config
 from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.codehosting import sftponly
 from canonical.codehosting.tests.test_acceptance import (
-    SSHTestCase, SSHKeyMixin, deferToThread)
+    AuthserverWithKeys, SSHTestCase, deferToThread)
 from canonical.codehosting.tests.helpers import (
     TwistedLayer, TwistedBzrlibLayer)
 
@@ -45,7 +45,7 @@ class SFTPTests(SSHTestCase):
     def test_rmdir_branch(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
         # branches)
-        transport = self.getTransport('~testuser/+junk')
+        transport = self.server.getTransport('~testuser/+junk')
         transport.mkdir('foo')
         transport.mkdir('bar')
         self.failUnless(stat.S_ISDIR(transport.stat('foo').st_mode))
@@ -62,7 +62,7 @@ class SFTPTests(SSHTestCase):
     @deferToThread
     def test_mkdir_toplevel_error(self):
         # You cannot create a top-level directory.
-        transport = self.getTransport()
+        transport = self.server.getTransport()
         e = self.assertRaises(PermissionDenied, transport.mkdir, 'foo')
         self.failUnless(
             "Branches must be inside a person or team directory." in str(e),
@@ -72,7 +72,7 @@ class SFTPTests(SSHTestCase):
     def test_mkdir_invalid_product_error(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
         # branches)
-        transport = self.getTransport('~testuser')
+        transport = self.server.getTransport('~testuser')
 
         # You cannot create a product directory unless the product name is
         # registered in Launchpad.
@@ -87,7 +87,7 @@ class SFTPTests(SSHTestCase):
     def test_mkdir_not_team_member_error(self):
         # You can't mkdir in a team directory unless you're a member of that
         # team (in fact, you can't even see the directory).
-        transport = self.getTransport()
+        transport = self.server.getTransport()
         e = self.assertRaises(NoSuchFile,
                 transport.mkdir, '~not-my-team/mozilla-firefox')
         self.failUnless("~not-my-team" in str(e))
@@ -96,7 +96,7 @@ class SFTPTests(SSHTestCase):
     def test_mkdir_team_member(self):
         # You can mkdir in a team directory that you're a member of (so long as
         # it's a real product), though.
-        transport = self.getTransport()
+        transport = self.server.getTransport()
         transport.mkdir('~testteam/firefox')
 
         # Confirm the mkdir worked by using list_dir.
@@ -112,7 +112,7 @@ class SFTPTests(SSHTestCase):
     def test_rename_directory_to_existing_directory_fails(self):
         # 'rename dir1 dir2' should fail if 'dir2' exists. Unfortunately, it
         # will only fail if they both contain files/directories.
-        transport = self.getTransport('~testuser/+junk')
+        transport = self.server.getTransport('~testuser/+junk')
         transport.mkdir('branch')
         transport.mkdir('branch/.bzr')
         transport.mkdir('branch/.bzr/dir1')
@@ -126,7 +126,7 @@ class SFTPTests(SSHTestCase):
     def test_rename_directory_to_empty_directory_succeeds(self):
         # 'rename dir1 dir2' succeeds if 'dir2' is empty. Not sure we want this
         # behaviour, but it's worth documenting.
-        transport = self.getTransport('~testuser/+junk')
+        transport = self.server.getTransport('~testuser/+junk')
         transport.mkdir('branch')
         transport.mkdir('branch/.bzr')
         transport.mkdir('branch/.bzr/dir1')
@@ -137,7 +137,7 @@ class SFTPTests(SSHTestCase):
     @deferToThread
     def test_rename_directory_succeeds(self):
         # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
-        transport = self.getTransport('~testuser/+junk')
+        transport = self.server.getTransport('~testuser/+junk')
         transport.mkdir('branch')
         transport.mkdir('branch/.bzr')
         transport.mkdir('branch/.bzr/dir1')
@@ -319,7 +319,7 @@ class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
         return d.addCallback(check)
 
 
-class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
+class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
     """Tests for the SSH server authentication mechanism.
 
     PublicKeyFromLaunchpadChecker accepts the SSH authentication information
@@ -332,21 +332,23 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
     layer = TwistedLayer
 
     def setUp(self):
-        self.authService = AuthserverService()
-        self.authService.startService()
-        self.authserver = TwistedAuthServer(config.codehosting.authserver)
-        self.checker = sftponly.PublicKeyFromLaunchpadChecker(self.authserver)
-        self.setUpTestUser()
         self.valid_login = 'testuser'
-        self.public_key = self.getPublicKey()
+        self.authserver = AuthserverWithKeys(self.valid_login, 'testteam')
+        self.authserver.setUp()
+        self.authserver_client = TwistedAuthServer(
+            config.codehosting.authserver)
+        self.checker = sftponly.PublicKeyFromLaunchpadChecker(
+            self.authserver_client)
+        self.public_key = self.authserver.getPublicKey()
         self.sigData = (
             NS('') + chr(userauth.MSG_USERAUTH_REQUEST)
             + NS(self.valid_login) + NS('none') + NS('publickey') + '\xff'
             + NS('ssh-dss') + NS(self.public_key))
-        self.signature = keys.signData(self.getPrivateKey(), self.sigData)
+        self.signature = keys.signData(
+            self.authserver.getPrivateKey(), self.sigData)
 
     def tearDown(self):
-        self.authService.stopService()
+        self.authserver.tearDown()
 
     def test_successful(self):
         # We should be able to login with the correct public and private
