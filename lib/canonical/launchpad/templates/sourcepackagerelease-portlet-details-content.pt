@@ -25,9 +25,9 @@ are just the package defaults.
 </div>
 
 <b>Initially uploaded to:</b><br />
-<a tal:content="context/uploaddistrorelease/distribution/displayname"
-   tal:attributes="href context/uploaddistrorelease/distribution/fmt:url"
+<a tal:content="context/uploaddistroseries/distribution/displayname"
+   tal:attributes="href context/uploaddistroseries/distribution/fmt:url"
    >Ubuntu</a>
-<a tal:content="context/uploaddistrorelease/displayname"
-   tal:attributes="href context/uploaddistrorelease/fmt:url"
+<a tal:content="context/uploaddistroseries/displayname"
+   tal:attributes="href context/uploaddistroseries/fmt:url"
    >Warty</a>

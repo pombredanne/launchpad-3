@@ -91,17 +91,17 @@
 
     <tal:has-last-probe condition="context/last_probe_record">
       <tal:archive-mirror condition="context/content/enumvalue:ARCHIVE"
-        define="arch_releases view/getSummarizedMirroredArchReleases;
-                source_releases view/getSummarizedMirroredSourceReleases">
+        define="arch_serieses view/getSummarizedMirroredArchSerieses;
+                source_serieses view/getSummarizedMirroredSourceSerieses">
         <metal:mirror-content
           use-macro="context/@@+distributionmirror-macros/archive-mirror-content" />
       </tal:archive-mirror>
 
-      <tal:release-mirror condition="context/content/enumvalue:RELEASE"
-        define="flavours_by_releases view/getCDImageMirroredFlavoursByRelease">
+      <tal:cdimage-mirror condition="context/content/enumvalue:RELEASE"
+        define="flavours_by_serieses view/getCDImageMirroredFlavoursBySeries">
         <metal:mirror-content
-          use-macro="context/@@+distributionmirror-macros/release-mirror-content" />
-      </tal:release-mirror>
+          use-macro="context/@@+distributionmirror-macros/cdimage-mirror-content" />
+      </tal:cdimage-mirror>
     </tal:has-last-probe>
 
 </div>

@@ -407,11 +407,11 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
 
         field = self.context
         distribution = field.context.distribution
-        if distribution is None and field.context.distrorelease is not None:
-            distribution = field.context.distrorelease.distribution
+        if distribution is None and field.context.distroseries is not None:
+            distribution = field.context.distroseries.distribution
         assert distribution is not None, (
             "BugTaskSourcePackageNameWidget should be used only for"
-            " bugtasks on distributions or on distribution releases.")
+            " bugtasks on distributions or on distribution series.")
 
         try:
             source, binary = distribution.guessPackageNames(input)

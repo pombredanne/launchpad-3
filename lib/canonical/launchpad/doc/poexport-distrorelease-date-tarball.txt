@@ -1,15 +1,15 @@
-Distribution Release PO File Exports With Date Limits
-=====================================================
+Distribution Series PO File Exports With Date Limits
+====================================================
 
 This tests the ability to generate a tarball of PO files for a distribution
-release that only includes PO files which have been changed since a certain
+series that only includes PO files which have been changed since a certain
 date.
 
 First we need to set up some data to test with, and for this we need some DB
 classes.
 
     >>> from canonical.launchpad.database import Person
-    >>> from canonical.launchpad.database import DistroRelease
+    >>> from canonical.launchpad.database import DistroSeries
     >>> from canonical.launchpad.database import SourcePackageName
     >>> from canonical.launchpad.database import POTemplateName
     >>> from canonical.launchpad.database import POTemplate
@@ -18,13 +18,13 @@ Get hold of a person.
 
     >>> person = Person.get(1)
 
-Get a distro release.
+Get a distro series.
 
-    >>> release = DistroRelease.get(5)
-    >>> release.name
+    >>> series = DistroSeries.get(5)
+    >>> series.name
     u'grumpy'
 
-Get a source package name to go with our distro release.
+Get a source package name to go with our distro series.
 
     >>> spn = SourcePackageName.byName('evolution')
 
@@ -43,7 +43,7 @@ Create a PO template and put a single message set in it.
 
     >>> ptn = POTemplateName(name='test', translationdomain='test', title='test')
     >>> template = POTemplate(
-    ...     potemplatename=ptn, distrorelease=release, sourcepackagename=spn,
+    ...     potemplatename=ptn, distroseries=series, sourcepackagename=spn,
     ...     owner=person, languagepack=True, path='po/test.pot')
     >>> potmsgset = template.createMessageSetFromText(u'blah')
     >>> potmsgset.sequence = 1
@@ -84,8 +84,8 @@ Now we try to export the PO files we've just created.
 Set up the exporter.
 
     >>> from canonical.launchpad.components.poexport import \
-    ...     DistroReleasePOExporter
-    >>> exporter = DistroReleasePOExporter(release)
+    ...     DistroSeriesPOExporter
+    >>> exporter = DistroSeriesPOExporter(series)
 
 This is handy for examining the tar files that are generated.
 

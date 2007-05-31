@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces import (
     IArchiveSet, IPersonSet)
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket,
-    DistributionReleaseStatus)
+    DistroSeriesStatus)
 
 
 class TestPublisher(TestNativePublishingBase):
@@ -58,10 +58,10 @@ class TestPublisher(TestNativePublishingBase):
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'Hello world')
 
-    def testPublishingSpecificDistroRelease(self):
+    def testPublishingSpecificDistroSeries(self):
         """Test the publishing procedure with the suite argument.
 
-        To publish a specific distrorelease.
+        To publish a specific distroseries.
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
@@ -72,7 +72,7 @@ class TestPublisher(TestNativePublishingBase):
         pub_source = self.getPubSource(filecontent='foo')
         pub_source2 = self.getPubSource(
             sourcename='baz', filecontent='baz',
-            distrorelease=self.ubuntutest['hoary-test'])
+            distroseries=self.ubuntutest['hoary-test'])
 
         publisher.A_publish(force_publishing=False)
         self.layer.txn.commit()
@@ -94,8 +94,8 @@ class TestPublisher(TestNativePublishingBase):
             allowed_suites=[('breezy-autotest',
                              PackagePublishingPocket.UPDATES)])
 
-        self.ubuntutest['breezy-autotest'].releasestatus = (
-            DistributionReleaseStatus.CURRENT)
+        self.ubuntutest['breezy-autotest'].status = (
+            DistroSeriesStatus.CURRENT)
 
         pub_source = self.getPubSource(
             filecontent='foo',
@@ -354,10 +354,10 @@ class TestPublisher(TestNativePublishingBase):
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
 
-    def testCarefulDominationOnDevelopmentRelease(self):
+    def testCarefulDominationOnDevelopmentSeries(self):
         """Test the careful domination procedure.
 
-        Check if it works on a development release.
+        Check if it works on a development series.
         A SUPERSEDED published source should be moved to PENDINGREMOVAL.
         """
         from canonical.archivepublisher.publishing import Publisher
@@ -382,10 +382,10 @@ class TestPublisher(TestNativePublishingBase):
         self.assertEqual(
             pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
 
-    def testCarefulDominationOnObsoleteRelease(self):
+    def testCarefulDominationOnObsoleteSeries(self):
         """Test the careful domination procedure.
 
-        Check if it works on a obsolete release.
+        Check if it works on a obsolete series.
         A SUPERSEDED published source should be moved to PENDINGREMOVAL.
         """
         from canonical.archivepublisher.publishing import Publisher
@@ -393,8 +393,8 @@ class TestPublisher(TestNativePublishingBase):
             self.logger, self.config, self.disk_pool, self.ubuntutest,
             self.ubuntutest.main_archive)
 
-        self.ubuntutest['breezy-autotest'].releasestatus = (
-            DistributionReleaseStatus.OBSOLETE)
+        self.ubuntutest['breezy-autotest'].status = (
+            DistroSeriesStatus.OBSOLETE)
 
         pub_source = self.getPubSource(
             status=PackagePublishingStatus.SUPERSEDED)
@@ -415,7 +415,7 @@ class TestPublisher(TestNativePublishingBase):
         """Test release file writing.
 
         The release file should contain the MD5, SHA1 and SHA256 for each
-        index created for a given distrorelease.
+        index created for a given distroseries.
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
