@@ -16,7 +16,7 @@ import bzrlib.branch
 from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
-from bzrlib.transport import get_transport, sftp, ssh
+from bzrlib.transport import get_transport, sftp, ssh, Server
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
@@ -28,11 +28,193 @@ from canonical.codehosting.sftponly import (
     BazaarFileTransferServer, SFTPOnlyAvatar)
 from canonical.codehosting.tests.helpers import (
     deferToThread, TwistedBzrlibLayer)
+from canonical.config import config
 from canonical.database.sqlbase import cursor, commit, sqlvalues
 from canonical.launchpad import database
 from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.daemons.sftp import SFTPService
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+
+
+class Authserver(Server):
+
+    def __init__(self):
+        self.authserver = AuthserverService()
+
+    def setUp(self):
+        self.authserver.startService()
+
+    def tearDown(self):
+        self.authserver.stopService()
+
+    def get_url(self):
+        return config.codehosting.authserver
+
+
+class AuthserverWithKeys(Authserver):
+
+    def __init__(self, testUser, testTeam):
+        Authserver.__init__(self)
+        self.testUser = testUser
+        self.testTeam = testTeam
+
+    def setUp(self):
+        self.setUpTestUser()
+        Authserver.setUp(self)
+
+    def setUpTestUser(self):
+        """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
+        SSH key.
+        """
+        # insert SSH keys for testuser -- and insert testuser!
+        cur = cursor()
+        cur.execute(
+            "UPDATE Person SET name = '%s' WHERE name = 'spiv';"
+            % self.testUser)
+        cur.execute(
+            "UPDATE Person SET name = '%s' WHERE name = 'name18';"
+            % self.testTeam)
+        cur.execute("""
+            INSERT INTO SSHKey (person, keytype, keytext, comment)
+            VALUES (7, 2,
+            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==',
+            'testuser');
+            """)
+        commit()
+
+    def getPrivateKey(self):
+        """Return the private key object used by 'testuser' for auth."""
+        return keys.getPrivateKeyObject(
+            data=open(sibpath(__file__, 'id_dsa'), 'rb').read())
+
+    def getPublicKey(self):
+        """Return the public key string used by 'testuser' for auth."""
+        return keys.getPublicKeyString(
+            data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
+
+
+class CodeHostingServer(Server):
+
+    def __init__(self, authserver, branches_root):
+        self.authserver = authserver
+        self._branches_root = branches_root
+
+    def setUp(self):
+        if os.path.isdir(self._branches_root):
+            shutil.rmtree(self._branches_root)
+        os.makedirs(self._branches_root, 0700)
+        shutil.copytree(
+            sibpath(__file__, 'keys'),
+            os.path.join(self._branches_root, 'keys'))
+        self.authserver.setUp()
+
+    def tearDown(self):
+        self.authserver.tearDown()
+        shutil.rmtree(self._branches_root)
+
+    def getTransport(self, relpath):
+        """Return a new transport for 'relpath', adding necessary cleanup."""
+        raise NotImplementedError()
+
+
+class SSHCodeHostingServer(CodeHostingServer):
+
+    def __init__(self, authserver, branches_root):
+        CodeHostingServer.__init__(self, authserver, branches_root)
+
+    def setUpFakeHome(self):
+        user_home = os.path.abspath(tempfile.mkdtemp())
+        os.makedirs(os.path.join(user_home, '.ssh'))
+        shutil.copyfile(
+            sibpath(__file__, 'id_dsa'),
+            os.path.join(user_home, '.ssh', 'id_dsa'))
+        shutil.copyfile(
+            sibpath(__file__, 'id_dsa.pub'),
+            os.path.join(user_home, '.ssh', 'id_dsa.pub'))
+        os.chmod(os.path.join(user_home, '.ssh', 'id_dsa'), 0600)
+        real_home, os.environ['HOME'] = os.environ['HOME'], user_home
+        return real_home, user_home
+
+    def forceParamiko(self):
+        _old_vendor_manager = ssh._ssh_vendor_manager._cached_ssh_vendor
+        ssh._ssh_vendor_manager._cached_ssh_vendor = ssh.ParamikoVendor()
+        return _old_vendor_manager
+
+    def setUp(self):
+        self._real_home, self._fake_home = self.setUpFakeHome()
+        self._old_vendor_manager = self.forceParamiko()
+        CodeHostingServer.setUp(self)
+        self.server = TestSSHService()
+        self.server.startService()
+
+    def tearDown(self):
+        self.server.stopService()
+        os.environ['HOME'] = self._real_home
+        CodeHostingServer.tearDown(self)
+        shutil.rmtree(self._fake_home)
+        ssh._ssh_vendor_manager._cached_ssh_vendor = self._old_vendor_manager
+
+    def get_url(self, user=None):
+        if user is None:
+            user = self.authserver.testUser
+        return '%s://%s@localhost:%s/' % (
+            self._schema, user, config.codehosting.port)
+
+    def runAndWaitForDisconnect(self, func, *args, **kwargs):
+        """Run the given function, close all SFTP connections, and wait for the
+        server to acknowledge the end of the session.
+        """
+        ever_connected = threading.Event()
+        done = threading.Event()
+        self.server.setConnectionMadeEvent(ever_connected)
+        self.server.setConnectionLostEvent(done)
+        try:
+            return func(*args, **kwargs)
+        finally:
+            self.closeAllConnections()
+            # done.wait() can block forever if func() never actually
+            # connects, so only wait if we are sure that the client
+            # connected.
+            if ever_connected.isSet():
+                done.wait()
+
+
+class SFTPCodeHostingServer(SSHCodeHostingServer):
+
+    def setUp(self):
+        SSHCodeHostingServer.setUp(self)
+        self._schema = 'sftp'
+        self._clients_to_close = []
+
+    def tearDown(self):
+        self._closeClients(self._clients_to_close)
+        SSHCodeHostingServer.tearDown(self)
+
+    def _closeClients(self, clients):
+        while clients:
+            client = clients.pop()
+            client.close()
+            client.sock.transport.close()
+
+    def closeAllConnections(self):
+        """Closes all open bzrlib SFTP connections.
+
+        bzrlib doesn't provide a facility for closing sftp connections. The
+        closest it gets is clearing the connection cache and forcing the
+        connection objects to be garbage collected. This means that this method
+        won't actually close a connection if a reference to it is still around.
+        """
+        self._closeClients(sftp._connected_hosts.values())
+        sftp.clear_connection_cache()
+        gc.collect()
+
+    def getTransport(self, path=None):
+        """Get a paramiko transport pointing to `path` on the base server."""
+        if path is None:
+            path = ''
+        transport = get_transport(self.get_url()).clone(path)
+        self._clients_to_close.append(transport._sftp)
+        return transport
 
 
 class TestSSHService(SFTPService):
@@ -117,79 +299,21 @@ class TestBazaarFileTransferServer(BazaarFileTransferServer):
         return d
 
 
-class SSHKeyMixin:
-    """Mixin for tests that need to do SSH key-based authentication."""
+class SSHTestCase(TrialTestCase, TestCaseWithRepository):
 
-    def setUpTestUser(self, testUser, testTeam):
-        """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
-        SSH key.
-        """
-        # insert SSH keys for testuser -- and insert testuser!
-        cur = cursor()
-        cur.execute(
-            "UPDATE Person SET name = '%s' WHERE name = 'spiv';" % testUser)
-        cur.execute(
-            "UPDATE Person SET name = '%s' WHERE name = 'name18';" % testTeam)
-        cur.execute("""
-            INSERT INTO SSHKey (person, keytype, keytext, comment)
-            VALUES (7, 2,
-            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==',
-            'testuser');
-            """)
-        commit()
-
-    def getPrivateKey(self):
-        """Return the private key object used by 'testuser' for auth."""
-        return keys.getPrivateKeyObject(
-            data=open(sibpath(__file__, 'id_dsa'), 'rb').read())
-
-    def getPublicKey(self):
-        """Return the public key string used by 'testuser' for auth."""
-        return keys.getPublicKeyString(
-            data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
-
-
-class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
-
+    server = None
     default_user = 'testuser'
     default_team = 'testteam'
-    server_base = 'sftp://%s@localhost:22222/'
 
-    def setUpBranchesRoot(self, branches_root):
-        if os.path.isdir(branches_root):
-            shutil.rmtree(branches_root)
-        os.makedirs(branches_root, 0700)
-        shutil.copytree(
-            sibpath(__file__, 'keys'), os.path.join(branches_root, 'keys'))
-        self.addCleanup(lambda: shutil.rmtree(branches_root))
-
-    def setUpFakeHome(self):
-        user_home = os.path.abspath(tempfile.mkdtemp())
-        os.makedirs(os.path.join(user_home, '.ssh'))
-        shutil.copyfile(
-            sibpath(__file__, 'id_dsa'),
-            os.path.join(user_home, '.ssh', 'id_dsa'))
-        shutil.copyfile(
-            sibpath(__file__, 'id_dsa.pub'),
-            os.path.join(user_home, '.ssh', 'id_dsa.pub'))
-        os.chmod(os.path.join(user_home, '.ssh', 'id_dsa'), 0600)
-        real_home, os.environ['HOME'] = os.environ['HOME'], user_home
-        def tearDownFakeHome():
-            os.environ['HOME'] = real_home
-            shutil.rmtree(user_home)
-        self.addCleanup(tearDownFakeHome)
+    def installServer(self, server):
+        self.server = server
+        self.default_user = server.authserver.testUser
+        self.default_team = server.authserver.testTeam
 
     def setUpSignalHandling(self):
         oldSigChld = signal.getsignal(signal.SIGCHLD)
         signal.signal(signal.SIGCHLD, signal.SIG_DFL)
         self.addCleanup(lambda: signal.signal(signal.SIGCHLD, oldSigChld))
-
-    def forceParamiko(self):
-        _old_vendor_manager = ssh._ssh_vendor_manager._cached_ssh_vendor
-        def restore_vendor_manager():
-            ssh._ssh_vendor_manager._cached_ssh_vendor = _old_vendor_manager
-        self.addCleanup(restore_vendor_manager)
-        ssh._ssh_vendor_manager._cached_ssh_vendor = ssh.ParamikoVendor()
 
     def setUp(self):
         super(SSHTestCase, self).setUp()
@@ -198,26 +322,14 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         # EINTR errors when child processes exit.
         self.setUpSignalHandling()
 
-        self.setUpTestUser(self.default_user, self.default_team)
+        if self.server is None:
+            authserver = AuthserverWithKeys(
+                self.default_user, self.default_team)
+            branches_root = '/tmp/sftp-test'
+            self.server = SFTPCodeHostingServer(authserver, branches_root)
 
-        # Point $HOME at a test ssh config and key.
-        self.setUpFakeHome()
-
-        # Force bzrlib to use paramiko (because OpenSSH doesn't respect $HOME)
-        self.forceParamiko()
-
-        # Start authserver.
-        authserver = AuthserverService()
-        authserver.startService()
-        self.addCleanup(authserver.stopService)
-
-        # Set up the branch storage location on the filesystem.
-        self.setUpBranchesRoot('/tmp/sftp-test')
-
-        # Start the SSH server
-        self.server = TestSSHService()
-        self.server.startService()
-        self.addCleanup(self.server.stopService)
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
 
     def __str__(self):
         return self.id()
@@ -226,53 +338,23 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         """Return the base URL for the tests."""
         if relpath is None:
             relpath = ''
-        if username is None:
-            username = self.default_user
-        return self.server_base % username + relpath
+        return self.server.get_url(username) + relpath
 
-    def getTransport(self, path=None):
-        """Get a paramiko transport pointing to `path` on the base server."""
-        if path is None:
-            path = ''
-        transport = get_transport(self.getTransportURL(path))
-        self.addCleanup(transport._sftp.close)
-        self.addCleanup(transport._sftp.sock.transport.close)
-        return transport
 
-    def closeAllSFTPConnections(self):
-        """Closes all open bzrlib SFTP connections.
+class AcceptanceTests(SSHTestCase):
+    """Acceptance tests for the Launchpad codehosting service's Bazaar support.
 
-        bzrlib doesn't provide a facility for closing sftp connections. The
-        closest it gets is clearing the connection cache and forcing the
-        connection objects to be garbage collected. This means that this method
-        won't actually close a connection if a reference to it is still around.
-        """
-        for client in sftp._connected_hosts.values():
-            client.close()
-            client.sock.transport.close()
-        sftp.clear_connection_cache()
-        gc.collect()
+    Originally converted from the English at
+    https://launchpad.canonical.com/SupermirrorTaskList
+    """
 
-    def runAndWaitForSSHDisconnect(self, func, *args, **kwargs):
-        """Run the given function, close all SFTP connections, and wait for the
-        server to acknowledge the end of the session.
-        """
+    layer = TwistedBzrlibLayer
+
+    def runAndWaitForDisconnect(self, func, *args, **kwargs):
         old_dir = os.getcwdu()
         os.chdir(local_path_from_url(self.local_branch.base))
         try:
-            ever_connected = threading.Event()
-            done = threading.Event()
-            self.server.setConnectionMadeEvent(ever_connected)
-            self.server.setConnectionLostEvent(done)
-            try:
-                result = func(*args, **kwargs)
-            finally:
-                self.closeAllSFTPConnections()
-                # done.wait() can block forever if func() never actually
-                # connects, so only wait if we are sure that the client
-                # connected.
-                if ever_connected.isSet():
-                    done.wait()
+            result = self.server.runAndWaitForDisconnect(func, *args, **kwargs)
         finally:
             os.chdir(old_dir)
         return result
@@ -287,7 +369,7 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-        self.runAndWaitForSSHDisconnect(
+        self.runAndWaitForDisconnect(
             self.run_bzr_captured, ['push', remote_url], retcode=None)
 
     def getLastRevision(self, remote_url):
@@ -297,18 +379,8 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-        return self.runAndWaitForSSHDisconnect(
+        return self.runAndWaitForDisconnect(
             lambda: bzrlib.branch.Branch.open(remote_url).last_revision())
-
-
-class AcceptanceTests(SSHTestCase):
-    """Acceptance tests for the Launchpad codehosting service's Bazaar support.
-
-    Originally converted from the English at
-    https://launchpad.canonical.com/SupermirrorTaskList
-    """
-
-    layer = TwistedBzrlibLayer
 
     def setUp(self):
         super(AcceptanceTests, self).setUp()
@@ -385,9 +457,9 @@ class AcceptanceTests(SSHTestCase):
         # disallow, and try to have a tolerable error.
 
     def _testMissingParentDirectory(self, relpath):
-        transport = self.getTransport(relpath).clone('..')
+        transport = self.server.getTransport(relpath).clone('..')
         self.assertRaises((NoSuchFile, PermissionDenied),
-                          self.runAndWaitForSSHDisconnect,
+                          self.runAndWaitForDisconnect,
                           transport.mkdir, 'hello')
 
     @deferToThread
@@ -427,7 +499,7 @@ class AcceptanceTests(SSHTestCase):
 
         self.assertRaises(
             NotBranchError,
-            self.runAndWaitForSSHDisconnect,
+            self.runAndWaitForDisconnect,
             bzrlib.branch.Branch.open,
             self.getTransportURL('~testuser/+junk/renamed-branch'))
 
@@ -485,24 +557,23 @@ class AcceptanceTests(SSHTestCase):
 
 class CodeHostingTestProviderAdapter:
 
-    def __init__(self, format, base_urls):
+    def __init__(self, format, servers):
         self._repository_format = format
-        self._base_urls = base_urls
+        self._servers = servers
 
     def adapt(self, test):
         from copy import deepcopy
         from bzrlib.tests import default_transport
         result = unittest.TestSuite()
-        for base_url in self._base_urls:
+        for server in self._servers:
             new_test = deepcopy(test)
             new_test.transport_server = default_transport
             new_test.transport_readonly_server = None
             new_test.bzrdir_format = self._repository_format._matchingbzrdir
             new_test.repository_format = self._repository_format
-            new_test.server_base = base_url
+            new_test.installServer(server)
             def make_new_test_id():
-                new_id = "%s(%s)" % (
-                    new_test.id(), base_url[:base_url.find(':')])
+                new_id = "%s(%s)" % (new_test.id(), server.__class__.__name__)
                 return lambda: new_id
             new_test.id = make_new_test_id()
             result.addTest(new_test)
@@ -547,8 +618,12 @@ def make_repository_tests(base_suite):
 def make_server_tests(base_suite):
     from bzrlib.repository import RepositoryFormat
     repository_format = RepositoryFormat.get_default_format()
-    base_urls = ['sftp://%s@localhost:22222/']
-    adapter = CodeHostingTestProviderAdapter(repository_format, base_urls)
+
+    authserver = AuthserverWithKeys('testuser', 'testteam')
+    branches_root = '/tmp/sftp-test'
+    servers = [
+        SFTPCodeHostingServer(authserver, branches_root)]
+    adapter = CodeHostingTestProviderAdapter(repository_format, servers)
     return adapt_suite(adapter, base_suite)
 
 
