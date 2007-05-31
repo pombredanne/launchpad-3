@@ -44,8 +44,8 @@ Your package contains new components which requires manual editing of
 the override file.  It is ok otherwise, so please be patient.  New
 packages are usually added to the overrides about once a week.
 
-You may have gotten the distrorelease wrong.  If so, you may get warnings
-above if files already exist in other distroreleases.
+You may have gotten the distroseries wrong.  If so, you may get warnings
+above if files already exist in other distroseries.
 
 -- 
 You are receiving this email because you are the uploader, maintainer or

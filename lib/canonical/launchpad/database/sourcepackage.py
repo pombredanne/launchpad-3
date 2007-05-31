@@ -40,8 +40,8 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from canonical.launchpad.database.distroreleasesourcepackagerelease import (
-    DistroReleaseSourcePackageRelease)
+from canonical.launchpad.database.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.build import Build
 
 
@@ -153,19 +153,19 @@ class SourcePackageQuestionTargetMixin:
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
-    """A source package, e.g. apache2, in a distrorelease.
+    """A source package, e.g. apache2, in a distroseries.
 
     This object implements the MagicSourcePackage specification. It is not a
     true database object, but rather attempts to represent the concept of a
-    source package in a distro release, with links to the relevant database
+    source package in a distro series, with links to the relevant database
     objects.
     """
 
     implements(ISourcePackage, IHasBuildRecords, IQuestionTarget)
 
-    def __init__(self, sourcepackagename, distrorelease):
+    def __init__(self, sourcepackagename, distroseries):
         self.sourcepackagename = sourcepackagename
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
 
     def _get_ubuntu(self):
         # XXX: Ideally, it would be possible to just do
@@ -193,8 +193,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
                    SourcePackageRelease.sourcepackagename = %s AND
                    SourcePackagePublishingHistory.distrorelease = %s AND
                    SourcePackagePublishingHistory.archive = %s
-                """ % sqlvalues(self.sourcepackagename, self.distrorelease,
-                                self.distrorelease.main_archive))
+                """ % sqlvalues(self.sourcepackagename, self.distroseries,
+                                self.distroseries.main_archive))
         if version:
             clauses.append(
                 "SourcePackageRelease.version = %s" % sqlvalues(version))
@@ -235,8 +235,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         latest_package = self._getFirstPublishingHistory(
                      exclude_status=[PackagePublishingStatus.REMOVED])
         if latest_package:
-            return DistroReleaseSourcePackageRelease(
-                    self.distrorelease, latest_package.sourcepackagerelease)
+            return DistroSeriesSourcePackageRelease(
+                    self.distroseries, latest_package.sourcepackagerelease)
         else:
             return None
 
@@ -246,31 +246,31 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
                      version=version,
                      exclude_status=[PackagePublishingStatus.REMOVED])
         if latest_package:
-            return DistroReleaseSourcePackageRelease(
-                    self.distrorelease, latest_package.sourcepackagerelease)
+            return DistroSeriesSourcePackageRelease(
+                    self.distroseries, latest_package.sourcepackagerelease)
         else:
             return None
 
     @property
     def displayname(self):
         return "%s %s" % (
-            self.distrorelease.displayname, self.sourcepackagename.name)
+            self.distroseries.displayname, self.sourcepackagename.name)
 
     @property
     def bugtargetname(self):
         """See IBugTarget."""
-        return "%s (%s)" % (self.name, self.distrorelease.fullreleasename)
+        return "%s (%s)" % (self.name, self.distroseries.fullseriesname)
 
     @property
     def title(self):
         titlestr = self.sourcepackagename.name
         titlestr += ' in ' + self.distribution.displayname
-        titlestr += ' ' + self.distrorelease.displayname
+        titlestr += ' ' + self.distroseries.displayname
         return titlestr
 
     @property
     def distribution(self):
-        return self.distrorelease.distribution
+        return self.distroseries.distribution
 
     @property
     def format(self):
@@ -282,7 +282,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
     def manifest(self):
         """For the moment, the manifest of a SourcePackage is defined as the
         manifest of the .currentrelease of that SourcePackage in the
-        distrorelease. In future, we might have a separate table for the
+        distroseries. In future, we might have a separate table for the
         current working copy of the manifest for a source package.
         """
         if not self.currentrelease:
@@ -333,14 +333,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
     @property
     def potemplates(self):
         result = POTemplate.selectBy(
-            distrorelease=self.distrorelease,
+            distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
         return sorted(list(result), key=lambda x: x.potemplatename.name)
 
     @property
     def currentpotemplates(self):
         result = POTemplate.selectBy(
-            distrorelease=self.distrorelease,
+            distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename,
             iscurrent=True)
         return sorted(list(result), key=lambda x: x.potemplatename.name)
@@ -369,16 +369,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         # get any packagings matching this sourcepackage
         return Packaging.selectFirstBy(
             sourcepackagename=self.sourcepackagename,
-            distrorelease=self.distrorelease,
+            distroseries=self.distroseries,
             orderBy='packaging')
 
     @property
     def packaging(self):
         """See ISourcePackage.packaging"""
         # First we look to see if there is packaging data for this
-        # distrorelease and sourcepackagename. If not, we look up through
-        # parent distroreleases, and when we hit Ubuntu, we look backwards in
-        # time through Ubuntu releases till we find packaging information or
+        # distroseries and sourcepackagename. If not, we look up through
+        # parent distroserieses, and when we hit Ubuntu, we look backwards in
+        # time through Ubuntu series till we find packaging information or
         # blow past the Warty Warthog.
 
         # see if there is a direct packaging
@@ -387,19 +387,19 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             return result
 
         ubuntu = self._get_ubuntu()
-        # if we are an ubuntu sourcepackage, try the previous release of
+        # if we are an ubuntu sourcepackage, try the previous series of
         # ubuntu
         if self.distribution == ubuntu:
-            ubuntureleases = self.distrorelease.previous_releases
-            if ubuntureleases:
-                previous_ubuntu_release = ubuntureleases[0]
+            ubuntuserieses = self.distroseries.previous_serieses
+            if ubuntuserieses:
+                previous_ubuntu_series = ubuntuserieses[0]
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
-                                   distrorelease=previous_ubuntu_release)
+                                   distroseries=previous_ubuntu_series)
                 return sp.packaging
-        # if we have a parent distrorelease, try that
-        if self.distrorelease.parentrelease is not None:
+        # if we have a parent distroseries, try that
+        if self.distroseries.parentseries is not None:
             sp = SourcePackage(sourcepackagename=self.sourcepackagename,
-                               distrorelease=self.distrorelease.parentrelease)
+                               distroseries=self.distroseries.parentseries)
             return sp.packaging
         # capitulate
         return None
@@ -432,8 +432,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             thedict[pocket] = []
         # add all the sourcepackagereleases in the right place
         for spr in result:
-            thedict[spr.pocket].append(DistroReleaseSourcePackageRelease(
-                spr.distrorelease, spr.sourcepackagerelease))
+            thedict[spr.pocket].append(DistroSeriesSourcePackageRelease(
+                spr.distroseries, spr.sourcepackagerelease))
         return thedict
 
     def searchTasks(self, search_params):
@@ -443,12 +443,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
 
     def getUsedBugTags(self):
         """See IBugTarget."""
-        return self.distrorelease.getUsedBugTags()
+        return self.distroseries.getUsedBugTags()
 
     def getUsedBugTagsWithOpenCounts(self, user):
         """See IBugTarget."""
         return get_bug_tags_open_count(
-            "BugTask.distrorelease = %s" % sqlvalues(self.distrorelease),
+            "BugTask.distrorelease = %s" % sqlvalues(self.distroseries),
             user,
             count_subcontext_clause="BugTask.sourcepackagename = %s" % (
                 sqlvalues(self.sourcepackagename)))
@@ -457,21 +457,21 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # We don't currently support opening a new bug directly on an
         # ISourcePackage, because internally ISourcePackage bugs mean bugs
-        # targetted to be fixed in a specific distrorelease + sourcepackage.
+        # targetted to be fixed in a specific distroseries + sourcepackage.
         raise NotImplementedError(
             "A new bug cannot be filed directly on a source package in a "
-            "specific distribution release, because releases are meant for "
-            "\"targeting\" a fix to a specific release. It's possible that "
+            "specific distribution series, because series are meant for "
+            "\"targeting\" a fix to a specific series. It's possible that "
             "we may change this behaviour to allow filing a bug on a "
-            "distribution release source package in the not-too-distant "
+            "distribution series source package in the not-too-distant "
             "future. For now, you probably meant to file the bug on the "
-            "distro-wide (i.e. not release-specific) source package.")
+            "distro-wide (i.e. not series-specific) source package.")
 
     def _getBugTaskContextClause(self):
         """See BugTargetBase."""
         return (
             'BugTask.distrorelease = %s AND BugTask.sourcepackagename = %s' %
-                sqlvalues(self.distrorelease, self.sourcepackagename))
+                sqlvalues(self.distroseries, self.sourcepackagename))
 
     def setPackaging(self, productseries, user):
         target = self.direct_packaging
@@ -482,7 +482,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             target.datecreated = UTC_NOW
         else:
             # ok, we need to create a new one
-            Packaging(distrorelease=self.distrorelease,
+            Packaging(distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename,
             productseries=productseries, owner=user,
             packaging=PackagingType.PRIME)
@@ -493,7 +493,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return (
             (ISourcePackage.providedBy(other)) and
-            (self.distrorelease.id == other.distrorelease.id) and
+            (self.distroseries.id == other.distroseries.id) and
             (self.sourcepackagename.id == other.sourcepackagename.id))
 
     def __ne__(self, other):
@@ -514,8 +514,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         SourcePackagePublishingHistory.sourcepackagerelease =
         SourcePackageRelease.id
         """ % sqlvalues(self.sourcepackagename,
-                        self.distrorelease,
-                        self.distrorelease.main_archive,
+                        self.distroseries,
+                        self.distroseries.main_archive,
                         PackagePublishingStatus.PUBLISHED)]
 
         # XXX cprov 20060925: It would be nice if we could encapsulate

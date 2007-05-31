@@ -1,23 +1,29 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+import binascii
+import os
+
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
 from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
 from twisted.conch.ssh.common import getNS, NS
 from twisted.conch.checkers import SSHPublicKeyDatabase
+
 from twisted.cred.error import UnauthorizedLogin
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
+
 from twisted.internet import defer
+
 from twisted.python import components, failure
+
 from twisted.vfs.pathutils import FileSystem
 from twisted.vfs.adapters import sftp
+
 from canonical.codehosting.bazaarfs import SFTPServerRoot
 
 from zope.interface import implements
-import binascii
-import os
 
 
 class SubsystemOnlySession(session.SSHSession, object):
@@ -134,6 +140,7 @@ class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
     def __init__(self, avatar):
         sftp.AdaptFileSystemUserToISFTP.__init__(self, avatar)
         self.filesystem = avatar.makeFileSystem()
+
 
 components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
                            filetransfer.ISFTPServer)

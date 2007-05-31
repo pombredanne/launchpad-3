@@ -91,7 +91,7 @@
               </td>
             </tr>
             <tr tal:condition="python:context.distribution or
-                                      context.distrorelease">
+                                      context.distroseries">
               <td colspan="0">
                 <label tal:attributes="for view/sourcepackagename_widget/name"
                        tal:content="view/sourcepackagename_widget/label">
@@ -100,7 +100,7 @@
               </td>
             </tr>
             <tr tal:condition="python:context.distribution or
-                                      context.distrorelease">
+                                      context.distroseries">
               <td colspan="0"
                   tal:content="context/sourcepackagename/name|nothing" nowrap />
             </tr>

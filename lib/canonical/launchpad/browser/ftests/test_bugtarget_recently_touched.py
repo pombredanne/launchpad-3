@@ -21,8 +21,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.ftests.test_bugtarget import (
     bugtarget_filebug, productSetUp, project_filebug, projectSetUp,
     productseries_filebug, productSeriesSetUp, distributionSetUp,
-    distributionSourcePackageSetUp, distrorelease_filebug,
-    distributionReleaseSetUp, sourcepackage_filebug, sourcePackageSetUp)
+    distributionSourcePackageSetUp, distroseries_filebug,
+    distributionSeriesSetUp, sourcepackage_filebug, sourcePackageSetUp)
 from canonical.launchpad.ftests.test_system_documentation import (
     default_optionflags, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
@@ -37,7 +37,7 @@ def test_suite():
         projectSetUp,
         distributionSetUp,
         distributionSourcePackageSetUp,
-        distributionReleaseSetUp,
+        distributionSeriesSetUp,
         sourcePackageSetUp,
         ]
 

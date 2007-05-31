@@ -540,12 +540,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         changed.
         """
 
-    def shippedShipItRequestsOfCurrentRelease():
+    def shippedShipItRequestsOfCurrentSeries():
         """Return all requests made by this person that were sent to the
         shipping company already.
 
         This only includes requests for CDs of
-        ShipItConstants.current_distrorelease.
+        ShipItConstants.current_distroseries.
         """
 
     def currentShipItRequest():
@@ -570,7 +570,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """Return SourcePackageReleases maintained by this person.
 
         This method will only include the latest source package release
-        for each source package name, distribution release combination.
+        for each source package name, distribution series combination.
         """
 
     def latestUploadedButNotMaintainedPackages():
@@ -578,7 +578,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         not maintained by him.
 
         This method will only include the latest source package release
-        for each source package name, distribution release combination.
+        for each source package name, distribution series combination.
         """
 
     def isUploader(distribution):
@@ -898,8 +898,8 @@ class IPersonSet(Interface):
     def getPOFileContributors(pofile):
         """Return people that have contributed to the specified POFile."""
 
-    def getPOFileContributorsByDistroRelease(self, distrorelease, language):
-        """Return people who translated strings in distroRelease to language.
+    def getPOFileContributorsByDistroSeries(self, distroseries, language):
+        """Return people who translated strings in distroseries to language.
 
         The people that translated only IPOTemplate objects that are not
         current will not appear in the returned list.
