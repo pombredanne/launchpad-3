@@ -855,7 +855,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 publishedpackage = PublishedPackage.selectFirstBy(
                     sourcepackagename=sourcepackagename.name,
                     binarypackagename=sourcepackagename.name,
-                    distrorelease=self.currentrelease,
+                    distroseries=self.currentseries,
                     orderBy=['-id'])
                 if publishedpackage is None:
                     # Try any release next.
