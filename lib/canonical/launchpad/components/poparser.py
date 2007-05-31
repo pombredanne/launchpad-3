@@ -356,29 +356,39 @@ class POMessage(object):
                 wrapped_line = [paragraph]
             else:
                 line = u''
+                escaped_line_len = 0
                 new_block = u''
+                escaped_new_block_len = 0
                 wrapped_line = []
                 for char in paragraph:
-                    if (len(local_escape(line))
-                        + len(local_escape(new_block))
+                    if (escaped_line_len + escaped_new_block_len
                         + len(local_escape(char)) <= wrap_width):
                         if char in wrap_at:
                             line += u'%s%s' % (new_block, char)
+                            escaped_line_len += (escaped_new_block_len
+                                                 + len(local_escape(char)))
                             new_block = u''
+                            escaped_new_block_len = 0
                         else:
                             new_block += char
+                            escaped_new_block_len += len(local_escape(char))
                     else:
-                        if len(local_escape(line)) == 0:
+                        if escaped_line_len == 0:
                             # Word is too long to fit into single line,
                             # break it carefully, watching not to break
                             # in the middle of the escape
                             line = new_block
-                            while len(local_escape(line)) > wrap_width:
+                            escaped_line_len = escaped_new_block_len
+                            while escaped_line_len > wrap_width:
+                                escaped_line_len -= len(local_escape(line[-1]))
                                 line = line[:-1]
                             new_block = new_block[len(line):]
+                            escaped_new_block_len -= escaped_line_len
                         wrapped_line.append(line)
                         line = u''
+                        escaped_line_len = 0
                         new_block += char
+                        escaped_new_block_len += len(local_escape(char))
                 if line or new_block:
                     wrapped_line.append(u'%s%s' % (line, new_block))
             for line in wrapped_line:
