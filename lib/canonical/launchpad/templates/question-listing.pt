@@ -44,15 +44,31 @@
 
       <input tal:replace="structure view/search_action/render" />
 
-      <div id="testcheck" tal:condition="view/show_language_checkboxes">
-        <label>Language</label> (<a href="/+editmylanguages">Change your preferred languages</a>)
-        <tal:languages replace="structure view/widgets/languages" />
+      <div class="field"
+           tal:condition="view/show_language_checkboxes"
+           tal:define="widget nocall:view/widgets/languages|nothing">
+        <label tal:content="widget/label">Label</label>
+        (<a href="/+editmylanguages">Change your preferred languages</a>)
+        <tal:languages replace="structure widget" />
       </div>
       
-      <tal:status define="widget nocall:view/widgets/status|nothing"
-                  condition="nocall: widget">
-        <metal:widget use-macro="widget/@@launchpad_widget_macros/launchpad_widget_row" />
-      </tal:status>
+      <div class="field" 
+           tal:define="widget nocall:view/widgets/status|nothing"
+           tal:condition="nocall: widget">
+        <div tal:define="error python:view.widget_errors.get('status')"
+             tal:attributes="class python:error and 'error' or None">
+          <label tal:content="widget/label">Label</label>
+          <tal:status tal:replace="structure widget">
+            <input type="text" style="width:100%"/>
+          </tal:status>
+
+          <div class="message"
+               tal:condition="error"
+               tal:content="structure error">
+            An error message.
+          </div>
+        </div>
+      </div>
 
     </form>
   </div>
@@ -133,7 +149,11 @@
     criteria in this context (project, person, sourcepackage).
   </p>
   <p>The search criteria for the current listing can be modified directly at
-    the top of the page.
+    the top of the page. You can enter text to see questions that have the
+    same terms. You may restrict the questions to one or more of your
+    <a href="/+editmylanguages">preferred languages</a> when the context
+    has questions in more than one of your languages. You must select one
+    or more statuses to match questions.
   </p>
   <p>If you hover the mouse over a question, the beginning of its
     description will pop-up after a few seconds.

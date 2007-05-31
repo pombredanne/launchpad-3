@@ -165,14 +165,15 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         languages. If the user is anonymous, the languages submited in the
         browser's request will be used.
         """
-        languages = self.user_support_languages
+        languages = set(self.user_support_languages)
+        languages.intersection_update(self.context_question_languages)
         terms = []
-        for lang in languages:
+        for lang in list(languages):
             terms.append(SimpleTerm(lang, lang.code, lang.displayname))
         return form.Fields(
                 List(
                     __name__='languages',
-                    title=_('View Languages'),
+                    title=_('Languages'),
                     value_type=Choice(vocabulary=SimpleVocabulary(terms)),
                     required=False,
                     default=self.user_support_languages,
@@ -180,6 +181,15 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                         'The languages to filter the search results by.')),
                 custom_widget=self.custom_widgets['languages'],
                 render_context=self.render_context)
+
+    def validate(self, data):
+        """Validate hook.
+
+        This validation method sets the chosen_language attribute.
+        """
+        if 'status' not in data:
+            self.setFieldError(
+                'status', _('You must choose at least one status.'))
 
     @cachedproperty
     def status_title_map(self):
@@ -283,14 +293,19 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     @property
     def show_language_checkboxes(self):
         """Whether to show the Languages boxes or not.
-        
-        English is added to user languages to ensure that it is the site
-        language. When the user has more than one language (English), then 
-        he may wish to filter the questions by one or more of his languages.
-        In general, People or browsers that only speak English will not see
-        the language controls.
+
+        When the QuestionTarget has questions in only one language,
+        and that language is among the users' languages, we hide
+        the language control because there are no choices to be made.
         """
-        return len(self.user_support_languages) > 1
+        languages = list(self.context_question_languages)
+        if len(languages) == 0:
+            return False
+        elif (len(languages) == 1
+              and languages[0] in self.user_support_languages):
+            return False
+        else:
+            return True
 
     @safe_action
     @action(_('Search'))
@@ -457,9 +472,14 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
             return _("No questions are unsupported for ${context}.",
                       mapping={'context': self.context.displayname})
 
+    @property
+    def show_language_checkboxes(self):
+        """See SearchQuestionsView."""
+        return False
+
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
-        return dict(language=None, languages=[], unsupported=True)
+        return dict(language=None, languages=None, unsupported=True)
 
 
 class ManageAnswerContactView(LaunchpadFormView):
