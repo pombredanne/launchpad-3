@@ -1,7 +1,6 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
-"""Tests for Supermirror SFTP server's bzr support.
-"""
+"""Tests for Supermirror SFTP server's bzr support."""
 
 __metaclass__ = type
 
@@ -34,7 +33,8 @@ from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.codehosting import sftponly
 from canonical.codehosting.tests.test_acceptance import (
     SFTPTestCase, SSHKeyMixin, deferToThread)
-from canonical.codehosting.tests.helpers import TwistedBzrlibLayer
+from canonical.codehosting.tests.helpers import (
+    TwistedLayer, TwistedBzrlibLayer)
 
 
 class SFTPTests(SFTPTestCase):
@@ -42,7 +42,7 @@ class SFTPTests(SFTPTestCase):
     layer = TwistedBzrlibLayer
 
     @deferToThread
-    def _test_rmdir_branch(self):
+    def test_rmdir_branch(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
         # branches)
         transport = self.getTransport('~testuser/+junk')
@@ -59,11 +59,8 @@ class SFTPTests(SFTPTestCase):
         # The 'foo' directory is still listed.
         self.failUnlessEqual(['bar', 'foo'], sorted(transport.list_dir('.')))
 
-    def test_rmdir_branch(self):
-        return self._test_rmdir_branch()
-
     @deferToThread
-    def _test_mkdir_toplevel_error(self):
+    def test_mkdir_toplevel_error(self):
         # You cannot create a top-level directory.
         transport = self.getTransport()
         e = self.assertRaises(PermissionDenied, transport.mkdir, 'foo')
@@ -71,11 +68,8 @@ class SFTPTests(SFTPTestCase):
             "Branches must be inside a person or team directory." in str(e),
             str(e))
 
-    def test_mkdir_toplevel_error(self):
-        return self._test_mkdir_toplevel_error()
-
     @deferToThread
-    def _test_mkdir_invalid_product_error(self):
+    def test_mkdir_invalid_product_error(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
         # branches)
         transport = self.getTransport('~testuser')
@@ -89,11 +83,8 @@ class SFTPTests(SFTPTestCase):
             "product name registered in Launchpad" in str(e),
             str(e))
 
-    def test_mkdir_invalid_product_error(self):
-        return self._test_mkdir_invalid_product_error()
-
     @deferToThread
-    def _test_mkdir_not_team_member_error(self):
+    def test_mkdir_not_team_member_error(self):
         # You can't mkdir in a team directory unless you're a member of that
         # team (in fact, you can't even see the directory).
         transport = self.getTransport()
@@ -101,11 +92,8 @@ class SFTPTests(SFTPTestCase):
                 transport.mkdir, '~not-my-team/mozilla-firefox')
         self.failUnless("~not-my-team" in str(e))
 
-    def test_mkdir_not_team_member_error(self):
-        return self._test_mkdir_not_team_member_error()
-
     @deferToThread
-    def _test_mkdir_team_member(self):
+    def test_mkdir_team_member(self):
         # You can mkdir in a team directory that you're a member of (so long as
         # it's a real product), though.
         transport = self.getTransport()
@@ -120,11 +108,8 @@ class SFTPTests(SFTPTestCase):
             'shiny-new-thing' in transport.list_dir('~testteam/firefox'))
         transport.mkdir('~testteam/firefox/shiny-new-thing/.bzr')
 
-    def test_mkdir_team_member(self):
-        return self._test_mkdir_team_member()
-
     @deferToThread
-    def _test_rename_directory_to_existing_directory_fails(self):
+    def test_rename_directory_to_existing_directory_fails(self):
         # 'rename dir1 dir2' should fail if 'dir2' exists. Unfortunately, it
         # will only fail if they both contain files/directories.
         transport = self.getTransport('~testuser/+junk')
@@ -137,11 +122,20 @@ class SFTPTests(SFTPTestCase):
         self.assertRaises(
             IOError, transport.rename, 'branch/.bzr/dir1', 'branch/.bzr/dir2')
 
-    def test_rename_directory_to_existing_directory_fails(self):
-        return self._test_rename_directory_to_existing_directory_fails()
+    @deferToThread
+    def test_rename_directory_to_empty_directory_succeeds(self):
+        # 'rename dir1 dir2' succeeds if 'dir2' is empty. Not sure we want this
+        # behaviour, but it's worth documenting.
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        transport.mkdir('branch/.bzr/dir1')
+        transport.mkdir('branch/.bzr/dir2')
+        transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
+        self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
 
     @deferToThread
-    def _test_rename_directory_succeeds(self):
+    def test_rename_directory_succeeds(self):
         # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
         transport = self.getTransport('~testuser/+junk')
         transport.mkdir('branch')
@@ -150,9 +144,6 @@ class SFTPTests(SFTPTestCase):
         transport.mkdir('branch/.bzr/dir1/foo')
         transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
         self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
-
-    def test_rename_directory_success(self):
-        return self._test_rename_directory_succeeds()
 
 
 class MockRealm:
