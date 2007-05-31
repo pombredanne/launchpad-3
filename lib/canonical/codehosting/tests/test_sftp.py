@@ -336,7 +336,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase, SSHKeyMixin):
         self.authService.startService()
         self.authserver = TwistedAuthServer(config.codehosting.authserver)
         self.checker = sftponly.PublicKeyFromLaunchpadChecker(self.authserver)
-        self.prepareTestUser()
+        self.setUpTestUser()
         self.valid_login = 'testuser'
         self.public_key = self.getPublicKey()
         self.sigData = (

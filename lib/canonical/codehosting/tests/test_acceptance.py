@@ -120,7 +120,7 @@ class TestBazaarFileTransferServer(BazaarFileTransferServer):
 class SSHKeyMixin:
     """Mixin for tests that need to do SSH key-based authentication."""
 
-    def prepareTestUser(self):
+    def setUpTestUser(self):
         """Prepare 'testuser' and 'testteam' Persons, giving 'testuser' a known
         SSH key.
         """
@@ -196,7 +196,7 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         # EINTR errors when child processes exit.
         self.setUpSignalHandling()
 
-        self.prepareTestUser()
+        self.setUpTestUser()
 
         # Point $HOME at a test ssh config and key.
         self.setUpFakeHome()
