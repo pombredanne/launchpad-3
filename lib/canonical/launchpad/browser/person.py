@@ -2992,12 +2992,12 @@ class PersonBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, self.selected_lifecycle_status)
+            self.context, self.selected_lifecycle_status, self.user)
 
     @cachedproperty
     def _subscribed_branches(self):
         return set(getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, []))
+            self.context, [], self.user))
 
     def roleForBranch(self, branch):
         person = self.context
@@ -3019,7 +3019,7 @@ class PersonAuthoredBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, self.selected_lifecycle_status)
+            self.context, self.selected_lifecycle_status, self.user)
 
 
 class PersonRegisteredBranchesView(BranchListingView):
@@ -3030,7 +3030,7 @@ class PersonRegisteredBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, self.selected_lifecycle_status)
+            self.context, self.selected_lifecycle_status, self.user)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
@@ -3041,7 +3041,7 @@ class PersonSubscribedBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, self.selected_lifecycle_status)
+            self.context, self.selected_lifecycle_status, self.user)
 
 
 class PersonTeamBranchesView(LaunchpadView):

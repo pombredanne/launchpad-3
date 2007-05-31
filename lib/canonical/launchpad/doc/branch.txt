@@ -137,12 +137,12 @@ Branches with no URL are primarily hosted on the supermirror.
 
 == Determining the number of branches ==
 
-The IBranchSet can tell us how many branches there are registered.
+The IBranchSet can tell us how many public branches there are registered.
 
     >>> branchset.count()
-    32
+    30
 
-(30 in the sample data, and two added above.)
+(28 public branches in the sample data, and two added above.)
 
 # XXX thumper 2007-05-28
 # Rework example so it doesn't get stuffed everytime we update sample data.
@@ -713,7 +713,9 @@ return all branches associated with that person:
     New ~ddaa/+junk/junkcode
 
     >>> sample_person = personset.getByName('name12')
-    >>> for branch in branchset.getBranchesForPerson(sample_person):
+    >>> branches = branchset.getBranchesForPerson(
+    ...     sample_person, visible_by_user=sample_person)
+    >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
     New ~name12/firefox/main
     Abandoned ~name12/gnome-terminal/2.4
@@ -730,7 +732,9 @@ return all branches associated with that person:
     Experimental ~name12/+junk/junk.dev
     New ~name12/+junk/junk.contrib
 
-    >>> for branch in branchset.getBranchesAuthoredByPerson(sample_person):
+    >>> branches = branchset.getBranchesAuthoredByPerson(
+    ...     sample_person, visible_by_user=sample_person)
+    >>> for branch in branches:
     ...     print branch.lifecycle_status.title, branch.unique_name
     New ~name12/firefox/main
     Merged ~name12/gnome-terminal/slowness
