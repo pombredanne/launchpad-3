@@ -21,7 +21,7 @@ from canonical.testing import (
         )
 from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
 from canonical.functional import FunctionalTestSetup
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import (
         cursor, SQLBase, ZopelessTransactionManager,
@@ -67,13 +67,11 @@ def _disconnect_sqlos():
         del connCache[key]
     sqlos.connection.connCache.clear()
 
-def _reconnect_sqlos(dbuser=None):
+def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
     _disconnect_sqlos()
-    da = None
+    dbconfig.setConfigSection(database_config_section)
     name = getUtility(IConnectionName).name
     da = getUtility(IZopeDatabaseAdapter, name)
-    if dbuser is None:
-        dbuser = config.launchpad.dbuser
     da.switchUser(dbuser)
 
     # Confirm that the database adapter *really is* connected.
