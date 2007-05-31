@@ -304,11 +304,11 @@ class TrackerImporter:
 
         # pick a series to attach the milestone.  Pick 'trunk' or
         # 'main' if they exist.  Otherwise pick the first.
-        for series in self.product.serieslist:
+        for series in self.product.serieses:
             if series.name in ['trunk', 'main']:
                 break
         else:
-            series = self.product.serieslist[0]
+            series = self.product.serieses[0]
 
         return series.newMilestone(name)
 

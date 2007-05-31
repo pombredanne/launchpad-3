@@ -41,7 +41,7 @@ u'trunk'
 It's also possible to ask a product for all its associated series.
 
 >>> onedotzero = firefox.getSeries('1.0')
->>> list(firefox.serieslist) == [onedotzero, trunk]
+>>> list(firefox.serieses) == [onedotzero, trunk]
 True
 
 A ProductSeries can also be fetched with the IProductSeriesSet utility.

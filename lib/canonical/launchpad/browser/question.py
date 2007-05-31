@@ -21,7 +21,7 @@ __all__ = [
     'QuestionSubscriptionView',
     'QuestionWorkflowView',
     ]
-    
+
 import re
 
 from operator import attrgetter
@@ -47,8 +47,8 @@ from canonical.launchpad.helpers import is_english_variant, request_languages
 
 from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, IBug, ILanguageSet,
-    ILaunchpadStatisticSet, IProject, IQuestion, IQuestionAddMessageForm, 
-    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget, 
+    ILaunchpadStatisticSet, IProject, IQuestion, IQuestionAddMessageForm,
+    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget,
     UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
@@ -190,8 +190,8 @@ class QuestionLanguageVocabularyFactory:
     def __init__(self, view):
         """Create a QuestionLanguageVocabularyFactory.
 
-        :param view: The view that provides the request used to determine the 
-        user languages. The view contains the Product widget selected by the 
+        :param view: The view that provides the request used to determine the
+        user languages. The view contains the Product widget selected by the
         user in the case where a question is asked in the context of a Project.
         """
         self.view = view
@@ -208,12 +208,12 @@ class QuestionLanguageVocabularyFactory:
 
         # Insert English as the first element, to make it the default one.
         languages.insert(0, getUtility(ILanguageSet)['en'])
-        
+
         # The vocabulary indicates which languages are supported.
         if context is not None and not IProject.providedBy(context):
             question_target = IQuestionTarget(context)
             supported_languages = question_target.getSupportedLanguages()
-        elif (IProject.providedBy(context) and 
+        elif (IProject.providedBy(context) and
                 self.view.question_target is not None):
             # Projects do not implement IQuestionTarget--the user must
             # choose a product while asking a question.
@@ -272,7 +272,7 @@ class QuestionSupportLanguageMixin:
             key=attrgetter('englishname'))
 
     def createLanguageField(self):
-        """Create a field with a special vocabulary to edit a question language.
+        """Create a field with a vocabulary to edit a question language.
 
         :param the_form: The form that will use this field.
         :return: A form.Fields instance containing the language field.
@@ -298,7 +298,8 @@ class QuestionSupportLanguageMixin:
         will only be displayed one time, except if the user changes the
         request language to another unsupported value.
         """
-        if self.chosen_language in self.question_target.getSupportedLanguages():
+        if (self.chosen_language in
+            self.question_target.getSupportedLanguages()):
             return False
 
         old_chosen_language = self.request.form.get('chosen_language')
@@ -452,8 +453,7 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     """View for editing a Question."""
     schema = IQuestion
     label = 'Edit question'
-    field_names = ["title", "description", "target", "priority", "assignee", 
-                   "whiteboard"]
+    field_names = ["title", "description", "target", "assignee", "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)
@@ -466,7 +466,7 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
         """
         LaunchpadEditFormView.setUpFields(self)
 
-        self.form_fields = self.form_fields.omit("distribution", 
+        self.form_fields = self.form_fields.omit("distribution",
             "sourcepackagename", "product")
 
         # Add the language field with a vocabulary specialized for display
@@ -496,7 +496,7 @@ class QuestionMakeBugView(LaunchpadFormView):
     field_names = ['title', 'description']
 
     def initialize(self):
-        """Initialize the view when a Bug may be reported for this Question."""
+        """Initialize the view when a Bug may be reported for the Question."""
         question = self.context
         if question.bugs:
             # we can't make a bug when we have linked bugs
@@ -519,7 +519,8 @@ class QuestionMakeBugView(LaunchpadFormView):
         """Create a Bug from a Question."""
         question = self.context
 
-        unmodifed_question = Snapshot(question, providing=providedBy(question))
+        unmodifed_question = Snapshot(
+            question, providing=providedBy(question))
         params = CreateBugParams(
             owner=self.user, title=data['title'], comment=data['description'])
         bug = question.target.createBug(params)
@@ -646,7 +647,7 @@ class QuestionWorkflowView(LaunchpadFormView):
     @action(_('I Solved the Problem on My Own'), name="selfanswer",
             condition=canSelfAnswer)
     def selfanswer_action(self, action, data):
-        """Action called when the owner provides the solution to his problem."""
+        """Action called when the owner provides the solution."""
         self.context.giveAnswer(self.user, data['message'])
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for sharing your solution.'), data)
@@ -833,7 +834,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
                      mapping=dict(search_text=self.search_text))
         else:
             return _('There are no questions with the requested statuses.')
-    
+
     @safe_action
     @action(_('Search'), name='search')
     def search_action(self, action, data):
@@ -843,7 +844,9 @@ class SearchAllQuestionsView(SearchQuestionsView):
         attribute and redirects to questions when the term is a question id.
         """
         super(SearchAllQuestionsView, self).search_action.success(data)
-        
+
+        if not self.search_text:
+            return
         id_matches = SearchAllQuestionsView.id_pattern.match(self.search_text)
         if id_matches is not None:
             question = getUtility(IQuestionSet).get(id_matches.group(1))

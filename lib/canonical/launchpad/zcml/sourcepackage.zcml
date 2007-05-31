@@ -55,7 +55,7 @@
   <browser:url
     for="canonical.launchpad.interfaces.ISourcePackage"
     path_expression="string:+source/${name}"
-    attribute_to_parent="distrorelease"
+    attribute_to_parent="distroseries"
     />
 
    <browser:menus

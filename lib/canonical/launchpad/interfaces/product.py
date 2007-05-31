@@ -261,13 +261,12 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'translation. This will remove the caution presented when '
         'people contribute translations for the project in Launchpad.'))
 
-    sourcepackages = Attribute(_("List of distribution release packages for "
-        "this product"))
+    sourcepackages = Attribute(_("List of packages for this product"))
 
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
-    serieslist = Attribute(_("""An iterator over the ProductSeries for this
+    serieses = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
 
     development_focus = Choice(
@@ -286,17 +285,17 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     related to this product."""))
 
     milestones = Attribute(_(
-        "The visible release milestones associated with this product, "
+        "The visible milestones associated with this product, "
         "ordered by date expected."))
     all_milestones = Attribute(_(
-        "All release milestones associated with this product, ordered by "
+        "All milestones associated with this product, ordered by "
         "date expected."))
 
     bounties = Attribute(_("The bounties that are related to this product."))
 
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "
-        "translated sorted by distrorelease.name and sourcepackage.name.")
+        "translated sorted by distroseries.name and sourcepackage.name.")
 
     translatable_series = Attribute(
         "A list of the series of this product for which we have translation "
@@ -318,8 +317,8 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getLatestBranches(quantity=5):
         """Latest <quantity> branches registered for this product."""
 
-    def getPackage(distrorelease):
-        """Return a package in that distrorelease for this product."""
+    def getPackage(distroseries):
+        """Return a package in that distroseries for this product."""
 
     def getMilestone(name):
         """Return a milestone with the given name for this product, or

@@ -267,9 +267,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     myactivememberships = Attribute(
         "List of TeamMembership objects for Teams this Person is an active "
         "member of.")
-    activememberships = Attribute(
-        "List of TeamMembership objects for people who are active members "
-        "in this team.")
+    open_membership_invitations = Attribute(
+        "All TeamMemberships which represent an invitation (to join a team) "
+        "sent to this person.")
     teams_participated_in = Attribute(
         "Iterable of all Teams that this person is active in, recursive")
     teams_indirectly_participated_in = Attribute(
@@ -299,10 +299,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
     proposedmembers = Attribute("List of members with PROPOSED status")
-    declinedmembers = Attribute("List of members with DECLINED status")
     inactivemembers = Attribute(
         "List of members with EXPIRED or DEACTIVATED status")
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
+    invited_members = Attribute("List of members with INVITED status")
+    pendingmembers = Attribute(
+        "List of members with INVITED or PROPOSED status")
     specifications = Attribute(
         "Any specifications related to this person, either because the are "
         "a subscriber, or an assignee, or a drafter, or the creator. "
@@ -413,6 +415,34 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         if person.icon is not None and not person.isTeam():
             raise Invalid('Only teams can have an icon.')
 
+    def getActiveMemberships():
+        """Return all active TeamMembership objects of this team.
+
+        Active TeamMemberships are the ones with the ADMIN or APPROVED status.
+
+        The results are ordered using Person.sortingColumns.
+        """
+
+    def getInvitedMemberships():
+        """Return all TeamMemberships of this team with the INVITED status.
+
+        The results are ordered using Person.sortingColumns.
+        """
+
+    def getInactiveMemberships():
+        """Return all inactive TeamMemberships of this team.
+
+        Inactive memberships are the ones with status EXPIRED or DEACTIVATED.
+
+        The results are ordered using Person.sortingColumns.
+        """
+
+    def getProposedMemberships():
+        """Return all TeamMemberships of this team with the PROPOSED status.
+
+        The results are ordered using Person.sortingColumns.
+        """
+
     def getBugContactPackages():
         """Return a list of packages for which this person is a bug contact.
 
@@ -510,12 +540,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         changed.
         """
 
-    def shippedShipItRequestsOfCurrentRelease():
+    def shippedShipItRequestsOfCurrentSeries():
         """Return all requests made by this person that were sent to the
         shipping company already.
 
         This only includes requests for CDs of
-        ShipItConstants.current_distrorelease.
+        ShipItConstants.current_distroseries.
         """
 
     def currentShipItRequest():
@@ -540,7 +570,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """Return SourcePackageReleases maintained by this person.
 
         This method will only include the latest source package release
-        for each source package name, distribution release combination.
+        for each source package name, distribution series combination.
         """
 
     def latestUploadedButNotMaintainedPackages():
@@ -548,8 +578,16 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         not maintained by him.
 
         This method will only include the latest source package release
-        for each source package name, distribution release combination.
+        for each source package name, distribution series combination.
         """
+
+    def isUploader(distribution):
+        """Return whether this person is an uploader for distribution.
+
+        Returns True if this person is an uploader for distribution, or
+        False otherwise.
+        """
+
 
     def validateAndEnsurePreferredEmail(email):
         """Ensure this person has a preferred email.
@@ -601,12 +639,16 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """
 
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None):
+                  comment=None, force_team_add=False):
         """Add the given person as a member of this team.
 
         If the given person is already a member of this team we'll simply
         change its membership status. Otherwise a new TeamMembership is
         created with the given status.
+
+        If the person is actually a team and force_team_add is False, the
+        team will actually be invited to join this one. Otherwise the team
+        is added as if it were a person.
 
         The given status must be either Approved, Proposed or Admin.
 
@@ -856,8 +898,8 @@ class IPersonSet(Interface):
     def getPOFileContributors(pofile):
         """Return people that have contributed to the specified POFile."""
 
-    def getPOFileContributorsByDistroRelease(self, distrorelease, language):
-        """Return people who translated strings in distroRelease to language.
+    def getPOFileContributorsByDistroSeries(self, distroseries, language):
+        """Return people who translated strings in distroseries to language.
 
         The people that translated only IPOTemplate objects that are not
         current will not appear in the returned list.

@@ -71,7 +71,7 @@ def main():
             target_archives = [distribution.main_archive]
 
         for archive in target_archives:
-            for distrorelease in distribution.releases:
+            for distrorelease in distribution.serieses:
 
                 if archive == distrorelease.main_archive:
                     log.debug("Processing queue for %s" % distrorelease.name)

@@ -181,7 +181,7 @@ class MultiTableCopy:
         """
         self.name = name
         self.tables = tables
-        self.lower_tables = [t.lower() for t in self.tables]
+        self.lower_tables = [table.lower() for table in self.tables]
         self.seconds_per_batch = seconds_per_batch
         self.minimum_batch_size = minimum_batch_size
         self.last_extracted_table = None
@@ -203,8 +203,8 @@ class MultiTableCopy:
 
         Return value is properly quoted for use as an SQL identifier.
         """
-        return str(
-            quoteIdentifier(self.getRawHoldingTableName(tablename, suffix)))
+        raw_name = self.getRawHoldingTableName(tablename, suffix)
+        return str(quoteIdentifier(raw_name))
 
     def pointsToTable(self, source_table, foreign_key):
         """Name of table that source_table.foreign_key refers to.
@@ -345,10 +345,10 @@ class MultiTableCopy:
         added from the holding table.
         """
         columns = [join.lower() for join in joins]
-        fkupdates = ['%s = new_%s' % (column, column) for column in columns]
-        updatestr = ', '.join(fkupdates)
-        logging.info("Redirecting foreign keys: %s" % updatestr)
-        cur.execute("UPDATE %s SET %s" % (holding_table, updatestr))
+        fk_updates = ['%s = new_%s' % (column, column) for column in columns]
+        updates = ', '.join(fk_updates)
+        logging.info("Redirecting foreign keys: %s" % updates)
+        cur.execute("UPDATE %s SET %s" % (holding_table, updates))
         for column in columns:
             logging.info("Dropping foreign-key column %s" % column)
             cur.execute("ALTER TABLE %s DROP COLUMN new_%s"
@@ -515,8 +515,8 @@ class MultiTableCopy:
     def _commit(self, ztm, cur=None):
         """If we have a transaction, commit it and offer replacement cursor.
 
-        Use this as "cur = self._commit(cur)" to commit a transaction, restart
-        it, and replace cur with a cursor that lives within the new
+        Use this as "cur = self._commit(ztm, cur)" to commit a transaction,
+        restart it, and replace cur with a cursor that lives within the new
         transaction.
         """
         if ztm is None:
