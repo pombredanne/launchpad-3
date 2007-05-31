@@ -216,6 +216,22 @@ class SFTPCodeHostingServer(SSHCodeHostingServer):
         return transport
 
 
+class SmartSSHCodeHostingServer(SSHCodeHostingServer):
+
+    def setUp(self):
+        SSHCodeHostingServer.setUp(self)
+        self._schema = 'bzr+ssh'
+
+    def getTransport(self, path=None):
+        if path is None:
+            path = ''
+        transport = get_transport(self.get_url()).clone(path)
+        return transport
+
+    def closeAllConnections(self):
+        pass
+
+
 class TestSSHService(SFTPService):
     """SSH service that uses the the TestSFTPOnlyAvatar and installs the test
     keys in a place that the SSH server can find them.
@@ -621,7 +637,8 @@ def make_server_tests(base_suite):
     authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = '/tmp/sftp-test'
     servers = [
-        SFTPCodeHostingServer(authserver, branches_root)]
+        SFTPCodeHostingServer(authserver, branches_root),
+        SmartSSHCodeHostingServer(authserver, branches_root)]
     adapter = CodeHostingTestProviderAdapter(repository_format, servers)
     return adapt_suite(adapter, base_suite)
 
