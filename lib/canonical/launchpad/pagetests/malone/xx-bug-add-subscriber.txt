@@ -47,4 +47,3 @@ The subscribers portlet now contains the new subscriber's name.
     >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
     >>> extract_text(subs.ul)
     u'...David Allouche...'
-
