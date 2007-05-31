@@ -19,7 +19,6 @@ from bzrlib.tests.repository_implementations.test_repository import (
 from bzrlib.transport import get_transport, sftp, ssh
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
-from bzrlib.repository import RepositoryTestProviderAdapter
 
 from twisted.conch.ssh import keys
 from twisted.python.util import sibpath
@@ -152,6 +151,10 @@ class SSHKeyMixin:
 
 class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
 
+    default_user = 'testuser'
+    default_team = 'testteam'
+    server_base = 'sftp://%s@localhost:22222/'
+
     def setUpBranchesRoot(self, branches_root):
         if os.path.isdir(branches_root):
             shutil.rmtree(branches_root)
@@ -191,10 +194,6 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
     def setUp(self):
         super(SSHTestCase, self).setUp()
 
-        self.default_user = 'testuser'
-        self.default_team = 'testteam'
-        self.server_base = 'sftp://%s@localhost:22222/'
-
         # Install the default SIGCHLD handler so that read() calls don't get
         # EINTR errors when child processes exit.
         self.setUpSignalHandling()
@@ -219,6 +218,9 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         self.server = TestSSHService()
         self.server.startService()
         self.addCleanup(self.server.stopService)
+
+    def __str__(self):
+        return self.id()
 
     def getTransportURL(self, relpath=None, username=None):
         """Return the base URL for the tests."""
@@ -480,44 +482,79 @@ class AcceptanceTests(SSHTestCase):
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
 
-class CodeHostingTestProviderAdapter(RepositoryTestProviderAdapter):
 
-    # XXX: JonathanLange 2007-05-31, Should I be using composition instead of
-    # inheritance here?
+class CodeHostingTestProviderAdapter:
 
-    def __init__(self, transport_server, transport_readonly_server, formats,
-                 base_urls, vfs_transport_factory=None):
-        RepositoryTestProviderAdapter.__init__(
-            self, transport_server, transport_readonly_server, formats,
-            vfs_transport_factory)
+    def __init__(self, format, base_urls):
+        self._repository_format = format
         self._base_urls = base_urls
 
     def adapt(self, test):
-        result = RepositoryTestProviderAdapter.adapt(self, test)
+        from copy import deepcopy
+        from bzrlib.tests import default_transport
+        result = unittest.TestSuite()
+        for base_url in self._base_urls:
+            new_test = deepcopy(test)
+            new_test.transport_server = default_transport
+            new_test.transport_readonly_server = None
+            new_test.bzrdir_format = self._repository_format._matchingbzrdir
+            new_test.repository_format = self._repository_format
+            new_test.server_base = base_url
+            def make_new_test_id():
+                new_id = "%s(%s)" % (
+                    new_test.id(), base_url[:base_url.find(':')])
+                return lambda: new_id
+            new_test.id = make_new_test_id()
+            result.addTest(new_test)
         return result
 
 
-def test_suite():
+def adapt_suite(adapter, base_suite):
+    from bzrlib.tests import iter_suite_tests
+    suite = unittest.TestSuite()
+    for test in iter_suite_tests(base_suite):
+        suite.addTests(adapter.adapt(test))
+    return suite
+
+
+def make_repository_tests(base_suite):
     # Construct a test suite that runs AcceptanceTests with several different
     # repository formats.
     #
     # We do this so that we can be sure that users can host various different
     # formats without any trouble.
+    from bzrlib.repository import RepositoryTestProviderAdapter
     from bzrlib.repository import format_registry
     from bzrlib.repofmt.weaverepo import RepositoryFormat6
-    from bzrlib.tests import default_transport, iter_suite_tests
+    from bzrlib.tests import default_transport
+
+    # Test all the formats except for the default. The default format is tested
+    # by the server tests.
     supported_formats = [RepositoryFormat6()]
     supported_formats.extend([
-        format_registry.get(k) for k in format_registry.keys()])
-    adapter = CodeHostingTestProviderAdapter(
+        format_registry.get(k) for k in format_registry.keys()
+        if k != format_registry.default_key])
+    adapter = RepositoryTestProviderAdapter(
         default_transport,
         # None here will cause a readonly decorator to be created
         # by the TestCaseWithTransport.get_readonly_transport method.
         None,
-        [(format, format._matchingbzrdir) for format in supported_formats],
-        ['sftp://%s@localhost:22222'])
+        [(format, format._matchingbzrdir) for format in supported_formats])
 
+    return adapt_suite(adapter, base_suite)
+
+
+def make_server_tests(base_suite):
+    from bzrlib.repository import RepositoryFormat
+    repository_format = RepositoryFormat.get_default_format()
+    base_urls = ['sftp://%s@localhost:22222/']
+    adapter = CodeHostingTestProviderAdapter(repository_format, base_urls)
+    return adapt_suite(adapter, base_suite)
+
+
+def test_suite():
+    base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
-    for test in iter_suite_tests(unittest.makeSuite(AcceptanceTests)):
-        suite.addTests(adapter.adapt(test))
+    suite.addTest(make_repository_tests(base_suite))
+    suite.addTest(make_server_tests(base_suite))
     return suite
