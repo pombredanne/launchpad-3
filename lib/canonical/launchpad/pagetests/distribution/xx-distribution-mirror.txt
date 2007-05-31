@@ -106,13 +106,27 @@ the mirror owner, but can only be edited by mirror admins).
     >>> print extract_text(find_tag_by_id(browser.contents, 'status'))
     Official Ubuntu Linux Mirror registered by Sample Person ... 
 
+The whiteboard can also be seen by the mirror owner, but not by anybody
+else.
+
+    >>> browser = Browser()
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'whiteboard'))
+    This is a good mirror 
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive')
+    >>> print find_tag_by_id(anon_browser.contents, 'whiteboard')
+    None
+
 == Error checking ==
 
 When creating a new mirror, at least an HTTP or FTP URL must be given.
 
     # XXX: matsubara 2006-05-18: We need to reset the Browser object to
     # reset the headers.  https://launchpad.net/launchpad/+bug/45226
-    >>> from zope.testbrowser.testing import Browser
     >>> browser = Browser()
     >>> browser.handleErrors = False
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
