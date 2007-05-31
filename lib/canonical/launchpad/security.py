@@ -828,11 +828,16 @@ class AdminByBuilddAdmin(AuthorizationBase):
     permission = 'launchpad.Admin'
 
     def checkAuthenticated(self, user):
-        """Allow only admins and members of buildd_admin team"""
+        """Allow admins and buildd_admins."""
         lp_admin = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(lp_admin):
+            return True
+
         buildd_admin = getUtility(ILaunchpadCelebrities).buildd_admin
-        return (user.inTeam(buildd_admin) or
-                user.inTeam(lp_admin))
+        if user.inTeam(buildd_admin):
+            return True
+
+        return False
 
 
 class AdminBuilderSet(AdminByBuilddAdmin):
@@ -854,6 +859,15 @@ class EditBuilder(AdminByBuilddAdmin):
 class AdminBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
 
+    def checkAuthenticated(self, user):
+        """Allow only BuilddAdmins and PPA owner."""
+        if AdminByBuilddAdmin.checkAuthenticated(self, user):
+            return True
+
+        if self.obj.archive.owner and user.inTeam(self.obj.archive.owner):
+            return True
+
+        return False
 
 class AdminQuestion(AdminByAdminsTeam):
     permission = 'launchpad.Admin'

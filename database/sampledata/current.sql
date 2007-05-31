@@ -578,7 +578,7 @@ INSERT INTO archive (id, "owner", description) VALUES (7, NULL, NULL);
 INSERT INTO archive (id, "owner", description) VALUES (8, NULL, NULL);
 INSERT INTO archive (id, "owner", description) VALUES (9, 28, 'packages to help my friends.');
 INSERT INTO archive (id, "owner", description) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)');
-
+INSERT INTO archive (id, "owner", description) VALUES (11, 52, 'I am not allowed to say, I have no privs.');
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
 
@@ -1100,6 +1100,7 @@ INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, da
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (20, '2006-07-25 00:00:00', 1, 1, 0, NULL, NULL, NULL, NULL, 29, 0, NULL, 1);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (21, '2006-12-01 00:00:00', 1, 1, 2, NULL, NULL, NULL, NULL, 33, 0, NULL, 1);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (22, '2007-04-20 00:00:00', 1, 8, 7, '2007-04-20 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 1);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive) VALUES (23, '2007-05-30 00:00:00', 1, 1, 2, '2007-05-30 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 11);
 
 
 ALTER TABLE build ENABLE TRIGGER ALL;
