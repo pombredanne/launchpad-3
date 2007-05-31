@@ -38,13 +38,20 @@ sent:
     'test@canonical.com'
     >>> add_notification['Subject']
     "[Question #...]: Can't install Ubuntu"
-    >>> notification_body = add_notification.get_payload()
+
+Like all Launchpad notifications should, the message contain in the
+footer the reason why the user is receiving the notification.
+
+    >>> notification_body = add_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     New question #... on Ubuntu:
     http://.../ubuntu/+question/...
     <BLANKLINE>
     I insert the install CD in the CD-ROM drive, but it won't boot.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 The notification also includes a 'X-Launchpad-Question' header that
 contains information about the question.
@@ -52,6 +59,12 @@ contains information about the question.
     >>> print add_notification['X-Launchpad-Question']
     distribution=ubuntu; sourcepackage=None; status=Open;
     assignee=None; priority=Normal; language=en
+
+As welll as the standard 'X-Launchpad-Message-Rationale' header that
+contains in short format the reason for the user to be contacted.
+
+    >>> print add_notification['X-Launchpad-Message-Rationale']
+    Subscriber
 
 Register the Ubuntu Team as Ubuntu's answer contact, so that they get
 notified about the changes as well:
@@ -69,8 +82,8 @@ notifications:
 
 == Edit Notifications ==
 
-If we edit the title and description of the question, a notification will be
-sent.
+If we edit the title and description of the question, a notification
+will be sent.
 
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
@@ -118,6 +131,9 @@ Foo Bar, and one to Ubuntu Team:
     <BLANKLINE>
     It boots straight into MacOS 9.
     <BLANKLINE>
+    --...
+    You received this question notification because you are the assignee for
+    this question.
 
 XXX flacoste 2006/09/19 Add checks for notification of change to
 assignee, status whiteboard, priority. For example, if a question is
@@ -141,7 +157,10 @@ the notification does not include priority.
     <BLANKLINE>
         Project: libstdc++ in ubuntu => Ubuntu
     <BLANKLINE>
-  
+    --...
+    You received this question notification because you are the assignee for
+    this question.
+
 If we trigger a modification event when no changes worth
 notifying about was made, no notification is sent:
 
@@ -193,6 +212,9 @@ bug that has been linked to it:
         http://.../bugs/...
         "Installer fails on a Mac PPC"
     <BLANKLINE>
+    --...
+    You received this question notification because you are a member of
+    Ubuntu Team, which is an answer contact for Ubuntu.
 
 === Linked Bug Status Changed Notification ===
 
@@ -227,11 +249,13 @@ of changes to the bug status:
     http://.../ubuntu/+bug/...
     "Installer fails on a Mac PPC"
     <BLANKLINE>
-    --
-    You received this email because you are a subscriber of
-    question #... which is linked to this bug.
+    This bug is linked to #14.
     Installer doesn't work on a Mac
     http://.../ubuntu/+question/...
+    <BLANKLINE>
+    --...
+    You received this question notification because you are a member of
+    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Only a change in status triggers a notification.
 
@@ -268,6 +292,9 @@ A notification is also sent when a bug is unlinked from the question:
         http://.../bugs/13
         "Installer fails on a Mac PPC"
     <BLANKLINE>
+    --...
+    You received this question notification because you are a member of
+    Ubuntu Team, which is an answer contact for Ubuntu.
 
 == Workflow Notifications ==
 
@@ -301,6 +328,9 @@ subscribers except the question owner will look like this:
     No Privileges Person requested for more information:
     What is your Mac model?
     <BLANKLINE>
+    --...
+    You received this question notification because you are a member of
+    Ubuntu Team, which is an answer contact for Ubuntu.
 
 But the owner notification has a slightly different preamble and has
 an extra footer.
@@ -315,11 +345,13 @@ an extra footer.
     No Privileges Person requested for more information:
     What is your Mac model?
     <BLANKLINE>
-    _______________________________________________________________________
+    --...
     To answer this request for more information, you can either reply to
     this email or enter your reply at the following page:
     http://.../ubuntu/+question/...
     <BLANKLINE>
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 Of course, if the owner unsubscribe from the question, he won't receives
 a notification.
@@ -342,6 +374,9 @@ a notification.
     Sample Person gave more information on the question:
     A PowerMac 7200.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a member of
+    Ubuntu Team, which is an answer contact for Ubuntu.
 
 The notification for new messages on the question contain a 'References'
 header to the previous message for threading purpose.
@@ -381,6 +416,9 @@ Default notification when the question is expired:
     No Privileges Person expired the question:
     Expired because of no recent activity.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a member of
+    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
@@ -394,12 +432,14 @@ Notification received by the owner:
     No Privileges Person expired the question:
     Expired because of no recent activity.
     <BLANKLINE>
-    _______________________________________________________________________
+    --...
     If you're still having this problem, you can reopen your question either
     by replying to this email or by going to the following page and
     entering more information about your problem:
     http://.../ubuntu/+question/...
     <BLANKLINE>
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 === Notifications for reopen() ===
 
@@ -443,6 +483,9 @@ Default notification when the owner reopens the question:
     <BLANKLINE>
     Please provide some help to a newbie.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a member of
+    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
@@ -459,6 +502,9 @@ Notification received by the owner:
     <BLANKLINE>
     Please provide some help to a newbie.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 === Notifications for giveAnswer() ===
 
@@ -492,6 +538,9 @@ Default notification when an answer is proposed:
     Consult https://help.ubuntu.com/community/Installation/OldWorldMacs for
     all the details.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a member of
+    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
@@ -510,7 +559,7 @@ Notification received by the owner:
     Consult https://help.ubuntu.com/community/Installation/OldWorldMacs for
     all the details.
     <BLANKLINE>
-    _______________________________________________________________________
+    --...
     If this answers your question, please go to the following page to let us
     know that it is solved:
     http://.../ubuntu/+question/.../+confirm?answer_id=...
@@ -519,6 +568,8 @@ Notification received by the owner:
     following page to enter your feedback:
     http://.../ubuntu/+question/...
     <BLANKLINE>
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 === Notifications for confirm() ===
 
@@ -543,6 +594,9 @@ Default notification when the owner confirms an answer:
     Sample Person confirmed that the question is solved:
     I've installed BootX and the installer CD is now booting. Thanks!
     <BLANKLINE>
+    --...
+    You received this question notification because you are a member of
+    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
@@ -556,6 +610,9 @@ Notification received by the owner:
     You confirmed that the question is solved:
     I've installed BootX and the installer CD is now booting. Thanks!
     <BLANKLINE>
+    --...
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 === Notifications for addComment() ===
 
@@ -579,6 +636,9 @@ Default notification when a comment is posted:
     Unless you have lots of RAM... and even then, the system will probably
     be very slow.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a member of
+    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
@@ -591,6 +651,9 @@ Notification received by the owner:
     Unless you have lots of RAM... and even then, the system will probably
     be very slow.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 === Notifications for reject() ===
 
@@ -615,6 +678,9 @@ Default notification when the question is rejected:
     Foo Bar rejected the question:
     Yeah! It will be awfully slow.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a member of
+    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
@@ -628,11 +694,14 @@ Notification received by the owner:
     Foo Bar rejected the question:
     Yeah! It will be awfully slow.
     <BLANKLINE>
-    _______________________________________________________________________
+    --...
     If you think that this rejection was a mistake, you can post a comment
     explaining your point of view either by replying to this email or at
     the following page:
     http://.../ubuntu/+question/...
+    <BLANKLINE>
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 === Notifications for setStatus() ===
 
@@ -657,6 +726,9 @@ Default notification when somebody changes the status:
     Foo Bar changed the question status:
     The rejection was a mistake.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a member of
+    Ubuntu Team, which is an answer contact for Ubuntu.
 
 Notification received by the owner:
 
@@ -670,6 +742,9 @@ Notification received by the owner:
     Foo Bar changed the question status:
     The rejection was a mistake.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 == Notifications and Teams ==
 
@@ -779,6 +854,9 @@ sent to the support list about that question:
     none of the registered Ubuntu answer contacts.
     <BLANKLINE>
     http://.../ubuntu/+question/...
+    --...
+    You received this question notification because you are an answer
+    contact for Ubuntu.
 
 The notification received by the question owner contain a warning that
 the question is in a language spoken by none of the answer contacts:
@@ -802,10 +880,12 @@ the question is in a language spoken by none of the answer contacts:
     <BLANKLINE>
     Le CD ne semble pas fonctionn\xe9.
     <BLANKLINE>
-    _______________________________________________________________________
     WARNING: This question is asked in a language (French)
     spoken by none of the registered Ubuntu answer contacts.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 No notification will be sent to the answer contacts when this question
 is modified. Only the owner will receive a modification notification
@@ -829,10 +909,12 @@ with a warning appended to it.
     Summary changed to:
     CD d'Ubuntu ne d\xe9marre pas
     <BLANKLINE>
-    _______________________________________________________________________
     WARNING: This question is asked in a language (French)
     spoken by none of the registered Ubuntu answer contacts.
     <BLANKLINE>
+    --...
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 === Localized Questions and Teams ===
 
@@ -935,6 +1017,14 @@ address if Spanish is among its preferred languages:
     # This call also generates email notifications, so we'll clean up
     # stub.test_emails after it
     >>> admins.addMember(guadamen, reviewer=foobar)
+
+    # We need to accept the invitation sent by the addMember() call in
+    # order to make guadamen an actual member of admins.
+    >>> login(guadamen.teamowner.preferredemail.email)
+    >>> guadamen.acceptInvitationToBeMemberOf(admins, comment='something')
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
     >>> transaction.commit()
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []

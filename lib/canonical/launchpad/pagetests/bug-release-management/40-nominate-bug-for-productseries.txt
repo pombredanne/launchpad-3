@@ -37,7 +37,7 @@ is raised.
     >>> for tag in find_tags_by_class(nopriv_other_browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
-    This bug has already been nominated for these releases: 1.0
+    This bug has already been nominated for these series: 1.0
 
 When a nomination is submitted by a privileged user, it is immediately
 approved and targeted to the release.
@@ -52,3 +52,4 @@ approved and targeted to the release.
     ...     admin_browser.contents, 'informational message'):
     ...     print tag
     <div...Targeted bug to: firefox trunk (upstream)...
+

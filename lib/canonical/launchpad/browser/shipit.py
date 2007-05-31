@@ -23,7 +23,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from canonical.lp.dbschema import (
-    ShipItFlavour, ShipItArchitecture, ShipItDistroRelease,
+    ShipItFlavour, ShipItArchitecture, ShipItDistroSeries,
     ShippingRequestStatus)
 from canonical.launchpad.helpers import (
     intOrZero, get_email_template, shortlist)
@@ -155,9 +155,9 @@ class ShipItRequestView(GeneralFormView):
 
     should_show_custom_request = False
     # This only exists so that our tests can simulate the creation (through
-    # the web UI) of requests containing CDs of releases other than the
+    # the web UI) of requests containing CDs of serieses other than the
     # current one.
-    release = ShipItConstants.current_distrorelease
+    series = ShipItConstants.current_distroseries
 
     # Field names that are part of the schema but don't exist in our
     # context object.
@@ -477,7 +477,7 @@ class ShipItRequestView(GeneralFormView):
         # check (and possibly change) its approved quantities before it can be
         # shipped.
         current_order.setQuantities(
-            {self.flavour: quantities}, distrorelease=self.release)
+            {self.flavour: quantities}, distroseries=self.series)
 
         # Make sure that subsequent queries will see the RequestedCDs objects
         # created/updated when we set the order quantities above.
@@ -487,7 +487,7 @@ class ShipItRequestView(GeneralFormView):
 
         max_size_for_auto_approval = ShipItConstants.max_size_for_auto_approval
         new_total_of_cds = current_order.getTotalCDs()
-        shipped_orders = self.user.shippedShipItRequestsOfCurrentRelease()
+        shipped_orders = self.user.shippedShipItRequestsOfCurrentSeries()
         if new_total_of_cds > max_size_for_auto_approval:
             # If the order was already approved and the guy is just reducing
             # the number of CDs, there's no reason for de-approving it.
@@ -499,7 +499,7 @@ class ShipItRequestView(GeneralFormView):
             if (not shipped_orders or 
                 not self.userAlreadyRequestedFlavours(current_flavours)):
                 # This is either the first order containing CDs of the current
-                # distrorelease made by this user or it contains only CDs of
+                # distroseries made by this user or it contains only CDs of
                 # flavours this user hasn't requested before.
                 current_order.approve()
         elif (self.userAlreadyRequestedFlavours(current_flavours) and
@@ -545,10 +545,10 @@ class ShipItRequestView(GeneralFormView):
 
     def userAlreadyRequestedFlavours(self, flavours):
         """Return True if any of the given flavours is contained in any of
-        this users's shipped requests of the current distrorelease.
+        this users's shipped requests of the current distroseries.
         """
         flavours = set(flavours)
-        for order in self.user.shippedShipItRequestsOfCurrentRelease():
+        for order in self.user.shippedShipItRequestsOfCurrentSeries():
             if flavours.intersection(order.getContainedFlavours()):
                 return True
         return False
@@ -583,7 +583,7 @@ class ShipItRequestView(GeneralFormView):
         subject = '[ShipIt] New Request Pending Approval (#%d)' % order.id
         recipient = order.recipient
         headers = {'Reply-To': order.recipient_email}
-        shipped_requests = recipient.shippedShipItRequestsOfCurrentRelease()
+        shipped_requests = recipient.shippedShipItRequestsOfCurrentSeries()
         replacements = {'recipientname': order.recipientdisplayname,
                         'recipientemail': order.recipient_email,
                         'requesturl': canonical_url(order),
@@ -616,7 +616,7 @@ class ShippingRequestsView:
     # making tests more readable.
     selectedStatus = ShippingRequestStatus.PENDING.name
     selectedFlavourName = 'any'
-    selectedDistroReleaseName = ShipItConstants.current_distrorelease.name
+    selectedDistroSeriesName = ShipItConstants.current_distroseries.name
     recipient_text = ''
 
     @cachedproperty
@@ -649,12 +649,12 @@ class ShippingRequestsView:
         names_and_titles.append(('any', 'Any flavour'))
         return self._build_options(names_and_titles, self.selectedFlavourName)
 
-    def release_options(self):
-        names_and_titles = [(release.name, release.title) 
-                            for release in ShipItDistroRelease.items]
+    def series_options(self):
+        names_and_titles = [(series.name, series.title) 
+                            for series in ShipItDistroSeries.items]
         names_and_titles.append(('any', 'Any'))
         return self._build_options(
-            names_and_titles, self.selectedDistroReleaseName)
+            names_and_titles, self.selectedDistroSeriesName)
 
     def status_options(self):
         names_and_titles = [(status.name, status.title) 
@@ -676,11 +676,11 @@ class ShippingRequestsView:
         else:
             status = ShippingRequestStatus.items[self.selectedStatus]
 
-        self.selectedDistroReleaseName = request.get('releasefilter')
-        if self.selectedDistroReleaseName == 'any':
-            release = None
+        self.selectedDistroSeriesName = request.get('seriesfilter')
+        if self.selectedDistroSeriesName == 'any':
+            series = None
         else:
-            release = ShipItDistroRelease.items[self.selectedDistroReleaseName]
+            series = ShipItDistroSeries.items[self.selectedDistroSeriesName]
 
         self.selectedFlavourName = request.get('flavourfilter')
         if self.selectedFlavourName == 'any':
@@ -693,7 +693,7 @@ class ShippingRequestsView:
 
         requestset = getUtility(IShippingRequestSet)
         results = requestset.search(
-            status=status, flavour=flavour, distrorelease=release,
+            status=status, flavour=flavour, distroseries=series,
             recipient_text=self.recipient_text, orderBy=orderby)
         self.batchNavigator = self._getBatchNavigator(results)
 
@@ -925,7 +925,7 @@ class ShippingRequestApproveOrDenyView(
         """Return True if the recipient has other requests that were already
         sent to the shipping company."""
         recipient = self.context.recipient
-        shipped_requests = recipient.shippedShipItRequestsOfCurrentRelease()
+        shipped_requests = recipient.shippedShipItRequestsOfCurrentSeries()
         if not shipped_requests:
             return False
         elif (shipped_requests.count() == 1 
@@ -964,7 +964,7 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
         'addressline2', 'province', 'postcode', 'organization']
 
     def __init__(self, context, request):
-        self.release = ShipItConstants.current_distrorelease
+        self.series = ShipItConstants.current_distroseries
         order_id = request.form.get('order')
         if order_id is not None and order_id.isdigit():
             self.current_order = getUtility(IShippingRequestSet).get(
@@ -1030,7 +1030,7 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
             # This is a newly created request, and because it's created by a
             # shipit admin we set both approved and requested quantities and
             # approve it.
-            current_order.setQuantities(quantities, distrorelease=self.release)
+            current_order.setQuantities(quantities, distroseries=self.series)
             current_order.approve()
         else:
             for name in self.shipping_details_fields:

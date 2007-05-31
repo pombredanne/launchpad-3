@@ -166,10 +166,11 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
     def test_getBranchesForUser(self):
         # Although user 12 has lots of branches in the sample data, they only
         # have three push branches: "pushed", "mirrored" and "scanned" on the
-        # "gnome-terminal" product.
+        # "gnome-terminal" product, and another branch on "landscape".
         storage = DatabaseUserDetailsStorageV2(None)
         branches = storage._getBranchesForUserInteraction(self.cursor, 12)
-        self.assertEqual(1, len(branches))
+        self.assertEqual(
+            2, len(branches), "Expected 2 products but got %s" % len(branches))
         gnomeTermProduct = branches[0]
         gnomeTermID, gnomeTermName, gnomeTermBranches = gnomeTermProduct
         self.assertEqual(6, gnomeTermID)
@@ -192,13 +193,9 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
 
         storage = DatabaseUserDetailsStorageV2(None)
         branchInfo = storage._getBranchesForUserInteraction(self.cursor, 12)
-        self.assertEqual(2, len(branchInfo))
+        self.assertEqual(3, len(branchInfo))
 
-        gnomeTermProduct, junkProduct = branchInfo
-        # Results could come back in either order, so swap if necessary.
-        if gnomeTermProduct[0] is None:
-            gnomeTermProduct, junkProduct = junkProduct, gnomeTermProduct
-        
+        gnomeTermProduct, landscapeProduct, junkProduct = branchInfo
         # Check that the details and branches for the junk product are correct:
         # empty ID and name for the product, with a single branch named
         # 'foo-branch'.
@@ -208,7 +205,7 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(1, len(junkBranches))
         fooBranchID, fooBranchName = junkBranches[0]
         self.assertEqual('foo-branch', fooBranchName)
-    
+
     def test_createBranch(self):
         storage = DatabaseUserDetailsStorageV2(None)
         branchID = storage._createBranchInteraction(self.cursor, 12, 6, 'foo')

@@ -13,7 +13,7 @@ class SpecificationDelta:
     implements(ISpecificationDelta)
     def __init__(self, specification, user, title=None,
         summary=None, whiteboard=None, specurl=None, productseries=None,
-        distrorelease=None, milestone=None, name=None, priority=None,
+        distroseries=None, milestone=None, name=None, priority=None,
         status=None, target=None, bugs_linked=None, bugs_unlinked=None,
         approver=None, assignee=None, drafter=None):
         self.specification = specification
@@ -23,7 +23,7 @@ class SpecificationDelta:
         self.whiteboard = whiteboard
         self.specurl = specurl
         self.productseries = productseries
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
         self.milestone = milestone
         self.name = name
         self.priority = priority

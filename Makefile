@@ -27,7 +27,9 @@ schema: build
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-check_launchpad_on_merge: build dbfreeze_check check importdcheck
+check_launchpad_on_merge: build dbfreeze_check check importdcheck check_sourcecode_dependencies
+
+check_sourcecode_dependencies:
 	# Use the check_for_launchpad rule which runs tests over a smaller
 	# set of libraries, for performance and reliability reasons.
 	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \

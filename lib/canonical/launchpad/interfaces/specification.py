@@ -143,12 +143,12 @@ class ISpecification(IHasOwner, ICanBeMentored):
     productseries = Choice(title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
-            "Choose a release series in which you would like to deliver "
+            "Choose a series in which you would like to deliver "
             "this feature. Selecting '(no value)' will clear the goal."))
-    distrorelease = Choice(title=_('Release Goal'), required=False,
-        vocabulary='FilteredDistroRelease',
+    distroseries = Choice(title=_('Series Goal'), required=False,
+        vocabulary='FilteredDistroSeries',
         description=_(
-            "Choose a release in which you would like to deliver "
+            "Choose a series in which you would like to deliver "
             "this feature. Selecting '(no value)' will clear the goal."))
 
     # milestone
@@ -159,14 +159,12 @@ class ISpecification(IHasOwner, ICanBeMentored):
             "delivered."))
 
     # nomination to a series for release management
-    goal = Attribute(
-        "The release series or distro release for which this feature "
-        "is a goal.")
+    goal = Attribute("The series for which this feature is a goal.")
     goalstatus = Choice(
         title=_('Goal Acceptance'), vocabulary='SpecificationGoalStatus',
         default=SpecificationGoalStatus.PROPOSED, description=_(
             "Whether or not the drivers have accepted this feature as "
-            "a goal for the targeted release or series."))
+            "a goal for the targeted series."))
     goal_proposer = Attribute("The person who nominated the spec for "
         "this series.")
     date_goal_proposed = Attribute("The date of the nomination.")
@@ -265,7 +263,7 @@ class ISpecification(IHasOwner, ICanBeMentored):
 
     # goal management
     def proposeGoal(goal, proposer):
-        """Propose this spec for a series or distrorelease."""
+        """Propose this spec for a series or distroseries."""
 
     def acceptBy(decider):
         """Mark the spec as being accepted for its current series goal."""
@@ -273,10 +271,9 @@ class ISpecification(IHasOwner, ICanBeMentored):
     def declineBy(decider):
         """Mark the spec as being declined as a goal for the proposed series."""
 
-    has_release_goal = Attribute('Is true if this specification has been '
-        'proposed as a goal for a specific distro release or product '
-        'series and the drivers of that release/series have accepted '
-        'the goal.')
+    has_accepted_goal = Attribute('Is true if this specification has been '
+        'proposed as a goal for a specific series, '
+        'and the drivers of that series have accepted the goal.')
 
     # lifecycle management
     def updateLifecycleStatus(user):
@@ -393,7 +390,7 @@ class ISpecificationDelta(Interface):
     whiteboard = Attribute("The spec whiteboard or None.")
     specurl = Attribute("The URL to the spec home page (not in Launchpad).")
     productseries = Attribute("The product series.")
-    distrorelease = Attribute("The release to which this is targeted.")
+    distroseries = Attribute("The series to which this is targeted.")
     milestone = Attribute("The milestone to which the spec is targeted.")
     bugs_linked = Attribute("A list of new bugs linked to this spec.")
     bugs_unlinked = Attribute("A list of bugs unlinked from this spec.")

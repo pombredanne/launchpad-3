@@ -8,7 +8,7 @@
   <div metal:fill-slot="body">
 
     <h1 tal:condition="not: view/current_order">
-      Make a new <span tal:replace="view/release/name/capitalize" />
+      Make a new <span tal:replace="view/series/name/capitalize" />
       Request</h1>
     <h1 tal:condition="view/current_order">Change a Request</h1>
 
@@ -57,8 +57,8 @@
 
       <br />
       <div style="text-align: right;">
-        <input type="hidden" name="release"
-               tal:attributes="value view/release/name" />
+        <input type="hidden" name="series"
+               tal:attributes="value view/series/name" />
         <tal:block condition="not: view/current_order">
           <input type="submit" value="Request" name="FORM_SUBMIT" />
         </tal:block>
