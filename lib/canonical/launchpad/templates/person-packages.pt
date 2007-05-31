@@ -76,17 +76,17 @@
   <tal:block define="spr sourcepackagerelease;
                      distrorelease spr/uploaddistrorelease">
     <td>
-      <a tal:attributes="href string:${distrorelease/fmt:url}/+source/${spr/name}"
+      <a tal:attributes="href string:${distrorelease/distribution/fmt:url}/+source/${spr/name}"
          tal:content="spr/sourcepackagename/name">
       </a>
     </td>
     <td>
-      <a tal:attributes="href distrorelease/fmt:url"
+      <a tal:attributes="href string:${distrorelease/fmt:url}/+source/${spr/name}"
          tal:content="distrorelease/fullreleasename">
       </a>
     </td>
     <td>
-      <a tal:attributes="href string:${distrorelease/fmt:url}/+source/${spr/name}/${spr/version}"
+      <a tal:attributes="href string:${distrorelease/distribution/fmt:url}/+source/${spr/name}/${spr/version}"
          tal:content="spr/version">
       </a>
     </td>
