@@ -15,7 +15,7 @@ from sqlobject import (
 
 from canonical.launchpad.interfaces import (
     IBugLinkTarget,
-    IDistroRelease,
+    IDistroSeries,
     IProductSeries,
     ISpecification,
     ISpecificationSet,
@@ -90,8 +90,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
         foreignKey='ProductSeries', notNull=False, default=None)
     distribution = ForeignKey(dbName='distribution',
         foreignKey='Distribution', notNull=False, default=None)
-    distrorelease = ForeignKey(dbName='distrorelease',
-        foreignKey='DistroRelease', notNull=False, default=None)
+    distroseries = ForeignKey(dbName='distrorelease',
+        foreignKey='DistroSeries', notNull=False, default=None)
     goalstatus = EnumCol(schema=SpecificationGoalStatus, notNull=True,
         default=SpecificationGoalStatus.PROPOSED)
     goal_proposer = ForeignKey(dbName='goal_proposer', notNull=False,
@@ -180,7 +180,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # are moving to a different product that will have different
         # policies and drivers
         self.productseries = None
-        self.distrorelease = None
+        self.distroseries = None
         self.goalstatus = SpecificationGoalStatus.PROPOSED
         self.goal_proposer = None
         self.date_goal_proposed = None
@@ -197,27 +197,27 @@ class Specification(SQLBase, BugLinkTargetMixin):
         """See ISpecification."""
         if self.productseries:
             return self.productseries
-        return self.distrorelease
+        return self.distroseries
 
     def proposeGoal(self, goal, proposer):
         """See ISpecification."""
         if goal is None:
             # we are clearing goals
             self.productseries = None
-            self.distrorelease = None
+            self.distroseries = None
         elif IProductSeries.providedBy(goal):
             # set the product series as a goal
             self.productseries = goal
             self.goal_proposer = proposer
             self.date_goal_proposed = UTC_NOW
-            # and make sure there is no leftover distrorelease goal
-            self.distrorelease = None
-        elif IDistroRelease.providedBy(goal):
-            # set the distrorelease goal
-            self.distrorelease = goal
+            # and make sure there is no leftover distroseries goal
+            self.distroseries = None
+        elif IDistroSeries.providedBy(goal):
+            # set the distroseries goal
+            self.distroseries = goal
             self.goal_proposer = proposer
             self.date_goal_proposed = UTC_NOW
-            # and make sure there is no leftover distrorelease goal
+            # and make sure there is no leftover distroseries goal
             self.productseries = None
         else:
             raise AssertionError, 'Inappropriate goal.'
@@ -415,7 +415,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return False
 
     @property
-    def has_release_goal(self):
+    def has_accepted_goal(self):
         """See ISpecification."""
         if (self.goal is not None and
             self.goalstatus == SpecificationGoalStatus.ACCEPTED):
@@ -427,7 +427,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         delta = ObjectDelta(old_spec, self)
         delta.recordNewValues(("title", "summary", "whiteboard",
                                "specurl", "productseries",
-                               "distrorelease", "milestone"))
+                               "distroseries", "milestone"))
         delta.recordNewAndOld(("name", "priority", "status", "target",
                                "approver", "assignee", "drafter"))
         delta.recordListAddedAndRemoved("bugs",

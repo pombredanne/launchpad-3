@@ -29,9 +29,9 @@ class BinaryPackageView:
         """Wrap the relationship_builder for BinaryPackages.
 
         Define apt_pkg.ParseDep as a relationship 'parser' and
-        IDistroArchRelease.getBinaryPackage as 'getter'.
+        IDistroArchSeries.getBinaryPackage as 'getter'.
         """
-        getter = self.context.build.distroarchrelease.getBinaryPackage
+        getter = self.context.build.distroarchseries.getBinaryPackage
         parser = ParseDepends
         return relationship_builder(content, parser=parser, getter=getter)
 

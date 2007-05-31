@@ -17,7 +17,7 @@ from canonical.database.sqlbase import SQLBase
 class Milestone(SQLBase):
     implements(IMilestone)
 
-    # XXX: Milestones should be associated with productseries/distroreleases
+    # XXX: Milestones should be associated with productseries/distroseriess
     # so these columns are not needed. See https://launchpad.net/bugs/40978
     # for more details. -- Guilherme Salgado, 2007-03-27
     product = ForeignKey(dbName='product',
@@ -27,8 +27,8 @@ class Milestone(SQLBase):
 
     productseries = ForeignKey(dbName='productseries',
         foreignKey='ProductSeries', default=None)
-    distrorelease = ForeignKey(dbName='distrorelease',
-        foreignKey='DistroRelease', default=None)
+    distroseries = ForeignKey(dbName='distrorelease',
+        foreignKey='DistroSeries', default=None)
     name = StringCol(notNull=True)
     dateexpected = DateCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
@@ -51,8 +51,8 @@ class Milestone(SQLBase):
         """See IMilestone."""
         if self.productseries:
             return self.productseries
-        elif self.distrorelease:
-            return self.distrorelease
+        elif self.distroseries:
+            return self.distroseries
 
     @property
     def displayname(self):

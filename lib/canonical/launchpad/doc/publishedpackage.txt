@@ -20,10 +20,10 @@ model in more intuitive ones:
  >>> src.name
  u'pmount'
 
-IDistroReleaseSourcePackageRelease.meta_binaries returns a list of binaries
-resulting from the sourcepackagerelease for a distrorelease.
+IDistroSeriesSourcePackageRelease.meta_binaries returns a list of binaries
+resulting from the sourcepackagerelease for a distroseries.
 This test makes sure that the meta_binaries method exists and the
-returned objects meet the IDistroReleaseBinaryPackage interface.
+returned objects meet the IDistroSeriesBinaryPackage interface.
 There should only be one package in the binaries collection for
 mozilla-firefox.  This is a feature of the sample data that we are relying
 upon.
@@ -36,6 +36,6 @@ upon.
  >>> len(ff_drspr.meta_binaries)
  1
 
- >>> from canonical.launchpad.interfaces import IDistroReleaseBinaryPackage
- >>> verifyObject(IDistroReleaseBinaryPackage, ff_drspr.meta_binaries[0])
+ >>> from canonical.launchpad.interfaces import IDistroSeriesBinaryPackage
+ >>> verifyObject(IDistroSeriesBinaryPackage, ff_drspr.meta_binaries[0])
  True

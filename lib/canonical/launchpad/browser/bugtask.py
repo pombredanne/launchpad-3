@@ -61,7 +61,7 @@ from canonical.launchpad.interfaces import (
     IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
     IBugWatchSet, IDistribution, IDistributionSourcePackage, IBug,
-    IDistroBugTask, IDistroRelease, IDistroReleaseBugTask,
+    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
     IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
     IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
@@ -192,7 +192,7 @@ class BugTargetTraversalMixin:
         Raises NotFoundError if no bug with the given name is found.
 
         If the context type does provide IProduct, IDistribution,
-        IDistroRelease, ISourcePackage or IDistributionSourcePackage
+        IDistroSeries, ISourcePackage or IDistributionSourcePackage
         a TypeError is raised.
         """
         context = self.context
@@ -225,11 +225,11 @@ class BugTargetTraversalMixin:
             null_bugtask = bug.getNullBugTask(
                 distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
-        elif IDistroRelease.providedBy(context):
-            null_bugtask = bug.getNullBugTask(distrorelease=context)
+        elif IDistroSeries.providedBy(context):
+            null_bugtask = bug.getNullBugTask(distroseries=context)
         elif ISourcePackage.providedBy(context):
             null_bugtask = bug.getNullBugTask(
-                distrorelease=context.distrorelease,
+                distroseries=context.distroseries,
                 sourcepackagename=context.sourcepackagename)
         else:
             raise TypeError(
@@ -542,11 +542,11 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
                     bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
                     distribution=fake_task.distribution,
                     sourcepackagename=fake_task.sourcepackagename)
-            elif IDistroReleaseBugTask.providedBy(fake_task):
-                # Create a real distro release bug task in this context.
+            elif IDistroSeriesBugTask.providedBy(fake_task):
+                # Create a real distro series bug task in this context.
                 real_task = getUtility(IBugTaskSet).createTask(
                     bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    distrorelease=fake_task.distrorelease,
+                    distroseries=fake_task.distroseries,
                     sourcepackagename=fake_task.sourcepackagename)
             else:
                 raise TypeError(
@@ -568,14 +568,14 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
 
         return matching_bugtasks.count() > 0
 
-    def isReleaseTargetableContext(self):
-        """Is the context something that supports release targeting?
+    def isSeriesTargetableContext(self):
+        """Is the context something that supports Series targeting?
 
         Returns True or False.
         """
         return (
             IDistroBugTask.providedBy(self.context) or
-            IDistroReleaseBugTask.providedBy(self.context))
+            IDistroSeriesBugTask.providedBy(self.context))
 
     @cachedproperty
     def comments(self):
@@ -647,9 +647,9 @@ class BugTaskEditView(GeneralFormView):
             parts.append(bugtask.distribution.name)
             if bugtask.sourcepackagename is not None:
                 parts.append(bugtask.sourcepackagename.name)
-        elif IDistroReleaseBugTask.providedBy(bugtask):
-            parts.append(bugtask.distrorelease.distribution.name)
-            parts.append(bugtask.distrorelease.name)
+        elif IDistroSeriesBugTask.providedBy(bugtask):
+            parts.append(bugtask.distroseries.distribution.name)
+            parts.append(bugtask.distroseries.name)
             if bugtask.sourcepackagename is not None:
                 parts.append(bugtask.sourcepackagename.name)
         else:
@@ -788,7 +788,7 @@ class BugTaskEditView(GeneralFormView):
         elif IDistroBugTask.providedBy(bugtask):
             return bugtask.distribution
         else:
-            return bugtask.distrorelease.distribution
+            return bugtask.distroseries.distribution
 
     @property
     def initial_values(self):
@@ -802,8 +802,8 @@ class BugTaskEditView(GeneralFormView):
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
-        if bugtask.distrorelease is not None:
-            distro = bugtask.distrorelease.distribution
+        if bugtask.distroseries is not None:
+            distro = bugtask.distroseries.distribution
         else:
             distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
@@ -1292,14 +1292,14 @@ class BugTaskSearchListingView(LaunchpadView):
         productseries_context = self._productSeriesContext()
         project_context = self._projectContext()
         distribution_context = self._distributionContext()
-        distrorelease_context = self._distroReleaseContext()
+        distroseries_context = self._distroSeriesContext()
         distrosourcepackage_context = self._distroSourcePackageContext()
         sourcepackage_context = self._sourcePackageContext()
 
         if (upstream_context or productseries_context or
             distrosourcepackage_context or sourcepackage_context):
             return ["id", "summary", "importance", "status"]
-        elif distribution_context or distrorelease_context:
+        elif distribution_context or distroseries_context:
             return ["id", "summary", "packagename", "importance", "status"]
         elif project_context:
             return ["id", "summary", "productname", "importance", "status"]
@@ -1490,22 +1490,32 @@ class BugTaskSearchListingView(LaunchpadView):
         context = self.context
         return (
             (IDistribution.providedBy(context) and
-             context.currentrelease is not None) or
-            IDistroRelease.providedBy(context) or
+             context.currentseries is not None) or
+            IDistroSeries.providedBy(context) or
             ISourcePackage.providedBy(context))
 
     def shouldShowNoPackageWidget(self):
         """Should the widget to filter on bugs with no package be shown?
 
         The widget will be shown only on a distribution or
-        distrorelease's advanced search page.
+        distroseries's advanced search page.
         """
         return (IDistribution.providedBy(self.context) or
-                IDistroRelease.providedBy(self.context))
+                IDistroSeries.providedBy(self.context))
 
     def shouldShowReporterWidget(self):
         """Should the reporter widget be shown on the advanced search page?"""
         return True
+
+    def shouldShowReleaseCriticalPortlet(self):
+        """Should the page include a portlet showing release-critical bugs
+        for different series.
+        """
+        return (
+            IDistribution.providedBy(self.context) and self.context.serieses or
+            IDistroSeries.providedBy(self.context) or
+            IProduct.providedBy(self.context) and self.context.serieses or
+            IProductSeries.providedBy(self.context))
 
     def shouldShowUpstreamStatusBox(self):
         """Should the upstream status filtering widgets be shown?"""
@@ -1667,15 +1677,15 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         return IDistribution(self.context, None)
 
-    def _distroReleaseContext(self):
-        """Is this page being viewed in a distrorelease context?
+    def _distroSeriesContext(self):
+        """Is this page being viewed in a distroseries context?
 
-        Return the IDistroRelease if yes, otherwise return None.
+        Return the IDistroSeries if yes, otherwise return None.
         """
-        return IDistroRelease(self.context, None)
+        return IDistroSeries(self.context, None)
 
     def _sourcePackageContext(self):
-        """Is this page being viewed in a [distrorelease] sourcepackage context?
+        """Is this page being viewed in a [distroseries] sourcepackage context?
 
         Return the ISourcePackage if yes, otherwise return None.
         """
@@ -1769,7 +1779,7 @@ class BugTasksAndNominationsView(LaunchpadView):
 
         distro_tasks = [
             bugtask for bugtask in bugtasks
-            if bugtask.distribution or bugtask.distrorelease]
+            if bugtask.distribution or bugtask.distroseries]
 
         upstream_tasks.sort(key=_by_targetname)
         distro_tasks.sort(key=_by_targetname)
@@ -1820,7 +1830,7 @@ class BugTaskTableRowView(LaunchpadView):
         Returns True or False.
         """
         bugtask = self.context
-        return (IDistroReleaseBugTask.providedBy(bugtask) or
+        return (IDistroSeriesBugTask.providedBy(bugtask) or
                 IProductSeriesBugTask.providedBy(bugtask))
 
     def taskLink(self):
@@ -1832,24 +1842,24 @@ class BugTaskTableRowView(LaunchpadView):
         else:
             return canonical_url(bugtask) + "/+viewstatus"
 
-    def _getReleaseTargetNameHelper(self, bugtask):
-        """Return the short name of bugtask's targeted release."""
-        if IDistroReleaseBugTask.providedBy(bugtask):
-            return bugtask.distrorelease.name.capitalize()
+    def _getSeriesTargetNameHelper(self, bugtask):
+        """Return the short name of bugtask's targeted series."""
+        if IDistroSeriesBugTask.providedBy(bugtask):
+            return bugtask.distroseries.name.capitalize()
         elif IProductSeriesBugTask.providedBy(bugtask):
             return bugtask.productseries.name.capitalize()
         else:
             assert (
-                "Expected IDistroReleaseBugTask or IProductSeriesBugTask. "
+                "Expected IDistroSeriesBugTask or IProductSeriesBugTask. "
                 "Got: %r" % bugtask)
 
-    def getReleaseTargetName(self):
-        """Get the release or series to which this task is targeted."""
-        return self._getReleaseTargetNameHelper(self.context)
+    def getSeriesTargetName(self):
+        """Get the series to which this task is targeted."""
+        return self._getSeriesTargetNameHelper(self.context)
 
     def getConjoinedMasterName(self):
         """Get the conjoined master's name for displaying."""
-        return self._getReleaseTargetNameHelper(self.context.conjoined_master)
+        return self._getSeriesTargetNameHelper(self.context.conjoined_master)
 
     def shouldShowPackageIcon(self):
         """Should we show the package icon?
