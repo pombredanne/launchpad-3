@@ -278,6 +278,7 @@ class POMessage(object):
         Lets also make sure that the unconditional break is not occurring
         inside a single long word in the middle of the escape sequence
         like \" or \\:
+
         >>> pomsg = POMessage(
         ...     msgid="1234567890abcdefghij\\klmno",
         ...     msgstr="")
@@ -294,25 +295,54 @@ class POMessage(object):
         "1234567890abcdefgh\\"
         "ijklmno"
         msgstr ""
+        >>> pomsg = POMessage(
+        ...     msgid="1234567890abcdefg\\\\hijklmno",
+        ...     msgstr="")
+        >>> print pomsg.__unicode__(20)
+        msgid ""
+        "1234567890abcdefg\\"
+        "\\hijklmno"
+        msgstr ""
+
+
+        For compatibility with msgcat -w, it also wraps on \\ properly.
+
+        >>> pomsg = POMessage(
+        ...     msgid="\\\\\\\\\\",
+        ...     msgstr="")
+        >>> print pomsg.__unicode__(5)
+        msgid ""
+        "\\\\"
+        "\\\\"
+        "\\"
+        msgstr ""
+        >>> print pomsg.__unicode__(6)
+        msgid ""
+        "\\\\\\"
+        "\\\\"
+        msgstr ""
 
         '''
+        def local_escape(text):
+            ret = text.replace(u'\\', u'\\\\')
+            ret = ret.replace(ur'"', ur'\"')
+            ret = ret.replace(u'\t', u'\\t')
+            return ret.replace(u'\n', u'\\n')
+
+        # What characters to wrap at
+        wrap_at = [' ', '\t', '\n', '-', '\\']
+
         if wrap_width is None:
             raise AssertionError('wrap_width should not be None')
         wrapped_lines = [u'%s%s' % (prefix, u' ""')]
         if not text:
             return wrapped_lines
-        text = text.replace(u'\\', u'\\\\')
-        text = text.replace(ur'"', ur'\"')
-        text = text.replace(u'\t', u'\\t')
-        if (text.endswith('\n') and '\n' not in text[:-1]):
-            # If there is only one newline char and it's at the end of the
-            # string.
-            text = text.replace(u'\n', u'\\n')
-        unwrapped_line = u'%s "%s"' % (prefix, text)
-        if ('\n' not in unwrapped_line and
-            len(unwrapped_line) <= wrap_width):
-            return [unwrapped_line]
-        del unwrapped_line
+        if '\n' not in text[:-1]:
+            # If there are no new-lines, or it's at the end of string.
+            unwrapped_line = u'%s "%s"' % (prefix, local_escape(text))
+            if len(unwrapped_line) <= wrap_width:
+                return [unwrapped_line]
+            del unwrapped_line
         paragraphs = text.split('\n')
         end = len(paragraphs) - 1
         for i, paragraph in enumerate(paragraphs):
@@ -320,44 +350,39 @@ class POMessage(object):
                 if not paragraph:
                     break
             else:
-                paragraph += u'\\n'
-            if len(paragraph) <= wrap_width:
+                paragraph += '\n'
+
+            if len(local_escape(paragraph)) <= wrap_width:
                 wrapped_line = [paragraph]
             else:
                 line = u''
                 new_block = u''
                 wrapped_line = []
                 for char in paragraph:
-                    if len(line) + len(new_block) < wrap_width:
-                        if char in [' ', '\t', '\n', '-']:
+                    if (len(local_escape(line))
+                        + len(local_escape(new_block))
+                        + len(local_escape(char)) <= wrap_width):
+                        if char in wrap_at:
                             line += u'%s%s' % (new_block, char)
                             new_block = u''
                         else:
                             new_block += char
                     else:
-                        if not len(line):
+                        if len(local_escape(line)) == 0:
                             # Word is too long to fit into single line,
                             # break it carefully, watching not to break
                             # in the middle of the escape
-                            last_char_is_escape = (
-                                new_block[wrap_width-1] == '\\')
-                            if last_char_is_escape:
-                                if (len(new_block)>=2 and
-                                    new_block[wrap_width-2]=='\\'):
-                                    last_char_is_escape = False
-                            if last_char_is_escape:
-                                line = new_block[:wrap_width-1]
-                                new_block = new_block[wrap_width-1:]
-                            else:
-                                line = new_block[:wrap_width]
-                                new_block = new_block[wrap_width:]
+                            line = new_block
+                            while len(local_escape(line)) > wrap_width:
+                                line = line[:-1]
+                            new_block = new_block[len(line):]
                         wrapped_line.append(line)
                         line = u''
                         new_block += char
                 if line or new_block:
                     wrapped_line.append(u'%s%s' % (line, new_block))
             for line in wrapped_line:
-                wrapped_lines.append(u'"%s"' % (line))
+                wrapped_lines.append(u'"%s"' % (local_escape(line)))
         return wrapped_lines
 
 class POHeader(dict, POMessage):
