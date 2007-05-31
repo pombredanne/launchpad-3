@@ -120,16 +120,16 @@ class TestBazaarFileTransferServer(BazaarFileTransferServer):
 class SSHKeyMixin:
     """Mixin for tests that need to do SSH key-based authentication."""
 
-    def setUpTestUser(self):
-        """Prepare 'testuser' and 'testteam' Persons, giving 'testuser' a known
+    def setUpTestUser(self, testUser, testTeam):
+        """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
         SSH key.
         """
         # insert SSH keys for testuser -- and insert testuser!
         cur = cursor()
         cur.execute(
-            "UPDATE Person SET name = 'testuser' WHERE name = 'spiv';")
+            "UPDATE Person SET name = '%s' WHERE name = 'spiv';" % testUser)
         cur.execute(
-            "UPDATE Person SET name = 'testteam' WHERE name = 'name18';")
+            "UPDATE Person SET name = '%s' WHERE name = 'name18';" % testTeam)
         cur.execute("""
             INSERT INTO SSHKey (person, keytype, keytext, comment)
             VALUES (7, 2,
@@ -151,15 +151,13 @@ class SSHKeyMixin:
 
 class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
 
-    branches_root = '/tmp/sftp-test'
-
-    def setUpBranchesRoot(self):
-        if os.path.isdir(self.branches_root):
-            shutil.rmtree(self.branches_root)
-        os.makedirs(self.branches_root, 0700)
-        shutil.copytree(sibpath(__file__, 'keys'),
-                        os.path.join(self.branches_root, 'keys'))
-        self.addCleanup(lambda: shutil.rmtree(self.branches_root))
+    def setUpBranchesRoot(self, branches_root):
+        if os.path.isdir(branches_root):
+            shutil.rmtree(branches_root)
+        os.makedirs(branches_root, 0700)
+        shutil.copytree(
+            sibpath(__file__, 'keys'), os.path.join(branches_root, 'keys'))
+        self.addCleanup(lambda: shutil.rmtree(branches_root))
 
     def setUpFakeHome(self):
         user_home = os.path.abspath(tempfile.mkdtemp())
@@ -192,11 +190,15 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
     def setUp(self):
         super(SSHTestCase, self).setUp()
 
+        self.default_user = 'testuser'
+        self.default_team = 'testteam'
+        self.server_base = 'sftp://%s@localhost:22222/'
+
         # Install the default SIGCHLD handler so that read() calls don't get
         # EINTR errors when child processes exit.
         self.setUpSignalHandling()
 
-        self.setUpTestUser()
+        self.setUpTestUser(self.default_user, self.default_team)
 
         # Point $HOME at a test ssh config and key.
         self.setUpFakeHome()
@@ -205,24 +207,31 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         self.forceParamiko()
 
         # Start authserver.
-        self.authserver = AuthserverService()
-        self.authserver.startService()
-        self.addCleanup(self.authserver.stopService)
+        authserver = AuthserverService()
+        authserver.startService()
+        self.addCleanup(authserver.stopService)
 
         # Set up the branch storage location on the filesystem.
-        self.setUpBranchesRoot()
+        self.setUpBranchesRoot('/tmp/sftp-test')
 
         # Start the SSH server
         self.server = TestSSHService()
         self.server.startService()
-        self.server_base = 'sftp://testuser@localhost:22222/'
         self.addCleanup(self.server.stopService)
+
+    def getTransportURL(self, relpath=None, username=None):
+        """Return the base URL for the tests."""
+        if relpath is None:
+            relpath = ''
+        if username is None:
+            username = self.default_user
+        return self.server_base % username + relpath
 
     def getTransport(self, path=None):
         """Get a paramiko transport pointing to `path` on the base server."""
         if path is None:
             path = ''
-        transport = get_transport(self.server_base + path)
+        transport = get_transport(self.getTransportURL(path))
         self.addCleanup(transport._sftp.close)
         self.addCleanup(transport._sftp.sock.transport.close)
         return transport
@@ -319,7 +328,7 @@ class AcceptanceTests(SSHTestCase):
         (and/or their bzrlib equivalents) and so on should work, so long as the
         user has permission to read or write to those URLs.
         """
-        remote_url = self.server_base + '~testuser/+junk/test-branch'
+        remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(self.local_branch.last_revision(),
@@ -333,7 +342,7 @@ class AcceptanceTests(SSHTestCase):
         pushing further revisions to an existing branch works as well.
         """
         # Initial push.
-        remote_url = self.server_base + '~testuser/+junk/test-branch'
+        remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(remote_revision, 'rev1')
@@ -390,7 +399,7 @@ class AcceptanceTests(SSHTestCase):
         """
 
         # Push the local branch to the server
-        remote_url = self.server_base + '~testuser/+junk/test-branch'
+        remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
 
         # Rename branch in the database
@@ -417,10 +426,10 @@ class AcceptanceTests(SSHTestCase):
             NotBranchError,
             self.runAndWaitForSSHDisconnect,
             bzrlib.branch.Branch.open,
-            self.server_base + '~testuser/+junk/renamed-branch')
+            self.getTransportURL('~testuser/+junk/renamed-branch'))
 
         remote_revision = self.getLastRevision(
-            self.server_base + '~testuser/firefox/renamed-branch')
+            self.getTransportURL('~testuser/firefox/renamed-branch'))
         self.assertEqual(remote_revision,
                          self.local_branch.last_revision())
 
@@ -431,11 +440,10 @@ class AcceptanceTests(SSHTestCase):
         branch.owner.name = 'renamed-user'
         LaunchpadZopelessTestSetup().txn.commit()
 
-        server_base = self.server_base.replace('testuser', 'renamed-user')
-        remote_revision = self.getLastRevision(
-            server_base + '~renamed-user/firefox/renamed-branch')
-        self.assertEqual(remote_revision,
-                         self.local_branch.last_revision())
+        url = self.getTransportURL(
+            '~renamed-user/firefox/renamed-branch', 'renamed-user')
+        remote_revision = self.getLastRevision(url)
+        self.assertEqual(remote_revision, self.local_branch.last_revision())
 
     @deferToThread
     def test_mod_rewrite_data(self):
@@ -450,7 +458,7 @@ class AcceptanceTests(SSHTestCase):
         # values in the database.
 
         # Push branch to sftp server
-        self.push(self.server_base + '~testuser/+junk/test-branch')
+        self.push(self.getTransportURL('~testuser/+junk/test-branch'))
 
         # Retrieve the branch from the database.  selectOne will fail if the
         # branch does not exist (or if somehow multiple branches match!).
