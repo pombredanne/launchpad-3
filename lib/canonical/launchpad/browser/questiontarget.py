@@ -35,8 +35,8 @@ from canonical.launchpad import _
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
     IDistribution, ILanguageSet, IProject, IQuestion, IQuestionCollection,
-    IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
-    NotFoundError)
+    IQuestionSet, IQuestionTarget, ISearchableByQuestionOwner,
+    ISearchQuestionsForm, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, stepto, stepthrough, urlappend,
     ApplicationMenu, LaunchpadFormView, Link, safe_action)
@@ -569,7 +569,15 @@ class QuestionTargetTraversalMixin:
             question_id = int(name)
         except ValueError:
             raise NotFoundError(name)
-        return self.context.getQuestion(question_id)
+        question = self.context.getQuestion(question_id)
+        if question is not None:
+            return question
+        
+        # Try to find the question in another context.
+        question = getUtility(IQuestionSet).get(question_id)
+        if question is None:
+            raise NotFoundError(name)
+        return self.redirectSubTree(canonical_url(question))
 
 
     @stepto('+ticket')
