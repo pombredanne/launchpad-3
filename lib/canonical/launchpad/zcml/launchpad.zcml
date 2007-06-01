@@ -269,7 +269,7 @@
       />
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="code-import-list"
+      name="+code-imports"
       class="canonical.launchpad.browser.CodeImportSetView"
       template="../templates/codeimport-list.pt"
       permission="zope.Public"

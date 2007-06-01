@@ -3,5 +3,35 @@ For now, we put a link on the `code` page:
   >>> browser.open('http://code.launchpad.dev/')
   >>> browser.getLink('View all imports').click()
   >>> browser.url
-  'http://code.launchpad.dev/code-import-list'
+  'http://code.launchpad.dev/+code-imports'
+
+We don't have any sample data yet:
+
+  >>> 'No code imports found!' in browser.contents
+  True
+
+But if we create one:
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import ICodeImportSet
+  >>> from canonical.lp.dbschema import RevisionControlSystems
+  >>> from canonical.launchpad.interfaces import IProductSeriesSet
+  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+  >>> login(ANONYMOUS)
+  >>> series = getUtility(IProductSeriesSet).get(1)
+  >>> product = series.product
+  >>> codeimportset = getUtility(ICodeImportSet)
+  >>> newimport = codeimportset.new(
+  ...     series=series, product=product,
+  ...     name='sample-import', rcs_type=RevisionControlSystems.SVN,
+  ...     svn_branch_url='http://svn.example.com/hello/trunk')
+  >>> logout()
+
+and refresh the page, the message changes:
+
+  >>> browser.reload()
+  >>> 'Code imports found!' in browser.contents
+  True
+
+
 

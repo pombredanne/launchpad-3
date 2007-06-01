@@ -1,12 +1,22 @@
-<html>
-  <head>
-    <title>Title</title>
-  </head>
-  <body>
-    <h1>Title</h1>
-    <p>
-      Content.
-    </p>
-  </body>
+<html metal:use-macro="view/macro:page/applicationhome" i18n:domain="bazaar">
+
+<body>
+
+  <h1 metal:fill-slot="heading">Code Imports</h1>
+
+<div metal:fill-slot="main" class="visualPadding"
+     tal:define="batch view/results">
+
+
+  <tal:block tal:condition="not:batch">
+    <p>No code imports found!</p>
+  </tal:block>
+
+  <tal:block tal:condition="batch">
+    <p>Code imports found!</p>
+  </tal:block>
+
+</div>
+
+</body>
 </html>
-    
