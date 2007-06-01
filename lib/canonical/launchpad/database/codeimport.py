@@ -3,7 +3,7 @@
 """Database classes including and related to CodeImport."""
 
 __metaclass__ = type
-__all__ = ['CodeImport']
+__all__ = ['CodeImport', 'CodeImportSet']
 
 from zope.interface import implements
 
@@ -41,9 +41,15 @@ class CodeImport(SQLBase):
 class CodeImportSet:
     """See ICodeImportSet."""
 
+    implements(ICodeImportSet)
+
     def new(self, name, product, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
         """See ICodeImportSet."""
         return CodeImport(name=name, product=product,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
+
+    def getAll(self):
+        """See ICodeImportSet."""
+        return CodeImport.select()
