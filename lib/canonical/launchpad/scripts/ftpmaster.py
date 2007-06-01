@@ -1322,20 +1322,18 @@ class PackageCopier(LaunchpadScript):
         Result is returned.
         """
         target_binaries = []
-        # Obtain names of all distinct binary packages names
-        # produced by the target_source.
-        binary_name_set = set(
-            [binary.name for binary in from_source.binaries])
 
         # Get the binary packages in each distroarchseries and store them
-        # in target_binaries for returning.
-        for binary_name in binary_name_set:
+        # in target_binaries for returning.  We are looking for *published*
+        # binarypackagereleases in all arches for the from_source and its
+        # from_location.
+        for binary in from_source.binaries:
             all_arches = from_location.distroseries.architectures
             for distroarchseries in all_arches:
-                dasbp = distroarchseries.getBinaryPackage(binary_name)
-                dasbpr = dasbp[from_source.version]
+                dasbpr = distroarchseries.getBinaryPackage(
+                    binary.name)[binary.version]
                 # Only include objects with published binaries.
-                if dasbpr:
+                if dasbpr and dasbpr.current_publishing_record:
                     target_binaries.append(dasbpr)
         return target_binaries
 
