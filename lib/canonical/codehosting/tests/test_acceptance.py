@@ -119,9 +119,6 @@ class CodeHostingServer(Server):
 
 class SSHCodeHostingServer(CodeHostingServer):
 
-    def __init__(self, authserver, branches_root):
-        CodeHostingServer.__init__(self, authserver, branches_root)
-
     def setUpFakeHome(self):
         user_home = os.path.abspath(tempfile.mkdtemp())
         os.makedirs(os.path.join(user_home, '.ssh'))
