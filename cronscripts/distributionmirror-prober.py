@@ -155,7 +155,7 @@ class DistroMirrorProber(LaunchpadCronScript):
             self.logger.info(
                 'Re-enabling %s mirror(s): %s'
                 % (len(reenabled_mirrors), ", ".join(reenabled_mirrors)))
-        # XXX: This should be done in LaunchpadCronScript.lock_and_run() when the
+        # XXX: This should be done in LaunchpadScript.lock_and_run() when the
         # isolation used is AUTOCOMMIT_ISOLATION. Also note that replacing
         # this with a flush_database_updates() doesn't have the same effect,
         # it seems.
