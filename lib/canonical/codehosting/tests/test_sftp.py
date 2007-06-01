@@ -41,6 +41,11 @@ class SFTPTests(SSHTestCase):
 
     layer = TwistedBzrlibLayer
 
+    def _cleanUp(self, result):
+        print 'lalalalalala'
+        from twisted.internet import defer
+        return defer.succeed(None)
+
     @deferToThread
     def test_rmdir_branch(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
