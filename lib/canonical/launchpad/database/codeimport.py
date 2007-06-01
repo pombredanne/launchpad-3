@@ -47,3 +47,7 @@ class CodeImportSet:
         return CodeImport(name=name, product=product,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
+
+    def getAll(self):
+        """See ICodeImportSet."""
+        return CodeImport.select()

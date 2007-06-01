@@ -63,3 +63,6 @@ class ICodeImportSet(Interface):
     def new(name, product, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
         """Create a new CodeImport."""
+
+    def getAll():
+        """Return an iterable of all CodeImport objects."""
