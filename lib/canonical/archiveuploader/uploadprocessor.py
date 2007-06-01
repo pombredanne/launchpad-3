@@ -304,7 +304,8 @@ class UploadProcessor:
                 upload.do_reject()
                 self.ztm.abort()
             else:
-                successful = upload.do_accept()
+                notify = not(self.options.dryrun or self.options.nomails)
+                successful = upload.do_accept(notify=notify)
                 if not successful:
                     result = UploadStatusEnum.REJECTED
                     self.log.info("Rejection during accept. "
