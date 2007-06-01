@@ -226,8 +226,6 @@ def setUpGlobs(test):
         auth="Basic no-priv@canonical.com:test")
     test.globs['admin_browser'] = setupBrowser(
         auth="Basic foo.bar@canonical.com:test")
-    test.globs['sabdfl_browser'] = setupBrowser(
-        auth="Basic mark@hbd.com:test")
 
     test.globs['find_tag_by_id'] = find_tag_by_id
     test.globs['find_tags_by_class'] = find_tags_by_class

@@ -3,7 +3,7 @@
 """Helpers for OpenID page tests."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = ['install_consumerview', 'uninstall_consumerview']
 
 from StringIO import StringIO
 

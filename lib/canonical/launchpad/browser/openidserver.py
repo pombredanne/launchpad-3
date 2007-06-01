@@ -392,6 +392,7 @@ class OpenIdView(LaunchpadView):
 class OpenIdViewNavigation(Navigation):
     usedfor = IOpenIdView
 
+    # XXX: Bug #118215 -- email traversal should go -- StuartBishop 20070601
     @stepthrough('+email')
     def traverse_email(self, name):
         # Allow traversal to email addresses, redirecting to the
@@ -445,33 +446,21 @@ class OpenIdIdentityView:
 
     implements(IBrowserPublisher)
 
+    identity_template = ViewPageTemplateFile("../templates/openid-identity.pt")
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
 
     def __call__(self):
-        # XXX: No idea how to make this next line work. Hardcode for now
-        # -- StuartBishop 20070528
-        #person_url = canonical_url(self.context, rootsite='openid')
-        openid_identifier = self.context.openid_identifier
-        server_url = allvhosts.configs['openid'].rooturl
-        identity_url = '%s+openid/+id/%s' % (
-                server_url, openid_identifier)
-        person_url = canonical_url(self.context, rootsite='mainsite')
-        display_name = self.context.displayname
+        # Setup variables to pass to the template
+        self.server_url = allvhosts.configs['openid'].rooturl
+        self.identity_url = '%s+openid/+id/%s' % (
+                self.server_url, self.context.openid_identifier)
+        self.person_url = canonical_url(self.context, rootsite='mainsite')
+        self.meta_refresh_content = "1; URL=%s" % self.person_url
 
-        return textwrap.dedent("""\
-                <html>
-                <head>
-                <link rel="openid.server" href="%(server_url)s" />
-                <meta http-equiv="Refresh" content="1; URL=%(person_url)s" />
-                </head>
-                <body>
-                <h1>OpenID Identity URL for
-                    <a href="%(person_url)s">%(display_name)s</a></h1>
-                </body>
-                </html>
-                """ % vars())
+        return self.identity_template()
 
     def browserDefault(self, request):
         return self, ()
