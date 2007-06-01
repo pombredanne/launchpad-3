@@ -14,6 +14,7 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     IDistroArchSeriesBinaryPackageRelease)
 
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.lp.dbschema import PackagePublishingStatus
@@ -21,7 +22,7 @@ from canonical.lp.dbschema import PackagePublishingStatus
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishingHistory)
+    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 
 class DistroArchSeriesBinaryPackageRelease:
 
@@ -242,4 +243,25 @@ class DistroArchSeriesBinaryPackageRelease:
     def files(self):
         """See IBinaryPackageRelease."""
         return self.binarypackagerelease.files
+
+    def copyTo(self, distroseries, pocket):
+        """See IDistroArchSeriesBinaryPackageRelease."""
+        # Both lookups may raise NotFoundError; it should be handled in
+        # the caller.
+        current = self.current_publishing_record
+        target_das = distroseries[current.distroarchseries.architecturetag]
+
+        copy = SecureBinaryPackagePublishingHistory(
+            archive=current.archive,
+            binarypackagerelease=self.binarypackagerelease,
+            distroarchseries=target_das,
+            component=current.component,
+            section=current.section,
+            priority=current.priority,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            pocket=pocket,
+            embargo=False
+        )
+        return copy
 

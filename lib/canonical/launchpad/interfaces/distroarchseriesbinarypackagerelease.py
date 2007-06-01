@@ -54,3 +54,10 @@ class IDistroArchSeriesBinaryPackageRelease(IBinaryPackageRelease):
         "of this binary package release in this distro arch release, or "
         "None if there is not one.")
 
+    def copyTo(self, distroseries, pocket):
+        """Copy a DistroArchSeriesBinaryPackageRelease to another location.
+
+        Return the publishing record in the targeted location.
+        """
+
+

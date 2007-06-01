@@ -269,23 +269,3 @@ class DistroArchSeriesBinaryPackage:
 
         return current
 
-    def copyTo(self, distroseries, pocket):
-        """See IDistroArchSeriesBinaryPackage."""
-        # Both lookups may raise NotFoundError; it should be handled in
-        # the caller.
-        current = self.current_published
-        target_dar = distroseries[current.distroarchseries.architecturetag]
-
-        copy = SecureBinaryPackagePublishingHistory(
-            archive=current.archive,
-            binarypackagerelease=current.binarypackagerelease,
-            distroarchseries=target_dar,
-            component=current.component,
-            section=current.section,
-            priority=current.priority,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            pocket=pocket,
-            embargo=False
-        )
-        return copy

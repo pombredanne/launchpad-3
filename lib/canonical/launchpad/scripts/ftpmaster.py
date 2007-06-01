@@ -1317,7 +1317,7 @@ class PackageCopier(LaunchpadScript):
         return target_source
 
     def _findBinaries(self, from_source, from_location):
-        """Build a set of DistroArchSeriesBinaryPackage for the context source.
+        """Build a set of DistroArchSeriesBinaryPackageRelease for the source.
 
         Result is returned.
         """
@@ -1330,16 +1330,13 @@ class PackageCopier(LaunchpadScript):
         # Get the binary packages in each distroarchseries and store them
         # in target_binaries for returning.
         for binary_name in binary_name_set:
-            all_archs = from_location.distroseries.architectures
-            for distroarchseries in all_archs:
-                darbp = distroarchseries.getBinaryPackage(binary_name)
+            all_arches = from_location.distroseries.architectures
+            for distroarchseries in all_arches:
+                dasbp = distroarchseries.getBinaryPackage(binary_name)
+                dasbpr = dasbp[from_source.version]
                 # Only include objects with published binaries.
-                try:
-                    current = darbp.current_published
-                except NotFoundError:
-                    pass
-                else:
-                    target_binaries.append(darbp)
+                if dasbpr:
+                    target_binaries.append(dasbpr)
         return target_binaries
 
     def _getUserConfirmation(self):
