@@ -318,7 +318,7 @@ The `names` command returns a sequence of the names in the `path`.
 
 `path` is normalized before used.
 
-    >>> sorted(ufs.names("some-directory/..")) # -> "."
+    >>> sorted(ufs.names("some-directory/..")) 
     ['testdir', 'testfile']
 
 'path' under the server root is not allowed:
