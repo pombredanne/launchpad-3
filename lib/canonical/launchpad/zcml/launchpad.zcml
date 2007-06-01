@@ -267,6 +267,13 @@
       template="../templates/product-code-index.pt"
       permission="zope.Public"
       />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="code-import-list"
+      class="canonical.launchpad.browser.CodeImportSetView"
+      template="../templates/codeimport-list.pt"
+      permission="zope.Public"
+      />
 
 </facet>
 

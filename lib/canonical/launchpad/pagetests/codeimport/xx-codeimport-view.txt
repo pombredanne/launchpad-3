@@ -1,0 +1,7 @@
+For now, we put a link on the `code` page:
+
+  >>> browser.open('http://code.launchpad.dev/')
+  >>> browser.getLink('View all imports').click()
+  >>> browser.url
+  'http://code.launchpad.dev/code-import-list'
+

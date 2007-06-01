@@ -30,6 +30,7 @@ from canonical.launchpad.browser.bugtask import *
 from canonical.launchpad.browser.bugtracker import *
 from canonical.launchpad.browser.bugwatch import *
 from canonical.launchpad.browser.cal import *
+from canonical.launchpad.browser.codeimport import *
 from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.cve import *
 from canonical.launchpad.browser.cvereport import *

@@ -53,6 +53,7 @@
                         <div class="columns">
                           <div class="three column left">
                             <h2>Recent imports</h2>
+                            <a href="/code-import-list">View all imports</a>
                             <ul class="branch">
                               <li tal:repeat="
                                       branch view/recently_imported_branches">
