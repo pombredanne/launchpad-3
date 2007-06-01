@@ -5,7 +5,14 @@
 __metaclass__ = type
 __all__ = ['CodeImport']
 
+from zope.interface import implements
+
+from sqlobject import (
+    BoolCol, ForeignKey, IntCol, StringCol)
+
 from canonical.database.constants import DEFAULT
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.lp.dbschema import RevisionControlSystems
