@@ -54,8 +54,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     LaunchpadView, action, LaunchpadFormView, LaunchpadEditFormView,
-    custom_widget, safe_action)
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
+    custom_widget, redirection, safe_action)
+from canonical.launchpad.webapp.interfaces import (
+    IAlwaysSubmittedWidget, NotFoundError)
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
 from canonical.widgets.project import ProjectScopeWidget
@@ -63,8 +64,18 @@ from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 
 class QuestionSetNavigation(Navigation):
-    """A navigator for a QuestionSet."""
+    """Navigation for the IQuestionSet."""
     usedfor = IQuestionSet
+
+    def traverse(self, name):
+        """Traverse to a question by id."""
+        try:
+            question = getUtility(IQuestionSet).get(int(name))
+        except ValueError:
+            question = None
+        if question is None:
+            raise NotFoundError(name)
+        return redirection(canonical_url(question))
 
 
 class QuestionSetView(LaunchpadFormView):

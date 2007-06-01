@@ -119,7 +119,7 @@ On that facet, we will find the same common listings:
     >>> browser.getLink('My questions').url
     '.../ubuntu/+myquestions'
 
-== Distroreleases ==
+== DistroSeries ==
 
 On a distroseries there is a "Ask Question" link, but note that it
 points at its distro, not itself. Questions are linked to distro,
@@ -237,3 +237,26 @@ involving that person.
     >>> browser.getLink('Next').click()
     >>> browser.getLink('Firefox loses focus').url
     '.../firefox/+question/4'
+
+== Accessing a question directly ==
+
+You can access any question by its ID using the
+http://answers.launchpad.dev/questions/<id>. This URL will redirect
+to the proper context where the question can be found:
+
+    >>> browser.open('http://answers.launchpad.dev/questions/1')
+    >>> print browser.url
+    http://answers.launchpad.dev/firefox/+question/1
+
+Asking for a non-existent question or an invalid ID will still
+raise a 404 though:
+
+    >>> browser.open('http://answers.launchpad.dev/questions/255')
+    Traceback (most recent call last):
+      ...
+    NotFound: ...
+
+    >>> browser.open('http://answers.launchpad.dev/questions/bad_id')
+    Traceback (most recent call last):
+      ...
+    NotFound: ...
