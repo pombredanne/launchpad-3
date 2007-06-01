@@ -812,12 +812,16 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                 'published in it'
                                 % (self.displayname, pkgname))
 
-        # The way this method works is that is tries to locate a pair of
-        # packages related to that name. If it locates a binary package,
-        # it then tries to find the source package most recently
-        # associated with it, first in the current distroseries and
-        # then across the whole distribution. If it doesn't, it tries to
-        # find a source package with that name published in the
+        # The way this method works is that is tries to locate a pair
+        # of packages related to that name. If it locates a source
+        # package it then tries to see if it has been published at any
+        # point, and gets the binary package from the publishing
+        # record.
+        #
+        # If that fails (no source package by that name, or not
+        # published) then it'll search binary packages, then find the
+        # source package most recently associated with it, first in
+        # the current distroseries and then across the whole
         # distribution.
         #
         # XXX: note that the strategy of falling back to previous
@@ -826,6 +830,56 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # us to allow them to be associated with obsolete packages.
         #   -- kiko, 2006-07-28
 
+        sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
+        if sourcepackagename:
+            # Note that in the source package case, we don't restrict
+            # the search to the distribution release, making a best
+            # effort to find a package.
+            publishing = SourcePackagePublishingHistory.selectFirst('''
+                SourcePackagePublishingHistory.distrorelease =
+                    DistroRelease.id AND
+                DistroRelease.distribution = %s AND
+                SourcePackagePublishingHistory.archive = %s AND
+                SourcePackagePublishingHistory.sourcepackagerelease =
+                    SourcePackageRelease.id AND
+                SourcePackageRelease.sourcepackagename = %s AND
+                SourcePackagePublishingHistory.status = %s
+                ''' % sqlvalues(self, self.main_archive, sourcepackagename,
+                                PackagePublishingStatus.PUBLISHED),
+                clauseTables=['SourcePackageRelease', 'DistroRelease'],
+                distinct=True,
+                orderBy="id")
+            if publishing is not None:
+                # Attempt to find a published binary package of the
+                # same name. Try the current release first.
+                publishedpackage = PublishedPackage.selectFirstBy(
+                    sourcepackagename=sourcepackagename.name,
+                    binarypackagename=sourcepackagename.name,
+                    distroseries=self.currentseries,
+                    orderBy=['-id'])
+                if publishedpackage is None:
+                    # Try any release next.
+                    # XXX could we just do this first? I'm just
+                    # following the pattern that was here before
+                    # (e.g. see the search for a binary package
+                    # below).
+                    #   -- Gavin Panella, 2007-04-18
+                    publishedpackage = PublishedPackage.selectFirstBy(
+                        sourcepackagename=sourcepackagename.name,
+                        binarypackagename=sourcepackagename.name,
+                        distribution=self,
+                        orderBy=['-id'])
+                if publishedpackage is not None:
+                    binarypackagename = BinaryPackageName.byName(
+                        publishedpackage.binarypackagename)
+                    return (sourcepackagename, binarypackagename)
+                # No binary with a similar name, so just return None
+                # rather than returning some arbitrary binary package.
+                return (sourcepackagename, None)
+
+        # At this point we don't have a published source package by
+        # that name, so let's try to find a binary package and work
+        # back from there.
         binarypackagename = BinaryPackageName.selectOneBy(name=pkgname)
         if binarypackagename:
             # Ok, so we have a binarypackage with that name. Grab its
@@ -847,7 +901,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                         publishing.sourcepackagename)
                 return (sourcepackagename, binarypackagename)
 
-        sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
+        # We got nothing so signal an error.
         if sourcepackagename is None:
             # Not a binary package name, not a source package name,
             # game over!
@@ -856,33 +910,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                     % (pkgname, self.displayname))
             else:
                 raise NotFoundError('Unknown package: %s' % pkgname)
-
-        # Note that in the source package case, we don't restrict
-        # the search to the distribution series, making a best
-        # effort to find a package.
-        publishing = SourcePackagePublishingHistory.selectFirst('''
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.status = %s
-            ''' % sqlvalues(self, self.main_archive, sourcepackagename,
-                            PackagePublishingStatus.PUBLISHED),
-            clauseTables=['SourcePackageRelease', 'DistroRelease'],
-            distinct=True,
-            orderBy="id")
-
-        if publishing is None:
+        else:
             raise NotFoundError('Package %s not published in %s'
                                 % (pkgname, self.displayname))
-
-        # Note the None here: if no source package was published for the
-        # the binary package we found above, assume we ran into a red
-        # herring and just ignore the binary package name hit.
-        return (sourcepackagename, None)
 
 
 class DistributionSet:

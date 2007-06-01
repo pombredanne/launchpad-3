@@ -19,10 +19,10 @@ from canonical.config import config
 from canonical.launchpad.scripts.cveimport import CVEDB_NS, update_one_cve
 
 from canonical.launchpad.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadCronScript, LaunchpadScriptFailure)
 
 
-class CVEUpdater(LaunchpadScript):
+class CVEUpdater(LaunchpadCronScript):
     def add_my_options(self):
         """Parse command line arguments."""
         self.parser.add_option("-f", "--cvefile", dest="cvefile",
