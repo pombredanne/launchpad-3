@@ -275,10 +275,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IBugTarget."""
         return '%s (upstream)' % self.name
 
-    def getLatestBranches(self, quantity=5):
+    def getLatestBranches(self, quantity=5, visible_by_user=None):
         """See IProduct."""
         return shortlist(
-            BranchSet().getLatestBranchesForProduct(self, quantity))
+            BranchSet().getLatestBranchesForProduct(
+                self, quantity, visible_by_user))
 
     def getPackage(self, distrorelease):
         """See IProduct."""

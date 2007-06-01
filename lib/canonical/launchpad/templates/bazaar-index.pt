@@ -51,7 +51,7 @@
                         </p>
 
                         <div class="columns">
-                          <div class="three column left">
+                          <div class="three column left" id="recent-imports">
                             <h2>Recent imports</h2>
                             <ul class="branch">
                               <li tal:repeat="
@@ -63,7 +63,7 @@
                               </li>
                             </ul>
                           </div>
-                          <div class="three column middle">
+                          <div class="three column middle" id="recently-registered">
                             <h2>Recently registered</h2>
                             <ul class="branch">
                               <li tal:repeat="branch view/recently_registered_branches">
@@ -74,7 +74,7 @@
                               </li>
                             </ul>
                           </div>
-                          <div class="three column right">
+                          <div class="three column right" id="recently-changed">
                             <h2>Recently changed</h2>
                             <ul class="branch">
                               <li tal:repeat="branch view/recently_changed_branches">

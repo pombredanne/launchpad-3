@@ -218,17 +218,12 @@
       />
     <browser:page
       name="+portlet-aboutcve"
-      template="../templates/portlet-aboutcve.pt" 
+      template="../templates/portlet-aboutcve.pt"
       />
-  </browser:pages>
-
-  <browser:pages
-    for="canonical.launchpad.interfaces.IProduct"
-    permission="zope.Public">
-      <browser:page
-        name="+portlet-latestbranches"
-        template="../templates/product-portlet-latestbranches.pt" 
-        />
+    <browser:page
+      name="+portlet-latestbranches"
+      template="../templates/product-portlet-latestbranches.pt"
+      />
   </browser:pages>
 
   <browser:page

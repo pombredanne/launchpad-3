@@ -506,6 +506,16 @@ class IBranchSet(Interface):
         only visible by the author, and subscribers.
         """
 
+    def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
+        """Return the most recently created branches for the product.
+
+        At most quantity branches are returned.
+
+        The visible_by_user parameter is used to filter out the branches
+        that the user is not entitled to see.  Private branches are
+        only visible by the author, and subscribers.
+        """
+
 
 class IBranchDelta(Interface):
     """The quantitative changes made to a branch that was edited or altered."""

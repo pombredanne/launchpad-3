@@ -563,6 +563,10 @@ class ProductView(LaunchpadView):
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
 
+    def getLatestBranches(self):
+        return self.context.getLatestBranches(visible_by_user=self.user)
+
+
 class ProductDownloadFilesView(LaunchpadView):
 
     __used_for__ = IProduct

@@ -607,7 +607,7 @@ class BranchSet:
         return Branch.select(
             self._generateBranchClause(query, visible_by_user),
             limit=quantity,
-            orderBy=['-date_created'])
+            orderBy=['-date_created', '-id'])
 
 
 class BranchRelationship(SQLBase):

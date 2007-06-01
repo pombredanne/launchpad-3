@@ -178,6 +178,15 @@ Anonymous users see just the public branches.
     ~name12/gnome-terminal/scanned False
     ~name12/gnome-terminal/mirrored False
 
+    >>> for branch in branch_set.getRecentlyImportedBranches(3):
+    ...     print branch.unique_name, branch.private
+    >>> for branch in branch_set.getRecentlyChangedBranches(3):
+    ...     print branch.unique_name, branch.private
+    >>> for branch in branch_set.getRecentlyImportedBranches(3, sabdfl):
+    ...     print branch.unique_name, branch.private
+    >>> for branch in branch_set.getRecentlyChangedBranches(3, sabdfl):
+    ...     print branch.unique_name, branch.private
+
 David is not in eligible to see any of the private branches.
 
     >>> for branch in branch_set.getRecentlyRegisteredBranches(3, ddaa):
