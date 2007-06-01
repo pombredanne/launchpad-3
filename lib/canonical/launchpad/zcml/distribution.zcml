@@ -21,11 +21,11 @@
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages
-      getQuestionLanguages" 
+      getQuestionLanguages"
       />
-    <require 
+    <require
       permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact" 
+      attributes="newQuestion addAnswerContact removeAnswerContact"
       />
   </content>
 
@@ -89,8 +89,8 @@
     facet="bugs"
     permission="zope.Public">
     <browser:page
-      name="+portlet-bugtasklist-releasebugs"
-      template="../templates/bugtask-portlet-releasebugs.pt"
+      name="+portlet-bugtasklist-seriesbugs"
+      template="../templates/bugtask-portlet-seriesbugs.pt"
       />
   </browser:pages>
 
@@ -100,7 +100,7 @@
     class="canonical.launchpad.browser.DistributionArchiveMirrorsView"
     permission="zope.Public"
     name="+archivemirrors"
-    template="../templates/distribution-mirrors.pt" 
+    template="../templates/distribution-mirrors.pt"
     />
 
   <browser:page
@@ -121,17 +121,17 @@
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
     facet="overview"
-    class="canonical.launchpad.browser.DistributionReleaseMirrorsView"
+    class="canonical.launchpad.browser.DistributionSeriesMirrorsView"
     permission="zope.Public"
     name="+cdmirrors"
-    template="../templates/distribution-mirrors.pt" 
+    template="../templates/distribution-mirrors.pt"
     />
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
     name="+cdmirrors-rss"
     permission="zope.Public"
-    class="canonical.launchpad.browser.DistributionReleaseMirrorsRSSView"
+    class="canonical.launchpad.browser.DistributionSeriesMirrorsRSSView"
     template="../templates/distribution-mirrors-rss.pt"
     />
 
@@ -141,7 +141,7 @@
     class="canonical.launchpad.browser.DistributionDisabledMirrorsView"
     permission="zope.Public"
     name="+disabledmirrors"
-    template="../templates/distribution-mirrors.pt" 
+    template="../templates/distribution-mirrors.pt"
     />
 
   <browser:page
@@ -150,7 +150,7 @@
     class="canonical.launchpad.browser.DistributionUnofficialMirrorsView"
     permission="zope.Public"
     name="+unofficialmirrors"
-    template="../templates/distribution-mirrors.pt" 
+    template="../templates/distribution-mirrors.pt"
     />
 
   <browser:page
@@ -172,9 +172,9 @@
       template="../templates/distribution-index.pt"
       />
     <browser:page
-      name="+releases"
+      name="+series"
       facet="overview"
-      template="../templates/distribution-releases.pt"
+      template="../templates/distribution-series.pt"
       />
     <browser:page
       name="+search"
@@ -205,6 +205,10 @@
       name="+builds-list"
       template="../templates/builds-list.pt"
       />
+    <browser:page
+      name="+ppas"
+      template="../templates/ppa-list.pt"
+      />
   </browser:pages>
 
   <browser:page
@@ -231,7 +235,7 @@
     permission="zope.Public"
     name="+cve"
     facet="bugs"
-    template="../templates/distribution-cvereport.pt" 
+    template="../templates/distribution-cvereport.pt"
     />
 
   <browser:pages
@@ -246,8 +250,8 @@
       template="../templates/distribution-portlet-lifecycle.pt"
       />
     <browser:page
-      name="+portlet-releases"
-      template="../templates/distribution-portlet-releases.pt"
+      name="+portlet-series"
+      template="../templates/distribution-portlet-series.pt"
       />
     <browser:page
       name="+portlet-milestones"
@@ -283,19 +287,19 @@
   </browser:pages>
 
   <browser:addform
-    name="+addrelease"
+    name="+addseries"
     for="canonical.launchpad.interfaces.IDistribution"
-    schema="canonical.launchpad.interfaces.IDistroRelease"
-    label="Register a new distribution release"
-    fields="name displayname title summary description version parentrelease"
-    content_factory="canonical.launchpad.database.DistroRelease"
-    class="canonical.launchpad.browser.DistroReleaseAddView"
+    schema="canonical.launchpad.interfaces.IDistroSeries"
+    label="Register a new series"
+    fields="name displayname title summary description version parentseries"
+    content_factory="canonical.launchpad.database.DistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesAddView"
     facet="overview"
     permission="launchpad.Admin"
     template="../templates/launchpad-addform.pt" >
       <browser:widget
         field="owner"
-        class="canonical.widgets.HiddenUserWidget" 
+        class="canonical.widgets.HiddenUserWidget"
         />
   </browser:addform>
 
@@ -305,7 +309,7 @@
     class="canonical.launchpad.browser.DistributionEditView"
     name="+edit"
     facet="overview"
-    template="../templates/distribution-edit.pt" 
+    template="../templates/distribution-edit.pt"
     />
 
   <browser:page
@@ -314,7 +318,7 @@
     class="canonical.launchpad.browser.DistributionBrandingView"
     name="+branding"
     facet="overview"
-    template="../templates/object-branding.pt" 
+    template="../templates/object-branding.pt"
     />
 
   <browser:page
@@ -355,7 +359,7 @@
     facet="overview"
     fields="mirror_admin"
     permission="launchpad.Edit"
-    template="../templates/distribution-change-mirror-admin.pt" 
+    template="../templates/distribution-change-mirror-admin.pt"
     />
 
   <browser:editform
@@ -391,7 +395,7 @@
     template="../templates/bounty-link.pt">
     <browser:widget
       field="distribution"
-      class="canonical.widgets.ContextWidget" 
+      class="canonical.widgets.ContextWidget"
       />
   </browser:addform>
 
@@ -427,7 +431,7 @@
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSet"
-    name="+index" 
+    name="+index"
     />
 
   <browser:navigation
@@ -465,7 +469,7 @@
     class="canonical.launchpad.browser.DistributionAddView"
     facet="overview"
     permission="launchpad.Admin"
-    template="../templates/distribution-add.pt" 
+    template="../templates/distribution-add.pt"
     />
 
 </configure>

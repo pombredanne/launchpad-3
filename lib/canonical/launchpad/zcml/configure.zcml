@@ -51,13 +51,13 @@
     <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />
     <include file="distrocomponentuploader.zcml" />
-    <include file="distrorelease.zcml" />
-    <include file="distroreleasebinarypackage.zcml" />
-    <include file="distroreleasesourcepackagerelease.zcml" />
-    <include file="distroreleaselanguage.zcml" />
-    <include file="distroarchrelease.zcml" />
-    <include file="distroarchreleasebinarypackage.zcml" />
-    <include file="distroarchreleasebinarypackagerelease.zcml" />
+    <include file="distroseries.zcml" />
+    <include file="distroseriesbinarypackage.zcml" />
+    <include file="distroseriessourcepackagerelease.zcml" />
+    <include file="distroserieslanguage.zcml" />
+    <include file="distroarchseries.zcml" />
+    <include file="distroarchseriesbinarypackage.zcml" />
+    <include file="distroarchseriesbinarypackagerelease.zcml" />
     <include file="driver.zcml" />
     <include file="emailaddress.zcml" />
     <include file="files.zcml" />
@@ -92,7 +92,6 @@
     <include file="posubmission.zcml" />
     <include file="potranslation.zcml" />
     <include file="processor.zcml" />
-    <include file="productrelease.zcml" />
     <include file="productrelease.zcml" />
     <include file="productseries.zcml" />
     <include file="product.zcml" />
@@ -136,6 +135,7 @@
     <include file="section.zcml" />
     <include file="vpoexport.zcml" />
     <include file="vpotexport.zcml" />
+    <include file="archive.zcml" />
 
     <include file="fields.zcml" />
     <include file="resources.zcml" />

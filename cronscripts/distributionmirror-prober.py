@@ -21,11 +21,11 @@ from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.scripts.distributionmirror_prober import (
-    get_expected_cdimage_paths, probe_archive_mirror, probe_release_mirror)
+    get_expected_cdimage_paths, probe_archive_mirror, probe_cdimage_mirror)
 
 
 class DistroMirrorProber(LaunchpadCronScript):
-    usage = ('%prog --content-type=(archive|release) [--force] '
+    usage = ('%prog --content-type=(archive|cdimage) [--force] '
              '[--no-owner-notification]')
 
     def _sanity_check_mirror(self, mirror):
@@ -65,8 +65,8 @@ class DistroMirrorProber(LaunchpadCronScript):
         if self.options.content_type == 'archive':
             probe_function = probe_archive_mirror
             content_type = MirrorContent.ARCHIVE
-        elif self.options.content_type == 'release':
-            probe_function = probe_release_mirror
+        elif self.options.content_type == 'cdimage':
+            probe_function = probe_cdimage_mirror
             content_type = MirrorContent.RELEASE
         else:
             raise LaunchpadScriptFailure(

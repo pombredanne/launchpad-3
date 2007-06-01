@@ -2,9 +2,9 @@
 
 __metaclass__ = type
 
-__all__ = ['IDistributionMirror', 'IMirrorDistroArchRelease',
-           'IMirrorDistroReleaseSource', 'IMirrorProbeRecord',
-           'IDistributionMirrorSet', 'IMirrorCDImageDistroRelease',
+__all__ = ['IDistributionMirror', 'IMirrorDistroArchSeries',
+           'IMirrorDistroSeriesSource', 'IMirrorProbeRecord',
+           'IDistributionMirrorSet', 'IMirrorCDImageDistroSeries',
            'PROBE_INTERVAL', 'UnableToFetchCDImageFileList']
 
 from zope.schema import Bool, Choice, Datetime, Int, TextLine
@@ -13,7 +13,7 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
-from canonical.launchpad.fields import ContentNameField, URIField
+from canonical.launchpad.fields import ContentNameField, URIField, Whiteboard
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad import _
@@ -128,10 +128,9 @@ class IDistributionMirror(Interface):
     content = Choice(
         title=_('Content'), required=True, readonly=False, 
         description=_(
-            'Choose Release if this mirror contains CD images of any of the '
-            'various releases of this distribution, or choose Archive if this '
-            'mirror contains packages for this distribution and is meant to '
-            'be used in conjunction with apt.'),
+            'Choose "CD Image" if this mirror contains CD images of '
+            'this distribution. Choose "Archive" if this is a '
+            'mirror of packages for this distribution.'),
         vocabulary='MirrorContent')
     official_candidate = Bool(
         title=_('Apply to be an official mirror of this distribution'),
@@ -141,10 +140,10 @@ class IDistributionMirror(Interface):
         required=False, readonly=False, default=False)
 
     title = Attribute('The title of this mirror')
-    cdimage_releases = Attribute(
-        'All MirrorCDImageDistroReleases of this mirror')
-    source_releases = Attribute('All MirrorDistroReleaseSources of this mirror')
-    arch_releases = Attribute('All MirrorDistroArchReleases of this mirror')
+    cdimage_serieses = Attribute(
+        'All MirrorCDImageDistroSerieses of this mirror')
+    source_serieses = Attribute('All MirrorDistroSeriesSources of this mirror')
+    arch_serieses = Attribute('All MirrorDistroArchSerieses of this mirror')
     last_probe_record = Attribute('The last MirrorProbeRecord for this mirror.')
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
     has_ftp_or_rsync_base_url = Bool(
@@ -152,36 +151,40 @@ class IDistributionMirror(Interface):
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    whiteboard = Whiteboard(
+        title=_('Whiteboard'), required=False,
+        description=_('Notes on the current status of the mirror (only '
+                      'visible to admins).'))
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
         if not (mirror.http_base_url or mirror.ftp_base_url):
             raise Invalid('A mirror must have at least an HTTP or FTP URL.')
 
-    def getSummarizedMirroredSourceReleases():
+    def getSummarizedMirroredSourceSerieses():
         """Return a summarized list of this distribution_mirror's 
-        MirrorDistroReleaseSource objects.
+        MirrorDistroSeriesSource objects.
 
         Summarized, in this case, means that it ignores pocket and components
-        and returns the MirrorDistroReleaseSource with the worst status for
-        each distrorelease of this distribution mirror.
+        and returns the MirrorDistroSeriesSource with the worst status for
+        each distroseries of this distribution mirror.
         """
 
-    def getSummarizedMirroredArchReleases():
+    def getSummarizedMirroredArchSerieses():
         """Return a summarized list of this distribution_mirror's 
-        MirrorDistroArchRelease objects.
+        MirrorDistroArchSeries objects.
 
         Summarized, in this case, means that it ignores pocket and components
-        and returns the MirrorDistroArchRelease with the worst status for
-        each distro_arch_release of this distribution mirror.
+        and returns the MirrorDistroArchSeries with the worst status for
+        each distro_arch_series of this distribution mirror.
         """
 
     def getOverallStatus():
         """Return this mirror's overall status.
 
         For ARCHIVE mirrors, the overall status is the worst status of all
-        of this mirror's content objects (MirrorDistroArchRelease,
-        MirrorDistroReleaseSource or MirrorCDImageDistroReleases).
+        of this mirror's content objects (MirrorDistroArchSeries,
+        MirrorDistroSeriesSource or MirrorCDImageDistroSeriess).
 
         For RELEASE mirrors, the overall status is either UPTODATE, if the
         mirror contains all ISO images that it should or UNKNOWN if it doesn't
@@ -195,7 +198,7 @@ class IDistributionMirror(Interface):
         """Should this mirror be marked disabled?
 
         If this is a RELEASE mirror then expected_file_count must not be None,
-        and it should be disabled if the number of cdimage_releases it
+        and it should be disabled if the number of cdimage_serieses it
         contains is smaller than the given expected_file_count.
 
         If this is an ARCHIVE mirror, then it should be disabled only if it
@@ -225,49 +228,49 @@ class IDistributionMirror(Interface):
     def newProbeRecord(log_file):
         """Create and return a new MirrorProbeRecord for this mirror."""
 
-    def deleteMirrorDistroArchRelease(distro_arch_release, pocket, component):
-        """Delete the MirrorDistroArchRelease with the given arch release and
+    def deleteMirrorDistroArchSeries(distro_arch_series, pocket, component):
+        """Delete the MirrorDistroArchSeries with the given arch series and
         pocket, in case it exists.
         """
 
-    def ensureMirrorDistroArchRelease(distro_arch_release, pocket, component):
-        """Check if we have a MirrorDistroArchRelease with the given arch
-        release and pocket, creating one if not.
+    def ensureMirrorDistroArchSeries(distro_arch_series, pocket, component):
+        """Check if we have a MirrorDistroArchSeries with the given arch
+        series and pocket, creating one if not.
 
-        Return that MirrorDistroArchRelease.
+        Return that MirrorDistroArchSeries.
         """
 
-    def ensureMirrorDistroReleaseSource(distrorelease, pocket, component):
-        """Check if we have a MirrorDistroReleaseSource with the given distro
-        release, creating one if not.
+    def ensureMirrorDistroSeriesSource(distroseries, pocket, component):
+        """Check if we have a MirrorDistroSeriesSource with the given distro
+        series, creating one if not.
 
-        Return that MirrorDistroReleaseSource.
+        Return that MirrorDistroSeriesSource.
         """
 
-    def deleteMirrorDistroReleaseSource(distrorelease, pocket, component):
-        """Delete the MirrorDistroReleaseSource with the given distro release,
+    def deleteMirrorDistroSeriesSource(distroseries, pocket, component):
+        """Delete the MirrorDistroSeriesSource with the given distro series,
         in case it exists.
         """
 
-    def ensureMirrorCDImageRelease(arch_release, flavour):
-        """Check if we have a MirrorCDImageDistroRelease with the given
-        arch release and flavour, creating one if not.
+    def ensureMirrorCDImageSeries(arch_series, flavour):
+        """Check if we have a MirrorCDImageDistroSeries with the given
+        arch series and flavour, creating one if not.
 
-        Return that MirrorCDImageDistroRelease.
+        Return that MirrorCDImageDistroSeries.
         """
 
-    def deleteMirrorCDImageRelease(arch_release, flavour):
-        """Delete the MirrorCDImageDistroRelease with the given arch 
-        release and flavour, in case it exists.
+    def deleteMirrorCDImageSeries(arch_series, flavour):
+        """Delete the MirrorCDImageDistroSeries with the given arch 
+        series and flavour, in case it exists.
         """
 
-    def deleteAllMirrorCDImageReleases():
-        """Delete all MirrorCDImageDistroReleases of this mirror."""
+    def deleteAllMirrorCDImageSerieses():
+        """Delete all MirrorCDImageDistroSeriess of this mirror."""
 
     def getExpectedPackagesPaths():
         """Get all paths where we can find Packages.gz files on this mirror.
 
-        Return a list containing, for each path, the DistroArchRelease,
+        Return a list containing, for each path, the DistroArchSeries,
         the PackagePublishingPocket and the Component to which that given
         Packages.gz file refer to and the path to the file itself.
         """
@@ -275,14 +278,14 @@ class IDistributionMirror(Interface):
     def getExpectedSourcesPaths():
         """Get all paths where we can find Sources.gz files on this mirror.
 
-        Return a list containing, for each path, the DistroRelease, the
+        Return a list containing, for each path, the DistroSeries, the
         PackagePublishingPocket and the Component to which that given
         Sources.gz file refer to and the path to the file itself.
         """
 
 
 class UnableToFetchCDImageFileList(Exception):
-    """Couldn't feth the file list needed for probing release mirrors."""
+    """Couldn't fetch the file list needed for probing cdimage mirrors."""
 
 
 class IDistributionMirrorSet(Interface):
@@ -324,13 +327,13 @@ class IDistributionMirrorSet(Interface):
         """Return the mirror with the given Rsync URL or None."""
 
 
-class IMirrorDistroArchRelease(Interface):
-    """The mirror of the packages of a given Distro Arch Release"""
+class IMirrorDistroArchSeries(Interface):
+    """The mirror of the packages of a given Distro Arch Series"""
 
     distribution_mirror = Attribute(_("The Distribution Mirror"))
-    distro_arch_release = Choice(
-        title=_('Distribution Arch Release'), required=True, readonly=True,
-        vocabulary='FilteredDistroArchRelease')
+    distro_arch_series = Choice(
+        title=_('Version and Architecture'), required=True, readonly=True,
+        vocabulary='FilteredDistroArchSeries')
     status = Choice(
         title=_('Status'), required=True, readonly=False,
         vocabulary='MirrorStatus')
@@ -344,7 +347,7 @@ class IMirrorDistroArchRelease(Interface):
         """Return a dictionary mapping each different MirrorStatus to a URL on
         this mirror.
 
-        If there's not publishing records for this DistroArchRelease,
+        If there's not publishing records for this DistroArchSeries,
         Component and Pocket, an empty dictionary is returned.
 
         These URLs should be checked and, if they are accessible, we know
@@ -352,13 +355,13 @@ class IMirrorDistroArchRelease(Interface):
         """
 
 
-class IMirrorDistroReleaseSource(Interface):
-    """The mirror of a given Distro Release"""
+class IMirrorDistroSeriesSource(Interface):
+    """The mirror of a given Distro Series"""
 
     distribution_mirror = Attribute(_("The Distribution Mirror"))
-    distrorelease = Choice(
-        title=_('Distribution Release'), required=True, readonly=True,
-        vocabulary='FilteredDistroRelease')
+    distroseries = Choice(
+        title=_('Series'), required=True, readonly=True,
+        vocabulary='FilteredDistroSeries')
     status = Choice(
         title=_('Status'), required=True, readonly=False,
         vocabulary='MirrorStatus')
@@ -372,7 +375,7 @@ class IMirrorDistroReleaseSource(Interface):
         """Return a dictionary mapping each different MirrorStatus to a URL on
         this mirror.
 
-        If there's not publishing records for this DistroRelease, Component
+        If there's not publishing records for this DistroSeries, Component
         and Pocket, an empty dictionary is returned.
 
         These URLs should be checked and, if they are accessible, we know
@@ -380,11 +383,11 @@ class IMirrorDistroReleaseSource(Interface):
         """
 
 
-class IMirrorCDImageDistroRelease(Interface):
+class IMirrorCDImageDistroSeries(Interface):
     """The mirror of a given CD/DVD image"""
 
     distribution_mirror = Attribute(_("The Distribution Mirror"))
-    distrorelease = Attribute(_("The DistroRelease"))
+    distroseries = Attribute(_("The DistroSeries"))
     flavour = TextLine(
         title=_("The Flavour's name"), required=True, readonly=True)
 

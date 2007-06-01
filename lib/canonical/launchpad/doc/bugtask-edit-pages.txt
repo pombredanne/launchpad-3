@@ -120,12 +120,12 @@ fail.
     ...     print error
     This bug has already been reported on evolution (ubuntu).
 
-This also works if we try to reassign an accepted distribution release
+This also works if we try to reassign an accepted distribution series
 task. Since we aren't allowed to edit the current development task
 directly, let's add a grumpy task first.
 
     >>> login('foo.bar@canonical.com')
-    >>> ubuntu_grumpy = ubuntu.getRelease('grumpy')
+    >>> ubuntu_grumpy = ubuntu.getSeries('grumpy')
     >>> nomination = bug_two.addNomination(
     ...     target=ubuntu_grumpy, owner=getUtility(ILaunchBag).user)
     >>> nomination.isApproved()

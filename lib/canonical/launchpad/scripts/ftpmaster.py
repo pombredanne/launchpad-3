@@ -43,7 +43,7 @@ from canonical.launchpad.scripts.base import (
 from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority,
-    DistributionReleaseStatus)
+    DistroSeriesStatus)
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.librarian.utils import copy_and_close
@@ -63,7 +63,7 @@ class ArchiveOverrider:
     It will raise ArchiveOverriderError exception if anything goes wrong.
     """
     distro = None
-    distrorelease = None
+    distroseries = None
     pocket = None
     component = None
     section = None
@@ -96,12 +96,12 @@ class ArchiveOverrider:
                 "Invalid distribution: '%s'" % self.distro_name)
 
         if not self.suite:
-            self.distrorelease = self.distro.currentrelease
+            self.distroseries = self.distro.currentseries
             self.pocket = PackagePublishingPocket.RELEASE
         else:
             try:
-                self.distrorelease, self.pocket = (
-                    self.distro.getDistroReleaseAndPocket(self.suite))
+                self.distroseries, self.pocket = (
+                    self.distro.getDistroSeriesAndPocket(self.suite))
             except NotFoundError:
                 raise ArchiveOverriderError(
                     "Invalid suite: '%s'" % self.suite)
@@ -109,24 +109,24 @@ class ArchiveOverrider:
         if self.component_name:
             valid_components = dict(
                 [(component.name, component)
-                 for component in self.distrorelease.components])
+                 for component in self.distroseries.components])
             if self.component_name not in valid_components:
                 raise ArchiveOverriderError(
                     "%s is not a valid component for %s/%s."
                     % (self.component_name, self.distro.name,
-                       self.distrorelease.name))
+                       self.distroseries.name))
             self.component = valid_components[self.component_name]
             self.log.info("Override Component to: '%s'" % self.component.name)
 
         if self.section_name:
             valid_sections = dict(
                 [(section.name, section)
-                 for section in self.distrorelease.sections])
+                 for section in self.distroseries.sections])
             if self.section_name not in valid_sections:
                 raise ArchiveOverriderError(
                     "%s is not a valid section for %s/%s."
                     % (self.section_name, self.distro.name,
-                       self.distrorelease.name))
+                       self.distroseries.name))
             self.section = valid_sections[self.section_name]
             self.log.info("Override Section to: '%s'" % self.section.name)
 
@@ -138,20 +138,20 @@ class ArchiveOverrider:
                 raise ArchiveOverriderError(
                     "%s is not a valid priority for %s/%s."
                     % (self.priority_name, self.distro.name,
-                       self.distrorelease.name))
+                       self.distroseries.name))
             self.priority = valid_priorities[self.priority_name]
             self.log.info("Override Priority to: '%s'" % self.priority.name)
 
     def processSourceChange(self, package_name):
         """Perform changes in a given source package name.
 
-        It changes only the current published release.
+        It changes only the current published package release.
         """
-        sp = self.distrorelease.getSourcePackage(package_name)
+        sp = self.distroseries.getSourcePackage(package_name)
 
         if not sp or not sp.currentrelease:
             self.log.error("'%s' source isn't published in %s"
-                           % (package_name, self.distrorelease.name))
+                           % (package_name, self.distroseries.name))
             return
 
         sp.currentrelease.changeOverride(new_component=self.component,
@@ -165,24 +165,24 @@ class ArchiveOverrider:
 
         It tries to change the binary in all architectures.
         """
-        for distroarchrelease in self.distrorelease.architectures:
+        for distroarchseries in self.distroseries.architectures:
             try:
                 binarypackagename = getUtility(IBinaryPackageNameSet)[
                     package_name]
             except NotFoundError:
                 self.log.error("'%s' binary not found in %s/%s"
-                               % (package_name, self.distrorelease.name,
-                                  distroarchrelease.architecturetag))
+                               % (package_name, self.distroseries.name,
+                                  distroarchseries.architecturetag))
                 return
 
-            darbp = distroarchrelease.getBinaryPackage(binarypackagename)
+            darbp = distroarchseries.getBinaryPackage(binarypackagename)
 
             try:
                 current = darbp.current_published
             except NotFoundError:
                 self.log.error("'%s' binary isn't published in %s/%s"
-                               % (package_name, self.distrorelease.name,
-                                  distroarchrelease.architecturetag))
+                               % (package_name, self.distroseries.name,
+                                  distroarchseries.architecturetag))
             else:
                 darbp.changeOverride(new_component=self.component,
                                      new_priority=self.priority,
@@ -191,18 +191,18 @@ class ArchiveOverrider:
                     "'%s/%s/%s/%s' binary overridden in %s/%s"
                     % (package_name, current.component.name,
                        current.section.name, current.priority.name,
-                       self.distrorelease.name,
-                       distroarchrelease.architecturetag))
+                       self.distroseries.name,
+                       distroarchseries.architecturetag))
 
     def processChildrenChange(self, package_name):
         """Perform changes on all binary packages generated by this source.
 
         Affects only the currently published release.
         """
-        sp = self.distrorelease.getSourcePackage(package_name)
+        sp = self.distroseries.getSourcePackage(package_name)
         if not sp or not sp.currentrelease:
             self.log.error("'%s' source isn't published in %s"
-                           % (package_name, self.distrorelease.name))
+                           % (package_name, self.distroseries.name))
             return
 
         # IDRSPR.binaries returns IBPRs which have name multiplicity.
@@ -230,7 +230,7 @@ class ArchiveCruftChecker:
     """
 
     # XXX cprov 20060515: the default archive path should come
-    # from the IDistrorelease.lucilleconfig. But since it's still
+    # from the IDistroSeries.lucilleconfig. But since it's still
     # not optimal and we have real plans to migrate it from DB
     # text field to default XML config or a more suitable/reliable
     # method it's better to not add more obsolete code to handle it.
@@ -267,10 +267,10 @@ class ArchiveCruftChecker:
     @property
     def architectures(self):
         return dict([(a.architecturetag, a)
-                     for a in self.distrorelease.architectures])
+                     for a in self.distroseries.architectures])
     @property
     def components(self):
-        return dict([(c.name, c) for c in self.distrorelease.components])
+        return dict([(c.name, c) for c in self.distroseries.components])
 
     @property
     def components_and_di(self):
@@ -283,7 +283,7 @@ class ArchiveCruftChecker:
     @property
     def dist_archive(self):
         return os.path.join(self.archive_path, self.distro.name,
-                            'dists', self.distrorelease.name)
+                            'dists', self.distroseries.name)
 
     def gunzipTagFileContent(self, filename):
         """Gunzip the contents of passed filename.
@@ -462,8 +462,8 @@ class ArchiveCruftChecker:
         Ensure the package is still published in the suite before add.
         """
         bpr = getUtility(IBinaryPackageReleaseSet)
-        result = bpr.getByNameInDistroRelease(
-            self.distrorelease.id, package)
+        result = bpr.getByNameInDistroSeries(
+            self.distroseries, package)
 
         if len(list(result)) == 0:
             return
@@ -553,12 +553,12 @@ class ArchiveCruftChecker:
                     "Invalid distribution: '%s'" % self.distribution_name)
 
         if not self.suite:
-            self.distrorelease = self.distro.currentrelease
+            self.distroseries = self.distro.currentseries
             self.pocket = PackagePublishingPocket.RELEASE
         else:
             try:
-                self.distrorelease, self.pocket = (
-                    self.distro.getDistroReleaseAndPocket(self.suite))
+                self.distroseries, self.pocket = (
+                    self.distro.getDistroSeriesAndPocket(self.suite))
             except NotFoundError:
                 raise ArchiveCruftCheckerError(
                     "Invalid suite: '%s'" % self.suite)
@@ -584,9 +584,9 @@ class ArchiveCruftChecker:
         """
         for package in self.nbs_to_remove:
 
-            for distroarchrelease in self.distrorelease.architectures:
+            for distroarchseries in self.distroseries.architectures:
                 binarypackagename = getUtility(IBinaryPackageNameSet)[package]
-                darbp = distroarchrelease.getBinaryPackage(binarypackagename)
+                darbp = distroarchseries.getBinaryPackage(binarypackagename)
                 try:
                     sbpph = darbp.supersede()
                     # We're blindly removing for all arches, if it's not there
@@ -597,8 +597,8 @@ class ArchiveCruftChecker:
                     version = sbpph.binarypackagerelease.version
                     self.logger.info ("Removed %s_%s from %s/%s ... "
                                       % (package, version,
-                                         self.distrorelease.name,
-                                         distroarchrelease.architecturetag))
+                                         self.distroseries.name,
+                                         distroarchseries.architecturetag))
 
 
 class PubBinaryContent:
@@ -809,7 +809,7 @@ class ChrootManagerError(Exception):
 class ChrootManager:
     """Chroot actions wrapper.
 
-    The 'distroarchrelease' and 'pocket' arguments are mandatory and
+    The 'distroarchseries' and 'pocket' arguments are mandatory and
     'filepath' is optional.
 
     'filepath' is required by some allowed actions as source or destination,
@@ -821,8 +821,8 @@ class ChrootManager:
 
     allowed_actions = ['add', 'update', 'remove', 'get']
 
-    def __init__(self, distroarchrelease, pocket, filepath=None):
-        self.distroarchrelease = distroarchrelease
+    def __init__(self, distroarchseries, pocket, filepath=None):
+        self.distroarchseries = distroarchseries
         self.pocket = pocket
         self.filepath = filepath
         self._messages = []
@@ -862,15 +862,15 @@ class ChrootManager:
         Return the respective IPocketChroot instance.
         Raises ChrootManagerError if it could not be found.
         """
-        pocket_chroot = self.distroarchrelease.getPocketChroot(self.pocket)
+        pocket_chroot = self.distroarchseries.getPocketChroot(self.pocket)
         if pocket_chroot is None:
             raise ChrootManagerError(
                 'Could not find chroot for %s/%s'
-                % (self.distroarchrelease.title, self.pocket.name))
+                % (self.distroarchseries.title, self.pocket.name))
 
         self._messages.append(
             "PocketChroot for '%s'/%s (%d) retrieved."
-            % (pocket_chroot.distroarchrelease.title,
+            % (pocket_chroot.distroarchseries.title,
                pocket_chroot.pocket.name, pocket_chroot.id))
 
         return pocket_chroot
@@ -880,7 +880,7 @@ class ChrootManager:
         if self.filepath is None:
             raise ChrootManagerError('Missing local chroot file path.')
         alias = self._upload()
-        return self.distroarchrelease.addOrUpdateChroot(self.pocket, alias)
+        return self.distroarchseries.addOrUpdateChroot(self.pocket, alias)
 
     def add(self):
         """Create a new PocketChroot record.
@@ -893,7 +893,7 @@ class ChrootManager:
         pocket_chroot = self._update()
         self._messages.append(
             "PocketChroot for '%s'/%s (%d) added."
-            % (pocket_chroot.distroarchrelease.title,
+            % (pocket_chroot.distroarchseries.title,
                pocket_chroot.pocket.name, pocket_chroot.id))
 
     def update(self):
@@ -906,7 +906,7 @@ class ChrootManager:
         pocket_chroot = self._update()
         self._messages.append(
             "PocketChroot for '%s'/%s (%d) updated."
-            % (pocket_chroot.distroarchrelease.title,
+            % (pocket_chroot.distroarchseries.title,
                pocket_chroot.pocket.name, pocket_chroot.id))
 
     def remove(self):
@@ -915,10 +915,10 @@ class ChrootManager:
         Raises ChrootManagerError if the chroot record isn't found.
         """
         pocket_chroot = self._getPocketChroot()
-        self.distroarchrelease.addOrUpdateChroot(self.pocket, None)
+        self.distroarchseries.addOrUpdateChroot(self.pocket, None)
         self._messages.append(
             "PocketChroot for '%s'/%s (%d) removed."
-            % (pocket_chroot.distroarchrelease.title,
+            % (pocket_chroot.distroarchseries.title,
                pocket_chroot.pocket.name, pocket_chroot.id))
 
     def get(self):
@@ -1088,17 +1088,17 @@ class PackageLocationError(Exception):
 class PackageLocation:
     """Object used to model locations when copying publications.
 
-    It groups distribution + distrorelease + pocket in a way they
+    It groups distribution + distroseries + pocket in a way they
     can be easily manipulated and compared.
     """
     distribution = None
-    distrorelease = None
+    distroseries = None
     pocket = None
 
     def __init__(self, distribution_name, suite_name):
         """Store given parameters.
 
-        Build LP objects and expand suite_name into distrorelease + pocket.
+        Build LP objects and expand suite_name into distroseries + pocket.
         """
         try:
             self.distribution = getUtility(IDistributionSet)[distribution_name]
@@ -1108,25 +1108,25 @@ class PackageLocation:
 
         if suite_name is not None:
             try:
-                suite = self.distribution.getDistroReleaseAndPocket(suite_name)
+                suite = self.distribution.getDistroSeriesAndPocket(suite_name)
             except NotFoundError, err:
                 raise PackageLocationError(
                     "Could not find suite %s" % err)
             else:
-                self.distrorelease, self.pocket = suite
+                self.distroseries, self.pocket = suite
         else:
-            self.distrorelease = self.distribution.currentrelease
+            self.distroseries = self.distribution.currentseries
             self.pocket = PackagePublishingPocket.RELEASE
 
     def __eq__(self, other):
         if (self.distribution.id == other.distribution.id and
-            self.distrorelease.id == other.distrorelease.id and
+            self.distroseries.id == other.distroseries.id and
             self.pocket.value == other.pocket.value):
             return True
         return False
 
     def __str__(self):
-        return '%s/%s/%s' % (self.distribution.name, self.distrorelease.name,
+        return '%s/%s/%s' % (self.distribution.name, self.distroseries.name,
                              self.pocket.name)
 
 
@@ -1292,11 +1292,11 @@ class PackageCopier(LaunchpadScript):
         return (from_location, to_location)
 
     def _findSource(self, from_location, sourcename, sourceversion):
-        """Build a DistroReleaseSourcePackageRelease for the given parameters
+        """Build a DistroSeriesSourcePackageRelease for the given parameters
 
         Result is returned.
         """
-        sourcepackage = from_location.distrorelease.getSourcePackage(
+        sourcepackage = from_location.distroseries.getSourcePackage(
             sourcename)
 
         if sourcepackage is None:
@@ -1317,7 +1317,7 @@ class PackageCopier(LaunchpadScript):
         return target_source
 
     def _findBinaries(self, from_source, from_location):
-        """Build a set of DistroArchReleaseBinaryPackage for the context source.
+        """Build a set of DistroArchSeriesBinaryPackage for the context source.
 
         Result is returned.
         """
@@ -1327,12 +1327,12 @@ class PackageCopier(LaunchpadScript):
         binary_name_set = set(
             [binary.name for binary in from_source.binaries])
 
-        # Get the binary packages in each distroarchrelease and store them
+        # Get the binary packages in each distroarchseries and store them
         # in target_binaries for returning.
         for binary_name in binary_name_set:
-            all_archs = from_location.distrorelease.architectures
-            for distroarchrelease in all_archs:
-                darbp = distroarchrelease.getBinaryPackage(binary_name)
+            all_archs = from_location.distroseries.architectures
+            for distroarchseries in all_archs:
+                darbp = distroarchseries.getBinaryPackage(binary_name)
                 # Only include objects with published binaries.
                 try:
                     current = darbp.current_published
@@ -1365,12 +1365,12 @@ class PackageCopier(LaunchpadScript):
         self.logger.info("Performing source copy.")
 
         source_copy = from_source.copyTo(
-            distrorelease=to_location.distrorelease,
+            distroseries=to_location.distroseries,
             pocket=to_location.pocket)
 
         # Retrieve and store the IDRSPR for the target location
-        to_distrorelease = to_location.distrorelease
-        copied_source = to_distrorelease.getSourcePackageRelease(
+        to_distroseries = to_location.distroseries
+        copied_source = to_distroseries.getSourcePackageRelease(
             source_copy.sourcepackagerelease)
 
         self.logger.info("Copied: %s" % copied_source.title)
@@ -1388,13 +1388,13 @@ class PackageCopier(LaunchpadScript):
         # safe, so that's why we swallow this error.
         try:
             binary_copy = binary.copyTo(
-                distrorelease=to_location.distrorelease,
+                distroseries=to_location.distroseries,
                 pocket=to_location.pocket)
         except NotFoundError:
             pass
         else:
             # Retrieve and store the IDARBPR for the target location.
-            darbp = binary_copy.distroarchrelease.getBinaryPackage(
+            darbp = binary_copy.distroarchseries.getBinaryPackage(
                 binary_copy.binarypackagerelease.name)
             bin_version = binary_copy.binarypackagerelease.version
             binary_copied = darbp[bin_version]
@@ -1506,46 +1506,48 @@ class LpQueryDistro(LaunchpadScript):
 
     # XXX cprov 20070420: should be implemented in IDistribution.
     # raising NotFoundError instead. Bug #113563.
-    def getReleaseByStatus(self, releasestatus):
-        """Query context distribution for a distrorelese in a given status.
+    def getSeriesByStatus(self, status):
+        """Query context distribution for a distroseries in a given status.
 
-        I may raise LaunchpadScriptError if no suitable distrorelease in a
+        I may raise LaunchpadScriptError if no suitable distroseries in a
         given status was found.
         """
-        for release in self.location.distribution.releases:
-            if release.releasestatus == releasestatus:
-                return release
+        # XXX sabdfl 2007-05-27 isn't this a bit risky, if there are
+        # multiple series with the desired status?
+        for series in self.location.distribution.serieses:
+            if series.status == status:
+                return series
         raise LaunchpadScriptFailure(
-                "Could not find a %s distrorelease in %s"
+                "Could not find a %s distroseries in %s"
                 % (status.name, self.location.distribution.name))
 
     @property
     def get_current(self):
-        """Return the name of the CURRENT distrorelease.
+        """Return the name of the CURRENT distroseries.
 
         It is restricted for the context distribution.
         It may raise LaunchpadScriptFailure if a suite was passed in the
         command-line.
-        See self.getReleaseByStatus for further information
+        See self.getSeriesByStatus for further information
         """
         self.checkNoSuiteDefined()
-        release = self.getReleaseByStatus(
-            DistributionReleaseStatus.CURRENT)
-        return release.name
+        series = self.getSeriesByStatus(
+            DistroSeriesStatus.CURRENT)
+        return series.name
 
     @property
     def get_development(self):
-        """Return the name of the DEVELOPMENT distrorelease.
+        """Return the name of the DEVELOPMENT distroseries.
 
         It is restricted for the context distribution.
         It may raise LaunchpadScriptFailure if a suite was passed in the
         command-line.
-        See self.getReleaseByStatus for further information
+        See self.getSeriesByStatus for further information
         """
         self.checkNoSuiteDefined()
-        release = self.getReleaseByStatus(
-            DistributionReleaseStatus.DEVELOPMENT)
-        return release.name
+        series = self.getSeriesByStatus(
+            DistroSeriesStatus.DEVELOPMENT)
+        return series.name
 
     @property
     def get_archs(self):
@@ -1553,7 +1555,7 @@ class LpQueryDistro(LaunchpadScript):
 
         It is restricted for the context distribution and suite.
         """
-        architectures = self.location.distrorelease.architectures
+        architectures = self.location.distroseries.architectures
         return " ".join(arch.architecturetag for arch in architectures)
 
     @property
@@ -1562,7 +1564,7 @@ class LpQueryDistro(LaunchpadScript):
 
         It is restricted to the context distribution and suite.
         """
-        architectures = self.location.distrorelease.architectures
+        architectures = self.location.distroseries.architectures
         return " ".join(arch.architecturetag
                         for arch in architectures
                         if arch.official)
@@ -1573,6 +1575,6 @@ class LpQueryDistro(LaunchpadScript):
 
         It is restricted to the context distribution and suite.
         """
-        release = self.location.distrorelease
-        return release.nominatedarchindep.architecturetag
+        series = self.location.distroseries
+        return series.nominatedarchindep.architecturetag
 

@@ -148,7 +148,7 @@
 
 <metal:header define-macro="item"
     tal:define="package_name string:${task/distribution/name|string:}
-                                    ${task/distrorelease/name|string:}
+                                    ${task/distroseries/name|string:}
                                     ${task/sourcepackagename/name|string:}">
   <td tal:condition="python:'select' in listing_columns">
     <input type="checkbox" name="task" value=""
@@ -373,7 +373,7 @@
 
     </fieldset>
     <fieldset tal:define="show_component_widget view/shouldShowComponentWidget">
-      <legend>Release-specific</legend>
+      <legend>Series-specific</legend>
       <table>
         <tr>
           <td width="40%">

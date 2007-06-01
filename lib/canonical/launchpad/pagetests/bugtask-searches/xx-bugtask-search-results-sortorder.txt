@@ -57,7 +57,7 @@ By status:
     ...Blackhole Trash folder...
     ...Thunderbird crashes...
 
-3. The distrorelease +bugs page.
+3. The distroseries +bugs page.
 
 Default view:
 

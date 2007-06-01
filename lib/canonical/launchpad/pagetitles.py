@@ -164,7 +164,7 @@ def bug_extref_edit(context, view):
 
 bug_mark_as_duplicate = ContextBugId('Bug #%d - Mark as duplicate')
 
-def bug_nominate_for_release(context, view):
+def bug_nominate_for_series(context, view):
     return view.label
 
 bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
@@ -348,7 +348,7 @@ distribution_mirrors = ContextTitle("Mirrors of %s")
 
 distribution_newmirror = ContextTitle("Register a new mirror for %s")
 
-distribution_releases = ContextTitle("%s releases")
+distribution_series = ContextTitle("%s version history")
 
 distribution_translations = ContextDisplayName('Translating %s')
 
@@ -371,46 +371,48 @@ distributionsourcepackage_manage_bugcontacts = ContextTitle('Bug contacts for %s
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
-distroarchrelease_admin = ContextTitle('Administer %s')
+distroarchseries_admin = ContextTitle('Administer %s')
 
-distroarchrelease_index = ContextTitle('%s in Launchpad')
+distroarchseries_index = ContextTitle('%s in Launchpad')
 
-distroarchrelease_builds = ContextTitle('%s builds')
+distroarchseries_builds = ContextTitle('%s builds')
 
-distroarchrelease_search = ContextTitle(
+distroarchseries_search = ContextTitle(
     smartquote("Search %s's binary packages"))
 
-distroarchreleasebinarypackage_index = ContextTitle('%s')
+distroarchseriesbinarypackage_index = ContextTitle('%s')
 
-distroarchreleasebinarypackagerelease_index = ContextTitle('%s')
+distroarchseriesbinarypackagerelease_index = ContextTitle('%s')
 
-distrorelease_addport = ContextTitle('Add a port of %s')
+distroseries_addport = ContextTitle('Add a port of %s')
 
-distrorelease_bugs = ContextTitle('Bugs in %s')
+distroseries_bugs = ContextTitle('Bugs in %s')
 
-distrorelease_cvereport = ContextDisplayName('CVE report for %s')
+distroseries_cvereport = ContextDisplayName('CVE report for %s')
 
-distrorelease_edit = ContextTitle('Edit details of %s')
+distroseries_edit = ContextTitle('Edit details of %s')
 
-def distrorelease_index(context, view):
+def distroseries_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
 
-distrorelease_packaging = ContextDisplayName('Mapping packages to upstream '
+distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
     'for %s')
 
-distrorelease_search = ContextDisplayName('Search packages in %s')
+distroseries_search = ContextDisplayName('Search packages in %s')
 
-distrorelease_translations = ContextTitle('Translations of %s in Launchpad')
+distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
-distrorelease_builds = ContextTitle('Builds for %s')
+distroseries_translationsadmin = ContextTitle('Admin translation options of %s')
 
-distrorelease_queue = ContextTitle('Queue for %s')
+distroseries_builds = ContextTitle('Builds for %s')
 
-distroreleasebinarypackage_index = ContextTitle('%s')
+distroseries_queue = ContextTitle('Queue for %s')
 
-distroreleaselanguage_index = ContextTitle('%s')
+distroseriesbinarypackage_index = ContextTitle('%s')
 
-distroreleasesourcepackagerelease_index = ContextTitle('%s')
+distroserieslanguage_index = ContextTitle('%s')
+
+distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
 
@@ -496,6 +498,8 @@ launchpad_onezerostatus = 'One-Zero Page Template Status'
 launchpad_requestexpired = 'Error: Timeout'
 
 launchpad_search = 'Search projects in Launchpad'
+
+launchpad_translationunavailable= 'Translation page is not available'
 
 launchpad_unexpectedformdata = 'Error: Unexpected form data'
 
@@ -755,6 +759,8 @@ potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
+ppa_list = 'Personal Package Archive List'
+
 product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
@@ -967,7 +973,7 @@ sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 sourcepackage_packaging = ContextTitle('%s upstream links')
 
 def sourcepackage_index(context, view):
-    return '%s source packages' % context.distrorelease.title
+    return '%s source packages' % context.distroseries.title
 
 sourcepackage_edit_packaging = ContextTitle('Define upstream link for %s')
 
@@ -978,7 +984,7 @@ sourcepackagenames_index = 'Source package name set'
 sourcepackagerelease_index = ContextTitle('Source package %s')
 
 def sourcepackages(context, view):
-    return '%s source packages' % context.distrorelease.title
+    return '%s source packages' % context.distroseries.title
 
 sourcepackages_comingsoon = 'Coming soon'
 
@@ -1014,7 +1020,7 @@ specification_people = 'Change blueprint assignee, drafter, and reviewer'
 
 specification_priority = 'Change blueprint priority'
 
-specification_distrorelease = ('Target blueprint to a distribution release')
+specification_distroseries = ('Target blueprint to a distribution release')
 
 specification_productseries = 'Target blueprint to a series'
 
@@ -1098,9 +1104,11 @@ team_edit = 'Edit team information'
 
 team_editemail = ContextDisplayName('%s contact e-mail address')
 
+team_editproposed = ContextBrowsername('Proposed members of %s')
+
 team_index = ContextBrowsername(smartquote('"%s" team in Launchpad'))
 
-team_editproposed = ContextBrowsername('Proposed members of %s')
+team_invitations = ContextBrowsername("Invitations sent to %s")
 
 team_join = ContextBrowsername('Join %s')
 
@@ -1112,6 +1120,10 @@ team_mugshots = ContextBrowsername(smartquote('Mugshots in the "%s" team'))
 
 def teammembership_index(context, view):
     return smartquote("%s's membership status in %s") % (
+        context.person.browsername, context.team.browsername)
+
+def teammembership_invitation(context, view):
+    return "Make %s a member of %s" % (
         context.person.browsername, context.team.browsername)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')

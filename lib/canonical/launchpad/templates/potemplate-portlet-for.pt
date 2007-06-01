@@ -6,15 +6,15 @@
   <div class="portletBody">
     <div class="portletContent">
     <img src="/@@/info" alt="info" />
-    <tal:block condition="context/distrorelease">
+    <tal:block condition="context/distroseries">
       This template came from the following source package and
       distribution:<br />
       <b>Distribution:</b>
-      <span tal:replace="context/distrorelease/distribution/displayname">
+      <span tal:replace="context/distroseries/distribution/displayname">
         Ubuntu
       </span><br />
-      <b>Release:</b>
-      <span tal:replace="context/distrorelease/name">
+      <b>Series:</b>
+      <span tal:replace="context/distroseries/name">
         Hoary
       </span><br />
       <b>Source:</b>

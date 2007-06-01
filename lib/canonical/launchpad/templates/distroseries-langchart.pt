@@ -1,0 +1,38 @@
+<tal:hide-translations condition="context/hide_all_translations">
+  <p>
+    Translations for <tal:distroseries replace="context/displayname" />
+    is not available due to automatic translation updates. You will be able
+    to reach it once the process finish. Try again in a few hours.
+  </p>
+  <p>
+    We apologise for the inconvenience.
+  </p>
+</tal:hide-translations>
+<tal:no-hide-translations condition="not:context/hide_all_translations">
+  <table class="sortable listing" width="100%" id="languagestats">
+    <thead>
+      <tr>
+        <th>Language</th>
+        <th>Status</th>
+        <th>Contributors</th>
+        <th>Untranslated</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr tal:repeat="drlang view/distroserieslanguages">
+        <td>
+          <a tal:attributes="href string:${drlang/fmt:url}"
+             tal:content="drlang/language/englishname">
+             Language Name
+          </a>
+        </td>
+        <td style="white-space: nowrap">
+          <div tal:replace="structure drlang/@@+barchart" />
+        </td>
+        <td tal:content="drlang/contributor_count">16</td>
+        <td tal:content="drlang/untranslatedCount">42344</td>
+      </tr>
+    </tbody>
+  </table>
+</tal:no-hide-translations>

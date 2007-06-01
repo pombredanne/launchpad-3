@@ -22,7 +22,8 @@ class IQuestionMessage(IMessage):
     It adds attributes to the IMessage interface.
     """
     # This is really an Object field with schema=IQuestion, but that
-    # would create a circular dependency between IQuestion and IQuestionMessage
+    # would create a circular dependency between IQuestion
+    # and IQuestionMessage
     question = Field(
         title=_("The question related to this message."),
         description=_("An IQuestion object."), required=True, readonly=True)

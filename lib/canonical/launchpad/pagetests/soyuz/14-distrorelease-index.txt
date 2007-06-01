@@ -1,8 +1,8 @@
-DistroRelease page is reached by traversing the Distribution page with
+DistroSeries page is reached by traversing the Distribution page with
 a given name.
 
 As it's main functionality this page allow users to search for binary
-packages within the distrorelease in context:
+packages within the distroseries in context:
 
   >>> anon_browser.open("http://launchpad.dev/ubuntu/warty")
   >>> anon_browser.getControl(name="text", index=1).value = "firefox"
@@ -16,7 +16,7 @@ packages within the distrorelease in context:
 == Latest uploads page ==
 
 This page provides raw list of the last five source packages uploaded
-and published for a given distrorelease.
+and published for a given distroseries.
 
 Each entry contains:
 
@@ -34,7 +34,7 @@ Each entry contains:
   True
 
 The link presented points to the SourcePackageRelease inside the
-DistroRelease in question (a IDRSPR), we can check for consistency
+DistroSeries in question (a IDRSPR), we can check for consistency
 clicking on it:
 
   >>> anon_browser.getLink("mozilla-firefox 0.9").click()

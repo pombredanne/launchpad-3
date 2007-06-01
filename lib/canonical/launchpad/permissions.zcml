@@ -19,6 +19,13 @@
 
   <permission id="launchpad.Admin" title="Administer something" />
 
+  <!-- There are some fields related with translations that need to be set
+  by Translation admins (aka Rosetta Admins) but we don't want to give
+  them launchpad.Admin rights because they should not be able to change other
+  details for those objects, for instance, IDistroSeries.name. -->
+  <permission id="launchpad.TranslationsAdmin" title="Administer something
+        related with translations." />
+
   <!-- XXX: To be removed soon, this is only needed by the page to upload SSH
   keys, cause we decided to not allow admins to upload keys in behalf of other
   users. GuilhermeSalgado 25/08/2005 -->

@@ -52,17 +52,20 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
-        text = 'Mark as official'
+        if self.context.isOfficial():
+            text = 'Mark as unofficial'
+        else:
+            text = 'Mark as official'
         return Link('+mark-official', text, icon='edit')
 
 
-class _FlavoursByDistroRelease:
-    """A simple class to help when rendering a table of releases and flavours
-    mirrored by a given Release mirror.
+class _FlavoursByDistroSeries:
+    """A simple class to help when rendering a table of series and flavours
+    mirrored by a given Distro Series mirror.
     """
 
-    def __init__(self, distrorelease, flavours):
-        self.distrorelease = distrorelease
+    def __init__(self, distroseries, flavours):
+        self.distroseries = distroseries
         self.flavours = flavours
 
 
@@ -72,33 +75,33 @@ class DistributionMirrorView(LaunchpadView):
     def probe_records(self):
         return BatchNavigator(self.context.all_probe_records, self.request)
 
-    def getSummarizedMirroredSourceReleases(self):
-        mirrors = self.context.getSummarizedMirroredSourceReleases()
+    def getSummarizedMirroredSourceSerieses(self):
+        mirrors = self.context.getSummarizedMirroredSourceSerieses()
         return sorted(mirrors, reverse=True,
-                      key=lambda mirror: Version(mirror.distrorelease.version))
+                      key=lambda mirror: Version(mirror.distroseries.version))
 
-    def getSummarizedMirroredArchReleases(self):
-        mirrors = self.context.getSummarizedMirroredArchReleases()
+    def getSummarizedMirroredArchSerieses(self):
+        mirrors = self.context.getSummarizedMirroredArchSerieses()
         return sorted(
             mirrors, reverse=True,
             key=lambda mirror: Version(
-                mirror.distro_arch_release.distrorelease.version))
+                mirror.distro_arch_series.distroseries.version))
 
-    def getCDImageMirroredFlavoursByRelease(self):
-        """Return a list of _FlavoursByDistroRelease objects ordered
+    def getCDImageMirroredFlavoursBySeries(self):
+        """Return a list of _FlavoursByDistroSeries objects ordered
         descending by version.
         """
-        releases = {}
-        for cdimage in self.context.cdimage_releases:
-            release, flavour = cdimage.distrorelease, cdimage.flavour
-            flavours_by_release = releases.get(release)
-            if flavours_by_release is None:
-                flavours_by_release = _FlavoursByDistroRelease(release, [])
-                releases[release] = flavours_by_release
-            flavours_by_release.flavours.append(flavour)
-        flavours_by_releases = releases.values()
-        return sorted(flavours_by_releases, reverse=True,
-                      key=lambda item: Version(item.distrorelease.version))
+        serieses = {}
+        for cdimage in self.context.cdimage_serieses:
+            series, flavour = cdimage.distroseries, cdimage.flavour
+            flavours_by_series = serieses.get(series)
+            if flavours_by_series is None:
+                flavours_by_series = _FlavoursByDistroSeries(series, [])
+                serieses[series] = flavours_by_series
+            flavours_by_series.flavours.append(flavour)
+        flavours_by_serieses = serieses.values()
+        return sorted(flavours_by_serieses, reverse=True,
+                      key=lambda item: Version(item.distroseries.version))
 
 
 class DistributionMirrorAddView(LaunchpadFormView):
@@ -126,7 +129,7 @@ class DistributionMirrorAddView(LaunchpadFormView):
 class DistributionMirrorOfficialApproveView(LaunchpadEditFormView):
 
     schema = IDistributionMirror
-    field_names = ['official_approved']
+    field_names = ['official_approved', 'whiteboard']
     label = "Mark as official"
 
     @action(_("Save"), name="save")

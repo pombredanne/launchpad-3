@@ -122,7 +122,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IProject"
-    class="canonical.launchpad.browser.SpecificationTargetView"
+    class="canonical.launchpad.browser.HasSpecificationsView"
     facet="specifications"
     permission="zope.Public">
     <browser:page

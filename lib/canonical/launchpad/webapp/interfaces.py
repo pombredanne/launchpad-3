@@ -10,8 +10,13 @@ from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.schema import Int, Text, Object, Datetime, TextLine, Bool
+from zope.security.interfaces import Forbidden
 
 from canonical.launchpad import _
+
+
+class TranslationUnavailableError(Forbidden):
+    """Translation objects are unavailable."""
 
 
 class NotFoundError(KeyError):
@@ -304,8 +309,8 @@ class ILaunchBag(Interface):
     project = Attribute('IProject, or None')
     product = Attribute('IProduct, or None')
     distribution = Attribute('IDistribution, or None')
-    distrorelease = Attribute('IDistroRelease, or None')
-    distroarchrelease = Attribute('IDistroArchRelease, or None')
+    distroseries = Attribute('IDistroSeries, or None')
+    distroarchseries = Attribute('IDistroArchSeries, or None')
     sourcepackage = Attribute('ISourcepackage, or None')
     sourcepackagereleasepublishing = Attribute(
         'ISourcepackageReleasePublishing, or None')

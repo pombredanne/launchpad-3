@@ -347,35 +347,24 @@ sourcepackage. E.g.
     []
 
 There are some IBugTargets that don't allow bugs to be directly filed on
-them, e.g. IDistroRelease and ISourcePackage.
+them, e.g. IDistroSeries and ISourcePackage.
 
-    >>> from canonical.launchpad.interfaces import IDistroReleaseSet
+    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
 
-    >>> ubuntu_warty = getUtility(IDistroReleaseSet).get(1)
+    >>> ubuntu_warty = getUtility(IDistroSeriesSet).get(1)
     >>> ubuntu_warty_firefox = ubuntu_warty.getSourcePackage("mozilla-firefox")
     >>> params = CreateBugParams(
     ...     owner=current_user(), title="test", comment="test")
     >>> ubuntu_warty.createBug(params)
     Traceback (most recent call last):
       ...
-    NotImplementedError: A new bug cannot be filed directly on a
-        distribution release, because releases are meant for "targeting"
-        a fix to a specific release. It's possible that we may change
-        this behaviour to allow filing a bug on a distribution release
-        in the not-too-distant future. For now, you probably meant to
-        file the bug on the distribution instead.
+    NotImplementedError: A new bug cannot be filed directly...
     >>> params = CreateBugParams
     ...     owner=current_user(), title="test", comment="test")
     >>> ubuntu_warty_firefox.createBug(params)
     Traceback (most recent call last):
       ...
-    NotImplementedError: A new bug cannot be filed directly on a source
-        package in a specific distribution release, because releases are
-        meant for "targeting" a fix to a specific release. It's possible
-        that we may change this behaviour to allow filing a bug on a
-        distribution release source package in the not-too-distant
-        future.  For now, you probably meant to file the bug on the
-        distro-wide (i.e.  not release-specific) source package.
+    NotImplementedError: A new bug cannot be filed directly...
 
 == Date Last Updated ==
 
@@ -800,7 +789,7 @@ use getBugTask() to get it.
     >>> ubuntu_task.target.name
     u'ubuntu'
 
-    >>> ubuntu_hoary = ubuntu.getRelease('hoary')
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
     >>> ubuntu_hoary_task = bug_two.getBugTask(ubuntu_hoary)
     >>> ubuntu_hoary_task.target.name
     u'hoary'
@@ -811,7 +800,7 @@ use getBugTask() to get it.
     >>> mozilla_in_debian_task.target.displayname
     u'mozilla-firefox in debian'
 
-    >>> debian_woody = debian.getRelease('woody')
+    >>> debian_woody = debian.getSeries('woody')
     >>> mozilla_in_woody = debian_woody.getSourcePackage('mozilla-firefox')
     >>> mozilla_in_woody_task = bug_two.getBugTask(mozilla_in_woody)
     >>> mozilla_in_woody_task.target.displayname

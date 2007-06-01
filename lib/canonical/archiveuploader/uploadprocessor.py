@@ -9,13 +9,15 @@ they may have come from a build.
 
 Within an upload, we may find no changes file, one, or several. One is
 the usual number. To process the upload, we process each changes file
-in turn.
+in turn. These changes files may be within a structure of sub-directories,
+in which case we extract information from the names of these, to calculate
+which distribution and which PPA are being uploaded to.
 
 To process a changes file, we make checks such as that the other files
 referenced by it are present, formatting is valid, signatures are correct,
 checksums match, and that the .changes file represents an upload which makes
 sense, eg. it is not a binary for which we have no source, or an older
-version than already exists in the same target distrorelease pocket.
+version than already exists in the same target distroseries pocket.
 
 Depending on the outcome of these checks, the changes file will either be
 accepted (and the information from it, and the referenced files, imported
@@ -49,12 +51,16 @@ from email import message_from_string
 import os
 import shutil
 
+from zope.component import getUtility
+
 from canonical.launchpad.mail import sendmail
 from canonical.encoding import ascii_smash
 from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IPersonSet, IArchiveSet, NotFoundError)
 
 from contrib.glock import GlobalLock
 
@@ -73,6 +79,9 @@ class UploadStatusEnum:
     REJECTED = 'rejected'
     FAILED = 'failed'
 
+
+class UploadPathError(Exception):
+    """This exception happened when parsing the upload path."""
 
 class UploadProcessor:
     """Responsible for processing uploads. See module docstring."""
@@ -188,13 +197,19 @@ class UploadProcessor:
     def locateChangesFiles(self, upload_path):
         """Locate .changes files in the given upload directory.
 
-        Return .changes files sorted with *_source.changes first.
+        Return .changes files sorted with *_source.changes first. This
+        is important to us, as in an upload containing several changes files,
+        it's possible the binary ones will depend on the source ones, so
+        the source ones should always be considered first.
         """
         changes_files = []
-        for filename in self.orderFilenames(os.listdir(upload_path)):
-            if filename.endswith(".changes"):
-                changes_files.append(filename)
-        return changes_files
+
+        for dirpath, dirnames, filenames in os.walk(upload_path):
+            relative_path = dirpath[len(upload_path) + 1:]
+            for filename in filenames:
+                if filename.endswith(".changes"):
+                    changes_files.append(os.path.join(relative_path, filename))
+        return self.orderFilenames(changes_files)
 
     def processChangesFile(self, upload_path, changes_file):
         """Process a single changes file.
@@ -204,32 +219,50 @@ class UploadProcessor:
         the upload, if present), creating a NascentUpload object and calling
         its process method.
 
+        We obtain the context for this processing from the relative path,
+        within the upload folder, of this changes file. This influences
+        our creation both of upload policy and the NascentUpload object.
+
         See nascentupload.py for the gory details.
 
         Returns a value from UploadStatusEnum, or re-raises an exception
         from NascentUpload.
         """
-        # Cache original value of self.options.distro, from command-line
-        options_distro = self.options.distro
+        # Calculate the distribution from the path within the upload
+        # Reject the upload since we could not process the path,
+        # Store the exception information as a rejection message.
+        relative_path = os.path.dirname(changes_file)
+        error = None
+        try:
+            distribution, suite_name, archive = self.getDistributionAndArchive(
+                relative_path)
+        except UploadPathError, e:
+            # pick some defaults to create the NascentUploap() object.
+            # We will be rejecting the upload so it doesn matter much.
+            distribution = getUtility(IDistributionSet)['ubuntu']
+            suite_name = None
+            archive = distribution.main_archive
+            error = str(e)
 
-        # Override self.options.distro from .distro file, if present
-        distro_filename = upload_path + ".distro"
-        if os.path.isfile(distro_filename):
-            distro_file = open(distro_filename)
-            self.options.distro = distro_file.read()
-            distro_file.close()
-            self.log.debug("Overriding distribution: %s" %
-                           self.options.distro)
-
-        # Get the policy, using the overriden options
         self.log.debug("Finding fresh policy")
+        self.options.distro = distribution.name
         policy = findPolicyByOptions(self.options)
+        policy.archive = archive
+        # DistroSeries overriding respect the following precedence:
+        #  1. process-upload.py command-line option (-r),
+        #  2. upload path,
+        #  3. changesfile 'Distribution' field.
+        if suite_name is not None:
+            policy.setDistroSeriesAndPocket(suite_name)
 
-        # Restore original value for self.options.distro
-        self.options.distro = options_distro
-
+        # The path we want for NascentUpload is the path to the folder
+        # containing the changes file (and the other files referenced by it).
         changesfile_path = os.path.join(upload_path, changes_file)
         upload = NascentUpload(changesfile_path, policy, self.log)
+
+        # Store archive lookup error in the upload if it was the case.
+        if error is not None:
+            upload.reject(error)
 
         # Store processed NascentUpload instance, mostly used for tests.
         self.last_processed_upload = upload
@@ -262,19 +295,21 @@ class UploadProcessor:
                 self.log.exception("Unhandled exception processing upload")
                 upload.reject("Unhandled exception processing upload: %s" % e)
 
+            # XXX julian 2007-05-25
+            # When bug #29744 is fixed (zopeless mails should only be sent
+            # when transaction is committed) this will cause any emails sent
+            # sent by do_reject to be lost.
             if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
-                mails = upload.do_reject()
+                upload.do_reject()
                 self.ztm.abort()
-                self.sendMails(mails)
             else:
-                successful, mails = upload.do_accept()
+                successful = upload.do_accept()
                 if not successful:
                     result = UploadStatusEnum.REJECTED
                     self.log.info("Rejection during accept. "
                                   "Aborting partial accept.")
                     self.ztm.abort()
-                self.sendMails(mails)
 
             if self.options.dryrun:
                 self.log.info("Dry run, aborting transaction.")
@@ -350,4 +385,83 @@ class UploadProcessor:
             return (not filename.endswith("_source.changes"), filename)
 
         return sorted(fnames, key=sourceFirst)
+
+    def getDistributionAndArchive(self, relative_path):
+        """Locate the distribution and archive for the upload.
+
+        We do this by analysing the path to which the user has uploaded,
+        ie. the relative path within the upload folder to the changes file.
+
+        The valid paths are:
+        '' - default distro, ubuntu
+        '<distroname>' - given distribution
+        '~<personname>/<distroname>/[distroseriesname]' - given ppa,
+          distribution and optionally a distroseries.
+
+        I raises UploadPathError if something was wrong when parsing it.
+
+        On success it returns a tuple of IDistribution, suite-name,
+        IArchive for the given path, where the second field can be None.
+        """
+        parts = relative_path.split(os.path.sep)
+        first_path = parts[0]
+
+        # Empty distroseries override by default.
+        suite_name = None
+
+        # Distribution name only, or nothing
+        if len(parts) == 1:
+            distribution_name = first_path
+            # fallback to ubuntu
+            if not distribution_name:
+                distribution_name = 'ubuntu'
+
+            distribution = getUtility(IDistributionSet).getByName(
+                distribution_name)
+            if not distribution:
+                raise UploadPathError(
+                    "Could not find distribution '%s'" % distribution_name)
+            archive = distribution.main_archive
+
+        # PPA upload (~<person>/<distro>/[distroseries])
+        elif len(parts) <= 3:
+            if not first_path.startswith('~'):
+                raise UploadPathError(
+                    "PPA upload path must start with '~'.")
+
+            # Skip over ~
+            person_name = first_path[1:]
+            person = getUtility(IPersonSet).getByName(person_name)
+            if person is None:
+                raise UploadPathError(
+                    "Could not find person '%s'" % person_name)
+
+            distribution_name = parts[1]
+            distribution = getUtility(IDistributionSet).getByName(
+                distribution_name)
+            if distribution is None:
+                raise UploadPathError(
+                    "Could not find distribution '%s'" % distribution_name)
+
+            archive = getUtility(IArchiveSet).ensure(owner=person)
+            if archive is None:
+                raise UploadPathError(
+                    "Could not find PPA for '%s'" % person_name)
+
+            if len(parts) > 2:
+                suite_name = parts[2]
+                # Check if the given suite name is valid.
+                # We will return the suite_name string simply.
+                try:
+                    suite = distribution.getDistroSeriesAndPocket(suite_name)
+                except NotFoundError:
+                    raise UploadPathError(
+                        "Could not find suite '%s'" % suite_name)
+        else:
+            raise UploadPathError(
+                "Path mismatch '%s'. Use ~<person>/<distro>/[distroseries]/"
+                "[files] for PPAs and <distro>/[files] for normal uploads."
+                % (relative_path))
+
+        return (distribution, suite_name, archive)
 

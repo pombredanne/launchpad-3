@@ -1,49 +1,58 @@
 <configure
-    xmlns="http://namespaces.zope.org/zope"
-    i18n_domain="launchpad">
+  xmlns="http://namespaces.zope.org/zope"
+  i18n_domain="launchpad">
 
 <subscriber
-   for="canonical.launchpad.interfaces.IQuestion
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.QuestionAddedNotification" />
+  for="canonical.launchpad.interfaces.IQuestion
+       canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+  handler="canonical.launchpad.mailnotification.QuestionAddedNotification"
+  />
 <subscriber
-   for="canonical.launchpad.interfaces.IQuestion
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.mailnotification.QuestionUnsupportedLanguageNotification" />
+  for="canonical.launchpad.interfaces.IQuestion
+       canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+  handler="canonical.launchpad.mailnotification.QuestionUnsupportedLanguageNotification"
+  />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IQuestion
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.QuestionModifiedDefaultNotification" />
+  for="canonical.launchpad.interfaces.IQuestion
+       canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+  handler="canonical.launchpad.mailnotification.QuestionModifiedDefaultNotification"
+  />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IQuestion
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.mailnotification.QuestionModifiedOwnerNotification" />
+  for="canonical.launchpad.interfaces.IQuestion
+       canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+  handler="canonical.launchpad.mailnotification.QuestionModifiedOwnerNotification"
+  />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IQuestion
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.subscribers.karma.question_created" />
+  for="canonical.launchpad.interfaces.IQuestion
+       canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+  handler="canonical.launchpad.subscribers.karma.question_created"
+  />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IQuestion
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.subscribers.karma.question_modified" />
+  for="canonical.launchpad.interfaces.IQuestion
+       canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+  handler="canonical.launchpad.subscribers.karma.question_modified"
+  />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IQuestionMessage
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.subscribers.karma.question_comment_added" />
+  for="canonical.launchpad.interfaces.IQuestionMessage
+       canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+  handler="canonical.launchpad.subscribers.karma.question_comment_added"
+  />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IQuestionBug
-        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   handler="canonical.launchpad.subscribers.karma.question_bug_added" />
+  for="canonical.launchpad.interfaces.IQuestionBug
+       canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+  handler="canonical.launchpad.subscribers.karma.question_bug_added"
+  />
 
 <subscriber
-   for="canonical.launchpad.interfaces.IQuestion
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   handler="canonical.launchpad.database.create_questionreopening" />
+  for="canonical.launchpad.interfaces.IQuestion
+       canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+  handler="canonical.launchpad.database.create_questionreopening"
+  />
 
 </configure>

@@ -121,7 +121,7 @@ On that facet, we will find the same common listings:
 
 == Distroreleases ==
 
-On a distrorelease there is a "Ask Question" link, but note that it
+On a distroseries there is a "Ask Question" link, but note that it
 points at its distro, not itself. Questions are linked to distro,
 and optionally source package too.
 

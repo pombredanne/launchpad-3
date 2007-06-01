@@ -1,10 +1,8 @@
 Milestones
 ==========
 
-A milestone is a significant event in a project. A release of a new version of
-a piece of software is a significant event (we're geeks, give us a break.) In
-Malone, milestones can be defined to assign bug fixes to a specific release of
-some software.
+A milestone is a significant event in a project. In Malone, milestones can be
+defined to assign bug fixes to a specific release of some software.
 
 This document is about milestones in Malone.
 
@@ -24,7 +22,7 @@ To retrieve all milestones, iterate over an IMilestoneSet object:
     [1, 2, 3]
 
 To create a new Milestone, use the .newMilestone(name, dateexpected=None)
-method of a ProductSeries or DistroRelease:
+method of a ProductSeries or DistroSeries:
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> productset = getUtility(IProductSet)
@@ -56,17 +54,17 @@ return None:
     >>> print non_ms
     None
 
-Now, lets test all of that for DistroReleases too!
+Now, lets test all of that for DistroSeriess too!
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> kubuntu = getUtility(IDistributionSet).getByName('kubuntu')
-    >>> krunch = kubuntu.getRelease('krunch')
+    >>> krunch = kubuntu.getSeries('krunch')
     >>> new_ms = krunch.newMilestone('1.3rc2')
     >>> print new_ms.name
     1.3rc2
     >>> print new_ms.distribution.name
     kubuntu
-    >>> print new_ms.distrorelease.name
+    >>> print new_ms.distroseries.name
     krunch
     >>> print kubuntu.getMilestone('foo2.3')
     None

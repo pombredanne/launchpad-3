@@ -1,4 +1,4 @@
-This page checks that we can see a list of bugs on the distrorelease,
+This page checks that we can see a list of bugs on the distroseries,
 specifically Hoary.
 
   >>> browser.open('http://localhost/ubuntu/hoary/+bugs')
