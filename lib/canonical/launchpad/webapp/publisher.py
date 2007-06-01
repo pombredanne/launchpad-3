@@ -322,7 +322,7 @@ def canonical_url(
                     "== None or a request providing one of the ShipIt Layers")
         else:
             raise AssertionError("rootsite is %s.  Must be in %r." % (
-                    rootsite, allvhosts.configs.keys()
+                    rootsite, sorted(allvhosts.configs.keys())
                     ))
     path = u'/'.join(reversed(urlparts))
     if (path_only_if_possible and

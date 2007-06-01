@@ -48,3 +48,6 @@ openid.mode:id_res
 openid.return_to:http://launchpad.dev/+openid-consumer
 ...
 
+>>> from canonical.launchpad.ftests.openid import uninstall_consumer
+>>> uninstall_consumer()
+

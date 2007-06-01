@@ -895,7 +895,8 @@ class Person(SQLBase, HasSpecificationsMixin):
     @property
     def openid_identifier(self):
         # XXX: This should be a value stored in the database. Calculating
-        # using a hash for now so we can test during database freeze
+        # using a hash for now so we can test during database freeze.
+        # Bug #118200
         # -- StuartBishop 20070528
         if self.isTeam():
             return None
@@ -1625,7 +1626,8 @@ class PersonSet:
     def getByOpenIdIdentifier(self, openid_identifier):
         """Returns a Person with the given openid_identifier, or None."""
         # XXX: This should be a value stored in the database. Calculating
-        # using a hash for now so we can test during database freeze
+        # using a hash for now so we can test during database freeze.
+        # Bug #118200
         # -- StuartBishop 20070528
         if openid_identifier.startswith('temp'):
             try:

@@ -24,17 +24,15 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.server.server import (
-    ProtocolError,
-    Server,
-    ENCODE_URL,
-    CheckIDRequest,
+    ProtocolError, Server, ENCODE_URL, CheckIDRequest,
     )
 from openid.server.trustroot import TrustRoot
 from openid import oidutil
 
 from canonical.launchpad.interfaces import (
         IEmailAddressSet, ILaunchBag, IOpenIdAuthorizationSet,
-        ILaunchpadOpenIdStoreFactory, IPersonSet, UnexpectedFormData,
+        ILaunchpadOpenIdStoreFactory, IPersonSet, NotFoundError,
+        UnexpectedFormData,
         )
 from canonical.launchpad.webapp import LaunchpadView, canonical_url
 from canonical.launchpad.webapp.publisher import (
@@ -86,7 +84,10 @@ class OpenIdView(LaunchpadView):
         """
         # Detect submission of the decide page
         if self.request.form.has_key('nonce'):
+
+            # Restore our stored OpenIDRequest from the session
             self.restoreSessionOpenIdRequest()
+
             if self.request.form.get('action_deny'):
                 return self.renderOpenIdResponse(self.deny())
             elif self.request.form.get('action_allow'):
@@ -113,37 +114,35 @@ class OpenIdView(LaunchpadView):
         # Handle checkid_immediate requests.
         if self.openid_request.mode == 'checkid_immediate':
             self.login = self.getPersonNameByIdentity(
-                    self.openid_request.identity
-                    )
+                    self.openid_request.identity)
             if self.isAuthorized():
                 openid_response = self.openid_request.answer(True)
             else:
                 openid_response = self.openid_request.answer(
-                    False, allvhosts.configs['openid'].rooturl
-                    )
+                    False, allvhosts.configs['openid'].rooturl)
+
         # Handle checkid_setup requests.
         elif self.openid_request.mode == 'checkid_setup':
 
+            if self.user is None:
+                raise Unauthorized("You must be logged in to continue.")
+
             # Determine the account we are trying to authenticate with.
             # The consumer might have sent us an identity URL we can
-            # extract the identifier from, or maybe sent us a nonce
+            # extract the identifier from, or maybe sent us a token
             # indicating we need to calculate the identity.
             if (self.openid_request.identity ==
                     'http://specs.openid.net/auth/2.0/identifier_select'):
                 # Magic identity indicating that we need to determine it.
-                if self.user is None:
-                    raise Unauthorized("You must be logged in to continue")
                 self.login = self.user.name
                 self.openid_request.identity = '%s+openid/+id/%s' % (
                         allvhosts.configs['openid'].rooturl,
-                        self.user.openid_identifier
-                        )
+                        self.user.openid_identifier)
 
             else:
                 # Consumer sent us an identity URL
                 self.login = self.getPersonNameByIdentity(
-                        self.openid_request.identity
-                        )
+                        self.openid_request.identity)
                 if self.login is None:
                     if self.user is None:
                         self.login = 'username'
@@ -151,12 +150,11 @@ class OpenIdView(LaunchpadView):
                         self.login = self.user.name
                     return self.invalid_identity_template()
 
-            if not self.isAuthenticated():
-                # Interactive request, but user is not yet logged on.
-                # Trigger authentication.
+            if not self.isIdentityOwner():
+                # Interactive request, but user is logged in as someone other
+                # than the identity owner. Trigger authentication.
                 raise Unauthorized(
-                        "You are not authorized to use this OpenID identifier."
-                        )
+                    "You are not authorized to use this OpenID identifier.")
 
             elif self.isAuthorized():
                 # User is logged in and the site is authorized.
@@ -169,8 +167,7 @@ class OpenIdView(LaunchpadView):
 
         else:
             openid_response = self.openid_server.handleRequest(
-                    self.openid_request
-                    )
+                    self.openid_request)
 
         # If the above code has not already returned or raised an exception,
         # openid_respose is filled out ready for the openid library to render.
@@ -194,30 +191,23 @@ class OpenIdView(LaunchpadView):
 
         >>> view = OpenIdView(None, None)
         >>> view.getPersonByIdentity(
-        ...     'https://openid.launchpad.dev/+openid/+id/temp1').name
-        u'sabdfl'
-        >>> view.getPersonByIdentity(
         ...     'http://openid.launchpad.dev/+openid/+id/temp1').name
         u'sabdfl'
         >>> view.getPersonByIdentity(
-        ...     'https://openid.launchpad.dev/+openid/+id/temp1/').name
+        ...     'http://openid.launchpad.dev/+openid/+id/temp1/').name
         u'sabdfl'
         >>> view.getPersonByIdentity('foo')
         >>> view.getPersonByIdentity('http://example.com/+openid/+id/temp1')
         """
-        openid_url = allvhosts.configs['openid'].rooturl
-        # Note that we accept both http and https urls.
+        assert allvhosts.configs['openid'].rooturl.endswith('/'), \
+                'rooturl does not end with trailing slash.'
 
-        if openid_url.startswith('http:'):
-            url_match_string = 'https?' + re.escape(openid_url[4:])
-        else:
-            url_match_string = 'https?' + re.escape(openid_url[5:])
-
-        url_match_string += re.escape('+openid/+id/')
-
-        match = re.search(
-                r'^\s*%s(\w+)/?\s*$' % url_match_string, identity
+        url_match_string = re.escape(
+                allvhosts.configs['openid'].rooturl
+                + '+openid/+id/'
                 )
+
+        match = re.search(r'^\s*%s(\w+)/?\s*$' % url_match_string, identity)
 
         if match is None:
             return None
@@ -292,31 +282,23 @@ class OpenIdView(LaunchpadView):
         for key in to_delete:
             del session[key]
 
-    def isAuthenticated(self):
+    def isIdentityOwner(self):
         """Returns True if we are logged in as the owner of the identity."""
-        # Not authenticated if the user is not logged in
-        if self.user is None:
-            return False
-
-        # Not authenticated if we are logged in as someone other than
-        # the identity's owner
+        assert self.user is not None, "user should be logged in by now."
         return self.user.name == self.login
 
     def isAuthorized(self):
         """Check if the identity is authorized for the trust_root"""
-        # Can't be authorized if we are logged in, or logged in as a
+        # Can't be authorized if we are not logged in, or logged in as a
         # user other than the identity owner.
-        if not self.isAuthenticated():
+        if self.user is None or not self.isIdentityOwner():
             return False
 
         client_id = getUtility(IClientIdManager).getClientId(self.request)
-
         auth_set = getUtility(IOpenIdAuthorizationSet)
+
         return auth_set.isAuthorized(
-                self.user,
-                self.openid_request.trust_root,
-                client_id
-                )
+                self.user, self.openid_request.trust_root, client_id)
 
     def restoreSessionOpenIdRequest(self):
         """Get the OpenIDRequest from our session using the nonce in the
@@ -334,6 +316,17 @@ class OpenIdView(LaunchpadView):
 
         assert zisinstance(self.openid_request, CheckIDRequest), \
                 'Invalid OpenIDRequest in session'
+
+        self.login = self.getPersonNameByIdentity(self.openid_request.identity)
+
+        # Security checks, as logging out doesn't change your session so
+        # in extreme cases we might end up with someone elses OpenIDRequest.
+        if self.user is None:
+            raise Unauthorized("You are no longer logged in.")
+        if not self.isIdentityOwner():
+            raise Unauthorized(
+            "You are no longer logged in as the identity owner.")
+
 
     def trashSessionOpenIdRequest(self):
         """Remove the OpenIdRequest from the session using the nonce in the
@@ -356,13 +349,10 @@ class OpenIdView(LaunchpadView):
         """
         # If the user is not authenticated as the user owning the
         # identifier, bounce them to the login page.
-        self.login = self.getPersonNameByIdentity(
-                self.openid_request.identity
-                )
-        if not self.isAuthenticated():
+        self.login = self.getPersonNameByIdentity(self.openid_request.identity)
+        if not self.isIdentityOwner():
             raise Unauthorized(
-                    "You are not yet authorized to use this OpenID identifier."
-                    )
+                "You are not yet authorized to use this OpenID identifier.")
         duration = self.request.form['allow_duration']
 
         if duration != 'once':
@@ -375,15 +365,12 @@ class OpenIdView(LaunchpadView):
                     duration = int(duration)
                 except ValueError:
                     raise UnexpectedFormData
-                expires = (
-                        datetime.utcnow().replace(tzinfo=pytz.UTC)
-                        + timedelta(seconds=duration)
-                        )
+                expires = (datetime.utcnow().replace(tzinfo=pytz.UTC)
+                        + timedelta(seconds=duration))
 
             auth_set = getUtility(IOpenIdAuthorizationSet)
             auth_set.authorize(
-                    self.user, self.openid_request.trust_root, expires
-                    )
+                    self.user, self.openid_request.trust_root, expires)
 
         return self.openid_request.answer(True)
 
@@ -414,8 +401,7 @@ class OpenIdViewNavigation(Navigation):
             person = getUtility(IPersonSet).get(email.personID)
             target = '%s+openid/+id/%s' % (
                     allvhosts.configs['openid'].rooturl,
-                    person.openid_identifier
-                    )
+                    person.openid_identifier)
             return RedirectionView(target, self.request, 303)
         else:
             return None
@@ -424,23 +410,21 @@ class OpenIdViewNavigation(Navigation):
     def traverse_id(self, name):
         person = getUtility(IPersonSet).getByOpenIdIdentifier(name)
         if person is not None:
-            return MinimalOpenIdIdentityView(self.request, person)
+            return OpenIdIdentityView(person, self.request)
         else:
             return None
     
     def traverse(self, name):
         # Provide a permanent OpenID identity for use by the Ubuntu shop
         # or other services that cannot cope with name changes.
-        try:
-            person_id = int(name)
-        except ValueError:
-            pass
+        person = getUtility(IPersonSet).getByName(name)
+        if person is not None:
+            target = '%s+openid/+id/%s' % (
+                    allvhosts.configs['openid'].rooturl,
+                    person.openid_identifier)
+            return RedirectionView(target, self.request, 303)
         else:
-            person = getUtility(IPersonSet).get(person_id)
-            if person is not None:
-                return MinimalOpenIdIdentityView(self.request, person)
-
-        raise NotFoundError(name)
+            raise NotFoundError(name)
 
 
 class ProtocolErrorView(LaunchpadView):
@@ -456,13 +440,14 @@ class ProtocolErrorView(LaunchpadView):
         return self.context.encodeToKVForm()
 
 
-class MinimalOpenIdIdentityView:
-    """Render a minimal OpenID idenntity page."""
+class OpenIdIdentityView:
+    """Render the OpenID identity page."""
+
     implements(IBrowserPublisher)
 
-    def __init__(self, request, context):
-        self.request = request
+    def __init__(self, context, request):
         self.context = context
+        self.request = request
 
     def __call__(self):
         # XXX: No idea how to make this next line work. Hardcode for now
@@ -470,14 +455,20 @@ class MinimalOpenIdIdentityView:
         #person_url = canonical_url(self.context, rootsite='openid')
         openid_identifier = self.context.openid_identifier
         server_url = allvhosts.configs['openid'].rooturl
-        person_url = '%s+openid/+id/%s' % (server_url, openid_identifier)
+        identity_url = '%s+openid/+id/%s' % (
+                server_url, openid_identifier)
+        person_url = canonical_url(self.context, rootsite='mainsite')
+        display_name = self.context.displayname
+
         return textwrap.dedent("""\
                 <html>
                 <head>
-                <link rel="openid.server" href="%(server_url)s">
+                <link rel="openid.server" href="%(server_url)s" />
+                <meta http-equiv="Refresh" content="1; URL=%(person_url)s" />
                 </head>
                 <body>
-                <h1>OpenID Identity URL %(openid_identifier)s</h1>
+                <h1>OpenID Identity URL for
+                    <a href="%(person_url)s">%(display_name)s</a></h1>
                 </body>
                 </html>
                 """ % vars())

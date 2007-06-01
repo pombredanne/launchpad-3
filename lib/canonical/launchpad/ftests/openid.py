@@ -14,6 +14,7 @@ from zope.security.checker import defineChecker, Checker, CheckerPublic
 
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
+
 class ConsumerView(LaunchpadView):
     """Register a view that renders the parameters in the response
     in an easily testable format.

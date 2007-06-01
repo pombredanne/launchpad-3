@@ -5,30 +5,8 @@ We are going to fake a consumer for these examples. In order to ensure
 that the consumer is being fed the correct replies, we register a view
 that renders the parameters in the response in an easily testable format.
 
->>> from StringIO import StringIO
->>> from canonical.launchpad.webapp.publisher import LaunchpadView
->>> from zope.publisher.interfaces.browser import IBrowserPublisher
->>> from zope.interface import implements
->>> class ConsumerView(LaunchpadView):
-...     implements(IBrowserPublisher)
-...     def render(self):
-...         out = StringIO()
-...         print >> out, 'Consumer received %s' % self.request.method
-...         keys = sorted(self.request.form.keys())
-...         for key in keys:
-...             print >> out, '%s:%s' % (key, self.request.form[key])
-...         return out.getvalue()
-...     def browserDefault(self, request):
-...         return self, ()
-...
->>> from zope.security.checker import defineChecker, Checker, CheckerPublic
->>> defineChecker(ConsumerView, Checker({
-...     '__call__': CheckerPublic,
-...     'browserDefault': CheckerPublic,
-...     'render': CheckerPublic,
-...     }))
->>> from zope.app.testing.ztapi import browserView
->>> browserView(None, '+openid-consumer', ConsumerView)
+>>> from canonical.launchpad.ftests.openid import install_consumer
+>>> install_consumer()
 
 
 The shop gets the user's email address and calculates an identity URL.
@@ -44,15 +22,11 @@ authenticate against, using the OpenID delegation feature.
 >>> print anon_browser.url
 http://openid.launchpad.dev/+openid/+id/temp1
 >>> print anon_browser.contents
-<html>
-<head>
-<link rel="openid.server" href="http://openid.launchpad.dev/">
-</head>
-<body>
-<h1>OpenID Identity URL temp1</h1>
-</body>
-</html>
-<BLANKLINE>
+<...
+<link rel="openid.server" href="http://openid.launchpad.dev/" />
+...
+>>> 'openid.delegate' in anon_browser.contents
+False
 
 
 The end result should be that the shop, after getting the email address
@@ -60,3 +34,7 @@ from the user, will obtain a permanent identity URL it can use as a key.
 The shop will authenticate using the standard Lauchpad OpenID identity of
 the form http://openid.launchpad.dev/~sabdfl so no new code is required
 there.
+
+>>> from canonical.launchpad.ftests.openid import uninstall_consumer
+>>> uninstall_consumer()
+
