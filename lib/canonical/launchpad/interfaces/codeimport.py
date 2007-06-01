@@ -7,8 +7,9 @@ __metaclass__ = type
 __all__ = ['ICodeImport', 'ICodeImportSet']
 
 from zope.interface import Attribute, Interface
-from zope.schema import DateTime, Choice, Int, TextLine
+from zope.schema import Datetime, Choice, Int, TextLine
 
+from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.productseries import (
     validate_cvs_module, validate_cvs_root)
