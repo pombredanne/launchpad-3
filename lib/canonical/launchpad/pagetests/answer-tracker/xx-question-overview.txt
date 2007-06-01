@@ -240,7 +240,7 @@ involving that person.
 
 == Accessing a question directly ==
 
-You can access any question by its ID using the
+You can access any question by its ID using the URL
 http://answers.launchpad.dev/questions/<id>. This URL will redirect
 to the proper context where the question can be found:
 
@@ -269,7 +269,7 @@ is useful after a question was retargeted.)
     >>> print browser.url
     http://answers.launchpad.dev/firefox/+question/1
 
-It also works with page below that URL:
+It also works with pages below that URL:
 
     >>> browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+question/1/+history')
