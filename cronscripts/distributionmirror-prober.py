@@ -16,7 +16,7 @@ from canonical.config import config
 from canonical.lp import AUTOCOMMIT_ISOLATION
 from canonical.lp.dbschema import MirrorContent
 from canonical.launchpad.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
     IDistributionMirrorSet, ILibraryFileAliasSet)
 from canonical.launchpad.webapp import canonical_url
@@ -24,7 +24,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     get_expected_cdimage_paths, probe_archive_mirror, probe_cdimage_mirror)
 
 
-class DistroMirrorProber(LaunchpadScript):
+class DistroMirrorProber(LaunchpadCronScript):
     usage = ('%prog --content-type=(archive|cdimage) [--force] '
              '[--no-owner-notification]')
 
