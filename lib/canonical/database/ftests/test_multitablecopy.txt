@@ -26,10 +26,10 @@ Set up some unrelated tables that follow the documented expectations:
     ...     "CREATE TABLE textual (id SERIAL PRIMARY KEY, t varchar)")
     >>> numeric_values = range(1,4)
     >>> textual_values = ['one', 'two', 'three']
-    >>> for x in numeric_values:
-    ...     cur.execute("INSERT INTO numeric (n) VALUES (%d)" % x)
-    >>> for x in textual_values:
-    ...     cur.execute("INSERT INTO textual (t) VALUES ('%s')" % x)
+    >>> for number in numeric_values:
+    ...     cur.execute("INSERT INTO numeric (n) VALUES (%d)" % number)
+    >>> for word in textual_values:
+    ...     cur.execute("INSERT INTO textual (t) VALUES ('%s')" % word)
 
 And set up a prospective MultiTableCopy on them.  The copier will be called
 "test" (a name that will be used in the holding tables it creates) and copy
@@ -108,7 +108,7 @@ We have the data we're copying in holding tables now.
 Now we pour or data in the holding tables back into the source tables.  Each
 row from the holding tables gets a new id, so no errors about duplicates here.
 
-    >>> copier.pourHoldingTables()
+    >>> copier.pourHoldingTables(ztm)
 
 Since pourHoldingTables may commit transactions, our cursor is now invalid.
 We get a new one before we go on.
@@ -233,7 +233,7 @@ up with incomplete data that should be deleted:
     >>> copier = MultiTableCopy('test', ['textual', 'numeric'], 0.01, 2)
     >>> copier.extractToHoldingTable('textual', where_clause="t='many'")
     >>> copier.extractToHoldingTable('numeric', joins=['textual'])
-    >>> copier.hasRecoverableHoldingTables()
+    >>> copier.needsRecovery()
     False
 
     >>> postgresql.have_table(cur, copier.getRawHoldingTableName('textual'))
@@ -305,7 +305,7 @@ original words twice.
 There is no saying what numeric entries have or have not been copied.  We're
 caught in the middle somewhere, and need recovery.
 
-    >>> copier.hasRecoverableHoldingTables()
+    >>> copier.needsRecovery()
     True
 
 There's no going back: the only sane thing to do is to complete the operation.
@@ -315,7 +315,7 @@ When this happens, it'll usually be because one process died and the next one
 does the recovery.  We set up a new copier to simulate this chain of events.
 
     >>> copier = MultiTableCopy('test', ['textual', 'numeric'], 0.1, 3)
-    >>> copier.hasRecoverableHoldingTables()
+    >>> copier.needsRecovery()
     True
 
     >>> cur.execute("DELETE FROM %s WHERE n=101" % numeric_holding_table)
@@ -358,6 +358,6 @@ This time we run to completion without problems.
 
 == Cleanup ==
 
-    >>> postgresql.drop_tables(cur, ['numeric', 'textual'])
+    >>> postgresql.drop_tables(cursor(), ['numeric', 'textual'])
     >>> ztm.uninstall()
 

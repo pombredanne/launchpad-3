@@ -22,10 +22,10 @@ class PouringLoop:
     """
     implements(ITunableLoop)
 
-    def __init__(self, from_table, to_table, ztm=None):
-        self.from_table = from_table
-        self.to_table = to_table
-        self.ztm = ztm
+    def __init__(self, from_table, to_table, transaction_manager):
+        self.from_table = str(from_table)
+        self.to_table = str(to_table)
+        self.transaction_manager = transaction_manager
         self.cur = cursor()
 
         # We batch simply by breaking the range of ids in our table down
@@ -65,10 +65,9 @@ class PouringLoop:
         self._commit()
 
     def _commit(self):
-        if self.ztm:
-            self.ztm.commit()
-            self.ztm.begin()
-            self.cur = cursor()
+        self.transaction_manager.commit()
+        self.transaction_manager.begin()
+        self.cur = cursor()
 
 
 class MultiTableCopy:
@@ -118,10 +117,10 @@ class MultiTableCopy:
 
     A MultiTableCopy is restartable.  If the process should fail for any
     reason, the holding tables will be left in one of two states: if stage 1
-    has not completed, hasRecoverableData will return False.  In that case,
-    drop the holding tables using dropHoldingTables and either start again (or
-    give up).  But if a previous run did complete the extraction stage, the
-    holding tables will remain and contain valid data.  In that case, run
+    has not completed, needsRecovery will return False.  In that case, drop
+    the holding tables using dropHoldingTables and either start again (or give
+    up).  But if a previous run did complete the extraction stage, the holding
+    tables will remain and contain valid data.  In that case, run
     pourHoldingTables again to continue the work (and hopefully complete it
     this time).
 
@@ -179,7 +178,7 @@ class MultiTableCopy:
         Pass a time goal (in seconds) to define how long, ideally, the
         algorithm should be allowed to hold locks on the source tables.
         """
-        self.name = name
+        self.name = str(name)
         self.tables = tables
         self.lower_tables = [table.lower() for table in self.tables]
         self.seconds_per_batch = seconds_per_batch
@@ -188,15 +187,16 @@ class MultiTableCopy:
 
     def dropHoldingTables(self):
         """Drop any holding tables that may exist for this MultiTableCopy."""
-        postgresql.drop_tables(cursor(),
-            [self.getHoldingTableName(table) for table in self.tables])
+        holding_tables = [self.getHoldingTableName(table)
+                          for table in self.tables]
+        postgresql.drop_tables(cursor(), holding_tables)
 
     def getRawHoldingTableName(self, tablename, suffix=''):
         """Name for a holding table, but without quotes.  Use with care."""
         if suffix:
             suffix = '_%s' % suffix
         return "temp_%s_holding_%s%s" % (
-            str(tablename), str(self.name), suffix)
+            str(tablename), self.name, str(suffix))
 
     def getHoldingTableName(self, tablename, suffix=''):
         """Name for a holding table to hold data being copied in tablename.
@@ -204,7 +204,7 @@ class MultiTableCopy:
         Return value is properly quoted for use as an SQL identifier.
         """
         raw_name = self.getRawHoldingTableName(tablename, suffix)
-        return str(quoteIdentifier(raw_name))
+        return quoteIdentifier(raw_name)
 
     def pointsToTable(self, source_table, foreign_key):
         """Name of table that source_table.foreign_key refers to.
@@ -258,6 +258,7 @@ class MultiTableCopy:
         if joins is None:
             joins = []
 
+        source_table = str(source_table)
         self._checkExtractionOrder(source_table)
 
         holding_table = self.getHoldingTableName(source_table)
@@ -288,14 +289,16 @@ class MultiTableCopy:
         new_id column.
         """
 
+        source_table = str(source_table)
         select = ['%s.*' % source_table]
         from_list = [source_table]
         where = []
 
-        for j in joins:
-            referenced_table = self.pointsToTable(source_table, j)
+        for join in joins:
+            join = str(join)
+            referenced_table = self.pointsToTable(source_table, join)
             referenced_holding = self.getHoldingTableName(referenced_table)
-            column = j.lower()
+            column = join.lower()
 
             self._checkForeignKeyOrder(column, referenced_table)
 
@@ -314,14 +317,18 @@ class MultiTableCopy:
         # finally a "new_id" holding its future id field.  This new_id value
         # is allocated from the original table's id sequence, so it will be
         # unique in the original table.
+        table_creation_parameters = {
+            'holding_table': holding_table,
+            'columns': ','.join(select),
+            'id_sequence': id_sequence,
+            'source_tables': ','.join(from_list),
+            'where': where_text}
         cur = cursor()
         cur.execute('''
-            CREATE TABLE %s AS
-            SELECT %s, nextval('%s'::regclass) AS new_id
-            FROM %s
-            %s'''
-            % (holding_table, ', '.join(select), id_sequence,
-               ', '.join(from_list), where_text))
+            CREATE TABLE %(holding_table)s AS
+            SELECT %(columns)s, nextval('%(id_sequence)s'::regclass) AS new_id
+            FROM %(source_tables)s
+            %(where)s''' % table_creation_parameters)
         return cur
 
     def _indexIdColumn(self, holding_table, source_table, cur):
@@ -330,7 +337,7 @@ class MultiTableCopy:
         Creates a unique index on "id" column in holding table.  The index
         gets the name of the holding table with "_id" appended.
         """
-
+        source_table = str(source_table)
         logging.info("Indexing %s" % holding_table)
         cur.execute('''
             CREATE UNIQUE INDEX %s
@@ -354,7 +361,7 @@ class MultiTableCopy:
             cur.execute("ALTER TABLE %s DROP COLUMN new_%s"
                         % (holding_table, column))
 
-    def hasRecoverableHoldingTables(self):
+    def needsRecovery(self):
         """Do we have holding tables with recoverable data from previous run?
 
         Returns Boolean answer.
@@ -381,26 +388,28 @@ class MultiTableCopy:
         logging.info("Recoverable data found")
         return True
 
-    def pourHoldingTables(self, ztm=None):
+    def pourHoldingTables(self, transaction_manager):
         """Pour data from holding tables back into source tables.
 
-        The transaction ztm, if any, is committed and re-opened after every
-        batch run.
+        The transaction manager is committed and re-opened after every batch
+        run.
 
         Batch sizes are dynamically adjusted to meet the stated time goal.
         """
 
         if self.last_extracted_table is None:
-            if not self.hasRecoverableHoldingTables():
+            if not self.needsRecovery():
                 raise AssertionError("Can't pour: no tables extracted")
         elif self.last_extracted_table != len(self.tables) - 1:
             raise AssertionError(
                 "Not safe to pour: last table '%s' was not extracted"
                 % self.tables[-1])
 
-        cur = self._commit(ztm)
+        cur = self._commit(transaction_manager)
 
         # Don't let postgres revert to slow sequential scans while we pour.
+        # That might otherwise happen to the holding table as its vital "id"
+        # index degrades with the removal of rows.
         postgresql.allow_sequential_scans(cur, False)
 
         # Main loop: for each of the source tables being copied, see if
@@ -425,19 +434,21 @@ class MultiTableCopy:
             has_new_id = postgresql.table_has_column(
                 cur, holding_table_unquoted, 'new_id')
 
-            self._pourTable(holding_table, table, has_new_id, ztm)
+            self._pourTable(
+                holding_table, table, has_new_id, transaction_manager)
             postgresql.drop_tables(cursor(), holding_table)
 
             logging.info(
                 "Pouring %s took %.3f seconds."
                 % (holding_table, time.time()-tablestarttime))
 
-            self._commit(ztm)
+            self._commit(transaction_manager)
 
-    def _pourTable(self, holding_table, table, has_new_id, ztm):
+    def _pourTable(
+        self, holding_table, table, has_new_id, transaction_manager):
         """Pour contents of a holding table back into its source table.
 
-        This will commit ztm, if one is given, probably several times.
+        This will commit transaction_manager, typically multiple times.
         """
         if has_new_id:
             # Update ids in holding table from originals to copies.
@@ -456,7 +467,7 @@ class MultiTableCopy:
         # rows.  The goal is to have these transactions running no longer than
         # five seconds or so each; we aim for four just to be sure.
 
-        pourer = PouringLoop(holding_table, table, ztm)
+        pourer = PouringLoop(holding_table, table, transaction_manager)
         LoopTuner(
             pourer, self.seconds_per_batch, self.minimum_batch_size).run()
 
@@ -512,19 +523,16 @@ class MultiTableCopy:
                 "Foreign key '%s' refers to table '%s' "
                 "which is not being copied" % (fk, referenced_table))
 
-    def _commit(self, ztm, cur=None):
-        """If we have a transaction, commit it and offer replacement cursor.
+    def _commit(self, transaction_manager):
+        """Commit our transaction and create replacement cursor.
 
-        Use this as "cur = self._commit(ztm, cur)" to commit a transaction,
-        restart it, and replace cur with a cursor that lives within the new
+        Use this as "cur = self._commit(transaction_manager)" to commit a
+        transaction, restart it, and create a cursor that lives within the new
         transaction.
         """
-        if ztm is None:
-            return cur or cursor()
-
         start = time.time()
-        ztm.commit()
-        logging.info("Committed in %.3f seconds" % (time.time()-start))
-        ztm.begin()
+        transaction_manager.commit()
+        logging.info("Committed in %.3f seconds" % (time.time() - start))
+        transaction_manager.begin()
         return cursor()
 

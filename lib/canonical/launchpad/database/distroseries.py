@@ -1760,14 +1760,14 @@ new imports with the information being copied.
         if len(self.potemplates) == 0:
             # We're a new distroseries; copy from scratch
             self._copyActiveTranslationsToNewRelease(ztm, copier)
-        elif copier.hasRecoverableHoldingTables():
+        elif copier.needsRecovery():
             # Recover data from previous, abortive run
             copier.pourHoldingTables(ztm)
         else:
             # Incremental copy of updates from parent distroseries
             self._copyActiveTranslationsAsUpdate()
 
-    def copyMissingTranslationsFromParent(self, ztm=None):
+    def copyMissingTranslationsFromParent(self, ztm):
         """See IDistroSeries."""
         flush_database_updates()
         flush_database_caches()
