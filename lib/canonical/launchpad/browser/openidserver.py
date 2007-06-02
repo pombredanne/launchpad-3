@@ -400,6 +400,8 @@ class OpenIdViewNavigation(Navigation):
         email = getUtility(IEmailAddressSet).getByEmail(name)
         if email is not None:
             person = getUtility(IPersonSet).get(email.personID)
+            if not person.is_openid_enabled:
+                return None
             target = '%s+openid/+id/%s' % (
                     allvhosts.configs['openid'].rooturl,
                     person.openid_identifier)
@@ -410,7 +412,7 @@ class OpenIdViewNavigation(Navigation):
     @stepthrough('+id')
     def traverse_id(self, name):
         person = getUtility(IPersonSet).getByOpenIdIdentifier(name)
-        if person is not None:
+        if person is not None and person.is_openid_enabled:
             return OpenIdIdentityView(person, self.request)
         else:
             return None
@@ -419,7 +421,7 @@ class OpenIdViewNavigation(Navigation):
         # Provide a permanent OpenID identity for use by the Ubuntu shop
         # or other services that cannot cope with name changes.
         person = getUtility(IPersonSet).getByName(name)
-        if person is not None:
+        if person is not None and person.is_openid_enabled:
             target = '%s+openid/+id/%s' % (
                     allvhosts.configs['openid'].rooturl,
                     person.openid_identifier)
