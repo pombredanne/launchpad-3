@@ -385,22 +385,26 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                     # the status flags because we can get some improved
                     # information from upstream.
                     matches = 0
+                    updated = 0
                     for pluralform in range(self.pluralforms):
-                        if (self.getActiveSubmission(pluralform) ==
-                            self.getPublishedSubmission(pluralform)):
+                        active = self.getActiveSubmission(pluralform)
+                        if (active is not None and active.published):
                             matches += 1
+                        elif active is not None:
+                            updated += 1
                     if matches == self.pluralforms:
                         # The active submission is exactly the same as the
                         # published one, so the fuzzy and complete flags should be
                         # also the same.
                         self.isfuzzy = self.publishedfuzzy
                         self.iscomplete = self.publishedcomplete
+                    elif updated > 0:
+                        # There are some active translations different from
+                        # published ones, so the message has been updated
+                        self.isupdated = True
             else:
                 self.isfuzzy = fuzzy
                 self.iscomplete = complete
-
-        # update the pomsgset flags
-        self.updateFlags()
 
     def _makeSubmission(self, person, text, is_fuzzy, pluralform, published,
             validation_status=TranslationValidationStatus.UNKNOWN,

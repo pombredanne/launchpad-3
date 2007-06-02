@@ -19,6 +19,10 @@ class RosettaPOImporter(LaunchpadScript):
 
 
 if __name__ == '__main__':
+    import hotshot
+    prof = hotshot.Profile('poimport-profile')
+    prof.start()
+
     script = RosettaPOImporter('rosetta-poimport',
         dbuser=config.rosetta.poimport.dbuser)
     script.lock_or_quit()
@@ -26,4 +30,9 @@ if __name__ == '__main__':
         script.run()
     finally:
         script.unlock()
+
+    prof.stop()
+
+# from hotshot import stats; s = stats.load('poimport-profile')
+# s.sort_stats('cumulative').print_stats(20)
 
