@@ -1768,7 +1768,7 @@ new imports with the information being copied.
             # Incremental copy of updates from parent distroseries
             self._copyActiveTranslationsAsUpdate()
 
-    def copyMissingTranslationsFromParent(self, ztm=None):
+    def copyMissingTranslationsFromParent(self, ztm):
         """See IDistroSeries."""
         flush_database_updates()
         flush_database_caches()
