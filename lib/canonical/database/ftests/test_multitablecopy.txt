@@ -43,18 +43,18 @@ the tables "numeric" and "textual," in that order.
 We're about to start extracting data from these tables.  But we can't do that
 in any old order.  We must follow the list of tables we gave, in that order:
 
-    >>> copier.extractToHoldingTable('nonsensetable')
+    >>> copier.extract('nonsensetable')
     Traceback (most recent call last):
     ...
     AssertionError: Can't extract 'nonsensetable': not in list of tables
 
-    >>> copier.extractToHoldingTable('textual')
+    >>> copier.extract('textual')
     Traceback (most recent call last):
     ...
     AssertionError: Can't extract: skipped first table 'numeric'
 
     >>> numeric_holding_table = copier.getHoldingTableName('numeric')
-    >>> copier.extractToHoldingTable('numeric', where_clause="n <= 2")
+    >>> copier.extract('numeric', where_clause="n <= 2")
     >>> cur.execute("SELECT count(*) FROM %s" % numeric_holding_table)
     >>> print cur.fetchall()[0][0]
     2
@@ -62,7 +62,7 @@ in any old order.  We must follow the list of tables we gave, in that order:
 Since we haven't extracted all tables yet, we're not allowed to move to the
 pouring stage yet:
 
-    >>> copier.pourHoldingTables(ztm)
+    >>> copier.pour(ztm)
     Traceback (most recent call last):
     ...
     AssertionError: Not safe to pour: last table 'textual' was not extracted
@@ -73,7 +73,7 @@ pouring stage yet:
 We must extract the rest of our tables before we can do that.  We copy all of
 the data in the textual table, without restrictions.
 
-    >>> copier.extractToHoldingTable('textual')
+    >>> copier.extract('textual')
 
 We now have two holding tables, one with some of the values from numeric, the
 other with all values from textual:
@@ -108,10 +108,10 @@ We have the data we're copying in holding tables now.
 Now we pour or data in the holding tables back into the source tables.  Each
 row from the holding tables gets a new id, so no errors about duplicates here.
 
-    >>> copier.pourHoldingTables(ztm)
+    >>> copier.pour(ztm)
 
-Since pourHoldingTables may commit transactions, our cursor is now invalid.
-We get a new one before we go on.
+Since pour() may commit transactions, our cursor is now invalid.  We get a new
+one before we go on.
 
     >>> cur = cursor()
 
@@ -185,8 +185,8 @@ order to make redirection of the foreign key work properly, we must start with
 the table that the foreign key will refer to.
 
     >>> copier = MultiTableCopy('test', ['textual', 'numeric'])
-    >>> copier.extractToHoldingTable('textual', where_clause="t='many'")
-    >>> copier.extractToHoldingTable('numeric', joins=['textual'])
+    >>> copier.extract('textual', where_clause="t='many'")
+    >>> copier.extract('numeric', joins=['textual'])
 
 That copied just the "many" row into a holding table for textual, and all rows
 from numeric that referred to it into a holding table for numeric.
@@ -204,7 +204,7 @@ from numeric that referred to it into a holding table for numeric.
 
     >>> cur.execute("UPDATE %s SET t='lots'" % textual_holding_table)
     >>> cur.execute("UPDATE %s SET n=2*n" % numeric_holding_table)
-    >>> copier.pourHoldingTables(ztm)
+    >>> copier.pour(ztm)
 
     >>> cur = cursor()
     >>> cur.execute("""
@@ -231,8 +231,8 @@ data will be left behind.  If we never get to start the pouring stage, we end
 up with incomplete data that should be deleted:
 
     >>> copier = MultiTableCopy('test', ['textual', 'numeric'])
-    >>> copier.extractToHoldingTable('textual', where_clause="t='many'")
-    >>> copier.extractToHoldingTable('numeric', joins=['textual'])
+    >>> copier.extract('textual', where_clause="t='many'")
+    >>> copier.extract('numeric', joins=['textual'])
     >>> copier.needsRecovery()
     False
 
@@ -267,13 +267,13 @@ through.  The particular sabot we slip into the machine is a row whose new id
 which means that the attempt to insert it will violate a unique constraint.
 
     >>> copier = MultiTableCopy('test', ['textual', 'numeric'])
-    >>> copier.extractToHoldingTable('textual')
-    >>> copier.extractToHoldingTable('numeric', joins=['textual'])
+    >>> copier.extract('textual')
+    >>> copier.extract('numeric', joins=['textual'])
     >>> cur.execute("UPDATE %s SET n=n+100" % numeric_holding_table)
     >>> cur.execute("UPDATE %s SET new_id=id WHERE n=101"
     ...             % numeric_holding_table)
 
-    >>> copier.pourHoldingTables(ztm)
+    >>> copier.pour(ztm)
     Traceback (most recent call last):
     ...
     IntegrityError: ... duplicate key violates unique constraint ...
@@ -319,7 +319,7 @@ does the recovery.  We set up a new copier to simulate this chain of events.
     True
 
     >>> cur.execute("DELETE FROM %s WHERE n=101" % numeric_holding_table)
-    >>> copier.pourHoldingTables(ztm)
+    >>> copier.pour(ztm)
 
 This time we run to completion without problems.
 
