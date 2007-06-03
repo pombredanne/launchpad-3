@@ -91,10 +91,10 @@ class MultiTableCopy:
 
     All this happens in a two-stage process:
 
-    1. Extraction stage.  Use the extractToHoldingTable method to copy
-    selected data to a holding table, one table at a time.  Ordering matters:
-    always do this in such an order that the table you are extracting has no
-    foreign-key references to another table that you are yet to extract.
+    1. Extraction stage.  Use the extract() method to copy selected data to a
+    holding table, one table at a time.  Ordering matters: always do this in
+    such an order that the table you are extracting has no foreign-key
+    references to another table that you are yet to extract.
 
     This stage is relatively fast and holds no locks on the database.  Do any
     additional processing on the copied rows in the holding tables, during or
@@ -106,7 +106,7 @@ class MultiTableCopy:
 
     2. Pouring stage.  All data from the holding tables is inserted back into
     the source tables.  This entire stage, which normally takes the bulk of
-    the copying time, is performed by calling the pourHoldingTables method.
+    the copying time, is performed by calling the pour method.
 
     This stage will lock the rows that are being inserted in the source
     tables, if the database is so inclined (e.g. when using postgres with
@@ -120,9 +120,8 @@ class MultiTableCopy:
     has not completed, needsRecovery will return False.  In that case, drop
     the holding tables using dropHoldingTables and either start again (or give
     up).  But if a previous run did complete the extraction stage, the holding
-    tables will remain and contain valid data.  In that case, run
-    pourHoldingTables again to continue the work (and hopefully complete it
-    this time).
+    tables will remain and contain valid data.  In that case, just pour again
+    to continue the work (and hopefully complete it this time).
 
     Holding tables will have names like "temp_POMsgSet_holding_ubuntu_feisty",
     in this case for one holding data extracted from source table POMsgSet by
@@ -144,7 +143,7 @@ class MultiTableCopy:
 
      * Every foreign-key column that refers to a table that is also being
        copied, has the same name as the table it refers to.  This can be
-       changed by subclassing and overriding the pointsToTable method.
+       changed by subclassing and overriding the _pointsToTable method.
 
      * Foreign-key column names and the tables they refer to can be used in
        SQL without quoting.
@@ -206,7 +205,7 @@ class MultiTableCopy:
         raw_name = self.getRawHoldingTableName(tablename, suffix)
         return quoteIdentifier(raw_name)
 
-    def pointsToTable(self, source_table, foreign_key):
+    def _pointsToTable(self, source_table, foreign_key):
         """Name of table that source_table.foreign_key refers to.
 
         By default, all foreign keys that play a role in the MultiTableCopy
@@ -217,11 +216,8 @@ class MultiTableCopy:
         """
         return foreign_key
 
-    def extractToHoldingTable(self,
-            source_table,
-            joins=None,
-            where_clause=None,
-            id_sequence=None):
+    def extract(
+        self, source_table, joins=None, where_clause=None, id_sequence=None):
         """Extract (selected) rows from source_table into a holding table.
 
         The holding table gets an additional new_id column with identifiers in
@@ -234,7 +230,7 @@ class MultiTableCopy:
         There is a special facility for redirecting foreign keys to other
         tables copied in the same way.  The joins argument can pass a list of
         foreign keys.  By default (and this can be changed by overriding the
-        pointsToTable method) each foreign key is assumed to point to a table
+        _pointsToTable method) each foreign key is assumed to point to a table
         of the same name.  The foreign keys given in joins must be columns of
         source_table, and refer to tables that are also being copied.  The
         selection used in populating the holding table for source_table will
@@ -296,7 +292,7 @@ class MultiTableCopy:
 
         for join in joins:
             join = str(join)
-            referenced_table = self.pointsToTable(source_table, join)
+            referenced_table = self._pointsToTable(source_table, join)
             referenced_holding = self.getHoldingTableName(referenced_table)
             column = join.lower()
 
@@ -370,8 +366,8 @@ class MultiTableCopy:
         cur = cursor()
 
         # If there are any holding tables to be poured into their source
-        # tables, there must at least be one for the last table that
-        # pourHoldingTables() processes.
+        # tables, there must at least be one for the last table that pour()
+        # processes.
         last_holding_table = self.getRawHoldingTableName(self.tables[-1])
         if not postgresql.have_table(cur, last_holding_table):
             return False
@@ -388,7 +384,7 @@ class MultiTableCopy:
         logging.info("Recoverable data found")
         return True
 
-    def pourHoldingTables(self, transaction_manager):
+    def pour(self, transaction_manager):
         """Pour data from holding tables back into source tables.
 
         The transaction manager is committed and re-opened after every batch

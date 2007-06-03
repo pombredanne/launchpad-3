@@ -1344,9 +1344,8 @@ new imports with the information being copied.
 
         # Copy relevant POTemplates from existing series into a holding
         # table, complete with their original id fields.
-        copier.extractToHoldingTable('POTemplate',
-            [],
-            'distrorelease=%s AND iscurrent' % quote(self.parentseries))
+        where = 'distrorelease = %s AND iscurrent' % quote(self.parentseries)
+        copier.extract('POTemplate', [], where)
 
         # Now that we have the data "in private," where nobody else can see
         # it, we're free to play with it.  No risk of locking other processes
@@ -1366,31 +1365,24 @@ new imports with the information being copied.
         # Copy each POTMsgSet whose template we copied, and replace each
         # potemplate reference with a reference to our copy of the original
         # POTMsgSet's potemplate.
-        copier.extractToHoldingTable('POTMsgSet',
-            ['POTemplate'],
-            'POTMsgSet.sequence > 0')
+        copier.extract('POTMsgSet', ['POTemplate'], 'POTMsgSet.sequence > 0')
 
         # Copy POMsgIDSightings, substituting their potmsgset foreign
         # keys with references to our own, copied POTMsgSets
-        copier.extractToHoldingTable('POMsgIDSighting',
-            ['POTMsgSet'])
+        copier.extract('POMsgIDSighting', ['POTMsgSet'])
 
         # Copy POFiles, making them refer to our copied POTemplates
-        copier.extractToHoldingTable('POFile',
-            ['POTemplate'])
+        copier.extract('POFile', ['POTemplate'])
 
         # Same for POMsgSet, but a bit more complicated since it refers to
         # both POFile and POTMsgSet.
-        copier.extractToHoldingTable('POMsgSet',
-            ['POFile', 'POTMsgSet'])
+        copier.extract('POMsgSet', ['POFile', 'POTMsgSet'])
 
         # And for POSubmission
-        copier.extractToHoldingTable('POSubmission',
-            ['POMsgSet'],
-            'active OR published')
+        copier.extract('POSubmission', ['POMsgSet'], 'active OR published')
 
         # Now pour the holding tables back into the originals
-        copier.pourHoldingTables(ztm)
+        copier.pour(ztm)
 
     def _copyActiveTranslationsAsUpdate(self):
         """Receive active, updated translations from parent series."""
@@ -1762,7 +1754,7 @@ new imports with the information being copied.
             self._copyActiveTranslationsToNewRelease(ztm, copier)
         elif copier.needsRecovery():
             # Recover data from previous, abortive run
-            copier.pourHoldingTables(ztm)
+            copier.pour(ztm)
         else:
             # Incremental copy of updates from parent distroseries
             self._copyActiveTranslationsAsUpdate()
