@@ -340,6 +340,9 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository):
     def __str__(self):
         return self.id()
 
+    def getTransport(self, relpath=None):
+        return self.server.getTransport(relpath)
+
     def getTransportURL(self, relpath=None, username=None):
         """Return the base URL for the tests."""
         if relpath is None:

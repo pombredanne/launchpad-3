@@ -27,7 +27,7 @@ class SFTPTests(SSHTestCase):
     def test_rmdir_branch(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
         # branches)
-        transport = self.server.getTransport('~testuser/+junk')
+        transport = self.getTransport('~testuser/+junk')
         transport.mkdir('foo')
         transport.mkdir('bar')
         self.failUnless(stat.S_ISDIR(transport.stat('foo').st_mode))
@@ -44,7 +44,7 @@ class SFTPTests(SSHTestCase):
     @deferToThread
     def test_mkdir_toplevel_error(self):
         # You cannot create a top-level directory.
-        transport = self.server.getTransport()
+        transport = self.getTransport()
         e = self.assertRaises(PermissionDenied, transport.mkdir, 'foo')
         self.failUnless(
             "Branches must be inside a person or team directory." in str(e),
@@ -54,7 +54,7 @@ class SFTPTests(SSHTestCase):
     def test_mkdir_invalid_product_error(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
         # branches)
-        transport = self.server.getTransport('~testuser')
+        transport = self.getTransport('~testuser')
 
         # You cannot create a product directory unless the product name is
         # registered in Launchpad.
@@ -69,7 +69,7 @@ class SFTPTests(SSHTestCase):
     def test_mkdir_not_team_member_error(self):
         # You can't mkdir in a team directory unless you're a member of that
         # team (in fact, you can't even see the directory).
-        transport = self.server.getTransport()
+        transport = self.getTransport()
         e = self.assertRaises(NoSuchFile,
                 transport.mkdir, '~not-my-team/mozilla-firefox')
         self.failUnless("~not-my-team" in str(e))
@@ -78,7 +78,7 @@ class SFTPTests(SSHTestCase):
     def test_mkdir_team_member(self):
         # You can mkdir in a team directory that you're a member of (so long as
         # it's a real product), though.
-        transport = self.server.getTransport()
+        transport = self.getTransport()
         transport.mkdir('~testteam/firefox')
 
         # Confirm the mkdir worked by using list_dir.
@@ -94,7 +94,7 @@ class SFTPTests(SSHTestCase):
     def test_rename_directory_to_existing_directory_fails(self):
         # 'rename dir1 dir2' should fail if 'dir2' exists. Unfortunately, it
         # will only fail if they both contain files/directories.
-        transport = self.server.getTransport('~testuser/+junk')
+        transport = self.getTransport('~testuser/+junk')
         transport.mkdir('branch')
         transport.mkdir('branch/.bzr')
         transport.mkdir('branch/.bzr/dir1')
@@ -108,7 +108,7 @@ class SFTPTests(SSHTestCase):
     def test_rename_directory_to_empty_directory_succeeds(self):
         # 'rename dir1 dir2' succeeds if 'dir2' is empty. Not sure we want this
         # behaviour, but it's worth documenting.
-        transport = self.server.getTransport('~testuser/+junk')
+        transport = self.getTransport('~testuser/+junk')
         transport.mkdir('branch')
         transport.mkdir('branch/.bzr')
         transport.mkdir('branch/.bzr/dir1')
@@ -119,7 +119,7 @@ class SFTPTests(SSHTestCase):
     @deferToThread
     def test_rename_directory_succeeds(self):
         # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
-        transport = self.server.getTransport('~testuser/+junk')
+        transport = self.getTransport('~testuser/+junk')
         transport.mkdir('branch')
         transport.mkdir('branch/.bzr')
         transport.mkdir('branch/.bzr/dir1')
