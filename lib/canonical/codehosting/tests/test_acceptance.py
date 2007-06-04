@@ -585,7 +585,7 @@ class CodeHostingTestProviderAdapter:
             new_test.repository_format = self._repository_format
             new_test.installServer(server)
             def make_new_test_id():
-                new_id = "%s(%s)" % (new_test.id(), server.__class__.__name__)
+                new_id = "%s(%s)" % (new_test.id(), server._schema)
                 return lambda: new_id
             new_test.id = make_new_test_id()
             result.addTest(new_test)
