@@ -441,7 +441,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                         ' <a href="%(package_url)s/+edit-packaging">updating'
                         ' the packaging information for'
                         ' %(full_package_name)s</a>.',
-                        full_package_name=bugtask.targetname,
+                        full_package_name=bugtask.bugtargetname,
                         package_url=canonical_url(sourcepackage))
             else:
                 try:
@@ -915,7 +915,7 @@ class BugTextView(LaunchpadView):
 
     def bugtask_text(self, task):
         text = []
-        text.append('task: %s' % task.targetname)
+        text.append('task: %s' % task.bugtargetname)
         text.append('status: %s' % task.status.title)
         text.append('reporter: %s' % self.person_text(task.owner))
 

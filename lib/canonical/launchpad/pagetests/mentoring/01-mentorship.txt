@@ -15,7 +15,7 @@ You have to be logged in to see the offers of mentoring. Let's try viewing
 the bug and spec as an anonymous user. We should see neither the page link
 nor the menu link to offer mentoring.
 
-  >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2')
+  >>> anon_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> menu_mentoring_offer not in anon_browser.contents
   True
   >>> page_mentoring_offer not in anon_browser.contents
@@ -31,7 +31,7 @@ offer mentorship. Since they can offer mentorship, they should not be able
 to retract it at the same time.
 
   >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
-  >>> browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2')
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> menu_mentoring_offer in browser.contents
   True
   >>> page_mentoring_offer in browser.contents
@@ -56,7 +56,7 @@ ability to offer mentorship:
   >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
   >>> browser.addHeader("Authorization", "Basic no-team-memberships@test.com:test")
-  >>> browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2')
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> menu_mentoring_offer in browser.contents
   False
   >>> page_mentoring_offer in browser.contents
@@ -74,7 +74,7 @@ complete.
 
   >>> browser = Browser()
   >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
-  >>> browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/8')
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/8')
   >>> menu_mentoring_offer in browser.contents
   False
   >>> page_mentoring_offer in browser.contents
@@ -92,7 +92,7 @@ Now let's look at a spec which is complete:
 In the case of bugs, we should not be able to offer mentorship on a bug
 which is a duplicate:
 
-  >>> browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/6')
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/6')
   >>> menu_mentoring_offer in browser.contents
   False
   >>> page_mentoring_offer in browser.contents
@@ -108,15 +108,15 @@ First, we will make an offer of mentorship on a bug.
 
   >>> browser = Browser()
   >>> browser.addHeader("Authorization", "Basic one-membership@test.com:test")
-  >>> browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2')
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> browser.getLink(menu_mentoring_offer).click()
   >>> print browser.url
-  http://bugs.launchpad.dev/ubuntu-product/+bug/2/+mentor
+  http://bugs.launchpad.dev/tomcat/+bug/2/+mentor
   >>> print browser.title
   Offer to mentor this work
   >>> browser.getControl('Offer Mentoring').click()
   >>> print browser.url
-  http://bugs.launchpad.dev/ubuntu-product/+bug/2
+  http://bugs.launchpad.dev/tomcat/+bug/2
   >>> 'Blackhole Trash folder' in browser.title
   True
 
@@ -146,7 +146,7 @@ offer mentoring:
 
   >>> browser = Browser()
   >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
-  >>> browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2')
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> menu_mentoring_offer in browser.contents
   True
   >>> page_mentoring_offer in browser.contents
@@ -234,17 +234,17 @@ of this mentorship.
 
 There is also a listing of mentorships available for a product:
 
-  >>> anon_browser.open('http://launchpad.dev/ubuntu-product/+mentoring')
+  >>> anon_browser.open('http://launchpad.dev/tomcat/+mentoring')
   >>> print anon_browser.title
-  Mentoring available in Ubuntu
+  Mentoring available in Tomcat
   >>> 'Blackhole Trash folder' in anon_browser.contents
   True
 
 And for a project:
 
-  >>> anon_browser.open('http://launchpad.dev/ubuntu-project/+mentoring')
+  >>> anon_browser.open('http://launchpad.dev/apache/+mentoring')
   >>> print anon_browser.title
-  Mentoring available in the Ubuntu Project
+  Mentoring available in Apache
   >>> 'Blackhole Trash folder' in anon_browser.contents
   True
 
@@ -345,17 +345,17 @@ of this mentorship.
 
 Or the listing of mentorships available for a product:
 
-  >>> anon_browser.open('http://launchpad.dev/ubuntu-product/+mentoring')
+  >>> anon_browser.open('http://launchpad.dev/tomcat/+mentoring')
   >>> print anon_browser.title
-  Mentoring available in Ubuntu
+  Mentoring available in Tomcat
   >>> 'Blackhole Trash folder' in anon_browser.contents
   False
 
 Or for a project:
 
-  >>> anon_browser.open('http://launchpad.dev/ubuntu-project/+mentoring')
+  >>> anon_browser.open('http://launchpad.dev/apache/+mentoring')
   >>> print anon_browser.title
-  Mentoring available in the Ubuntu Project
+  Mentoring available in Apache
   >>> 'Blackhole Trash folder' in anon_browser.contents
   False
 
@@ -452,17 +452,17 @@ of this mentorship.
 
 There is also a listing of mentorships available for a product:
 
-  >>> anon_browser.open('http://launchpad.dev/ubuntu-product/+mentoring')
+  >>> anon_browser.open('http://launchpad.dev/tomcat/+mentoring')
   >>> print anon_browser.title
-  Mentoring available in Ubuntu
+  Mentoring available in Tomcat
   >>> 'Blackhole Trash folder' in anon_browser.contents
   False
 
 And for a project:
 
-  >>> anon_browser.open('http://launchpad.dev/ubuntu-project/+mentoring')
+  >>> anon_browser.open('http://launchpad.dev/apache/+mentoring')
   >>> print anon_browser.title
-  Mentoring available in the Ubuntu Project
+  Mentoring available in Apache
   >>> 'Blackhole Trash folder' in anon_browser.contents
   False
 
@@ -488,7 +488,7 @@ retract mentoring that you have offered.
   False
   >>> page_mentoring_retract in browser.contents
   False
-  >>> browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2')
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> 'Mentors:' in browser.contents
   True
   >>> menu_mentoring_retract in browser.contents
@@ -535,7 +535,7 @@ mentoring again.
 
 And finally let's do it on the bug.
 
-  >>> browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2')
+  >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> browser.getLink(menu_mentoring_retract).click()
   >>> print browser.title
   Retract offer of mentorship
@@ -588,7 +588,7 @@ Now let's do the same with a bug.
 First we show that 'One Membership' is not initially a subscriber to the
 bug:
 
-  >>> subs = find_portlet(browser.contents, 'Subscribers to bug 10')
+  >>> subs = find_portlet(browser.contents, 'Subscribers')
   >>> 'One Membership' in subs.renderContents()
   False
 
@@ -602,7 +602,7 @@ Now we offer mentoring, and along the way we request to be subscribed:
 
 And now 'One Membership' is a subscriber:
 
-  >>> subs = find_portlet(browser.contents, 'Subscribers to bug 10')
+  >>> subs = find_portlet(browser.contents, 'Subscribers')
   >>> 'One Membership' in subs.renderContents()
   True
 

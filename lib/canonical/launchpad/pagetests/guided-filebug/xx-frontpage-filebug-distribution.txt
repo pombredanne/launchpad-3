@@ -80,7 +80,7 @@ and not on the distribution:
     >>> user_browser.url
     'http://bugs.launchpad.dev/iso-codes/+bug/...'
     >>> user_browser.title
-    'Bug #... in iso-codes (upstream)...'
+    'Bug #... in iso-codes:...'
 
 == Advanced filebug page ==
 

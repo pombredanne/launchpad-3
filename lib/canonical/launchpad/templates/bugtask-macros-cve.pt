@@ -31,7 +31,7 @@
             <tr>
               <td style="padding-left: 3em">
                   <span tal:replace="structure bugtask/image:icon" />
-                  <span tal:replace="bugtask/targetname" />
+                  <span tal:replace="bugtask/bugtargetname" />
                   <tal:badges replace="structure bugtask/image:badges" />
               </td>
               <td>

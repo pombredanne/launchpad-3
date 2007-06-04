@@ -473,6 +473,7 @@
     <!-- BugTaskDelta -->
     <content class="canonical.launchpad.database.bugtask.BugTaskDelta">
         <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />
+        <require permission="zope.Public" attributes="bugtargetname" />
     </content>
 
   </facet>

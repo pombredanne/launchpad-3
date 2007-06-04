@@ -58,7 +58,7 @@
           </div>
 
           <h2>Status in
-            <tal:target replace="context/targetname">Firefox</tal:target>
+            <tal:target replace="context/bugtargetname">Firefox</tal:target>
           </h2>
 
           <div class="field">

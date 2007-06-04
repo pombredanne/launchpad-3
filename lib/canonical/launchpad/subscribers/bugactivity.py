@@ -96,7 +96,7 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
 
 def record_bug_task_added(bug_task, object_created_event):
     if bug_task.sourcepackagename:
-        name = bug_task.targetname
+        name = bug_task.bugtargetname
     else:
         name = bug_task.target.name
     getUtility(IBugActivitySet).new(

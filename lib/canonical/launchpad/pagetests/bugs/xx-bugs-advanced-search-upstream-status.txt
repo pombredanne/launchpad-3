@@ -54,7 +54,8 @@ are not included in the report.
     ...         syncUpdate(bugtask)
 
     >>> for bugtask in bug_two.bugtasks:
-    ...     print "%s, %s" % (bugtask.target.bugtargetname, bugtask.status.title)
+    ...     print "%s, %s" % (
+    ...         bugtask.target.bugtargetdisplayname, bugtask.status.title)
     Tomcat, Rejected
     Ubuntu, Unconfirmed
     Ubuntu Hoary, Unconfirmed

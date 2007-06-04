@@ -10,7 +10,7 @@
       <a tal:replace="structure context/owner/fmt:link" /><br />
 
       <b>In:</b>
-      <a tal:content="context/targetname"
+      <a tal:content="context/bugtargetname"
          tal:attributes="href string:${context/target/fmt:url}/+bugs">ubuntu</a><br />
 
       <b>When:</b>

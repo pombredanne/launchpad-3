@@ -153,7 +153,7 @@ class BugTaskMixin:
     @property
     def bugtargetdisplayname(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        return self.targetnamecache
+        return self.target.bugtargetdisplayname
 
     @property
     def bugtargetname(self):

@@ -44,7 +44,7 @@ more than one target (https://launchpad.net/bugs/1357).
         Low
         Unconfirmed
     2 Blackhole Trash folder
-        Ubuntu
+        Tomcat
         Low
         Unconfirmed
     1 Firefox does not support SVG
@@ -115,7 +115,7 @@ person.
         Low
         Unconfirmed
     2 Blackhole Trash folder
-        Ubuntu
+        Tomcat
         Low
         Unconfirmed
     1 Firefox does not support SVG

@@ -924,11 +924,11 @@ class BugTaskEditView(GeneralFormView):
             self.request.response.addWarningNotification(
                 "The %s milestone setting has been removed because "
                 "you reassigned the bug to %s." % (
-                    milestone_cleared.displayname, bugtask.targetname))
+                    milestone_cleared.displayname, bugtask.bugtargetname))
         elif milestone_ignored:
             self.request.response.addWarningNotification(
                 "The milestone setting was ignored because "
-                "you reassigned the bug to %s." % bugtask.targetname)
+                "you reassigned the bug to %s." % bugtask.bugtargetname)
 
         comment_on_change = self.request.form.get(
             "%s.comment_on_change" % self.prefix)
@@ -974,7 +974,7 @@ class BugTaskEditView(GeneralFormView):
             # subscribed the new bug contacts.
             self.request.response.addNotification(
                 "The bug contacts for %s have been subscribed to this bug." % (
-                    bugtask.targetname))
+                    bugtask.bugtargetname))
 
     def nextURL(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
