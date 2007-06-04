@@ -13,7 +13,7 @@ First we'll import a few things needed for the tests:
     >>> from canonical.database.ftests import PortForwardTestSetup
     >>> from canonical.ftests.pgsql import PgTestSetup
     >>> from canonical.launchpad.webapp.adapter import (
-    ...     ReconnectingDatabaseAdapter, DisconnectedConnectionError)
+    ...     ReconnectingDatabaseAdapter, DisconnectionError)
 
 Now set up a small port forwarding daemon that proxies requests
 through to the database:
@@ -40,7 +40,7 @@ First we'll simulate a disconnect on execute():
     >>> cursor.execute("SELECT 1")
     Traceback (most recent call last):
       ...
-    Retry: ...
+    DisconnectionError: ...
 
 Now we will abort the Zope transaction and start another one.  The
 connection should be usable:
@@ -64,7 +64,7 @@ Now we'll simulate a disconnection just before the commit:
     >>> transaction.commit()
     Traceback (most recent call last):
       ...
-    Retry: ...
+    DisconnectionError: ...
 
 If we abort the transaction now, the connection is usable:
 
@@ -86,7 +86,7 @@ transaction starts.
     >>> cursor = connection.cursor()
     Traceback (most recent call last):
       ...
-    Retry: ...
+    DisconnectionError: ...
     >>> portforward.setUp()
 
 Now when we abort the transaction, we should have a usable connection
@@ -96,3 +96,8 @@ again:
     >>> cursor.execute("SELECT 1")
     >>> cursor.fetchone()[0]
     1
+
+
+Cleanup:
+
+    >>> portforward.tearDown()

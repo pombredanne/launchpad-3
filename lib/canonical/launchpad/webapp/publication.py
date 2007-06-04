@@ -345,6 +345,9 @@ class LaunchpadBrowserPublication(
         # we call does this (bug to be fixed upstream) -- StuartBishop 20060317
         if retry_allowed and isinstance(exc_info[1], Retry):
             raise
+        # Retry the request if we get a database disconnection.
+        if retry_allowed and isinstance(exc_info[1], da.DisconnectionError):
+            raise Retry(exc_info)
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.handleException(self, object, request, exc_info,
                                    retry_allowed)

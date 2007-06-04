@@ -28,6 +28,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.launchpad.webapp.opstats import OpStats
 
 __all__ = [
+    'DisconnectionError',
     'LaunchpadDatabaseAdapter',
     'SessionDatabaseAdapter',
     'RequestExpired',
@@ -91,7 +92,7 @@ class RetryPsycopgIntegrityError(psycopg.IntegrityError, Retry):
         psycopg.IntegrityError.__init__(self, *integrity_error.args)
 
 
-class DisconnectedConnectionError(Exception):
+class DisconnectionError(Exception):
     """Attempt was made to access the database after a disconnection."""
 
 
@@ -110,24 +111,22 @@ class ReconnectingConnection:
         """Ensure that we are connected to the database.
 
         If the connection is marked as dead, or if we can't reconnect,
-        then raise DisconnectedConnectionError.
+        then raise DisconnectionError.
 
         If we need to reconnect, the connection generation number is
         incremented.
         """
         if self._is_dead:
-            raise Retry((DisconnectedConnectionError,
-                         DisconnectedConnectionError('Already disconnected'),
-                         None))
+            raise DisconnectionError('Already disconnected')
         if self._connection is not None:
             return
         try:
             self._connection = self._connection_factory()
             self._generation += 1
-        except psycopg.OperationalError:
-            self._handleDisconnection()
+        except psycopg.OperationalError, exc:
+            self._handleDisconnection(exc)
 
-    def _handleDisconnection(self):
+    def _handleDisconnection(self, exc):
         """Note that we were disconnected from the database.
 
         This resets the internal _connection attribute, and marks the
@@ -138,7 +137,7 @@ class ReconnectingConnection:
         """
         self._is_dead = True
         self._connection = None
-        raise Retry(sys.exc_info())
+        raise DisconnectionError(str(exc))
 
     def _checkDisconnect(self, _function, *args, **kwargs):
         """Call a function, checking for database disconnections."""
@@ -158,7 +157,7 @@ class ReconnectingConnection:
             raise RetryPsycopgIntegrityError(sys.exc_info())
         except psycopg.Error, exc:
             if exc.args and _wasDisconnected(exc.args[0]):
-                self._handleDisconnection()
+                self._handleDisconnection(exc)
             else:
                 raise
 
