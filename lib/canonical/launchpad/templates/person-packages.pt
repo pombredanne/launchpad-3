@@ -77,16 +77,19 @@
                      distroseries spr/uploaddistroseries">
     <td>
       <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}"
+         class="distrosrcpackage"
          tal:content="spr/sourcepackagename/name">
       </a>
     </td>
     <td>
       <a tal:attributes="href string:${distroseries/fmt:url}/+source/${spr/name}"
+         class="distroseriessrcpackage"
          tal:content="distroseries/fullseriesname">
       </a>
     </td>
     <td>
       <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}/${spr/version}"
+         class="distrosrcpackagerelease"
          tal:content="spr/version">
       </a>
     </td>

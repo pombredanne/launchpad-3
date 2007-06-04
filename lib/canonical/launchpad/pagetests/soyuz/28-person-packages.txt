@@ -1,0 +1,57 @@
+= Person Packages =
+
+Here we demonstrate a page that lists packages maintained by a particular
+launchpad person.  
+
+  >>> browser.open("http://localhost/~name16/+packages")
+  >>> browser.title
+  'Packages maintained by Foo Bar'
+
+name16, aka the esteemed Foo Bar, has 9 maintained packages in the sample
+data.  The page lists columns of data, "Name", "Uploaded To" and "Version"
+that link to a distributionsourcepackage, distroseriessourcepackage and
+distrosourcepackagerelease respectively:
+
+  >>> soup = find_main_content(browser.contents)
+  >>> distrosrcpackages = soup.findAll(attrs={'class': 'distrosrcpackage'})
+  >>> distroseriessrcpackages = soup.findAll(
+  ...     attrs={'class': 'distrosrcpackage'})
+  >>> distrosrcpackagereleases = soup.findAll(
+  ...     attrs={'class': 'distrosrcpackage'})
+
+  >>> for link in distrosrcpackages:
+  ...     print link
+  <a class="distrosrcpackage" href="/ubuntu/+source/language-pack-de">language-pack-de</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/foobar">foobar</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/cdrkit">cdrkit</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/cnews">cnews</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/libstdc++">libstdc++</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/cnews">cnews</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/linux-source-2.6.15">linux-source-2.6.15</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/at">at</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/alsa-utils">alsa-utils</a>
+
+  >>> for link in distroseriessrcpackages:
+  ...     print link
+  <a class="distrosrcpackage" href="/ubuntu/+source/language-pack-de">language-pack-de</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/foobar">foobar</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/cdrkit">cdrkit</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/cnews">cnews</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/libstdc++">libstdc++</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/cnews">cnews</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/linux-source-2.6.15">linux-source-2.6.15</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/at">at</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/alsa-utils">alsa-utils</a>
+
+  >>> for link in distrosrcpackagereleases:
+  ...     print link
+  <a class="distrosrcpackage" href="/ubuntu/+source/language-pack-de">language-pack-de</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/foobar">foobar</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/cdrkit">cdrkit</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/cnews">cnews</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/libstdc++">libstdc++</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/cnews">cnews</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/linux-source-2.6.15">linux-source-2.6.15</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/at">at</a>
+  <a class="distrosrcpackage" href="/ubuntu/+source/alsa-utils">alsa-utils</a>
+
