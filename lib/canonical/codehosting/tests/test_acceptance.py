@@ -32,7 +32,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor, commit, sqlvalues
 from canonical.launchpad import database
 from canonical.launchpad.daemons.authserver import AuthserverService
-from canonical.launchpad.daemons.sftp import SFTPService
+from canonical.launchpad.daemons.sftp import SSHService
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
 
@@ -230,7 +230,7 @@ class SmartSSHCodeHostingServer(SSHCodeHostingServer):
         pass
 
 
-class TestSSHService(SFTPService):
+class TestSSHService(SSHService):
     """SSH service that uses the the TestLaunchpadAvatar and installs the test
     keys in a place that the SSH server can find them.
 
@@ -256,7 +256,7 @@ class TestSSHService(SFTPService):
         self._connection_made_event = event
 
     def makeRealm(self):
-        realm = SFTPService.makeRealm(self)
+        realm = SSHService.makeRealm(self)
         realm.avatarFactory = self.makeAvatar
         return realm
 

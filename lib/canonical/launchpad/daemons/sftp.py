@@ -5,7 +5,7 @@ branches. For more information, see lib/canonical/codehosting/README.
 """
 
 __metaclass__ = type
-__all__ = ['SFTPService']
+__all__ = ['SSHService']
 
 
 import os
@@ -20,7 +20,7 @@ from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.codehosting import sshserver
 
 
-class SFTPService(service.Service):
+class SSHService(service.Service):
     """A Twisted service for the supermirror SFTP server."""
 
     def __init__(self):
