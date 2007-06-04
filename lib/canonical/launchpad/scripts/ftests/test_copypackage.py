@@ -150,7 +150,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         copied_binary = copied_binaries[0]
         self.assertEqual(
             copied_binary.title,
-            u'mozilla-firefox 0.9 (i386 binary) in ubuntu hoary')
+            u'mozilla-firefox 1.0 (i386 binary) in ubuntu hoary')
 
     def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):

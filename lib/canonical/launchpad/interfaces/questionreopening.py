@@ -44,5 +44,6 @@ class IQuestionReopening(Interface):
         readonly=True)
 
     priorstate = Choice(
-        title=_("The previous state of the question, before it was re-opened."),
+        title=_(
+            "The previous state of the question, before it was re-opened."),
         vocabulary='QuestionStatus', required=True, readonly=True)

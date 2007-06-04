@@ -1,5 +1,7 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
+"""SQLBase implementation of  IAnswerContact."""
+
 __metaclass__ = type
 __all__ = ['AnswerContact']
 

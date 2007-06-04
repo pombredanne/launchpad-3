@@ -12,21 +12,22 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.lp import READ_COMMITTED_ISOLATION
 
 
-class PackageCacheUpdater(LaunchpadScript):
-    def updateDistroReleaseCache(self, distrorelease):
-        self.logger.info('%s starting' % distrorelease.name)
-        distrorelease.updatePackageCount()
+class PackageCacheUpdater(LaunchpadCronScript):
+    def updateDistroSeriesCache(self, distroseries):
+        self.logger.info('%s %s starting' % (
+            distroseries.distribution.name, distroseries.name))
+        distroseries.updatePackageCount()
         self.txn.commit()
-        distrorelease.removeOldCacheItems(log=self.logger)
+        distroseries.removeOldCacheItems(log=self.logger)
         self.txn.commit()
-        distrorelease.updateCompletePackageCache(
+        distroseries.updateCompletePackageCache(
             ztm=self.txn, log=self.logger)
         self.txn.commit()
-        for arch in distrorelease.architectures:
+        for arch in distroseries.architectures:
             arch.updatePackageCount()
             self.txn.commit()
 
@@ -36,8 +37,8 @@ class PackageCacheUpdater(LaunchpadScript):
         # Do the cache update
         distroset = getUtility(IDistributionSet)
         for distro in distroset:
-            for distrorelease in distro.releases:
-                self.updateDistroReleaseCache(distrorelease)
+            for distroseries in distro.serieses:
+                self.updateDistroSeriesCache(distroseries)
             distro.removeOldCacheItems(log=self.logger)
             self.txn.commit()
             distro.updateCompleteSourcePackageCache(ztm=self.txn,

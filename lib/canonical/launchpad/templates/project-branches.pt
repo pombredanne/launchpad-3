@@ -31,11 +31,11 @@
             <tr>
               <th>Primary Release Branches</th>
             </tr>
-            <tr tal:repeat="series prod/serieslist">
+            <tr tal:repeat="series prod/serieses">
                 <td tal:content="series/title">x
                 </td>
             </tr>
-            <tr tal:condition="not: prod/serieslist">
+            <tr tal:condition="not: prod/serieses">
                 <td>No release branches for this project group.</td>
             </tr>
         </table>

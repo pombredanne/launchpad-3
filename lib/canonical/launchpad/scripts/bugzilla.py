@@ -386,7 +386,7 @@ class Bugzilla:
         if milestone is not None:
             return milestone
         else:
-            return self.ubuntu.currentrelease.newMilestone(name)
+            return self.ubuntu.currentseries.newMilestone(name)
 
     def getLaunchpadUpstreamProduct(self, bug):
         """Find the upstream product for the given Bugzilla bug.
@@ -397,8 +397,8 @@ class Bugzilla:
         srcpkgname, binpkgname = self._getPackageNames(bug)
         # find a product series
         series = None
-        for release in self.ubuntu.releases:
-            srcpkg = release.getSourcePackage(srcpkgname)
+        for series in self.ubuntu.serieses:
+            srcpkg = series.getSourcePackage(srcpkgname)
             if srcpkg:
                 series = srcpkg.productseries
                 if series:

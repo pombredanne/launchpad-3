@@ -20,7 +20,7 @@ export LP_DBUSER=debonzi
 
 (PYTHONPATH=$LPL python -u $GINA/grabber.py \
                            --distro=ubuntu \
-                           --distrorelease=hoary \
+                           --distroseries=hoary \
                            --arch=i386 \
                            --components=main \
                            --launchpad=launchpad_dev \

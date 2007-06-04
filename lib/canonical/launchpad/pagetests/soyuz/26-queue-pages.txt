@@ -1,6 +1,6 @@
 Queue pages were designed to offer the ability to perform
 control and visualisation over the current uploads queue.
-Currently the queue page is only available for DistroReleases.
+Currently the queue page is only available for DistroSeriess.
 
   >>> from zope.testbrowser.testing import Browser
 
