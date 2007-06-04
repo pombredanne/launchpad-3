@@ -49,7 +49,7 @@ supporting Javascript, the statistics are displayed as normal text:
     >>> for li_tag in stats_div.noscript.ul('li'):
     ...     print li_tag.renderContents()
     3 New bugs
-    0 Needs Info bugs
+    0 Incomplete bugs
     0 Confirmed bugs
     0 In Progress bugs
     0 Fix Committed bugs

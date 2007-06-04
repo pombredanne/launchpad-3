@@ -366,7 +366,7 @@ Person.
     >>> bugfilters_portlet_view = create_view(firefox, '+portlet-bugfilters')
 
     >>> print bugfilters_portlet_view.getOpenBugsURL()
-    http://...?search=Search&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed
+    http://...?search=Search&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Incomplete&field.status=Fix+Committed
     >>> print bugfilters_portlet_view.context.open_bugtasks.count()
     3
 
@@ -397,7 +397,7 @@ it would not be included in the counts.
 The critical bugs link and counts consider only unresolved bugs.
 
     >>> print bugfilters_portlet_view.getCriticalBugsURL()
-    http://...?search=Search&field.importance=Critical&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed
+    http://...?search=Search&field.importance=Critical&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Incomplete&field.status=Fix+Committed
 
     >>> bugfilters_portlet_view.context.critical_bugtasks.count()
     1
@@ -422,7 +422,7 @@ Moving along...
     3
 
     >>> print bugfilters_portlet_view.getUnassignedBugsURL()
-    http://...?search=Search&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&assignee_option=none
+    http://...?search=Search&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Incomplete&field.status=Fix+Committed&assignee_option=none
 
     >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
     1
@@ -430,7 +430,7 @@ Moving along...
 And finally, all bugs ever reported.
 
     >>> print bugfilters_portlet_view.getAllBugsEverReportedURL()
-    http://...?search=Search&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&field.status=Fix+Released&field.status=Invalid&field.omit_dupes.used=
+    http://...?search=Search&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Incomplete&field.status=Fix+Committed&field.status=Fix+Released&field.status=Invalid&field.omit_dupes.used=
 
     >>> print bugfilters_portlet_view.context.all_bugtasks.count()
     4

@@ -50,9 +50,9 @@ if the bug is closed:
     >>> external_bugzilla.convertRemoteStatus('REOPENED').title
     'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO').title
-    'Needs Info'
+    'Incomplete'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO_REPORTER').title
-    'Needs Info'
+    'Incomplete'
     >>> external_bugzilla.convertRemoteStatus('MODIFIED').title
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('UPSTREAM').title

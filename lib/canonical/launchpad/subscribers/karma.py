@@ -90,7 +90,7 @@ def bugtask_modified(bugtask, event):
 
     actionname_status_mapping = {
         BugTaskStatus.FIXRELEASED: 'bugfixed',
-        BugTaskStatus.REJECTED: 'bugrejected',
+        BugTaskStatus.INVALID: 'bugrejected',
         BugTaskStatus.CONFIRMED: 'bugaccepted'}
 
     if task_delta.status:

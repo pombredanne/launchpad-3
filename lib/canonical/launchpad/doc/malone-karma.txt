@@ -93,7 +93,7 @@ Reject a bug task:
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.transitionToStatus(BugTaskStatus.INVALID)
     >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
-    Karma added: action=buginvalid, distribution=debian
+    Karma added: action=bugrejected, distribution=debian
 
 Accept a bug task:
 

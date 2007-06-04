@@ -144,7 +144,7 @@ If the 'moreinfo' tag is present, we map the status to 'Needs Info'.
 
     >>> print external_debbugs.convertRemoteStatus(
     ...     'open normal moreinfo').title
-    Needs Info
+    Incomplete
 
 Of course, if the 'moreinfo' tag is present and the status is 'done',
 we still map to 'Fix Released'.

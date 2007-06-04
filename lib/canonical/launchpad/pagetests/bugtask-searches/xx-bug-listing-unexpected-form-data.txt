@@ -3,7 +3,7 @@ to be sent to the server. In this case, an UnexpectedFormData exception
 is raised.
 
     >>> browser.open(
-    ...     "http://localhost/ubuntu/+bugs?search=Search&field.status=New")
+    ...     "http://localhost/ubuntu/+bugs?search=Search&field.status=Fred")
     Traceback (most recent call last):
       ...
     UnexpectedFormData: Unexpected value for field 'status'...
@@ -25,7 +25,7 @@ When a UnexpectedFormData is raised, we display a custom error page to the
 user.
 
     >>> output = str(http(r"""
-    ... GET /ubuntu/+bugs?search=Search&field.status=New HTTP/1.1
+    ... GET /ubuntu/+bugs?search=Search&field.status=Fred HTTP/1.1
     ... """))
     >>> 'HTTP/1.1 500 Internal Server Error' in output
     True
