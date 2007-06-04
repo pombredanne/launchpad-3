@@ -36,6 +36,24 @@ from canonical.launchpad.daemons.sftp import SSHService
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
 
+class ParamikoVendor(ssh.ParamikoVendor):
+
+    def __init__(self):
+        ssh.ParamikoVendor.__init__(self)
+        self._ssh_transports = []
+
+    def _connect(self, username, password, host, port):
+        transport = ssh.ParamikoVendor._connect(
+            self, username, password, host, port)
+        self._ssh_transports.append(transport)
+        return transport
+
+    def _closeAllTransports(self):
+        while self._ssh_transports:
+            connection = self._ssh_transports.pop()
+            connection.close()
+
+
 class Authserver(Server):
 
     def __init__(self):
@@ -220,6 +238,11 @@ class SmartSSHCodeHostingServer(SSHCodeHostingServer):
         SSHCodeHostingServer.setUp(self)
         self._schema = 'bzr+ssh'
 
+    def forceParamiko(self):
+        _old_vendor_manager = ssh._ssh_vendor_manager._cached_ssh_vendor
+        ssh._ssh_vendor_manager._cached_ssh_vendor = ParamikoVendor()
+        return _old_vendor_manager
+
     def getTransport(self, path=None):
         if path is None:
             path = ''
@@ -227,7 +250,7 @@ class SmartSSHCodeHostingServer(SSHCodeHostingServer):
         return transport
 
     def closeAllConnections(self):
-        pass
+        ssh._ssh_vendor_manager._cached_ssh_vendor._closeAllTransports()
 
 
 class TestSSHService(SSHService):
