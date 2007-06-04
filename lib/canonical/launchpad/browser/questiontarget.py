@@ -126,7 +126,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     schema = ISearchQuestionsForm
 
-    custom_widget('languages', LabeledMultiCheckBoxWidget,
+    custom_widget('language', LabeledMultiCheckBoxWidget,
                   orientation='horizontal')
     custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
     custom_widget('status', LabeledMultiCheckBoxWidget,
@@ -145,8 +145,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     def setUpFields(self):
         """See LaunchpadFormView."""
         LaunchpadFormView.setUpFields(self)
-        if self.show_language_checkboxes:
-            self.form_fields = self.createLanguagesField() + self.form_fields
+        if self.show_language_control:
+            self.form_fields = self.createLanguageField() + self.form_fields
 
     def setUpWidgets(self):
         """See LaunchpadFormView."""
@@ -158,7 +158,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             if widget and not widget.hasValidInput():
                 widget.setRenderedValue(value)
 
-    def createLanguagesField(self):
+    def createLanguageField(self):
         """Create a field to choose a set of languages.
 
         Create a specialized vocabulary based on the user's preferred
@@ -168,19 +168,18 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         languages = set(self.user_support_languages)
         languages.intersection_update(self.context_question_languages)
         terms = []
-        for lang in list(languages):
+        for lang in languages:
             terms.append(SimpleTerm(lang, lang.code, lang.displayname))
         return form.Fields(
-                List(
-                    __name__='languages',
-                    title=_('Languages'),
-                    value_type=Choice(vocabulary=SimpleVocabulary(terms)),
-                    required=False,
-                    default=self.user_support_languages,
-                    description=_(
-                        'The languages to filter the search results by.')),
-                custom_widget=self.custom_widgets['languages'],
-                render_context=self.render_context)
+            List(__name__='language',
+                 title=_('Languages filter'),
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False,
+                 default=self.user_support_languages,
+                 description=_(
+                     'The languages to filter the search results by.')),
+            custom_widget=self.custom_widgets['language'],
+            render_context=self.render_context)
 
     def validate(self, data):
         """Validate hook.
@@ -267,7 +266,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     def getDefaultFilter(self):
         """Hook for subclass to provide a default search filter."""
-        return dict(languages=self.user_support_languages)
+        return dict(language=self.user_support_languages)
 
     @property
     def search_text(self):
@@ -291,11 +290,11 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         return self.context.getQuestionLanguages()
 
     @property
-    def show_language_checkboxes(self):
+    def show_language_control(self):
         """Whether to show the Languages boxes or not.
 
         When the QuestionTarget has questions in only one language,
-        and that language is among the users' languages, we hide
+        and that language is among the user's languages, we hide
         the language control because there are no choices to be made.
         """
         languages = list(self.context_question_languages)
@@ -327,16 +326,11 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             # Search button wasn't clicked, use the default filter.
             # Copy it so that it doesn't get mutated accidently.
             self.search_params = dict(self.getDefaultFilter())
-        if 'languages' in self.search_params:
-            self.search_params['language'] = self.search_params['languages']
-        else:
-            # The languages param is not required when the user speaks the
+        if 'language' not in self.search_params:
+            # The language param is not required when the user speaks the
             # only language that the target's questions are asked in.
             # By default, search matches questions to the user's languages.
             self.search_params['language'] = set(self.user_support_languages)
-
-        # Remove the 'languages' param since it is only used by the view.
-        self.search_params.pop('languages', None)
 
         # The search parameters used is defined by the union of the fields
         # present in ISearchQuestionsForm (search_text, status, sort) and the
@@ -401,7 +395,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
         return dict(owner=self.user, status=set(QuestionStatus.items),
-                    languages=self.user_support_languages)
+                    language=self.user_support_languages)
 
 
 class QuestionCollectionNeedAttentionView(SearchQuestionsView):
@@ -438,7 +432,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
         return dict(needs_attention_from=self.user,
-                    languages=self.user_support_languages)
+                    language=self.user_support_languages)
 
 
 class QuestionCollectionUnsupportedView(SearchQuestionsView):
@@ -473,13 +467,13 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
                       mapping={'context': self.context.displayname})
 
     @property
-    def show_language_checkboxes(self):
+    def show_language_control(self):
         """See SearchQuestionsView."""
         return False
 
     def getDefaultFilter(self):
         """See SearchQuestionsView."""
-        return dict(language=None, languages=None, unsupported=True)
+        return dict(language=None, unsupported=True)
 
 
 class ManageAnswerContactView(LaunchpadFormView):

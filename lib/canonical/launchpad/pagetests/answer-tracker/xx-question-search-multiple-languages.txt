@@ -31,12 +31,12 @@ information.
     Installation failed
 
 The questions match the languages inferred from by GeoIP
-(127.0.0.1 is mapped to South Africa in the test suite.) The language
+127.0.0.1 is mapped to South Africa in the test suite. The language
 control shows the intersection of the the user's languages and the
 languages of the target's questions. In this example:
 set(['af', 'en', 'st', 'xh', 'zu']) & set(['en', 'es']) == set(en).
 
-    >>> sorted(anon_browser.getControl(name='field.languages').options)
+    >>> sorted(anon_browser.getControl(name='field.language').options)
     ['en']
 
 If the user unselects all the language options, then all questions,
@@ -66,10 +66,10 @@ When the project has no questions to search, we do not show the
 language controls.
 
     >>> anon_browser.open('http://launchpad.dev/kubuntu/+questions')
-    >>> anon_browser.getControl(name='field.languages')
+    >>> anon_browser.getControl(name='field.language')
     Traceback (most recent call last):
       ...
-    LookupError: name 'field.languages...
+    LookupError: name 'field.language...
 
     >>> content = find_main_content(anon_browser.contents).first('p')
     >>> print content.renderContents()
@@ -84,10 +84,10 @@ mapped, we assume he speaks the default language of English.
     >>> anon_browser.addHeader('X_FORWARDED_FOR', '172.16.1.1')
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+questions')
-    >>> anon_browser.getControl(name='field.languages')
+    >>> anon_browser.getControl(name='field.language')
     Traceback (most recent call last):
       ...
-    LookupError: name 'field.languages...
+    LookupError: name 'field.language...
 
 But if the user configures his browser to accept Spanish, then English
 and Spanish language questions will be displayed:
@@ -128,7 +128,7 @@ rules. As with the anonymous user, the intersection of the GeoIP
 languages and the target's question languages is 'en'.
 
     >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
-    >>> sorted(user_browser.getControl(name='field.languages').options)
+    >>> sorted(user_browser.getControl(name='field.language').options)
     ['en']
 
 When the project languages are just English, and the user speaks
@@ -137,18 +137,17 @@ that language, we do not show the language controls.
     >>> user_browser.addHeader('X_FORWARDED_FOR', '172.16.1.1')
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+questions')
-    >>> user_browser.getControl(name='field.languages')
+    >>> user_browser.getControl(name='field.language')
     Traceback (most recent call last):
       ...
-    LookupError: name 'field.languages...
+    LookupError: name 'field.language...
 
-When No Privileges Person adds Spanish to his browser we see that
-language and English added earlier listed among the language
-controls.
+When No Privileges Person adds Spanish to his browser, Spanish is added
+along with English to the language controls.
 
     >>> user_browser.addHeader('Accept-Language', 'es')
     >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
-    >>> sorted(user_browser.getControl(name='field.languages').options)
+    >>> sorted(user_browser.getControl(name='field.language').options)
     ['en', 'es']
 
 Users that have configured their preferred languages may choose to
@@ -156,17 +155,17 @@ see questions for any, some, all, or none of their languages by
 toggling the check box for each of their preferred languages. In
 this example, Carlos speaks two languages (Spanish and Catalan),
 and Answers adds English to the list of languages. There are no
-Catalan questions, so the control does not offer that as a checkbox.
+Catalan questions, so no Cataloan checkbox is displayed.
 
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
-    >>> language_control = browser.getControl(name='field.languages')
+    >>> language_control = browser.getControl(name='field.language')
     >>> for label in language_control.displayOptions:
     ...     # print the label without the leading non-breaking space.
     ...     label[1:]
     'English (en)'
     'Spanish (es)'
-    >>> browser.getControl(name='field.languages').options
+    >>> browser.getControl(name='field.language').options
     ['en', 'es']
 
 By unchecking a checkbox, Carlos can exclude English questions from

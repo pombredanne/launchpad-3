@@ -222,6 +222,16 @@ He clicks on the link to read the question description.
     >>> browser.title
     'mozilla-firefox in ubuntu question #3:...Firefox is slow...'
 
+The user must choose at least one status when searching questions. An
+error is displayed when the user forgets to select a status.
+
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
+    >>> browser.getControl(name='field.status').value = []
+    >>> browser.getControl('Search').click()
+    >>> messages = find_tags_by_class(browser.contents, 'message')
+    >>> print messages[0].renderContents()
+    You must choose at least one status.
+
 
 == Controlling the Sort Order ==
 
