@@ -1,9 +1,10 @@
 = Code Imports =
 
-The CodeImport objects model the process surrounding the code import service
-of Launchpad. A CodeImport object is created by a user requesting an import,
-the import source is then reviewed by privileged users. Then importd, the
-code import daemon, performs the initial import and updates it regularly.
+CodeImport objects model the process surrounding the code import service of
+Launchpad. A CodeImport object is created by a user requesting an import, the
+import source is then reviewed by privileged users. Then importd, the code
+import daemon, performs the initial import that creates the import branch, and
+updates it regularly.
 
 We can import code from CVS or Subversion.
 
@@ -58,6 +59,9 @@ create a Subversion import with the same series, clear it now.
   >>> flush_database_updates()
 
 == Code import from Subversion ==
+
+Code imports from Subversion specify the URL used with "svn checkout" to
+retrieve the tree to import.
 
   >>> svn = RevisionControlSystems.SVN
   >>> svn_url = 'svn://svn.example.com/trunk'

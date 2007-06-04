@@ -3,12 +3,15 @@
 """Database classes including and related to CodeImport."""
 
 __metaclass__ = type
-__all__ = ['CodeImport', 'CodeImportSet']
 
-from zope.interface import implements
+__all__ = [
+    'CodeImport',
+    'CodeImportSet',
+    ]
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, StringCol)
+from zope.interface import implements
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -28,10 +31,10 @@ class CodeImport(SQLBase):
     name = StringCol(notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     product = ForeignKey(dbName='product', foreignKey='Product',
-                         notNull=True)
+        notNull=True)
     series = ForeignKey(dbName='series', foreignKey='ProductSeries')
     branch = ForeignKey(dbName='branch', foreignKey='Branch',
-                        default=None)
+        default=None)
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)

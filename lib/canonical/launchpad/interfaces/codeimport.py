@@ -4,7 +4,10 @@
 
 __metaclass__ = type
 
-__all__ = ['ICodeImport', 'ICodeImportSet']
+__all__ = [
+    'ICodeImport',
+    'ICodeImportSet',
+    ]
 
 from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int, TextLine
@@ -22,26 +25,25 @@ class ICodeImport(Interface):
 
     id = Int(readonly=True, required=True)
     date_created = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
+        title=_("Date Created"), required=True, readonly=True)
     name = TextLine(
-        title=_('Name'), required=True, 
-        description=_("Unique name of the import used in the URL."),
+        title=_("Name"), required=True,
+        description=_("Unique name of the import, used in URLs."),
         constraint=name_validator)
     product = Choice(
-        title=_('Project'), required=True, vocabulary='Product',
+        title=_("Project"), required=True, vocabulary='Product',
         description=_("The project this code import belongs to."))
     series = Choice(
-        title=_('Release Series'), required=False, vocabulary='ProductSeries',
+        title=_("Release Series"), required=False, vocabulary='ProductSeries',
         description=_("The release series whose branch will be set to the "
         "imported branch when it is first published."))
-    branch = Attribute('The Bazaar branch produced by the import system.')
+    branch = Attribute("The Bazaar branch produced by the import system.")
 
     review_status = Choice(
-        title=_('Review Status'), vocabulary='CodeImportReviewStatus',
+        title=_("Review Status"), vocabulary='CodeImportReviewStatus',
         default=CodeImportReviewStatus.NEW,
-        description=_('Before a code import is performed, it is reviewed.'
-            ' Only when the import request has been reviewed will the import'
-            ' be processed.'))
+        description=_("Before a code import is performed, it is reviewed."
+            " Only reviewed imports are processed."))
 
     rcs_type = Choice(title=_("Type of RCS"),
         required=True, vocabulary='RevisionControlSystems',
@@ -60,12 +62,12 @@ class ICodeImport(Interface):
 
     cvs_root = TextLine(title=_("Repository"), required=False,
         constraint=validate_cvs_root,
-        description=_('The CVSROOT. '
-            'Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'))
+        description=_("The CVSROOT. "
+            "Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome"))
     cvs_module = TextLine(title=_("Module"), required=False,
         constraint=validate_cvs_module,
-        description=_('The path to import within the repository.'
-            ' Usually, it is the name of the project.'))
+        description=_("The path to import within the repository."
+            " Usually, it is the name of the project."))
 
 
 class ICodeImportSet(Interface):
