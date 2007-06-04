@@ -152,6 +152,10 @@ class CodeHostingServer(Server):
 
 class SSHCodeHostingServer(CodeHostingServer):
 
+    def __init__(self, schema, authserver, branches_root):
+        self._schema = schema
+        CodeHostingServer.__init__(self, authserver, branches_root)
+
     def setUpFakeHome(self):
         user_home = os.path.abspath(tempfile.mkdtemp())
         os.makedirs(os.path.join(user_home, '.ssh'))
@@ -216,20 +220,6 @@ class SSHCodeHostingServer(CodeHostingServer):
             # connected.
             if ever_connected.isSet():
                 done.wait()
-
-
-class SFTPCodeHostingServer(SSHCodeHostingServer):
-
-    def setUp(self):
-        SSHCodeHostingServer.setUp(self)
-        self._schema = 'sftp'
-
-
-class SmartSSHCodeHostingServer(SSHCodeHostingServer):
-
-    def setUp(self):
-        SSHCodeHostingServer.setUp(self)
-        self._schema = 'bzr+ssh'
 
 
 class TestSSHService(SSHService):
@@ -341,7 +331,8 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository):
             authserver = AuthserverWithKeys(
                 self.default_user, self.default_team)
             branches_root = '/tmp/sftp-test'
-            self.server = SFTPCodeHostingServer(authserver, branches_root)
+            self.server = SSHCodeHostingServer(
+                'sftp', authserver, branches_root)
 
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
@@ -640,8 +631,8 @@ def make_server_tests(base_suite):
     authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = '/tmp/sftp-test'
     servers = [
-        SFTPCodeHostingServer(authserver, branches_root),
-        SmartSSHCodeHostingServer(authserver, branches_root)]
+        SSHCodeHostingServer('sftp', authserver, branches_root),
+        SSHCodeHostingServer('bzr+ssh', authserver, branches_root)]
     adapter = CodeHostingTestProviderAdapter(repository_format, servers)
     return adapt_suite(adapter, base_suite)
 
