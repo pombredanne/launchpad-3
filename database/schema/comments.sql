@@ -513,6 +513,7 @@ COMMENT ON COLUMN Question.dateanswered IS 'The date this question was last "ans
 COMMENT ON COLUMN Question.dateclosed IS 'The date the requester marked this question CLOSED.';
 COMMENT ON COLUMN Question.language IS 'The language of the question''s title and description.';
 COMMENT ON COLUMN Question.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the question. So its a useful way for projects to add their own semantics or metadata to the Answer Tracker.';
+COMMENT ON COLUMN Question.faq IS 'The FAQ document that contains the long answer to this question.';
 
 -- QuestionBug
 
@@ -535,6 +536,22 @@ COMMENT ON COLUMN QuestionReopening.priorstate IS 'The state of the question bef
 -- QuestionSubscription
 
 COMMENT ON TABLE QuestionSubscription IS 'A subscription of a person to a particular question.';
+
+
+-- FAQ 
+COMMENT ON TABLE FAQ IS 'A technical document containing the answer to a common question.';
+COMMENT ON COLUMN FAQ.id IS 'The FAQ document sequence number.';
+COMMENT ON COLUMN FAQ.title IS 'The document title.';
+COMMENT ON COLUMN FAQ.summary IS 'A summary of the document. It should contains at least the commonly asked question.';
+COMMENT ON COLUMN FAQ.keywords IS 'White-space separated list of keywords.';
+COMMENT ON COLUMN FAQ.content IS 'The content of the document. Either "content" or "url" must be set.';
+COMMENT ON COLUMN FAQ.url IS 'The URL to the document content. Either "content" or "url" must be set.';
+COMMENT ON COLUMN FAQ.product IS 'The product to which this document is related. Either "product" or "distribution" must be set.';
+COMMENT ON COLUMN FAQ.distribution IS 'The distribution to which this document is related. Either "product" or "distribution" must be set.';
+COMMENT ON COLUMN FAQ.owner IS 'The person who created the document.';
+COMMENT ON COLUMN FAQ.date_created IS 'The datetime when the document was created.';
+COMMENT ON COLUMN FAQ.last_updated_by IS 'The person who last modified the document.';
+COMMENT ON COLUMN FAQ.date_last_updated IS 'The datetime when the document was last modified.';
 
 
 -- DistroReleaseLanguage

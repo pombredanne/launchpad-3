@@ -71,6 +71,13 @@ ALL_FTI = [
             ('descriptions', C),
             ]),
 
+    ('faq', [
+            ('title', A),
+            ('keywords', B),
+            ('summary', C),
+            ('content', D),
+            ]),
+
     ('message', [
             ('subject', B),
             ]),
