@@ -26,7 +26,8 @@ from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
-    ITeamMembership, ITeamParticipation, ITeamMembershipSet)
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ITeamMembership,
+    ITeamParticipation, ITeamMembershipSet)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
@@ -57,6 +58,37 @@ class TeamMembership(SQLBase):
     def isExpired(self):
         """See ITeamMembership"""
         return self.status == TeamMembershipStatus.EXPIRED
+
+    def canBeRenewedByMember(self):
+        """See ITeamMembership"""
+        ondemand = TeamMembershipRenewalPolicy.ONDEMAND
+        admin, approved = [TeamMembershipStatus.APPROVED,
+                           TeamMembershipStatus.ADMIN]
+        date_limit = datetime.now(pytz.timezone('UTC')) + timedelta(
+            days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
+        return (self.status in [admin, approved]
+                and self.team.renewal_policy == ondemand
+                and self.dateexpires is not None
+                and self.dateexpires < date_limit)
+
+    def sendSelfRenewalNotification(self):
+        """See ITeamMembership"""
+        team = self.team
+        member = self.person
+        assert team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND
+
+        from_addr = format_address(
+            "Launchpad Team Membership Notifier", config.noreply_from_address)
+        replacements = {'member_name': member.unique_displayname,
+                        'team_name': team.unique_displayname,
+                        'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
+        subject = ('Launchpad: renewed %s as member of %s'
+                   % (member.name, team.name))
+        template = get_email_template('membership-member-renewed.txt')
+        msg = MailWrapper().format(template % replacements)
+        admins_addrs = self.team.getTeamAdminsEmailAddresses()
+        for address in admins_addrs:
+            simple_sendmail(from_addr, address, subject, msg)
 
     def sendAutoRenewalNotification(self):
         """See ITeamMembership"""

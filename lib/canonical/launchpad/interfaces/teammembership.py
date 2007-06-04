@@ -5,12 +5,17 @@
 __metaclass__ = type
 
 __all__ = ['ITeamMembership', 'ITeamMembershipSet', 'ITeamMember',
-           'ITeamParticipation']
+           'ITeamParticipation', 'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT']
 
 from zope.schema import Choice, Int, Text
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
+
+# One week before a membership expires we send a notification to the member,
+# either inviting him to renew his own membership or asking him to get a team
+# admin to do so, depending on the team's renewal policy.
+DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT = 7
 
 
 class ITeamMembership(Interface):
@@ -37,6 +42,22 @@ class ITeamMembership(Interface):
 
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
+
+    def canBeRenewedByMember():
+        """Can this membership be renewed by the member himself?
+
+        A membership can be renewed if the team's renewal policy is ONDEMAND,
+        the membership itself is active (status = [ADMIN|APPROVED]) and it's
+        set to expire in less than DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        """
+
+    def sendSelfRenewalNotification():
+        """Send an email to the team admins notifying that this membership
+        has been renewed by the member himself.
+
+        This method must not be called if the team's renewal policy is not
+        ONDEMAND.
+        """
 
     def sendAutoRenewalNotification():
         """Send an email to the member and to team admins notifying that this
@@ -90,7 +111,7 @@ class ITeamMembershipSet(Interface):
         filling the TeamParticipation table.
         """
 
-    def getByPersonAndTeam(personID, team, default=None):
+    def getByPersonAndTeam(person, team, default=None):
         """Return the TeamMembership object for the given person and team.
 
         If there's no TeamMembership for this person in this team, return the

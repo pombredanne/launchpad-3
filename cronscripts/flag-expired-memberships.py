@@ -10,7 +10,8 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ITeamMembershipSet)
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
+    ITeamMembershipSet)
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 
@@ -26,11 +27,11 @@ class ExpireMemberships(LaunchpadScript):
         membershipset.handleMembershipsExpiringToday(reviewer)
         self.txn.commit()
 
-        one_week_from_now = datetime.now(
-            pytz.timezone('UTC')) + timedelta(days=7)
+        min_date_for_warning = datetime.now(pytz.timezone('UTC')) + timedelta(
+            days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
         self.txn.begin()
         for membership in membershipset.getMembershipsToExpire(
-                one_week_from_now):
+                min_date_for_warning):
             membership.sendExpirationWarningEmail()
         self.txn.commit()
 
@@ -45,6 +46,6 @@ class ExpireMemberships(LaunchpadScript):
 
 if __name__ == '__main__':
     script = ExpireMemberships('flag-expired-memberships', 
-                dbuser=config.expiredmembershipsflagger.dbuser)
+                               dbuser=config.expiredmembershipsflagger.dbuser)
     script.lock_and_run()
 

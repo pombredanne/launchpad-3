@@ -37,7 +37,8 @@
       />
     <require
       permission="launchpad.Edit"
-      attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf"
+      attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
+                  renewTeamMembership"
       />
   </content>
 

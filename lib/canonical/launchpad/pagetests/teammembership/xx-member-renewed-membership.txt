@@ -1,0 +1,118 @@
+= Renewing your own memberships =
+
+Depending on a team's renewal policy, a team member may be allowed to
+renew his own membership. That is allowed for teams which have ONDEMAND
+as the renewal policy and for active memberships which are about to
+expire.
+
+We'll use Karl's membership on the Mirror Administrators team to
+demonstrate that. That team's renewal policy is not ONDEMAND and the
+membership is not about to expire, so it can't be renewed unless we make
+some changes.
+
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS)
+    >>> from zope.component import getUtility
+    >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, ITeamMembershipSet)
+    >>> membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+    ...     getUtility(IPersonSet).getByName('karl'),
+    ...     getUtility(IPersonSet).getByName('ubuntu-mirror-admins'))
+    >>> print membership.dateexpires
+    None
+    >>> membership.team.renewal_policy != TeamMembershipRenewalPolicy.ONDEMAND
+    True
+    >>> logout()
+
+Even though there won't be a link to the page in which it would
+otherwise be possible to renew that membership, the user could manually
+craft the URL to get to it, so in this case the page will simply say the
+membership can't be renewed and explain why.
+
+    >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~karl/+expiringmembership/'
+    ...              'ubuntu-mirror-admins')
+    >>> browser.getControl('Renew')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Renew'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    This membership cannot be renewed because Mirror Administrators
+    (ubuntu-mirror-admins) is not a team which accepts its members to
+    renew their own memberships.
+
+If we change the team's renewal policy it still won't be possible for
+the user to renew that membership because it's not about to expire.
+
+    >>> from zope.testbrowser.testing import Browser
+    >>> team_admin_browser = Browser()
+    >>> team_admin_browser.handleErrors = False
+    >>> team_admin_browser.addHeader(
+    ...     'Authorization', 'Basic mark@hbd.com:test')
+    >>> team_admin_browser.open(
+    ...     'http://launchpad.dev/~ubuntu-mirror-admins/+edit')
+    >>> team_admin_browser.getControl(
+    ...     'invite them to renew their own membership').selected = True
+    >>> team_admin_browser.getControl('Renewal period').value = '30'
+    >>> team_admin_browser.getControl('Save').click()
+
+    >>> browser.open('http://launchpad.dev/~karl/+expiringmembership/'
+    ...              'ubuntu-mirror-admins')
+    >>> browser.getControl('Renew')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Renew'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    This membership cannot be renewed because it is not flagged to
+    expire in 7 days or less. Maybe it has been renewed by somebody else
+    already?
+
+If we now change Karl's membership to expire in a couple days, he'll be
+able to renew it himself.
+
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> now = datetime.now(pytz.timezone('UTC'))
+
+    >>> team_admin_browser.open(
+    ...     'http://launchpad.dev/~ubuntu-mirror-admins/+member/karl')
+    >>> team_admin_browser.getControl(name='expires').value = ['date']
+    >>> team_admin_browser.getControl(name='day').value = [str(now.day + 2)]
+    >>> team_admin_browser.getControl(name='year').value = [str(now.year)]
+    >>> team_admin_browser.getControl(name='month').value = [str(now.month)]
+    >>> team_admin_browser.getControl(name='change').click()
+
+    >>> team_admin_browser.url
+    'http://launchpad.dev/~ubuntu-mirror-admins/+members'
+
+    >>> browser.open('http://launchpad.dev/~karl/+expiringmembership/'
+    ...              'ubuntu-mirror-admins')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Renew team membership
+    This membership is going to expire in ... from now; if you want to
+    be kept as a member of Mirror Administrators, you must renew it.
+
+Karl then renews his membership.
+
+    >>> browser.getControl('Renew').click()
+    >>> browser.url
+    'http://launchpad.dev/~karl'
+    >>> for tag in find_tags_by_class(
+    ...         browser.contents, 'informational message'):
+    ...     print tag.renderContents()
+    Membership renewed until ...
+
+Karl can't renew it again, since it's now not set to expire soon.
+
+    >>> browser.open('http://launchpad.dev/~karl/+expiringmembership/'
+    ...              'ubuntu-mirror-admins')
+    >>> browser.getControl('Renew')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Renew'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    This membership cannot be renewed because it is not flagged to
+    expire in 7 days or less. Maybe it has been renewed by somebody else
+    already?
+

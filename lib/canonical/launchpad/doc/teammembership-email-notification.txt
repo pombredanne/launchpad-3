@@ -494,7 +494,7 @@ notification is also sent to the member and to team admins when a membership
 is automatically renewed.
 
     >>> import pytz
-    >>> from datetime import datetime
+    >>> from datetime import datetime, timedelta
     >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
     >>> utc_now = datetime.now(pytz.timezone('UTC'))
     >>> lp_admins = personset.getByName('admins')
@@ -544,7 +544,7 @@ just show the recipients and the different messages we may send.
     Hello,
     <BLANKLINE>
     The membership of Jeff Waugh (jdub) in the Ubuntu Team (ubuntu-team)
-    team has been automatically renewed until 2008-05-27.
+    team has been automatically renewed until ...
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -571,12 +571,74 @@ just show the recipients and the different messages we may send.
     Hello,
     <BLANKLINE>
     Your membership in the Ubuntu Team (ubuntu-team) team has been
-    automatically renewed until 2008-05-27.
+    automatically renewed until ...
     <BLANKLINE>
     Regards,
     The Launchpad team
     ----------------------------------------
 
+
+== Memberships renewed by the members themselves ==
+
+Another possible renewal policy for teams is ONDEMAND, which means that team
+members are invited to renew their membership once it gets close to their
+expiration date. When a member renew his own membership, a notification is
+sent to all team admins.
+
+    >>> karl = personset.getByName('karl')
+    >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
+    >>> karl_on_mirroradmins = membershipset.getByPersonAndTeam(
+    ...     karl, mirror_admins)
+    >>> tomorrow = datetime.now(pytz.timezone('UTC')) + timedelta(days=1)
+    >>> print karl_on_mirroradmins.status.title
+    Approved
+    >>> print karl_on_mirroradmins.dateexpires
+    None
+
+    >>> login(mirror_admins.teamowner.preferredemail.email)
+    >>> karl_on_mirroradmins.dateexpires = tomorrow
+    >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
+    >>> ondemand = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> karl_on_mirroradmins.team.renewal_policy = ondemand
+    >>> mirror_admins.defaultrenewalperiod = 365
+    >>> flush_database_updates()
+
+    >>> login(karl.preferredemail.email)
+    >>> karl.renewTeamMembership(mirror_admins)
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    # XXX: Dear reviewer,
+    # Please remind me to create a function with the code below as it's
+    # already used a few lines above and I just copied it here to avoid
+    # conflicts with my first part of the fix for this bug, which is in
+    # another branch.
+    # -- Guilherme Salgado
+    >>> distinct_messages = {}
+    >>> for message in pop_notifications():
+    ...     recipients = set(
+    ...         recipient.strip() for recipient in message['To'].split(','))
+    ...     body = message.get_payload()
+    ...     if body not in distinct_messages:
+    ...         distinct_messages[body] = recipients
+    ...     else:
+    ...         existing_recipients = distinct_messages[body]
+    ...         distinct_messages[body] = existing_recipients.union(recipients)
+
+    >>> for message in sorted(distinct_messages):
+    ...     print 'To:', sorted(distinct_messages[message])
+    ...     print message #doctest: -NORMALIZE_WHITESPACE
+    ...     print "-"*40
+    To: ['mark@hbd.com']
+    Hello,
+    <BLANKLINE>
+    Karl Tilbury (karl) renewed his/her own membership in the Mirror
+    Administrators (ubuntu-mirror-admins) team until ...
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
 
 == Some special cases ==
 
@@ -598,6 +660,7 @@ notification.
 
     >>> cprov = personset.getByName('cprov')
     >>> cprov_membership = membershipset.getByPersonAndTeam(cprov, ubuntu_team)
+    >>> login('mark@hbd.com')
     >>> setStatus(
     ...     cprov_membership, TeamMembershipStatus.ADMIN, reviewer=sabdfl)
     >>> len(stub.test_emails)

@@ -477,6 +477,79 @@ while the one that was inactive hasn't changed.
     'Deactivated'
 
 
+== Renewing team memberships ==
+
+A tem membership can be renewed before it has been expired by either
+changing its dateexpires (which can be done only by admins of the
+membership's team) or by using IPerson.renewTeamMembership, which is
+accessible only to the membership's member a few days before it expires.
+Also, for a member to renew his own membership, it's necessary that the
+team's renewal policy is set to ONDEMAND and that the membership is
+still active.
+
+    >>> karl = personset.getByName('karl')
+    >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
+    >>> karl_on_mirroradmins = membershipset.getByPersonAndTeam(
+    ...     karl, mirror_admins)
+    >>> tomorrow = datetime.now(pytz.timezone('UTC')) + timedelta(days=1)
+    >>> print karl_on_mirroradmins.status.title
+    Approved
+    >>> print karl_on_mirroradmins.dateexpires
+    None
+
+The member himself can't change the expiration date of his membership.
+
+    >>> login(karl.preferredemail.email)
+    >>> karl_on_mirroradmins.dateexpires = tomorrow
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+Only a team admin can.
+
+    >>> login(mirror_admins.teamowner.preferredemail.email)
+    >>> karl_on_mirroradmins.dateexpires = tomorrow
+    >>> karl_on_mirroradmins.dateexpires == tomorrow
+    True
+
+If the team's renewal policy is ONDEMAND, the membership can be renewed
+by the member himself. (That is only true because this membership is
+active and flagged to expire tomorrow).
+
+    >>> print karl_on_mirroradmins.team.renewal_policy.name
+    NONE
+    >>> karl_on_mirroradmins.canBeRenewedByMember()
+    False
+    >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
+    >>> ondemand = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> karl_on_mirroradmins.team.renewal_policy = ondemand
+
+    # When a user renews his own membership, we use the team's default
+    # renewal period, so we must specify that for the mirror admins
+    # team.
+    >>> mirror_admins.defaultrenewalperiod = 365
+    >>> flush_database_updates()
+
+    >>> karl_on_mirroradmins.canBeRenewedByMember()
+    True
+
+    >>> login(karl.preferredemail.email)
+    >>> karl.renewTeamMembership(mirror_admins)
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(karl_on_mirroradmins)
+
+Now the membership can't be renewed by the member as it's not going to
+expire soon.
+    
+    >>> karl_on_mirroradmins.dateexpires == tomorrow + timedelta(days=365)
+    True
+    >>> karl_on_mirroradmins.canBeRenewedByMember()
+    False
+    >>> print karl_on_mirroradmins.status.title
+    Approved
+
+
 == Querying team memberships ==
 
 You can check a person's direct memberships by using myactivememberships:

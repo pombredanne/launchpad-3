@@ -86,8 +86,10 @@ __all__ = [
 
 import cgi
 import copy
-import urllib
+from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
+import pytz
+import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.form.browser.add import AddView
@@ -106,7 +108,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
-    PersonCreationRationale, BugTaskStatus)
+    PersonCreationRationale, BugTaskStatus, TeamMembershipRenewalPolicy)
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -120,7 +122,8 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet, ITeamMembership)
+    BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet, ITeamMembership,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -196,6 +199,17 @@ class PersonNavigation(CalendarTraversalMixin,
     def breadcrumb(self):
         return self.context.displayname
 
+    @stepthrough('+expiringmembership')
+    def traverse_expiring_membership(self, name):
+        # Return the found membership regardless of its status as we know
+        # TeamMembershipSelfRenewalView will tell users why the memembership
+        # can't be renewed when necessary.
+        membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.context, getUtility(IPersonSet).getByName(name))
+        if membership is None:
+            return None
+        return TeamMembershipSelfRenewalView(membership, self.request)
+
 
 class PersonDynMenu(DynMenu):
 
@@ -217,9 +231,7 @@ class PersonDynMenu(DynMenu):
         yield self.makeLink('See all projects...', target='/products')
 
 
-class TeamNavigation(CalendarTraversalMixin,
-                     BranchTraversalMixin,
-                     Navigation):
+class TeamNavigation(PersonNavigation):
 
     usedfor = ITeam
 
@@ -232,14 +244,11 @@ class TeamNavigation(CalendarTraversalMixin,
 
     @stepthrough('+invitation')
     def traverse_invitation(self, name):
-        team = getUtility(IPersonSet).getByName(name)
-        if team is None:
-            return None
-        # Return any TeamMembership (regardless of its status) because the
-        # page to approve invitations will display a nice message if it has
-        # been accepted already --that's better than a 404.
+        # Return the found membership regardless of its status as we know
+        # TeamInvitationView can handle memberships in statuses other than
+        # INVITED.
         membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
-            self.context, team)
+            self.context, getUtility(IPersonSet).getByName(name))
         if membership is None:
             return None
         return TeamInvitationView(membership, self.request)
@@ -251,6 +260,75 @@ class TeamNavigation(CalendarTraversalMixin,
             return None
         return getUtility(ITeamMembershipSet).getByPersonAndTeam(
             person, self.context)
+
+
+class TeamMembershipSelfRenewalView(LaunchpadFormView):
+
+    implements(IBrowserPublisher)
+
+    schema = ITeamMembership
+    field_names = []
+    label = 'Renew team membership'
+    template = ViewPageTemplateFile(
+        '../templates/teammembership-self-renewal.pt')
+
+    def __init__(self, context, request):
+        # Only the member himself or admins of the member (in case it's a
+        # team) can see the page in which they renew memberships that are
+        # about to expire.
+        if not check_permission('launchpad.Edit', context.person):
+            raise Unauthorized(
+                "Only the member himself can renew his memberships.")
+        LaunchpadFormView.__init__(self, context, request)
+
+    def browserDefault(self, request):
+        return self, ()
+
+    def getReasonForDeniedRenewal(self):
+        """Return a text describing why the membership can't be renewed."""
+        context = self.context
+        ondemand = TeamMembershipRenewalPolicy.ONDEMAND
+        admin, approved = [TeamMembershipStatus.APPROVED,
+                           TeamMembershipStatus.ADMIN]
+        date_limit = datetime.now(pytz.timezone('UTC')) - timedelta(
+            days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
+        if context.status not in [admin, approved]:
+            text = "it is not active."
+        elif context.team.renewal_policy != ondemand:
+            text = ('<a href="%s">%s</a> is not a team which accepts its '
+                    'members to renew their own memberships.'
+                    % (canonical_url(context.team),
+                       context.team.unique_displayname))
+        elif context.dateexpires is None or context.dateexpires > date_limit:
+            text = ('it is not flagged to expire in %d days or less. '
+                    '<a href="%s/+members">Maybe it has been renewed by '
+                    'somebody else already?</a>'
+                    % (DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+                       canonical_url(context.team)))
+        else:
+            raise AssertionError('This membership can be renewed!')
+        return text
+
+    @property
+    def time_before_expiration(self):
+        return self.context.dateexpires - datetime.now(pytz.timezone('UTC'))
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.person)
+
+    @action(_("Renew"), name="renew")
+    def renew_action(self, action, data):
+        member = self.context.person
+        member.renewTeamMembership(self.context.team)
+        self.request.response.addInfoNotification(
+            _("Membership renewed until %(date)s."),
+            date=self.context.dateexpires.strftime('%Y-%m-%d'))
+
+    @action(_("Let it Expire"), name="nothing")
+    def do_nothing_action(self, action, data):
+        # Redirect back and wait for the membership to expire automatically.
+        pass
 
 
 class TeamInvitationView(LaunchpadFormView):

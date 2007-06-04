@@ -1126,6 +1126,10 @@ def teammembership_invitation(context, view):
     return "Make %s a member of %s" % (
         context.person.browsername, context.team.browsername)
 
+def teammembership_self_renewal(context, view):
+    return "Renew membership of %s on %s" % (
+        context.person.browsername, context.team.browsername)
+
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
 
 team_newpoll = ContextTitle('New poll for team %s')
