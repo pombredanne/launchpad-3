@@ -7,7 +7,8 @@ but we need old bookmarks to keep working with the status names.
     ...     "http://bugs.launchpad.dev/ubuntu/+bugs?"
     ...     "field.searchtext="
     ...     "&orderby=-importance"
-    ...     "&search=Search&field.status%3Alist=Unconfirmed"
+    ...     "&search=Search"
+    ...     "&field.status%3Alist=Unconfirmed"
     ...     "&field.status%3Alist=In+Progress"
     ...     "&assignee_option=any"
     ...     "&field.status_upstream-empty-marker=1"
@@ -23,15 +24,16 @@ to allow user agents (and users) to update bookmarks, etc.
     >>> uri = URI(anon_browser.url)
     >>> print uri.path
     /ubuntu/+bugs
-    >>> print sorted(uri.query.split('&'))
-    ['assignee_option=any',
-     'field.has_patch.used=',
-     'field.omit_dupes=on',
-     'field.searchtext=',
-     'field.status%3Alist=In+Progress',
+    >>> print uri.query.split('&')
+    ['field.searchtext=',
+     'orderby=-importance',
+     'search=Search',
      'field.status%3Alist=New',
+     'field.status%3Alist=In+Progress',
+     'assignee_option=any',
      'field.status_upstream-empty-marker=1',
-     'orderby=-importance', 'search=Search']
+     'field.omit_dupes=on',
+     'field.has_patch.used=']
 
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
@@ -51,3 +53,29 @@ to allow user agents (and users) to update bookmarks, etc.
     Medium
     New
 
+Searching amonsgt all bugs should also redirect to an updated
+location with the new status names in place of the old.
+
+    >>> url = (
+    ...     "http://bugs.launchpad.dev/bugs/+bugs?"
+    ...     "orderby=-importance&"
+    ...     "search=Search&"
+    ...     "field.status%3Alist=Unconfirmed&"
+    ...     "field.status%3Alist=Needs+Info&"
+    ...     "assignee_option=any&"
+    ...     "field.status_upstream-empty-marker=1&"
+    ...     "field.omit_dupes=on"
+    ...     )
+    >>> anon_browser.open(url)
+
+    >>> uri = URI(anon_browser.url)
+    >>> print uri.path
+    /bugs/+bugs
+    >>> print uri.query.split('&')
+    ['orderby=-importance',
+     'search=Search',
+     'field.status%3Alist=New',
+     'field.status%3Alist=Incomplete',
+     'assignee_option=any',
+     'field.status_upstream-empty-marker=1',
+     'field.omit_dupes=on']

@@ -57,6 +57,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
     IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
@@ -171,6 +172,35 @@ def get_sortorder_from_request(request):
     else:
         # No sort ordering specified, so use a reasonable default.
         return ["-importance"]
+
+
+OLD_BUGTASK_STATUS_MAP = {
+    'Unconfirmed': 'New',
+    'Needs Info': 'Incomplete',
+    'Rejected': 'Invalid',
+    }
+
+
+def get_old_bugtask_status_redirect(uri):
+    """Get url with old status names replaced with new.
+
+    If an old status string has been used in the query, construct a
+    corrected location for the search, else return None.
+    """
+    query_elements = cgi.parse_qsl(
+        uri.query, keep_blank_values=True, strict_parsing=True)
+    query_elements_mapped = []
+
+    for name, value in query_elements:
+        if name == 'field.status:list':
+            value = OLD_BUGTASK_STATUS_MAP.get(value, value)
+        query_elements_mapped.append((name, value))
+
+    if query_elements == query_elements_mapped:
+        return None
+    else:
+        return uri.replace(
+            query=urllib.urlencode(query_elements_mapped, doseq=True))
 
 
 class BugTargetTraversalMixin:
@@ -1264,6 +1294,16 @@ class BugTaskSearchListingView(LaunchpadView):
             return IBugTaskSearch
 
     def initialize(self):
+        # Look for old status names and redirect to a new location if
+        # found.
+        query_string = self.request.get('QUERY_STRING')
+        if query_string:
+            uri = URI('%s?%s' % (self.request.getURL(), query_string))
+            uri = get_old_bugtask_status_redirect(uri)
+            if uri is not None:
+                self.request.response.redirect(str(uri), status=301)
+                return
+        
         if self.shouldShowComponentWidget():
             # CustomWidgetFactory doesn't work with
             # MultiCheckBoxWidget, so we work around this by manually
@@ -1885,7 +1925,8 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
 
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
-        self._redirectToSearchContext()
+        if not self._isRedirected():
+            self._redirectToSearchContext()
 
     def _redirectToSearchContext(self):
         """Check wether a target was given and redirect to it.
