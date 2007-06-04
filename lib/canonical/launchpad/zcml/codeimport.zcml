@@ -5,6 +5,22 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
+  <!-- CodeImport -->
+
+  <content class="canonical.launchpad.database.CodeImport">
+    <allow interface="canonical.launchpad.interfaces.ICodeImport" />
+    <require
+        permission="zope.Public"
+        set_schema="canonical.launchpad.interfaces.ICodeImport"
+    />
+  </content>
+
+  <!-- CodeImportSet -->
+
+  <content class="canonical.launchpad.database.CodeImportSet">
+    <allow interface="canonical.launchpad.interfaces.ICodeImportSet" />
+  </content>
+
   <securedutility
       class="canonical.launchpad.database.CodeImportSet"
       provides="canonical.launchpad.interfaces.ICodeImportSet" >
