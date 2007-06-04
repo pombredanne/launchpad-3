@@ -18,6 +18,7 @@ chunk should take, and it will figure out how many items you need to process
 per chunk to get close to your ideal time between stops.  Chunk sizes will
 adjust themselves dynamically to actual performance.
 
+    >>> import math
     >>> from zope.interface import implements
     >>> from canonical.launchpad.utilities.looptuner import LoopTuner
     >>> from canonical.launchpad.interfaces.looptuner import ITunableLoop
@@ -29,16 +30,25 @@ Here's a very simple ITunableLoop.  It receives a list of timings to simulate
 for its iterations (it finishes when the list runs out), and for every
 iteration, prints out what happened to its chunk size parameter.
 
+The printout includes a logarithmic order-of-magnitude indication, where "no
+change" is zero, decreases are negative numbers, and increases show up as
+positive numbers.  The expectations for these numbers are based on
+observation, and could in principle still vary a bit with different CPU
+architectures, compilers used for the Python interpreter, etc.
+
     >>> goal_seconds = 10.0
     >>> def print_change(last_chunk_size, new_chunk_size):
     ...     if last_chunk_size is None:
     ...         print "start"
-    ...     elif new_chunk_size > last_chunk_size:
-    ...         print "increased"
+    ...         return
+    ...     change = "same"
+    ...     if new_chunk_size > last_chunk_size:
+    ...         change = "increased"
     ...     elif new_chunk_size < last_chunk_size:
-    ...         print "decreased"
-    ...     else:
-    ...         print "same"
+    ...         change = "decreased"
+    ...     ratio = new_chunk_size / last_chunk_size
+    ...     order_of_magnitude = math.log10(ratio)
+    ...     print "%s (%.1f)" % (change, order_of_magnitude)
 
     >>> class PlannedLoop:
     ...     implements(ITunableLoop)
@@ -96,19 +106,19 @@ variations, it keeps oscillating a bit.
     >>> loop = TestTuner(body, goal_seconds, 100)
     >>> loop.run()
     start
-    increased
-    increased
-    increased
-    increased
-    same
-    decreased
-    same
-    increased
-    same
-    increased
-    same
-    decreased
-    same
+    increased (0.2)
+    increased (0.1)
+    increased (0.1)
+    increased (0.0)
+    same (0.0)
+    decreased (-0.0)
+    same (0.0)
+    increased (0.0)
+    same (0.0)
+    increased (0.0)
+    same (0.0)
+    decreased (-0.0)
+    same (0.0)
     done
 
 
@@ -121,15 +131,15 @@ minimum chunk size.
     >>> loop = TestTuner(body, goal_seconds, 100)
     >>> loop.run()
     start
-    same
-    same
-    same
-    same
-    same
-    same
-    same
-    same
-    same
+    same (0.0)
+    same (0.0)
+    same (0.0)
+    same (0.0)
+    same (0.0)
+    same (0.0)
+    same (0.0)
+    same (0.0)
+    same (0.0)
     done
 
 
@@ -144,17 +154,17 @@ in performance was a fluke, the next chunk falls well short of its time goal.
     >>> loop = TestTuner(body, goal_seconds, 100)
     >>> loop.run()
     start
-    increased
-    increased
-    increased
-    increased
-    same
-    decreased
-    increased
-    decreased
-    increased
-    same
-    same
+    increased (0.2)
+    increased (0.1)
+    increased (0.1)
+    increased (0.0)
+    same (0.0)
+    decreased (-0.0)
+    increased (0.0)
+    decreased (-0.1)
+    increased (0.1)
+    same (0.0)
+    same (0.0)
     done
 
 
@@ -229,13 +239,13 @@ should turn out to vary inversely with chunk size.
     >>> loop = CostedTuner(body, goal_seconds, 100, 1000)
     >>> loop.run()
     start
-    increased
-    increased
-    increased
+    increased (0.2)
+    increased (0.2)
+    increased (0.2)
     ...
-    same
-    same
-    same
+    same (0.0)
+    same (0.0)
+    same (0.0)
     done
 
 
@@ -254,12 +264,12 @@ goal asymptotically.  In principle we never quite get there.
     >>> loop = CostedTuner(body, goal_seconds, 100)
     >>> loop.run()
     start
-    increased
-    increased
-    increased
+    increased (0.2)
+    increased (0.1)
+    increased (0.0)
     ...
-    increased
-    increased
+    increased (0.0)
+    increased (0.0)
     done
 
     >>> body.computeCost() < goal_seconds
@@ -278,11 +288,11 @@ not achieve equilibrium in 10 iterations:
     >>> loop = CostedTuner(body, goal_seconds, 100)
     >>> loop.run()
     start
-    increased
-    increased
-    increased
+    increased (0.0)
+    increased (0.0)
+    increased (0.0)
     ...
-    increased
+    increased (0.0)
     done
     >>> body.computeCost() < goal_seconds
     True
@@ -312,17 +322,17 @@ be a neat alternation of oversized and undersized chunks.
     >>> loop = CostedTuner(body, goal_seconds, 1)
     >>> loop.run()
     start
-    increased
-    increased
+    increased (0.7)
+    increased (0.4)
     ...
-    decreased
-    increased
-    decreased
-    increased
+    decreased (-0.0)
+    increased (0.0)
+    decreased (-0.0)
+    increased (0.0)
     ...
-    same
+    same (0.0)
     ...
-    same
+    same (0.0)
     ...
     done
 
@@ -336,16 +346,16 @@ effect remains the same:
     >>> loop = CostedTuner(body, goal_seconds, 1)
     >>> loop.run()
     start
-    increased
+    increased (0.3)
     ...
-    decreased
-    increased
-    decreased
-    increased
+    decreased (-0.0)
+    increased (0.0)
+    decreased (-0.0)
+    increased (0.0)
     ...
-    same
+    same (0.0)
     ...
-    same
+    same (0.0)
     ...
     done
 
