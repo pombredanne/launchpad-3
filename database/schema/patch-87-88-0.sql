@@ -6,8 +6,10 @@ CREATE TABLE CodeImport (
         DEFAULT timezone('UTC', now()) NOT NULL,
     name text NOT NULL UNIQUE,
     product integer REFERENCES Product NOT NULL,
-    series integer REFERENCES ProductSeries UNIQUE NOT NULL,
+    series integer REFERENCES ProductSeries UNIQUE,
     branch integer REFERENCES Branch,
+
+    review_status integer DEFAULT 1 NOT NULL,
 
     rcs_type integer NOT NULL,
     svn_branch_url text UNIQUE,
@@ -29,8 +31,6 @@ CREATE TABLE CodeImport (
     -- XXX: product must be consistent across the codeimport, the branch and
     -- the productseries. What is the best way to enforce that?
     -- -- David Allouche 2007-05-18
-    -- FOREIGN KEY (branch, product) REFERENCES Branch (id, product),
-    -- FOREIGN KEY (series, product) REFERENCES ProductSeries (id, product)
 );
 
 -- XXX: This should be fixed once we get a real patch number:

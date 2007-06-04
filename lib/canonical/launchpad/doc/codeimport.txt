@@ -16,8 +16,6 @@ registered as a utility.
   >>> from zope.interface.verify import verifyObject
   >>> from zope.component import getUtility
   >>> code_import_set = getUtility(ICodeImportSet)
-  >>> code_import_set.__class__
-  <class 'canonical.launchpad.database.codeimport.CodeImportSet'>
   >>> verifyObject(ICodeImportSet, code_import_set)
   True
 
@@ -45,12 +43,20 @@ repository, known as the "module".
   >>> cvs_module = 'hello'
 
 
-  >>> cvs_import = code_import_set.new(name="test", product=product,
+  >>> cvs_import = code_import_set.new(name='cvs-test', product=product,
   ...     series=series,
   ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
+
+  >>> verifyObject(ICodeImport, cvs_import)
+  True
 
 == Code import from Subversion ==
 
   >>> svn = RevisionControlSystems.SVN
-  >>> svn_url = 'http://svn.example.com/hello/trunk'
-  >>> svn_import = code_import_set
+  >>> svn_url = svn://svn.example.com/trunk'
+
+  >>> svn_import = code_import_set.new(name='svn-test', product=product,
+  ...     series=series, rcs_type=svn, svn_branch_url=svn_url)
+
+  >>> verifyObject(ICodeImport, svn_import)
+  True
