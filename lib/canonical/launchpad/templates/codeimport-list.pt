@@ -16,10 +16,13 @@
     <thead>
       <tr>
         <th>
+          Name
+        </th>
+        <th>
           Date Created
         </th>
         <th>
-          Name
+          Status
         </th>
         <th>
           Product
@@ -31,11 +34,16 @@
     </thead>
     <tbody>
       <tr tal:repeat="b batch">
+        <td>
+          <a href="name" tal:attributes="href b/name" tal:content="b/name">
+            name
+          </a>
+        </td>
         <td tal:content="structure b/date_created/fmt:datetime">
           some date
         </td>
-        <td tal:content="b/name">
-          name
+        <td tal:content="b/review_status/name">
+          status
         </td>
         <td tal:content="b/product/name">
           product-name
