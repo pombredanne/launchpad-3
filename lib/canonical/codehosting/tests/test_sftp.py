@@ -42,7 +42,7 @@ class SFTPTests(SSHTestCase):
     layer = TwistedBzrlibLayer
 
     def _cleanUp(self, result):
-        print 'lalalalalala'
+        print "Overriding Twisted's cleanup because it causes errors."
         from twisted.internet import defer
         return defer.succeed(None)
 
