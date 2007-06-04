@@ -63,7 +63,7 @@ from canonical.lp.dbschema import (
     SpecificationStatus, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
-    IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
+    IBuildSet, IDistribution, IDistributionSet, IFAQTarget, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
     get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH,\
     IHasLogo, IHasMugshot, IHasIcon)
@@ -77,7 +77,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasSprintsMixin, KarmaContextMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IHasBuildRecords, IQuestionTarget,
+        IDistribution, IFAQTarget, IHasBuildRecords, IQuestionTarget,
         IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Distribution'

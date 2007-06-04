@@ -1,0 +1,19 @@
+= Answer Tracker FAQ Documents =
+
+The Answer Tracker offers feature to manage answers to commonly asked
+questions (also called FAQ). Like the regular questions, FAQ documents
+are associated to distributions or products. The IFAQTarget interface
+is provided by objects that can host FAQs.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IProductSet, IFAQTarget)
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> verifyObject(IFAQTarget, firefox)
+    True
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> verifyObject(IFAQTarget, ubuntu)
+    True
+

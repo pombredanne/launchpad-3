@@ -63,6 +63,7 @@ from canonical.launchpad.interfaces.distroseriespackagecache import *
 from canonical.launchpad.interfaces.distroseriessourcepackagerelease import *
 from canonical.launchpad.interfaces.emailaddress import *
 from canonical.launchpad.interfaces.externalbugtracker import *
+from canonical.launchpad.interfaces.faqtarget import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *

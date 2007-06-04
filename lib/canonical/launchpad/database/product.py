@@ -56,6 +56,7 @@ from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     get_supported_languages,
     ICalendarOwner,
+    IFAQTarget,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
@@ -75,7 +76,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, IQuestionTarget,
+    implements(IProduct, ICalendarOwner, IFAQTarget, IQuestionTarget,
                IHasLogo, IHasMugshot, IHasIcon, IHasTranslationImports)
 
     _table = 'Product'
