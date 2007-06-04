@@ -6,7 +6,7 @@ __all__ = ['AnswerContact']
 
 from zope.interface import implements
 
-from sqlobject import BoolCol, ForeignKey
+from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IAnswerContact
@@ -29,5 +29,3 @@ class AnswerContact(SQLBase):
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', notNull=False,
         foreignKey='SourcePackageName')
-    want_english = BoolCol(
-        dbName='want_english', notNull=True, default=True)

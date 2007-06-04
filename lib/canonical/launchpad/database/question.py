@@ -907,26 +907,15 @@ class QuestionTargetMixin:
         """
         return {}
 
-    def addAnswerContact(self, person, want_english=True):
+    def addAnswerContact(self, person):
         """See IQuestionTarget."""
-        if not want_english:
-            assert len(person.getSupportedLanguages()) != 0, (
-                "%s has no languages to support." % person.name)
-        
         answer_contact = AnswerContact.selectOneBy(
             person=person, **self._getTargetTypes())
-        if (answer_contact is not None and
-                answer_contact.want_english == want_english):
-            return False
-        
         if answer_contact is not None:
-            answer_contact.want_english = want_english
-        else:
-            params = dict(product=None, distribution=None, 
-                sourcepackagename=None)
-            params.update(self._getTargetTypes())
-            AnswerContact(
-                person=person, want_english=want_english, **params)
+            return False
+        params = dict(product=None, distribution=None, sourcepackagename=None)
+        params.update(self._getTargetTypes())
+        AnswerContact(person=person, **params)
         return True
 
     def _selectPersonFromAnswerContacts(self, constraints, clause_tables):
@@ -949,11 +938,6 @@ class QuestionTargetMixin:
                 constraint = "AnswerContact." + column + " = %s" % sqlvalues(
                     target)
             constraints.append(constraint)
-            
-        if language.code == 'en':
-            constraints.append("""AnswerContact.want_english = TRUE""")
-            return self._selectPersonFromAnswerContacts(
-                constraints, ['PersonLanguage'])
         
         # Persons and teams may set the preferred languages.
         # Teams without preferred languages will support the languages
@@ -986,12 +970,3 @@ class QuestionTargetMixin:
             if language in member.getSupportedLanguages():
                 speakers.add(member)
         return speakers
-
-    @property
-    def answer_contacts_that_want_english(self):
-        """See IQuestionTarget."""
-        answer_contacts = AnswerContact.selectBy(
-            want_english=True, **self._getTargetTypes())
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=operator.attrgetter('displayname'))  

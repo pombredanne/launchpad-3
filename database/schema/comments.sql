@@ -11,7 +11,6 @@ COMMENT ON COLUMN AnswerContact.distribution IS 'The distribution that the answe
 COMMENT ON COLUMN AnswerContact.sourcepackagename IS 'The sourcepackagename that the answer contact supports.';
 COMMENT ON COLUMN AnswerContact.person IS 'The person or team associated with the question target.';
 COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was submitted.';
-COMMENT ON COLUMN AnswerContact.want_english IS 'Whether or not the answer contact supports questions in English.';
 
 -- Branch 
 COMMENT ON TABLE Branch IS 'Bzr branch';

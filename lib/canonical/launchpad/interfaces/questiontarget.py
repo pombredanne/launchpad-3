@@ -73,17 +73,13 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :title: A phrase
         """
 
-    def addAnswerContact(person, want_english=True):
+    def addAnswerContact(person):
         """Add a new answer contact.
 
         :person: An IPerson.
-        :want_english: A boolean flag indicating whether the person
-                supports questions written in English. When the
-                parameter is omitted, the person will receive English language
-                questions too.
 
-        Returns True if the person was added or preferred_languages was 
-        changed, False if the person already was an answer contact.
+        Returns True if the person was added, False if the person already was
+        an answer contact..
         """
 
     def removeAnswerContact(person):
@@ -125,14 +121,6 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             "this target. (answer_contacts may include answer contacts "
             "inherited from other context.)"),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
-        
-    answer_contacts_that_want_english = List(
-        title=_("Answer Contacts that want questions in English."),
-        description=_(
-            "IPersons that are willing to provide support for questions "
-            "written in English for this target."),
-        value_type=Choice(vocabulary="ValidPersonOrTeam"))
-
 
 # These schemas are only used by browser/questiontarget.py and should really
 # live there. See Bug #66950.

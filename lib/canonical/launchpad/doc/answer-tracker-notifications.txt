@@ -907,51 +907,6 @@ if the team supported languages includes the question language:
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'test@canonical.com']
 
-By default, answer contacts choose to receive notification about
-English questions. Teams my choose to restrict the notifications to
-their preferred languages. For example, when rosetta_admins changes
-chooses for preferred languages only (want_english=False), French
-becomes the only language they will receive email for.
-
-    >>> english = getUtility(ILanguageSet)['en']
-    >>> ubuntu.addAnswerContact(rosetta_admins, want_english=False)
-    True
-  
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> contacts = ubuntu.getAnswerContactsForLanguage(french)
-    >>> [contact.name for contact in contacts]
-    [u'rosetta-admins']
-    
-    >>> contacts = ubuntu.getAnswerContactsForLanguage(english)
-    >>> [contact.name for contact in contacts]
-    [u'salgado', u'launchpad', u'ubuntu-team']
-    
-    >>> english_question = ubuntu.newQuestion(
-    ...     sample_person, "Can't install Ubuntu",
-    ...    "I insert the install CD in the CD-ROM drive, but it won't boot.",
-    ...     language=english)
-    >>> notify(SQLObjectCreatedEvent(english_question))
-    >>> notifications = pop_notifications()
-    >>> addresses = [email_msg['To'] for email_msg in notifications]
-    >>> 'rosetta@launchpad.net' in addresses
-    False
-    
-The preferred languages condition is also true for teams without
-a contact email address. From above, Foo Bar is the only member of 
-launchpad_devs, and the team's preferred languages only contains
-Spanish.
-
-    >>> ubuntu.addAnswerContact(launchpad_devs, want_english=False)
-    True
-
-    >>> flush_database_updates()
-    >>> notify(SQLObjectCreatedEvent(english_question))
-    >>> notifications = pop_notifications()
-    >>> addresses = [email_msg['To'] for email_msg in notifications]
-    >>> 'foo.bar@canonical.com' in addresses
-    False
-
 But when the team didn't configured its supported language set, only the
 team members that speaks the language of the question will be notified.
 For example, Carlos is a member of the admins team which doesn't have

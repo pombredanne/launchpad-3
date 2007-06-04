@@ -384,17 +384,6 @@ is only available to registered users.
     Unauthorized...
     >>> login('no-priv@canonical.com')
 
-You cannot add an answer contact with the want_english=False
-parameter when the Person has not configured his preferred languages.
-
-    >>> from canonical.launchpad.helpers import shortlist
-    >>> shortlist(name18.languages)
-    []
-    >>> target.addAnswerContact(name18, want_english=False)
-    Traceback (most recent call last):
-     ...
-    AssertionError: name18 has no languages to support... 
-    
 This method will return True when the contact was added the list and
 False when it was already on the list:
 
@@ -467,54 +456,27 @@ because we ignore all English variants.
     ...                               key=operator.attrgetter('code'))]
     [u'ca', u'cy', u'en', u'es', u'ja']
 
-== Answer Contacts that want English ==
-
-Answer contacts may exclude themselves from receiving notification
-about questions wirtten in English. The 
-answer_contacts_that_want_english property returns the subset of 
-answer_contacts that indicated they want question in English.
-
-    >>> sorted([person.name for person in target.answer_contacts])
-    [u'carlos', u'daf']
-    
-    >>> sorted([person.name 
-    ...         for person in target.answer_contacts_that_want_english])
-    [u'carlos', u'daf']
-    
-    >>> target.addAnswerContact(carlos, want_english=False)
-    True
-    
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> sorted([person.name 
-    ...         for person in target.answer_contacts_that_want_english])
-    [u'daf']
-
-Carlos is still in the set of answer contacts.
-
-    >>> sorted([person.name for person in target.answer_contacts])
-    [u'carlos', u'daf']
-
 
 == getAnswerContactsForLanguage() ==
 
-Continuing from the previous section with Carlos and Daf, the 
+Continuing from the previous section with Carlos and Daf, the
 getAnswerContactsForLanguage() method returns a list of answer contacts
 who support the specified language. Support is determined in two ways:
-One, the person is a regular answer contact and the language is the 
-default support language of English (Dafydd in this example). Or two, 
+One, the person is a regular answer contact and the language is the
+default support language of English (Dafydd in this example). Or two,
 the language is among the contacts preferred languages (both Dafydd and
 Carlos).
-    
+
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> answer_contacts = target.getAnswerContactsForLanguage(spanish)
     >>> sorted([person.name for person in answer_contacts])
     [u'carlos']
-    
+
     >>> answer_contacts = target.getAnswerContactsForLanguage(english)
     >>> sorted([person.name for person in answer_contacts])
     [u'daf']
-        
+
+
 == getQuestionLanguages() ==
 
 The getQuestionLanguages() method returns the set of languages used by all

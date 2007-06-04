@@ -969,10 +969,11 @@ class QuestionNotification:
     def getRecipients(self):
         """Return the recipient of the notification.
 
-        Default to the question's subscribers that speaks the request 
-        languages. When a subscriber is a team and it doesn't have an email
-        set nor supported languages, only contacts the members that speaks
-        the supported language.
+        Default to the question's subscribers that speaks the request
+        languages. If the question owner is subscribed, he's always consider
+        to speak the language. When a subscriber is a team and it doesn't
+        have an email set nor supported languages, only contacts the members
+        that speaks the supported language.
         """
         # Optimize the English case.
         english = getUtility(ILanguageSet)['en']
