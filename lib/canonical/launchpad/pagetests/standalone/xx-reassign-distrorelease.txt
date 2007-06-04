@@ -1,4 +1,4 @@
-  Change the owner of the grumpy distrorelease.
+  Change the owner of the grumpy distroseries.
 
 
   Logged in as Sample Person we don't have permission to do that, because he's

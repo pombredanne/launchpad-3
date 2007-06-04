@@ -60,8 +60,9 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         self._pooldir = self._config.poolroot
         self._overdir = self._config.overrideroot
         self._listdir = self._config.overrideroot
+        self._tempdir = self._config.temproot
         self._logger = FakeLogger()
-        self._dp = DiskPool(self._pooldir, self._logger)
+        self._dp = DiskPool(self._pooldir, self._tempdir, self._logger)
 
     def tearDown(self):
         LaunchpadZopelessTestCase.tearDown(self)

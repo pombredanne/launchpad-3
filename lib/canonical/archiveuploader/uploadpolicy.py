@@ -8,10 +8,10 @@ __all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IComponentSet)
+    IDistributionSet, IComponentSet, ILaunchpadCelebrities)
 
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, DistributionReleaseStatus)
+    PackagePublishingPocket, DistroSeriesStatus)
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -30,9 +30,9 @@ def policy_options(optparser):
                          dest="distro", metavar="DISTRO", default="ubuntu",
                          help="Distribution to give back from")
 
-    optparser.add_option("-r", "--release", action="store", default=None,
-                         dest="distrorelease", metavar="DISTRORELEASE",
-                         help="Distribution to give back from.")
+    optparser.add_option("-s", "--series", action="store", default=None,
+                         dest="distroseries", metavar="DISTROSERIES",
+                         help="Distro series to give back from.")
 
     optparser.add_option("-b", "--buildid", action="store", type="int",
                          dest="buildid", metavar="BUILD",
@@ -64,7 +64,7 @@ class AbstractUploadPolicy:
         """Prepare a policy..."""
         self.name = 'abstract'
         self.distro = None
-        self.distrorelease = None
+        self.distroseries = None
         self.pocket = None
         self.archive = None
         self.unsigned_changes_ok = False
@@ -83,33 +83,33 @@ class AbstractUploadPolicy:
         self.options = options
         # Extract and locate the distribution though...
         self.distro = getUtility(IDistributionSet)[options.distro]
-        if options.distrorelease is not None:
-            self.setDistroReleaseAndPocket(options.distrorelease)
+        if options.distroseries is not None:
+            self.setDistroSeriesAndPocket(options.distroseries)
 
-    def setDistroReleaseAndPocket(self, dr_name):
-        """Set the distrorelease and pocket from the provided name.
+    def setDistroSeriesAndPocket(self, dr_name):
+        """Set the distroseries and pocket from the provided name.
 
-        It also sets self.archive to the distrorelease main_archive.
+        It also sets self.archive to the distroseries main_archive.
         """
-        if self.distrorelease is not None:
+        if self.distroseries is not None:
             assert self.archive is not None, "Archive must be set."
             # We never override the policy
             return
 
-        self.distroreleasename = dr_name
-        (self.distrorelease,
-         self.pocket) = self.distro.getDistroReleaseAndPocket(dr_name)
+        self.distroseriesname = dr_name
+        (self.distroseries,
+         self.pocket) = self.distro.getDistroSeriesAndPocket(dr_name)
 
         if self.archive is None:
-            self.archive = self.distrorelease.main_archive
+            self.archive = self.distroseries.main_archive
 
     @property
     def announcelist(self):
         """Return the announcement list address."""
         announce_list = getattr(self.options, 'announcelist', None)
         if (announce_list is None and
-            getattr(self, 'distrorelease', None) is not None):
-            announce_list = self.distrorelease.changeslist
+            getattr(self, 'distroseries', None) is not None):
+            announce_list = self.distroseries.changeslist
         return announce_list
 
     def checkUpload(self, upload):
@@ -118,15 +118,15 @@ class AbstractUploadPolicy:
             if self.pocket != PackagePublishingPocket.RELEASE:
                 upload.reject(
                     "PPA uploads must be for the RELEASE pocket.")
-            if not upload.changes.signer.is_ubuntero:
-                upload.reject(
-                    "PPA uploads must be signed by an 'ubuntero'.")
         else:
-            if not self.distrorelease.canUploadToPocket(self.pocket):
+            # XXX julian 2005-05-29
+            # This is a greasy hack until bug #117557 is fixed.
+            if (self.distroseries and 
+                not self.distroseries.canUploadToPocket(self.pocket)):
                 upload.reject(
                     "Not permitted to upload to the %s pocket in a "
-                    "release in the '%s' state." % (
-                    self.pocket.name, self.distrorelease.releasestatus.name))
+                    "series in the '%s' state." % (
+                    self.pocket.name, self.distroseries.status.name))
 
         # reject PPA uploads by default
         self.rejectPPAUploads(upload)
@@ -199,20 +199,44 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         """Insecure policy allows PPA upload."""
         return False
 
+    def checkIsSignerUbuntero(self, upload):
+        """Reject the upload if the upload signer is not an 'ubuntero'."""
+        if not upload.changes.signer.is_ubuntero:
+            upload.reject(
+                "PPA uploads must be signed by an 'ubuntero'.")
+
+    def checkIsSignerBetaTester(self, upload):
+        """Reject the upload if the upload signer is not a 'beta-tester'.
+
+        For being a 'beta-tester' a person must be a valid member of
+        launchpad-beta-tester team/celebrity.
+        """
+        beta_testers = getUtility(
+            ILaunchpadCelebrities).launchpad_beta_testers
+        if not upload.changes.signer.inTeam(beta_testers):
+            upload.reject(
+                "PPA is only allowed for members of "
+                "launchpad-beta-testers team.")
+
     def policySpecificChecks(self, upload):
         """The insecure policy does not allow SECURITY uploads for now."""
-        if self.pocket == PackagePublishingPocket.SECURITY:
-            upload.reject(
-                "This upload queue does not permit SECURITY uploads.")
+        if upload.is_ppa:
+            # XXX cprov 20070530: check disabled during PPA-beta period.
+            #self.checkIsSignerUbuntero(upload)
+            self.checkIsSignerBetaTester(upload)
+        else:
+            if self.pocket == PackagePublishingPocket.SECURITY:
+                upload.reject(
+                    "This upload queue does not permit SECURITY uploads.")
 
     def autoApprove(self, upload):
         """The insecure policy only auto-approves RELEASE pocket stuff.
 
-        Additionally, we only auto-approve if the distrorelease is not FROZEN.
+        Additionally, we only auto-approve if the distroseries is not FROZEN.
         """
         if self.pocket == PackagePublishingPocket.RELEASE:
-            if (self.distrorelease.releasestatus !=
-                DistributionReleaseStatus.FROZEN):
+            if (self.distroseries.status !=
+                DistroSeriesStatus.FROZEN):
                 return True
         return False
 

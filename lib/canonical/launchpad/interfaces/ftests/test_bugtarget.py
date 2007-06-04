@@ -54,7 +54,7 @@ def productseries_filebug(productseries, summary, status=None):
     """File a bug on a product series.
 
     Since it's not possible to file a bug on a product series directly,
-    the bug will first be filed on its product, then a release task will
+    the bug will first be filed on its product, then a series task will
     be created.
     """
     bug = bugtarget_filebug(productseries.product, summary, status=status)
@@ -84,32 +84,32 @@ def distributionSourcePackageSetUp(test):
     test.globs['filebug'] = bugtarget_filebug
 
 
-def distrorelease_filebug(distrorelease, summary, sourcepackagename=None,
+def distroseries_filebug(distroseries, summary, sourcepackagename=None,
                           status=None):
-    """File a bug on a distrorelease.
+    """File a bug on a distroseries.
 
-    Since bugs can't be filed on distroreleases directly, a bug will
-    first be filed on its distribution, and then a release task will be
+    Since bugs can't be filed on distroseriess directly, a bug will
+    first be filed on its distribution, and then a series task will be
     added.
     """
-    bug = bugtarget_filebug(distrorelease.distribution, summary, status=status)
+    bug = bugtarget_filebug(distroseries.distribution, summary, status=status)
     getUtility(IBugTaskSet).createTask(
-        bug, getUtility(ILaunchBag).user, distrorelease=distrorelease,
+        bug, getUtility(ILaunchBag).user, distroseries=distroseries,
         sourcepackagename=sourcepackagename, status=status)
     return bug
 
 
-def distributionReleaseSetUp(test):
+def distributionSeriesSetUp(test):
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    test.globs['bugtarget'] = ubuntu.getRelease('warty')
-    test.globs['filebug'] = distrorelease_filebug
+    test.globs['bugtarget'] = ubuntu.getSeries('warty')
+    test.globs['filebug'] = distroseries_filebug
 
 
 def sourcepackage_filebug(source_package, summary, status=None):
-    """File a bug on a source package in a distrorelease."""
-    bug = distrorelease_filebug(
-        source_package.distrorelease, summary,
+    """File a bug on a source package in a distroseries."""
+    bug = distroseries_filebug(
+        source_package.distroseries, summary,
         sourcepackagename=source_package.sourcepackagename, status=status)
     return bug
 
@@ -117,7 +117,7 @@ def sourcepackage_filebug(source_package, summary, status=None):
 def sourcePackageSetUp(test):
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    warty = ubuntu.getRelease('warty')
+    warty = ubuntu.getSeries('warty')
     test.globs['bugtarget'] = warty.getSourcePackage('mozilla-firefox')
     test.globs['filebug'] = sourcepackage_filebug
 
@@ -131,7 +131,7 @@ def test_suite():
         projectSetUp,
         distributionSetUp,
         distributionSourcePackageSetUp,
-        distributionReleaseSetUp,
+        distributionSeriesSetUp,
         sourcePackageSetUp,
         ]
 

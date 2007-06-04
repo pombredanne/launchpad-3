@@ -17,7 +17,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 class Packaging(SQLBase):
-    """A Packaging relating a SourcePackageName in DistroRelease and a Product.
+    """A Packaging relating a SourcePackageName in DistroSeries and a Product.
     """
 
     implements(IPackaging)
@@ -30,7 +30,7 @@ class Packaging(SQLBase):
     sourcepackagename = ForeignKey(foreignKey="SourcePackageName",
                                    dbName="sourcepackagename",
                                    notNull=True)
-    distrorelease = ForeignKey(foreignKey='DistroRelease',
+    distroseries = ForeignKey(foreignKey='DistroSeries',
                                dbName='distrorelease',
                                notNull=True)
     packaging = EnumCol(dbName='packaging', notNull=True,
@@ -41,7 +41,7 @@ class Packaging(SQLBase):
     @property
     def sourcepackage(self):
         from canonical.launchpad.database.sourcepackage import SourcePackage
-        return SourcePackage(distrorelease=self.distrorelease,
+        return SourcePackage(distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
 
 
@@ -50,21 +50,21 @@ class PackagingUtil:
     implements(IPackagingUtil)
 
     def createPackaging(self, productseries, sourcepackagename,
-                        distrorelease, packaging, owner):
+                        distroseries, packaging, owner):
         """See IPackaging."""
         Packaging(productseries=productseries,
                   sourcepackagename=sourcepackagename,
-                  distrorelease=distrorelease,
+                  distroseries=distroseries,
                   packaging=packaging,
                   owner=owner)
 
     def packagingEntryExists(self, productseries, sourcepackagename,
-                             distrorelease):
+                             distroseries):
         """See IPackaging."""
         result = Packaging.selectOneBy(
             productseries=productseries,
             sourcepackagename=sourcepackagename,
-            distrorelease=distrorelease)
+            distroseries=distroseries)
         if result is None:
             return False
         return True

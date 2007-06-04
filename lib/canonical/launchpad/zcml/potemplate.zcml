@@ -15,7 +15,7 @@
         />
       <require
         permission="launchpad.Admin"
-        set_attributes="potemplatename productseries distrorelease
+        set_attributes="potemplatename productseries distroseries
                         sourcepackagename sourcepackageversion
                         binarypackagename languagepack path header
                         iscurrent from_sourcepackagename date_last_updated"
@@ -128,7 +128,7 @@
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IPOTemplateSubset"
-            set_attributes="sourcepackagename distrorelease"
+            set_attributes="sourcepackagename distroseries"
             />
     </content>
 

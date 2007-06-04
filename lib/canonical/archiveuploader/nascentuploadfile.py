@@ -535,7 +535,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         """
         control_arch = self.control.get("Architecture", '')
         valid_archs = [a.architecturetag
-                       for a in self.policy.distrorelease.architectures]
+                       for a in self.policy.distroseries.architectures]
 
         if control_arch not in valid_archs and control_arch != "all":
             yield UploadError(
@@ -717,7 +717,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
     def findSourcePackageRelease(self):
         """Return the respective ISourcePackagRelease for this binary upload.
 
-        It inspect publication in the targeted DistroRelease and also the
+        It inspect publication in the targeted DistroSeries and also the
         ACCEPTED queue for sources matching stored (source_name, source_version).
 
         It raises UploadError if the source was not found.
@@ -726,8 +726,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         mixed_uploads (source + binary) we do not have the source stored
         in DB yet (see verifySourcepackagerelease).
         """
-        distrorelease = self.policy.distrorelease
-        spphs = distrorelease.getPublishedReleases(
+        distroseries = self.policy.distroseries
+        spphs = distroseries.getPublishedReleases(
             self.source_name, version=self.source_version,
             include_pending=True, archive=self.policy.archive)
 
@@ -744,7 +744,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # info in bug #55774.
             self.logger.debug("No source published, checking the ACCEPTED queue")
 
-            queue_candidates = distrorelease.getQueueItems(
+            queue_candidates = distroseries.getQueueItems(
                 status=PackageUploadStatus.ACCEPTED,
                 name=self.source_name, version=self.source_version,
                 archive=self.policy.archive, exact_match=True)
@@ -760,7 +760,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # and we know how bad that can be. Time to give up!
             raise UploadError(
                 "Unable to find source package %s/%s in %s" % (
-                self.source_name, self.source_version, distrorelease.name))
+                self.source_name, self.source_version, distroseries.name))
 
         return sourcepackagerelease
 
@@ -795,7 +795,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         raise UploadError resulting in a upload rejection.
         """
         build_id = getattr(self.policy.options, 'buildid', None)
-        dar = self.policy.distrorelease[self.archtag]
+        dar = self.policy.distroseries[self.archtag]
 
         if build_id is None:
             # Check if there's a suitable existing build.
@@ -825,7 +825,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         # source package).
         if (build.sourcepackagerelease != sourcepackagerelease or
             build.pocket != self.policy.pocket or
-            build.distroarchrelease != dar or
+            build.distroarchseries != dar or
             build.archive != self.policy.archive):
             raise UploadError(
                 "Attempt to upload binaries specifying "
