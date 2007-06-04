@@ -27,6 +27,11 @@
       permission="launchpad.AnyPerson"
       attributes="newQuestion addAnswerContact removeAnswerContact"
       />
+    <!-- IFAQTarget -->
+    <require
+      permission="launchpad.AnyPerson"
+      attributes="newFAQ"
+      />
   </content>
 
   <browser:menus

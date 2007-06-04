@@ -14,9 +14,8 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
-from sqlobject.sqlbuilder import SQLConstant
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues, cursor
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -36,6 +35,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.faq import FAQ
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -391,7 +391,14 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             'Language.id = Question.language AND '
             'Question.product = %s' % sqlvalues(self.id),
             clauseTables=['Question'], distinct=True))
-
+    
+    def newFAQ(self, owner, title, summary, content=None, url=None,
+               date_created=UTC_NOW):
+        """See `IFAQ`."""
+        return FAQ(
+            owner=owner, title=title, summary=summary, content=content,
+            url=url, date_created=date_created, product=self)
+            
     @property
     def translatable_packages(self):
         """See IProduct."""
