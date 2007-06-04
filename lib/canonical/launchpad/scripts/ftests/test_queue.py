@@ -14,7 +14,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroReleaseQueueSet)
+    IDistributionSet, IPackageUploadSet)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
@@ -22,7 +22,7 @@ from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket,
-    DistroReleaseQueueStatus, DistributionReleaseStatus)
+    PackageUploadStatus, DistroSeriesStatus)
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.librarian.utils import filechunks
 
@@ -118,9 +118,9 @@ class TestQueueTool(TestQueueBase):
         # check if the considered queue size matches the existent number
         # of records in sampledata
         bat = getUtility(IDistributionSet)['ubuntu']['breezy-autotest']
-        queue_size = getUtility(IDistroReleaseQueueSet).count(
-            status=DistroReleaseQueueStatus.NEW,
-            distrorelease=bat, pocket= PackagePublishingPocket.RELEASE)
+        queue_size = getUtility(IPackageUploadSet).count(
+            status=PackageUploadStatus.NEW,
+            distroseries=bat, pocket= PackagePublishingPocket.RELEASE)
         self.assertEqual(queue_size, queue_action.size)
         # check if none of them was filtered, since not filter term
         # was passed.
@@ -234,7 +234,7 @@ class TestQueueTool(TestQueueBase):
         """Check if BACKPORTS acceptance are not announced publicly.
 
         Queue tool normally announce acceptance in the specified changeslist
-        for the distrorelease in question, however BACKPORTS announce doesn't
+        for the distroseries in question, however BACKPORTS announce doesn't
         fit very well in that list, they cause unwanted noise.
 
         Further details in bug #59443
@@ -243,12 +243,12 @@ class TestQueueTool(TestQueueBase):
         # to BACKPORTS.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
-        breezy_autotest.releasestatus = DistributionReleaseStatus.CURRENT
+        breezy_autotest.status = DistroSeriesStatus.CURRENT
 
         # Store the targeted queue item for future inspection.
         # Ensure it is what we expect.
         target_queue = breezy_autotest.getQueueItems(
-            status=DistroReleaseQueueStatus.UNAPPROVED,
+            status=PackageUploadStatus.UNAPPROVED,
             pocket= PackagePublishingPocket.BACKPORTS)[0]
         self.assertEqual(10, target_queue.id)
 
@@ -288,13 +288,13 @@ class TestQueueTool(TestQueueBase):
         # to PROPOSED.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
-        breezy_autotest.releasestatus = DistributionReleaseStatus.CURRENT
+        breezy_autotest.status = DistroSeriesStatus.CURRENT
 
         # Store the targeted queue item for future inspection.
         # Ensure it is what we expect.
         target_queue = breezy_autotest.getQueueItems(
-            status=DistroReleaseQueueStatus.UNAPPROVED,
-            pocket= PackagePublishingPocket.PROPOSED)[0]
+            status=PackageUploadStatus.UNAPPROVED,
+            pocket=PackagePublishingPocket.PROPOSED)[0]
         self.assertEqual(12, target_queue.id)
         source = target_queue.sources[0].sourcepackagerelease
         self.assertEqual('translations', source.section.name)
@@ -313,10 +313,10 @@ class TestQueueTool(TestQueueBase):
         # No email was sent.
         self.assertEqual(0, len(stub.test_emails))
 
-    def assertQueueLength(self, expected_length, distro_release, status, name):
+    def assertQueueLength(self, expected_length, distro_series, status, name):
         self.assertEqual(
             expected_length,
-            distro_release.getQueueItems(status=status, name=name).count())
+            distro_series.getQueueItems(status=status, name=name).count())
 
     def testAcceptanceWorkflowForDuplications(self):
         """Check how queue tool behaves dealing with duplicated entries.
@@ -344,7 +344,7 @@ class TestQueueTool(TestQueueBase):
 
         # certify we have a 'cnews' upload duplication in UNAPPROVED
         self.assertQueueLength(
-            2, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            2, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 1: try to accept both
         queue_action = self.execute_command(
@@ -353,7 +353,7 @@ class TestQueueTool(TestQueueBase):
 
         # the first is in accepted.
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.ACCEPTED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.ACCEPTED, "cnews")
 
         # the last can't be accepted and remains in UNAPPROVED
         self.assertTrue(
@@ -361,7 +361,7 @@ class TestQueueTool(TestQueueBase):
              'sourcepackagerelease is already accepted in breezy-autotest.')
             in self.test_output)
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 2: try to accept the remaining item in UNAPPROVED.
         queue_action = self.execute_command(
@@ -372,16 +372,16 @@ class TestQueueTool(TestQueueBase):
              'sourcepackagerelease is already accepted in breezy-autotest.')
             in self.test_output)
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # simulate a publication of the accepted item, now it is in DONE
         accepted_item = breezy_autotest.getQueueItems(
-            status=DistroReleaseQueueStatus.ACCEPTED, name="cnews")[0]
+            status=PackageUploadStatus.ACCEPTED, name="cnews")[0]
 
         accepted_item.setDone()
         accepted_item.syncUpdate()
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.DONE, "cnews")
+            1, breezy_autotest, PackageUploadStatus.DONE, "cnews")
 
         # Step 3: try to accept the remaining item in UNAPPROVED with the
         # duplication already in DONE
@@ -394,16 +394,16 @@ class TestQueueTool(TestQueueBase):
              'sourcepackagerelease is already accepted in breezy-autotest.')
             in self.test_output)
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
         # Step 4: The only possible destiny for the remaining item it REJECT
         queue_action = self.execute_command(
             'reject cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
         self.assertQueueLength(
-            0, breezy_autotest, DistroReleaseQueueStatus.UNAPPROVED, "cnews")
+            0, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
         self.assertQueueLength(
-            1, breezy_autotest, DistroReleaseQueueStatus.REJECTED, "cnews")
+            1, breezy_autotest, PackageUploadStatus.REJECTED, "cnews")
 
 
 class TestQueueToolInJail(TestQueueBase):

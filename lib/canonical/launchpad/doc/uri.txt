@@ -64,6 +64,23 @@ We also test the basic parsing functionality.
     >>> uri.path
     '/blee/blah'
 
+The grammar from RFC 3986 does not allow for square brackets in the
+query component, but Section 3.4 does say how such delimeter
+characters should be handled if found in the component.
+
+    >>> uri = URI('http://www.apple.com/store?delivery=[slow]#horse+cart')
+    >>> uri.scheme
+    'http'
+    >>> uri.host
+    'www.apple.com'
+    >>> uri.port is None
+    True
+    >>> uri.path
+    '/store'
+    >>> uri.query
+    'delivery=[slow]'
+    >>> uri.fragment
+    'horse+cart'
 
 == Security Proxied URI Objects ==
 
@@ -169,6 +186,7 @@ canonicalised by the URI class:
   ...  * MAILTO:joe@example.com
   ...  * xmpp:fred@example.org
   ...  * http://bazaar.launchpad.net/%7ename12/firefox/foo
+  ...  * http://somewhere.in/time?track=[02]#wasted-years
   ... '''
 
   >>> for uri in find_uris_in_text(text):
@@ -178,3 +196,4 @@ canonicalised by the URI class:
   mailto:joe@example.com
   xmpp:fred@example.org
   http://bazaar.launchpad.net/~name12/firefox/foo
+  http://somewhere.in/time?track=[02]#wasted-years

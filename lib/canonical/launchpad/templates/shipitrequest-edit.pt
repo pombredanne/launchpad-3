@@ -17,7 +17,7 @@
     </tal:block>
 
     <h1>
-      <span tal:replace="context/distrorelease/name/capitalize" />
+      <span tal:replace="context/distroseries/name/capitalize" />
       Request #<span tal:replace="context/id" />
     </h1>
 
@@ -30,7 +30,7 @@
          tal:define="dupe_requests context/getRequestsWithSameAddressFromOtherUsers"
          class="informational message">
       <p>
-        There are other requests for CDs of this same release made by other
+        There are other requests for CDs of this same version made by other
         users with this shipping address.
       </p>
       <table class="listing lesser" id="dupe-address-reuqests">
@@ -67,7 +67,7 @@
 
     <div tal:condition="view/recipientHasOtherShippedRequests"
          tal:define="shipped_requests
-                     context/recipient/shippedShipItRequestsOfCurrentRelease"
+                     context/recipient/shippedShipItRequestsOfCurrentSeries"
          class="informational message">
      <p>This person has other requests already sent to the shipping company.
      </p>

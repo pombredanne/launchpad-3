@@ -25,8 +25,8 @@
         template="../templates/sourcepackagerelease-portlet-details.pt"
         />
       <browser:page
-        name="+portlet-distroreleases"
-        template="../templates/sourcepackagerelease-portlet-distroreleases.pt"
+        name="+portlet-distroseries"
+        template="../templates/sourcepackagerelease-portlet-distroseries.pt"
         />
       <browser:page
         name="+portlet-details-content"
@@ -40,6 +40,17 @@
     name="+open_questions_count"
     permission="zope.Public"
     />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISourcePackageRelease"
+    class="canonical.launchpad.browser.SourcePackageReleaseView"
+    permission="zope.Public">
+    <browser:page
+      name="+changelog"
+      template="../templates/sourcepackagerelease-changelog.pt"
+    />
+  </browser:pages>
+
    <adapter
     for="canonical.launchpad.interfaces.ISourcePackageRelease"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
