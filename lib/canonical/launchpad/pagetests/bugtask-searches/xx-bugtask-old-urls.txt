@@ -1,0 +1,53 @@
+= Keeping old bookmarks working =
+
+As part of the bug workflow spec various statuses are being changed
+but we need old bookmarks to keep working with the status names.
+
+    >>> url = (
+    ...     "http://bugs.launchpad.dev/ubuntu/+bugs?"
+    ...     "field.searchtext="
+    ...     "&orderby=-importance"
+    ...     "&search=Search&field.status%3Alist=Unconfirmed"
+    ...     "&field.status%3Alist=In+Progress"
+    ...     "&assignee_option=any"
+    ...     "&field.status_upstream-empty-marker=1"
+    ...     "&field.omit_dupes=on"
+    ...     "&field.has_patch.used="
+    ... )
+    >>> anon_browser.open(url)
+
+The user is redirected to a new url to make the change explicit, and
+to allow user agents (and users) to update bookmarks, etc.
+
+    >>> from canonical.launchpad.webapp.uri import URI
+    >>> uri = URI(anon_browser.url)
+    >>> print uri.path
+    /ubuntu/+bugs
+    >>> print sorted(uri.query.split('&'))
+    ['assignee_option=any',
+     'field.has_patch.used=',
+     'field.omit_dupes=on',
+     'field.searchtext=',
+     'field.status%3Alist=In+Progress',
+     'field.status%3Alist=New',
+     'field.status_upstream-empty-marker=1',
+     'orderby=-importance', 'search=Search']
+
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
+    >>> print_bugtasks(anon_browser.contents)
+    1
+    Firefox does not support SVG
+    mozilla-firefox
+    Medium
+    New
+    10
+    another test bug
+    linux-source-2.6.15
+    Medium
+    New
+    2
+    Blackhole Trash folder
+    &mdash;
+    Medium
+    New
+
