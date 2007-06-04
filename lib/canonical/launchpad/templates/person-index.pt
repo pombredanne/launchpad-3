@@ -5,17 +5,23 @@
 
 <head>
     <tal:block metal:fill-slot="head_epilogue">
-        <tal:valid_person_or_team condition="context/is_valid_person_or_team">
+        <tal:valid_person_or_team
+            condition="context/is_valid_person_or_team"
+            tal:define="vhosts
+                modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
             <link
                 tal:condition="not:context/hide_email_addresses" 
                 rel="meta" type="application/rdf+xml"
                 title="FOAF" href="+rdf" />
             <link
                 tal:condition="context/is_openid_enabled"
-                tal:define="vhosts
-                    modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
                 rel="openid.server"
                 tal:attributes="href vhosts/openid/rooturl" />
+            <link
+                tal:condition="context/is_openid_enabled"
+                rel="openid.delegate"
+                tal:attributes="href string:${vhosts/openid/rooturl
+                    }+openid/+id/${context/openid_identifier}" />
         </tal:valid_person_or_team>
     </tal:block>
 </head>

@@ -3,9 +3,7 @@
 == Introduction ==
 
 Launchpad is an OpenID provider. If the URL is accessed by a web browser,
-an informative message is displayed. We replicate the one from the
-specification exactly, even though other OpenID servers take more
-liberties.
+an informative message is displayed as per the OpenID spec.
 
 >>> anon_browser.open('http://openid.launchpad.dev')
 >>> print anon_browser.headers
@@ -26,30 +24,8 @@ We are going to fake a consumer for these examples. In order to ensure
 that the consumer is being fed the correct replies, we register a view
 that renders the parameters in the response in an easily testable format.
 
->>> from StringIO import StringIO
->>> from canonical.launchpad.webapp.publisher import LaunchpadView
->>> from zope.publisher.interfaces.browser import IBrowserPublisher
->>> from zope.interface import implements
->>> class ConsumerView(LaunchpadView):
-...     implements(IBrowserPublisher)
-...     def render(self):
-...         out = StringIO()
-...         print >> out, 'Consumer received %s' % self.request.method
-...         keys = sorted(self.request.form.keys())
-...         for key in keys:
-...             print >> out, '%s:%s' % (key, self.request.form[key])
-...         return out.getvalue()
-...     def browserDefault(self, request):
-...         return self, ()
-...
->>> from zope.security.checker import defineChecker, Checker, CheckerPublic
->>> defineChecker(ConsumerView, Checker({
-...     '__call__': CheckerPublic,
-...     'browserDefault': CheckerPublic,
-...     'render': CheckerPublic,
-...     }))
->>> from zope.app.testing.ztapi import browserView
->>> browserView(None, '+openid-consumer', ConsumerView)
+>>> from canonical.launchpad.ftests.openid import install_consumer
+>>> install_consumer()
 
 NB. The plus is in the query to ensure this test is running with an up to
 date enough Zope3
@@ -67,20 +43,42 @@ tag to allow OpenID consumers to determine the URL of the OpenID server to
 be contacted.
 
 >>> anon_browser.open('http://launchpad.dev/~sabdfl')
->>> print '\n' + anon_browser.contents
-<BLANKLINE>
-...
+>>> print anon_browser.contents
+<...
 <head>
 ...
 <link rel="openid.server" href="http://openid.launchpad.dev/" />
+<link
+    rel="openid.delegate"
+    href="http://openid.launchpad.dev/+openid/+id/temp1" />
 </head>
 ...
+
 
 Teams do not have this tag of course.
 
 >>> anon_browser.open('http://launchpad.dev/~admins')
 >>> 'openid' in anon_browser.contents
 False
+
+
+The standard person homepage delegates to a permanent identity URL
+
+>>> anon_browser.open('http://openid.launchpad.dev/+openid/+id/temp1')
+>>> print anon_browser.contents
+<html>
+<head>
+<link rel="openid.server" href="http://openid.launchpad.dev/" />
+...
+>>> 'openid.delegate' in anon_browser.contents
+False
+
+If a permanent, human memorable, identity URL is needed we have that too.
+It is just a redirect to the above permanent identity URL.
+
+>>> anon_browser.open('http://openid.launchpad.dev/+openid/sabdfl')
+>>> anon_browser.url
+'http://openid.launchpad.dev/+openid/+id/temp1'
 
 
 == associate Mode ==
@@ -124,7 +122,7 @@ will currently return "can't say" as we are not yet logged into Launchpad.
 
 >>> args = urlencode({
 ...     'openid.mode': 'checkid_immediate',
-...     'openid.identity': 'https://launchpad.dev/~sabdfl',
+...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp1',
 ...     'openid.assoc_handle': assoc_handle,
 ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
 ...     })
@@ -136,28 +134,12 @@ openid.user_setup_url:http://openid.launchpad.dev/?...
 <BLANKLINE>
 
 
-An error is returned to the consumer if an attempt to login as a team is
-made.
-
->>> args = urlencode({
-...     'openid.mode': 'checkid_immediate',
-...     'openid.identity': 'https://launchpad.dev/~admins',
-...     'openid.assoc_handle': assoc_handle,
-...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
-...     })
->>> user_browser.open('http://openid.launchpad.dev/?%s' % args)
->>> print user_browser.contents
-Consumer received GET
-openid.mode:id_res
-openid.user_setup_url:http://openid.launchpad.dev/?...
-<BLANKLINE>
-
 An error is returned to the consumer if an attempt to login as an invalid
 user.
 
 >>> args = urlencode({
 ...     'openid.mode': 'checkid_immediate',
-...     'openid.identity': 'https://launchpad.dev/~limi',
+...     'openid.identity': 'http://launchpad.dev/+openid/+id/temp10',
 ...     'openid.assoc_handle': assoc_handle,
 ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
 ...     })
@@ -173,19 +155,35 @@ We test a success below in the 'Sticky Authorization' section.
 
 == checkid_setup Mode ==
 
-checkid_setup is interactive with the user, giving them the oppertunity
-to log in and approve access to the consumer site. We can extract the
+checkid_setup is interactive with the user. We can extract the
 URL for the checkid_setup from the result of the previous test.
 
 >>> [setup_url] = re.findall(
 ...     '(?m)^openid.user_setup_url:(.*)$', anon_browser.contents
 ...     )
->>> anon_browser.open(setup_url)
->>> print '\n' + anon_browser.contents
-<BLANKLINE>
-...
-    <form method="get" action=".">
-        <input type="hidden" name="token"
+
+
+To proceed, the user will need to login.
+
+>>> sabdfl_browser = setupBrowser()
+>>> sabdfl_browser.handleErrors = True
+>>> sabdfl_browser.open(setup_url)
+>>> print sabdfl_browser.url
+http://openid.launchpad.dev/+openid/+login?...
+>>> sabdfl_browser.handleErrors = False
+>>> sabdfl_browser.getControl('E-mail address', index=0).value = 'mark@hbd.com'
+>>> sabdfl_browser.getControl('Password', index=0).value = 'test'
+>>> sabdfl_browser.getControl('Log In', index=0).click()
+
+
+Once logged in, the user is redirected to the 'decide' page, where the
+user is informed about what is going on and they are given the oppertunity
+to allow authorization or decline.
+
+>>> print find_main_content(sabdfl_browser.contents)
+<...
+    <form method="post" action=".">
+        <input type="hidden" name="nonce"
             value="..." />
         <select name="allow_duration">
             <option value="once">Once only</option>
@@ -203,10 +201,10 @@ URL for the checkid_setup from the result of the previous test.
 Lets deny the request. This will return us to the consumer without
 authentication.
 
->>> anon_browser.getControl('Deny').click()
->>> print anon_browser.url
+>>> sabdfl_browser.getControl('Deny').click()
+>>> print sabdfl_browser.url
 http://launchpad.dev/+openid-consumer?openid.mode=cancel
->>> print anon_browser.contents
+>>> print sabdfl_browser.contents
 Consumer received GET
 openid.mode:cancel
 <BLANKLINE>
@@ -216,24 +214,14 @@ Now, lets do that again but allow the request. This will require us
 to log in to Launchpad before being redirected back to the consumer
 informing it that the request is valid.
 
->>> sabdfl_browser = setupBrowser()
->>> sabdfl_browser.handleErrors = True
 >>> sabdfl_browser.open(setup_url)
 >>> sabdfl_browser.getControl('Allow').click()
-
->>> print sabdfl_browser.url
-http://openid.launchpad.dev/+openid/+login?...
->>> sabdfl_browser.handleErrors = False
->>> sabdfl_browser.getControl('E-mail address', index=0).value = 'mark@hbd.com'
->>> sabdfl_browser.getControl('Password', index=0).value = 'test'
->>> sabdfl_browser.getControl('Log In', index=0).click()
-
 >>> print sabdfl_browser.url
 http://launchpad.dev/+openid-consumer?...
 >>> print sabdfl_browser.contents
 Consumer received GET
 openid.assoc_handle:...
-openid.identity:https://launchpad.dev/~sabdfl
+openid.identity:http://openid.launchpad.dev/+openid/+id/temp1
 openid.mode:id_res
 openid.return_to:http://launchpad.dev/+openid-consumer
 openid.sig:...
@@ -249,7 +237,7 @@ returned.
 
 >>> args = urlencode({
 ...     'openid.mode': 'checkid_setup',
-...     'openid.identity': 'http://launchpad.dev/~sabdfl',
+...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp1',
 ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
 ...     'openid.trust_root': 'http://com',
 ...     'whatever': 'blah',
@@ -277,7 +265,7 @@ check_authentication will fail.
 ...     'openid.assoc_handle': assoc_handle,
 ...     'openid.sig': sig,
 ...     'openid.signed':  'return_to,mode,identity',
-...     'openid.identity': 'https://launchpad.dev/~sabdfl',
+...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp1',
 ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
 ...     })
 >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
@@ -291,7 +279,7 @@ Mode.
 
 >>> args = urlencode({
 ...     'openid.mode': 'checkid_setup',
-...     'openid.identity': 'https://launchpad.dev/~sabdfl',
+...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp1',
 ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
 ...     })
 >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
@@ -299,7 +287,7 @@ Mode.
 >>> print sabdfl_browser.contents
 Consumer received GET
 openid.assoc_handle:...
-openid.identity:https://launchpad.dev/~sabdfl
+openid.identity:http://openid.launchpad.dev/+openid/+id/temp1
 openid.mode:id_res
 openid.return_to:http://launchpad.dev/+openid-consumer
 openid.sig:...
@@ -316,42 +304,7 @@ openid.signed:return_to,mode,identity
 ...     'openid.sig': sig,
 ...     'openid.signed': 'return_to,mode,identity',
 ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
-...     'openid.identity': 'https://launchpad.dev/~sabdfl',
-...     })
->>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
->>> print sabdfl_browser.contents
-is_valid:true
-<BLANKLINE>
-
-
-If the consumer sends through the identity URL using %7E notation instead
-of ~, that is also supported. I think this might actually break the spec
-or be unnecessary, but I can't see any harm being done.
-
->>> args = urlencode({
-...     'openid.mode': 'checkid_setup',
-...     'openid.identity': 'https://launchpad.dev/%7Esabdfl',
-...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
-...     })
->>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
->>> sabdfl_browser.getControl('Allow').click()
->>> print sabdfl_browser.contents
-Consumer received GET
-...
-openid.identity:https://launchpad.dev/%7Esabdfl
-...
-
->>> [pstateless_assoc_handle] = re.findall(
-...     'assoc_handle:(.*)', sabdfl_browser.contents
-...     )
->>> [psig] = re.findall('sig:(.*)', sabdfl_browser.contents)
->>> args = urlencode({
-...     'openid.mode': 'check_authentication',
-...     'openid.assoc_handle': pstateless_assoc_handle,
-...     'openid.sig': psig,
-...     'openid.signed': 'return_to,mode,identity',
-...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
-...     'openid.identity': 'https://launchpad.dev/%7Esabdfl',
+...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp1',
 ...     })
 >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
 >>> print sabdfl_browser.contents
@@ -370,7 +323,7 @@ them to a particular consumer.
 >>> print sabdfl_browser.contents
 Consumer received GET
 ...
-openid.identity:https://launchpad.dev/~sabdfl
+openid.identity:http://openid.launchpad.dev/+openid/+id/temp1
 openid.mode:id_res
 openid.return_to:http://launchpad.dev/+openid-consumer
 ...
@@ -382,7 +335,7 @@ automatically succeed without user intervention.
 >>> print sabdfl_browser.contents
 Consumer received GET
 ...
-openid.identity:https://launchpad.dev/~sabdfl
+openid.identity:http://openid.launchpad.dev/+openid/+id/temp1
 openid.mode:id_res
 openid.return_to:http://launchpad.dev/+openid-consumer
 ...
@@ -397,7 +350,7 @@ Immediate mode:
 
 >>> args = urlencode({
 ...     'openid.mode': 'checkid_immediate',
-...     'openid.identity': 'https://launchpad.dev/~stub',
+...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp22',
 ...     'openid.assoc_handle': assoc_handle,
 ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
 ...     })
@@ -413,12 +366,12 @@ Interactive mode:
 >>> [setup_url] = re.findall(
 ...     '(?m)^openid.user_setup_url:(.*)$', sabdfl_browser.contents
 ...     )
->>> sabdfl_browser.open(setup_url)
 >>> sabdfl_browser.handleErrors = False
->>> sabdfl_browser.getControl('Allow').click()
+>>> sabdfl_browser.open(setup_url)
 Traceback (most recent call last):
 ...
-Unauthorized: You are not yet authorized to use this OpenID identifier.
+Unauthorized: You are not authorized to use this OpenID identifier.
+>>> sabdfl_browser.handleErrors = True
 
 == Invalid identities ==
 
@@ -427,7 +380,7 @@ identifier, you get a nice error page.
 
 >>> args = urlencode({
 ...     'openid.mode': 'checkid_immediate',
-...     'openid.identity': 'https://launchpad.dev/~limi',
+...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp10',
 ...     'openid.assoc_handle': assoc_handle,
 ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
 ...     })
@@ -473,4 +426,8 @@ Consumer received GET
 openid.error:No decoder for mode 'whoops'
 openid.mode:error
 <BLANKLINE>
+
+
+>>> from canonical.launchpad.ftests.openid import uninstall_consumer
+>>> uninstall_consumer()
 

@@ -47,6 +47,8 @@ from canonical.launchpad.database.questionsubscription import (
     QuestionSubscription)
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.mailnotification import (
+    QuestionNotificationRecipientSet)
 from canonical.launchpad.webapp.enum import Item
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -416,24 +418,27 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getSubscribers(self):
         """See IQuestion."""
-        direct = set(self.getDirectSubscribers())
-        indirect = set(self.getIndirectSubscribers())
-        return sorted(
-            direct.union(indirect), key=operator.attrgetter('displayname'))
+        subscribers = self.getDirectSubscribers()
+        subscribers.update(self.getIndirectSubscribers())
+        return subscribers
 
     def getDirectSubscribers(self):
         """See IQuestion."""
-        return sorted(
-            self.subscribers, key=operator.attrgetter('displayname'))
+        subscribers = QuestionNotificationRecipientSet()
+        reason = ("You received this question notification because you are "
+                  "a direct subscriber of the question.")
+        subscribers.add(self.subscribers, reason, 'Subscriber')
+        return subscribers
 
     def getIndirectSubscribers(self):
         """See IQuestion."""
-        subscribers = set(self.target.answer_contacts)
-
+        subscribers = QuestionNotificationRecipientSet()
+        subscribers.addAnswerContacts(self.target)
         if self.assignee:
-            subscribers.add(self.assignee)
-
-        return sorted(subscribers, key=operator.attrgetter('displayname'))
+            reason = ('You received this question notification because you '
+                      'are the assignee for this question.')
+            subscribers.add(self.assignee, reason, 'Assignee')
+        return subscribers
 
     def _newMessage(self, owner, content, action, new_status, subject=None,
                     datecreated=None, update_question_dates=True):

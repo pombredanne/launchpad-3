@@ -1,0 +1,13 @@
+<html>
+    <head>
+        <link rel="openid.server"
+            tal:attributes="href view/server_url" />
+        <meta http-equiv="Refresh"
+            tal:attributes="content view/meta_refresh_content" />
+    </head>
+    <body>
+        <h1>OpenID Identity URL for <a tal:attributes="href view/person_url"
+                tal:content="view/context/displayname">Display Name</a></h1>
+    </body>
+</html>
+

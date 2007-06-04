@@ -896,6 +896,17 @@ class Person(SQLBase, HasSpecificationsMixin):
 
         return False
 
+    @property
+    def openid_identifier(self):
+        # XXX: This should be a value stored in the database. Calculating
+        # using a hash for now so we can test during database freeze.
+        # Bug #118200
+        # -- StuartBishop 20070528
+        if self.isTeam():
+            return None
+        else:
+            return 'temp%d' % self.id
+
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
         """See IPerson."""
@@ -1588,6 +1599,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         return Archive.selectOneBy(owner=self)
 
+
 class PersonSet:
     """The set of persons."""
     implements(IPersonSet)
@@ -1689,6 +1701,20 @@ class PersonSet:
         if ignore_merged:
             query = AND(query, Person.q.mergedID==None)
         return Person.selectOne(query)
+
+    def getByOpenIdIdentifier(self, openid_identifier):
+        """Returns a Person with the given openid_identifier, or None."""
+        # XXX: This should be a value stored in the database. Calculating
+        # using a hash for now so we can test during database freeze.
+        # Bug #118200
+        # -- StuartBishop 20070528
+        if openid_identifier.startswith('temp'):
+            try:
+                id = int(openid_identifier[4:])
+            except ValueError:
+                return None
+            return self.get(id)
+        return None
 
     def updateStatistics(self, ztm):
         """See IPersonSet."""
