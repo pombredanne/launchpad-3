@@ -307,16 +307,16 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base',
-            priority_name='important')
+            priority_name='extra')
         changer.initialize()
         changer.processChildrenChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'IMPORTANT'\n"
+            "INFO: Override Priority to: 'EXTRA'\n"
             "ERROR: 'mozilla-firefox' binary isn't published in warty/hppa\n"
-            "INFO: 'mozilla-firefox/main/base/EXTRA' "
+            "INFO: 'mozilla-firefox/main/base/IMPORTANT' "
                 "binary overridden in warty/i386")
 
     def test_processChildrenChange_error(self):

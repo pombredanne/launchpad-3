@@ -12,11 +12,11 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.lp import READ_COMMITTED_ISOLATION
 
 
-class PackageCacheUpdater(LaunchpadScript):
+class PackageCacheUpdater(LaunchpadCronScript):
     def updateDistroSeriesCache(self, distroseries):
         self.logger.info('%s %s starting' % (
             distroseries.distribution.name, distroseries.name))

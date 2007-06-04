@@ -10,11 +10,11 @@ import _pythonpath
 import logging
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.branch_scanner import BranchScanner
 
 
-class UpdateBranches(LaunchpadScript):
+class UpdateBranches(LaunchpadCronScript):
     def main(self):
         # We don't want debug messages from bzr at that point.
         bzr_logger = logging.getLogger("bzr")
