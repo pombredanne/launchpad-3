@@ -41,6 +41,8 @@ class ParamikoVendor(ssh.ParamikoVendor):
     def __init__(self):
         ssh.ParamikoVendor.__init__(self)
         self._ssh_transports = []
+        self._ssh_channels = []
+        self._sftp_clients = []
 
     def _connect(self, username, password, host, port):
         transport = ssh.ParamikoVendor._connect(
@@ -48,7 +50,19 @@ class ParamikoVendor(ssh.ParamikoVendor):
         self._ssh_transports.append(transport)
         return transport
 
+    def connect_sftp(self, username, password, host, port):
+        client = ssh.ParamikoVendor.connect_sftp(
+            self, username, password, host, port)
+        self._sftp_clients.append(client)
+        return client
+
     def _closeAllTransports(self):
+        if self._sftp_clients:
+            while self._sftp_clients:
+                client = self._sftp_clients.pop()
+                client.close()
+            sftp.clear_connection_cache()
+            gc.collect()
         while self._ssh_transports:
             connection = self._ssh_transports.pop()
             connection.close()
@@ -153,8 +167,17 @@ class SSHCodeHostingServer(CodeHostingServer):
 
     def forceParamiko(self):
         _old_vendor_manager = ssh._ssh_vendor_manager._cached_ssh_vendor
-        ssh._ssh_vendor_manager._cached_ssh_vendor = ssh.ParamikoVendor()
+        ssh._ssh_vendor_manager._cached_ssh_vendor = ParamikoVendor()
         return _old_vendor_manager
+
+    def getTransport(self, path=None):
+        if path is None:
+            path = ''
+        transport = get_transport(self.get_url()).clone(path)
+        return transport
+
+    def closeAllConnections(self):
+        ssh._ssh_vendor_manager._cached_ssh_vendor._closeAllTransports()
 
     def setUp(self):
         self._real_home, self._fake_home = self.setUpFakeHome()
@@ -164,6 +187,7 @@ class SSHCodeHostingServer(CodeHostingServer):
         self.server.startService()
 
     def tearDown(self):
+        self.closeAllConnections()
         self.server.stopService()
         os.environ['HOME'] = self._real_home
         CodeHostingServer.tearDown(self)
@@ -199,37 +223,6 @@ class SFTPCodeHostingServer(SSHCodeHostingServer):
     def setUp(self):
         SSHCodeHostingServer.setUp(self)
         self._schema = 'sftp'
-        self._clients_to_close = []
-
-    def tearDown(self):
-        self._closeClients(self._clients_to_close)
-        SSHCodeHostingServer.tearDown(self)
-
-    def _closeClients(self, clients):
-        while clients:
-            client = clients.pop()
-            client.close()
-            client.sock.transport.close()
-
-    def closeAllConnections(self):
-        """Closes all open bzrlib SFTP connections.
-
-        bzrlib doesn't provide a facility for closing sftp connections. The
-        closest it gets is clearing the connection cache and forcing the
-        connection objects to be garbage collected. This means that this method
-        won't actually close a connection if a reference to it is still around.
-        """
-        self._closeClients(sftp._connected_hosts.values())
-        sftp.clear_connection_cache()
-        gc.collect()
-
-    def getTransport(self, path=None):
-        """Get a paramiko transport pointing to `path` on the base server."""
-        if path is None:
-            path = ''
-        transport = get_transport(self.get_url()).clone(path)
-        self._clients_to_close.append(transport._sftp)
-        return transport
 
 
 class SmartSSHCodeHostingServer(SSHCodeHostingServer):
@@ -237,20 +230,6 @@ class SmartSSHCodeHostingServer(SSHCodeHostingServer):
     def setUp(self):
         SSHCodeHostingServer.setUp(self)
         self._schema = 'bzr+ssh'
-
-    def forceParamiko(self):
-        _old_vendor_manager = ssh._ssh_vendor_manager._cached_ssh_vendor
-        ssh._ssh_vendor_manager._cached_ssh_vendor = ParamikoVendor()
-        return _old_vendor_manager
-
-    def getTransport(self, path=None):
-        if path is None:
-            path = ''
-        transport = get_transport(self.get_url()).clone(path)
-        return transport
-
-    def closeAllConnections(self):
-        ssh._ssh_vendor_manager._cached_ssh_vendor._closeAllTransports()
 
 
 class TestSSHService(SSHService):
