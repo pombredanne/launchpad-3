@@ -154,8 +154,8 @@ class IDistributionMirror(Interface):
         title=_('Date Created'), required=True, readonly=True)
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
-        description=_('Notes on the current status of the mirror (only '
-                      'visible to admins).'))
+        description=_("Notes on the current status of the mirror (only "
+                      "visible to admins and the mirror's registrant)."))
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
