@@ -5,12 +5,7 @@ For now, we put a link on the `code` page:
   >>> browser.url
   'http://code.launchpad.dev/+code-imports'
 
-We don't have any sample data yet:
-
-  >>> 'No code imports found!' in browser.contents
-  True
-
-But if we create one:
+So far, there is only one CodeImport in the sample data:
 
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.interfaces import ICodeImportSet
@@ -21,16 +16,14 @@ But if we create one:
   >>> series = getUtility(IProductSeriesSet).get(1)
   >>> product = series.product
   >>> codeimportset = getUtility(ICodeImportSet)
-  >>> newimport = codeimportset.new(
-  ...     series=series, product=product,
-  ...     name='sample-import', rcs_type=RevisionControlSystems.SVN,
-  ...     svn_branch_url='http://svn.example.com/hello/trunk')
+  >>> codeimport, = codeimportset.getAll()
+  >>> codeimport.name
+  u'sample'
   >>> logout()
 
-and refresh the page, the message changes:
+And it shows up in the page:
 
-  >>> browser.reload()
-  >>> 'Code imports found!' in browser.contents
+  >>> 'sample' in browser.contents
   True
 
 

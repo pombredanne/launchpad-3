@@ -533,6 +533,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -1121,6 +1127,14 @@ INSERT INTO calendarsubscription (id, subject, "object", colour, date_created) V
 
 
 ALTER TABLE calendarsubscription ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codeimport DISABLE TRIGGER ALL;
+
+INSERT INTO codeimport (id, date_created, name, product, series, branch, rcs_type, svn_branch_url, cvs_root, cvs_module) VALUES (1, '2007-06-04 12:27:18.669658', 'sample', 8, 4, NULL, 2, 'http://svn.example.org', NULL, NULL);
+
+
+ALTER TABLE codeimport ENABLE TRIGGER ALL;
 
 
 ALTER TABLE component DISABLE TRIGGER ALL;
@@ -3121,6 +3135,20 @@ ALTER TABLE officialbugtag DISABLE TRIGGER ALL;
 
 
 ALTER TABLE officialbugtag ENABLE TRIGGER ALL;
+
+
+ALTER TABLE openidassociations DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE openidassociations ENABLE TRIGGER ALL;
+
+
+ALTER TABLE openidauthorization DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE openidauthorization ENABLE TRIGGER ALL;
 
 
 ALTER TABLE packagebugcontact DISABLE TRIGGER ALL;

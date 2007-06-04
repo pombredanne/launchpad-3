@@ -12,9 +12,40 @@
     <p>No code imports found!</p>
   </tal:block>
 
-  <tal:block tal:condition="batch">
-    <p>Code imports found!</p>
-  </tal:block>
+  <table class="listing" tal:condition="batch">
+    <thead>
+      <tr>
+        <th>
+          Date Created
+        </th>
+        <th>
+          Name
+        </th>
+        <th>
+          Product
+        </th>
+        <th>
+          Series
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="b batch">
+        <td tal:content="structure b/date_created/fmt:datetime">
+          some date
+        </td>
+        <td tal:content="b/name">
+          name
+        </td>
+        <td tal:content="b/product/name">
+          product-name
+        </td>
+        <td tal:content="b/series/name">
+          series-name
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
 </div>
 

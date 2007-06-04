@@ -11,4 +11,8 @@
     <allow interface="canonical.launchpad.interfaces.ICodeImportSet" />
   </securedutility>
 
+  <content class="canonical.launchpad.database.CodeImport">
+    <allow interface="canonical.launchpad.interfaces.ICodeImport" />
+  </content>
+
 </configure>
