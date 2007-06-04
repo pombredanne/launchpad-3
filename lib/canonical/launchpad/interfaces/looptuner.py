@@ -11,8 +11,8 @@ from zope.interface import Interface
 class ITunableLoop(Interface):
     """Interface for self-tuning loop bodies to be driven by LoopTuner.
 
-    To construct a self-tuning batched loop, define your loop body as a
-    derivative of TunableLoop and pass an instance to your LoopTuner.
+    To construct a self-tuning batched loop, define your loop body as a class
+    implementing TunableLoop, and pass an instance to your LoopTuner.
     """
     def isDone(self):
         """Is this loop finished?

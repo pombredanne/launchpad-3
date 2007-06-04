@@ -55,10 +55,10 @@ class PouringLoop:
         logging.info("pouring %s: %d rows (%d-%d)"
                      % (self.from_table, batch_size, self.lowest_id, next))
 
-        self.cur.execute("INSERT INTO %s (SELECT * FROM %s WHERE id <= %d)"
+        self.cur.execute("INSERT INTO %s (SELECT * FROM %s WHERE id < %d)"
                          % (self.to_table, self.from_table, next))
 
-        self.cur.execute("DELETE FROM %s WHERE id <= %d"
+        self.cur.execute("DELETE FROM %s WHERE id < %d"
                          % (self.from_table, next))
 
         self.lowest_id = next

@@ -8,6 +8,8 @@ __all__ = ['LoopTuner']
 import logging
 import time
 
+from canonical.launchpad.interfaces.looptuner import ITunableLoop
+
 
 class LoopTuner:
     """A loop that tunes itself to approximate an ideal time per iteration.
@@ -42,8 +44,8 @@ class LoopTuner:
 
         Parameters:
 
-        operation: an object implementing the loop body.  It should support
-        the ITunableLoop interface.
+        operation: an object implementing the loop body.  It must support the
+            ITunableLoop interface.
 
         goal_seconds: the ideal number of seconds for any one iteration to
             take.  The algorithm will vary chunk size in order to stick close
@@ -57,7 +59,7 @@ class LoopTuner:
             reason, since reaching floating-point infinity would seriously
             break the algorithm's arithmetic.
         """
-
+        assert(ITunableLoop.providedBy(operation))
         self.operation = operation
         self.goal_seconds = float(goal_seconds)
         self.minimum_chunk_size = minimum_chunk_size

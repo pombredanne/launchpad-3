@@ -23,6 +23,19 @@ adjust themselves dynamically to actual performance.
     >>> from canonical.launchpad.utilities.looptuner import LoopTuner
     >>> from canonical.launchpad.interfaces.looptuner import ITunableLoop
 
+The LoopTuner requires the operation you define for it to implement the
+ITunableLoop interface.
+
+    >>> class NotATunableLoop:
+    ...     def isDone(self):
+    ...         return True
+    ...     def __call__(self, chunk_size):
+    ...         "This never gets called"
+    >>> LoopTuner(NotATunableLoop(), 1, 10)
+    Traceback (most recent call last):
+    ...
+    AssertionError
+
 
 == Chunk Size Convergence ==
 
