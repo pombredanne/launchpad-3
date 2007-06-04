@@ -14,9 +14,9 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-
-from canonical.lp.dbschema import RevisionControlSystems
 from canonical.launchpad.interfaces import ICodeImport, ICodeImportSet
+from canonical.lp.dbschema import (
+    CodeImportReviewStatus, RevisionControlSystems)
 
 
 class CodeImport(SQLBase):
@@ -29,10 +29,12 @@ class CodeImport(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     product = ForeignKey(dbName='product', foreignKey='Product',
                          notNull=True)
-    series = ForeignKey(dbName='series', foreignKey='ProductSeries',
-                        notNull=True)
+    series = ForeignKey(dbName='series', foreignKey='ProductSeries')
     branch = ForeignKey(dbName='branch', foreignKey='Branch',
                         default=None)
+
+    review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
+        default=CodeImportReviewStatus.NEW)
 
     rcs_type = EnumCol(schema=RevisionControlSystems,
         notNull=False, default=None)

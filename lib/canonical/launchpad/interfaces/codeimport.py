@@ -14,6 +14,8 @@ from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.productseries import (
     validate_cvs_module, validate_cvs_root)
 from canonical.launchpad.validators.name import name_validator
+from canonical.lp.dbschema import CodeImportReviewStatus
+
 
 class ICodeImport(Interface):
     """A code import to a Bazaar Branch."""
@@ -31,6 +33,13 @@ class ICodeImport(Interface):
     series = Attribute("The release series whose branch will be set to the "
         "imported branch when it is first published.")
     branch = Attribute('The Bazaar branch produced by the import system.')
+
+    review_status = Choice(
+        title=_('Review Status'), vocabulary='CodeImportReviewStatus',
+        default=CodeImportReviewStatus.NEW,
+        description=_('Before a code import is performed, it is reviewed.'
+            ' Only when the import request has been reviewed will the import'
+            ' be processed.')
 
     rcs_type = Choice(title=_("Type of RCS"),
         required=True, vocabulary='RevisionControlSystems',
