@@ -77,7 +77,9 @@ If we abort the transaction now, the connection is usable:
 == Disconnection on cursor() ==
 
 If the connection has previously been disconnected, a call to
-connection.cursor() will result in an attempt to reconnect:
+connection.cursor() will result in an attempt to reconnect.  This is a
+common case if the database connection has dropped before the
+transaction starts.
 
     >>> portforward.tearDown()
     >>> transaction.abort()
@@ -85,6 +87,7 @@ connection.cursor() will result in an attempt to reconnect:
     Traceback (most recent call last):
       ...
     Retry: ...
+    >>> portforward.setUp()
 
 Now when we abort the transaction, we should have a usable connection
 again:

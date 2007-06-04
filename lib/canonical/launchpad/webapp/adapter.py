@@ -233,6 +233,17 @@ class ReconnectingCursor:
     fetchall = _handle_disconnections('fetchall')
 
 
+class ReconnectingPsycopgConnection(PsycopgConnection):
+    """A PsycopgConnection subclass that joins the Zope transaction
+    when cursor() is called.
+    """
+
+    def cursor(self):
+        """See IZopeConnection"""
+        self.registerForTxn()
+        return super(ReconnectingPsycopgConnection, self).cursor()
+
+
 class ReconnectingDatabaseAdapter(PsycopgAdapter):
     """A Postgres database adapter that can reconnect to the database."""
 
@@ -241,7 +252,7 @@ class ReconnectingDatabaseAdapter(PsycopgAdapter):
     def connect(self):
         if not self.isConnected():
             try:
-                self._v_connection = PsycopgConnection(
+                self._v_connection = ReconnectingPsycopgConnection(
                     self.Connection(self._connection_factory), self)
             except psycopg.Error, error:
                 raise DatabaseException(str(error))
