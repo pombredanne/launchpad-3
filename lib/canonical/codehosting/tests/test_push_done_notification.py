@@ -17,7 +17,7 @@ from twisted.internet import defer
 
 from canonical.codehosting import bazaarfs
 from canonical.codehosting.sftponly import (
-    BazaarFileTransferServer, SFTPOnlyAvatar)
+    BazaarFileTransferServer, LaunchpadAvatar)
 from canonical.codehosting.tests.helpers import AvatarTestCase
 
 
@@ -43,7 +43,7 @@ class TestPushDoneNotification(AvatarTestCase):
     def setUp(self):
         AvatarTestCase.setUp(self)
         self.launchpad = Launchpad()
-        self.avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+        self.avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
                                      self.launchpad)
         self.server = self.avatar.lookupSubsystem('sftp', None)
         self.filesystem = self.server.client.filesystem
@@ -217,7 +217,7 @@ class BazaarFileTransferServerTests(AvatarTestCase):
 
     def test_branchDirty(self):
         launchpad = Launchpad()
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
                                 launchpad)
         server = BazaarFileTransferServer(avatar=avatar)
         server.branchDirtied(1234)
@@ -228,8 +228,8 @@ class BazaarFileTransferServerTests(AvatarTestCase):
 
     def test_branchDirtyDuplicate(self):
         launchpad = Launchpad()
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                launchpad)
+        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                 launchpad)
         server = BazaarFileTransferServer(avatar=avatar)
         server.branchDirtied(1234)
         server.branchDirtied(1234)

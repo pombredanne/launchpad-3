@@ -12,7 +12,7 @@ from twisted.conch.interfaces import ISession
 from twisted.internet.process import ProcessExitedAlready
 from twisted.internet.protocol import ProcessProtocol
 
-from canonical.codehosting.sftponly import SFTPOnlyAvatar
+from canonical.codehosting.sftponly import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import AvatarTestCase
 
 from canonical.codehosting import smartserver, plugins
@@ -67,7 +67,7 @@ class TestExecOnlySession(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = SFTPOnlyAvatar(
+        self.avatar = LaunchpadAvatar(
             'alice', self.tmpdir, self.aliceUserDict, None)
         self.reactor = MockReactor()
         self.session = smartserver.ExecOnlySession(self.avatar, self.reactor)
@@ -216,7 +216,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = SFTPOnlyAvatar(
+        self.avatar = LaunchpadAvatar(
             'alice', self.tmpdir, self.aliceUserDict, None)
         self.reactor = MockReactor()
         self.session = smartserver.RestrictedExecOnlySession(
@@ -279,7 +279,7 @@ class TestSessionIntegration(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        self.avatar = SFTPOnlyAvatar(
+        self.avatar = LaunchpadAvatar(
             'alice', self.tmpdir, self.aliceUserDict, None)
 
     def test_avatarAdaptsToRestrictedExecOnlySession(self):

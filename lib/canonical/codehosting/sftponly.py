@@ -36,7 +36,7 @@ class SubsystemOnlySession(session.SSHSession, object):
         self.loseConnection()
 
 
-class SFTPOnlyAvatar(avatar.ConchUser):
+class LaunchpadAvatar(avatar.ConchUser):
 
     def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
         # Double-check that we don't get unicode -- directory names on the file
@@ -80,7 +80,7 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         that name exists.
 
         This method guarantees repeatable reads: on a particular instance of
-        SFTPOnlyAvatar, fetchProductID will always return the same value for a
+        LaunchpadAvatar, fetchProductID will always return the same value for a
         given productName.
         """
         productID = self._productIDs.get(productName)
@@ -138,10 +138,10 @@ class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
         self.filesystem = avatar.makeFileSystem()
 
 
-components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
+components.registerAdapter(AdaptFileSystemUserToISFTP, LaunchpadAvatar,
                            filetransfer.ISFTPServer)
 
-components.registerAdapter(launch_smart_server, SFTPOnlyAvatar, ISession)
+components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
 
 
 class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
@@ -151,7 +151,7 @@ class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
 class Realm:
     implements(IRealm)
 
-    avatarFactory = SFTPOnlyAvatar
+    avatarFactory = LaunchpadAvatar
 
     def __init__(self, homeDirsRoot, authserver):
         self.homeDirsRoot = homeDirsRoot

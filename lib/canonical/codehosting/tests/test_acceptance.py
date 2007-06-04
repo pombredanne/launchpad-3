@@ -25,7 +25,7 @@ from twisted.python.util import sibpath
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting.sftponly import (
-    BazaarFileTransferServer, SFTPOnlyAvatar)
+    BazaarFileTransferServer, LaunchpadAvatar)
 from canonical.codehosting.tests.helpers import (
     deferToThread, TwistedBzrlibLayer)
 from canonical.config import config
@@ -231,10 +231,10 @@ class SmartSSHCodeHostingServer(SSHCodeHostingServer):
 
 
 class TestSSHService(SFTPService):
-    """SSH service that uses the the TestSFTPOnlyAvatar and installs the test
+    """SSH service that uses the the TestLaunchpadAvatar and installs the test
     keys in a place that the SSH server can find them.
 
-    This class, TestSFTPOnlyAvatar and TestBazaarFileTransferServer work
+    This class, TestLaunchpadAvatar and TestBazaarFileTransferServer work
     together to provide a threading event which is set when the first
     connecting XXX client closes its connection to the SSH server.
     """
@@ -261,17 +261,17 @@ class TestSSHService(SFTPService):
         return realm
 
     def makeAvatar(self, avatarId, homeDirsRoot, userDict, launchpad):
-        self.avatar = TestSFTPOnlyAvatar(self, avatarId, homeDirsRoot,
-                                         userDict, launchpad)
+        self.avatar = TestLaunchpadAvatar(self, avatarId, homeDirsRoot,
+                                          userDict, launchpad)
         return self.avatar
 
 
-class TestSFTPOnlyAvatar(SFTPOnlyAvatar):
+class TestLaunchpadAvatar(LaunchpadAvatar):
     """SSH avatar that uses the TestBazaarFileTransferServer."""
 
     def __init__(self, service, avatarId, homeDirsRoot, userDict, launchpad):
-        SFTPOnlyAvatar.__init__(self, avatarId, homeDirsRoot, userDict,
-                                launchpad)
+        LaunchpadAvatar.__init__(self, avatarId, homeDirsRoot, userDict,
+                                 launchpad)
         self.service = service
         self.subsystemLookup = {'sftp': self.makeFileTransferServer}
 

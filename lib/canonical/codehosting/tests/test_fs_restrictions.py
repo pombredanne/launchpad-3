@@ -6,7 +6,7 @@ import unittest
 from twisted.internet import defer
 from twisted.vfs.ivfs import PermissionError, NotFoundError
 
-from canonical.codehosting.sftponly import SFTPOnlyAvatar
+from canonical.codehosting.sftponly import LaunchpadAvatar
 from canonical.codehosting.bazaarfs import (
     SFTPServerRoot, SFTPServerBranch, SFTPServerProductDir,
     SFTPServerProductDirPlaceholder, WriteLoggingDirectory)
@@ -50,7 +50,8 @@ class FakeLaunchpad:
 class TestTopLevelDir(AvatarTestCase):
     def testListDirNoTeams(self):
         # list only user dir + team dirs
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None)
+        avatar = LaunchpadAvatar(
+            'alice', self.tmpdir, self.aliceUserDict, None)
         root = SFTPServerRoot(avatar)
         self.assertEqual(
             [name for name, child in root.children()],
@@ -58,14 +59,16 @@ class TestTopLevelDir(AvatarTestCase):
 
     def testListDirTeams(self):
         # list only user dir + team dirs
-        avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None)
+        avatar = LaunchpadAvatar(
+            'bob', self.tmpdir, self.bobUserDict, None)
         root = SFTPServerRoot(avatar)
         self.assertEqual(
             [name for name, child in root.children()],
             ['.', '..', '~bob', '~test-team'])
 
     def testAllWriteOpsForbidden(self):
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None)
+        avatar = LaunchpadAvatar(
+            'alice', self.tmpdir, self.aliceUserDict, None)
         root = SFTPServerRoot(avatar)
         self.assertRaises(PermissionError, root.createFile, 'xyz')
         self.assertRaises(PermissionError, root.child('~alice').remove)
@@ -73,13 +76,14 @@ class TestTopLevelDir(AvatarTestCase):
             defer.maybeDeferred(root.createDirectory, 'xyz'), PermissionError)
 
     def testUserDirPlusJunk(self):
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None)
+        avatar = LaunchpadAvatar(
+            'alice', self.tmpdir, self.aliceUserDict, None)
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
         self.assertIn('+junk', [name for name, child in userDir.children()])
 
     def testTeamDirPlusJunk(self):
-        avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None)
+        avatar = LaunchpadAvatar('bob', self.tmpdir, self.bobUserDict, None)
         root = avatar.makeFileSystem().root
         userDir = root.child('~test-team')
         self.assertNotIn('+junk', [name for name, child in userDir.children()])
@@ -88,8 +92,8 @@ class TestTopLevelDir(AvatarTestCase):
 class UserDirsTestCase(AvatarTestCase):
     def testCreateValidProduct(self):
         # Test creating a product dir.
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                FakeLaunchpad(self))
+        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                 FakeLaunchpad(self))
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
         self.assertEqual(
@@ -105,8 +109,8 @@ class UserDirsTestCase(AvatarTestCase):
         return deferred
 
     def testCreateInvalidProduct(self):
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                FakeLaunchpad(self))
+        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                 FakeLaunchpad(self))
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
@@ -125,7 +129,7 @@ class UserDirsTestCase(AvatarTestCase):
         self.bobUserDict['teams'][1]['initialBranches'] = [ # test-team
             (3, 'thing', [(4, 'another-branch')]),
         ]
-        avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None)
+        avatar = LaunchpadAvatar('bob', self.tmpdir, self.bobUserDict, None)
         root = avatar.makeFileSystem().root
 
         # The user's dir with have mozilla-firefox, product-x, and also +junk.
@@ -141,8 +145,8 @@ class UserDirsTestCase(AvatarTestCase):
 
 class ProductDirsTestCase(AvatarTestCase):
     def testCreateBranch(self):
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                FakeLaunchpad(self))
+        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                 FakeLaunchpad(self))
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
@@ -193,8 +197,8 @@ class ProductDirsTestCase(AvatarTestCase):
 class ProductPlaceholderTestCase(AvatarTestCase):
 
     def _setUpFilesystem(self):
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                FakeLaunchpad(self))
+        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                 FakeLaunchpad(self))
         return avatar.makeFileSystem()
 
     def testBranchInPlaceholderNotFound(self):
@@ -264,8 +268,8 @@ class TestSFTPServerBranch(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                FakeLaunchpad(self))
+        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                 FakeLaunchpad(self))
         root = avatar.makeFileSystem().root
         root.setListenerFactory(lambda branch_id: (lambda: None))
         userDir = root.child('~alice')

@@ -17,7 +17,7 @@ from twisted.python.util import mergeFunctionMetadata
 
 
 class AvatarTestCase(TwistedTestCase):
-    """Base class for tests that need an SFTPOnlyAvatar with some basic sample
+    """Base class for tests that need a LaunchpadAvatar with some basic sample
     data.
     """
 
