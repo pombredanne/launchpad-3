@@ -6,7 +6,7 @@ import unittest
 from twisted.internet import defer
 from twisted.vfs.ivfs import PermissionError, NotFoundError
 
-from canonical.codehosting.sftponly import LaunchpadAvatar
+from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.bazaarfs import (
     SFTPServerRoot, SFTPServerBranch, SFTPServerProductDir,
     SFTPServerProductDirPlaceholder, WriteLoggingDirectory)

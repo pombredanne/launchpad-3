@@ -30,7 +30,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.config import config
 from canonical.launchpad.daemons.authserver import AuthserverService
-from canonical.codehosting import sftponly
+from canonical.codehosting import sshserver
 from canonical.codehosting.tests.test_acceptance import (
     AuthserverWithKeys, SSHTestCase, deferToThread)
 from canonical.codehosting.tests.helpers import (
@@ -229,7 +229,7 @@ class UserAuthServerMixin:
     def setUp(self):
         self.portal = Portal(MockRealm())
         self.transport = MockSSHTransport(self.portal)
-        self.user_auth = sftponly.SSHUserAuthServer(self.transport)
+        self.user_auth = sshserver.SSHUserAuthServer(self.transport)
 
 
 class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
@@ -294,7 +294,7 @@ class MockChecker(SSHPublicKeyDatabase):
 
     def requestAvatarId(self, credentials):
         return failure.Failure(
-            sftponly.UserDisplayedUnauthorizedLogin('error message'))
+            sshserver.UserDisplayedUnauthorizedLogin('error message'))
 
 
 class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
@@ -379,7 +379,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         self.authserver.setUp()
         self.authserver_client = TwistedAuthServer(
             config.codehosting.authserver)
-        self.checker = sftponly.PublicKeyFromLaunchpadChecker(
+        self.checker = sshserver.PublicKeyFromLaunchpadChecker(
             self.authserver_client)
         self.public_key = self.authserver.getPublicKey()
         self.sigData = (
@@ -410,7 +410,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         """
         d = self.assertFailure(
             self.checker.requestAvatarId(creds),
-            sftponly.UserDisplayedUnauthorizedLogin)
+            sshserver.UserDisplayedUnauthorizedLogin)
         d.addCallback(
             lambda exception: self.assertEqual(str(exception), error_message))
         return d
@@ -449,7 +449,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         d.addCallback(
             lambda exception:
             self.failIf(isinstance(exception,
-                                   sftponly.UserDisplayedUnauthorizedLogin),
+                                   sshserver.UserDisplayedUnauthorizedLogin),
                         "Should not be a UserDisplayedUnauthorizedLogin"))
         return d
 

@@ -24,7 +24,7 @@ from twisted.conch.ssh import keys
 from twisted.python.util import sibpath
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.codehosting.sftponly import (
+from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
 from canonical.codehosting.tests.helpers import (
     deferToThread, TwistedBzrlibLayer)

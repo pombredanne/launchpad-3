@@ -16,7 +16,7 @@ import unittest
 from twisted.internet import defer
 
 from canonical.codehosting import bazaarfs
-from canonical.codehosting.sftponly import (
+from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
 from canonical.codehosting.tests.helpers import AvatarTestCase
 
