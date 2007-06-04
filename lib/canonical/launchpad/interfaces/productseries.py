@@ -8,6 +8,8 @@ __all__ = [
     'IProductSeries',
     'IProductSeriesSet',
     'IProductSeriesSourceAdmin',
+    'validate_cvs_root',
+    'validate_cvs_module',
     ]
 
 import re

@@ -30,8 +30,10 @@ class ICodeImport(Interface):
     product = Choice(
         title=_('Project'), required=True, vocabulary='Product',
         description=_("The project this code import belongs to."))
-    series = Attribute("The release series whose branch will be set to the "
-        "imported branch when it is first published.")
+    series = Choice(
+        title=_('Release Series'), required=False, vocabulary='ProductSeries',
+        description=_("The release series whose branch will be set to the "
+        "imported branch when it is first published."))
     branch = Attribute('The Bazaar branch produced by the import system.')
 
     review_status = Choice(
@@ -39,7 +41,7 @@ class ICodeImport(Interface):
         default=CodeImportReviewStatus.NEW,
         description=_('Before a code import is performed, it is reviewed.'
             ' Only when the import request has been reviewed will the import'
-            ' be processed.')
+            ' be processed.'))
 
     rcs_type = Choice(title=_("Type of RCS"),
         required=True, vocabulary='RevisionControlSystems',
