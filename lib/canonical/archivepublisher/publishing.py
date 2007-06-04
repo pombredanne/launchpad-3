@@ -293,7 +293,6 @@ class Publisher(object):
         mode = stat.S_IMODE(os.stat(source_index_path).st_mode)
         os.chmod(source_index_path, mode | stat.S_IWGRP)
 
-
         for arch in distroseries.architectures:
             arch_path = 'binary-%s' % arch.architecturetag
             self.log.debug("Generating Packages for %s" % arch_path)
@@ -322,6 +321,17 @@ class Publisher(object):
             # make the files group writable
             mode = stat.S_IMODE(os.stat(package_index_path).st_mode)
             os.chmod(package_index_path, mode | stat.S_IWGRP)
+
+        # Inject static requests for Release files into
+        # 'self.apt_handler.release_files_needed' in a way we can easily
+        # obtain them for NoMoreAptFtpArchive w/o chaging much the rest
+        # of the code a lot.
+        dr_special = self.apt_handler.release_files_needed.setdefault(
+            full_name, {})
+        dr_component_special = dr_special.setdefault(component.name, set())
+        dr_component_special.add('source')
+        for arch in distroseries.architectures:
+            dr_component_special.add("binary-" + arch.architecturetag)
 
     def isAllowed(self, distroseries, pocket):
         """Whether or not the given suite should be considered.
