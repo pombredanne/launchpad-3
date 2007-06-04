@@ -310,6 +310,11 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository):
     default_user = 'testuser'
     default_team = 'testteam'
 
+    def getDefaultServer(self):
+        authserver = AuthserverWithKeys(self.default_user, self.default_team)
+        branches_root = '/tmp/sftp-test'
+        return SSHCodeHostingServer('sftp', authserver, branches_root)
+
     def installServer(self, server):
         self.server = server
         self.default_user = server.authserver.testUser
@@ -328,11 +333,7 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository):
         self.setUpSignalHandling()
 
         if self.server is None:
-            authserver = AuthserverWithKeys(
-                self.default_user, self.default_team)
-            branches_root = '/tmp/sftp-test'
-            self.server = SSHCodeHostingServer(
-                'sftp', authserver, branches_root)
+            self.installServer(self.getDefaultServer())
 
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
@@ -342,12 +343,6 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository):
 
     def getTransport(self, relpath=None):
         return self.server.getTransport(relpath)
-
-    def getTransportURL(self, relpath=None, username=None):
-        """Return the base URL for the tests."""
-        if relpath is None:
-            relpath = ''
-        return self.server.get_url(username) + relpath
 
 
 class AcceptanceTests(SSHTestCase):
@@ -390,6 +385,12 @@ class AcceptanceTests(SSHTestCase):
         """
         return self.runAndWaitForDisconnect(
             lambda: bzrlib.branch.Branch.open(remote_url).last_revision())
+
+    def getTransportURL(self, relpath=None, username=None):
+        """Return the base URL for the tests."""
+        if relpath is None:
+            relpath = ''
+        return self.server.get_url(username) + relpath
 
     def setUp(self):
         super(AcceptanceTests, self).setUp()
