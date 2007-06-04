@@ -112,6 +112,7 @@ class TestLaunchpadServer(TestCaseInTempDir):
     def test_construct(self):
         self.assertEqual(self.backing_transport, self.server.backing_transport)
         self.assertEqual(self.user_id, self.server.user_id)
+        self.assertEqual('foo', self.server.user_name)
         self.assertEqual(self.authserver, self.server.authserver)
 
     def test_base_path_translation(self):

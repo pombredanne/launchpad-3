@@ -471,9 +471,12 @@ class AcceptanceTests(SSHTestCase):
 
     def _testMissingParentDirectory(self, relpath):
         transport = self.server.getTransport(relpath).clone('..')
-        self.assertRaises((NoSuchFile, PermissionDenied),
-                          self.runAndWaitForDisconnect,
-                          transport.mkdir, 'hello')
+        try:
+            self.assertRaises(
+                (NoSuchFile, PermissionDenied),
+                self.runAndWaitForDisconnect, transport.mkdir, 'hello')
+        except self.failureException, e:
+            raise AssertionError("%s: %s" % (e, relpath))
 
     @deferToThread
     def test_db_rename_branch(self):

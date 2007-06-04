@@ -78,7 +78,9 @@ class LaunchpadServer(Server):
             branches are actually stored.
         """
         self.authserver = authserver
-        self.user_id = user_id
+        self.user_dict = self.authserver.getUser(user_id)
+        self.user_id = self.user_dict['id']
+        self.user_name = self.user_dict['name']
         self.backing_transport = transport
         # XXX: JonathanLange 2007-05-29, Instead of fetching branch information
         # as needed, we load it all when the server is started. This mimics the
@@ -88,7 +90,7 @@ class LaunchpadServer(Server):
         self._branches = dict(self._iter_branches())
 
     def _iter_branches(self):
-        for team_dict in self.authserver.getUser(self.user_id)['teams']:
+        for team_dict in self.user_dict['teams']:
             products = self.authserver.getBranchesForUser(team_dict['id'])
             for product_id, product_name, branches in products:
                 if product_name == '':
@@ -121,16 +123,44 @@ class LaunchpadServer(Server):
         :param product: The name of the product to which the new branch
             belongs.
         :param branch: The name of the new branch.
+
+        :raise TransportNotPossible: If 'user' doesn't begin with a '~'.
+        :raise PermissionDenied: If 'product' is not the name of an existing
+            product.
         :return: The database ID of the new branch.
         """
         if not user.startswith('~'):
             raise TransportNotPossible(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
-        user_id = self.authserver.getUser(user)['id']
+        user_dict = self.authserver.getUser(user)
+        if not user_dict:
+            raise NoSuchFile("%s doesn't exist" % (user,))
+        user_id = user_dict['id']
         # If product is '+junk', then product_id will be '', which is XML-RPC's
         # way of saying None.
-        product_id = self.authserver.fetchProductID(product)
+        if product == '+junk':
+            if user_id == self.user_id:
+                product_id = ''
+            else:
+                # XXX: JonathanLange 2007-06-04, This should perhaps be
+                # 'PermissionDenied', not 'NoSuchFile'. However bzrlib doesn't
+                # translate PermissionDenied errors. See _translate_error in
+                # bzrlib/transport/remote.py.
+                raise NoSuchFile(
+                    "+junk is only allowed under user directories, not team "
+                    "directories.")
+        else:
+            product_id = self.authserver.fetchProductID(product)
+            if not product_id:
+                # XXX: JonathanLange 2007-06-04, This should perhaps be
+                # 'PermissionDenied', not 'NoSuchFile'. However bzrlib doesn't
+                # translate PermissionDenied errors. See _translate_error in
+                # bzrlib/transport/remote.py.
+                raise NoSuchFile(
+                    "Directories directly under a user directory must be "
+                    "named after a product name registered in Launchpad "
+                    "<https://launchpad.net/>.")
         branch_id = self.authserver.createBranch(user_id, product_id, branch)
         # Maintain the local cache of branch information. Alternatively, we
         # could do: self._branches = dict(self._iter_branches())
@@ -167,7 +197,7 @@ class LaunchpadServer(Server):
         try:
             branch_id = self._branches[(user, product, branch)]
         except KeyError:
-            raise UntranslatablePath(path=virtual_path, user=self.user_id)
+            raise UntranslatablePath(path=virtual_path, user=self.user_name)
         return '/'.join([branch_id_to_path(branch_id), path])
 
     def _factory(self, url):
