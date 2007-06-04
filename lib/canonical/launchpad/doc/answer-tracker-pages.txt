@@ -688,12 +688,13 @@ searchResults() method. The returned results are batched.
     >>> questions = search_view.searchResults()
     >>> questions
     <canonical.launchpad.webapp.batching.BatchNavigator ...>
-    >>> print "\n".join([question.title for question in questions.batch])
+    >>> for question in questions.batch:
+    ...     print question.title.encode('us-ascii', 'backslashreplace')
+    Problema al recompilar kernel con soporte smp (doble-n\xfacleo)
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
     Installation of Java Runtime Environment for Mozilla
-    Slow system
 
 These were the default results when no search is entered. The user
 can tweak the search and filter the results:

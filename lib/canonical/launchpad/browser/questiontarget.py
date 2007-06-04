@@ -326,11 +326,6 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             # Search button wasn't clicked, use the default filter.
             # Copy it so that it doesn't get mutated accidently.
             self.search_params = dict(self.getDefaultFilter())
-        if 'language' not in self.search_params:
-            # The language param is not required when the user speaks the
-            # only language that the target's questions are asked in.
-            # By default, search matches questions to the user's languages.
-            self.search_params['language'] = set(self.user_support_languages)
 
         # The search parameters used is defined by the union of the fields
         # present in ISearchQuestionsForm (search_text, status, sort) and the
