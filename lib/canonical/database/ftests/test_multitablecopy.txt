@@ -35,7 +35,7 @@ And set up a prospective MultiTableCopy on them.  The copier will be called
 "test" (a name that will be used in the holding tables it creates) and copy
 the tables "numeric" and "textual," in that order.
 
-    >>> copier = MultiTableCopy('test', ['numeric', 'textual'])
+    >>> copier = MultiTableCopy('test', ['numeric', 'textual'], 0.1, 1)
 
 
 === Ordering ===
@@ -184,7 +184,7 @@ linking the numeric entries to a new copy of "many" in the textual table.  In
 order to make redirection of the foreign key work properly, we must start with
 the table that the foreign key will refer to.
 
-    >>> copier = MultiTableCopy('test', ['textual', 'numeric'])
+    >>> copier = MultiTableCopy('test', ['textual', 'numeric'], 1, 1)
     >>> copier.extract('textual', where_clause="t='many'")
     >>> copier.extract('numeric', joins=['textual'])
 
@@ -230,7 +230,7 @@ We may get interrupted while going through the multi-table copy.  In that case,
 data will be left behind.  If we never get to start the pouring stage, we end
 up with incomplete data that should be deleted:
 
-    >>> copier = MultiTableCopy('test', ['textual', 'numeric'])
+    >>> copier = MultiTableCopy('test', ['textual', 'numeric'], 0.01, 2)
     >>> copier.extract('textual', where_clause="t='many'")
     >>> copier.extract('numeric', joins=['textual'])
     >>> copier.needsRecovery()
@@ -266,7 +266,7 @@ through.  The particular sabot we slip into the machine is a row whose new id
 (when it is poured back in the source table) is identical to its original id,
 which means that the attempt to insert it will violate a unique constraint.
 
-    >>> copier = MultiTableCopy('test', ['textual', 'numeric'])
+    >>> copier = MultiTableCopy('test', ['textual', 'numeric'], 0.01, 2)
     >>> copier.extract('textual')
     >>> copier.extract('numeric', joins=['textual'])
     >>> cur.execute("UPDATE %s SET n=n+100" % numeric_holding_table)
@@ -314,7 +314,7 @@ We undo our sabotage and try again.  The remaining data will be copied.
 When this happens, it'll usually be because one process died and the next one
 does the recovery.  We set up a new copier to simulate this chain of events.
 
-    >>> copier = MultiTableCopy('test', ['textual', 'numeric'])
+    >>> copier = MultiTableCopy('test', ['textual', 'numeric'], 0.1, 3)
     >>> copier.needsRecovery()
     True
 
