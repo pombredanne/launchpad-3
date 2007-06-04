@@ -27,7 +27,7 @@ from canonical.lp.dbschema import (
     SpecificationFilter, SprintSpecificationStatus)
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
-    BranchVisibilityPolicy)
+    BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -45,7 +45,7 @@ from canonical.launchpad.database.question import QuestionTargetSearch
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              HasSprintsMixin, KarmaContextMixin):
+              HasSprintsMixin, KarmaContextMixin, BranchVisibilityPolicyMixin):
     """A Project"""
 
     implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
@@ -97,11 +97,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
-
-    @property
-    def branch_visibility_policy(self):
-        """See IHasBranchVisibilityPolicy."""
-        return BranchVisibilityPolicy(project=self)
 
     @property
     def products(self):

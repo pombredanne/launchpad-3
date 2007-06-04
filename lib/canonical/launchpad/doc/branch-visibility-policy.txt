@@ -34,43 +34,27 @@ There are currently four visibility policies:
 
 == IHasBranchVisibilityPolicy ==
 
-The interface IHasBranchVisibilityPolicy is used to define the attribute
-`branch_visibility_policy`.  Both IProject and IProduct inherit from
-this interface as both projects and products can set branch visibility
-policies.
+The interface IHasBranchVisibilityPolicy is used to define the public
+interface for modifying the branch visibility policy items.  Both
+IProject and IProduct inherit from this interface as both projects and
+products can set branch visibility policies.
 
     >>> from zope.component import getUtility
+    >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IProjectSet, IHasBranchVisibilityPolicy)
     >>> project_set = getUtility(IProjectSet)
     >>> mozilla = project_set.getByName('mozilla')
     >>> IHasBranchVisibilityPolicy.providedBy(mozilla)
     True
+    >>> verifyObject(IHasBranchVisibilityPolicy, mozilla)
+    True
 
     >>> firefox, thunderbird = list(mozilla.products)
 
     >>> IHasBranchVisibilityPolicy.providedBy(firefox)
     True
-
-
-== The policy object ==
-
-The object that is accessed through the branch_visibility_policy
-attribute implements IBranchVisibilityPolicy.
-
-    >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import IBranchVisibilityPolicy
-    >>> policy = firefox.branch_visibility_policy
-    >>> verifyObject(IBranchVisibilityPolicy, policy)
-    True
-
-The policy object has a context that refers to the object that the
-policy applies to.
-
-    >>> policy.context == firefox
-    True
-
-    >>> mozilla.branch_visibility_policy.context == mozilla
+    >>> verifyObject(IHasBranchVisibilityPolicy, firefox)
     True
 
 
@@ -82,7 +66,7 @@ policy applies to.
     >>> ubuntu_gnome_team = person_set.getByName('name18')
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> launchpad = getUtility(IProductSet).getByName('launchpad')
-    >>> policy = launchpad.branch_visibility_policy
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
 
     >>> def teamname(team):
     ...     if team is None:
@@ -90,8 +74,8 @@ policy applies to.
     ...     else:
     ...         return team.displayname
 
-    >>> def print_policy_items(policy):
-    ...     for item in policy.items:
+    >>> def print_policy_items(context):
+    ...     for item in context.branch_visibility_policy_items:
     ...         print "%s: %s" % (teamname(item.team), item.policy.title)
 
 
@@ -103,9 +87,10 @@ is not returned with the items attribute.  In order to override this
 implicit policy you need to explicitly define a policy for everyone, and
 this is done by specifying None for the team.
 
-    >>> print_policy_items(policy)
-    >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.PUBLIC)
-    >>> print_policy_items(policy)
+    >>> print_policy_items(evolution)
+    >>> evolution.setTeamBranchVisibilityPolicy(
+    ...     None, BranchVisibilityPolicy.PUBLIC)
+    >>> print_policy_items(evolution)
     *everyone*: Public
 
 
@@ -114,44 +99,47 @@ this is done by specifying None for the team.
 Setting the policy for a team overrides any existing policy that may
 exist for that team.
 
-    >>> policy.setTeamPolicy(launchpad_team, BranchVisibilityPolicy.PUBLIC)
-    >>> print_policy_items(policy)
+    >>> evolution.setTeamBranchVisibilityPolicy(
+    ...     launchpad_team, BranchVisibilityPolicy.PUBLIC)
+    >>> print_policy_items(evolution)
     *everyone*: Public
     Launchpad Developers: Public
 
 Setting again replaces the policy.
 
-    >>> policy.setTeamPolicy(launchpad_team, BranchVisibilityPolicy.PRIVATE)
-    >>> print_policy_items(policy)
+    >>> evolution.setTeamBranchVisibilityPolicy(
+    ...     launchpad_team, BranchVisibilityPolicy.PRIVATE)
+    >>> print_policy_items(evolution)
     *everyone*: Public
     Launchpad Developers: Private
 
 Setting the policy for *everyone* is done by passing None for the team.
 
-    >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.FORBIDDEN)
-    >>> print_policy_items(policy)
+    >>> evolution.setTeamBranchVisibilityPolicy(
+    ...     None, BranchVisibilityPolicy.FORBIDDEN)
+    >>> print_policy_items(evolution)
     *everyone*: Forbidden
     Launchpad Developers: Private
 
 
 == Removing teams from the policy object ==
 
-    >>> policy.removeTeam(launchpad_team)
-    >>> print_policy_items(policy)
+    >>> evolution.removeTeamFromBranchVisibilityPolicy(launchpad_team)
+    >>> print_policy_items(evolution)
     *everyone*: Forbidden
 
 Attempting to remove a team that doesn't exist is allowed, but does not
 change the state of the policy object.
 
-    >>> policy.removeTeam(launchpad_team)
-    >>> print_policy_items(policy)
+    >>> evolution.removeTeamFromBranchVisibilityPolicy(launchpad_team)
+    >>> print_policy_items(evolution)
     *everyone*: Forbidden
 
 In order to remove a policy assigned to everyone you pass None in for
 the team name.
 
-    >>> policy.removeTeam(None)
-    >>> print_policy_items(policy)
+    >>> evolution.removeTeamFromBranchVisibilityPolicy(None)
+    >>> print_policy_items(evolution)
 
 
 == Listing the policy items ==
@@ -159,70 +147,57 @@ the team name.
 Policy items are listed in alphabetical order of the team display name
 with the policy for *everybody* being first.
 
-    >>> policy.setTeamPolicy(ubuntu_gnome_team, BranchVisibilityPolicy.PRIVATE)
-    >>> policy.setTeamPolicy(launchpad_team, BranchVisibilityPolicy.PRIVATE)
-    >>> print_policy_items(policy)
+    >>> evolution.setTeamBranchVisibilityPolicy(
+    ...     ubuntu_gnome_team, BranchVisibilityPolicy.PRIVATE)
+    >>> evolution.setTeamBranchVisibilityPolicy(
+    ...     launchpad_team, BranchVisibilityPolicy.PRIVATE)
+    >>> print_policy_items(evolution)
     Launchpad Developers: Private
     Ubuntu Gnome Team: Private
 
-    >>> policy.setTeamPolicy(None, BranchVisibilityPolicy.PUBLIC)
-    >>> print_policy_items(policy)
+    >>> evolution.setTeamBranchVisibilityPolicy(
+    ...     None, BranchVisibilityPolicy.PUBLIC)
+    >>> print_policy_items(evolution)
     *everyone*: Public
     Launchpad Developers: Private
     Ubuntu Gnome Team: Private
 
 
-== Inherited policies ==
+== Inherited policy items ==
 
-When a branch visibility policy is created, it has an optional parameter
-of another branch visibility policy that it inherits behaviour from.
+Products can inherit the branch visibility policy items of their
+projects.  If a product has no project, then there are no inherited
+items to inherit.
 
-The inherited behaviour only used if there are no explicit policy items
-set for BranchVisibilityPolicy object.
-
-Branch visibility policies for projects are not created with inherited
-policies.
-
-    >>> mozilla_policy = mozilla.branch_visibility_policy
-    >>> print mozilla_policy.inherited_policy
-    None
-    >>> print mozilla_policy.isUsingInheritedPolicy()
+    >>> print mozilla.isUsingInheritedBranchVisibilityPolicy()
     False
 
-Branch visibility policies for products are created with an inherited
-policy of their project if the project exists.
+The inherited behaviour is only used if there are no explicit policy
+items set
 
-    >>> thunderbird_policy = thunderbird.branch_visibility_policy
-    >>> print thunderbird_policy.inherited_policy.context.name
-    mozilla
-    >>> print thunderbird_policy.isUsingInheritedPolicy()
+    >>> print thunderbird.isUsingInheritedBranchVisibilityPolicy()
     True
 
 Since the Launchpad product doesn't have a project associated with it,
 there is no inherited policy.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> launchpad = getUtility(IProductSet).getByName('launchpad')
-    >>> launchpad_policy = launchpad.branch_visibility_policy
-    >>> print launchpad_policy.inherited_policy
-    None
-    >>> print launchpad_policy.isUsingInheritedPolicy()
+    >>> print launchpad.isUsingInheritedBranchVisibilityPolicy()
     False
 
 Adding a team to the mozilla project will also affect products
 associated with the mozilla project that are inheriting the project's
 branch policy.
 
-    >>> mozilla_policy.setTeamPolicy(
+    >>> mozilla.setTeamBranchVisibilityPolicy(
     ...     ubuntu_gnome_team, BranchVisibilityPolicy.PRIVATE)
-    >>> mozilla_policy.setTeamPolicy(None, BranchVisibilityPolicy.PRIVATE)
+    >>> mozilla.setTeamBranchVisibilityPolicy(
+    ...     None, BranchVisibilityPolicy.PRIVATE)
 
-    >>> print_policy_items(mozilla_policy)
+    >>> print_policy_items(mozilla)
     *everyone*: Private
     Ubuntu Gnome Team: Private
 
-    >>> thunderbird_policy = thunderbird.branch_visibility_policy
-    >>> print_policy_items(thunderbird_policy)
+    >>> print_policy_items(thunderbird)
     *everyone*: Private
     Ubuntu Gnome Team: Private
 
@@ -230,9 +205,10 @@ In order to avoid inheriting the policy of the project, there just needs
 to be an explicit policy item for the product.  This explicit item could
 even be the same as the default policy.
 
-    >>> thunderbird_policy.setTeamPolicy(None, BranchVisibilityPolicy.PUBLIC)
-    >>> print thunderbird_policy.isUsingInheritedPolicy()
+    >>> thunderbird.setTeamBranchVisibilityPolicy(
+    ...     None, BranchVisibilityPolicy.PUBLIC)
+    >>> print thunderbird.isUsingInheritedBranchVisibilityPolicy()
     False
-    >>> print_policy_items(thunderbird_policy)
+    >>> print_policy_items(thunderbird)
     *everyone*: Public
 

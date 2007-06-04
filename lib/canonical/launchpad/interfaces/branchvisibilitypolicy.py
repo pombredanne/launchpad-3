@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'IHasBranchVisibilityPolicy',
     'IBranchVisibilityPolicyItem',
-    'IBranchVisibilityPolicy',
     ]
 
 from zope.interface import Interface, Attribute
@@ -22,7 +21,31 @@ from canonical.launchpad import _
 class IHasBranchVisibilityPolicy(Interface):
     """Implemented by types that need to define default branch visibility."""
 
-    branch_visibility_policy = Attribute('The branch visibility policy')
+    branch_visibility_policy_items = Attribute(
+        'The branch visibility policy items.')
+
+    def isUsingInheritedBranchVisibilityPolicy():
+        """Return True if using policy from the inherited context.
+
+        BranchVisibilityPolicy objects for products are constructed with the
+        BranchVisibilityPolicy objects of their projects if they have a
+        project.  Projects can't have inherited policies.
+        """
+
+    def setTeamBranchVisibilityPolicy(team, policy):
+        """Set the policy for the team.
+
+        Each team can only have one policy.
+        """
+
+    def removeTeamFromBranchVisibilityPolicy(team):
+        """Remove the team from the policy list.
+
+        If the team exists in the items list it is removed.  If the team
+        isn't in the items list, the method returns and the state of the
+        object is unchanged.  Attempting to remove the team None returns
+        the policy for everyone back to the default, which is Public.
+        """
 
 
 class IBranchVisibilityPolicyItem(Interface):
@@ -42,44 +65,3 @@ class IBranchVisibilityPolicyItem(Interface):
         description=_(
         "The policy defines the default branch visibility for members of the "
         "team specified."))
-
-
-class IBranchVisibilityPolicy(Interface):
-    """Specifies a list of branch visibility policy items."""
-
-    items = Attribute("""
-        A list of policy items.
-
-        If there is a policy that does not have a team set, this
-        policy item is returned as the first item of the sequence.
-        """)
-
-    context = Attribute("The object that the policy applies to")
-
-    inherited_policy = Attribute("""
-        An optional BranchVisibilityPolicy whose policy items are used
-        when there are no explicit policy items set for the defined
-        context.""")
-
-    def isUsingInheritedPolicy():
-        """Return True if using policy from the inherited context.
-
-        BranchVisibilityPolicy objects for products are constructed with the
-        BranchVisibilityPolicy objects of their projects if they have a
-        project.  Projects can't have inherited policies.
-        """
-
-    def setTeamPolicy(team, policy):
-        """Set the policy for the team.
-
-        Each team can only have one policy.
-        """
-
-    def removeTeam(team):
-        """Remove the team from the policy list.
-
-        If the team exists in the items list it is removed.  If the team
-        isn't in the items list, the method returns and the state of the
-        object is unchanged.  Attempting to remove the team None returns
-        the policy for everyone back to the default, which is Public.
-        """

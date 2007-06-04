@@ -31,7 +31,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.branch import Branch
 from canonical.launchpad.database.branchvisibilitypolicy import (
-    BranchVisibilityPolicy)
+    BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
@@ -73,7 +73,7 @@ from canonical.launchpad.interfaces import (
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
-              KarmaContextMixin):
+              KarmaContextMixin, BranchVisibilityPolicyMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner, IQuestionTarget,
@@ -145,15 +145,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     calendar = ForeignKey(
         dbName='calendar', foreignKey='Calendar', default=None,
         forceDBName=True)
-
-    @property
-    def branch_visibility_policy(self):
-        """See IHasBranchVisibilityPolicy."""
-        inherited_policy = None
-        if self.project:
-            inherited_policy = self.project.branch_visibility_policy
-        return BranchVisibilityPolicy(
-            product=self, inherited_policy=inherited_policy)
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""

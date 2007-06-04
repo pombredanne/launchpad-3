@@ -6,22 +6,23 @@ __metaclass__ = type
 
 __all__ = [
     'BranchVisibilityPolicyItem',
-    'BranchVisibilityPolicy',
+    'BranchVisibilityPolicyMixin',
     ]
 
 from zope.interface import implements
 
 from sqlobject import ForeignKey
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.lp.dbschema import (
-    BranchVisibilityPolicy as BranchVisibilityPolicyEnum)
+from canonical.lp.dbschema import BranchVisibilityPolicy
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IBranchVisibilityPolicyItem, IBranchVisibilityPolicy)
+    IBranchVisibilityPolicyItem, IProduct, IProject)
 
 
 class BranchVisibilityPolicyItem(SQLBase):
@@ -34,8 +35,8 @@ class BranchVisibilityPolicyItem(SQLBase):
     product = ForeignKey(dbName='product', foreignKey='Product')
     team = ForeignKey(dbName='team', foreignKey='Person', default=None)
     policy = EnumCol(
-        schema=BranchVisibilityPolicyEnum, notNull=True,
-        default=BranchVisibilityPolicyEnum.PUBLIC)
+        schema=BranchVisibilityPolicy, notNull=True,
+        default=BranchVisibilityPolicy.PUBLIC)
 
 
 def policy_item_key(item):
@@ -44,69 +45,61 @@ def policy_item_key(item):
     return item.team.displayname
 
 
-class BranchVisibilityPolicy:
+class BranchVisibilityPolicyMixin:
     """Specifies a list of branch visibility policy items."""
 
-    implements(IBranchVisibilityPolicy)
-
-    def __init__(self, product=None, project=None, inherited_policy=None):
-        # Exactly one of product or project should be not None.
-        assert (product is None and project is not None or
-                product is not None and project is None), (
-            "Only one of product or project can be set")
-        if product is not None:
-            self.context = product
-            self.product = product
-            self.project = None
-        else:
-            self.context = project
-            self.product = None
-            self.project = project
-
-        self.inherited_policy = inherited_policy
+    @cachedproperty
+    def _policy_visibility_key(self):
+        product, project = None, None
+        if IProject.providedBy(self):
+            project = self
+        elif IProduct.providedBy(self):
+            product = self
+        assert product or project, (
+            "One of product or project must not be None")
+        return {'product':product, 'project':project}
 
     @property
-    def policy_items(self):
-        # The query is shortlisted to demonstrate that we are only expecting a
-        # few items, and to give warnings if too many items start appearing.
-        if self.product is not None:
-            query = "BranchVisibilityPolicy.product = %s" % self.product.id
-        else:
-            query = "BranchVisibilityPolicy.project = %s" % self.project.id
-        return shortlist(BranchVisibilityPolicyItem.select(query))
+    def _policy_items(self):
+        return BranchVisibilityPolicyItem.selectBy(
+            **self._policy_visibility_key)
 
     @property
-    def items(self):
+    def branch_visibility_policy_items(self):
         # If we are using the inherited policy return the items
         # from the inherited context.
-        if self.isUsingInheritedPolicy():
-            return self.inherited_policy.items
-        # Copy the policy_items list, don't just get a reference to it.
-        return sorted(self.policy_items, key=policy_item_key)
+        if self.isUsingInheritedBranchVisibilityPolicy():
+            return self.project.branch_visibility_policy_items
+        # Use shortlist here for policy items as we don't expect
+        # many items, and want a warning emitted if we start
+        # getting many items being created for projects as it
+        # may indicate a design flaw.
+        items = shortlist(self._policy_items)
+        return sorted(items, key=policy_item_key)
 
-    def isUsingInheritedPolicy(self):
+    def isUsingInheritedBranchVisibilityPolicy(self):
         """See IBranchVisibilityPolicy."""
-        # If there is no inherited policy, we can never be using it.
-        if self.inherited_policy is None:
+        # If there is no project to inherit a policy from,
+        # then we cannot be using an inherited policy.
+        if getattr(self, 'project', None) is None:
             return False
         # If there are no explictly defined policy items, use the
         # inherited policy.
-        return len(self.policy_items) == 0
+        return self._policy_items.count() == 0
 
-    def setTeamPolicy(self, team, policy):
+    def setTeamBranchVisibilityPolicy(self, team, policy):
         """See IBranchVisibilityPolicy."""
         item = BranchVisibilityPolicyItem.selectOneBy(
-            product=self.product, project=self.project, team=team)
+            team=team, **self._policy_visibility_key)
         if item is None:
             item = BranchVisibilityPolicyItem(
-                product=self.product, project=self.project, team=team,
-                policy=policy)
+                team=team, policy=policy, **self._policy_visibility_key)
         else:
             item.policy = policy
 
-    def removeTeam(self, team):
+    def removeTeamFromBranchVisibilityPolicy(self, team):
         """See IBranchVisibilityPolicy."""
         item = BranchVisibilityPolicyItem.selectOneBy(
-            product=self.product, project=self.project, team=team)
+            team=team, **self._policy_visibility_key)
         if item is not None:
             BranchVisibilityPolicyItem.delete(item.id)
