@@ -575,11 +575,6 @@ class BuilderGroup:
                 os.mkdir(failed_dir)
             os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
 
-        # Store build information, build record was already updated during
-        # the binary upload.
-        self.storeBuildInfo(
-            queueItem, slave, librarian, buildid, dependencies)
-
         # The famous 'flush_updates + clear_cache' will make visible the
         # DB changes done in process-upload, considering that the
         # transaction was set with READ_COMMITED_ISOLATION isolation level.
@@ -592,6 +587,11 @@ class BuilderGroup:
 
         flush_database_updates()
         clear_current_connection_cache()
+
+        # Store build information, build record was already updated during
+        # the binary upload.
+        self.storeBuildInfo(
+            queueItem, slave, librarian, buildid, dependencies)
 
         # Retrive the up-to-date build record and perform consistency
         # checks. The build record should be updated during the binary
@@ -610,8 +610,23 @@ class BuilderGroup:
         if (build.buildstate != dbschema.BuildStatus.FULLYBUILT or
             len(build.binarypackages) == 0):
             self.logger.debug("Build %s upload failed." % build.id)
+            # update builder
             queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOUPLOAD
-            queueItem.build.notify(extra_info=upload_stderr)
+            # Retrieve log file content.
+            possible_locations = [
+                'failed', 'failed-to-move', 'rejected', 'accepted']
+            for location_dir in possible_locations:
+                upload_final_location = os.path.join(
+                    root, location_dir, upload_leaf)
+                if os.path.exists(upload_final_location):
+                    log_filepath = os.path.join(
+                        upload_final_location, 'uploader.log')
+                    uploader_log_content = open(log_filepath).read()
+                    break
+            else:
+                uploader_log_content = 'Could not find upload log file'
+            # Notify the build failure.
+            queueItem.build.notify(extra_info=uploader_log_content)
         else:
             self.logger.debug("Gathered build %s completely" % queueItem.name)
 
