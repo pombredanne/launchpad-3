@@ -39,9 +39,10 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 class Authserver(Server):
 
     def __init__(self):
-        self.authserver = AuthserverService()
+        self.authserver = None
 
     def setUp(self):
+        self.authserver = AuthserverService()
         self.authserver.startService()
 
     def tearDown(self):
