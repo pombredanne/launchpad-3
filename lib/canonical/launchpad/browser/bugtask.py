@@ -93,7 +93,7 @@ from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget,
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget)
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -1197,14 +1197,17 @@ def upstream_status_vocabulary_factory(context):
     terms = [
         SimpleTerm(
             "pending_bugwatch",
-            title="Show only bugs that need to be forwarded to an upstream bug"
+            title="Show bugs that need to be forwarded to an upstream bug"
                   "tracker"),
         SimpleTerm(
             "hide_upstream",
-            title="Show only bugs that are not known to affect upstream"),
+            title="Show bugs that are not known to affect upstream"),
         SimpleTerm(
-            "only_resolved_upstream",
-            title="Show only bugs that are resolved upstream"),
+            "resolved_upstream",
+            title="Show bugs that are resolved upstream"),
+        SimpleTerm(
+            "open_upstream",
+            title="Show bugs that are open upstream"),
             ]
     return SimpleVocabulary(terms)
 
@@ -1278,8 +1281,10 @@ class BugTaskSearchListingView(LaunchpadView):
                 self.request)
 
         self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
-        self.status_upstream_widget = CustomWidgetFactory(
-            LaunchpadRadioWidget, _messageNoValue="Doesn't matter")
+        self.status_upstream_widget = LabeledMultiCheckBoxWidget(
+            self.schema['status_upstream'].bind(self.context),
+            upstream_status_vocabulary_factory(self.context),
+            self.request)
         self.tag_widget = CustomWidgetFactory(BugTagsWidget)
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
@@ -1403,11 +1408,13 @@ class BugTaskSearchListingView(LaunchpadView):
             # Convert the status_upstream value to parameters we can
             # send to BugTaskSet.search().
             status_upstream = data['status_upstream']
-            if status_upstream == 'pending_bugwatch':
+            if 'pending_bugwatch' in status_upstream:
                 data['pending_bugwatch_elsewhere'] = True
-            elif status_upstream == 'only_resolved_upstream':
-                data['only_resolved_upstream'] = True
-            elif status_upstream == 'hide_upstream':
+            if 'resolved_upstream' in status_upstream:
+                data['resolved_upstream'] = True
+            if 'open_upstream' in status_upstream:
+                data['open_upstream'] = True
+            if 'hide_upstream' in status_upstream:
                 data['has_no_upstream_bugtask'] = True
             del data['status_upstream']
 
@@ -1701,10 +1708,10 @@ class BugTaskSearchListingView(LaunchpadView):
     def getBugsFixedElsewhereInfo(self):
         """Return a dict with count and URL of bugs fixed elsewhere."""
         params = self._getDefaultSearchParams()
-        params.only_resolved_upstream = True
+        params.resolved_upstream = True
         fixed_elsewhere = self.context.searchTasks(params)
         search_url = (
-            "%s/+bugs?field.status_upstream=only_resolved_upstream" % 
+            "%s/+bugs?field.status_upstream=resolved_upstream" % 
                 canonical_url(self.context))
         return dict(count=fixed_elsewhere.count(), url=search_url)
 

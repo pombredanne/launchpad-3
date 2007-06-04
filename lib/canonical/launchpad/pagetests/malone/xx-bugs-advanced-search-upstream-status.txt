@@ -30,7 +30,7 @@ doesn't have a bug watch.
 
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show only bugs that need to be forwarded to an upstream bugtracker']
+    ...     'Show bugs that need to be forwarded to an upstream bugtracker']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
@@ -65,7 +65,7 @@ are not included in the report.
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show only bugs that need to be forwarded to an upstream bugtracker']
+    ...     'Show bugs that need to be forwarded to an upstream bugtracker']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print anon_browser.contents
     <!DOCTYPE...
@@ -82,7 +82,7 @@ on upstream, to focus instead on things they need to work on.
 
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show only bugs that are not known to affect upstream']
+    ...     'Show bugs that are not known to affect upstream']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     10 another test bug
@@ -116,13 +116,37 @@ modified and the sampledata we created above will show up.
 
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show only bugs that are resolved upstream']
+    ...     'Show bugs that are resolved upstream']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
       mozilla-firefox Medium Unconfirmed
     9 Thunderbird crashes
       thunderbird Medium Confirmed
+    2 Blackhole Trash folder
+      &mdash; Medium Unconfirmed
+
+If more than one filter for upstream status is selected, the search returns
+the union of the results for the individual filters.
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
+    >>> anon_browser.url
+    'http://launchpad.dev/ubuntu/+bugs?advanced=1'
+
+    >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
+    >>> upstream_status.displayValue = [
+    ...     'Show bugs that are resolved upstream',
+    ...     'Show bugs that are not known to affect upstream'
+    ...     ]
+
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+      mozilla-firefox Medium Unconfirmed
+    9 Thunderbird crashes
+      thunderbird Medium Confirmed
+    10 another test bug
+       linux-source-2.6.15 Medium Unconfirmed
     2 Blackhole Trash folder
       &mdash; Medium Unconfirmed
 

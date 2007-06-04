@@ -881,6 +881,22 @@ class BugTaskSet:
         "date_last_updated": "Bug.date_last_updated",
         "date_closed": "BugTask.date_closed"}
 
+    _open_resolved_upstream = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND ((
+                            RelatedBugTask.bugwatch IS NOT NULL AND
+                            RelatedBugTask.status %s)
+                            OR (
+                            RelatedBugTask.product IS NOT NULL AND
+                            RelatedBugTask.bugwatch IS NULL AND
+                            RelatedBugTask.status %s))
+                    )
+                """
+
+
     title = "A set of bug tasks"
 
     def get(self, task_id):
@@ -1057,6 +1073,7 @@ class BugTaskSet:
             """ % sqlvalues(distroseries, distroseries.main_archive,
                             component_ids, PackagePublishingStatus.PUBLISHED)])
 
+        upstream_clauses = []
         if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets
             # not using Malone, which are not Rejected, and have no bug
@@ -1079,7 +1096,7 @@ class BugTaskSet:
                     )
                 """ % sqlvalues(BugTaskStatus.REJECTED)
 
-            extra_clauses.append(pending_bugwatch_elsewhere_clause)
+            upstream_clauses.append(pending_bugwatch_elsewhere_clause)
 
         if params.has_no_upstream_bugtask:
             has_no_upstream_bugtask_clause = """
@@ -1087,7 +1104,7 @@ class BugTaskSet:
                     SELECT DISTINCT bug FROM BugTask
                     WHERE product IS NOT NULL)
             """
-            extra_clauses.append(has_no_upstream_bugtask_clause)
+            upstream_clauses.append(has_no_upstream_bugtask_clause)
 
         # Our definition of "resolved upstream" means:
         #
@@ -1099,7 +1116,7 @@ class BugTaskSet:
         # This definition of "resolved upstream" should address the use
         # cases we gathered at UDS Paris (and followup discussions with
         # seb128, sfllaw, et al.)
-        if params.only_resolved_upstream:
+        if params.resolved_upstream:
             statuses_for_watch_tasks = [
                 BugTaskStatus.REJECTED,
                 BugTaskStatus.FIXCOMMITTED,
@@ -1108,25 +1125,29 @@ class BugTaskSet:
                 BugTaskStatus.FIXCOMMITTED,
                 BugTaskStatus.FIXRELEASED]
 
-            only_resolved_upstream_clause = """
-                EXISTS (
-                    SELECT TRUE FROM BugTask AS RelatedBugTask
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND ((
-                            RelatedBugTask.bugwatch IS NOT NULL AND
-                            RelatedBugTask.status %s)
-                            OR (
-                            RelatedBugTask.product IS NOT NULL AND
-                            RelatedBugTask.bugwatch IS NULL AND
-                            RelatedBugTask.status %s))
-                    )
-                """ % (
+            only_resolved_upstream_clause = self._open_resolved_upstream % (
                     search_value_to_where_condition(
                         any(*statuses_for_watch_tasks)),
                     search_value_to_where_condition(
                         any(*statuses_for_upstream_tasks)))
-            extra_clauses.append(only_resolved_upstream_clause)
+            upstream_clauses.append(only_resolved_upstream_clause)
+        if params.open_upstream:
+            statuses_for_open_tasks = [
+                BugTaskStatus.UNCONFIRMED,
+                BugTaskStatus.NEEDSINFO,
+                BugTaskStatus.CONFIRMED,
+                BugTaskStatus.INPROGRESS,
+                BugTaskStatus.UNKNOWN]
+            only_open_upstream_clause = self._open_resolved_upstream % (
+                    search_value_to_where_condition(
+                        any(*statuses_for_open_tasks)),
+                    search_value_to_where_condition(
+                        any(*statuses_for_open_tasks)))
+            upstream_clauses.append(only_open_upstream_clause)
+
+        if upstream_clauses:
+            upstream_clause = " OR ".join(upstream_clauses)
+            extra_clauses.append('(%s)' % upstream_clause)
 
         if params.tag:
             tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
