@@ -307,7 +307,7 @@ class BugTask(SQLBase, BugTaskMixin):
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed")
-    _NON_CONJOINED_STATUSES = (BugTaskStatus.REJECTED,)
+    _NON_CONJOINED_STATUSES = (BugTaskStatus.INVALID,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
@@ -331,7 +331,7 @@ class BugTask(SQLBase, BugTaskMixin):
     status = EnumCol(
         dbName='status', notNull=True,
         schema=BugTaskStatus,
-        default=BugTaskStatus.UNCONFIRMED)
+        default=BugTaskStatus.NEW)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     importance = EnumCol(
         dbName='importance', notNull=True,
@@ -660,7 +660,7 @@ class BugTask(SQLBase, BugTaskMixin):
         # Ensure that we don't have dates recorded for state
         # transitions, if the bugtask has regressed to an earlier
         # workflow state. We want to ensure that, for example, a
-        # bugtask that went Unconfirmed => Confirmed => Unconfirmed
+        # bugtask that went New => Confirmed => New
         # has a dateconfirmed value of None.
         if new_status in UNRESOLVED_BUGTASK_STATUSES:
             self.date_closed = None
@@ -1059,7 +1059,7 @@ class BugTaskSet:
 
         if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets
-            # not using Malone, which are not Rejected, and have no bug
+            # not using Malone, which are not Invalid, and have no bug
             # watch.
             pending_bugwatch_elsewhere_clause = """
                 EXISTS (
@@ -1077,7 +1077,7 @@ class BugTaskSet:
                             )
                         AND RelatedBugTask.status != %s
                     )
-                """ % sqlvalues(BugTaskStatus.REJECTED)
+                """ % sqlvalues(BugTaskStatus.INVALID)
 
             extra_clauses.append(pending_bugwatch_elsewhere_clause)
 
@@ -1091,7 +1091,7 @@ class BugTaskSet:
 
         # Our definition of "resolved upstream" means:
         #
-        # * bugs with bugtasks linked to watches that are rejected,
+        # * bugs with bugtasks linked to watches that are invalid,
         #   fixed committed or fix released
         #
         # * bugs with upstream bugtasks that are fix committed or fix released
@@ -1101,7 +1101,7 @@ class BugTaskSet:
         # seb128, sfllaw, et al.)
         if params.only_resolved_upstream:
             statuses_for_watch_tasks = [
-                BugTaskStatus.REJECTED,
+                BugTaskStatus.INVALID,
                 BugTaskStatus.FIXCOMMITTED,
                 BugTaskStatus.FIXRELEASED]
             statuses_for_upstream_tasks = [

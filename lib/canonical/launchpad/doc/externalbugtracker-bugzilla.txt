@@ -42,7 +42,7 @@ resolution, separated by a space character. The resolution only exists
 if the bug is closed:
 
     >>> external_bugzilla.convertRemoteStatus('UNCONFIRMED').title
-    'Unconfirmed'
+    'New'
     >>> external_bugzilla.convertRemoteStatus('NEW').title
     'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('ASSIGNED').title
@@ -62,9 +62,9 @@ if the bug is closed:
     >>> external_bugzilla.convertRemoteStatus('RESOLVED FIXED').title
     'Fix Released'
     >>> external_bugzilla.convertRemoteStatus('VERIFIED WONTFIX').title
-    'Rejected'
+    'Invalid'
     >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
-    'Rejected'
+    'Invalid'
 
 If the status can't be converted, Unkown is returned, and a warning
 is logged.

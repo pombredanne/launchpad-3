@@ -209,8 +209,8 @@ will be fired off, even though the remote status stays the same.
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> old_lastchanged = debian_bugwatch.lastchanged
     >>> debian_bugwatch.updateStatus(
-    ...     debian_bugwatch.remotestatus, BugTaskStatus.UNCONFIRMED)
-    Confirmed => Unconfirmed
+    ...     debian_bugwatch.remotestatus, BugTaskStatus.NEW)
+    Confirmed => New
 
 The lastchanged isn't updated, though, since it indicates when the
 remotestatus changed. The bug watch can change the status of its bug
@@ -223,18 +223,18 @@ status mapping.
     >>> debian_bugwatch.remotestatus == old_remotestatus
     True
     >>> print debian_task.status.title
-    Unconfirmed
+    New
 
 If only the remote status is changed, not the bugtask's status, no
 event is fired off. The remote status is simply a string, it doesn't
 have to be convertable to a real Malone status.
 
-    >>> debian_bugwatch.updateStatus(u'some status', BugTaskStatus.UNCONFIRMED)
+    >>> debian_bugwatch.updateStatus(u'some status', BugTaskStatus.NEW)
 
     >>> debian_bugwatch.remotestatus
     u'some status'
     >>> print debian_task.status.title
-    Unconfirmed
+    New
 
 The lastchanged was updated, though.
 
@@ -259,7 +259,7 @@ Finally, let's make sure that bug notifications were added:
     Bug 1 changed by Bug Watch Updater:
     ** Changed in: mozilla-firefox (Debian)
        Importance: Low => Unknown
-           Status: Confirmed => Unconfirmed
+           Status: Confirmed => New
 
     >>> event_listener.unregister()
 

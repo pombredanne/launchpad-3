@@ -97,8 +97,8 @@ And the linked bugtasks got updated:
     >>> for bugtask in sorted(bugtasks, key=operator.attrgetter('id')):
     ...     print bugtask.bug.id, bugtask.targetname, bugtask.status.title,
     ...     print bugtask.importance.title
-    1 mozilla-firefox (Debian) Unconfirmed Unknown
-    3 mozilla-firefox (Debian Sarge) Unconfirmed Unknown
+    1 mozilla-firefox (Debian) New Unknown
+    3 mozilla-firefox (Debian Sarge) New Unknown
     7 evolution (Debian) Fix Released Unknown
 
 Sometimes the severity field is missing in the bug summary. That will
@@ -128,11 +128,11 @@ uploaded, so it maps to 'Fix Released.
     >>> print external_debbugs.convertRemoteStatus('done normal').title
     Fix Released
 
-If the status is simply 'open', we map it to 'Unconfirmed', since
+If the status is simply 'open', we map it to 'New', since
 there's no way of knowing if the bug is confirmed or not.
 
     >>> print external_debbugs.convertRemoteStatus('open normal').title
-    Unconfirmed
+    New
 
 If the 'wontfix' tag is present we map it to 'Confirmed', since even
 though the bug won't be fixed, it's still a confirmed bug.
@@ -199,11 +199,11 @@ the fix has reached the unstable distribution.
     ...     'open normal fixed-in-experimental').title
     Fix Committed
 
-All other tags we map to 'Unconfirmed'.
+All other tags we map to 'New'.
 
     >>> print external_debbugs.convertRemoteStatus(
     ...     'open normal unreproducible lfs woody').title
-    Unconfirmed
+    New
 
 If we pass in a malformed status string, we map it to 'Unknown' and
 log an error.
