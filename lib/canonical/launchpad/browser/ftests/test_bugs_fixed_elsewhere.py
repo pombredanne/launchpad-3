@@ -36,7 +36,7 @@ def commonSetUp(test):
     # interfere with the tests.
     cur = cursor()
     cur.execute("UPDATE BugTask SET status = %s" % (
-        sqlvalues(BugTaskStatus.UNCONFIRMED)))
+        sqlvalues(BugTaskStatus.NEW)))
 
 
 def productSetUp(test):

@@ -133,7 +133,7 @@ EVENT: source package assignment edited
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'mozilla-firefox: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.UNCONFIRMED.title
+  >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
   True
   >>> latest_activity.newvalue == BugTaskStatus.CONFIRMED.title
   True
@@ -157,16 +157,16 @@ EVENT: upstream product assignment edited
   ...     "importance"]
   >>> old_product_assignment = Snapshot(
   ...     product_assignment, providing=IUpstreamBugTask)
-  >>> product_assignment.transitionToStatus(BugTaskStatus.REJECTED)
+  >>> product_assignment.transitionToStatus(BugTaskStatus.INVALID)
   >>> product_assignment_edited = SQLObjectModifiedEvent(
   ...     product_assignment, old_product_assignment, edit_fields)
   >>> notify(product_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'thunderbird: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.UNCONFIRMED.title
+  >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
   True
-  >>> latest_activity.newvalue == BugTaskStatus.REJECTED.title
+  >>> latest_activity.newvalue == BugTaskStatus.INVALID.title
   True
 
 EVENT: source package infestation gets documented

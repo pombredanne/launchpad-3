@@ -38,22 +38,22 @@ from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 
-# XXX: Brad Bollenbach, 2005-12-02: In theory, NEEDSINFO belongs in
+# XXX: Brad Bollenbach, 2005-12-02: In theory, INCOMPLETE belongs in
 # UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would
 # break if it were added to the list below. See
 # <https://launchpad.net/malone/bugs/5320>
-# XXX: matsubara, 2006-02-02: I added the NEEDSINFO as a short-term solution
+# XXX: matsubara, 2006-02-02: I added the INCOMPLETE as a short-term solution
 # to bug https://launchpad.net/products/malone/+bug/4201
 UNRESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.UNCONFIRMED,
+    dbschema.BugTaskStatus.NEW,
     dbschema.BugTaskStatus.CONFIRMED,
     dbschema.BugTaskStatus.INPROGRESS,
-    dbschema.BugTaskStatus.NEEDSINFO,
+    dbschema.BugTaskStatus.INCOMPLETE,
     dbschema.BugTaskStatus.FIXCOMMITTED)
 
 RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXRELEASED,
-    dbschema.BugTaskStatus.REJECTED)
+    dbschema.BugTaskStatus.INVALID)
 
 
 class ConjoinedBugTaskEditError(Exception):
@@ -86,7 +86,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     #   -- kiko, 2006-03-23
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
-        default=dbschema.BugTaskStatus.UNCONFIRMED)
+        default=dbschema.BugTaskStatus.NEW)
     importance = Choice(
         title=_('Importance'), vocabulary='BugTaskImportance',
         default=dbschema.BugTaskImportance.UNDECIDED)
@@ -583,7 +583,7 @@ class IBugTaskSet(Interface):
         """Return all bug tasks assigned to a package/product maintained by
         :person:.
 
-        By default, closed (FIXCOMMITTED, REJECTED) tasks are not
+        By default, closed (FIXCOMMITTED, INVALID) tasks are not
         returned. If you want closed tasks too, just pass
         showclosed=True.
 

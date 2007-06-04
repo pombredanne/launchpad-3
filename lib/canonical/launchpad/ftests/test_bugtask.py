@@ -127,13 +127,13 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
         "Resolved", for our purposes, means either that one of the related
         tasks is an upstream task in FIXCOMMITTED or FIXRELEASED state, or
         it is a task with a bugwatch, and in FIXCOMMITTED, FIXRELEASED, or
-        REJECTED state.
+        INVALID state.
         """
         resolved_upstream_states = [
             BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED]
         resolved_bugwatch_states = [
             BugTaskStatus.FIXCOMMITTED, BugTaskStatus.FIXRELEASED,
-            BugTaskStatus.REJECTED]
+            BugTaskStatus.INVALID]
 
         # Helper functions for the list comprehension below.
         def _is_resolved_upstream_task(bugtask):

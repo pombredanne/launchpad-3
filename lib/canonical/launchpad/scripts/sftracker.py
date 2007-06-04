@@ -202,16 +202,16 @@ class TrackerItem:
             if self.resolution == 'Accepted' or self.assignee != 'nobody':
                 return BugTaskStatus.CONFIRMED
             else:
-                return BugTaskStatus.UNCONFIRMED
+                return BugTaskStatus.NEW
         elif self.status == 'Closed':
             if self.resolution in ['Accepted', 'Fixed', 'None']:
                 return BugTaskStatus.FIXRELEASED
             else:
-                return BugTaskStatus.REJECTED
+                return BugTaskStatus.INVALID
         elif self.status == 'Deleted':
-            # "Duplicate" bugs are marked deleted.  REJECTED is the
+            # "Duplicate" bugs are marked deleted.  INVALID is the
             # best fit for this.
-            return BugTaskStatus.REJECTED
+            return BugTaskStatus.INVALID
         elif self.status == 'Pending':
             if self.resolution in ['Fixed', 'None']:
                 return BugTaskStatus.FIXCOMMITTED

@@ -17,23 +17,23 @@ in the release task.
 
 However, if we reject the Hoary task, it means that the bug is deferred
 to the next release. In that case, the general Ubuntu task will keep
-open, while the release task is rejected.
+open, while the release task is invalid.
 
     >>> user_browser.getLink(url=ubuntu_hoary_edit_url).click()
-    >>> user_browser.getControl('Status').displayValue = ['Rejected']
+    >>> user_browser.getControl('Status').displayValue = ['Invalid']
     >>> user_browser.getControl('Save Changes').click()
 
 Now both the general and release tasks are editable.
 
     >>> user_browser.getLink(url=ubuntu_edit_url).click()
     >>> user_browser.getControl('Status').displayValue
-    ['Unconfirmed']
+    ['New']
     >>> user_browser.getControl('Status').displayValue = ['Confirmed']
     >>> user_browser.getControl('Save Changes').click()
 
     >>> user_browser.getLink(url=ubuntu_hoary_edit_url).click()
     >>> user_browser.getControl('Status').displayValue
-    ['Rejected']
+    ['Invalid']
 
 If the release task gets reopened, the tasks will be synced again, and
 the distribution task won't be editable.

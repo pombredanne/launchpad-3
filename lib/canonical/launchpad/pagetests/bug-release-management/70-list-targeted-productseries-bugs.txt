@@ -8,6 +8,6 @@ targeted to it.
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
-      Undecided Unconfirmed
+      Undecided New
     1 Firefox does not support SVG
       Undecided Confirmed

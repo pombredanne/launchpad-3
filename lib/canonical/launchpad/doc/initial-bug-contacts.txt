@@ -196,11 +196,11 @@ importance, etc.
     ** Affects: firefox (upstream)
          Importance: Low
            Assignee: Mark Shuttleworth
-             Status: Unconfirmed
+             Status: New
     <BLANKLINE>
     ** Affects: pmount (Ubuntu)
          Importance: Medium
-             Status: Unconfirmed
+             Status: New
     <BLANKLINE>
     ** Affects: mozilla-firefox (Debian)
          Importance: Low

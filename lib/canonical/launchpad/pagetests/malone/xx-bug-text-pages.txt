@@ -18,14 +18,14 @@ Get text page for a single bug.
    Sample Person (name12)
   <BLANKLINE>
   task: firefox (upstream)
-  status: Unconfirmed
+  status: New
   reporter: Sample Person (name12)
   importance: Low
   assignee: Mark Shuttleworth (sabdfl)
   milestone: 
   <BLANKLINE>
   task: mozilla-firefox (Ubuntu)
-  status: Unconfirmed
+  status: New
   reporter: Foo Bar (name16)
   importance: Medium
   assignee: 

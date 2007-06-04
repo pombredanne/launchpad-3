@@ -80,7 +80,7 @@ Launchpad sample data, we have an upstream product called Ubuntu).
 
 Now, it gets more interesting.
 
-Let us add a REJECTED bugtask for Bug #2 on the Firefox product.
+Let us add a INVALID bugtask for Bug #2 on the Firefox product.
 So the offer of mentoring is NOT relevant to Firefox, and should not
 show up there.
 
@@ -90,7 +90,7 @@ show up there.
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> ff_task = bugtaskset.createTask(
     ...     bug=bug2, product=firefox, owner=sabdfl,
-    ...     status=BugTaskStatus.REJECTED,
+    ...     status=BugTaskStatus.INVALID,
     ...     importance=BugTaskImportance.MEDIUM)
     >>> syncUpdate(ff_task)
     >>> ff_task.product == firefox
@@ -98,7 +98,7 @@ show up there.
     >>> for task in bug2.bugtasks:
     ...     if task.product == firefox:
     ...         print 'Found firefox task with status', task.status.name
-    Found firefox task with status REJECTED
+    Found firefox task with status INVALID
 
     >>> print firefox.mentoring_offers.count()
     0

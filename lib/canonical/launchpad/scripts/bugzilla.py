@@ -243,7 +243,7 @@ class Bug:
         if self.bug_status == 'ASSIGNED':
             bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
         elif self.bug_status == 'NEEDINFO':
-            bugtask.transitionToStatus(BugTaskStatus.NEEDSINFO)
+            bugtask.transitionToStatus(BugTaskStatus.INCOMPLETE)
         elif self.bug_status == 'PENDINGUPLOAD':
             bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
         elif self.bug_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
@@ -251,9 +251,9 @@ class Bug:
             if self.resolution == 'FIXED':
                 bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
             else:
-                bugtask.transitionToStatus(BugTaskStatus.REJECTED)
+                bugtask.transitionToStatus(BugTaskStatus.INVALID)
         else:
-            bugtask.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+            bugtask.transitionToStatus(BugTaskStatus.NEW)
 
         # add the status to the notes section, to account for any lost
         # information

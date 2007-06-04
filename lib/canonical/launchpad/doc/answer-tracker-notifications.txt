@@ -240,7 +240,7 @@ of changes to the bug status:
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Bug #... status changed in Ubuntu:
     <BLANKLINE>
-        Unconfirmed => Confirmed
+        New => Confirmed
     <BLANKLINE>
     Status change explanation given by No Privileges Person:
     <BLANKLINE>

@@ -667,7 +667,7 @@ X-Launchpad-Bug headers were added:
     >>> sorted(message.get_all('X-Launchpad-Bug'))
     [u'distribution=debian; sourcepackage=mozilla-firefox; component=None;...',
      u'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     u'product=firefox; status=Unconfirmed; importance=Low;...']
+     u'product=firefox; status=New; importance=Low;...']
 
 There's a blank line before the signature, and the signature marker has
 a trailing space.
@@ -764,7 +764,7 @@ initial message of the bug, it will result in a bug filed notification:
     <BLANKLINE>
     ** Affects: Ubuntu
          Importance: Undecided
-             Status: Unconfirmed
+             Status: New
     <BLANKLINE>
     --
     new bug

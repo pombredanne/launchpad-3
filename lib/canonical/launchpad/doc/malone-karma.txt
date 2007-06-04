@@ -91,9 +91,9 @@ Mark a bug task as fixed:
 Reject a bug task:
 
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    >>> bugtask.transitionToStatus(BugTaskStatus.REJECTED)
+    >>> bugtask.transitionToStatus(BugTaskStatus.INVALID)
     >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
-    Karma added: action=bugrejected, distribution=debian
+    Karma added: action=buginvalid, distribution=debian
 
 Accept a bug task:
 
@@ -153,7 +153,7 @@ Create a new bug task on a distroseries:
 
 Accept a distro series task.
 
-    >>> debian_woody_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+    >>> debian_woody_task.transitionToStatus(BugTaskStatus.NEW)
     >>> from canonical.launchpad.interfaces import IDistroSeriesBugTask
     >>> old_bugtask = Snapshot(
     ...     debian_woody_task, providing=IDistroSeriesBugTask)
@@ -163,7 +163,7 @@ Accept a distro series task.
 
 Accept a productseries task.
 
-    >>> evolution_trunk_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+    >>> evolution_trunk_task.transitionToStatus(BugTaskStatus.NEW)
     >>> from canonical.launchpad.interfaces import IProductSeriesBugTask
     >>> old_bugtask = Snapshot(
     ...     evolution_trunk_task, providing=IProductSeriesBugTask)

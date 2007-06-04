@@ -1034,7 +1034,7 @@ class BugTaskListingView(LaunchpadView):
 
         assignee_html = PersonFormatterAPI(assignee).link('+assignedbugs')
 
-        if status in (dbschema.BugTaskStatus.REJECTED,
+        if status in (dbschema.BugTaskStatus.INVALID,
                       dbschema.BugTaskStatus.FIXCOMMITTED):
             return '%s by %s' % (status_title, assignee_html)
         else:
@@ -1109,10 +1109,10 @@ class BugListingPortletView(LaunchpadView):
 
         return unresolved_tasks_query_string + "&assignee_option=none"
 
-    def getUnconfirmedBugsURL(self):
-        """Return the URL for unconfirmed bugs on this bug target."""
+    def getNewBugsURL(self):
+        """Return the URL for new bugs on this bug target."""
         return get_buglisting_search_filter_url(
-            self.request.URL, status=dbschema.BugTaskStatus.UNCONFIRMED.title)
+            self.request.URL, status=dbschema.BugTaskStatus.NEW.title)
 
     def getAllBugsEverReportedURL(self):
         all_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
@@ -1151,12 +1151,12 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
     >>> [status.name for status in initial['status']]
-    ['UNCONFIRMED', 'CONFIRMED', 'INPROGRESS', 'NEEDSINFO', 'FIXCOMMITTED']
+    ['NEW', 'CONFIRMED', 'INPROGRESS', 'INCOMPLETE', 'FIXCOMMITTED']
 
     >>> initial = getInitialValuesFromSearchParams(
-    ...     {'status': dbschema.BugTaskStatus.REJECTED}, IBugTaskSearch)
+    ...     {'status': dbschema.BugTaskStatus.INVALID}, IBugTaskSearch)
     >>> [status.name for status in initial['status']]
-    ['REJECTED']
+    ['INVALID']
 
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'importance': [dbschema.BugTaskImportance.CRITICAL,

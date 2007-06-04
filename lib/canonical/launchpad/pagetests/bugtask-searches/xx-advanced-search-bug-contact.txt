@@ -27,4 +27,4 @@ any bugs open on pmount.
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
-      mozilla-firefox Medium Unconfirmed
+      mozilla-firefox Medium New

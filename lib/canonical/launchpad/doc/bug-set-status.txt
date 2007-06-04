@@ -46,14 +46,14 @@ BugActivity records are created.
     No Privileges Person
     >>> print latest_notification.message.text_contents
     ** Changed in: firefox (upstream)
-           Status: Unconfirmed => Confirmed
+           Status: New => Confirmed
 
     >>> from canonical.launchpad.database import BugActivity
     >>> latest_activity = BugActivity.selectFirst(orderBy='-id')
     >>> latest_activity.whatchanged
     u'firefox: status'
     >>> latest_activity.oldvalue
-    u'Unconfirmed'
+    u'New'
     >>> latest_activity.newvalue
     u'Confirmed'
 
@@ -66,11 +66,11 @@ product, not the product series, the product bugtask is edited.
     >>> bug.getBugTask(firefox_trunk) is None
     True
     >>> firefox_bugtask = bug.setStatus(
-    ...     firefox_trunk, BugTaskStatus.UNCONFIRMED, no_priv)
+    ...     firefox_trunk, BugTaskStatus.NEW, no_priv)
     >>> firefox_bugtask.target.name
     u'firefox'
     >>> firefox_bugtask.status.name
-    'UNCONFIRMED'
+    'NEW'
 
 If the bug is targeted to the product series, the product series bugtask
 is edited.
@@ -93,12 +93,12 @@ is edited.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_trunk = firefox.getSeries('trunk')
     >>> firefox_trunk_bugtask = bug.setStatus(
-    ...     firefox_trunk, BugTaskStatus.NEEDSINFO, no_priv)
+    ...     firefox_trunk, BugTaskStatus.INCOMPLETE, no_priv)
 
     >>> firefox_trunk_bugtask.target.name
     u'trunk'
     >>> firefox_trunk_bugtask.status.name
-    'NEEDSINFO'
+    'INCOMPLETE'
 
 If the target bugtask has a conjoined master bugtask, the conjoined
 master will be edited and returned. The conjoined slave is of course
@@ -110,7 +110,7 @@ updated automatically.
     >>> firefox_bugtask.conjoined_master is not None
     True
     >>> firefox_bugtask.status.name
-    'NEEDSINFO'
+    'INCOMPLETE'
     >>> firefox_trunk_bugtask = bug.setStatus(
     ...     firefox_bugtask.target, BugTaskStatus.CONFIRMED, no_priv)
     >>> firefox_trunk_bugtask.target.name
@@ -156,11 +156,11 @@ edited.
 
     >>> ubuntu_bugtask.sourcepackagename = ubuntu_firefox.sourcepackagename
     >>> ubuntu_firefox_task = bug.setStatus(
-    ...     ubuntu_firefox, BugTaskStatus.NEEDSINFO, no_priv)
+    ...     ubuntu_firefox, BugTaskStatus.INCOMPLETE, no_priv)
     >>> ubuntu_firefox_task.target.displayname
     u'mozilla-firefox in ubuntu'
     >>> ubuntu_firefox_task.status.name
-    'NEEDSINFO'
+    'INCOMPLETE'
 
 If a distro series is given, but the bug is only targeted to the
 distribution and not to the distro series, the distribution task is
@@ -178,11 +178,11 @@ edited.
     >>> ubuntu_hoary = ubuntu.getSeries('hoary')
     >>> hoary_firefox = ubuntu_hoary.getSourcePackage('mozilla-firefox')
     >>> ubuntu_firefox_task = bug.setStatus(
-    ...     hoary_firefox, BugTaskStatus.UNCONFIRMED, no_priv)
+    ...     hoary_firefox, BugTaskStatus.NEW, no_priv)
     >>> ubuntu_firefox_task.target.displayname
     u'mozilla-firefox in ubuntu'
     >>> ubuntu_firefox_task.status.name
-    'UNCONFIRMED'
+    'NEW'
 
 However, if the bug is targeted to the current series, passing a
 non-current series won't modify any bugtask, unless the bug is already
@@ -211,7 +211,7 @@ targeted to the non-current series of course.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_warty = ubuntu.getSeries('warty')
     >>> warty_firefox = ubuntu_warty.getSourcePackage('mozilla-firefox')
-    >>> bug.setStatus(warty_firefox, BugTaskStatus.NEEDSINFO, no_priv) is None
+    >>> bug.setStatus(warty_firefox, BugTaskStatus.INCOMPLETE, no_priv) is None
     True
 
     >>> login('foo.bar@canonical.com')
@@ -234,8 +234,8 @@ targeted to the non-current series of course.
     >>> ubuntu_warty = ubuntu.getSeries('warty')
     >>> warty_firefox = ubuntu_warty.getSourcePackage('mozilla-firefox')
     >>> ubuntu_firefox_task = bug.setStatus(
-    ...     warty_firefox, BugTaskStatus.NEEDSINFO, no_priv)
+    ...     warty_firefox, BugTaskStatus.INCOMPLETE, no_priv)
     >>> ubuntu_firefox_task.target.displayname
     u'Warty mozilla-firefox'
     >>> ubuntu_firefox_task.status.name
-    'NEEDSINFO'
+    'INCOMPLETE'

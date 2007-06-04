@@ -446,7 +446,7 @@ Modifying a bugtask will update IBug.date_last_updated.
     >>> print firefox_task.importance.title
     Undecided
     >>> print firefox_task.status.title
-    Unconfirmed
+    New
 
     >>> bugtask_before_modification = Snapshot(
     ...     firefox_task, providing=IUpstreamBugTask)
@@ -723,8 +723,8 @@ IBug.date_last_updated.
 == Bug Completeness ==
 
 A bug is considered "complete" iff all of its bugtasks are themselves
-complete. The definition of completeness for a bugtask is that the bug has
-been rejected or a fix has been released.
+complete. The definition of completeness for a bugtask is that the bug
+has been marked invalid or a fix has been released.
 
     >>> b8 = bugset.get(8)
     >>> b8.is_complete
@@ -738,7 +738,7 @@ Let's add a new task to b8 to see if that affects the completeness.
     >>> from canonical.launchpad.database import BugTask
     >>> newtask = BugTask(bug=b8, product=firefox, owner=b8.owner)
     >>> newtask.status.name
-    'UNCONFIRMED'
+    'NEW'
     >>> b8.is_complete
     False
 

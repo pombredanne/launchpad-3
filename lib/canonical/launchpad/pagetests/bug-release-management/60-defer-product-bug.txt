@@ -17,10 +17,10 @@ in the series task.
 
 However, if we reject the Trunk task, it means that the bug is deferred
 to the next release. In that case, the general Firefox task will stay
-open, while the series task is rejected.
+open, while the series task is invalid.
 
     >>> user_browser.getLink(url=firefox_trunk_edit_url).click()
-    >>> user_browser.getControl('Status').displayValue = ['Rejected']
+    >>> user_browser.getControl('Status').displayValue = ['Invalid']
     >>> user_browser.getControl('Save Changes').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/trunk/+bug/4'
@@ -29,13 +29,13 @@ Now both the general and series tasks are editable.
 
     >>> user_browser.getLink(url=firefox_edit_url).click()
     >>> user_browser.getControl('Status').displayValue
-    ['Unconfirmed']
+    ['New']
     >>> user_browser.getControl('Status').displayValue = ['Confirmed']
     >>> user_browser.getControl('Save Changes').click()
 
     >>> user_browser.getLink(url=firefox_trunk_edit_url).click()
     >>> user_browser.getControl('Status').displayValue
-    ['Rejected']
+    ['Invalid']
 
 If the series task gets reopened, the tasks will be synced again, and
 the distribution task won't be editable.

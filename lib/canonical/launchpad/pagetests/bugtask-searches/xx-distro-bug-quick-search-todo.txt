@@ -2,7 +2,7 @@ The "my todo list" link gives the logged in user the ability to
 quickly see which bugs have been assigned to them.
 
   >>> print http(r"""
-  ... GET /debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.assignee=name12&search=Search HTTP/1.1
+  ... GET /debian/+bugs?field.status%3Alist=New&field.status%3Alist=Confirmed&field.assignee=name12&search=Search HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

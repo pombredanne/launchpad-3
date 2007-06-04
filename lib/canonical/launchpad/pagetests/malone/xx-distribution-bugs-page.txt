@@ -56,10 +56,10 @@ The link takes you to the list of bugs with CVEs linked to them.
     ...         print extract_text(tr)
     1 Firefox does not support SVG
       mozilla-firefox
-      Medium Unconfirmed
+      Medium New
     2 Blackhole Trash folder
       &mdash;
-      Medium Unconfirmed
+      Medium New
 
 == Open Bugs Statistics ==
 
@@ -72,7 +72,7 @@ as normal text:
     >>> stats_div = find_tag_by_id(anon_browser.contents, 'bugs-chart')
     >>> for li_tag in stats_div.noscript.ul('li'):
     ...     print li_tag.renderContents()
-    3 Unconfirmed bugs
+    3 New bugs
     0 Needs Info bugs
     1 Confirmed bugs
     0 In Progress bugs

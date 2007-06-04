@@ -8,7 +8,7 @@ statistics links.
 Viewing critical bugs as Sample Person:
 
   >>> print http(r"""
-  ... GET /debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.importance%3Alist=Critical&search=Search HTTP/1.1
+  ... GET /debian/+bugs?field.status%3Alist=New&field.status%3Alist=Confirmed&field.importance%3Alist=Critical&search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -17,7 +17,7 @@ Viewing critical bugs as Sample Person:
 Viewing bugs "assigned to me", as Sample Person:
 
   >>> print http(r"""
-  ... GET /debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.assignee=name12&search=Search HTTP/1.1
+  ... GET /debian/+bugs?field.status%3Alist=New&field.status%3Alist=Confirmed&field.assignee=name12&search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -26,7 +26,7 @@ Viewing bugs "assigned to me", as Sample Person:
 Viewing untriaged bugs as Sample Person:
 
   >>> print http(r"""
-  ... GET /debian/+bugs?field.status%3Alist=Unconfirmed&search=Search HTTP/1.1
+  ... GET /debian/+bugs?field.status%3Alist=New&search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -35,7 +35,7 @@ Viewing untriaged bugs as Sample Person:
 Viewing unassigned bugs as Sample Person:
 
   >>> print http(r"""
-  ... GET /debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.status-empty-marker=1&field.importance-empty-marker=1&field.assignee=&assignee_option=none&search=Search HTTP/1.1
+  ... GET /debian/+bugs?field.status%3Alist=New&field.status%3Alist=Confirmed&field.status-empty-marker=1&field.importance-empty-marker=1&field.assignee=&assignee_option=none&search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

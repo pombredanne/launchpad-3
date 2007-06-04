@@ -83,7 +83,7 @@ will close the specified bug.
     >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
     >>> [pmount_task] = pmount_bug.bugtasks
     >>> pmount_task.status.name
-    'UNCONFIRMED'
+    'NEW'
 
     >>> from canonical.launchpad.scripts.processaccepted import close_bugs
     >>> close_bugs([queue_item_id])
@@ -133,7 +133,7 @@ single e-mail later.
     ...         notification.message.text_contents)
     From Mark Shuttleworth:
     ** Changed in: pmount (Ubuntu)
-           Status: Unconfirmed => Fix Released
+           Status: New => Fix Released
     <BLANKLINE>
     From Mark Shuttleworth:
     pmount (0.1-1) hoary; urgency=low
@@ -173,11 +173,11 @@ specified, it's ignored.
     >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
     >>> [pmount_task] = pmount_bug.bugtasks
     >>> pmount_task.status.name
-    'UNCONFIRMED'
+    'NEW'
     >>> another_pmount_bug = getUtility(IBugSet).get(another_pmount_bug_id)
     >>> [another_pmount_task] = another_pmount_bug.bugtasks
     >>> another_pmount_task.status.name
-    'UNCONFIRMED'
+    'NEW'
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)

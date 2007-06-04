@@ -726,21 +726,21 @@ class BugTargetBugsView(BugTaskSearchListingView):
     #      unique color for each status in the pie chart
     #      -- Bjorn Tillenius, 2007-02-13
     status_color = {
-        BugTaskStatus.UNCONFIRMED: '#993300',
-        BugTaskStatus.NEEDSINFO: 'red',
+        BugTaskStatus.NEW: '#993300',
+        BugTaskStatus.INCOMPLETE: 'red',
         BugTaskStatus.CONFIRMED: 'orange',
         BugTaskStatus.INPROGRESS: 'blue',
         BugTaskStatus.FIXCOMMITTED: 'green',
         BugTaskStatus.FIXRELEASED: 'magenta',
-        BugTaskStatus.REJECTED: 'yellow',
+        BugTaskStatus.INVALID: 'yellow',
         BugTaskStatus.UNKNOWN: 'purple',
     }
 
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
         bug_statuses_to_show = [
-            BugTaskStatus.UNCONFIRMED,
-            BugTaskStatus.NEEDSINFO,
+            BugTaskStatus.NEW,
+            BugTaskStatus.INCOMPLETE,
             BugTaskStatus.CONFIRMED,
             BugTaskStatus.INPROGRESS,
             BugTaskStatus.FIXCOMMITTED,

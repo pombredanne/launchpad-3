@@ -55,7 +55,7 @@ Let's take a look at what the notification email looks like:
     <BLANKLINE>
     ** Affects: firefox (upstream)
          Importance: Medium
-             Status: Unconfirmed
+             Status: New
 
 (In reality, the importance of a newly-reported bug would not have been
 decided yet, so it would appear as Undecided.)
@@ -76,7 +76,7 @@ as well.
     <BLANKLINE>
     ** Affects: firefox (upstream)
          Importance: Medium
-             Status: Unconfirmed
+             Status: New
     <BLANKLINE>
     ** Tags: bar foo
 
@@ -251,7 +251,7 @@ pretend we had just added task five:
     ...     print "-----------------------------"
     ** Also affects: mozilla-firefox (Ubuntu)
        Importance: Medium
-           Status: Unconfirmed
+           Status: New
     -----------------------------
 
 = Editing a bug task =
@@ -268,7 +268,7 @@ text representations of the changes when a bug task is edited.
     >>> edited_bugtask.transitionToAssignee(sample_person)
     >>> bugtask_delta = BugTaskDelta(
     ...     bugtask=edited_bugtask,
-    ...     status={'old' : BugTaskStatus.UNCONFIRMED, 'new' : edited_bugtask.status},
+    ...     status={'old' : BugTaskStatus.NEW, 'new' : edited_bugtask.status},
     ...     assignee={'old' : None, 'new' : edited_bugtask.assignee})
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
@@ -280,7 +280,7 @@ text representations of the changes when a bug task is edited.
     ...     print "-----------------------------"
     ** Changed in: ubuntu-product (upstream)
          Assignee: (unassigned) => Sample Person
-           Status: Unconfirmed => Confirmed
+           Status: New => Confirmed
     -----------------------------
 
 Let's take a look at how it looks like when a distribution task is
@@ -434,7 +434,7 @@ We can also add a bugwatch while adding a new bugtask.
     ** Also affects: firefox (upstream) via
        https://bugzilla.mozilla.org/show_bug.cgi?id=42
        Importance: High
-           Status: Unconfirmed
+           Status: New
     -----------------------------
 
 

@@ -28,7 +28,7 @@ canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included:
     >>> assigned_bugtasks = list(assigned_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in assigned_bugtasks])
-    [(7, 'UNCONFIRMED')]
+    [(7, 'NEW')]
 
 Using the advanced form we can query for closed bugs.
 
@@ -55,11 +55,11 @@ unassigned bug tasks.
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.bug.owner.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in reported_bugtasks])
-    [(3, 'UNCONFIRMED', u'name16', None),
-     (7, 'UNCONFIRMED', u'name16', u'name16'),
+    [(3, 'NEW', u'name16', None),
+     (7, 'NEW', u'name16', u'name16'),
      (9, 'CONFIRMED', u'name16', None),
-     (10, 'UNCONFIRMED', u'name16', None),
-     (11, 'UNCONFIRMED', u'name16', None),
+     (10, 'NEW', u'name16', None),
+     (11, 'NEW', u'name16', None),
      (12, 'CONFIRMED', u'name16', None)]
 
 But the advanced search allows us to query only the bug tasks that aren't
@@ -76,14 +76,14 @@ assigned.
     >>> [(bugtask.bug.id, bugtask.status.name, bugtask.bug.owner.name,
     ...   getattr(bugtask.assignee, 'name', None))
     ... for bugtask in reported_bugtasks]
-    [(3, 'UNCONFIRMED', u'name16', None),
+    [(3, 'NEW', u'name16', None),
      (9, 'CONFIRMED', u'name16', None),
-     (10, 'UNCONFIRMED', u'name16', None),
-     (11, 'UNCONFIRMED', u'name16', None),
+     (10, 'NEW', u'name16', None),
+     (11, 'NEW', u'name16', None),
      (12, 'CONFIRMED', u'name16', None)]
 
 Using the advanced form we can also query for closed bugs reported by someone.
-Let's first close a bug setting its status to 'Rejected'.
+Let's first close a bug setting its status to 'Invalid'.
 
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
@@ -99,7 +99,7 @@ Let's first close a bug setting its status to 'Rejected'.
     >>> bug_task.bug.id
     9
     >>> old_status = bug_task.status
-    >>> bug_task.transitionToStatus(BugTaskStatus.REJECTED)
+    >>> bug_task.transitionToStatus(BugTaskStatus.INVALID)
     >>> flush_database_updates()
 
 And now we query for it.
@@ -109,7 +109,7 @@ And now we query for it.
     ...     'assignee_option': 'none',
     ...     'field.assignee': '',
     ...     'advanced': 1,
-    ...     'field.status': 'Rejected',
+    ...     'field.status': 'Invalid',
     ...     'search': 'Search bugs reported by Foo Bar'}
     >>> closed_reported_bugtasks_view = create_view(
     ...     name16, '+reportedbugs', form)
@@ -118,7 +118,7 @@ And now we query for it.
     >>> sorted([(bugtask.bug.id, bugtask.status.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in closed_reported_bugtasks])
-    [(9, 'REJECTED', None)]
+    [(9, 'INVALID', None)]
 
     >>> bug_task.transitionToStatus(old_status)
     >>> flush_database_updates()
@@ -136,9 +136,9 @@ with any importance.
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
     ...         for bugtask in subscribed_bugtasks])
     [(1, 'CONFIRMED', 'LOW'),
-     (1, 'UNCONFIRMED', 'LOW'),
-     (1, 'UNCONFIRMED', 'MEDIUM'),
-     (4, 'UNCONFIRMED', 'MEDIUM'),
+     (1, 'NEW', 'LOW'),
+     (1, 'NEW', 'MEDIUM'),
+     (4, 'NEW', 'MEDIUM'),
      (9, 'CONFIRMED', 'MEDIUM')]
 
 Using the advanced form we can query for closed bugs someone is subscribed to.
@@ -231,13 +231,13 @@ Unassigned, and In Progress bug lists.
     >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
 
     >>> packagebugs_search_view.getOpenBugsURL(ubuntu_mozilla_firefox)
-    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
+    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
 
     >>> packagebugs_search_view.getCriticalBugsURL(ubuntu_mozilla_firefox)
-    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
+    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
 
     >>> packagebugs_search_view.getUnassignedBugsURL(ubuntu_mozilla_firefox)
-    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&field.unassigned=on&search=Search'
+    u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&field.unassigned=on&search=Search'
 
     >>> packagebugs_search_view.getInProgressBugsURL(ubuntu_mozilla_firefox)
     u'.../~name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
@@ -282,10 +282,10 @@ render the overview report.
     0
 
     >>> ubuntu_firefox_bugcounts['open_bugs_url']
-    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
+    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
     >>> ubuntu_firefox_bugcounts['critical_bugs_url']
-    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
+    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.importance=Critical&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&search=Search'
     >>> ubuntu_firefox_bugcounts['unassigned_bugs_url']
-    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&field.unassigned=on&search=Search'
+    u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=New&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.status=Fix+Committed&field.unassigned=on&search=Search'
     >>> ubuntu_firefox_bugcounts['inprogress_bugs_url']
     u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'

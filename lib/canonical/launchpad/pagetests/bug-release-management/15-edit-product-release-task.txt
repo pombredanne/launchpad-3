@@ -6,7 +6,7 @@ After a productseries task has been created, it's editable.
     'http://bugs.launchpad.dev/firefox/1.0/+bug/1/+editstatus'
 
     >>> user_browser.getControl('Status').value
-    ['Unconfirmed']
+    ['New']
     >>> user_browser.getControl('Status').value = ['Confirmed']
     >>> user_browser.getControl('Save Changes').click()
     >>> user_browser.url

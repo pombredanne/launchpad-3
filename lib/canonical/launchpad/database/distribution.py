@@ -351,9 +351,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IDistribution."""
         counts = []
 
-        severities = [BugTaskStatus.UNCONFIRMED,
+        severities = [BugTaskStatus.NEW,
                       BugTaskStatus.CONFIRMED,
-                      BugTaskStatus.REJECTED,
+                      BugTaskStatus.INVALID,
                       BugTaskStatus.FIXRELEASED]
 
         querystr = ("BugTask.distribution = %s AND "

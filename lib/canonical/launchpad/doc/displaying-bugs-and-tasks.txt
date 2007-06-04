@@ -88,21 +88,21 @@ Let's see some examples of how this works:
   'Confirmed (unassigned)'
 
   >>> test_task.transitionToAssignee(foobar)
-  >>> test_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+  >>> test_task.transitionToStatus(BugTaskStatus.NEW)
   >>> render_bugtask_status(test_task)
-  u'Unconfirmed, assigned to ...Foo Bar...'
+  u'New, assigned to ...Foo Bar...'
 
   >>> test_task.transitionToStatus(BugTaskStatus.CONFIRMED)
   >>> render_bugtask_status(test_task)
   u'Confirmed, assigned to ...Foo Bar...'
 
-  >>> test_task.transitionToStatus(BugTaskStatus.REJECTED)
+  >>> test_task.transitionToStatus(BugTaskStatus.INVALID)
   >>> render_bugtask_status(test_task)
-  u'Rejected by ...Foo Bar...'
+  u'Invalid by ...Foo Bar...'
 
   >>> test_task.transitionToAssignee(None)
   >>> render_bugtask_status(test_task)
-  'Rejected (unassigned)'
+  'Invalid (unassigned)'
 
   >>> test_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
   >>> render_bugtask_status(test_task)

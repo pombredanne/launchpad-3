@@ -44,7 +44,7 @@ to access those other objects:
 Next, we need to grab some values to provide for importance and status.
 
     >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
-    >>> STATUS_UNCONFIRMED = BugTaskStatus.UNCONFIRMED
+    >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
     >>> IMPORTANCE_MEDIUM = BugTaskImportance.MEDIUM
@@ -54,7 +54,7 @@ Next, we need to grab some values to provide for importance and status.
     >>> evolution = productset.get(5)
     >>> upstream_task = bugtaskset.createTask(
     ...     bug=bug_one, product=evolution, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
+    ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.product == evolution
     True
 
@@ -67,7 +67,7 @@ Next, we need to grab some values to provide for importance and status.
     >>> ubuntu = distroset.get(1)
     >>> distro_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
+    ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> distro_task.distribution == ubuntu
     True
 
@@ -81,7 +81,7 @@ Next, we need to grab some values to provide for importance and status.
     >>> warty = distoseriesset.get(1)
     >>> distro_series_task = bugtaskset.createTask(
     ...     bug=bug_one, distroseries=warty, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
+    ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> distro_series_task.distroseries == warty
     True
 
@@ -119,7 +119,7 @@ zope.exceptions.NotFoundError:
 
 To retrieve a set of bug tasks matching a set of search criteria, use
 the searchTasks method of the IBugTarget interface. Here's how you'd
-grab all the UNCONFIRMED and CONFIRMED tasks:
+grab all the NEW and CONFIRMED tasks:
 
 For upstream:
 
@@ -128,7 +128,7 @@ For upstream:
     >>> from canonical.launchpad.database import Product
     >>> from canonical.launchpad.interfaces import BugTaskSearchParams
     >>> upstream_mozilla = Product.get(4)
-    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.NEW,
     ...                                         BugTaskStatus.CONFIRMED),
     ...                              orderby="id", user=None)
     >>> bugtasks = upstream_mozilla.searchTasks(params)
@@ -142,7 +142,7 @@ By project:
 
     >>> from canonical.launchpad.interfaces import IProjectSet
     >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
-    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.NEW,
     ...                                         BugTaskStatus.CONFIRMED),
     ...                              orderby="id", user=None)
     >>> bugtasks = mozilla_project.searchTasks(params)
@@ -156,7 +156,7 @@ For a distribution:
 
     >>> debian = distroset.get(3)
     >>> sample_person = personset.get(12)
-    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.NEW,
     ...                                         BugTaskStatus.CONFIRMED),
     ...                              orderby="id", user=None,
     ...                              assignee=sample_person)
@@ -174,7 +174,7 @@ For a person:
     >>> evolution_sourcepackage = sourcepackagenameset.queryByName('evolution')
     >>> ubuntu_evolution_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, owner=foobar,
-    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM,
+    ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM,
     ...     sourcepackagename=evolution_sourcepackage)
     >>> flush_database_updates()
     >>> params = BugTaskSearchParams(owner=foobar, user=None,
@@ -363,7 +363,7 @@ doesn't use Malone, and which lacks a bug watch.
     2 Blackhole Trash folder
 
 Pass the only_resolved_upstream flag to include only bugtasks linked to
-watches that are rejected, fixed committed or fix released, or bugtasks
+watches that are invalid, fixed committed or fix released, or bugtasks
 related to upstream bugtasks (i.e. filed on the same bug) that are fix
 committed or fix released.
 
@@ -829,7 +829,7 @@ require extra privileges.)
 
 The generic tasks are not directly editable.
 
-    >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.REJECTED)
+    >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.INVALID)
     Traceback (most recent call last):
       ...
     ConjoinedBugTaskEditError: This task cannot be edited directly, it
@@ -843,9 +843,9 @@ The generic tasks are not directly editable.
 
 
 A conjoined relationship can be broken, though. If the development
-task (i.e the conjoined master) is Rejected, it means that the bug is
+task (i.e the conjoined master) is Invalid, it means that the bug is
 deferred to the next series. In this case the development task should
-be Rejected, while the generic task keeps the value it had before,
+be Invalid, while the generic task keeps the value it had before,
 allowing it to stay open.
 
 First let's change the status from Fix Released, since it doesn't make
@@ -867,12 +867,12 @@ Now, if we reject the current series task, the generic task will still
 be confirmed.
 
     >>> current_series_netapplet_task.transitionToStatus(
-    ...     BugTaskStatus.REJECTED)
+    ...     BugTaskStatus.INVALID)
 
     >>> print generic_netapplet_task.status.title
     Confirmed
     >>> print current_series_netapplet_task.status.title
-    Rejected
+    Invalid
 
     >>> generic_netapplet_task.date_closed is None
     True
@@ -1030,7 +1030,7 @@ The private bugs will be invisible to No Privileges Person in the search
 results:
 
     >>> params = BugTaskSearchParams(
-    ...     status=any(STATUS_UNCONFIRMED, STATUS_CONFIRMED),
+    ...     status=any(STATUS_NEW, STATUS_CONFIRMED),
     ...     orderby="id", user=mr_no_privs)
     >>> bugtasks = upstream_mozilla.searchTasks(params)
     >>> print bugtasks.count()
@@ -1058,10 +1058,10 @@ when it was marked private:
 And note that he can access and set the bugtask attributes:
 
     >>> bug_upstream_firefox_no_svg_support.status.title
-    'Unconfirmed'
+    'New'
 
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
-    ...     BugTaskStatus.UNCONFIRMED)
+    ...     BugTaskStatus.NEW)
 
 Privacy and Team Awareness
 --------------------------
@@ -1071,7 +1071,7 @@ No Privileges Person can't see the private bug, because he's not a subscriber:
     >>> login("no-priv@canonical.com")
     >>> no_priv = personset.getByName("no-priv")
     >>> params = BugTaskSearchParams(
-    ...     status=any(STATUS_UNCONFIRMED, STATUS_CONFIRMED), user=no_priv)
+    ...     status=any(STATUS_NEW, STATUS_CONFIRMED), user=no_priv)
     >>> firefox_bugtasks = firefox.searchTasks(params)
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
     [4, 5, 6]
@@ -1085,7 +1085,7 @@ Team *is* subscribed to the bug, No Privileges Person will see the private bug.
 
     >>> login("no-priv@canonical.com")
     >>> params = BugTaskSearchParams(
-    ...     status=any(STATUS_UNCONFIRMED, STATUS_CONFIRMED), user=foobar)
+    ...     status=any(STATUS_NEW, STATUS_CONFIRMED), user=foobar)
     >>> firefox_bugtasks = firefox.searchTasks(params)
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
     [1, 4, 5, 6]
@@ -1112,7 +1112,7 @@ The same search as above yields the same result, because Daniel Debonzi is an
 administrator.
 
     >>> firefox = productset.get(4)
-    >>> params = BugTaskSearchParams(status=any(STATUS_UNCONFIRMED,
+    >>> params = BugTaskSearchParams(status=any(STATUS_NEW,
     ...                                         STATUS_CONFIRMED),
     ...                              user=debonzi)
     >>> firefox_bugtasks = firefox.searchTasks(params)
@@ -1135,14 +1135,14 @@ Trying to retrieve the bug directly will work fine:
 As will attribute access:
 
     >>> bug_upstream_firefox_no_svg_support.status.title
-    'Unconfirmed'
+    'New'
 
 And attribute setting:
 
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED)
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
-    ...     BugTaskStatus.UNCONFIRMED)
+    ...     BugTaskStatus.NEW)
 
 Sorting Bug Tasks
 -----------------
@@ -1192,7 +1192,7 @@ Of course, it's also computed and set when a bugtask is created.
 
     >>> upstream_task = bugtaskset.createTask(
     ...     bug=bug_one, product=netapplet, owner=sabdfl,
-    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
+    ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.targetname
     u'netapplet (upstream)'
 
@@ -1269,7 +1269,7 @@ ProgrammingError
     >>> import sys
     >>> try: bad_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, distroseries=warty,
-    ...     owner=sabdfl, status=STATUS_UNCONFIRMED,
+    ...     owner=sabdfl, status=STATUS_NEW,
     ...     importance=IMPORTANCE_MEDIUM)
     ... except DatabaseError: print sys.exc_value
     ERROR:  new row for relation "bugtask" violates check constraint "bugtask_assignment_checks"

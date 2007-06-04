@@ -48,7 +48,7 @@ supporting Javascript, the statistics are displayed as normal text:
     >>> stats_div = find_tag_by_id(anon_browser.contents, 'bugs-chart')
     >>> for li_tag in stats_div.noscript.ul('li'):
     ...     print li_tag.renderContents()
-    3 Unconfirmed bugs
+    3 New bugs
     0 Needs Info bugs
     0 Confirmed bugs
     0 In Progress bugs

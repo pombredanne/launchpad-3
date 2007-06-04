@@ -1178,11 +1178,11 @@ Invalid status:
         status foo
     ...
     The 'status' command expects any of the following arguments:
-    unconfirmed, needsinfo, rejected, confirmed, inprogress, fixcommitted, fixreleased
+    new, needsinfo, invalid, confirmed, inprogress, fixcommitted, fixreleased
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        status unconfirmed
+        status new
     ...
 
 Invalid importance:
@@ -1297,7 +1297,7 @@ The user is a bug contact of the upstream product
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (Ubuntu): Unconfirmed, assigned to no one
+    mozilla-firefox (Ubuntu): New, assigned to no one
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
@@ -1306,7 +1306,7 @@ The user is a bug contact of the upstream product
     >>> print bug_notification.message.text_contents
     ** Changed in: firefox (upstream)
     ...
-        Status: Unconfirmed => Confirmed
+        Status: New => Confirmed
 
 The user is a package bug contact
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1353,13 +1353,13 @@ The user is a distribution member
 
     >>> login('foo.bar@canonical.com')
     >>> submit_commands(
-    ...     bug_one, 'status unconfirmed', 'assignee test@canonical.com')
+    ...     bug_one, 'status new', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): New, assigned to Sample Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
@@ -1385,7 +1385,7 @@ user, telling him that he has to use the 'affects' command.
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): New, assigned to Sample Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> print_latest_email()

@@ -39,7 +39,7 @@ def _assignKarmaUsingBugContext(person, bug, actionname):
     actionname to the given person.
     """
     for task in bug.bugtasks:
-        if task.status == BugTaskStatus.REJECTED:
+        if task.status == BugTaskStatus.INVALID:
             continue
         _assign_karma_using_bugtask_context(person, task, actionname)
 
