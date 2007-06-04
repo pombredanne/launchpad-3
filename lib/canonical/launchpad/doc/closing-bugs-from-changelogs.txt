@@ -24,8 +24,8 @@ distribution package.
     >>> pmount_bug = pmount_ubuntu.createBug(bug_params)
     >>> pmount_bug_id = pmount_bug.id
 
-The package source uploads are represented as DistroReleaseQueue items
-that are associated with DistroReleaseQueueSource items and a changes
+The package source uploads are represented as DistroSeriesQueue items
+that are associated with DistroSeriesQueueSource items and a changes
 file. The only thing in the changes file that is used to close the bug
 is the Launchpad-bugs-fixed header.
 
@@ -36,21 +36,21 @@ is the Launchpad-bugs-fixed header.
     ...     PackageUploadStatus, PackagePublishingPocket)
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_hoary = ubuntu.getRelease('hoary')
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
     >>> changes = changes_template % pmount_bug_id
     >>> changes_file = getUtility(ILibrarianClient).addFile(
     ...     'pmount.changes', len(changes), StringIO(changes), 'text/plain')
     >>> queue_item = PackageUpload(
     ...     status=PackageUploadStatus.DONE,
     ...     archive=ubuntu_hoary.main_archive,
-    ...     distrorelease=ubuntu_hoary,
+    ...     distroseries=ubuntu_hoary,
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     changesfile=changes_file, signing_key=None)
     >>> queue_item_id = queue_item.id
 
-The DistroReleaseQueueSource items are linke to SourcePackageRelease
+The DistroSeriesQueueSource items are linke to SourcePackageRelease
 items, but for closing bugs the only thing that mattters is who uploaded
-it, what package name is it, and to what distribution release it was
+it, what package name is it, and to what distribution series it was
 uploaded to.
 
 
@@ -62,7 +62,7 @@ uploaded to.
     >>> pmount_release = SourcePackageRelease.get(pmount_release_id)
     >>> pmount_release.sourcepackagename.name
     u'pmount'
-    >>> pmount_release.uploaddistrorelease.name
+    >>> pmount_release.uploaddistroseries.name
     u'hoary'
     >>> source_queue = PackageUploadSource(
     ...     packageupload=queue_item,
@@ -161,7 +161,7 @@ specified, it's ignored.
     ...     'pmount.changes', len(changes), StringIO(changes), 'text/plain')
     >>> queue_item = PackageUpload(
     ...     status=PackageUploadStatus.DONE,
-    ...     distrorelease=ubuntu_hoary,
+    ...     distroseries=ubuntu_hoary,
     ...     archive=ubuntu_hoary.main_archive,
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     changesfile=changes_file, signing_key=None)
@@ -204,7 +204,7 @@ queue items have been processed.
     >>> queue_item = PackageUpload.get(queue_item_id)
     >>> queue_item = PackageUpload(
     ...     status=PackageUploadStatus.ACCEPTED,
-    ...     distrorelease=ubuntu_hoary,
+    ...     distroseries=ubuntu_hoary,
     ...     archive=ubuntu_hoary.main_archive,
     ...     pocket=PackagePublishingPocket.RELEASE,
     ...     changesfile=changes_file, signing_key=None)

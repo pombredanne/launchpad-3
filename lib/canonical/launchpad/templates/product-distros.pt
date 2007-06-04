@@ -25,7 +25,7 @@
     is packaged in different distributions.
   </p>
 
-  <p class="informational message" tal:condition="not: context/serieslist">
+  <p class="informational message" tal:condition="not: context/serieses">
     No project branches registered for 
     <span tal:replace="context/displayname">Foomatic</span>. Please
     <a href="+addseries">register a branch</a> and then you will be able to
@@ -39,25 +39,25 @@
     <table class="listing">
       <thead>
         <tr>
-          <th>Release</th>
+          <th>Distribution Series</th>
           <th>Source Package</th>
-          <th>Release Series</th>
+          <th>Upstream Series</th>
           <th>Package Version</th>
         </tr>
       </thead>
       <tbody>
         <tr tal:repeat="pkging distro/packagings">
           <td>
-            <span tal:replace="pkging/distrorelease/version">3.04</span>
-            (<span tal:replace="pkging/distrorelease/displayname">
+            <span tal:replace="pkging/distroseries/version">3.04</span>
+            (<span tal:replace="pkging/distroseries/displayname">
             Hoary</span>)</td>
             
-            <td>
-              <a
-                tal:attributes="href string:${pkging/distrorelease/fmt:url}/+source/${pkging/sourcepackagename/name}"
-                tal:content="pkging/sourcepackagename/name"
+          <td>
+            <a
+               tal:attributes="href string:${pkging/distroseries/fmt:url}/+source/${pkging/sourcepackagename/name}"
+               tal:content="pkging/sourcepackagename/name"
               >Apache</a>
-            </td>
+          </td>
             
           <td tal:content="pkging/productseries/name">2.0</td>
           <td><span tal:condition="pkging/sourcepackage/currentrelease"
@@ -70,7 +70,7 @@
   </tal:distribution>
 
   <p class="lesser discreet">
-    To add a Packaging Record, visit the page for the specific release
+    To add a Packaging Record, visit the page for the specific 
     series that has been packaged, and select "Link to Any Package".
   </p>
 

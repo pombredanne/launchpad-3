@@ -32,7 +32,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    ShipItDistroRelease, ShipItArchitecture, ShipItFlavour,
+    ShipItDistroSeries, ShipItArchitecture, ShipItFlavour,
     ShippingService, ShippingRequestStatus)
 
 from canonical.launchpad.helpers import intOrZero, get_email_template
@@ -97,13 +97,13 @@ class ShippingRequest(SQLBase):
             )
 
     @property
-    def distrorelease(self):
+    def distroseries(self):
         """See IShippingRequest"""
         requested_cds = self.getAllRequestedCDs()
         assert requested_cds.count() > 0
         # We know that a request cannot contain CDs of more than one distro
-        # release, so it's safe to get the first element here.
-        return requested_cds[0].distrorelease
+        # series, so it's safe to get the first element here.
+        return requested_cds[0].distroseries
 
     @property
     def recipient_email(self):
@@ -185,15 +185,15 @@ class ShippingRequest(SQLBase):
         self._setQuantities(quantities, set_approved=True)
 
     def setQuantities(self, quantities,
-                      distrorelease=ShipItConstants.current_distrorelease):
+                      distroseries=ShipItConstants.current_distroseries):
         """See IShippingRequest"""
         self._setQuantities(
             quantities, set_approved=True, set_requested=True,
-            distrorelease=distrorelease)
+            distroseries=distroseries)
 
     def _setQuantities(
             self, quantities, set_approved=False, set_requested=False,
-            distrorelease=ShipItConstants.current_distrorelease):
+            distroseries=ShipItConstants.current_distroseries):
         """Set the approved and/or requested quantities of this request.
 
         :quantities: A dictionary like the described in
@@ -208,7 +208,7 @@ class ShippingRequest(SQLBase):
                 if requested_cds is None:
                     requested_cds = RequestedCDs(
                         request=self, flavour=flavour, architecture=arch,
-                        distrorelease=distrorelease)
+                        distroseries=distroseries)
                 if set_approved:
                     requested_cds.quantityapproved = quantity
                 if set_requested:
@@ -374,12 +374,12 @@ class ShippingRequest(SQLBase):
                 AND country = %(country)s
                 AND recipient != %(recipient)s
                 AND status NOT IN (%(cancelled)s, %(denied)s)
-                AND RequestedCDs.distrorelease = %(release)s
+                AND RequestedCDs.distrorelease = %(series)s
             """ % sqlvalues(
                 address=self.normalized_address, recipient=self.recipient,
                 denied=ShippingRequestStatus.DENIED, country=self.country,
                 cancelled=ShippingRequestStatus.CANCELLED,
-                release=self.distrorelease)
+                series=self.distroseries)
         return ShippingRequest.select(
             "id IN (%s)" % query, limit=limit, orderBy='-daterequested')
 
@@ -463,7 +463,7 @@ class ShippingRequestSet:
 
     def getUnshippedRequestsIDs(
             self, priority,
-            distrorelease=ShipItConstants.current_distrorelease):
+            distroseries=ShipItConstants.current_distroseries):
         """See IShippingRequestSet"""
         if priority == ShippingRequestPriority.HIGH:
             priorityfilter = 'AND ShippingRequest.highpriority IS TRUE'
@@ -473,7 +473,7 @@ class ShippingRequestSet:
             # Nothing to filter, return all unshipped requests.
             priorityfilter = ''
 
-        replacements = sqlvalues(distrorelease=distrorelease,
+        replacements = sqlvalues(distroseries=distroseries,
                                  status=ShippingRequestStatus.APPROVED)
         replacements.update({'priorityfilter': priorityfilter})
         query = """
@@ -481,7 +481,7 @@ class ShippingRequestSet:
             FROM ShippingRequest, RequestedCDs
             WHERE shipment IS NULL 
                   AND ShippingRequest.id = RequestedCDs.request
-                  AND RequestedCDs.distrorelease = %(distrorelease)s
+                  AND RequestedCDs.distrorelease = %(distroseries)s
                   AND status = %(status)s
                   %(priorityfilter)s
             ORDER BY id
@@ -497,19 +497,19 @@ class ShippingRequestSet:
             status=ShippingRequestStatus.PENDING,
             orderBy='daterequested')
 
-    def search(self, status=None, flavour=None, distrorelease=None,
+    def search(self, status=None, flavour=None, distroseries=None,
                recipient_text=None, orderBy=ShippingRequest.sortingColumns):
         """See IShippingRequestSet"""
         queries = []
 
-        # We use subqueries To filter based on distrorelease/flavour so that
+        # We use subqueries To filter based on distroseries/flavour so that
         # we don't have to join the RequestedCDs table with a DISTINCT, which
         # causes the query to run a _lot_ slower.
-        if distrorelease is not None:
+        if distroseries is not None:
             queries.append("""
                 ShippingRequest.id IN (
                     SELECT request FROM RequestedCDs WHERE distrorelease = %s)
-                """ % sqlvalues(distrorelease))
+                """ % sqlvalues(distroseries))
 
         if flavour is not None:
             queries.append("""
@@ -540,9 +540,9 @@ class ShippingRequestSet:
 
     def exportRequestsToFiles(
             self, priority, ztm,
-            distrorelease=ShipItConstants.current_distrorelease):
+            distroseries=ShipItConstants.current_distroseries):
         """See IShippingRequestSet"""
-        request_ids = self.getUnshippedRequestsIDs(priority, distrorelease)
+        request_ids = self.getUnshippedRequestsIDs(priority, distroseries)
         # The SOFT_MAX_SHIPPINGRUN_SIZE is not a hard limit, and it doesn't
         # make sense to split a shippingrun into two just because there's 10 
         # requests more than the limit, so we only split them if there's at
@@ -559,7 +559,7 @@ class ShippingRequestSet:
                 request_ids = []
             shippingrun = self._create_shipping_run(request_ids_subset)
             now = datetime.now(pytz.timezone('UTC'))
-            filename = 'Ubuntu-%s' % distrorelease.name
+            filename = 'Ubuntu-%s' % distroseries.name
             if priority == ShippingRequestPriority.HIGH:
                 filename += '-High-Pri'
             filename += '-%s-%d.%s.csv' % (
@@ -603,7 +603,7 @@ class ShippingRequestSet:
         return total
 
     def _getRequestedCDCount(
-        self, current_release_only, country=None, approved=False):
+        self, current_series_only, country=None, approved=False):
         """Return the number of Requested CDs for each flavour and architecture.
         
         If country is not None, then consider only CDs requested by people on
@@ -616,11 +616,11 @@ class ShippingRequestSet:
         if approved:
             attr_to_sum_on = 'quantityapproved'
         quantities = {}
-        release_filter = ""
-        if current_release_only:
-            release_filter = (
+        series_filter = ""
+        if current_series_only:
+            series_filter = (
                 " AND RequestedCDs.distrorelease = %s"
-                % sqlvalues(ShipItConstants.current_distrorelease))
+                % sqlvalues(ShipItConstants.current_distroseries))
         for flavour in ShipItFlavour.items:
             quantities[flavour] = {}
             for arch in ShipItArchitecture.items:
@@ -629,7 +629,7 @@ class ShippingRequestSet:
                     shippingrequest.id = requestedcds.request AND
                     requestedcds.flavour = %s AND
                     requestedcds.architecture = %s""" % sqlvalues(flavour, arch)
-                query_str += release_filter
+                query_str += series_filter
                 if country is not None:
                     query_str += (" AND shippingrequest.country = %s" 
                                   % sqlvalues(country.id))
@@ -639,7 +639,7 @@ class ShippingRequestSet:
                     requests.sum(attr_to_sum_on))
         return quantities
 
-    def generateCountryBasedReport(self, current_release_only=True):
+    def generateCountryBasedReport(self, current_series_only=True):
         """See IShippingRequestSet"""
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
@@ -655,7 +655,7 @@ class ShippingRequestSet:
             'Percentage of total shipped CDs', 'Continent']
         csv_writer.writerow(header)
         requested_cd_count = self._getRequestedCDCount(
-            current_release_only, approved=True)
+            current_series_only, approved=True)
         all_shipped_cds = self._sumRequestedCDCount(requested_cd_count)
         ubuntu = ShipItFlavour.UBUNTU
         kubuntu = ShipItFlavour.KUBUNTU
@@ -670,11 +670,11 @@ class ShippingRequestSet:
                 % sqlvalues(country.id)
                 )
             clauseTables = []
-            if current_release_only:
+            if current_series_only:
                 base_query += """ 
                     AND RequestedCDs.distrorelease = %s
                     AND RequestedCDs.request = ShippingRequest.id
-                    """ % ShipItConstants.current_distrorelease
+                    """ % ShipItConstants.current_distroseries
                 clauseTables.append('RequestedCDs')
             total_shipped_requests = ShippingRequest.select(
                 base_query, clauseTables=clauseTables, distinct=True).count()
@@ -682,7 +682,7 @@ class ShippingRequestSet:
                 continue
             
             shipped_cds_per_arch = self._getRequestedCDCount(
-                current_release_only, country=country, approved=True)
+                current_series_only, country=country, approved=True)
 
             high_prio_orders = ShippingRequest.select(
                 base_query + " AND highpriority IS TRUE",
@@ -696,7 +696,7 @@ class ShippingRequestSet:
 
             shipped_cds = self._sumRequestedCDCount(shipped_cds_per_arch)
             requested_cd_count = self._getRequestedCDCount(
-                current_release_only, country=country, approved=False)
+                current_series_only, country=country, approved=False)
             requested_cds = self._sumRequestedCDCount(requested_cd_count)
             average_request_size = shipped_cds / total_shipped_requests
             percentage_of_approved = float(shipped_cds) / float(requested_cds)
@@ -730,7 +730,7 @@ class ShippingRequestSet:
         return csv_file
 
     def generateWeekBasedReport(
-            self, start_date, end_date, only_current_distrorelease=False):
+            self, start_date, end_date, only_current_distroseries=False):
         """See IShippingRequestSet"""
         # This is to ensure we include only full weeks of requests.
         start_monday = start_date - timedelta(days=start_date.isoweekday() - 1)
@@ -758,7 +758,7 @@ class ShippingRequestSet:
             header.append(label)
         csv_writer.writerow(header)
 
-        if only_current_distrorelease:
+        if only_current_distroseries:
             requests_base_query = """
                 SELECT COUNT(DISTINCT ShippingRequest.id) 
                 FROM ShippingRequest, RequestedCDs
@@ -766,7 +766,7 @@ class ShippingRequestSet:
                       AND RequestedCDs.request = ShippingRequest.id
                       AND RequestedCDs.distrorelease = %s
                 """ % sqlvalues(ShippingRequestStatus.CANCELLED,
-                                ShipItConstants.current_distrorelease)
+                                ShipItConstants.current_distroseries)
         else:
             requests_base_query = """
                 SELECT COUNT(ShippingRequest.id) 
@@ -780,10 +780,10 @@ class ShippingRequestSet:
             WHERE RequestedCDs.request = ShippingRequest.id
                   AND ShippingRequest.status != %s
             """ % sqlvalues(ShippingRequestStatus.CANCELLED)
-        if only_current_distrorelease:
+        if only_current_distroseries:
             sum_base_query += (
                 " AND RequestedCDs.distrorelease = %s"
-                % sqlvalues(ShipItConstants.current_distrorelease))
+                % sqlvalues(ShipItConstants.current_distroseries))
 
         sum_group_by = " GROUP BY flavour, architecture"
 
@@ -843,17 +843,17 @@ class ShippingRequestSet:
             sum_dict[flavour].update({arch: sum})
         return sum_dict
 
-    def generateShipmentSizeBasedReport(self, current_release_only=True):
+    def generateShipmentSizeBasedReport(self, current_series_only=True):
         """See IShippingRequestSet"""
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
         header = ['Number of CDs', 'Number of Shipments']
         csv_writer.writerow(header)
-        release_filter = ""
-        if current_release_only:
-            release_filter = (
+        series_filter = ""
+        if current_series_only:
+            series_filter = (
                 " AND RequestedCDs.distrorelease = %s"
-                % sqlvalues(ShipItConstants.current_distrorelease))
+                % sqlvalues(ShipItConstants.current_distroseries))
         query_str = """
             SELECT shipment_size, COUNT(request_id) AS shipments
             FROM
@@ -863,7 +863,7 @@ class ShippingRequestSet:
                 FROM requestedcds, shippingrequest
                 WHERE requestedcds.request = shippingrequest.id
                       AND shippingrequest.shipment IS NOT NULL
-                      %(release_filter)s
+                      %(series_filter)s
                 GROUP BY shippingrequest.id
             )
             AS TMP GROUP BY shipment_size ORDER BY shipment_size
@@ -879,7 +879,7 @@ class ShippingRequestSet:
     def generateRequestDistributionReport(self):
         """See IShippingRequestSet"""
         # First we get the distribution of requests/shipments for the current
-        # release only.
+        # series only.
         shipit_admins = getUtility(ILaunchpadCelebrities).shipit_admin
         cur = cursor()
         query = """
@@ -895,7 +895,7 @@ class ShippingRequestSet:
                     FROM RequestedCDs
                         JOIN ShippingRequest ON 
                             ShippingRequest.id = RequestedCDs.request
-                    WHERE distrorelease = %(current_release)s
+                    WHERE distrorelease = %(current_series)s
                         AND status != %(cancelled)s
                         AND recipient != %(shipit_admins)s
                     GROUP BY recipient
@@ -903,11 +903,11 @@ class ShippingRequestSet:
                 GROUP BY requests
                 ) AS REQUEST_DISTRIBUTION_AND_TOTALS
             """ % sqlvalues(
-                    current_release=ShipItConstants.current_distrorelease,
+                    current_series=ShipItConstants.current_distroseries,
                     shipit_admins=shipit_admins,
                     cancelled=ShippingRequestStatus.CANCELLED)
         cur.execute(query)
-        current_release_request_distribution = cur.fetchall()
+        current_series_request_distribution = cur.fetchall()
 
         query = """
             SELECT approved_requests, recipients,
@@ -923,7 +923,7 @@ class ShippingRequestSet:
                     FROM RequestedCDs
                         JOIN ShippingRequest ON 
                             ShippingRequest.id = RequestedCDs.request
-                    WHERE distrorelease = %(current_release)s
+                    WHERE distrorelease = %(current_series)s
                         AND status IN (%(approved)s, %(shipped)s)
                         AND recipient != %(shipit_admins)s
                     GROUP BY recipient
@@ -931,55 +931,55 @@ class ShippingRequestSet:
                 GROUP BY approved_requests
                 ) AS SHIPMENT_DISTRIBUTION_AND_TOTALS
             """ % sqlvalues(
-                    current_release=ShipItConstants.current_distrorelease,
+                    current_series=ShipItConstants.current_distroseries,
                     shipit_admins=shipit_admins,
                     approved=ShippingRequestStatus.APPROVED,
                     shipped=ShippingRequestStatus.SHIPPED)
         cur.execute(query)
-        current_release_shipment_distribution = cur.fetchall()
+        current_series_shipment_distribution = cur.fetchall()
 
         # We need to create some temporary tables to make the next queries run
         # in non-geological time.
         create_tables = """
-            -- People with non-cancelled requests for the current release.
-            CREATE TEMPORARY TABLE current_release_requester
+            -- People with non-cancelled requests for the current series.
+            CREATE TEMPORARY TABLE current_series_requester
                 (recipient integer);
-            INSERT INTO current_release_requester (
+            INSERT INTO current_series_requester (
                 SELECT DISTINCT recipient
                 FROM ShippingRequest
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
-                WHERE distrorelease = %(current_release)s
+                WHERE distrorelease = %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status != %(cancelled)s);
-            CREATE UNIQUE INDEX current_release_requester__unq 
-                ON current_release_requester(recipient);
+            CREATE UNIQUE INDEX current_series_requester__unq 
+                ON current_series_requester(recipient);
 
-            -- People with with non-cancelled requests for any release other
+            -- People with with non-cancelled requests for any series other
             -- than the current one.
-            CREATE TEMPORARY TABLE previous_release_requester
+            CREATE TEMPORARY TABLE previous_series_requester
                 (recipient integer);
-            INSERT INTO previous_release_requester (
+            INSERT INTO previous_series_requester (
                 SELECT DISTINCT recipient
                 FROM ShippingRequest
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
-                WHERE distrorelease < %(current_release)s
+                WHERE distrorelease < %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status != %(cancelled)s);
-            CREATE UNIQUE INDEX previous_release_requester__unq 
-                ON previous_release_requester(recipient);
+            CREATE UNIQUE INDEX previous_series_requester__unq 
+                ON previous_series_requester(recipient);
 
-            -- People which made requests for any release other than the 
+            -- People which made requests for any series other than the 
             -- current one, but none of the requests were ever shipped.
-            CREATE TEMPORARY TABLE previous_release_non_recipient
+            CREATE TEMPORARY TABLE previous_series_non_recipient
                 (recipient integer);
-            INSERT INTO previous_release_non_recipient (
+            INSERT INTO previous_series_non_recipient (
                 SELECT DISTINCT recipient
                 FROM ShippingRequest
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
-                WHERE distrorelease < %(current_release)s
+                WHERE distrorelease < %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status NOT IN (%(shipped)s, %(cancelled)s)
                 EXCEPT
@@ -987,21 +987,21 @@ class ShippingRequestSet:
                 FROM ShippingRequest
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequest.id
-                WHERE distrorelease < %(current_release)s
+                WHERE distrorelease < %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status = %(shipped)s);
-            CREATE UNIQUE INDEX previous_release_non_recipient__unq 
-                ON previous_release_non_recipient(recipient);
+            CREATE UNIQUE INDEX previous_series_non_recipient__unq 
+                ON previous_series_non_recipient(recipient);
             """ % sqlvalues(
-                    current_release=ShipItConstants.current_distrorelease,
+                    current_series=ShipItConstants.current_distroseries,
                     shipit_admins=shipit_admins,
                     shipped=ShippingRequestStatus.SHIPPED,
                     cancelled=ShippingRequestStatus.CANCELLED)
         cur.execute(create_tables)
 
-        # Now we get the distribution of other-than-current-release
+        # Now we get the distribution of other-than-current-series
         # requests/shipments for the people which made requests of the current
-        # release.
+        # series.
         query = """
             SELECT requests, requesters,
                 CASE WHEN requests > 0
@@ -1013,25 +1013,25 @@ class ShippingRequestSet:
                     COUNT(recipient) AS requesters
                 FROM (
                     -- This select will give us the people which made feisty
-                    -- requests and which also made requests for other releases.
+                    -- requests and which also made requests for other series.
                     SELECT recipient, SUM(quantity) AS requested_cds_per_user,
                         COUNT(DISTINCT request) AS requests
                     FROM RequestedCDs, ShippingRequest
-                    WHERE distrorelease < %(current_release)s
+                    WHERE distrorelease < %(current_series)s
                         AND status != %(cancelled)s
                         AND ShippingRequest.id = RequestedCDs.request
                         AND recipient IN (
-                            SELECT recipient FROM current_release_requester)
+                            SELECT recipient FROM current_series_requester)
                         AND recipient != %(shipit_admins)s
                     GROUP BY recipient
                     UNION
                     -- This one gives us the people which made feisty requests
-                    -- but haven't made requests for any other releases.
+                    -- but haven't made requests for any other series.
                     SELECT recipient, 0 AS requested_cds_per_user,
                         0 AS requests
-                    FROM (SELECT recipient FROM current_release_requester
+                    FROM (SELECT recipient FROM current_series_requester
                           EXCEPT
-                          SELECT recipient FROM previous_release_requester
+                          SELECT recipient FROM previous_series_requester
                          ) AS FIRST_TIME_REQUESTERS
                     WHERE recipient != %(shipit_admins)s
                     ) AS RECIPIENTS_AND_COUNTS
@@ -1039,11 +1039,11 @@ class ShippingRequestSet:
                 ) AS REQUEST_DISTRIBUTION_AND_TOTALS
             WHERE requesters > 0
             """ % sqlvalues(
-                    current_release=ShipItConstants.current_distrorelease,
+                    current_series=ShipItConstants.current_distroseries,
                     shipit_admins=shipit_admins,
                     cancelled=ShippingRequestStatus.CANCELLED)
         cur.execute(query)
-        other_releases_request_distribution = cur.fetchall()
+        other_serieses_request_distribution = cur.fetchall()
 
         query = """
             SELECT requests, requesters,
@@ -1057,65 +1057,65 @@ class ShippingRequestSet:
                 FROM (
                     -- This select will give us the people which made feisty
                     -- requests and which also had shipped requests for other
-                    -- releases.
+                    -- serieses.
                     SELECT recipient,
                         SUM(quantityapproved) AS approved_cds_per_user,
                         COUNT(DISTINCT request) AS requests
                     FROM RequestedCDs, ShippingRequest
-                    WHERE distrorelease < %(current_release)s
+                    WHERE distrorelease < %(current_series)s
                         AND status = %(shipped)s
                         AND ShippingRequest.id = RequestedCDs.request
                         AND recipient IN (
-                            SELECT recipient FROM current_release_requester)
+                            SELECT recipient FROM current_series_requester)
                     GROUP BY recipient
                     UNION
                     -- This one gives us the people which made feisty requests
                     -- but haven't had any shipped request of previous
-                    -- releases.
+                    -- serieses.
                     SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
                     FROM RequestedCDs, ShippingRequest
-                    WHERE distrorelease < %(current_release)s
+                    WHERE distrorelease < %(current_series)s
                         AND status != %(shipped)s
                         AND ShippingRequest.id = RequestedCDs.request
                         AND recipient IN (
-                            SELECT recipient FROM current_release_requester)
+                            SELECT recipient FROM current_series_requester)
                         AND recipient IN (
                             SELECT recipient 
-                            FROM previous_release_non_recipient)
+                            FROM previous_series_non_recipient)
                     UNION
                     -- This one gives us the people which made feisty requests
-                    -- but haven't made requests for any other releases.
+                    -- but haven't made requests for any other serieses.
                     SELECT recipient, 0 AS approved_cds_per_user, 0 AS requests
-                    FROM (SELECT recipient FROM current_release_requester
+                    FROM (SELECT recipient FROM current_series_requester
                           EXCEPT
-                          SELECT recipient FROM previous_release_requester
+                          SELECT recipient FROM previous_series_requester
                          ) AS FIRST_TIME_RECIPIENTS
                     ) AS RECIPIENTS_AND_COUNTS
                 GROUP BY requests
                 ) AS SHIPMENT_DISTRIBUTION_AND_TOTALS
             WHERE requesters > 0
             """ % sqlvalues(
-                    current_release=ShipItConstants.current_distrorelease,
+                    current_series=ShipItConstants.current_distroseries,
                     shipit_admins=shipit_admins,
                     approved=ShippingRequestStatus.APPROVED,
                     shipped=ShippingRequestStatus.SHIPPED)
         cur.execute(query)
-        other_releases_shipment_distribution = cur.fetchall()
+        other_serieses_shipment_distribution = cur.fetchall()
 
         # Get the numbers of the rows we want to display.
         all_results = itertools.chain(
-            current_release_shipment_distribution,
-            current_release_request_distribution,
-            other_releases_shipment_distribution,
-            other_releases_request_distribution)
+            current_series_shipment_distribution,
+            current_series_request_distribution,
+            other_serieses_shipment_distribution,
+            other_serieses_request_distribution)
         row_numbers = set()
         for requests, requesters, avg_size in all_results:
             row_numbers.add(requests)
 
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
-        header1 = ['', '', 'Current Release Only', '', '',
-                  '', '', 'Previous Releases Only', '']
+        header1 = ['', '', 'Current Series Only', '', '',
+                  '', '', 'Previous Series Only', '']
         header2 = ['', 'requests', '', 'shipped', '', 'requests', '',
                    'shipped', '']
         header3 = ['# of requests', '# of people', 'avg CDs per request',
@@ -1130,16 +1130,16 @@ class ShippingRequestSet:
         # a few lines below and I can't think of anything better.
         # -- Guilherme Salgado, 2007-04-25
         cr = self._convert_results_to_dict_and_fill_gaps(
-            current_release_request_distribution, row_numbers)
+            current_series_request_distribution, row_numbers)
         cr = self._add_percentage_to_number_of_people(cr)
         cs = self._convert_results_to_dict_and_fill_gaps(
-            current_release_shipment_distribution, row_numbers)
+            current_series_shipment_distribution, row_numbers)
         cs = self._add_percentage_to_number_of_people(cs)
         or_ = self._convert_results_to_dict_and_fill_gaps(
-            other_releases_request_distribution, row_numbers)
+            other_serieses_request_distribution, row_numbers)
         or_ = self._add_percentage_to_number_of_people(or_)
         os = self._convert_results_to_dict_and_fill_gaps(
-            other_releases_shipment_distribution, row_numbers)
+            other_serieses_shipment_distribution, row_numbers)
         os = self._add_percentage_to_number_of_people(os)
 
         for number in sorted(row_numbers):
@@ -1194,7 +1194,8 @@ class RequestedCDs(SQLBase):
     request = ForeignKey(
         dbName='request', foreignKey='ShippingRequest', notNull=True)
 
-    distrorelease = EnumCol(schema=ShipItDistroRelease, notNull=True)
+    distroseries = EnumCol(dbName='distrorelease',
+        schema=ShipItDistroSeries, notNull=True)
     architecture = EnumCol(schema=ShipItArchitecture, notNull=True)
     flavour = EnumCol(schema=ShipItFlavour, notNull=True)
 

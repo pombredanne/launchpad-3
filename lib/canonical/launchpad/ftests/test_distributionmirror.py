@@ -26,21 +26,21 @@ class TestDistributionMirror(LaunchpadFunctionalTestCase):
         LaunchpadFunctionalTestCase.setUp(self)
         login('test@canonical.com')
         mirrorset = getUtility(IDistributionMirrorSet)
-        self.release_mirror = getUtility(IDistributionMirrorSet).getByName(
+        self.cdimage_mirror = getUtility(IDistributionMirrorSet).getByName(
             'releases-mirror')
         self.archive_mirror = getUtility(IDistributionMirrorSet).getByName(
             'archive-mirror')
         self.hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
         self.hoary_i386 = self.hoary['i386']
 
-    def _create_source_mirror(self, distrorelease, pocket, component, status):
-        source_mirror1 = self.archive_mirror.ensureMirrorDistroReleaseSource(
-            distrorelease, pocket, component)
+    def _create_source_mirror(self, distroseries, pocket, component, status):
+        source_mirror1 = self.archive_mirror.ensureMirrorDistroSeriesSource(
+            distroseries, pocket, component)
         removeSecurityProxy(source_mirror1).status = status
 
-    def _create_bin_mirror(self, archrelease, pocket, component, status):
-        bin_mirror = self.archive_mirror.ensureMirrorDistroArchRelease(
-            archrelease, pocket, component)
+    def _create_bin_mirror(self, archseries, pocket, component, status):
+        bin_mirror = self.archive_mirror.ensureMirrorDistroArchSeries(
+            archseries, pocket, component)
         removeSecurityProxy(bin_mirror).status = status
         return bin_mirror
 
@@ -54,28 +54,28 @@ class TestDistributionMirror(LaunchpadFunctionalTestCase):
         flush_database_updates()
         self.failIf(self.archive_mirror.shouldDisable())
 
-    def test_release_mirror_not_missing_content_should_not_be_disabled(self):
+    def test_cdimage_mirror_not_missing_content_should_not_be_disabled(self):
         expected_file_count = 1
-        mirror = self.release_mirror.ensureMirrorCDImageRelease(
+        mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='ubuntu')
-        self.failIf(self.release_mirror.shouldDisable(expected_file_count))
+        self.failIf(self.cdimage_mirror.shouldDisable(expected_file_count))
 
-    def test_release_mirror_missing_content_should_be_disabled(self):
+    def test_cdimage_mirror_missing_content_should_be_disabled(self):
         expected_file_count = 1
-        self.failUnless(self.release_mirror.shouldDisable(expected_file_count))
+        self.failUnless(self.cdimage_mirror.shouldDisable(expected_file_count))
 
-    def test_delete_all_mirror_cdimage_releases(self):
-        mirror = self.release_mirror.ensureMirrorCDImageRelease(
+    def test_delete_all_mirror_cdimage_serieses(self):
+        mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='ubuntu')
-        mirror = self.release_mirror.ensureMirrorCDImageRelease(
+        mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='edubuntu')
-        self.failUnless(self.release_mirror.cdimage_releases.count() == 2)
-        self.release_mirror.deleteAllMirrorCDImageReleases()
-        self.failUnless(self.release_mirror.cdimage_releases.count() == 0)
+        self.failUnless(self.cdimage_mirror.cdimage_serieses.count() == 2)
+        self.cdimage_mirror.deleteAllMirrorCDImageSerieses()
+        self.failUnless(self.cdimage_mirror.cdimage_serieses.count() == 0)
 
     def test_archive_mirror_without_content_status(self):
-        self.failIf(self.archive_mirror.source_releases or
-                    self.archive_mirror.arch_releases)
+        self.failIf(self.archive_mirror.source_serieses or
+                    self.archive_mirror.arch_serieses)
         self.failUnless(
             self.archive_mirror.getOverallStatus() == MirrorStatus.UNKNOWN)
 
@@ -133,7 +133,7 @@ class TestDistributionMirror(LaunchpadFunctionalTestCase):
         LibrarianTestSetup().setUp()
         login('karl@canonical.com')
 
-        mirror = self.release_mirror
+        mirror = self.cdimage_mirror
         # If a mirror has been probed only once, the owner will always be
         # notified when it's disabled --it doesn't matter whether it was
         # previously enabled or disabled.
