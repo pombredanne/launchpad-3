@@ -454,6 +454,7 @@ class PackageUpload(SQLBase):
             "DISTRO": self.distroseries.distribution.title,
             "DISTROSERIES": self.distroseries.name,
             "ANNOUNCE": announce_list,
+            "SUBJECT": "Accepted",
             "SOURCE": self.displayname,
             "VERSION": self.displayversion,
             "ARCH": self.displayarchs,
@@ -506,6 +507,7 @@ class PackageUpload(SQLBase):
             # Only send an acceptance message.
             interpolations["SUMMARY"] += (
                 "\nThis upload awaits approval by a distro manager\n")
+            interpolations["SUBJECT"] = "Waiting approval"
             self._sendMail(accepted_template % interpolations)
             return
 
