@@ -60,14 +60,16 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
         firefox_upstream = self._getBugTaskByTarget(bug_one, firefox)
         self.assert_(firefox_upstream.product.official_malone)
         self.old_firefox_status = firefox_upstream.status
-        firefox_upstream.transitionToStatus(BugTaskStatus.FIXRELEASED)
+        firefox_upstream.transitionToStatus(
+            BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
         self.firefox_upstream = firefox_upstream
 
         # Mark an upstream task on bug #9 "Fix Committed"
         bug_nine = bugset.get(9)
         thunderbird_upstream = self._getBugTaskByTarget(bug_nine, thunderbird)
         self.old_thunderbird_status = thunderbird_upstream.status
-        thunderbird_upstream.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
+        thunderbird_upstream.transitionToStatus(
+            BugTaskStatus.FIXCOMMITTED, getUtility(ILaunchBag).user)
         self.thunderbird_upstream = thunderbird_upstream
         
         # Add a watch to a Debian bug for bug #2, and mark the task Fix
@@ -88,7 +90,8 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
         bug_two_in_debian_firefox = self._getBugTaskByTarget(
             bug_two, debian_firefox)
         bug_two_in_debian_firefox.bugwatch = watch_debbugs_327452
-        bug_two_in_debian_firefox.transitionToStatus(BugTaskStatus.FIXRELEASED)
+        bug_two_in_debian_firefox.transitionToStatus(
+            BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
 
         flush_database_updates()
 
@@ -99,9 +102,10 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
 
     def tearDownBugsElsewhereTests(self):
         """Resets the modified bugtasks to their original statuses."""
-        self.firefox_upstream.transitionToStatus(self.old_firefox_status)
+        self.firefox_upstream.transitionToStatus(
+            self.old_firefox_status, getUtility(ILaunchBag).user)
         self.thunderbird_upstream.transitionToStatus(
-            self.old_thunderbird_status)
+            self.old_thunderbird_status, getUtility(ILaunchBag).user)
         flush_database_updates()
 
     def assertBugTaskIsPendingBugWatchElsewhere(self, bugtask):

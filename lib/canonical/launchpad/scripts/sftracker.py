@@ -376,7 +376,7 @@ class TrackerImporter:
         # set up bug task
         bugtask.datecreated = item.datecreated
         bugtask.importance = item.lp_importance
-        bugtask.transitionToStatus(item.lp_status)
+        bugtask.transitionToStatus(item.lp_status, self.bug_importer)
         bugtask.transitionToAssignee(self.get_person(item.assignee))
 
         # Convert the category to a tag name

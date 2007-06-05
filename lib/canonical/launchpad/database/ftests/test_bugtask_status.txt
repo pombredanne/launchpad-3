@@ -1,0 +1,39 @@
+= Setting Bug Statuses =
+
+== Changing status to Won't Fix ==
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CreateBugParams, IPersonSet, IProductSet)
+    >>> from canonical.lp.dbschema import BugTaskStatus
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> nopriv_user = getUtility(IPersonSet).getByName('no-priv')
+    >>> login('foo.bar@canonical.com')
+    >>> firefox.bugcontact = nopriv_user
+    >>> login('no-priv@canonical.com')
+    >>> bug_params = CreateBugParams(
+    ...     nopriv_user, 'Test bug', 'Something')
+    >>> firefox_bug = firefox.createBug(bug_params)
+
+Only Bug Contacts should be able to assign status Won't Fix to a bug.
+
+    >>> [firefox_bugtask] = firefox_bug.bugtasks
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.WONTFIX, nopriv_user)
+    >>> print firefox_bugtask.status.title
+    Won't Fix
+
+Non Bug Contacts should not be permitted to change the status to Won't
+Fix. The option should not be offered in the UI, but we check here
+(and raise an AssertionError) to ensure that all call sites adhere to
+this.
+
+    >>> login('foo.bar@canonical.com')
+    >>> firefox.bugcontact = None
+
+    >>> login('no-priv@canonical.com')
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.WONTFIX, nopriv_user)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only Bug Contacts may change status to Won't Fix

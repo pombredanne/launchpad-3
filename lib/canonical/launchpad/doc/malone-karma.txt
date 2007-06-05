@@ -84,21 +84,24 @@ Mark a bug task as fixed:
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> bugtask = bug.bugtasks[0]
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    >>> bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> bugtask.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugfixed, distribution=debian
 
 Reject a bug task:
 
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    >>> bugtask.transitionToStatus(BugTaskStatus.INVALID)
+    >>> bugtask.transitionToStatus(
+    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
     >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugrejected, distribution=debian
 
 Accept a bug task:
 
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> bugtask.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(SQLObjectModifiedEvent(bugtask, old_bugtask, ['status']))
     Karma added: action=bugaccepted, distribution=debian
 
@@ -153,17 +156,20 @@ Create a new bug task on a distroseries:
 
 Accept a distro series task.
 
-    >>> debian_woody_task.transitionToStatus(BugTaskStatus.NEW)
+    >>> debian_woody_task.transitionToStatus(
+    ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
     >>> from canonical.launchpad.interfaces import IDistroSeriesBugTask
     >>> old_bugtask = Snapshot(
     ...     debian_woody_task, providing=IDistroSeriesBugTask)
-    >>> debian_woody_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> debian_woody_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(SQLObjectModifiedEvent(debian_woody_task, old_bugtask, ['status']))
     Karma added: action=bugaccepted, distribution=debian
 
 Accept a productseries task.
 
-    >>> evolution_trunk_task.transitionToStatus(BugTaskStatus.NEW)
+    >>> evolution_trunk_task.transitionToStatus(
+    ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
     >>> from canonical.launchpad.interfaces import IProductSeriesBugTask
     >>> old_bugtask = Snapshot(
     ...     evolution_trunk_task, providing=IProductSeriesBugTask)

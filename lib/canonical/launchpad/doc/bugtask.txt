@@ -496,6 +496,9 @@ package).
 Editing Bug Tasks
 -----------------
 
+When changing status we must pass the user making the change. Some
+statuses are restricted to Bug Contacts only.
+
 Upstream Bug Tasks
 ^^^^^^^^^^^^^^^^^^
 
@@ -503,7 +506,8 @@ To edit an upstream task, you must be logged in. Anonymous users
 cannot edit upstream tasks.
 
     >>> login(ANONYMOUS)
-    >>> upstream_task.transitionToStatus(STATUS_CONFIRMED)
+    >>> upstream_task.transitionToStatus(
+    ...     STATUS_CONFIRMED, getUtility(ILaunchBag).user)
     Traceback (most recent call last):
       ...
     Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
@@ -511,7 +515,8 @@ cannot edit upstream tasks.
 Let's login and try again.
 
     >>> login('jeff.waugh@ubuntulinux.com')
-    >>> upstream_task.transitionToStatus(STATUS_FIXRELEASED)
+    >>> upstream_task.transitionToStatus(
+    ...     STATUS_FIXRELEASED, getUtility(ILaunchBag).user)
 
 Distro and Distro Series Bug Tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -520,7 +525,8 @@ Any logged-in user can edit tasks filed on distros as long as the bug
 is not marked private. So, as an anonymous user, we can edit anything:
 
     >>> login(ANONYMOUS)
-    >>> distro_task.transitionToStatus(STATUS_FIXRELEASED)
+    >>> distro_task.transitionToStatus(
+    ...     STATUS_FIXRELEASED, getUtility(ILaunchBag).user)
     Traceback (most recent call last):
       ...
     Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
@@ -536,7 +542,8 @@ But once authenticated:
 
 We can edit the task:
 
-    >>> distro_task.transitionToStatus(STATUS_FIXRELEASED)
+    >>> distro_task.transitionToStatus(
+    ...     STATUS_FIXRELEASED, getUtility(ILaunchBag).user)
     >>> distro_series_task.transitionToAssignee(sample_person)
 
 Conjoined Bug Tasks
@@ -582,7 +589,8 @@ demonstrate.
 
     >>> ubuntu_edgy_milestone = ubuntu.currentseries.newMilestone("knot1")
 
-    >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.INPROGRESS)
+    >>> generic_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
     >>> generic_netapplet_task.transitionToAssignee(sample_person)
     >>> generic_netapplet_task.milestone = ubuntu_edgy_milestone
     >>> generic_netapplet_task.importance = BugTaskImportance.CRITICAL
@@ -741,7 +749,7 @@ require extra privileges.)
     True
 
     >>> current_series_netapplet_task.transitionToStatus(
-    ...     BugTaskStatus.FIXRELEASED)
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
 
     >>> print generic_netapplet_task.status.title
     Fix Released
@@ -829,7 +837,8 @@ require extra privileges.)
 
 The generic tasks are not directly editable.
 
-    >>> generic_netapplet_task.transitionToStatus(BugTaskStatus.INVALID)
+    >>> generic_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
     Traceback (most recent call last):
       ...
     ConjoinedBugTaskEditError: This task cannot be edited directly, it
@@ -852,7 +861,7 @@ First let's change the status from Fix Released, since it doesn't make
 sense to reject such a task.
 
     >>> current_series_netapplet_task.transitionToStatus(
-    ...     BugTaskStatus.CONFIRMED)
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> print generic_netapplet_task.status.title
     Confirmed
     >>> print current_series_netapplet_task.status.title
@@ -867,7 +876,7 @@ Now, if we reject the current series task, the generic task will still
 be confirmed.
 
     >>> current_series_netapplet_task.transitionToStatus(
-    ...     BugTaskStatus.INVALID)
+    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
 
     >>> print generic_netapplet_task.status.title
     Confirmed
@@ -1021,7 +1030,7 @@ properties of the bugtask.
     Unauthorized: (..., 'status', 'launchpad.View')
 
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
-    ...     BugTaskStatus.FIXCOMMITTED)
+    ...     BugTaskStatus.FIXCOMMITTED, getUtility(ILaunchBag).user)
     Traceback (most recent call last):
       ...
     Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
@@ -1061,7 +1070,7 @@ And note that he can access and set the bugtask attributes:
     'New'
 
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
-    ...     BugTaskStatus.NEW)
+    ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
 Privacy and Team Awareness
 --------------------------
@@ -1140,9 +1149,9 @@ As will attribute access:
 And attribute setting:
 
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
-    ...     BugTaskStatus.FIXRELEASED)
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
-    ...     BugTaskStatus.NEW)
+    ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
 Sorting Bug Tasks
 -----------------

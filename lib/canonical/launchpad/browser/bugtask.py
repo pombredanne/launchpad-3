@@ -948,7 +948,7 @@ class BugTaskEditView(GeneralFormView):
         if ((new_status is not self._missing_value) and
             (bugtask.status != new_status)):
             changed = True
-            bugtask.transitionToStatus(new_status)
+            bugtask.transitionToStatus(new_status, self.user)
 
         if ((new_assignee is not self._missing_value) and
             (bugtask.assignee != new_assignee)):
@@ -959,7 +959,8 @@ class BugTaskEditView(GeneralFormView):
             if bugtask.bugwatch is None:
                 # Reset the status and importance to the default values,
                 # since Unknown isn't selectable in the UI.
-                bugtask.transitionToStatus(IBugTask['status'].default)
+                bugtask.transitionToStatus(
+                    IBugTask['status'].default, self.user)
                 bugtask.importance = IBugTask['importance'].default
             else:
                 #XXX: Reset the bug task's status information. The right
@@ -967,7 +968,8 @@ class BugTaskEditView(GeneralFormView):
                 #     Launchpad status, but it's not trivial to do at the
                 #     moment. I will fix this later.
                 #     -- Bjorn Tillenius, 2006-03-01
-                bugtask.transitionToStatus(BugTaskStatus.UNKNOWN)
+                bugtask.transitionToStatus(
+                    BugTaskStatus.UNKNOWN, self.user)
                 bugtask.importance = BugTaskImportance.UNKNOWN
                 bugtask.transitionToAssignee(None)
 

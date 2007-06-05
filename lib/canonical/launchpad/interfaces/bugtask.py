@@ -186,8 +186,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         importance.
         """
 
-    def transitionToStatus(new_status):
+    def transitionToStatus(new_status, user):
         """Perform a workflow transition to the new_status.
+
+        :new_status: new status from `BugTaskStatus`
+        :user: the user requesting the change
 
         For certain statuses, e.g. Confirmed, other actions will
         happen, like recording the date when the task enters this

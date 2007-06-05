@@ -607,7 +607,7 @@ class BugTask(SQLBase, BugTaskMixin):
             raise ValueError('Unknown debbugs severity "%s"' % severity)
         return self.importance
 
-    def transitionToStatus(self, new_status):
+    def transitionToStatus(self, new_status, user):
         """See canonical.launchpad.interfaces.IBugTask."""
         if not new_status:
             # This is mainly to facilitate tests which, unlike the

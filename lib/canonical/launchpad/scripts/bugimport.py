@@ -320,7 +320,8 @@ class BugImporter:
         bugtask.importance = get_enum_value(BugTaskImportance,
                                             get_value(bugnode, 'importance'))
         bugtask.transitionToStatus(
-            get_enum_value(BugTaskStatus, get_value(bugnode, 'status')))
+            get_enum_value(BugTaskStatus, get_value(bugnode, 'status')),
+            self.bug_importer)
         bugtask.transitionToAssignee(
             self.getPerson(get_element(bugnode, 'assignee')))
         bugtask.milestone = self.getMilestone(get_value(bugnode, 'milestone'))

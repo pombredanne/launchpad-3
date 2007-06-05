@@ -684,7 +684,8 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
 
     def setAttributeValue(self, context, attr_name, attr_value):
         """See EmailCommand."""
-        context.transitionToStatus(attr_value)
+        context.transitionToStatus(
+            attr_value, getUtility(ILaunchBag).user)
 
 
 class ImportanceEmailCommand(DBSchemaEditEmailCommand):

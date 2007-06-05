@@ -394,7 +394,8 @@ bug and the blueprint we have been using.
    False
    >>> for task in bug_2.bugtasks:
    ...   if task.conjoined_master is None:
-   ...     task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+   ...     task.transitionToStatus(
+   ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
    >>> flush_database_updates()
    >>> bug_2.is_complete
    True

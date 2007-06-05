@@ -65,7 +65,8 @@ former status' count will of course decrease, and the latter's increase.
     >>> for bugtask in bug.bugtasks:
     ...     if bugtask.target == bugtarget:
     ...         break
-    >>> bugtask.transitionToStatus(BugTaskStatus.INCOMPLETE)
+    >>> bugtask.transitionToStatus(
+    ...     BugTaskStatus.INCOMPLETE, getUtility(ILaunchBag).user)
     >>> syncUpdate(bugtask)
     >>> new_bug_counts = bugtarget.getBugCounts(None)
     >>> print_count_difference(

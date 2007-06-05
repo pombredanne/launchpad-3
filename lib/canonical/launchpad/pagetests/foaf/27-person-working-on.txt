@@ -22,7 +22,8 @@ Sample Person.
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> params = BugTaskSearchParams(user=None, assignee=sample_person)
     >>> for task in getUtility(IBugTaskSet).search(params):
-    ...     task.transitionToStatus(BugTaskStatus.INPROGRESS)
+    ...     task.transitionToStatus(
+    ...         BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
 
 And the same for some blueprints.
 
