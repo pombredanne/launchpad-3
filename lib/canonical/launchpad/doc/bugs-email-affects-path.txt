@@ -122,7 +122,7 @@ an appropriate error message.
     >>> AffectsEmailCommand.getBugTarget('ubuntu/non-existant')
     Traceback (most recent call last):
     ...
-    BugTargetNotFound: Ubuntu doesn't have a release or source package
+    BugTargetNotFound: Ubuntu doesn't have a series or source package
                        named 'non-existant'.
 
 If some additional path component is included after the package, an
@@ -133,29 +133,29 @@ exception with an appropriate error is raised.
     ...
     BugTargetNotFound: Unexpected path components: foo
 
-== Getting a distribution release ==
+== Getting a distribution series ==
 
-A distribution release is a part of a distribution, so both the
-distribution and release has to be specified.
+A distribution series is a part of a distribution, so both the
+distribution and series has to be specified.
 
-    >>> from canonical.launchpad.interfaces import IDistroRelease
+    >>> from canonical.launchpad.interfaces import IDistroSeries
     >>> ubuntu_warty = AffectsEmailCommand.getBugTarget('ubuntu/warty')
-    >>> IDistroRelease.providedBy(ubuntu_warty)
+    >>> IDistroSeries.providedBy(ubuntu_warty)
     True
     >>> ubuntu_warty.name
     u'warty'
     >>> ubuntu_warty.distribution.name
     u'ubuntu'
 
-The path structure for a distribution release is the same as for a
+The path structure for a distribution series is the same as for a
 distribution source package, so the same error handling is used for
 both.
 
 
-== Getting a source package in a distribution release ==
+== Getting a source package in a distribution series ==
 
-When getting a source package within a distribution release, the source
-package is given after the distribution release.
+When getting a source package within a distribution series, the source
+package is given after the distribution series.
 
     >>> from canonical.launchpad.interfaces import ISourcePackage
     >>> warty_evolution = AffectsEmailCommand.getBugTarget(
@@ -164,9 +164,9 @@ package is given after the distribution release.
     True
     >>> warty_evolution.name
     u'evolution'
-    >>> warty_evolution.distrorelease.name
+    >>> warty_evolution.distroseries.name
     u'warty'
-    >>> warty_evolution.distrorelease.distribution.name
+    >>> warty_evolution.distroseries.distribution.name
     u'ubuntu'
 
 If a non-existant source package is given, an exception is raised with
@@ -175,7 +175,7 @@ an appropriate error message.
     >>> AffectsEmailCommand.getBugTarget('ubuntu/warty/non-existant')
     Traceback (most recent call last):
     ...
-    BugTargetNotFound: Warty doesn't have a release or source package
+    BugTargetNotFound: Warty doesn't have a series or source package
                        named 'non-existant'.
 
 If some additional path component is included after the package, an

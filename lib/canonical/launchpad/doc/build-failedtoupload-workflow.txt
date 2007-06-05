@@ -159,7 +159,7 @@ right target location, they are passed via process-upload command-line:
   >>> buildd_policy = getPolicy(
   ...     name='buildd',
   ...     distro=failedtoupload_candidate.distribution.name,
-  ...     distrorelease=failedtoupload_candidate.distrorelease.name,
+  ...     distroseries=failedtoupload_candidate.distroseries.name,
   ...     buildid=failedtoupload_candidate.id)
 
   >>> cdrkit_bin_upload = NascentUpload(
@@ -168,7 +168,7 @@ right target location, they are passed via process-upload command-line:
   >>> cdrkit_bin_upload.process()
   >>> cdrkit_bin_upload.is_rejected
   False
-  >>> success, msgs = cdrkit_bin_upload.do_accept()
+  >>> success = cdrkit_bin_upload.do_accept()
   >>> cdrkit_bin_upload.queue_root.status.name
   'NEW'
 

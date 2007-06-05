@@ -41,7 +41,7 @@ a Rosetta Expert to administrate it.
   'rosetta-admins'
   >>> browser.getControl(name='field.productseries').value
   'evolution/trunk'
-  >>> browser.getControl(name='field.distrorelease').value
+  >>> browser.getControl(name='field.distroseries').value
   ['']
   >>> browser.getControl(name='field.sourcepackagename').value
   ''
@@ -85,7 +85,7 @@ an admin to administrate it.
   'rosetta-admins'
   >>> admin_browser.getControl(name='field.productseries').value
   'evolution/trunk'
-  >>> admin_browser.getControl(name='field.distrorelease').value
+  >>> admin_browser.getControl(name='field.distroseries').value
   ['']
   >>> admin_browser.getControl(name='field.sourcepackagename').value
   ''

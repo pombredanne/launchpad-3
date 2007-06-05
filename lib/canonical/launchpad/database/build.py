@@ -43,8 +43,8 @@ class Build(SQLBase):
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
         notNull=True)
-    distroarchrelease = ForeignKey(dbName='distroarchrelease',
-        foreignKey='DistroArchRelease', notNull=True)
+    distroarchseries = ForeignKey(dbName='distroarchrelease',
+        foreignKey='DistroArchSeries', notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True, schema=BuildStatus)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease', notNull=True)
@@ -76,14 +76,14 @@ class Build(SQLBase):
         return queue_item.packageupload.changesfile
 
     @property
-    def distrorelease(self):
+    def distroseries(self):
         """See IBuild"""
-        return self.distroarchrelease.distrorelease
+        return self.distroarchseries.distroseries
 
     @property
     def distribution(self):
         """See IBuild"""
-        return self.distroarchrelease.distrorelease.distribution
+        return self.distroarchseries.distroseries.distribution
 
     @property
     def is_trusted(self):
@@ -94,10 +94,10 @@ class Build(SQLBase):
     def title(self):
         """See IBuild"""
         return '%s build of %s %s in %s %s %s' % (
-            self.distroarchrelease.architecturetag,
+            self.distroarchseries.architecturetag,
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
-            self.distribution.name, self.distrorelease.name, self.pocket.name)
+            self.distribution.name, self.distroseries.name, self.pocket.name)
 
     @property
     def was_built(self):
@@ -114,7 +114,7 @@ class Build(SQLBase):
             DistributionSourcePackageRelease)
 
         return DistributionSourcePackageRelease(
-            distribution=self.distroarchrelease.distrorelease.distribution,
+            distribution=self.distroarchseries.distroseries.distribution,
             sourcepackagerelease=self.sourcepackagerelease)
 
     @property
@@ -129,7 +129,7 @@ class Build(SQLBase):
         # check if the build would be properly collected if it was
         # reset. Do not reset denied builds.
         if (self.is_trusted and not
-            self.distrorelease.canUploadToPocket(self.pocket)):
+            self.distroseries.canUploadToPocket(self.pocket)):
             return False
 
         failed_buildstates = [
@@ -280,7 +280,7 @@ class Build(SQLBase):
         replacements = {
             'source_name': self.sourcepackagerelease.name,
             'source_version': self.sourcepackagerelease.version,
-            'architecturetag': self.distroarchrelease.architecturetag,
+            'architecturetag': self.distroarchseries.architecturetag,
             'build_state': self.buildstate.title,
             'build_duration': buildduration,
             'buildlog_url': buildlog_url,
@@ -317,16 +317,16 @@ class BuildSet:
         """See IBuildSet."""
         return Build.get(id)
 
-    def getPendingBuildsForArchSet(self, archreleases):
+    def getPendingBuildsForArchSet(self, archserieses):
         """See IBuildSet."""
-        if not archreleases:
+        if not archserieses:
             return None
 
-        archrelease_ids = [d.id for d in archreleases]
+        archseries_ids = [d.id for d in archserieses]
 
         return Build.select(
             AND(Build.q.buildstate==BuildStatus.NEEDSBUILD,
-                IN(Build.q.distroarchreleaseID, archrelease_ids))
+                IN(Build.q.distroarchseriesID, archseries_ids))
             )
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None):
@@ -368,7 +368,7 @@ class BuildSet:
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
         """See IBuildSet."""
-        # If not distroarchrelease was found return empty list
+        # If not distroarchseries was found return empty list
         if not arch_ids:
             # XXX cprov 20060908: returning and empty SelectResult to make
             # the callsites happy as bjorn suggested. However it would be

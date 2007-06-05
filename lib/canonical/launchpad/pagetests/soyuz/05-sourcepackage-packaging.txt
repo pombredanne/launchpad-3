@@ -14,7 +14,7 @@ package's +packaging page:
 
 As we could see 'mozilla' sourcepackage has no established Packaging
 records. We can add or edit the Packaging information for a specific
-distrorelease context. Let's try it for "grumpy":
+distroseries context. Let's try it for "grumpy":
 
   >>> user_browser.open(
   ...     "http://launchpad.dev/ubuntu/grumpy/+source/mozilla/+edit-packaging")
@@ -31,7 +31,7 @@ Now we can check if the Packaging record for "grumpy" is annotated:
   Upstream links for all source packages called
   "mozilla"
   Distribution
-  Release
+  Version
   Upstream Project Series
   Ubuntu
   Grumpy
@@ -48,7 +48,7 @@ list of Packaging records depends only on the source package name:
   Upstream links for all source packages called
   "mozilla"
   Distribution
-  Release
+  Version
   Upstream Project Series
   Ubuntu
   Grumpy
@@ -72,7 +72,7 @@ Now in the "warty" context both Packaging records are presented:
   Upstream links for all source packages called
   "mozilla"
   Distribution
-  Release
+  Version
   Upstream Project Series
   Ubuntu
   Grumpy
@@ -101,7 +101,7 @@ record is highlighted.
   Upstream links for all source packages called
   "mozilla"
   Distribution
-  Release
+  Version
   Upstream Project Series
   Ubuntu
   Grumpy

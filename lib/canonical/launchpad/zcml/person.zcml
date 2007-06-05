@@ -33,7 +33,11 @@
     <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
     <require
       permission="launchpad.Edit"
-      set_schema="canonical.launchpad.interfaces.IPerson" 
+      set_schema="canonical.launchpad.interfaces.IPerson"
+      />
+    <require
+      permission="launchpad.Edit"
+      attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf"
       />
   </content>
 
@@ -532,8 +536,14 @@
     name="+members"
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
-    class="canonical.launchpad.browser.TeamMembersView"
     template="../templates/team-members.pt"
+    />
+
+  <browser:page
+    name="+invitations"
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    template="../templates/team-invitations.pt"
     />
 
   <browser:page

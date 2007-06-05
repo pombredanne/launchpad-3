@@ -71,7 +71,8 @@ def _getDiskPool(pubconf, log):
     pubconf.setupArchiveDirs()
 
     log.debug("Preparing on-disk pool representation.")
-    dp = DiskPool(pubconf.poolroot, logging.getLogger("DiskPool"))
+    dp = DiskPool(pubconf.poolroot, pubconf.temproot,
+                  logging.getLogger("DiskPool"))
     # Set the diskpool's log level to INFO to suppress debug output
     dp.logger.setLevel(logging.INFO)
 
@@ -115,7 +116,7 @@ class Publisher(object):
     """Publisher is the class used to provide the facility to publish
     files in the pool of a Distribution. The publisher objects will be
     instantiated by the archive build scripts and will be used throughout
-    the processing of each DistroRelease and DistroArchRelease in question
+    the processing of each DistroSeries and DistroArchSeries in question
     """
 
     def __init__(self, log, config, diskpool, distribution, archive,
@@ -124,7 +125,7 @@ class Publisher(object):
 
         Publishers need the pool root dir and a DiskPool object.
 
-        Optionally we can pass a list of tuples, (distrorelease.name, pocket),
+        Optionally we can pass a list of tuples, (distroseries.name, pocket),
         which will restrict the publisher actions, only suites listed in
         allowed_suites will be modified.
         """
@@ -149,15 +150,15 @@ class Publisher(object):
         self.apt_handler = FTPArchiveHandler(self.log, self._config,
                                              self._diskpool, self.distro,
                                              self)
-        # Track which distrorelease pockets have been dirtied by a
+        # Track which distroseries pockets have been dirtied by a
         # change, and therefore need domination/apt-ftparchive work.
-        # This is a set of tuples in the form (distrorelease.name, pocket)
+        # This is a set of tuples in the form (distroseries.name, pocket)
         self.dirty_pockets = set()
 
     def A_publish(self, force_publishing):
         """First step in publishing: actual package publishing.
 
-        Asks each DistroRelease to publish itself, which causes
+        Asks each DistroSeries to publish itself, which causes
         publishing records to be updated, and files to be placed on disk
         where necessary.
         If self.allowed_suites is set, restrict the publication procedure
@@ -165,15 +166,15 @@ class Publisher(object):
         """
         self.log.debug("* Step A: Publishing packages")
 
-        for distrorelease in self.distro:
+        for distroseries in self.distro.serieses:
             for pocket, suffix in pocketsuffix.items():
-                if (self.allowed_suites and not (distrorelease.name, pocket) in
+                if (self.allowed_suites and not (distroseries.name, pocket) in
                     self.allowed_suites):
                     self.log.debug(
-                        "* Skipping %s/%s" % (distrorelease.name, pocket.name))
+                        "* Skipping %s/%s" % (distroseries.name, pocket.name))
                     continue
 
-                more_dirt = distrorelease.publish(
+                more_dirt = distroseries.publish(
                     self._diskpool, self.log, self.archive, pocket,
                     is_careful=force_publishing)
 
@@ -183,22 +184,22 @@ class Publisher(object):
         """Second step in publishing: domination."""
         self.log.debug("* Step B: dominating packages")
         judgejudy = Dominator(self.log, self.archive)
-        for distrorelease in self.distro:
+        for distroseries in self.distro.serieses:
             for pocket in PackagePublishingPocket.items:
                 if not force_domination:
-                    if not self.isDirty(distrorelease, pocket):
+                    if not self.isDirty(distroseries, pocket):
                         self.log.debug("Skipping domination for %s/%s" %
-                                   (distrorelease.name, pocket.name))
+                                   (distroseries.name, pocket.name))
                         continue
-                    if (not distrorelease.isUnstable() and
-                        distrorelease.main_archive.id == self.archive.id):
+                    if (not distroseries.isUnstable() and
+                        distroseries.main_archive.id == self.archive.id):
                         # We're not doing a full run and the
-                        # distrorelease is now 'stable': if we try to
+                        # distroseries is now 'stable': if we try to
                         # write a release file for it, we're doing
                         # something wrong.
                         assert pocket != PackagePublishingPocket.RELEASE,(
-                            "Oops, dominating stable distrorelease.")
-                judgejudy.judgeAndDominate(distrorelease, pocket, self._config)
+                            "Oops, dominating stable distroseries.")
+                judgejudy.judgeAndDominate(distroseries, pocket, self._config)
 
     def C_doFTPArchive(self, is_careful):
         """Does the ftp-archive step: generates Sources and Packages."""
@@ -208,24 +209,24 @@ class Publisher(object):
     def C_writeIndexes(self, is_careful):
         """Write Index files (Packages & Sources) using LP information.
 
-        Iterates over all distroreleases and its pockets and components.
+        Iterates over all distroserieses and its pockets and components.
         """
         self.log.debug("* Step C': write indexes directly from DB")
-        for distrorelease in self.distro:
+        for distroseries in self.distro:
             for pocket, suffix in pocketsuffix.items():
                 if not is_careful:
-                    if not self.isDirty(distrorelease, pocket):
+                    if not self.isDirty(distroseries, pocket):
                         self.log.debug("Skipping index generation for %s/%s" %
-                                       (distrorelease.name, pocket.name))
+                                       (distroseries.name, pocket.name))
                         continue
-                    if (not distrorelease.isUnstable() and
-                        distrorelease.main_archive.id == self.archive.id):
+                    if (not distroseries.isUnstable() and
+                        distroseries.main_archive.id == self.archive.id):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
-                            "Oops, indexing stable distrorelease.")
-                for component in distrorelease.components:
+                            "Oops, indexing stable distroseries.")
+                for component in distroseries.components:
                     self._writeComponentIndexes(
-                        distrorelease, pocket, component)
+                        distroseries, pocket, component)
 
     def D_writeReleaseFiles(self, is_careful):
         """Write out the Release files for the provided distribution.
@@ -235,36 +236,36 @@ class Publisher(object):
         Otherwise we include only pockets flagged as true in dirty_pockets.
         """
         self.log.debug("* Step D: Generating Release files.")
-        for distrorelease in self.distro:
+        for distroseries in self.distro:
             for pocket, suffix in pocketsuffix.items():
 
                 if not is_careful:
-                    if not self.isDirty(distrorelease, pocket):
+                    if not self.isDirty(distroseries, pocket):
                         self.log.debug("Skipping release files for %s/%s" %
-                                       (distrorelease.name, pocket.name))
+                                       (distroseries.name, pocket.name))
                         continue
-                    if (not distrorelease.isUnstable() and
-                        distrorelease.main_archive == self.archive):
+                    if (not distroseries.isUnstable() and
+                        distroseries.main_archive == self.archive):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
-                            "Oops, indexing stable distrorelease.")
-                self._writeDistroRelease(distrorelease, pocket)
+                            "Oops, indexing stable distroseries.")
+                self._writeDistroRelease(distroseries, pocket)
 
-    def isDirty(self, distrorelease, pocket):
+    def isDirty(self, distroseries, pocket):
         """True if a publication has happened in this release and pocket."""
-        if not (distrorelease.name, pocket) in self.dirty_pockets:
+        if not (distroseries.name, pocket) in self.dirty_pockets:
             return False
         return True
 
-    def _writeComponentIndexes(self, distrorelease, pocket, component):
-        """Write Index files for single distrorelease + pocket + component.
+    def _writeComponentIndexes(self, distroseries, pocket, component):
+        """Write Index files for single distroseries + pocket + component.
 
         Iterates over all supported architectures and 'sources', no
         support for installer-* yet.
         Write contents using LP info to an extra plain file (Packages.lp
         and Sources.lp .
         """
-        full_name = distrorelease.name + pocketsuffix[pocket]
+        full_name = distroseries.name + pocketsuffix[pocket]
         self.log.debug("Generate Indexes for %s/%s"
                        % (full_name, component.name))
 
@@ -272,7 +273,7 @@ class Publisher(object):
         temp_index = tempfile.mktemp(prefix='source-index_')
         source_index = gzip.GzipFile(fileobj=open(temp_index, 'wb'))
 
-        for spp in distrorelease.getSourcePackagePublishing(
+        for spp in distroseries.getSourcePackagePublishing(
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
             component=component, archive=self.archive):
             source_index.write(spp.getIndexStanza().encode('utf8'))
@@ -293,7 +294,7 @@ class Publisher(object):
         os.chmod(source_index_path, mode | stat.S_IWGRP)
 
 
-        for arch in distrorelease.architectures:
+        for arch in distroseries.architectures:
             arch_path = 'binary-%s' % arch.architecturetag
             self.log.debug("Generating Packages for %s" % arch_path)
 
@@ -301,7 +302,7 @@ class Publisher(object):
             temp_index = tempfile.mktemp(prefix=temp_prefix)
             package_index = gzip.GzipFile(fileobj=open(temp_index, "wb"))
 
-            for bpp in distrorelease.getBinaryPackagePublishing(
+            for bpp in distroseries.getBinaryPackagePublishing(
                 archtag=arch.architecturetag, pocket=pocket,
                 component=component, archive=self.archive):
                 package_index.write(bpp.getIndexStanza().encode('utf-8'))
@@ -322,7 +323,7 @@ class Publisher(object):
             mode = stat.S_IMODE(os.stat(package_index_path).st_mode)
             os.chmod(package_index_path, mode | stat.S_IWGRP)
 
-    def isAllowed(self, distrorelease, pocket):
+    def isAllowed(self, distroseries, pocket):
         """Whether or not the given suite should be considered.
 
         Return True either if the self.allowed_suite is empty (was not
@@ -331,19 +332,19 @@ class Publisher(object):
         Otherwise, return False.
         """
         if (self.allowed_suites and
-            (distrorelease.name, pocket) not in self.allowed_suites):
+            (distroseries.name, pocket) not in self.allowed_suites):
             return False
         return True
 
-    def _writeDistroRelease(self, distrorelease, pocket):
-        """Write out the Release files for the provided distrorelease."""
+    def _writeDistroRelease(self, distroseries, pocket):
+        """Write out the Release files for the provided distroseries."""
         # XXX: untested method -- kiko, 2006-08-24
 
         # As we generate file lists for apt-ftparchive we record which
-        # distroreleases and so on we need to generate Release files for.
+        # distroseriess and so on we need to generate Release files for.
         # We store this in release_files_needed and consume the information
         # when writeReleaseFiles is called.
-        full_name = distrorelease.name + pocketsuffix[pocket]
+        full_name = distroseries.name + pocketsuffix[pocket]
         release_files_needed = self.apt_handler.release_files_needed
         if full_name not in release_files_needed:
             # If we don't need to generate a release for this release
@@ -360,14 +361,14 @@ class Publisher(object):
                 # XXX malcc 2006-09-20: We don't like the way we build this
                 # all_architectures list. Make this better code.
                 clean_architecture = self._writeDistroArchRelease(
-                    distrorelease, pocket, component, architecture, all_files)
+                    distroseries, pocket, component, architecture, all_files)
                 if clean_architecture != "source":
                     all_architectures.add(clean_architecture)
 
         drsummary = "%s %s " % (self.distro.displayname,
-                                distrorelease.displayname)
+                                distroseries.displayname)
         if pocket == PackagePublishingPocket.RELEASE:
-            drsummary += distrorelease.version
+            drsummary += distroseries.version
         else:
             drsummary += pocket.name.capitalize()
 
@@ -378,8 +379,8 @@ class Publisher(object):
                     self.distro.displayname,
                     self.distro.displayname,
                     full_name,
-                    distrorelease.version,
-                    distrorelease.name,
+                    distroseries.version,
+                    distroseries.name,
                     datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
                     " ".join(sorted(list(all_architectures))),
                     " ".join(reorder_components(all_components)), drsummary)
@@ -398,12 +399,12 @@ class Publisher(object):
 
         f.close()
 
-    def _writeDistroArchRelease(self, distrorelease, pocket, component,
+    def _writeDistroArchRelease(self, distroseries, pocket, component,
                                 architecture, all_files):
         """Write out a Release file for a DAR."""
         # XXX: untested method -- kiko, 2006-08-24
 
-        full_name = distrorelease.name + pocketsuffix[pocket]
+        full_name = distroseries.name + pocketsuffix[pocket]
 
         self.log.debug("Writing Release file for %s/%s/%s" % (
             full_name, component, architecture))
@@ -434,7 +435,7 @@ class Publisher(object):
                               component, architecture, "Release"), "w")
         stanza = DISTROARCHRELEASE_STANZA % (
                 full_name,
-                distrorelease.version,
+                distroseries.version,
                 component,
                 self.distro.displayname,
                 self.distro.displayname,
@@ -444,18 +445,18 @@ class Publisher(object):
 
         return clean_architecture
 
-    def _writeSumLine(self, distrorelease_name, out_file, file_name, sum_form):
+    def _writeSumLine(self, distroseries_name, out_file, file_name, sum_form):
         """Write out a checksum line.
 
         Writes a checksum to the given file for the given filename in
         the given form.
         """
         full_name = os.path.join(self._config.distsroot,
-                                 distrorelease_name, file_name)
+                                 distroseries_name, file_name)
         if not os.path.exists(full_name):
             # The file we were asked to write out doesn't exist.
             # Most likely we have an incomplete archive (E.g. no sources
-            # for a given distrorelease). This is a non-fatal issue
+            # for a given distroseries). This is a non-fatal issue
             self.log.debug("Failed to find " + full_name)
             return
         in_file = open(full_name,"r")

@@ -597,13 +597,15 @@ questions filed against any of the project's products is displayed.
 The results are displayed in a format similar to the Person reports:
 there is an 'In' column displaying where the questions were filed.
 
-    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.tbody.fetch('tr'):
-    ...     question_title = question.first(
-    ...         'td', 'question').first('a').renderContents()
-    ...     question_target = question.first(
-    ...         'td', 'question-target').first('a').renderContents()
-    ...     print question_title, question_target
+    >>> def print_questions_with_target(contents):
+    ...     questions = find_tag_by_id(contents, 'question-listing')
+    ...     for question in questions.tbody.fetch('tr'):
+    ...         question_title = question.first(
+    ...             'td', 'question').first('a').renderContents()
+    ...         question_target = question.first(
+    ...             'td', 'question-target').first('a').renderContents()
+    ...         print question_title, question_target
+    >>> print_questions_with_target(browser.contents)
     Newly installed plug-in doesn't seem to be used Mozilla Firefox
     Firefox loses focus and gets stuck  Mozilla Firefox
     Problem showing the SVG demo on W3C site    Mozilla Firefox
@@ -657,13 +659,7 @@ questions ever filed on Launchpad.
 The results are displayed in a format similar to the Person reports:
 there is an 'In' column displaying where the questions were filed.
 
-    >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.tbody.fetch('tr'):
-    ...     question_title = question.first(
-    ...         'td', 'question').first('a').renderContents()
-    ...     question_target = question.first(
-    ...         'td', 'question-target').first('a').renderContents()
-    ...     print question_title, question_target
+    >>> print_questions_with_target(browser.contents)
     Firefox loses focus and gets stuck  Mozilla Firefox
     Firefox cannot render Bank Site     Mozilla Firefox
     mailto: problem in webpage          mozilla-firefox in ubuntu
@@ -683,6 +679,20 @@ When no results are found, a message informs the user of this fact:
     >>> print find_main_content(
     ...     browser.contents).first('p').renderContents()
     There are no questions matching "firefox" with the requested statuses.
+
+Clicking the 'Search' button without entering any search text will
+display all questions asked in Launchpad with the selected statuses.
+
+    >>> browser.getControl(name='field.status').displayValue = ['Open']
+    >>> browser.getControl(name='field.search_text').value = ''
+    >>> browser.getControl('Search').click()
+
+    >>> print_questions_with_target(browser.contents)
+    Continue playing after shutdown             Ubuntu
+    Installation failed                         Ubuntu
+    Firefox loses focus and gets stuck          Mozilla Firefox
+    Problem showing the SVG demo on W3C site    Mozilla Firefox
+    Firefox cannot render Bank Site             Mozilla Firefox
 
 == Searching in a Selected Project ==
 
