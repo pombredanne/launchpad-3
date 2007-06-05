@@ -68,7 +68,7 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
     valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
-    IProductSeries)
+    IProductSeries, BUG_CONTACT_BUGTASK_STATUSES)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -704,7 +704,7 @@ class BugTaskEditView(GeneralFormView):
             status_noshow = [BugTaskStatus.UNKNOWN]
             if (self.user is None or
                 not self.user.inTeam(self.context.pillar.bugcontact)):
-                status_noshow.append(BugTaskStatus.WONTFIX)
+                status_noshow.extend(BUG_CONTACT_BUGTASK_STATUSES)
             if self.context.status in status_noshow:
                 # The user has to be able to see the current value.
                 status_noshow.remove(self.context.status)
