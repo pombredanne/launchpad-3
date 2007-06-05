@@ -37,13 +37,13 @@ dev_host() {
   fi
   }
 
-echo "Checking development hosts"
 grep -q "^127.0.0.88" /etc/hosts
 if [ $? -ne 0 ]; then
+  echo "Adding development hosts on local machine"
   echo "
 # Launchpad virtual domains. This should be on one line.
 127.0.0.88      launchpad.dev
-" | sudo tee -a /etc/hosts
+" | sudo tee -a /etc/hosts > /dev/null
   echo "launchpad.dev added to /etc/hosts"
 fi
 
@@ -63,12 +63,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo "Checking ~/.ssh/config for relevant Canonical hosts"
 if [ ! -e ~/.ssh/config ]; then
     touch ~/.ssh/config
 fi
 
-grep "^Host .*chinstrap" ~/.ssh/config
+grep -q "^Host .*chinstrap" ~/.ssh/config
 if [ $? -ne 0 ]; then
   echo "Host chinstrap chinstrap.canonical.com chinstrap.ubuntu.com
     ForwardAgent yes
@@ -80,7 +79,7 @@ if [ $? -ne 0 ]; then
   echo "Added chinstrap to ~/.ssh/config"
 fi
 
-grep "^Host.*\*\.canonical.com" ~/.ssh/config
+grep -q "^Host.*\*\.canonical.com" ~/.ssh/config
 if [ $? -ne 0 ]; then
   echo "Host *.canonical.com *.ubuntu.com
     ForwardAgent yes
@@ -91,7 +90,7 @@ if [ $? -ne 0 ]; then
   echo "Added *.canonical.com to ~/.ssh/config"
 fi
 
-grep "^Host .*devpad" ~/.ssh/config
+grep -q "^Host .*devpad" ~/.ssh/config
 if [ $? -ne 0 ]; then
   echo "Host devpad devpad.canonical.com
     ForwardAgent yes
@@ -108,44 +107,45 @@ ssh devpad.canonical.com pwd > /dev/null
 if [ $? -ne 0 ]; then
   echo "
 ERROR: Unable to verify capability to ssh to devpad. Please check
-~/.ssh/config and uncomment the User configuration, and set the
-<canonical-username> to your username on Canonical servers, if it
-is not '${whoami}'
-"
+~/.ssh/config and check the User configuration item.  ['${whoami}']"
   exit 1
 fi
 
-
-echo "Retrieving signing-key for LP package repository."
-scp devpad.canonical.com:/code/lp-maintainers.pub /tmp/
+sudo apt-key list | grep -q "2048g/CA6E8A17"
 if [ $? -ne 0 ]; then
-  echo "Unable to fetch key for LP package repository"
-  exit 1
+  echo "Retrieving signing-key for LP package repository."
+  scp devpad.canonical.com:/code/lp-maintainers.pub /tmp/
+  if [ $? -ne 0 ]; then
+    echo "Unable to fetch key for LP package repository"
+    exit 1
+  fi
+  [ `sha1sum /tmp/lp-maintainers.pub | cut -d " " -f 1` = \
+     f1714a57bd8c481f45b2a64e2eb9131176c8922e ] \
+  && sudo apt-key add /tmp/lp-maintainers.pub
+  if [ $? -ne 0 ]; then
+    echo "Unable to add key for LP package repository"
+    exit 1
+  fi
 fi
-[ `sha1sum /tmp/lp-maintainers.pub | cut -d " " -f 1` = \
-   f1714a57bd8c481f45b2a64e2eb9131176c8922e ] \
-&& sudo apt-key add /tmp/lp-maintainers.pub
-if [ $? -ne 0 ]; then
-  echo "Unable to add key for LP package repository"
-  exit 1
-fi
 
 
-echo "Adding LP package respository to package source list."
-grep "^deb http://lpdebs.canonical.com/" /etc/apt/sources.list
+grep -q "^deb http://lpdebs.canonical.com/" /etc/apt/sources.list
 if [ $? -ne 0 ]; then
+  echo "Adding LP package respository to package source list."
   echo "deb http://lpdebs.canonical.com/${DISTRIB_CODENAME} ./" | sudo tee -a /etc/apt/sources.list > /dev/null
   sudo aptitude update
 fi
 
 
-echo "Installing Launchpad developer dependencies..."
-sudo aptitude install launchpad-developer-dependencies
+dpkg -s launchpad-developer-dependencies | grep -q "^Status:.*installed"
 if [ $? -ne 0 ]; then
-  echo "Unable to install LP developer dependencies"
-  exit 1
+  echo "Installing launchpad-developer-dependencies package..."
+  sudo aptitude install launchpad-developer-dependencies
+  if [ $? -ne 0 ]; then
+    echo "Unable to install LP developer dependencies"
+    exit 1
+  fi
 fi
-
 
 echo "
 <VirtualHost 127.0.0.88:80>
@@ -160,31 +160,101 @@ echo "
 </VirtualHost>
 " | sudo tee /etc/apache2/sites-available/launchpad.dev > /dev/null
 
-sudo a2enmod proxy
+sudo a2enmod proxy > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable proxy module in Apache2"
   exit 1
 fi
 
-sudo a2enmod proxy_http
+sudo a2enmod proxy_http > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable proxy_http module in Apache2"
   exit 1
 fi
 
-sudo a2ensite launchpad.dev
+sudo a2ensite launchpad.dev > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable launchpad.dev"
   exit 1
 fi
 
-sudo apache2ctl restart
+sudo apache2ctl restart > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to restart Apache2"
   exit 1
 fi
 
 
-echo "Setting up devpad repository"
+echo "Setting up devpad repository..."
 ssh devpad.canonical.com ~mark/devpad-setup
+
+
+# Create the local branch structure we will use for managing Launchpad code
+mkdir -p ~/canonical
+cd ~/canonical
+if [ ! -d lp-branches ]; then
+  bzr init-repo --trees lp-branches
+  if [ $? -ne 0 ]; then
+    echo "ERROR: Unable to setup local LP repository"
+    exit 1
+  fi
+fi
+if [ ! -d lp-branches/.bzr -a -d lp-branches/.bzr/repository ]; then
+  echo "ERROR: LP repository not found in ~/canonical/lp-branches/"
+  exit 1
+fi
+
+cd lp-branches
+if [ ! -d trunk ]; then
+  echo "Making local branch of Launchpad trunk, this will take a while..."
+  bzr branch bzr+ssh://devpad.canonical.com/code/rocketfuel/launchpad/devel trunk
+  if [ $? -ne 0 ]; then
+    echo "ERROR: Unable to create local copy of Rocketfuel trunk"
+    exit 1
+  fi
+fi
+
+cd trunk
+if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
+  "//devpad.canonical.com/code/rocketfuel/launchpad/devel/" ]; then
+  echo "ERROR: Your trunk branch in ~/canonical/lp-branches/trunk has an
+       incorrect pull location, correcting now..."
+  bzr pull --remember bzr+ssh://devpad.canonical.com/code/rocketfuel/launchpad/devel
+  if [ $? -ne 0 ]; then
+    echo "ERROR: Unable to set trunk pull location to
+       bzr+ssh://devpad.canonical.com/code/rocketfuel/launchpad/devel"
+    exit 1
+  fi
+fi
+
+# Setup scripts in /usr/local/bin
+cd /usr/local/bin
+if [ ! -e rocketfuel-get ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-get
+fi
+ls -l rocketfuel-get | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-get should be deleted so I can
+         recreate it."
+fi
+if [ ! -e rocketfuel-branch ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-branch
+fi
+ls -l rocketfuel-branch | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-branch should be deleted so I can
+         recreate it."
+fi
+if [ ! -e rocketfuel-setup ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-setup
+fi
+ls -l rocketfuel-setup | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-setup should be deleted so I can
+         recreate it."
+fi
+
+
+# Make sure we have all the right code in place for source dependencies
+/usr/local/bin/rocketfuel-get
 

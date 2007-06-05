@@ -13,11 +13,12 @@ RSYNCOPTIONS="-avp --partial --progress --delete"
 ssh-add -l
 if [ $? -gt 0 ]; then ssh-add; fi
 
-if [ ! -d $SOURCEDEPS ]; then mkdir $SOURCEDEPS; fi
+if [ ! -d $SOURCEDEPS ]; then mkdir -p $SOURCEDEPS; fi
 
 rsync $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $SOURCEDEPS/
 
 cd ~/canonical/lp-branches/trunk
 bzr pull
+utilities/link-external-sourcecode.sh ../../lp-sourcedeps
 make
 
