@@ -66,14 +66,11 @@ def poExportTearDown(test):
     tearDown(test)
 
 def uploaderSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(dbuser='uploader').setUp()
-    setGlobs(test)
-    # Set up an anonymous interaction.
-    login(ANONYMOUS)
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser('uploader')
 
 def uploaderTearDown(test):
-    LaunchpadZopelessTestSetup().tearDown()
+    tearDown(test)
 
 def builddmasterSetUp(test):
     LaunchpadZopelessLayer.alterConnection(
@@ -100,8 +97,9 @@ def answerTrackerTearDown(test):
     setSecurityPolicy(test.old_security_policy)
 
 def peopleKarmaTearDown(test):
-    # We can't detect db changes made by the subprocess
-    LaunchpadTestSetup().force_dirty_database()
+    # We can't detect db changes made by the subprocess (yet).
+    DatabaseLayer.force_dirty_database()
+    tearDown(test)
 
 def branchStatusSetUp(test):
     test._authserver = AuthserverTacTestSetup()
@@ -236,10 +234,10 @@ special = {
             '../doc/cve-update.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
-    'nascentupload.txt': FunctionalDocFileSuite(
+    'nascentupload.txt': LayeredDocFileSuite(
             '../doc/nascentupload.txt',
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
-            layer=LaunchpadFunctionalLayer
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
     'build-notification.txt': LayeredDocFileSuite(
             '../doc/build-notification.txt',
