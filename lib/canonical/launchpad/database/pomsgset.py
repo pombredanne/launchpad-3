@@ -338,7 +338,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 elif active_submissions[pluralform] is not None:
                     # Note that this submission did a change.
                     self.setActiveSubmission(pluralform, None)
-                    active_submissions[pluralform] = None
+                    while pluralform >= len(active_submissions):
+                        active_submissions.append(None)
                     has_changed = True
 
         # now loop through the translations and submit them one by one
@@ -353,7 +354,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 complete = False
             # make the new sighting or submission. note that this may not in
             # fact create a whole new submission
-            if index > len(active_submissions):
+            if index < len(active_submissions):
                 old_active_submission = active_submissions[index]
             else:
                 old_active_submission = None
@@ -371,7 +372,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
             if new_submission != old_active_submission:
                 has_changed = True
-                while index < len(active_submissions):
+                while index >= len(active_submissions):
                     active_submissions.append(None)
                 active_submissions[index] = new_submission
 
