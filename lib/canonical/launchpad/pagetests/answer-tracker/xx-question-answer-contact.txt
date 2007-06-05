@@ -1,0 +1,98 @@
+= Answer Contacts =
+
+Each product and distros can have answer contacts. Answer contacts
+receive notifications for new questions as well as changes to existing
+ones.
+
+The list of answer contacts is displayed in the 'Answer Contact'
+portlet which is available on the 'Answers' facet of the product or
+distro.
+
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'portlet-answer-contacts'))
+    Answer contacts for Ubuntu
+    There are no answer contacts.
+
+Anybody can become an answer contact. To register as an answer contact,
+the user clicks on the 'Set answer Contact' link:
+
+    >>> browser.getLink('Set answer contact').click()
+    >>> print find_main_content(browser.contents).find('h1')
+    <h1>Manage answer contacts</h1>
+
+That page displays a series of checkboxes. One for the user and one for
+each team that user is an administrator of.
+
+    >>> browser.getControl(
+    ...     name='field.answer_contact_teams').options
+    ['landscape-developers']
+
+The user can select any of these checkboxes to register as an answer
+contact himself or one of the team for which he's an administrator. In
+our case, the user decides to register himself and the Landscape
+Developers team.
+
+    >>> browser.getControl(
+    ...     "I want to be an answer contact for Ubuntu").selected = True
+    >>> browser.getControl("Landscape Developers").selected = True
+    >>> browser.getControl('Continue').click()
+
+Confirmation of the answer contact registrations are displayed and the
+new answer contacts appear in the 'Answer Contacts' portlet:
+
+    >>> for message in find_tags_by_class(browser.contents, 'message'):
+    ...     print message.renderContents()
+    You have been added as an answer contact for Ubuntu.
+    Landscape Developers has been added as an answer contact for Ubuntu.
+
+    >>> print extract_text(
+    ...    find_tag_by_id(browser.contents, 'portlet-answer-contacts'))
+    Answer contacts for Ubuntu
+    Landscape Developers
+    Sample Person
+
+To remove oneself from the answer contacts, the user uses the same
+'Set answer contact' link and uncheck himself or the team he want to remove
+from the answer contact list.
+
+    >>> browser.getLink('Set answer contact').click()
+    >>> browser.getControl(
+    ...     "I want to be an answer contact for Ubuntu").selected
+    True
+    >>> browser.getControl("Landscape Developers").selected
+    True
+    >>> browser.getControl("Landscape Developers").selected = False
+    >>> browser.getControl('Continue').click()
+
+A confirmation message is displayed:
+
+    >>> for tag in find_tags_by_class(browser.contents, 'message'):
+    ...     print tag.renderContents()
+    Landscape Developers has been removed as an answer contact for Ubuntu.
+
+Since answer contacts are notified of changes to questions, they are also
+listed in the 'Also notified' list in the 'Subscribers' portlet on a
+question.
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/ubuntu/+question/7')
+    >>> portlet = find_tag_by_id(browser.contents, 'question-subscribers')
+    >>> also_notified = portlet.find('b')
+    >>> also_notified
+    <b>Also notified:</b>
+    >>> print extract_text(also_notified.findNextSibling('ul'))
+    Sample Person
+
+== Product Answer Contacts ==
+
+The 'Set answer contact' action is also available on products:
+
+    >>> browser.open('http://answers.launchpad.dev/firefox')
+    >>> browser.getLink('Set answer contact').click()
+    >>> print browser.title
+    Answer contact for Mozilla Firefox
+    >>> print browser.url
+    http://answers.launchpad.dev/firefox/+answer-contact
+

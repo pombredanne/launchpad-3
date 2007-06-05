@@ -121,13 +121,25 @@ class TracExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
 
 class DebbugsExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with Trac URLs."""
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with Debbugs URLs."""
 
     bugtracker_type = BugTrackerType.DEBBUGS
     bug_url = 'http://some.host/some/path/cgi-bin/bugreport.cgi?bug=42'
     base_url = 'http://some.host/some/path/'
     bug_id = '42'
 
+
+class DebbugsExtractBugTrackerAndBugShorthandTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with compact Debbugs URLs."""
+
+    bugtracker_type = BugTrackerType.DEBBUGS
+    bug_url = 'http://bugs.debian.org/42'
+    base_url = 'http://bugs.debian.org/'
+    bug_id = '42'
+
+    def test_unregistered_tracker_url(self):
+        # bugs.debian.org is already registered, so no dice.
+        pass
 
 class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     """Make sure BugWatchSet.extractBugTrackerAndBug works with SF URLs.
@@ -157,6 +169,7 @@ def test_suite():
     suite.addTest(unittest.makeSuite(RoundUpExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(TracExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugShorthandTest))
     suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
     return suite
 

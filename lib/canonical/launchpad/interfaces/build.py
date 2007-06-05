@@ -20,7 +20,7 @@ class IBuild(Interface):
     id = Attribute("The build ID.")
     datecreated = Attribute("Date of BinPackage Creation")
     processor = Attribute("BinaryPackage Processor")
-    distroarchrelease = Attribute("The Distro Arch Release")
+    distroarchseries = Attribute("The Distro Arch Series")
     buildstate = Attribute("BinaryBuild State")
     datebuilt = Attribute("Binary Date of Built")
     buildduration = Attribute("Build Duration Interval")
@@ -35,7 +35,7 @@ class IBuild(Interface):
     title = Attribute("Build Title")
     changesfile = Attribute("The Build Changesfile object, returns None if "
                             "it is a gina-inserted record.")
-    distrorelease = Attribute("Direct parent needed by CanonicalURL")
+    distroseries = Attribute("Direct parent needed by CanonicalURL")
     buildqueue_record = Attribute("Corespondent BuildQueue record")
     was_built = Attribute("Whether or not modified by the builddfarm.")
     build_icon = Attribute("Return the icon url correspondent to buildstate.")
@@ -122,8 +122,8 @@ class IBuildSet(Interface):
         I.E. getUtility(IBuildSet).getByBuildID(foo).id == foo
         """
 
-    def getPendingBuildsForArchSet(archrelease):
-        """Return all pending build records within a group of ArchReleases
+    def getPendingBuildsForArchSet(archseries):
+        """Return all pending build records within a group of ArchSerieses
 
         Pending means that buildstatus is NEEDSBUILDING.
         """

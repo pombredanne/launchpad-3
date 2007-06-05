@@ -5,9 +5,7 @@
   <div class="portletBody portletContent">
 
     <b>Registrant:</b>
-    <img alt="" src="/@@/user" />
-    <a tal:attributes="href context/owner/fmt:url"
-       tal:content="context/owner/browsername">owner name</a> <br />
+    <a tal:replace="structure context/owner/fmt:link" /><br />
 
     <b>Speed:</b>
     <span tal:content="context/speed/title" /><br />

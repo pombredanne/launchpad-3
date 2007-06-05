@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -47,11 +46,6 @@
         permission="zope.Public"
         template="../templates/launchpad-form.pt"
         />
-
-    <!-- Widget Macros
-         NB this file overrides the addform / editform widget
-         display layout used in Launchpad. It should be somewhere
-         more central than bug.zcml-->
 
     <browser:page
         for="*"

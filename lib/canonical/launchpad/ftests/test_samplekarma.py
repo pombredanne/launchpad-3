@@ -8,8 +8,7 @@ from harness import LaunchpadTestCase
 class KarmaSampleDataTestCase(LaunchpadTestCase):
     def test_karma_sample_data(self):
         # Test to ensure that all sample karma events are far enough in
-        # the past that they will not be considered when calculating people's
-        # karma, as karma becomes worth less the further in the past it is.
+        # the past that they won't decay over time.
         con = self.connect()
         cur = con.cursor()
         cur.execute("""

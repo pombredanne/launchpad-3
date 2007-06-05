@@ -19,3 +19,4 @@ it should be removed, and its contents distributed to better places in
 the code.
 """
 
+from canonical.launchpad.components.objectdelta import ObjectDelta

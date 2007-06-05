@@ -1,35 +1,17 @@
-<table width="100%">
-  <tr>
-    <td width="10px">
-      <img src="/@@/spec" />
-    </td>
-    <td width="80%">
-      <a tal:attributes="
+<tr>
+  <td class="icon left">
+    <img src="/@@/blueprint" tal:replace="structure context/image:icon" />
+  </td>
+  <td>
+    <div>
+      <strong><a tal:attributes="
            href context/fmt:url;
            title context/name"
-         tal:content="context/title">Spec Title Here</a>
-      <img src="/@@/info" alt="Informational"
-           title="Informational specification"
-           tal:condition="context/informational" />
-    </td>
-    <td align="right" class="lesser">
-    </td>
-  </tr>
-  <tr>
-    <td>&nbsp;</td>
-    <td colspan="2" class="discreet">
-      [<span tal:attributes="
-               class string:specpriority${context/priority/name}"><span 
-        tal:content="context/priority/title">High</span>
-        Priority</span>]
-      [<span tal:attributes="
-               class string:specstatus${context/status/name}">Definition
-          <span tal:content="context/status/title">New</span></span>]
-      <tal:block condition="context/specurl">
-        <img src="/@@/link" />&nbsp;<a
-             tal:attributes="href context/specurl">Specification</a>
-      </tal:block>
-      <span tal:replace="context/summary/fmt:shorten/600">summary</span>
-    </td>
-  </tr>
-</table>
+         tal:content="context/title">Spec Title Here</a></strong>
+      for <strong tal:content="context/target/displayname" />
+    </div>
+    <div>
+      <tal:spec_summary replace="context/summary/fmt:shorten/320" />
+    </div>
+  </td>
+</tr>

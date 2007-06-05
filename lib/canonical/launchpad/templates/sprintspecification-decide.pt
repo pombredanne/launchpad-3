@@ -7,49 +7,32 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/specification/@@+portlet-details" />
-</metal:leftportlets>
-
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/sprint/@@+portlet-details" />
 </metal:rightportlets>
 
-<metal:heading fill-slot="pageheading">
-  <h3>Sprint: <span tal:replace="context/sprint/title">Firefox</span></h3>
-  <h2>Consider topic for agenda:</h2>
-</metal:heading>
-
 <div metal:fill-slot="main">
 
-  <h1 tal:content="context/specification/title">Spec title</h1>
+  <h1>Accept for agenda of <span
+  tal:replace="context/sprint/title">Firefox</span>?</h1>
 
   <form method="POST" action=".">
 
-    <div class="documentDescription">
-      Approve or decline this specification as a topic for discussion at
-      <span tal:replace="context/sprint/title">UBZ</span>.
-    </div>
-
     <div>
-              
-      <div>
-        <strong>Specification summary:</strong>
-      </div>
 
-      <p class="discreet" tal:content="context/specification/summary">
+      <h3>Specification summary:</h3>
+
+      <p tal:content="context/specification/summary">
         Summary here
       </p>
 
     </div>
 
     <div>
-              
-      <div>
-        <strong>Sprint details:</strong>
-      </div>
 
-      <p class="discreet" tal:content="context/sprint/summary">
+      <h3>Sprint details:</h3>
+
+      <p tal:content="context/sprint/summary">
         Summary here
       </p>
 
@@ -57,22 +40,22 @@
 
     <p>
       This topic was proposed by
-      <img src="/@@/user/">
-      <a tal:attributes="href context/registrant/fmt:url"
-         tal:content="context/registrant/browsername">Foo Bar</a>
-      on
-      <span tal:replace="context/date_created/fmt:date">2006-12-13</span>.
+      <a tal:replace="structure context/registrant/fmt:link">Foo Bar</a>
+      <span
+        tal:attributes="title context/date_created/fmt:datetime"
+        tal:content="context/date_created/fmt:displaydate">2006-12-13</span>.
       <tal:already_decided condition="context/decider">
         It was previously marked "<span tal:replace="context/status/title">
         Approved</span>" for the agenda by
-        <img src="/@@/user/">
-        <a tal:attributes="href context/decider/fmt:url"
-           tal:content="context/decider/browsername">Foo Bar</a>
-        on
-        <span tal:replace="context/date_decided/fmt:date">2006-12-13</span>.
+        <a tal:replace="structure context/decider/fmt:link">Foo Bar</a>
+        <span
+          tal:attributes="title context/date_decided/fmt:datetime"
+          tal:content="context/date_decided/fmt:displaydate">
+          2006-12-13
+        </span>.
       </tal:already_decided>
     </p>
-              
+
     <div class="actions">
       <input
         type="submit"

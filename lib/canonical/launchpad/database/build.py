@@ -12,9 +12,15 @@ from sqlobject import (
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.config import config
+
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.lp.dbschema import (
+    BuildStatus, PackagePublishingPocket)
+
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.buildqueue import BuildQueue
@@ -26,8 +32,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-from canonical.lp.dbschema import (
-    EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
+
 
 
 class Build(SQLBase):
@@ -38,8 +43,8 @@ class Build(SQLBase):
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
         notNull=True)
-    distroarchrelease = ForeignKey(dbName='distroarchrelease',
-        foreignKey='DistroArchRelease', notNull=True)
+    distroarchseries = ForeignKey(dbName='distroarchrelease',
+        foreignKey='DistroArchSeries', notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True, schema=BuildStatus)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease', notNull=True)
@@ -71,14 +76,14 @@ class Build(SQLBase):
         return queue_item.packageupload.changesfile
 
     @property
-    def distrorelease(self):
+    def distroseries(self):
         """See IBuild"""
-        return self.distroarchrelease.distrorelease
+        return self.distroarchseries.distroseries
 
     @property
     def distribution(self):
         """See IBuild"""
-        return self.distroarchrelease.distrorelease.distribution
+        return self.distroarchseries.distroseries.distribution
 
     @property
     def is_trusted(self):
@@ -89,12 +94,10 @@ class Build(SQLBase):
     def title(self):
         """See IBuild"""
         return '%s build of %s %s in %s %s %s' % (
-            self.distroarchrelease.architecturetag,
+            self.distroarchseries.architecturetag,
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
-            self.distroarchrelease.distrorelease.distribution.name,
-            self.distroarchrelease.distrorelease.name,
-            self.pocket.name)
+            self.distribution.name, self.distroseries.name, self.pocket.name)
 
     @property
     def was_built(self):
@@ -111,7 +114,7 @@ class Build(SQLBase):
             DistributionSourcePackageRelease)
 
         return DistributionSourcePackageRelease(
-            distribution=self.distroarchrelease.distrorelease.distribution,
+            distribution=self.distroarchseries.distroseries.distribution,
             sourcepackagerelease=self.sourcepackagerelease)
 
     @property
@@ -125,13 +128,15 @@ class Build(SQLBase):
         """See IBuild."""
         # check if the build would be properly collected if it was
         # reset. Do not reset denied builds.
-        if not self.distrorelease.canUploadToPocket(self.pocket):
+        if (self.is_trusted and not
+            self.distroseries.canUploadToPocket(self.pocket)):
             return False
 
         failed_buildstates = [
             BuildStatus.FAILEDTOBUILD,
             BuildStatus.MANUALDEPWAIT,
             BuildStatus.CHROOTWAIT,
+            BuildStatus.FAILEDTOUPLOAD,
             ]
 
         return self.buildstate in failed_buildstates
@@ -144,7 +149,6 @@ class Build(SQLBase):
     @property
     def calculated_buildstart(self):
         """See IBuild."""
-        assert self.was_built, "value is not suitable for pending builds."
         assert self.datebuilt and self.buildduration, (
             "value is not suitable for this build record (%d)"
             % self.id)
@@ -183,13 +187,13 @@ class Build(SQLBase):
                                    architecturespecific):
         """See IBuild."""
         return BinaryPackageRelease(build=self,
-                                    binarypackagenameID=binarypackagename,
+                                    binarypackagename=binarypackagename,
                                     version=version,
                                     summary=summary,
                                     description=description,
                                     binpackageformat=binpackageformat,
-                                    componentID=component,
-                                    sectionID=section,
+                                    component=component,
+                                    section=section,
                                     priority=priority,
                                     shlibdeps=shlibdeps,
                                     depends=depends,
@@ -208,7 +212,7 @@ class Build(SQLBase):
         """See IBuild"""
         return BuildQueue(build=self)
 
-    def notify(self):
+    def notify(self, extra_info=None):
         """See IBuild"""
         if not config.builddmaster.send_build_notification:
             return
@@ -264,17 +268,28 @@ class Build(SQLBase):
             buildlog_url = self.buildlog.http_url
             builder_url = canonical_url(self.builder)
 
+        if self.buildstate == BuildStatus.FAILEDTOUPLOAD:
+            assert extra_info is not None, (
+                'Extra information is required for FAILEDTOUPLOAD '
+                'notifications.')
+            extra_info = 'Upload log:\n%s' % extra_info
+        else:
+            extra_info = ''
+
         template = get_email_template('build-notification.txt')
         replacements = {
             'source_name': self.sourcepackagerelease.name,
             'source_version': self.sourcepackagerelease.version,
-            'architecturetag': self.distroarchrelease.architecturetag,
+            'architecturetag': self.distroarchseries.architecturetag,
             'build_state': self.buildstate.title,
             'build_duration': buildduration,
             'buildlog_url': buildlog_url,
             'builder_url': builder_url,
             'build_title': self.title,
             'build_url': canonical_url(self),
+            'source_url': canonical_url(
+                self.distributionsourcepackagerelease),
+            'extra_info': extra_info,
             }
         message = template % replacements
 
@@ -302,16 +317,16 @@ class BuildSet:
         """See IBuildSet."""
         return Build.get(id)
 
-    def getPendingBuildsForArchSet(self, archreleases):
+    def getPendingBuildsForArchSet(self, archserieses):
         """See IBuildSet."""
-        if not archreleases:
+        if not archserieses:
             return None
 
-        archrelease_ids = [d.id for d in archreleases]
+        archseries_ids = [d.id for d in archserieses]
 
         return Build.select(
             AND(Build.q.buildstate==BuildStatus.NEEDSBUILD,
-                IN(Build.q.distroarchreleaseID, archrelease_ids))
+                IN(Build.q.distroarchseriesID, archseries_ids))
             )
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None):
@@ -353,7 +368,7 @@ class BuildSet:
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
         """See IBuildSet."""
-        # If not distroarchrelease was found return empty list
+        # If not distroarchseries was found return empty list
         if not arch_ids:
             # XXX cprov 20060908: returning and empty SelectResult to make
             # the callsites happy as bjorn suggested. However it would be
@@ -418,7 +433,8 @@ class BuildSet:
             clauseTables.append('Sourcepackagerelease')
             clauseTables.append('Sourcepackagename')
 
-        # Exclude PPA builds
+        # Only pick builds from the distribution's main archive to
+        # exclude PPA builds
         clauseTables.extend(["DistroArchRelease",
                              "DistroRelease",
                              "Distribution"])

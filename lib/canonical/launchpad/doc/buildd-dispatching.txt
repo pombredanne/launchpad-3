@@ -54,24 +54,29 @@ Set IBuilder.builderok of all present builders:
   >>> builder_set.count()
   2
 
+  >>> from canonical.launchpad.ftests import syncUpdate
   >>> for b in builder_set:
   ...     b.builderok = True
+  ...     syncUpdate(b)
 
-Flush database changes, otherwise they won't be seem inside
-BuildMaster context:
 
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> flush_database_updates()
+Clean up previous BuildQueue results from sampledata:
+
+  >>> from canonical.launchpad.interfaces import IBuildQueueSet
+  >>> lost_job = getUtility(IBuildQueueSet).get(1)
+  >>> lost_job.builder.name
+  u'bob'
+  >>> lost_job.destroySelf()
 
 Setup BuilddMaster class:
 
-  >>> bm.addDistroArchRelease(hoary_i386)
+  >>> bm.addDistroArchSeries(hoary_i386)
   >>> bm.setupBuilders(hoary_i386)
 
 Check if there builders available:
 
   >>> available_builder = (
-  ...     bm._archreleases[hoary_i386]['builders'].firstAvailable(
+  ...     bm._archserieses[hoary_i386]['builders'].firstAvailable(
   ...     is_trusted=True))
   >>> available_builder.name
   u'bob'
@@ -91,7 +96,7 @@ Now let's check the build candidates which will be considered:
   >>> jobs_by_proc = bm.sortAndSplitByProcessor()
 
 jobs_by_proc is a dictionary which keys are the initialised
-distroarchreleases 'processorfamily's, in this case
+distroarchseriess 'processorfamily's, in this case
 hoary_i386.processorfamily only:
 
   >>> proc = hoary_i386.processorfamily
@@ -159,12 +164,11 @@ Restart buildd-slave:
 
 Create new Build record of the same source targeted for a PPA archive:
 
-  XXX cprov 20061103: used IPerson PPA lookup API.
-  >>> from canonical.launchpad.database import Archive
-  >>> cprov_ppa = Archive.get(8)
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
   >>> ppa_build = sprf.sourcepackagerelease.createBuild(
-  ...     hoary_i386, PackagePublishingPocket.RELEASE, archive=cprov_ppa)
+  ...     hoary_i386, PackagePublishingPocket.RELEASE, cprov.archive)
 
 Create BuildQueue record and inspect some parameters:
 
@@ -208,7 +212,7 @@ necessary. It's mainly required because the use of the 'notes'
 contents in python domain.
 
   >>> new_bm = BuilddMaster(logger, transaction)
-  >>> new_bm.addDistroArchRelease(hoary_i386)
+  >>> new_bm.addDistroArchSeries(hoary_i386)
   >>> new_bm.setupBuilders(hoary_i386)
   >>> jobs_by_proc = new_bm.sortAndSplitByProcessor()
   >>> jobs = jobs_by_proc[proc]

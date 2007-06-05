@@ -12,30 +12,30 @@ __all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
 
 from warnings import warn
 import operator
+import os
 
 from zope.interface import implements
-
 from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW, nowUTC
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
+from canonical.lp.dbschema import (
+    PackagePublishingPriority, PackagePublishingStatus,
+    PackagePublishingPocket)
 from canonical.launchpad.interfaces import (
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     IArchivePublisher, IArchiveFilePublisher, IArchiveSafePublisher,
     PoolFileOverwriteError)
-from canonical.lp.dbschema import (
-    EnumCol, PackagePublishingPriority, PackagePublishingStatus,
-    PackagePublishingPocket)
 
 
 # XXX cprov 20060818: move it away, perhaps archivepublisher/pool.py
 def makePoolPath(source_name, component_name):
     """Return the pool path for a given source name and component name."""
     from canonical.archivepublisher.diskpool import poolify
-    import os
     return os.path.join(
         'pool', poolify(source_name, component_name))
 
@@ -84,7 +84,7 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey="Distribution",
-                              unique=False, default=None,
+                              unique=False,
                               notNull=True)
 
     sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
@@ -94,25 +94,22 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
         dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
-                                         unique=False, default=None,
-                                         notNull=True)
+                                         unique=False, notNull=True)
 
     componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True)
+                              notNull=True)
 
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True)
+                                  notNull=True)
 
-    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True)
+    distroseriesname = StringCol(dbName='distroreleasename', unique=False,
+                                  notNull=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               default=None, notNull=True,
-                               schema=PackagePublishingStatus)
+                               notNull=True, schema=PackagePublishingStatus)
 
     pocket = EnumCol(dbName='pocket', unique=False,
-                     default=None, notNull=True,
-                     schema=PackagePublishingPocket)
+                     notNull=True, schema=PackagePublishingPocket)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
@@ -130,8 +127,8 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey="Distribution",
-                              unique=False, default=None,
-                              notNull=True, immutable=True)
+                              unique=False, notNull=True,
+                              immutable=True)
 
     binarypackagepublishing = ForeignKey(dbName='binarypackagepublishing',
         foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
@@ -140,28 +137,27 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
         dbName='libraryfilealias', foreignKey='LibraryFileAlias', notNull=True)
 
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
-                                         unique=False, default=None,
-                                         notNull=True, immutable=True)
+                                         unique=False, notNull=True,
+                                         immutable=True)
 
     componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True, immutable=True)
+                              notNull=True, immutable=True)
 
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True, immutable=True)
+                                  notNull=True, immutable=True)
 
-    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True, immutable=True)
+    distroseriesname = StringCol(dbName='distroreleasename', unique=False,
+                                  notNull=True, immutable=True)
 
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               default=None, notNull=True, immutable=True,
+                               notNull=True, immutable=True,
                                schema=PackagePublishingStatus)
 
     architecturetag = StringCol(dbName='architecturetag', unique=False,
-                                default=None, notNull=True, immutable=True)
+                                notNull=True, immutable=True)
 
     pocket = EnumCol(dbName='pocket', unique=False,
-                     default=None, notNull=True,
-                     schema=PackagePublishingPocket)
+                     notNull=True, schema=PackagePublishingPocket)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
@@ -179,7 +175,7 @@ class ArchiveSafePublisherBase:
             # already published (usually when we use -C
             # publish-distro.py option)
             self.status = PackagePublishingStatus.PUBLISHED
-            self.datepublished = nowUTC
+            self.datepublished = UTC_NOW
 
 
 class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
@@ -189,7 +185,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
                                       dbName='sourcepackagerelease')
-    distrorelease = ForeignKey(foreignKey='DistroRelease',
+    distroseries = ForeignKey(foreignKey='DistroSeries',
                                dbName='distrorelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
@@ -234,7 +230,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
-    distroarchrelease = ForeignKey(foreignKey='DistroArchRelease',
+    distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
                                    dbName='distroarchrelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
@@ -331,7 +327,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
-    distrorelease = ForeignKey(foreignKey='DistroRelease',
+    distroseries = ForeignKey(foreignKey='DistroSeries',
         dbName='distrorelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
@@ -362,8 +358,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.status=%s
             """ % sqlvalues(self.sourcepackagerelease,
-                            self.distrorelease,
-                            self.distrorelease.main_archive,
+                            self.distroseries,
+                            self.distroseries.main_archive,
                             PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
@@ -389,15 +385,22 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def meta_sourcepackage(self):
         """see ISourcePackagePublishingHistory."""
-        return self.distrorelease.getSourcePackage(
+        return self.distroseries.getSourcePackage(
             self.sourcepackagerelease.sourcepackagename
             )
 
     @property
     def meta_sourcepackagerelease(self):
         """see ISourcePackagePublishingHistory."""
-        return self.distrorelease.distribution.getSourcePackageRelease(
+        return self.distroseries.distribution.getSourcePackageRelease(
             self.sourcepackagerelease
+            )
+
+    @property
+    def meta_distroseriessourcepackagerelease(self):
+        """see ISourcePackagePublishingHistory."""
+        return self.distroseries.getSourcePackageRelease( 
+            self.sourcepackagerelease 
             )
 
     @property
@@ -405,7 +408,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """see ISourcePackagePublishingHistory."""
         if not self.supersededby:
             return None
-        return self.distrorelease.distribution.getSourcePackageRelease(
+        return self.distroseries.distribution.getSourcePackageRelease(
             self.supersededby
             )
 
@@ -415,7 +418,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         release = self.sourcepackagerelease
         name = release.sourcepackagename.name
         return "%s %s in %s" % (name, release.version,
-                                self.distrorelease.name)
+                                self.distroseries.name)
 
     def buildIndexStanzaFields(self):
         """See IArchivePublisher"""
@@ -451,7 +454,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
-    distroarchrelease = ForeignKey(foreignKey='DistroArchRelease',
+    distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
                                    dbName='distroarchrelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
@@ -469,14 +472,14 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
     @property
-    def distroarchreleasebinarypackagerelease(self):
+    def distroarchseriesbinarypackagerelease(self):
         """See IBinaryPackagePublishingHistory."""
         # import here to avoid circular import
-        from canonical.launchpad.database.distroarchreleasebinarypackagerelease \
-            import DistroArchReleaseBinaryPackageRelease
+        from canonical.launchpad.database.distroarchseriesbinarypackagerelease \
+            import DistroArchSeriesBinaryPackageRelease
 
-        return DistroArchReleaseBinaryPackageRelease(
-            self.distroarchrelease,
+        return DistroArchSeriesBinaryPackageRelease(
+            self.distroarchseries,
             self.binarypackagerelease)
 
     @property
@@ -500,10 +503,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See IArchiveFilePublisherBase."""
         release = self.binarypackagerelease
         name = release.binarypackagename.name
-        distrorelease = self.distroarchrelease.distrorelease
+        distroseries = self.distroarchseries.distroseries
         return "%s %s in %s %s" % (name, release.version,
-                                   distrorelease.name,
-                                   self.distroarchrelease.architecturetag)
+                                   distroseries.name,
+                                   self.distroarchseries.architecturetag)
 
     def buildIndexStanzaFields(self):
         """See IArchivePublisher"""
@@ -515,6 +518,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_filename = bin_file.libraryfile.filename
         bin_size = bin_file.libraryfile.content.filesize
         bin_md5 = bin_file.libraryfile.content.md5
+        bin_filepath = os.path.join(
+            makePoolPath(spr.name, self.component.name), bin_filename)
         # description field in index is an association of summary and
         # description, as:
         #
@@ -525,21 +530,28 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_description = (
             '%s\n %s'% (bpr.summary, '\n '.join(bpr.description.splitlines())))
 
+        # Dealing with architecturespecific field.
+        # Present 'all' in every archive index for architecture
+        # independent binaries.
+        if bpr.architecturespecific:
+            architecture = bpr.build.distroarchseries.architecturetag
+        else:
+            architecture = 'all'
+
         fields = IndexStanzaFields()
         fields.append('Package', bpr.name)
         fields.append('Priority', self.priority.title)
         fields.append('Section', self.section.name)
         fields.append('Installed-Size', bpr.installedsize)
         fields.append('Maintainer', spr.dsc_maintainer_rfc822)
-        fields.append(
-            'Architecture', bpr.build.distroarchrelease.architecturetag)
+        fields.append('Architecture', architecture)
         fields.append('Version', bpr.version)
         fields.append('Replaces', bpr.replaces)
         fields.append('Suggests', bpr.suggests)
         fields.append('Provides', bpr.provides)
         fields.append('Depends', bpr.depends)
         fields.append('Conflicts', bpr.conflicts)
-        fields.append('Filename', bin_filename)
+        fields.append('Filename', bin_filepath)
         fields.append('Size', bin_size)
         fields.append('MD5sum', bin_md5)
         fields.append('Description', bin_description)

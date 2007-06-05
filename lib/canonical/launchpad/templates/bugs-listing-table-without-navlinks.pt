@@ -10,15 +10,17 @@
           Package
         </th>
         <th tal:condition="context/show_column/productname|nothing">
-          Product
+          Project
         </th>
         <th tal:condition="context/show_column/importance|nothing">Importance</th>
         <th tal:condition="context/show_column/status|nothing">Status</th>
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="bugtask context/batch">
-        <td class="icon right" tal:content="structure bugtask/fmt:icon" />
+      <tr tal:repeat="bugtask context/getBugListingItems">
+        <td class="icon right">
+          <img src="/@@/bug" tal:replace="structure bugtask/image:icon" />
+        </td>
         <td
           class="amount"
           tal:content="bugtask/bug/id"
@@ -31,6 +33,7 @@
              tal:condition="context/show_column/summary|nothing">
             drop-down list in search bar disappears when using blah blah blah
           </a>
+          <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
         </td>
         <td tal:content="bugtask/targetname"
             tal:condition="context/show_column/targetname|nothing"

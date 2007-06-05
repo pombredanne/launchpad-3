@@ -3,7 +3,6 @@
 __metaclass__ = type
 __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
-import os.path
 import re
 
 from zope.interface import implements
@@ -11,60 +10,50 @@ from zope.component import getUtility
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
-    SQLObjectNotFound, AND)
+    SQLObjectNotFound)
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote 
+from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.sqlbase import (
+    cursor, quote, SQLBase, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.webapp import urlappend
-from canonical.launchpad.interfaces import (IBranch, IBranchSet,
+from canonical.launchpad.helpers import contactEmailAddresses
+from canonical.launchpad.interfaces import (
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
-from canonical.launchpad.database.revision import RevisionNumber
+from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
+from canonical.launchpad.database.revision import Revision
 from canonical.lp.dbschema import (
-    EnumCol, BranchRelationships, BranchLifecycleStatus)
+    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
+    BranchRelationships, BranchLifecycleStatus)
 
 
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
 
     implements(IBranch)
-
     _table = 'Branch'
+    _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
+
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
     summary = StringCol(notNull=True)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
-    started_at = ForeignKey(dbName='started_at', foreignKey='RevisionNumber', 
-                            default=None)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     author = ForeignKey(dbName='author', foreignKey='Person', default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
-    branch_product_name = StringCol(default=None)
-    product_locked = BoolCol(default=False, notNull=True)
 
     home_page = StringCol()
-    branch_home_page = StringCol(default=None)
-    home_page_locked = BoolCol(default=False, notNull=True)
 
     lifecycle_status = EnumCol(schema=BranchLifecycleStatus, notNull=True,
         default=BranchLifecycleStatus.NEW)
-
-    landing_target = ForeignKey(dbName='landing_target', foreignKey='Branch',
-                                default=None)
-    current_delta_url = StringCol(default=None)
-    current_diff_adds = IntCol(default=None)
-    current_diff_deletes = IntCol(default=None)
-    current_conflicts_url = StringCol(default=None)
-    current_activity = IntCol(default=0, notNull=True)
-    stats_updated = UtcDateTimeCol(default=None)
 
     last_mirrored = UtcDateTimeCol(default=None)
     last_mirrored_id = StringCol(default=None)
@@ -74,12 +63,15 @@ class Branch(SQLBase):
 
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
-    revision_count = IntCol(default=0, notNull=True)
+    revision_count = IntCol(default=DEFAULT, notNull=True)
 
-    cache_url = StringCol(default=None)
-
-    revision_history = SQLMultipleJoin('RevisionNumber', joinColumn='branch',
-        orderBy='-sequence')
+    @property
+    def revision_history(self):
+        return BranchRevision.select('''
+            BranchRevision.branch = %s AND
+            BranchRevision.sequence IS NOT NULL
+            ''' % sqlvalues(self),
+            prejoins=['revision'], orderBy='-sequence')
 
     subjectRelations = SQLMultipleJoin(
         'BranchRelationship', joinColumn='subject')
@@ -98,6 +90,10 @@ class Branch(SQLBase):
     spec_links = SQLMultipleJoin('SpecificationBranch',
         joinColumn='branch',
         orderBy='id')
+
+    date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+
+    mirror_request_time = UtcDateTimeCol(default=None)
 
     @property
     def related_bugs(self):
@@ -148,14 +144,14 @@ class Branch(SQLBase):
 
     def latest_revisions(self, quantity=10):
         """See IBranch."""
-        return RevisionNumber.selectBy(
-            branch=self, orderBy='-sequence').limit(quantity)
+        return self.revision_history.limit(quantity)
 
     def revisions_since(self, timestamp):
         """See IBranch."""
-        return RevisionNumber.select(
-            'Revision.id=RevisionNumber.revision AND '
-            'RevisionNumber.branch = %d AND '
+        return BranchRevision.select(
+            'Revision.id=BranchRevision.revision AND '
+            'BranchRevision.branch = %d AND '
+            'BranchRevision.sequence IS NOT NULL AND '
             'Revision.revision_date > %s' %
             (self.id, quote(timestamp)),
             orderBy='-sequence',
@@ -168,58 +164,116 @@ class Branch(SQLBase):
         return tuple(self.subjectRelations) + tuple(self.objectRelations)
 
     # subscriptions
-    def subscribe(self, person):
+    def subscribe(self, person, notification_level, max_diff_lines):
         """See IBranch."""
-        for sub in self.subscriptions:
-            if sub.person.id == person.id:
-                return sub
-        return BranchSubscription(branch=self, person=person)
+        # can't subscribe twice
+        assert not self.hasSubscription(person), "User is already subscribed."
+        return BranchSubscription(branch=self, person=person,
+                                  notification_level=notification_level,
+                                  max_diff_lines=max_diff_lines)
+
+    def getSubscription(self, person):
+        """See IBranch."""
+        if person is None:
+            return None
+        subscription = BranchSubscription.selectOneBy(
+            person=person, branch=self)
+        return subscription
+
+    def hasSubscription(self, person):
+        """See IBranch."""
+        return self.getSubscription(person) is not None
 
     def unsubscribe(self, person):
         """See IBranch."""
-        for sub in self.subscriptions:
-            if sub.person.id == person.id:
-                BranchSubscription.delete(sub.id)
-                break
+        subscription = self.getSubscription(person)
+        assert subscription is not None, "User is not subscribed."
+        BranchSubscription.delete(subscription.id)
 
-    def has_subscription(self, person):
-        """See IBranch."""
-        assert person is not None
-        subscription = BranchSubscription.selectOneBy(
-            person=person, branch=self)
-        return subscription is not None
+    def getBranchRevision(self, sequence):
+        """See IBranch.getBranchRevision()"""
+        assert sequence is not None, \
+               "Only use this to fetch revisions from mainline history."
+        return BranchRevision.selectOneBy(branch=self, sequence=sequence)
 
-    # revision number manipulation
-    def getRevisionNumber(self, sequence):
-        """See IBranch.getRevisionNumber()"""
-        return RevisionNumber.selectOneBy(
-            branch=self, sequence=sequence)
+    def createBranchRevision(self, sequence, revision):
+        """See IBranch.createBranchRevision()"""
+        return BranchRevision(
+            branch=self, sequence=sequence, revision=revision)
 
-    def createRevisionNumber(self, sequence, revision):
-        """See IBranch.createRevisionNumber()"""
-        return RevisionNumber(branch=self, sequence=sequence, revision=revision)
-
-    def truncateHistory(self, from_rev):
-        """See IBranch.truncateHistory()"""
-        revnos = RevisionNumber.select(AND(
-            RevisionNumber.q.branchID == self.id,
-            RevisionNumber.q.sequence >= from_rev))
-        did_something = False
-        # Since in the future we may not be storing the entire
-        # revision history, a simple count against RevisionNumber
-        # may not be sufficient to adjust the revision_count.
-        for revno in revnos:
-            revno.destroySelf()
-            self.revision_count -= 1
-            did_something = True
-        return did_something
+    def getTipRevision(self):
+        """See IBranch"""
+        tip_revision_id = self.last_scanned_id
+        if tip_revision_id is None:
+            return None
+        return Revision.selectOneBy(revision_id=tip_revision_id)
 
     def updateScannedDetails(self, revision_id, revision_count):
         """See IBranch."""
         self.last_scanned = UTC_NOW
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
-        
+
+    def getAttributeNotificationAddresses(self):
+        """See IBranch."""
+        addresses = set()
+        interested_levels = (
+            BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+            BranchSubscriptionNotificationLevel.FULL)
+        for subscription in self.subscriptions:
+            if subscription.notification_level in interested_levels:
+                addresses.update(contactEmailAddresses(subscription.person))
+        return sorted(addresses)
+
+    def getRevisionNotificationDetails(self):
+        """See IBranch."""
+        team_email_details = {}
+        individual_email_details = {}
+        interested_levels = (
+            BranchSubscriptionNotificationLevel.DIFFSONLY,
+            BranchSubscriptionNotificationLevel.FULL)
+        for subscription in self.subscriptions:
+            if subscription.notification_level in interested_levels:
+                addresses = contactEmailAddresses(subscription.person)
+                if subscription.person.isTeam():
+                    email_details = team_email_details
+                else:
+                    email_details = individual_email_details
+                for address in addresses:
+                    curr = email_details.get(
+                        address, BranchSubscriptionDiffSize.NODIFF)
+                    email_details[address] = max(
+                        curr, subscription.max_diff_lines)
+        # Individual preferences override team preferences.
+        email_details = team_email_details
+        email_details.update(individual_email_details)
+        # Now that we have determined the maximum size to send
+        # to any individual, switch the map around.
+        result = {}
+        for address, max_diff in email_details.iteritems():
+            result.setdefault(max_diff, []).append(address)
+        return result
+
+    def getScannerData(self):
+        """See IBranch."""
+        cur = cursor()
+        cur.execute("""
+            SELECT BranchRevision.id, BranchRevision.sequence,
+                Revision.revision_id
+            FROM Revision, BranchRevision
+            WHERE Revision.id = BranchRevision.revision
+                AND BranchRevision.branch = %s
+            ORDER BY BranchRevision.sequence
+            """ % sqlvalues(self))
+        ancestry = set()
+        history = []
+        branch_revision_map = {}
+        for branch_revision_id, sequence, revision_id in cur.fetchall():
+            ancestry.add(revision_id)
+            branch_revision_map[revision_id] = branch_revision_id
+            if sequence is not None:
+                history.append(revision_id)
+        return ancestry, history, branch_revision_map
 
 
 class BranchSet:
@@ -236,12 +290,18 @@ class BranchSet:
 
     def __iter__(self):
         """See IBranchSet."""
-        return iter(Branch.select())
+        return iter(Branch.select(prejoins=['owner', 'product']))
 
-    @property
-    def all(self):
-        branches = Branch.select()
-        return branches.prejoin(['author', 'product'])
+    def count(self):
+        """See IBranchSet."""
+        return Branch.select().count()
+
+    def countBranchesWithAssociatedBugs(self):
+        """See IBranchSet."""
+        return Branch.select(
+            'Branch.id = BugBranch.branch',
+            clauseTables=['BugBranch'],
+            distinct=True).count()
 
     def get(self, branch_id, default=None):
         """See IBranchSet."""
@@ -252,14 +312,17 @@ class BranchSet:
 
     def new(self, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None, whiteboard=None):
+            summary=None, home_page=None, whiteboard=None, date_created=None):
         """See IBranchSet."""
         if not home_page:
             home_page = None
+        if date_created is None:
+            date_created = UTC_NOW
         return Branch(
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page, whiteboard=whiteboard)
+            home_page=home_page, whiteboard=whiteboard,
+            date_created=date_created)
 
     def getByUrl(self, url, default=None):
         """See IBranchSet."""
@@ -293,7 +356,7 @@ class BranchSet:
                      + " AND Person.name = " + quote(owner_name)
                      + " AND Product.name = " + quote(product_name)
                      + " AND Branch.name = " + quote(branch_name))
-            tables=['Person', 'Product']            
+            tables=['Person', 'Product']
         branch = Branch.selectOne(query, clauseTables=tables)
         if branch is None:
             return default
@@ -314,6 +377,159 @@ class BranchSet:
              Branch.last_scanned_id <> Branch.last_mirrored_id)
             ''')
 
+    def getProductDevelopmentBranches(self, products):
+        """See IBranchSet."""
+        product_ids = [product.id for product in products]
+        query = Branch.select('''
+            (Branch.id = ProductSeries.import_branch OR
+            Branch.id = ProductSeries.user_branch) AND
+            ProductSeries.id = Product.development_focus AND
+            Branch.product IN %s''' % sqlvalues(product_ids),
+            clauseTables = ['Product', 'ProductSeries'])
+        return query.prejoin(['author'])
+            
+    def getActiveUserBranchSummaryForProducts(self, products):
+        """See IBranchSet."""
+        product_ids = [product.id for product in products]
+        if not product_ids:
+            return []
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        lifecycle_clause = self._lifecycleClause(
+            DEFAULT_BRANCH_STATUS_IN_LISTING)
+        cur = cursor()
+        cur.execute("""
+            SELECT
+                Branch.product, COUNT(Branch.id), MAX(Revision.revision_date)
+            FROM Branch
+            LEFT OUTER JOIN Revision
+            ON Branch.last_scanned_id = Revision.revision_id
+            WHERE Branch.product in %s
+            AND Branch.owner <> %d %s
+            GROUP BY Product
+            """ % (quote(product_ids), vcs_imports.id, lifecycle_clause))
+        result = {}
+        product_map = dict([(product.id, product) for product in products])
+        for product_id, branch_count, last_commit in cur.fetchall():
+            product = product_map[product_id]
+            result[product] = {'branch_count' : branch_count,
+                               'last_commit' : last_commit}
+        return result
+
+    def getRecentlyChangedBranches(self, branch_count):
+        """See IBranchSet."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        query = '''
+            Branch.last_scanned IS NOT NULL
+            AND Branch.owner <> %d
+            ''' % vcs_imports.id
+        branches = Branch.select(
+            query, orderBy=['-last_scanned', 'id'], limit=branch_count)
+        return branches.prejoin(['author', 'product'])
+
+    def getRecentlyImportedBranches(self, branch_count):
+        """See IBranchSet."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        query = '''
+            Branch.last_scanned IS NOT NULL
+            AND Branch.owner = %d
+            ''' % vcs_imports.id
+        branches = Branch.select(
+            query, orderBy=['-last_scanned'], limit=branch_count)
+        return branches.prejoin(['author', 'product'])
+
+    def getRecentlyRegisteredBranches(self, branch_count):
+        """See IBranchSet."""
+
+        branches = Branch.select(orderBy=['-date_created'], limit=branch_count)
+        return branches.prejoin(['author', 'product'])
+
+    def getLastCommitForBranches(self, branches):
+        """Return a map of branch id to last commit time."""
+        branch_ids = [branch.id for branch in branches]
+        if not branch_ids:
+            # Return a sensible default if given no branches
+            return {}
+        cur = cursor()
+        cur.execute("""
+            SELECT Branch.id, Revision.revision_date
+            FROM Branch
+            LEFT OUTER JOIN Revision
+            ON Branch.last_scanned_id = Revision.revision_id
+            WHERE Branch.id IN %s
+            """ % quote(branch_ids))
+        commits = dict(cur.fetchall())
+        return dict([(branch, commits.get(branch.id, None))
+                     for branch in branches])
+
+    def getBranchesForOwners(self, people):
+        """Return the branches that are owned by the people specified."""
+        owner_ids = [person.id for person in people]
+        if not owner_ids:
+            return []
+        branches = Branch.select('Branch.owner in %s' % quote(owner_ids))
+        return branches.prejoin(['product'])
+
+    def _lifecycleClause(self, lifecycle_statuses):
+        lifecycle_clause = ''
+        if lifecycle_statuses:
+            lifecycle_clause = (
+                ' AND Branch.lifecycle_status in %s' %
+                quote(lifecycle_statuses))
+        return lifecycle_clause
+
+    def getBranchesForPerson(self, person, lifecycle_statuses=None):
+        """See IBranchSet."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        subscribed_branches = Branch.select(
+            '''Branch.id = BranchSubscription.branch
+            AND BranchSubscription.person = %s %s
+            ''' % (person.id, lifecycle_clause),
+            clauseTables=['BranchSubscription'])
+
+        owner_author_branches = Branch.select(
+            '''(Branch.owner = %s
+            OR Branch.author = %s) %s
+            ''' % (person.id, person.id, lifecycle_clause))
+        
+        return subscribed_branches.union(
+            owner_author_branches, orderBy=Branch._defaultOrder)
+
+    def getBranchesAuthoredByPerson(self, person, lifecycle_statuses=None):
+        """See IBranchSet."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        return Branch.select(
+            'Branch.author = %s %s' % (person.id, lifecycle_clause))
+
+    def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None):
+        """See IBranchSet."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        return Branch.select(
+            '''Branch.owner = %s AND
+            (Branch.author is NULL OR
+             Branch.author != %s) %s''' %
+            (person.id, person.id, lifecycle_clause))
+
+    def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None):
+        """See IBranchSet."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        return Branch.select(
+            '''Branch.id = BranchSubscription.branch
+            AND BranchSubscription.person = %s %s
+            ''' % (person.id, lifecycle_clause),
+            clauseTables=['BranchSubscription'])
+
+    def getBranchesForProduct(self, product, lifecycle_statuses=None):
+        """See IBranchSet."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+
+        return Branch.select(
+            'Branch.product = %s %s' % (product.id, lifecycle_clause))
+
+
 
 class BranchRelationship(SQLBase):
     """A relationship between branches.
@@ -322,13 +538,9 @@ class BranchRelationship(SQLBase):
     """
 
     _table = 'BranchRelationship'
-    _columns = [
-        ForeignKey(name='subject', foreignKey='Branch', dbName='subject', 
-                   notNull=True),
-        IntCol(name='label', dbName='label', notNull=True),
-        ForeignKey(name='object', foreignKey='Branch', dbName='subject', 
-                   notNull=True),
-        ]
+    subject = ForeignKey(foreignKey='Branch', dbName='subject', notNull=True),
+    label = IntCol(dbName='label', notNull=True),
+    object = ForeignKey(foreignKey='Branch', dbName='object', notNull=True),
 
     def _get_src(self):
         return self.subject

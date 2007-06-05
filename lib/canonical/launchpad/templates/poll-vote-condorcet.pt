@@ -50,7 +50,7 @@
       </tal:block>
     </tal:block>
 
-    <table cols="2">
+    <table cols="2" id="your-vote">
       <tr>
         <td>
           <h2>Your current vote</h2>

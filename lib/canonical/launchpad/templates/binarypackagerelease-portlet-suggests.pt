@@ -2,19 +2,12 @@
 
   <h2>Suggests</h2>
 
-  <div class="portletBody portletContent">
+  <div class="portletBody portletContent"
+       tal:define="relationships view/suggests">
 
-    <ul>
-      <li tal:repeat="binsuggests view/suggests">
-
-        <a tal:content="binsuggests/name"
-           tal:attributes="href string:../../${binsuggests/name}"/>
-          <tal:dummy condition="binsuggests/signal">
-            (<span tal:replace="binsuggests/signal" />
-             <span tal:replace="binsuggests/version" />)
-          </tal:dummy>
-      </li>
-    </ul>
+     <tal:has_dep condition="relationships/has_items">
+        <tal:block replace="structure relationships/@@+render-list"/>
+     </tal:has_dep>
 
   </div>
 

@@ -13,7 +13,7 @@ True
 
 If we visit another vhost in the domain, we remain logged in.
 
->>> browser.getLink('Overview').click()
+>>> browser.open('http://launchpad.dev/')
 >>> browser.url
 'http://launchpad.dev/'
 >>> 'Logged in as' in browser.contents

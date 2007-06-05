@@ -1,9 +1,0 @@
-
-
-  >>> print http(r"""
-  ... GET /ubuntu/+bugs HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...Release bugs...
-  ...href="http://localhost:9000/ubuntu/warty/+bugs"...Warty...(1)...

@@ -1,6 +1,5 @@
 <configure xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -18,8 +17,8 @@
         <require 
             permission="zope.Public"
             attributes="team person reviewer status datejoined dateexpires
-                        reviewercomment statusname is_admin is_owner
-                        isExpired sendExpirationWarningEmail" />
+                        reviewercomment statusname isExpired
+                        sendExpirationWarningEmail" />
         <require 
             permission="launchpad.Edit"
             attributes="setStatus" />
@@ -38,6 +37,13 @@
         for="canonical.launchpad.interfaces.ITeamMembership"
         name="+index" />
 
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+      for="canonical.launchpad.interfaces.ITeamMembership"
+      factory="canonical.launchpad.browser.TeamMembershipSHP"
+      permission="zope.Public"
+      />
+
     <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.ITeamMembership"
@@ -45,7 +51,20 @@
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TeamMembershipEditView"
         template="../templates/teammembership-index.pt"
-        lp:url="/people/$team/+member/$member/+index">
-    </browser:page>
+        />
+
+    <browser:page
+        name="+listing-simple"
+        for="canonical.launchpad.interfaces.ITeamMembership"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/teammembership-listing-simple.pt"
+        />
+
+    <content class="canonical.launchpad.browser.person.TeamInvitationView">
+        <allow 
+            interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+        <allow attributes="__call__" />
+    </content>
 
 </configure>

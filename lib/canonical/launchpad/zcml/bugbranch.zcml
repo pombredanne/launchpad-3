@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -32,4 +31,16 @@
         keyword_arguments="status whiteboard"
         permission="launchpad.View"
         template="../templates/bugbranch-status.pt" />
+
+  <!-- BugBranchSet -->
+  <content class="canonical.launchpad.database.BugBranchSet">
+    <allow interface="canonical.launchpad.interfaces.IBugBranchSet" />
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.BugBranchSet"
+    provides="canonical.launchpad.interfaces.IBugBranchSet" >
+      <allow interface="canonical.launchpad.interfaces.IBugBranchSet" />
+  </securedutility>
+
 </configure>

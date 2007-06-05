@@ -62,18 +62,20 @@ class TestProcessUpload(LaunchpadZopelessTestCase):
         Expect it to exit earlier due the occupied lockfile
         """
         # acquire the process-upload lockfile locally
-        from canonical.launchpad.scripts.lockfile import LockFile
-        locker = LockFile('/var/lock/process-upload.lock')
+        from contrib.glock import GlobalLock
+        locker = GlobalLock('/var/lock/process-upload-insecure.lock')
         locker.acquire()
 
-        returncode, out, err = self.runProcessUpload()
+        returncode, out, err = self.runProcessUpload(
+            extra_args=['-C', 'insecure']
+            )
 
         # the process-upload call terminated with ERROR and
         # proper log message
         self.assertEqual(1, returncode)
         self.assertEqual(
             ['INFO    creating lockfile',
-             'ERROR   Cannot acquire lock.'
+             'ERROR   Lockfile /var/lock/process-upload-insecure.lock in use'
              ], err.splitlines())
 
         # release the locally acquired lockfile

@@ -43,7 +43,7 @@ class BranchScannerTest(LaunchpadFunctionalTestCase):
     def tearDown(self):
         rmtree(self.testdir)
         os.environ.clear()
-        os.environ.update(self._saved_environ)            
+        os.environ.update(self._saved_environ)
 
     def setupWarehouse(self):
         """Create a sandbox branch warehouse for testing.

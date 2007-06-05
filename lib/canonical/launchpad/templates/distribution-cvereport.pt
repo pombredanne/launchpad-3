@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad"
 >
   <body>
@@ -45,19 +45,21 @@
 
   </tal:resolved_issues>
 
-  <tal:releases condition="context/releases">
+  <tal:serieses
+        define="serieses context/serieses"
+        condition="serieses">
     <h2>CVE reports in releases of <span tal:replace="context/displayname" /></h2>
 
     <p>
       See also the CVE reports for individual distribution releases:
     </p>
       <ul>
-        <li tal:repeat="release context/releases">
-          <a tal:attributes="href string:${release/fmt:url}/+cve"
-             tal:content="release/displayname"></a>
+        <li tal:repeat="series serieses">
+          <a tal:attributes="href string:${series/fmt:url}/+cve"
+             tal:content="series/displayname"></a>
         </li>
       </ul>
-  </tal:releases>
+  </tal:serieses>
 
 </div> 
 </body>

@@ -19,7 +19,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Milestone title</h3>
   <h1>Change milestone details</h1>
 </metal:heading>
 

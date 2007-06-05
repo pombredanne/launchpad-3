@@ -8,8 +8,11 @@ from sqlobject import ForeignKey
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import EnumCol, RosettaFileFormat
 from canonical.database.sqlbase import SQLBase
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import RosettaFileFormat
+
 from canonical.launchpad.interfaces import IPOExportRequestSet, \
     IPOExportRequest
 
@@ -58,11 +61,8 @@ class POExportRequestSet:
         except IndexError:
             return None
 
-        # The list() is a workaround used to prevent warnings about indexing
-        # an unordered set being unreliable.
-
-        requests = list(POExportRequest.selectBy(
-            person=request.person, potemplate=request.potemplate))
+        requests = POExportRequest.selectBy(
+            person=request.person, potemplate=request.potemplate)
         person = requests[0].person
         potemplate = requests[0].potemplate
         format = requests[0].format

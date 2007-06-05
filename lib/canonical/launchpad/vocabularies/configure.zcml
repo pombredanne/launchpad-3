@@ -31,6 +31,11 @@
     />
 
   <vocabulary
+    name="BranchSubscriptionDiffSize"
+    factory="canonical.launchpad.vocabularies.BranchSubscriptionDiffSizeVocabulary"
+    />
+
+  <vocabulary
     name="BranchSubscriptionNotificationLevel"
     factory="canonical.launchpad.vocabularies.BranchSubscriptionNotificationLevelVocabulary"
     />
@@ -51,8 +56,8 @@
     />
 
   <vocabulary
-    name="BugNominatableReleases"
-    factory="canonical.launchpad.vocabularies.BugNominatableReleasesVocabulary"
+    name="BugNominatableSerieses"
+    factory="canonical.launchpad.vocabularies.BugNominatableSeriesesVocabulary"
     />
 
   <vocabulary
@@ -116,23 +121,23 @@
     />
 
   <vocabulary
-    name="DistroRelease"
-    factory="canonical.launchpad.vocabularies.DistroReleaseVocabulary"
+    name="DistroSeries"
+    factory="canonical.launchpad.vocabularies.DistroSeriesVocabulary"
     />
 
   <vocabulary
-    name="DistributionReleaseStatus"
-    factory="canonical.launchpad.vocabularies.DistributionReleaseStatusVocabulary"
+    name="DistroSeriesStatus"
+    factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
     />
 
   <vocabulary
-    name="FilteredDistroArchRelease"
-    factory="canonical.launchpad.vocabularies.FilteredDistroArchReleaseVocabulary"
+    name="FilteredDistroArchSeries"
+    factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
     />
 
   <vocabulary
-    name="FilteredDistroRelease"
-    factory="canonical.launchpad.vocabularies.FilteredDistroReleaseVocabulary"
+    name="FilteredDistroSeries"
+    factory="canonical.launchpad.vocabularies.FilteredDistroSeriesVocabulary"
     />
 
   <vocabulary
@@ -221,6 +226,11 @@
     />
 
   <vocabulary
+    name="PersonTeamParticipations"
+    factory="canonical.launchpad.vocabularies.person_team_participations_vocabulary_factory"
+    />
+
+  <vocabulary
     name="PollAlgorithm"
     factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
     />
@@ -263,6 +273,11 @@
   <vocabulary
     name="ProjectProducts"
     factory="canonical.launchpad.vocabularies.project_products_vocabulary_factory"
+    />
+
+  <vocabulary
+    name="ProjectProductsUsingMalone"
+    factory="canonical.launchpad.vocabularies.project_products_using_malone_vocabulary_factory"
     />
 
   <vocabulary
@@ -336,23 +351,28 @@
     />
 
   <vocabulary
-    name="TicketAction"
-    factory="canonical.launchpad.vocabularies.TicketActionVocabulary"
+    name="TextDirection"
+    factory="canonical.launchpad.vocabularies.TextDirectionVocabulary"
     />
 
   <vocabulary
-    name="TicketPriority"
-    factory="canonical.launchpad.vocabularies.TicketPriorityVocabulary"
+    name="QuestionAction"
+    factory="canonical.launchpad.vocabularies.QuestionActionVocabulary"
     />
 
   <vocabulary
-    name="TicketSort"
-    factory="canonical.launchpad.vocabularies.TicketSortVocabulary"
+    name="QuestionPriority"
+    factory="canonical.launchpad.vocabularies.QuestionPriorityVocabulary"
     />
 
   <vocabulary
-    name="TicketStatus"
-    factory="canonical.launchpad.vocabularies.TicketStatusVocabulary"
+    name="QuestionSort"
+    factory="canonical.launchpad.vocabularies.QuestionSortVocabulary"
+    />
+
+  <vocabulary
+    name="QuestionStatus"
+    factory="canonical.launchpad.vocabularies.QuestionStatusVocabulary"
     />
 
   <vocabulary
@@ -373,6 +393,11 @@
   <vocabulary
     name="UpstreamFileType"
     factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
+    />
+
+  <vocabulary
+    name="UserTeamsParticipation"
+    factory="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
     />
 
   <vocabulary

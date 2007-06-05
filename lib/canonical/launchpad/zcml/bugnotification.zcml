@@ -8,6 +8,12 @@
           />
   </class>
 
+
+
+  <class class="canonical.launchpad.mailnotification.BugNotificationRecipients">
+    <allow interface="canonical.launchpad.interfaces.INotificationRecipientSet" />
+  </class>
+
   <securedutility
       provides="canonical.launchpad.interfaces.IBugNotificationSet"
       class="canonical.launchpad.database.BugNotificationSet">

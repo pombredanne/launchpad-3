@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 #
 """Database schemas
 
@@ -18,14 +18,7 @@ __metaclass__ = type
 #
 # If you do not do this, from canonical.lp.dbschema import * will not
 # work properly, and the thing/lp:SchemaClass will not work properly.
-
-# The DBSchema subclasses should be in alphabetical order, listed after
-# EnumCol and Item.  Please keep it that way.
 __all__ = (
-'EnumCol',
-'Item',
-'DBSchema',
-# DBSchema types follow.
 'ArchArchiveType',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
@@ -35,6 +28,7 @@ __all__ = (
 'BranchLifecycleStatus',
 'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
+'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
 'BugBranchStatus',
 'BugNominationStatus',
@@ -48,7 +42,7 @@ __all__ = (
 'BuildStatus',
 'CodereleaseRelationships',
 'CveStatus',
-'DistributionReleaseStatus',
+'DistroSeriesStatus',
 'EmailAddressStatus',
 'GPGKeyAlgorithm',
 'ImportTestStatus',
@@ -69,12 +63,17 @@ __all__ = (
 'PollSecrecy',
 'ProjectRelationship',
 'ProjectStatus',
+'QuestionAction',
+'QuestionParticipation',
+'QuestionPriority',
+'QuestionSort',
+'QuestionStatus',
 'RevisionControlSystems',
 'RosettaFileFormat',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
 'ShipItArchitecture',
-'ShipItDistroRelease',
+'ShipItDistroSeries',
 'ShipItFlavour',
 'ShippingRequestStatus',
 'ShippingService',
@@ -92,11 +91,7 @@ __all__ = (
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
-'TicketAction',
-'TicketParticipation',
-'TicketPriority',
-'TicketSort',
-'TicketStatus',
+'TeamMembershipRenewalPolicy',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
 'TranslationPriority',
@@ -108,292 +103,7 @@ __all__ = (
 'UpstreamReleaseVersionStyle',
 )
 
-import sys
-import warnings
-
-from zope.interface.advice import addClassAdvisor
-from zope.security.proxy import isinstance as zope_isinstance
-
-from sqlobject.col import SOCol, Col
-from sqlobject.include import validators
-import sqlobject.constraints as consts
-
-from canonical.database.constants import DEFAULT
-
-
-class SODBSchemaEnumCol(SOCol):
-
-    def __init__(self, **kw):
-        self.schema = kw.pop('schema')
-        if not issubclass(self.schema, DBSchema):
-            raise TypeError('schema must be a DBSchema: %r' % self.schema)
-        SOCol.__init__(self, **kw)
-        self.validator = validators.All.join(
-            DBSchemaValidator(schema=self.schema), self.validator)
-
-    def autoConstraints(self):
-        return [consts.isInt]
-
-    def _sqlType(self):
-        return 'INT'
-
-
-class DBSchemaEnumCol(Col):
-    baseClass = SODBSchemaEnumCol
-
-
-class DBSchemaValidator(validators.Validator):
-
-    def __init__(self, **kw):
-        self.schema = kw.pop('schema')
-        validators.Validator.__init__(self, **kw)
-
-    def fromPython(self, value, state):
-        """Convert from DBSchema Item to int.
-
-        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
-        25
-        >>> validator.fromPython(tuple(), None)
-        Traceback (most recent call last):
-        ...
-        TypeError: Not a DBSchema Item: ()
-        >>> validator.fromPython(ImportTestStatus.NEW, None)
-        Traceback (most recent call last):
-        ...
-        TypeError: DBSchema Item from wrong class, <class 'canonical.lp.dbschema.ImportTestStatus'> != <class 'canonical.lp.dbschema.BugTaskStatus'>
-        >>>
-
-        """
-        if value is None:
-            return None
-        if value is DEFAULT:
-            return value
-        if isinstance(value, int):
-            raise TypeError(
-                'Need to set a dbschema Enum column to a dbschema Item,'
-                ' not an int')
-        if not zope_isinstance(value, Item):
-            # We use repr(value) because if it's a tuple (yes, it has been
-            # seen in some cases) then the interpolation would swallow that
-            # fact, confusing poor programmers like Daniel.
-            raise TypeError('Not a DBSchema Item: %s' % repr(value))
-        # Using != rather than 'is not' in order to cope with Security Proxy
-        # proxied items and their schemas.
-        if value.schema != self.schema:
-            raise TypeError('DBSchema Item from wrong class, %r != %r' % (
-                value.schema, self.schema))
-        return value.value
-
-    def toPython(self, value, state):
-        """Convert from int to DBSchema Item.
-
-        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.toPython(25, None) is BugTaskStatus.FIXCOMMITTED
-        True
-
-        """
-        if value is None:
-            return None
-        if value is DEFAULT:
-            return value
-        return self.schema.items[value]
-
-EnumCol = DBSchemaEnumCol
-
-def docstring_to_title_descr(string):
-    """When given a classically formatted docstring, returns a tuple
-    (title,x description).
-
-    >>> class Foo:
-    ...     '''
-    ...     Title of foo
-    ...
-    ...     Description of foo starts here.  It may
-    ...     spill onto multiple lines.  It may also have
-    ...     indented examples:
-    ...
-    ...       Foo
-    ...       Bar
-    ...
-    ...     like the above.
-    ...     '''
-    ...
-    >>> title, descr = docstring_to_title_descr(Foo.__doc__)
-    >>> print title
-    Title of foo
-    >>> for num, line in enumerate(descr.splitlines()):
-    ...    print "%d.%s" % (num, line)
-    ...
-    0.Description of foo starts here.  It may
-    1.spill onto multiple lines.  It may also have
-    2.indented examples:
-    3.
-    4.  Foo
-    5.  Bar
-    6.
-    7.like the above.
-
-    """
-    lines = string.splitlines()
-    # title is the first non-blank line
-    for num, line in enumerate(lines):
-        line = line.strip()
-        if line:
-            title = line
-            break
-    else:
-        raise ValueError
-    assert not lines[num+1].strip()
-    descrlines = lines[num+2:]
-    descr1 = descrlines[0]
-    indent = len(descr1) - len(descr1.lstrip())
-    descr = '\n'.join([line[indent:] for line in descrlines])
-    return title, descr
-
-
-class OrderedMapping:
-
-    def __init__(self, mapping):
-        self.mapping = mapping
-
-    def __getitem__(self, key):
-        if key in self.mapping:
-            return self.mapping[key]
-        else:
-            for k, v in self.mapping.iteritems():
-                if v.name == key:
-                    return v
-            raise KeyError, key
-
-    def __iter__(self):
-        L = self.mapping.items()
-        L.sort()
-        for k, v in L:
-            yield v
-
-
-class ItemsDescriptor:
-
-    def __get__(self, inst, cls=None):
-        return OrderedMapping(cls._items)
-
-
-class Item:
-    """An item in an enumerated type.
-
-    An item has a name, title and description.  It also has an integer value.
-
-    An item has a sortkey, which defaults to its integer value, but can be
-    set specially in the constructor.
-
-    """
-
-    def __init__(self, value, title, description=None, sortkey=None):
-        frame = sys._getframe(1)
-        locals = frame.f_locals
-
-        # Try to make sure we were called from a class def
-        if (locals is frame.f_globals) or ('__module__' not in locals):
-            raise TypeError("Item can be used only from a class definition.")
-
-        addClassAdvisor(self._setClassFromAdvice)
-        try:
-            self.value = int(value)
-        except ValueError:
-            raise TypeError("value must be an int, not %r" % (value,))
-        if description is None:
-            self.title, self.description = docstring_to_title_descr(title)
-        else:
-            self.title = title
-            self.description = description
-        if sortkey is None:
-            self.sortkey = self.value
-        else:
-            self.sortkey = sortkey
-
-    def _setClassFromAdvice(self, cls):
-        self.schema = cls
-        names = [k for k, v in cls.__dict__.iteritems() if v is self]
-        assert len(names) == 1
-        self.name = names[0]
-        if not hasattr(cls, '_items'):
-            cls._items = {}
-        cls._items[self.value] = self
-        return cls
-
-    def __int__(self):
-        raise TypeError("Cannot cast Item to int.  Use item.value instead.")
-
-    def __str__(self):
-        return str(self.value)
-
-    def __repr__(self):
-        return "<Item %s (%d) from %s>" % (self.name, self.value, self.schema)
-
-    def __sqlrepr__(self, dbname):
-        return repr(self.value)
-
-    def __eq__(self, other, stacklevel=2):
-        if isinstance(other, int):
-            warnings.warn('comparison of DBSchema Item to an int: %r' % self,
-                stacklevel=stacklevel)
-            return False
-        elif zope_isinstance(other, Item):
-            return self.value == other.value and self.schema == other.schema
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other, stacklevel=3)
-
-    def __lt__(self, other):
-        return self.sortkey < other.sortkey
-
-    def __gt__(self, other):
-        return self.sortkey > other.sortkey
-
-    def __le__(self, other):
-        return self.sortkey <= other.sortkey
-
-    def __ge__(self, other):
-        return self.sortkey >= other.sortkey
-
-    def __hash__(self):
-        return self.value
-
-    # These properties are provided as a way to get at the other
-    # schema items and name from a security wrapped Item instance when
-    # there are no security declarations for the DBSchema class.  They
-    # are used by the enumvalue TALES expression.
-    @property
-    def schema_items(self):
-        return self.schema.items
-
-    @property
-    def schema_name(self):
-        return self.schema.__name__
-
-# TODO: make a metaclass for dbschemas that looks for ALLCAPS attributes
-#       and makes the introspectible.
-#       Also, makes the description the same as the docstring.
-#       Also, sets the name on each Item based on its name.
-#       (Done by crufty class advice at present.)
-#       Also, set the name on the DBSchema according to the class name.
-#
-#       Also, make item take just one string, optionally, and parse that
-#       to make something appropriate.
-
-class DBSchema:
-    """Base class for database schemas."""
-
-    # TODO: Make description a descriptor that automatically refers to the
-    #       docstring.
-    description = "See body of class's __doc__ docstring."
-    title = "See first line of class's __doc__ docstring."
-    name = "See lower-cased-spaces-inserted class name."
-    items = ItemsDescriptor()
-
+from canonical.launchpad.webapp.enum import DBSchema, Item
 
 class ArchArchiveType(DBSchema):
     """Arch Archive Type
@@ -925,6 +635,35 @@ class EmailAddressStatus(DBSchema):
         """)
 
 
+class TeamMembershipRenewalPolicy(DBSchema):
+    """TeamMembership Renewal Policy.
+
+    How Team Memberships can be renewed on a given team.
+    """
+
+    NONE = Item(10, """
+        None
+
+        Memberships can be renewed only by team administrators or by going
+        through the normal workflow for joining the team.
+        """)
+
+    ONDEMAND = Item(20, """
+        On demand
+
+        Memberships can be renewed by the members themselves a few days before
+        it expires. After it expires the member has to go through the normal
+        workflow for joining the team.
+        """)
+
+    AUTOMATIC = Item(30, """
+        Automatic
+
+        Memberships are automatically renewed when they expire and a note is
+        sent to the member and to team admins.
+        """)
+
+
 class TeamMembershipStatus(DBSchema):
     """TeamMembership Status
 
@@ -968,6 +707,20 @@ class TeamMembershipStatus(DBSchema):
         Declined
 
         Your proposed subscription to this team has been declined.
+        """)
+
+    INVITED = Item(7, """
+        Invited
+
+        You have been invited as a member of this team. In order to become an
+        actual member, you have to accept the invitation.
+        """)
+
+    INVITATION_DECLINED = Item(8, """
+        Invitation declined
+
+        You have been invited as a member of this team but the invitation has
+        been declined.
         """)
 
 
@@ -1025,21 +778,21 @@ class ProjectRelationship(DBSchema):
         """)
 
 
-class DistributionReleaseStatus(DBSchema):
+class DistroSeriesStatus(DBSchema):
     """Distribution Release Status
 
-    A DistroRelease (warty, hoary, or grumpy for example) changes state
+    A DistroSeries (warty, hoary, or grumpy for example) changes state
     throughout its development. This schema describes the level of
-    development of the distrorelease. The typical sequence for a
-    distrorelease is to progress from experimental to development to
+    development of the distroseries. The typical sequence for a
+    distroseries is to progress from experimental to development to
     frozen to current to supported to obsolete, in a linear fashion.
     """
 
     EXPERIMENTAL = Item(1, """
         Experimental
 
-        This distrorelease contains code that is far from active
-        release planning or management. Typically, distroreleases
+        This distroseries contains code that is far from active
+        release planning or management. Typically, distroseriess
         that are beyond the current "development" release will be
         marked as "experimental". We create those so that people
         have a place to upload code which is expected to be part
@@ -1050,7 +803,7 @@ class DistributionReleaseStatus(DBSchema):
     DEVELOPMENT = Item(2, """
         Active Development
 
-        The distrorelease that is under active current development
+        The distroseries that is under active current development
         will be tagged as "development". Typically there is only
         one active development release at a time. When that freezes
         and releases, the next release along switches from "experimental"
@@ -1060,7 +813,7 @@ class DistributionReleaseStatus(DBSchema):
     FROZEN = Item(3, """
         Pre-release Freeze
 
-        When a distrorelease is near to release the administrators
+        When a distroseries is near to release the administrators
         will freeze it, which typically means that new package uploads
         require significant review before being accepted into the
         release.
@@ -1076,15 +829,15 @@ class DistributionReleaseStatus(DBSchema):
     SUPPORTED = Item(5, """
         Supported
 
-        This distrorelease is still supported, but it is no longer
+        This distroseries is still supported, but it is no longer
         the current stable release. In Ubuntu we normally support
-        a distrorelease for 2 years from release.
+        a distroseries for 2 years from release.
         """)
 
     OBSOLETE = Item(6, """
         Obsolete
 
-        This distrorelease is no longer supported, it is considered
+        This distroseries is no longer supported, it is considered
         obsolete and should not be used on production systems.
         """)
 
@@ -1128,6 +881,14 @@ class UpstreamFileType(DBSchema):
         release from the previous release in the series. This
         is usually not a detailed changelog, but a high-level
         summary of major new features and fixes.
+        """)
+
+    INSTALLER = Item(5, """
+        Installer file
+
+        This file contains an installer for a product.  It may
+        be a Debian package, an RPM file, an OS X disk image, a
+        Windows installer, or some other type of installer.
         """)
 
 
@@ -1449,14 +1210,14 @@ class SpecificationFilter(DBSchema):
         Declined
 
         This indicates that the list should include specifications that were
-        declined as goals for the underlying productseries or distrorelease.
+        declined as goals for the underlying productseries or distroseries.
         """)
 
     ACCEPTED = Item(50, """
         Accepted
 
         This indicates that the list should include specifications that were
-        accepted as goals for the underlying productseries or distrorelease.
+        accepted as goals for the underlying productseries or distroseries.
         """)
 
     VALID = Item(55, """
@@ -1674,155 +1435,152 @@ class SprintSpecificationStatus(DBSchema):
 
 # Enumeration covered by bug 66633:
 #   Need way to define enumerations outside of dbschema
-class TicketParticipation(DBSchema):
-    """The different ways a person can be involved in a ticket.
+class QuestionParticipation(DBSchema):
+    """The different ways a person can be involved in a question.
 
-    This enumeration is part of the ITicketActor.searchTickets() API.
+    This enumeration is part of the IPerson.searchTickets() API.
     """
 
     OWNER = Item(10, """
         Owner
 
-        The person created the ticket.
+        The person created the question.
         """)
 
     SUBSCRIBER = Item(15, """
         Subscriber
 
-        The person subscribed to the ticket.
+        The person subscribed to the question.
         """)
 
     ASSIGNEE = Item(20, """
         Assignee
 
-        The person is assigned to the ticket.
+        The person is assigned to the question.
         """)
 
     COMMENTER = Item(25, """
         Commenter
 
-        The person commented on the ticket.
+        The person commented on the question.
         """)
 
     ANSWERER = Item(30, """
         Answerer
 
-        The person answered the ticket.
+        The person answered the question.
         """)
 
 
-class TicketPriority(DBSchema):
-    """The Priority with a Support Request must be handled.
+class QuestionPriority(DBSchema):
+    """The Priority with a Question must be handled.
 
-    This enum is used to prioritise work done in the Launchpad support
-    request management system.
+    This enum is used to prioritise work done in the Launchpad Answert Tracker
+    management system.
     """
 
     WISHLIST = Item(0, """
         Wishlist
 
-        This support ticket is really a request for a new feature. We will
-        not take it further as a support ticket, it should be closed, and a
-        specification created and managed in the Launchpad Specification
-        Tracker.
+        This question is really a request for a new feature. We will not take
+        it further as a question, it should be closed, and a specification
+        created and managed in the Launchpad Specification tracker.
         """)
 
     NORMAL = Item(10, """
         Normal
 
-        This support ticket is of normal priority. We should respond to it
-        in due course.
+        This question is of normal priority. We should respond to it in due
+        course.
         """)
 
     HIGH = Item(70, """
         High
 
-        This support ticket has been flagged as being of higher than normal
-        priority. It should always be prioritised over a "normal" support
-        request.
+        This question has been flagged as being of higher than normal
+        priority. It should always be prioritised over a "normal" question.
         """)
 
     EMERGENCY = Item(90, """
         Emergency
 
-        This support ticket is classed as an emergency. No more than 5% of
-        requests should fall into this category. Support engineers should
+        This question is classed as an emergency. No more than 5% of
+        questions should fall into this category. Support engineers should
         ensure that there is somebody on this problem full time until it is
         resolved, or escalate it to the core technical and management team.
         """)
 
 
-class TicketAction(DBSchema):
-    """An enumeration of the possible actions done on a ticket.
+class QuestionAction(DBSchema):
+    """An enumeration of the possible actions done on a question.
 
     This enumeration is used to tag the action done by a user with
-    each TicketMessage. Most of these action indicates a status change
-    on the ticket.
+    each QuestionMessage. Most of these action indicates a status change
+    on the question.
     """
 
     REQUESTINFO = Item(10, """
         Request for more information
 
-        This message asks for more information about the support
-        request.
+        This message asks for more information about the question.
         """)
 
     GIVEINFO = Item(20, """
         Give more information
 
         In this message, the submitter provides more information about the
-        request.
+        question.
         """)
 
     COMMENT = Item(30, """
         Comment
 
         User commented on the message. This is use for example for messages
-        added to a ticket in the SOLVED state.
+        added to a question in the SOLVED state.
         """)
 
     ANSWER = Item(35, """
         Answer
 
-        This message provides an answer to the support request.
+        This message provides an answer to the question.
         """)
 
     CONFIRM = Item(40, """
         Confirm
 
-        This message confirms that an answer solved the problem.
+        This message confirms that an answer solved the question.
         """)
 
     REJECT = Item(50, """
         Reject
 
-        This message rejects a support request as invalid.
+        This message rejects a question as invalid.
         """)
 
     EXPIRE = Item(70, """
         Expire
 
-        Automatic message created when the ticket is expired.
+        Automatic message created when the question is expired.
         """)
 
     REOPEN = Item(80, """
         Reopen
 
-        Message from the submitter that reopens the ticket with more
-        information concerning the request.
+        Message from the submitter that reopens the question while providing
+        more information.
         """)
 
     SETSTATUS = Item(90, """
         Change status
 
-        Message from an administrator that explain why the ticket status
+        Message from an administrator that explain why the question status
         was changed.
         """)
 
 # Enumeration covered by bug 66633:
 #   Need way to define enumerations outside of dbschema
-class TicketSort(DBSchema):
-    """An enumeration of the valid ticket search sort order.
+class QuestionSort(DBSchema):
+    """An enumeration of the valid question search sort order.
 
     This enumeration is part of the ITicketTarget.searchTickets() API. The
     titles are formatted for nice display in browser code.
@@ -1831,13 +1589,13 @@ class TicketSort(DBSchema):
     RELEVANCY = Item(5, """
     by relevancy
 
-    Sort by relevancy of the ticket toward the search text.
+    Sort by relevancy of the question toward the search text.
     """)
 
     STATUS = Item(10, """
     by status
 
-    Sort tickets by status: Open, Needs information, Answered, Solved,
+    Sort questions by status: Open, Needs information, Answered, Solved,
     Expired, Invalid.
 
     NEWEST_FIRST should be used as a secondary sort key.
@@ -1846,37 +1604,43 @@ class TicketSort(DBSchema):
     NEWEST_FIRST = Item(15, """
     newest first
 
-    Sort ticket from newest to oldest.
+    Sort questions from newest to oldest.
     """)
 
     OLDEST_FIRST = Item(20, """
     oldest first
 
-    Sort tickets from oldset to newest.
+    Sort questions from oldset to newest.
+    """)
+
+    RECENT_OWNER_ACTIVITY = Item(30, """
+    recently updated first
+
+    Sort questions that recently received new information from the owner first.
     """)
 
 
-class TicketStatus(DBSchema):
-    """The current status of a Support Request
+class QuestionStatus(DBSchema):
+    """The current status of a Question.
 
-    This enum tells us the current status of the support ticket.
+    This enum tells us the current status of the question.
 
-    The lifecycle of a support request is documented in
-    https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    The lifecycle of a question is documented in
+    https://help.launchpad.net/QuestionLifeCycle, so remember
     to update that document for any pertinent changes.
     """
 
     OPEN = Item(10, """
         Open
 
-        The request is waiting for an answer. This could be a new request
-        or a request where the given answer was refused by the submitter.
+        The question is waiting for an answer. This could be a new question
+        or a question where the given answer was refused by the submitter.
         """)
 
     NEEDSINFO = Item(15, """
         Needs information
 
-        A user requested more information from the submitter. The request
+        A user requested more information from the submitter. The question
         will be moved back to the OPEN state once the submitter provides the
         answer.
         """)
@@ -1884,29 +1648,30 @@ class TicketStatus(DBSchema):
     ANSWERED = Item(18, """
         Answered
 
-        An answer was given on this request. We assume that the answer
-        is the correct one. The user will post back changing the ticket's
+        An answer was given on this question. We assume that the answer
+        is the correct one. The user will post back changing the question's
         status back to OPEN if that is not the case.
         """)
 
     SOLVED = Item(20, """
         Solved
 
-        The submitter confirmed that an answer solved his problem.
+        The submitter confirmed that an answer solved his question.
         """)
 
     EXPIRED = Item(25, """
         Expired
 
-        The ticket has been expired after 15 days without comments in the
+        The question has been expired after 15 days without comments in the
         OPEN or NEEDSINFO state.
         """)
 
     INVALID = Item(30, """
         Invalid
 
-        This ticket isn't a support request. It could be a duplicate request,
-        spam or anything that should not appear in the support tracker.
+        This question isn't a valid question. It could be a duplicate
+        question, spam or anything that should not appear in the
+        Answer Tracker.
         """)
 
 
@@ -1915,67 +1680,62 @@ class ImportStatus(DBSchema):
     on."""
 
     DONTSYNC = Item(1, """
-        Do Not Sync
+        Do Not Import
 
-        We do not want to attempt to test or sync this upstream repository
-        or branch. The ProductSeries can be set to DONTSYNC from any state
-        other than SYNCING. Once it is Syncing, it can be STOPPED but should
-        not be set to DONTSYNC. This prevents us from forgetting that we
-        were at one stage SYNCING the ProductSeries.  """)
+        Launchpad will not attempt to make a Bazaar import.
+        """)
 
     TESTING = Item(2, """
         Testing
 
-        New entries should start in this mode. We will try to import the
-        given upstream branch from CVS or SVN automatically. When / if this
-        ever succeeds it should set the status to AUTOTESTED.  """)
+        Launchpad has not yet attempted this import. The vcs-imports operator
+        will review the source details and either mark the series \"Do not
+        sync\", or perform a test import. If the test import is successful, a
+        public import will be created. After the public import completes, it
+        will be updated automatically.
+        """)
 
     TESTFAILED = Item(3, """
         Test Failed
 
-        This sourcesource has failed its test import run. Failures can be
-        indicative of a problem with the RCS server, or a problem with the
-        actual data in their RCS system, or a network error.""")
+        The test import has failed. We will do further tests, and plan to
+        complete this import eventually, but it may take a long time. For more
+        details, you can ask on the launchpad-users@canonical.com mailing list
+        or on IRC in the #launchpad channel on irc.freenode.net.
+        """)
 
     AUTOTESTED = Item(4, """
-        Auto Tested
+        Test Successful
 
-        The automatic testing system ("roomba") has successfully imported
-        and in theory verified its import of the upstream revision control
-        system. This ProductSeries is a definite candidate for manual review
-        and should be switched to PROCESSING.  """)
+        The test import was successful. The vcs-imports operator will lock the
+        source details for this series and perform a public Bazaar import.
+        """)
 
     PROCESSING = Item(5, """
         Processing
 
-        This ProductSeries is nearly ready for syncing. We will run it
-        through the official import process, and then manually review the
-        results. If they appear to be correct, then the
-        ProductSeries.bazimportstatus can be set to SYNCING.  """)
+        The public Bazaar import is being created. When it is complete, a
+        Bazaar branch will be published and updated automatically. The source
+        details for this series are locked and can only be modified by
+        vcs-imports members and Launchpad administrators.
+        """)
 
     SYNCING = Item(6, """
-        Syncing
+        Online
 
-        This ProductSeries is in Sync mode and SHOULD NOT BE EDITED OR
-        CHANGED.  At this point, protection of the data related to the
-        upstream revision control system should be extreme, with only
-        launchpad.Special (in this case the vcs-imports team) able to affect
-        these fields. If it is necessary to stop the syncing then the status
-        must be changed to STOPPED, and not to DONTSYNC.  """)
+        The Bazaar import is published and automatically updated to reflect the
+        upstream revision control system. The source details for this series
+        are locked and can only be modified by vcs-imports members and
+        Launchpad administrators.
+        """)
 
     STOPPED = Item(7, """
         Stopped
 
-        This state is used for ProductSeries that were in SYNCING mode and
-        it was necessary to stop the sync activity. For example, when an
-        upstream uses the same branch for versions 1, 2 and 3 of their
-        product, we should put the ProductSeries into STOPPED after each
-        release, create a new ProductSeries for the next version with the
-        same branch details for upstream revision control system. That way,
-        if they go back and branch off the previous release tag, we can
-        amend the previous ProductSeries.  In theory, a STOPPED
-        ProductSeries can be set to Sync again, but this requires serious
-        Bazaar fu, and the vcs-imports team.  """)
+        The Bazaar import has been suspended and is no longer updated. The
+        source details for this series are locked and can only be modified by
+        vcs-imports members and Launchpad administrators.
+        """)
 
 
 class SourcePackageFileType(DBSchema):
@@ -2107,9 +1867,9 @@ class PackageUploadStatus(DBSchema):
     """Distro Release Queue Status
 
     An upload has various stages it must pass through before becoming part
-    of a DistroRelease. These are managed via the Upload table
+    of a DistroSeries. These are managed via the Upload table
     and related tables and eventually (assuming a successful upload into the
-    DistroRelease) the effects are published via the PackagePublishing and
+    DistroSeries) the effects are published via the PackagePublishing and
     SourcePackagePublishing tables.  """
 
     NEW = Item(0, """
@@ -2117,7 +1877,7 @@ class PackageUploadStatus(DBSchema):
 
         This upload is either a brand-new source package or contains a
         binary package with brand new debs or similar. The package must sit
-        here until someone with the right role in the DistroRelease checks
+        here until someone with the right role in the DistroSeries checks
         and either accepts or rejects the upload. If the upload is accepted
         then entries will be made in the overrides tables and further
         uploads will bypass this state """)
@@ -2125,11 +1885,11 @@ class PackageUploadStatus(DBSchema):
     UNAPPROVED = Item(1, """
         Unapproved
 
-        If a DistroRelease is frozen or locked out of ordinary updates then
+        If a DistroSeries is frozen or locked out of ordinary updates then
         this state is used to mean that while the package is correct from a
         technical point of view; it has yet to be approved for inclusion in
-        this DistroRelease. One use of this state may be for security
-        releases where you want the security team of a DistroRelease to
+        this DistroSeries. One use of this state may be for security
+        releases where you want the security team of a DistroSeries to
         approve uploads.  """)
 
     ACCEPTED = Item(2, """
@@ -2142,7 +1902,7 @@ class PackageUploadStatus(DBSchema):
         Done
 
         An upload in this state has had its publishing records created if it
-        needs them and is fully processed into the DistroRelease. This state
+        needs them and is fully processed into the DistroSeries. This state
         exists so that a logging and/or auditing tool can pick up accepted
         uploads and create entries in a journal or similar before removing
         the queue item.  """)
@@ -2152,7 +1912,7 @@ class PackageUploadStatus(DBSchema):
 
         An upload which reaches this state has, for some reason or another
         not passed the requirements (technical or human) for entry into the
-        DistroRelease it was targetting. As for the 'done' state, this state
+        DistroSeries it was targetting. As for the 'done' state, this state
         is present to allow logging tools to record the rejection and then
         clean up any subsequently unnecessary records.  """)
 
@@ -2200,18 +1960,18 @@ class PackageUploadCustomFormat(DBSchema):
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
 
-     A package has various levels of being published within a DistroRelease.
+     A package has various levels of being published within a DistroSeries.
      This is important because of how new source uploads dominate binary
      uploads bit-by-bit. Packages (source or binary) enter the publishing
      tables as 'Pending', progress through to 'Published' eventually become
      'Superseded' and then become 'PendingRemoval'. Once removed from the
-     DistroRelease the publishing record is also removed.
+     DistroSeries the publishing record is also removed.
      """
 
     PENDING = Item(1, """
         Pending
 
-        This [source] package has been accepted into the DistroRelease and
+        This [source] package has been accepted into the DistroSeries and
         is now pending the addition of the files to the published disk area.
         In due course, this source package will be published.
         """)
@@ -2220,7 +1980,7 @@ class PackagePublishingStatus(DBSchema):
         Published
 
         This package is currently published as part of the archive for that
-        distrorelease. In general there will only ever be one version of any
+        distroseries. In general there will only ever be one version of any
         source/binary package published at any one time. Once a newer
         version becomes published the older version is marked as superseded.
         """)
@@ -2247,7 +2007,7 @@ class PackagePublishingStatus(DBSchema):
         Once a package is removed from the archive, its publishing record
         is set to this status. This means it won't show up in the SPP view
         and thus will not be considered in most queries about source
-        packages in distroreleases. """)
+        packages in distroseriess. """)
 
 
 class PackagePublishingPriority(DBSchema):
@@ -2302,9 +2062,9 @@ class PackagePublishingPriority(DBSchema):
 class PackagePublishingPocket(DBSchema):
     """Package Publishing Pocket
 
-    A single distrorelease can at its heart be more than one logical
-    distrorelease as the tools would see it. For example there may be a
-    distrorelease called 'hoary' and a SECURITY pocket subset of that would
+    A single distroseries can at its heart be more than one logical
+    distroseries as the tools would see it. For example there may be a
+    distroseries called 'hoary' and a SECURITY pocket subset of that would
     be referred to as 'hoary-security' by the publisher and the distro side
     tools.
     """
@@ -2780,6 +2540,46 @@ class BranchReviewStatus(DBSchema):
         """)
 
 
+class BranchSubscriptionDiffSize(DBSchema):
+    """Branch Subscription Diff Size
+
+    When getting branch revision notifications, the person can set a size
+    limit of the diff to send out. If the generated diff is greater than
+    the specified number of lines, then it is omitted from the email.
+    This enumerated type defines the number of lines as a choice
+    so we can sensibly limit the user to a number of size choices.
+    """
+
+    NODIFF = Item(0, """
+        Don't send diffs
+
+        Don't send generated diffs with the revision notifications.
+        """, sortkey=0)
+
+    HALFKLINES = Item(500, """
+        500 lines
+
+        Limit the generated diff to 500 lines.
+        """, sortkey=500)
+
+    ONEKLINES  = Item(1000, """
+        1000 lines
+
+        Limit the generated diff to 1000 lines.
+        """, sortkey=1000)
+
+    FIVEKLINES = Item(5000, """
+        5000 lines
+
+        Limit the generated diff to 5000 lines.
+        """, sortkey=5000)
+
+    WHOLEDIFF  = Item(-1, """
+        Send entire diff
+
+        Don't limit the size of the diff.
+        """, sortkey=1000000)
+
 
 class BranchSubscriptionNotificationLevel(DBSchema):
     """Branch Subscription Notification Level
@@ -2804,18 +2604,19 @@ class BranchSubscriptionNotificationLevel(DBSchema):
         """)
 
     DIFFSONLY = Item(2, """
-        Branch diff notifications only
+        Branch revision notifications only
 
         Only send notifications about new revisions added to this
         branch.
         """)
 
     FULL = Item(3, """
-        Branch attribute and diff notifications
+        Branch attribute and revision notifications
 
         Send notifications for both branch attribute updates
         and new revisions added to the branch.
         """)
+
 
 class BugNominationStatus(DBSchema):
     """Bug Nomination Status
@@ -3302,6 +3103,18 @@ class BuildStatus(DBSchema):
         available builders.
         """)
 
+    FAILEDTOUPLOAD = Item(7, """
+        Failed to upload
+
+        Build record is an historic account of a build that could not be
+        uploaded correctly. It's mainly genereated by failures in
+        process-upload which quietly rejects the binary upload resulted
+        by the build procedure.
+        In those cases all the build historic information will be stored (
+        buildlog, datebuilt, duration, builder, etc) and the buildd admins
+        will be notified via process-upload about the reason of the rejection.
+        """)
+
 
 class MirrorContent(DBSchema):
     """The content that is mirrored."""
@@ -3314,7 +3127,7 @@ class MirrorContent(DBSchema):
         """)
 
     RELEASE = Item(2, """
-        Release
+        CD Image
 
         Mirror containing released installation images for a given
         distribution.
@@ -3629,6 +3442,13 @@ class ShippingRequestStatus(DBSchema):
         This request needs special consideration.
         """)
 
+    DUPLICATEDADDRESS = Item(6, """
+        Pending Special Consideration (dupe address)
+
+        This request needs special consideration because other users already
+        requested CDs to the same address.
+        """)
+
 
 class ShippingService(DBSchema):
     """The Shipping company we use to ship CDs."""
@@ -3690,7 +3510,7 @@ class ShipItArchitecture(DBSchema):
         """)
 
 
-class ShipItDistroRelease(DBSchema):
+class ShipItDistroSeries(DBSchema):
     """The Distro Release, used only to link with ShippingRequest."""
 
     BREEZY = Item(1, """
@@ -3709,6 +3529,18 @@ class ShipItDistroRelease(DBSchema):
         6.10 (Edgy Eft)
 
         The Edgy Eft release.
+        """)
+
+    FEISTY = Item(4, """
+        7.04 (Feisty Fawn)
+
+        The Feisty Fawn release.
+        """)
+
+    GUTSY = Item(5, """
+        7.10 (Gutsy Gibbon)
+
+        The Gutsy Gibbon release.
         """)
 
 
@@ -3819,4 +3651,3 @@ class PersonCreationRationale(DBSchema):
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
         """)
-

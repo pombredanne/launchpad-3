@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 
 # "Sync" a source package by generating an upload
 # Copyright (C) 2005, 2006  Canonical Software Ltd. <james.troup@canonical.com>

@@ -36,29 +36,19 @@ class POTMsgSet(SQLBase):
 
     def getCurrentSubmissions(self, language, pluralform):
         """See IPOTMsgSet."""
-        subquery = '''
-            SELECT DISTINCT POSubmission.id
-            FROM POSubmission
-                JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
-                JOIN POFile ON (POMsgSet.pofile = POFile.id AND
-                                POFile.language = %s)
-                JOIN POTMsgSet ON (POMsgSet.potmsgset = POTMsgSet.id AND
-                                   POTMsgSet.primemsgid = %s)
-                LEFT OUTER JOIN POSelection AS ps1 ON (
-                    ps1.activesubmission = POSubmission.id AND
-                    ps1.pluralform = %s)
-                LEFT OUTER JOIN POSelection AS ps2 ON (
-                    ps2.publishedsubmission = POSubmission.id AND
-                    ps2.pluralform = %s)
-            WHERE
-                ps1.id IS NOT NULL OR ps2.id IS NOT NULL
-            ''' % sqlvalues(
-                language.id, self.primemsgid_ID, pluralform, pluralform)
-        subs = POSubmission.select('POSubmission.id IN (%s)' % subquery,
-                                   orderBy='-datecreated')
-        subs = subs.prejoin(
-                   ['potranslation', 'person', 'pomsgset', 'pomsgset.pofile'])
-        return subs
+        return POSubmission.select('''
+            POSubmission.pomsgset = POMsgSet.id AND
+            POMsgSet.pofile = POFile.id AND
+            POFile.language = %s AND
+            POMsgSet.potmsgset = POTMsgSet.id AND
+            POTMsgSet.primemsgid = %s AND
+            POSubmission.pluralform = %s AND
+            (POSubmission.active OR POSubmission.published)
+            ''' % sqlvalues(language, self.primemsgid_, pluralform),
+            clauseTables=['POTMsgSet', 'POMsgSet', 'POFile'],
+            orderBy='-datecreated',
+            prejoinClauseTables=['POMsgSet', 'POFile'],
+            prejoins=['potranslation', 'person'])
 
     def flags(self):
         if self.flagscomment is None:
@@ -303,3 +293,15 @@ class POTMsgSet(SQLBase):
         # Fix the newline chars.
         return text.replace(text_style, msgid_style)
 
+
+    @property
+    def hide_translations_from_anonymous(self):
+        """See IPOTMsgSet."""
+        # primemsgid_.msgid is pre-joined everywhere where
+        # hide_translations_from_anonymous is used
+        return self.primemsgid_.msgid in [
+            u'translation-credits',
+            u'translator-credits',
+            u'translator_credits',
+            u'_: EMAIL OF TRANSLATORS\nYour emails'
+            ]

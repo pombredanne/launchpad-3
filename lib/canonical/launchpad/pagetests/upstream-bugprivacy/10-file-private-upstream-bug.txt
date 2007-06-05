@@ -20,7 +20,7 @@ contact, the maintainer will be subscribed to the bug instead.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/firefox/+bug/11
+    http://bugs.launchpad.dev/firefox/+bug/13
 
 Now the reporter and the maintainer are subscribed.
 
@@ -31,7 +31,7 @@ Now the reporter and the maintainer are subscribed.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> bug = getUtility(IBugSet).get(11)
+    >>> bug = getUtility(IBugSet).get(13)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name12', u'name16']
@@ -58,7 +58,7 @@ bug listing.
     ...1...
     ...Low...
     ...
-    ...11...
+    ...13...
     ...Undecided...
 
 When the upstream has a security contact, the upstream will be
@@ -87,11 +87,11 @@ subscribed instead.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://localhost:9000/firefox/+bug/12
+    http://bugs.launchpad.dev/firefox/+bug/14
 
     >>> login("foo.bar@canonical.com")
 
-    >>> bug = getUtility(IBugSet).get(12)
+    >>> bug = getUtility(IBugSet).get(14)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
     [u'name16', u'sabdfl']

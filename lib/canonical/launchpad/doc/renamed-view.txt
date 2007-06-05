@@ -1,0 +1,90 @@
+= RenamedView =
+
+As Launchpad is reorganized, views are renamed. It is usually advisable
+to leave a permanent redirect from the old name to the new name. This
+allows search engines and bookmark to update transparently from the old
+name to the new one.
+
+For this case, we have a RenamedView that will take care of the
+redirection.
+
+    >>> from canonical.launchpad.webapp.publisher import RenamedView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+Let's say we rename the '+old_tickets_page' view on IQuestionTarget to
+'+questions'. A RenamedView redirecting to the new name would be created
+like this:
+
+    >>> request = LaunchpadTestRequest()
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> view = RenamedView(ubuntu, request, '+questions')
+
+(Note that the RenamedView class doesn't need to be aware of the
+previous name. The old name will be hooked up with the RenamedView
+via ZCML.)
+
+When the view is called, it redirects to the same context but with
+the new name. The redirection status is 301 (Moved permently) which
+will make search engines discards the old URLs and some browser to
+update bookmarks.
+
+    >>> view()
+    u''
+    >>> request.response.getStatus()
+    301
+    >>> print request.response.getHeader('Location')
+    http://launchpad.dev/ubuntu/+questions
+
+== Handling GET parameters ==
+
+If there was any query parameters on the request, they are appended
+to the redirected URL.
+
+    >>> request = LaunchpadTestRequest(
+    ...     QUERY_STRING='field.status=Open')
+    >>> view = RenamedView(ubuntu, request, '+questions')
+    >>> view()
+    u''
+    >>> print request.response.getHeader('Location')
+    http://launchpad.dev/ubuntu/+questions?field.status=Open
+
+== Redirecting to another virtual host ==
+
+The view also takes an optional 'rootsite' parameter, which will
+change the virtual host used for the redirection.
+
+    >>> request = LaunchpadTestRequest()
+    >>> view = RenamedView(
+    ...     ubuntu, request, '+questions', rootsite='answers')
+    >>> view()
+    u''
+    >>> print request.response.getHeader('Location')
+    http://answers.launchpad.dev/ubuntu/+questions
+
+== Registering from ZCML ==
+
+Finally, it is possible to register RenamedView from ZCML. The
+browser:renamed-page is available for this purpose.
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include file="lib/canonical/launchpad/webapp/meta.zcml" />
+    ...   <include file="lib/zope/app/meta.zcml" />
+    ...   <browser:renamed-page
+    ...       for="canonical.launchpad.interfaces.IQuestionTarget"
+    ...       name="+old_tickets_page"
+    ...       new_name="+questions"
+    ...       rootsite="answers"
+    ...       />
+    ... </configure>
+    ... """)
+
+    >>> from zope.component import getMultiAdapter
+    >>> request = LaunchpadTestRequest()
+    >>> view = getMultiAdapter((ubuntu, request), name='+old_tickets_page')
+    >>> view()
+    u''
+    >>> print request.response.getHeader('Location')
+    http://answers.launchpad.dev/ubuntu/+questions

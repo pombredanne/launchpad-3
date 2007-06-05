@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 """Upstream Product Release Finder.
 
@@ -7,31 +7,20 @@ to identify files and create new ProductRelease records for them.
 """
 
 import _pythonpath
-import sys
-import optparse
 
 from canonical.config import config
-from canonical.lp import initZopeless
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-                                         logger, logger_options)
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.productreleasefinder.finder import (
     ProductReleaseFinder)
 
 
-def main(argv):
-    # Parse command-line arguments
-    parser = optparse.OptionParser()
-    logger_options(parser)
-    (options, args) = parser.parse_args(argv[1:])
-
-    execute_zcml_for_scripts()
-    ztm = initZopeless(dbuser=config.productreleasefinder.dbuser,
-                       implicitBegin=False)
-
-    log = logger(options, "productreleasefinder")
-
-    prf = ProductReleaseFinder(ztm, log)
-    prf.findReleases()
+class ReleaseFinderScript(LaunchpadCronScript):
+    def main(self):
+        prf = ProductReleaseFinder(self.txn, self.logger)
+        prf.findReleases()
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    script = ReleaseFinderScript('productreleasefinder',
+        dbuser=config.productreleasefinder.dbuser)
+    script.lock_and_run()
+

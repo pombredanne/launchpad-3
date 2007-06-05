@@ -44,14 +44,14 @@ class BuildOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Admin')
     def retry(self):
         """Only enabled for build records that are active."""
-        text = 'Retry Build'
+        text = 'Retry build'
         return Link('+retry', text, icon='edit',
                     enabled=self.context.can_be_retried)
 
     @enabled_with_permission('launchpad.Admin')
     def rescore(self):
         """Only enabled for pending build records."""
-        text = 'Rescore Build'
+        text = 'Rescore build'
         return Link('+rescore', text, icon='edit',
                     enabled=self.context.can_be_rescored)
 
@@ -144,7 +144,7 @@ class BuildRecordsView(LaunchpadView):
     It retrieves the UI build_state selector action and setup a proper
     batched list with the requested results. See further UI details in
     template/builds-list.pt and callsite details in Builder, Distribution,
-    DistroRelease, DistroArchRelease and SourcePackage view classes.
+    DistroSeries, DistroArchSeries and SourcePackage view classes.
     """
     __used_for__ = IHasBuildRecords
 
@@ -196,6 +196,7 @@ class BuildRecordsView(LaunchpadView):
             'depwait': BuildStatus.MANUALDEPWAIT,
             'chrootwait': BuildStatus.CHROOTWAIT,
             'superseded': BuildStatus.SUPERSEDED,
+            'uploadfail': BuildStatus.FAILEDTOUPLOAD,
             'all': None,
             }
         # include pristine (not yet assigned to a builder) builds

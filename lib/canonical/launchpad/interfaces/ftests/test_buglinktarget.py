@@ -1,9 +1,9 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 """Test harness for running the buglinktarget.txt interface test
 
 This module will run the interface test against the CVE, Specification and
-Ticket implementations of that interface.
+Question implementations of that interface.
 """
 
 __metaclass__ = type
@@ -16,14 +16,14 @@ from zope.component import getUtility
 
 from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.interfaces import (
-    ICveSet, ISpecificationSet, ITicketSet)
+    ICveSet, ISpecificationSet, IQuestionSet)
 from canonical.launchpad.ftests.test_system_documentation import (
     default_optionflags, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
 
-def ticketSetUp(test):
+def questionSetUp(test):
     setUp(test)
-    test.globs['target'] = getUtility(ITicketSet).get(1)
+    test.globs['target'] = getUtility(IQuestionSet).get(1)
 
 
 def cveSetUp(test):
@@ -41,7 +41,7 @@ def test_suite():
     suite = unittest.TestSuite()
 
     targets = [('cve', cveSetUp),
-               ('ticket', ticketSetUp),
+               ('question', questionSetUp),
                ('specification', specificationSetUp),
                ]
 

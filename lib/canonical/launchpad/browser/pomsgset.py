@@ -2,14 +2,15 @@
 
 __metaclass__ = type
 __all__ = [
-    'POMsgSetIndexView',
-    'POMsgSetView',
-    'POMsgSetPageView',
-    'POMsgSetFacets',
-    'POMsgSetAppMenus',
-    'POMsgSetSuggestions',
-    'POMsgSetZoomedView',
     'BaseTranslationView',
+    'POMsgSetAppMenus',
+    'POMsgSetFacets',
+    'POMsgSetIndexView',
+    'POMsgSetPageView',
+    'POMsgSetSOP',
+    'POMsgSetSuggestions',
+    'POMsgSetView',
+    'POMsgSetZoomedView',
     ]
 
 import cgi
@@ -33,31 +34,36 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.potemplate import (
+    POTemplateFacets, POTemplateSOP)
 from canonical.launchpad.interfaces import (
     UnexpectedFormData, IPOMsgSet, TranslationConstants, NotFoundError,
     ILanguageSet, IPOFileAlternativeLanguage, IPOMsgSetSuggestions,
     IPOSubmissionSet, TranslationConflict)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Link, LaunchpadView,
-    canonical_url)
+    ApplicationMenu, Link, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
-
 
 #
 # Translation-related formatting functions
 #
 
-def contract_rosetta_tabs(text):
-    """Replace Rosetta representation of tabs with their native characters."""
-    return helpers.text_replaced(text, {'[tab]': '\t', r'\[tab]': '[tab]'})
+def contract_rosetta_escapes(text):
+    """Replace Rosetta escape sequences with the real characters."""
+    return helpers.text_replaced(text, {'[tab]': '\t',
+                                        r'\[tab]': '[tab]',
+                                        '[nbsp]' : u'\u00a0',
+                                        r'\[nbsp]' : '[nbsp]' })
 
 
-def expand_rosetta_tabs(unicode_text):
-    """Replace tabs with their Rosetta representations."""
-    return helpers.text_replaced(unicode_text,
-                                 {u'\t': TranslationConstants.TAB_CHAR,
-                                  u'[tab]': TranslationConstants.TAB_CHAR_ESCAPED})
+def expand_rosetta_escapes(unicode_text):
+    """Replace characters needing a Rosetta escape sequences."""
+    escapes = {u'\t': TranslationConstants.TAB_CHAR,
+               u'[tab]': TranslationConstants.TAB_CHAR_ESCAPED,
+               u'\u00a0' : TranslationConstants.NO_BREAK_SPACE_CHAR,
+               u'[nbsp]' : TranslationConstants.NO_BREAK_SPACE_CHAR_ESCAPED }
+    return helpers.text_replaced(unicode_text, escapes)
 
 
 def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
@@ -115,7 +121,7 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
 
             lines[i] = formatted_line
 
-    return expand_rosetta_tabs(newline.join(lines))
+    return expand_rosetta_escapes(newline.join(lines))
 
 
 def convert_newlines_to_web_form(unicode_text):
@@ -270,40 +276,23 @@ class CustomDropdownWidget(DropdownWidget):
 #
 # Standard UI classes
 #
-
-class POMsgSetFacets(StandardLaunchpadFacets):
+class POMsgSetFacets(POTemplateFacets):
     usedfor = IPOMsgSet
-    defaultlink = 'translations'
-    enable_only = ['overview', 'translations']
 
-    def _parent_url(self):
-        """Return the URL of the thing the PO template of this PO file is
-        attached to.
-        """
-        potemplate = self.context.pofile.potemplate
-        if potemplate.distrorelease:
-            source_package = potemplate.distrorelease.getSourcePackage(
-                potemplate.sourcepackagename)
-            return canonical_url(source_package)
-        else:
-            return canonical_url(potemplate.productseries)
+    def __init__(self, context):
+        POTemplateFacets.__init__(self, context.pofile.potemplate)
 
-    def overview(self):
-        target = self._parent_url()
-        text = 'Overview'
-        return Link(target, text)
 
-    def translations(self):
-        target = '+translate'
-        text = 'Translations'
-        return Link(target, text)
+class POMsgSetSOP(POTemplateSOP):
+
+    def __init__(self, context):
+        POTemplateSOP.__init__(self, context.pofile.potemplate)
 
 
 class POMsgSetAppMenus(ApplicationMenu):
     usedfor = IPOMsgSet
     facet = 'translations'
-    links = ['overview', 'translate', 'switchlanguages',
-             'upload', 'download', 'viewtemplate']
+    links = ['overview', 'translate', 'upload', 'download']
 
     def overview(self):
         text = 'Overview'
@@ -313,21 +302,13 @@ class POMsgSetAppMenus(ApplicationMenu):
         text = 'Translate many'
         return Link('../+translate', text, icon='languages')
 
-    def switchlanguages(self):
-        text = 'Switch Languages'
-        return Link('../../', text, icon='languages')
-
     def upload(self):
-        text = 'Upload a File'
+        text = 'Upload a file'
         return Link('../+upload', text, icon='edit')
 
     def download(self):
         text = 'Download'
         return Link('../+export', text, icon='download')
-
-    def viewtemplate(self):
-        text = 'View Template'
-        return Link('../../', text, icon='languages')
 
 #
 # Views
@@ -406,17 +387,17 @@ class BaseTranslationView(LaunchpadView):
             #   -- kiko, 2006-10-18
             self.request.response.addErrorNotification("""
             <p>
-            Rosetta can&#8217;t handle the plural items in this file, because it
-            doesn&#8217;t yet know how plural forms work for %s.
+            Launchpad can&#8217;t handle the plural items in this file, 
+	    because it doesn&#8217;t yet know how plural forms work for %s.
             </p>
             <p>
             To fix this, please e-mail the <a
-            href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users mailing list</a>
+            href="mailto:rosetta-users@lists.ubuntu.com">Launchpad Translations users mailing list</a>
             with this information, preferably in the format described in the
-            <a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta FAQ</a>.
+            <a href="https://wiki.ubuntu.com/RosettaFAQ">FAQ</a>.
             </p>
             <p>
-            This only needs to be done once per language. Thanks for helping Rosetta.
+            This only needs to be done once per language. Thanks for helping Launchpad Translations.
             </p>
             """ % self.pofile.language.englishname)
             return
@@ -682,7 +663,7 @@ class BaseTranslationView(LaunchpadView):
 
             # Get new value introduced by the user.
             raw_value = form[msgset_ID_LANGCODE_translation_PLURALFORM_new]
-            value = contract_rosetta_tabs(raw_value)
+            value = contract_rosetta_escapes(raw_value)
 
             if self.user_is_official_translator:
                 # Let's see the section that we are interested on based on the
@@ -690,8 +671,13 @@ class BaseTranslationView(LaunchpadView):
                 msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton = (
                     '%s%d_radiobutton' % (
                         msgset_ID_LANGCODE_translation_, pluralform))
-                selected_translation_key = form[
-                    msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton]
+                selected_translation_key = form.get(
+                    msgset_ID_LANGCODE_translation_PLURALFORM_radiobutton)
+                if selected_translation_key is None:
+                    # The radiobutton was missing from the form; either
+                    # it wasn't rendered to the end-user or no buttons
+                    # were selected.
+                    continue
 
                 # We are going to check whether the radio button is for
                 # current translation, suggestion or the new translation
@@ -812,7 +798,6 @@ class POMsgSetPageView(BaseTranslationView):
     """A view for the page that renders a single translation.
 
     See BaseTranslationView for details on how this works."""
-    __used_for__ = IPOMsgSet
 
     def initialize(self):
         self.pofile = self.context.pofile
@@ -860,7 +845,6 @@ class POMsgSetView(LaunchpadView):
     in which case, we would have up to 100 instances of this class using the
     same information at self.form.
     """
-    __used_for__ = IPOMsgSet
 
     # Instead of registering in ZCML, we indicate the template here and
     # avoid the adapter lookup when constructing these subviews.
@@ -962,16 +946,34 @@ class POMsgSetView(LaunchpadView):
                              count_lines(translation) > 1 or
                              count_lines(self.msgid) > 1 or
                              count_lines(self.msgid_plural) > 1)
-            self.translation_dictionaries.append({
+            active_submission = self.context.getActiveSubmission(index)
+            is_same_translator = active_submission is not None and (
+                active_submission.person.id == self.context.reviewer.id)
+            is_same_date = active_submission is not None and (
+                active_submission.datecreated == self.context.date_reviewed)
+            translation_entry = {
                 'plural_index': index,
                 'active_translation': text_to_html(
                     active, self.context.potmsgset.flags()),
                 'translation': translation,
-                'selection': self.context.getSelection(index),
+                'active_submission': active_submission,
                 'suggestion_block': self.suggestion_blocks[index],
                 'store_flag': index in self.plural_indices_to_store,
-                'is_multi_line': is_multi_line
-                })
+                'is_multi_line': is_multi_line,
+                'same_translator_and_reviewer': (is_same_translator and
+                                                 is_same_date)
+                }
+
+            if self.message_must_be_hidden:
+                # We must hide the translation because it may have private
+                # info that we don't want to show to anoymous users.
+                translation_entry['active_translation'] = u'''
+                    To prevent privacy issues, this translation is not
+                    available to anonymous users,<br />
+                    if you want to see it, please, <a href="+login">log in</a>
+                    first.'''
+
+            self.translation_dictionaries.append(translation_entry)
 
     def _buildAllSuggestions(self, index):
         """Builds all suggestions for a certain plural form index.
@@ -1011,6 +1013,15 @@ class POMsgSetView(LaunchpadView):
                 pruners_merged = pruners_merged.union(pruner)
             return dict((k, v) for (k, v) in main.iteritems()
                         if k not in pruners_merged)
+
+        if self.message_must_be_hidden:
+            # We must hide all suggestions because it may have private
+            # info that we don't want to show to anoymous users.
+            non_editor = self._buildSuggestions(None, [])
+            elsewhere = self._buildSuggestions(None, [])
+            wiki = self._buildSuggestions(None, [])
+            alt_lang_suggestions = self._buildSuggestions(None, [])
+            return non_editor, elsewhere, wiki, alt_lang_suggestions
 
         wiki = self.context.getWikiSubmissions(index)
         wiki_translations = build_dict(wiki)
@@ -1101,6 +1112,21 @@ class POMsgSetView(LaunchpadView):
     def is_plural(self):
         """Return whether there are plural forms."""
         return len(self.msgids) > 1
+
+    @cachedproperty
+    def message_must_be_hidden(self):
+        """Whether the message must be hidden.
+
+        Messages are always shown to logged-in users.
+
+        Messages that are likely to contain email addresses
+        are shown only to logged-in users, and not to anonymous users.
+        """
+        if self.user is not None:
+            # Always show messages to logged-in users.
+            return False
+        # For anonymous users, check the msgid.
+        return self.context.potmsgset.hide_translations_from_anonymous
 
     @cachedproperty
     def sequence(self):

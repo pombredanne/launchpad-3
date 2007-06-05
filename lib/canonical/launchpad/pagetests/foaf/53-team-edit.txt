@@ -1,0 +1,51 @@
+= Editing team details =
+
+Only an administrator (as well as the team owner) of a team can change the
+details of that team.
+
+    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+edit')
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> from zope.testbrowser.testing import Browser
+    >>> browser = Browser()
+    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser.open('http://launchpad.dev/~ubuntu-team')
+    >>> browser.getLink('Change details').click()
+    >>> browser.url
+    'http://launchpad.dev/~ubuntu-team/+edit'
+    >>> browser.getControl('Name', index=0).value
+    'ubuntu-team' 
+    >>> browser.getControl('Display Name').value
+    'Ubuntu Team'
+    >>> browser.getControl('Team Description').value
+    'This Team is responsible for the Ubuntu Distribution'
+    >>> browser.getControl('Subscription Policy').value
+    ['Moderated Team']
+
+Now we'll change some values.
+
+    >>> browser.getControl('Name', index=0).value = 'ubuntuteam'
+    >>> browser.getControl('Display Name').value = 'The Ubuntu Team'
+    >>> browser.getControl('Team Description').value = ''
+    >>> browser.getControl('Subscription Policy').value = ['Restricted Team']
+
+    >>> browser.getControl('Save').click()
+
+Here we see the updated values.
+
+    >>> browser.url
+    'http://launchpad.dev/~ubuntuteam'
+    >>> browser.getLink('Change details').click()
+
+    >>> browser.getControl('Name', index=0).value
+    'ubuntuteam'
+    >>> browser.getControl('Display Name').value
+    'The Ubuntu Team'
+    >>> browser.getControl('Team Description').value
+    ''
+    >>> browser.getControl('Subscription Policy').value
+    ['Restricted Team']
+

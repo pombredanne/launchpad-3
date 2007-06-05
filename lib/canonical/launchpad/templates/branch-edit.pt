@@ -37,7 +37,7 @@
     registrant is a team you belong to.</p>
 
   <p>The URL of the branch on Launchpad is based on the nickname of the
-    registrant, the name of the associated product, and the name of the branch.
+    registrant, the name of the associated project, and the name of the branch.
     All these values can be changed.</p>
 
   <p>If the branch is a <em>mirror</em> branch, you can change remote URL that
@@ -64,3 +64,4 @@
 
 </body>
 </html>
+<!-- 1-0 done -->

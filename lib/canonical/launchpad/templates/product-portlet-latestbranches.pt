@@ -1,8 +1,8 @@
 <div class="portlet" tal:condition="context/getLatestBranches">
-  <h2>Latest branches of <span tal:replace="context/name">firefox</span></h2>
+  <h2>Latest code</h2>
   <div class="portletBody portletContent">
-    
-  <ul>
+    <ul class="branch">
+
     <li tal:repeat="branch context/getLatestBranches" class="branch">
       <a tal:attributes="href branch/fmt:url"
          tal:content="branch/name"

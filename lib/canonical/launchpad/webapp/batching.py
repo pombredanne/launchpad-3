@@ -38,7 +38,7 @@ class BatchNavigator:
 
     implements(IBatchNavigator)
 
-    def __init__(self, results, request, start=0, size=None):
+    def __init__(self, results, request, start=0, size=None, callback=None):
         """Constructs a BatchNavigator instance.
 
         results is an iterable of results. request is the web request
@@ -52,6 +52,10 @@ class BatchNavigator:
 
         If no size can be divined from arguments or request, the
         launchpad.default_batch_size config option is used.
+
+        The callback function if defined is called at the end of
+        object construction with the defined batch as determined
+        by the start and request parameters.
         """
         # In this code we ignore invalid request variables since it
         # probably means the user finger-fumbled it in the request. We
@@ -79,6 +83,8 @@ class BatchNavigator:
 
         self.batch = _Batch(results, start=self.start, size=size)
         self.request = request
+        if callback is not None:
+            callback(self, self.batch)
 
     def cleanQueryString(self, query_string):
         """Removes start and batch params from a query string."""
@@ -191,8 +197,9 @@ class TableBatchNavigator(BatchNavigator):
     """See canonical.launchpad.interfaces.ITableBatchNavigator."""
     implements(ITableBatchNavigator)
 
-    def __init__(self, results, request, start=0, size=None, columns_to_show=None):
-        BatchNavigator.__init__(self, results, request, start, size)
+    def __init__(self, results, request, start=0, size=None,
+                 columns_to_show=None, callback=None):
+        BatchNavigator.__init__(self, results, request, start, size, callback)
 
         self.show_column = {}
         if columns_to_show:

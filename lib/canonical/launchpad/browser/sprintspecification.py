@@ -8,13 +8,6 @@ __all__ = [
     'SprintSpecificationDecideView',
     ]
 
-from zope.app.form.browser.add import AddView
-from zope.component import getUtility
-
-from canonical.launchpad.helpers import check_permission
-
-from canonical.launchpad.interfaces import ILaunchBag
-
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 
 

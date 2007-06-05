@@ -1,0 +1,28 @@
+= Products with code =
+
+The main purpose of this page is to show to casual browsers (and robots) that
+there are branches associated with products, and to entice them to click
+through to get lists of branches of products that interest them.
+
+    >>> browser.open('http://code.launchpad.dev')
+    >>> browser.getLink('6 projects').click()
+    >>> print browser.title
+    Projects with active branches
+
+This page hangs off the launchpad root site.
+
+    >>> browser.open('http://code.launchpad.dev/+project-cloud')
+    >>> print browser.title
+    Projects with active branches
+
+    >>> contents = find_tag_by_id(browser.contents, 'container')
+    >>> for anchor in contents.fetch('a'):
+    ...     print anchor['href']
+    /
+    /evolution
+    /firefox
+    /gnome-terminal
+    /iso-codes
+    /landscape
+    /thunderbird
+

@@ -6,15 +6,15 @@
   <div class="portletBody">
     <div class="portletContent">
     <img src="/@@/info" alt="info" />
-    <tal:block condition="context/distrorelease">
+    <tal:block condition="context/distroseries">
       This template came from the following source package and
       distribution:<br />
       <b>Distribution:</b>
-      <span tal:replace="context/distrorelease/distribution/displayname">
+      <span tal:replace="context/distroseries/distribution/displayname">
         Ubuntu
       </span><br />
-      <b>Release:</b>
-      <span tal:replace="context/distrorelease/name">
+      <b>Series:</b>
+      <span tal:replace="context/distroseries/name">
         Hoary
       </span><br />
       <b>Source:</b>
@@ -23,7 +23,7 @@
       </span><br />
     </tal:block>
     <tal:block condition="context/productseries">
-      This template is for the following <b>upstream</b> product branch:
+      This template is for the following <b>upstream</b> project branch:
       <br />
       <tal:block condition="context/productseries/product/project">
         <b>Project:</b>
@@ -31,7 +31,7 @@
           Apache
         </span><br />
       </tal:block>
-      <b>Product:</b>
+      <b>Project:</b>
       <span tal:replace="context/productseries/product/displayname">
         Apache Web Server
       </span><br />

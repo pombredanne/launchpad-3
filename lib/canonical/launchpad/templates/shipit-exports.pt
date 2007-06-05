@@ -12,7 +12,7 @@
   <table>
   <tbody>
   <tr>
-  <td width="80%">
+  <td width="80%" id="main-content">
 
   <p tal:condition="view/no_exports">
     No exports were made yet
@@ -31,7 +31,15 @@
       </thead>
       <tbody>
         <tr tal:repeat="export view/unsent_exports">
-          <td tal:content="export/datecreated/fmt:date" />
+          <td>
+            <span class="sortkey"
+              tal:content="export/datecreated/fmt:datetime" />
+            <span
+              tal:attributes="title export/datecreated/fmt:datetime"
+              tal:content="export/datecreated/fmt:approximatedate">
+              2007-02-19
+            </span>
+          </td>
           <td style="text-align: right"
               tal:content="export/requests_count" />
           <td><a tal:content="export/csvfile/filename"
@@ -61,7 +69,15 @@
       </thead>
       <tbody>
         <tr tal:repeat="export view/sent_exports">
-          <td tal:content="export/datecreated/fmt:date" />
+          <td>
+            <span class="sortkey"
+              tal:content="export/datecreated/fmt:datetime" />
+            <span
+              tal:attributes="title export/datecreated/fmt:datetime"
+              tal:content="export/datecreated/fmt:approximatedate">
+              2007-02-19
+            </span>
+          </td>
           <td style="text-align: right"
               tal:content="export/requests_count" />
           <td><a tal:content="export/csvfile/filename"
@@ -74,7 +90,7 @@
 
   </td>
   <td
-    width="20%"
+    width="20%" id="navigation"
     style="vertical-align: top;"
     tal:content="structure context/@@+portlet-navigation"
   />

@@ -28,7 +28,6 @@ And we get None when there isn't any POSubmission with the given ID.
   >>> posubmission is None
   True
 
-
 = POSubmission =
 
 This class links the translations submitted by a translator with the associated.
@@ -36,7 +35,7 @@ This class links the translations submitted by a translator with the associated.
 == destroySelf ==
 
 With this method, we allow to remove a submission, it comes from SQLObject,
-but we test it here to be sure it appears in our public interfaces.
+but we test it here to be sure it appears in our public interface.
 
 We will need extra permissions to use this method.
 
@@ -44,35 +43,15 @@ We will need extra permissions to use this method.
     >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
     >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
 
-It needs that there are no references to it to be able to remove it.
+Select an existing IPOSubmission and try to remove it.
 
     >>> from canonical.launchpad.database import POSubmission
     >>> posubmission = POSubmission.get(1)
-
-XXX CarlosPerelloMarin 20060426: We need to use try/except here because
-Dapper (my laptop) raises an IntegrityError but Breezy (pqm) raises
-ProgrammingError. We use DatabaseError because it's a superclass of both and 
-should be available on both systems.
-
-    >>> from psycopg import DatabaseError
-    >>> try:
-    ...     posubmission.destroySelf()
-    ... except DatabaseError:
-    ...     print 'We were not able to remove this posubmission'
-    We were not able to remove this posubmission
-
-Restore the database access after the failure.
-
-    >>> transaction.abort()
-
-Let's retry with a submission that we know is not referenced.
-
-    >>> posubmission = POSubmission.get(693)
     >>> posubmission.destroySelf()
 
 It should not exist now.
 
-    >>> posubmission = POSubmission.get(693)
+    >>> posubmission = POSubmission.get(1)
     Traceback (most recent call last):
     ...
     SQLObjectNotFound:...

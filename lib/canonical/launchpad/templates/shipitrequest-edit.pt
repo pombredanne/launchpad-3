@@ -17,7 +17,7 @@
     </tal:block>
 
     <h1>
-      <span tal:replace="context/distrorelease/name/capitalize" />
+      <span tal:replace="context/distroseries/name/capitalize" />
       Request #<span tal:replace="context/id" />
     </h1>
 
@@ -26,9 +26,48 @@
     <tr>
     <td width="80%">
 
+    <div tal:condition="context/addressIsDuplicated"
+         tal:define="dupe_requests context/getRequestsWithSameAddressFromOtherUsers"
+         class="informational message">
+      <p>
+        There are other requests for CDs of this same version made by other
+        users with this shipping address.
+      </p>
+      <table class="listing lesser" id="dupe-address-reuqests">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Recipient</th>
+            <th>Requested</th>
+            <th>Approved</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="dupe_request dupe_requests">
+            <td>
+              <a tal:attributes="href dupe_request/fmt:url">
+                <span tal:replace="dupe_request/daterequested/fmt:date" />
+              </a>
+            </td>
+            <td tal:content="dupe_request/recipientdisplayname" />
+            <td>
+              <span tal:replace="dupe_request/getTotalCDs" />
+              (<tal:flavours repeat="flavour dupe_request/getContainedFlavours"
+                ><span tal:replace="flavour/title"
+                  >Ubuntu</span><span tal:condition="not: repeat/flavour/end"
+                    >,</span></tal:flavours>)
+            </td>
+            <td tal:content="dupe_request/getTotalApprovedCDs" />
+            <td tal:content="dupe_request/status_desc" />
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <div tal:condition="view/recipientHasOtherShippedRequests"
          tal:define="shipped_requests
-                     context/recipient/shippedShipItRequestsOfCurrentRelease"
+                     context/recipient/shippedShipItRequestsOfCurrentSeries"
          class="informational message">
      <p>This person has other requests already sent to the shipping company.
      </p>
@@ -36,7 +75,11 @@
         <tal:block repeat="shipped_request shipped_requests">
           <li tal:condition="python: shipped_request != context">
             <a tal:attributes="href shipped_request/fmt:url">
-              <span tal:replace="shipped_request/daterequested/fmt:date" />:
+              <span
+                tal:attributes="
+                  title shipped_request/daterequested/fmt:datetime"
+                tal:content="
+                  shipped_request/daterequested/fmt:approximatedate" />:
               <span tal:replace="shipped_request/getTotalCDs" />
               <tal:flavours repeat="flavour shipped_request/getContainedFlavours">
                 <span tal:replace="flavour/title" /><span
@@ -59,26 +102,28 @@
 
     <table class="listing" style="width: auto; margin-left: 0"
            tal:attributes="cols view/ordered_architectures/count:len">
-      <tr>
       <thead>
-        <th>&nbsp;</th>
-        <tal:headers repeat="arch view/ordered_architectures">
-          <th tal:content="arch/title" />
-        </tal:headers>
+        <tr>
+          <th>&nbsp;</th>
+          <tal:headers repeat="arch view/ordered_architectures">
+            <th tal:content="arch/title" />
+          </tal:headers>
+        </tr>
       </thead>
-      </tr>
-      <tr tal:repeat="row view/quantities_matrix">
-        <tal:block repeat="cell row">
-          <tal:is-header condition="repeat/cell/start">
-            <th tal:content="cell" />
-          </tal:is-header>
-          <tal:is-not-header condition="not: repeat/cell/start">
-            <td style="text-align: right">
-              <span tal:replace="cell" />
-            </td>
-          </tal:is-not-header>
-        </tal:block>
-      </tr>
+      <tbody>
+        <tr tal:repeat="row view/quantities_matrix">
+          <tal:block repeat="cell row">
+            <tal:is-header condition="repeat/cell/start">
+              <th tal:content="cell" />
+            </tal:is-header>
+            <tal:is-not-header condition="not: repeat/cell/start">
+              <td style="text-align: right">
+                <span tal:replace="cell" />
+              </td>
+            </tal:is-not-header>
+          </tal:block>
+        </tr>
+      </tbody>
     </table>
 
     <tal:can-be-changed condition="view/contextCanBeModified">
@@ -165,7 +210,9 @@
       </tr>
       <tr>
         <td align="right"><strong>Date:</strong></td>
-        <td><span tal:replace="context/daterequested/fmt:datetime" /></td>
+        <td><span
+              tal:attributes="title context/daterequested/fmt:datetime"
+              tal:content="context/daterequested/fmt:approximatedate" /></td>
       </tr>
       <tr tal:condition="context/reason">
         <td align="right"><strong>Reason:</strong></td>

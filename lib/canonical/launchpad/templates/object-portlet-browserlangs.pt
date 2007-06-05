@@ -7,10 +7,13 @@
         <div class="portletContent">
 
           <ul>
-            <li class="languages"
-                tal:repeat="lang view/browserLanguages">
-              <span tal:replace="lang/englishname" />
-            </li>
+
+          <li
+            class="language"
+            tal:repeat="lang view/browserLanguages"
+            tal:content="lang/englishname"
+          />
+
           </ul>
 
         </div>

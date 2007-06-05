@@ -18,3 +18,25 @@ And check that the leading and trailing whitespaces were correctly stripped.
 
   >>> widget.getInputValue()
   u'123456'
+
+If only whitespace is provided, the widget acts like no input was
+provided.
+
+  >>> from canonical.launchpad.fields import StrippedTextLine
+  >>> non_required_field = StrippedTextLine(
+  ...     __name__='field', title=u'Title',  required=False)
+  >>> non_required_field.missing_value is None
+  True
+  >>> request = TestRequest(form={'field.field':'    \n    '})
+  >>> widget = StrippedTextWidget(non_required_field, request)
+  >>> widget.getInputValue() is None
+  True
+
+  >>> required_field = StrippedTextLine(
+  ...     __name__='field', title=u'Title',  required=True)
+  >>> request = TestRequest(form={'field.field':'    \n    '})
+  >>> widget = StrippedTextWidget(required_field, request)
+  >>> widget.getInputValue()
+  Traceback (most recent call last):
+  ...
+  WidgetInputError: ('field', u'Title', )

@@ -51,6 +51,7 @@ class BugComment:
         self.bugtask = bugtask
 
         self.title = message.title
+        self.display_title = False
         self.datecreated = message.datecreated
         self.owner = message.owner
 
@@ -77,6 +78,8 @@ class BugComment:
             self.was_truncated = False
 
     def isIdenticalTo(self, other):
+        if self.owner != other.owner:
+            return False
         if self.text_for_display != other.text_for_display:
             return False
         if self.title != other.title:

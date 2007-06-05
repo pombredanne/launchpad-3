@@ -11,7 +11,7 @@ as the root user.
 
 Add this line to /etc/hosts:
 {{{
-127.0.0.88	launchpad.dev bugs.launchpad.dev features.launchpad.dev translation.launchpad.dev code.launchpad.dev
+127.0.0.88	launchpad.dev code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translation.launchpad.dev xmlrpc.launchpad.dev shipit.ubuntu.dev shipit.kubuntu.dev shipit.edubuntu.dev
 }}}
 
 As we add more domains, you'll need to alter this line.
@@ -44,12 +44,13 @@ Put the following text in there.
 <VirtualHost 127.0.0.88:80>
   ServerName launchpad.dev
   ServerAlias *.launchpad.dev
+  LoadModule proxy_http_module /usr/lib/apache2/modules/mod_proxy_http.so
   <Proxy *>
     Order deny,allow
     Allow from 127.0.0.0/255.0.0.0
   </Proxy>
   ProxyPreserveHost on
-  ProxyPass / http://localhost:8085/
+  ProxyPass / http://localhost:8085/ retry=1
 </VirtualHost>
 }}}
 
@@ -63,5 +64,5 @@ As your normal user, run launchpad.  You should be able to access it
 at the following URLs:
 
   http://launchpad.dev/
-  http://features.launchpad.dev/
+  http://blueprints.launchpad.dev/
 

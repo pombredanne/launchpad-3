@@ -72,6 +72,14 @@ class Message(SQLBase):
         return self.subject
 
     @property
+    def has_new_title(self):
+        """See IMessage."""
+        if self.parent is None:
+            return True
+        return self.title.lower().lstrip('re:').strip() != \
+        self.parent.title.lower().lstrip('re:').strip()
+
+    @property
     def sender(self):
         """See IMessage."""
         return self.owner

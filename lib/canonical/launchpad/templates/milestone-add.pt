@@ -8,7 +8,6 @@
   <body>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Mozilla Firefox</h3>
   <h1>Add a milestone</h1>
 </metal:heading>
 

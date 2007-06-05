@@ -1,0 +1,70 @@
+= Filing bugs on a Product from the front page =
+
+On the Bugs front page there is a link to file a bug.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/')
+    >>> user_browser.getLink('Report a bug').click()
+    >>> user_browser.title
+    'Report a bug'
+
+Here we can select a product to file a bug on.
+
+    >>> user_browser.getControl('Project') is not None
+    True
+
+If we enter an non-existant product, we get an error message.
+
+    >>> user_browser.getControl('Project').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.product').value = 'non-existant'
+    >>> user_browser.getControl('Summary').value = (
+    ...     'SVG causes Firefox to crash')
+    >>> user_browser.getControl('Continue').click()
+
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    There is 1 error.
+    There is no project named 'non-existant' registered in Launchpad
+
+Selecting a valid product will take us to the next filebug step.
+
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.product').value = 'firefox'
+    >>> user_browser.getControl('Continue').click()
+
+    >>> from canonical.launchpad.ftests.bug import print_bugs_table
+    >>> print_bugs_table(user_browser.contents, "similar-bugs")
+    6 Firefox crashes when Save As dialog for a nonexistent window is closed
+    1 Firefox does not support SVG
+
+Entering a description and submitting the bug takes the user to the bug
+page.
+
+    >>> user_browser.getControl('Further information').value = 'Crash.'
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/...'
+    >>> user_browser.title
+    'Bug #... in firefox (upstream): ...SVG causes Firefox to crash...'
+
+== Advanced filebug page ==
+
+From the frontpage filebug page it's possible to go to the advanced
+filebug page and file a bug directly.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/')
+    >>> user_browser.getLink('Report a bug').click()
+    >>> user_browser.getLink('complicated bug filing form').click()
+    >>> user_browser.title
+    'Report a bug'
+
+    >>> user_browser.getControl('Project').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.product').value = 'evolution'
+    >>> user_browser.getControl('Summary').value = 'Evolution crashes'
+    >>> user_browser.getControl('Further information').value = 'Crash.'
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/evolution/+bug/...'
+    >>> user_browser.title
+    'Bug #... in evolution (upstream): ...Evolution crashes...'

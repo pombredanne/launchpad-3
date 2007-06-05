@@ -8,13 +8,15 @@ __all__ = [
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound
+from sqlobject import (
+    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import (EnumCol, RosettaTranslationOrigin,
+from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 
 from canonical.launchpad.interfaces import IPOSubmission, IPOSubmissionSet
@@ -49,11 +51,8 @@ class POSubmission(SQLBase):
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
     validationstatus = EnumCol(dbName='validationstatus', notNull=True,
         schema=TranslationValidationStatus)
-
-    active_selections = SQLMultipleJoin('POSelection',
-        joinColumn='activesubmission')
-    published_selections = SQLMultipleJoin('POSelection',
-        joinColumn='publishedsubmission')
+    active = BoolCol(notNull=True, default=False)
+    published = BoolCol(notNull=True, default=False)
 
 # XXX do we want to indicate the difference between a from-scratch
 # submission and an editorial decision (for example, when someone is

@@ -1,0 +1,39 @@
+
+To provide information about release mirrors to the ubuntu.com website (and
+any other application/website who may want to list the existing mirrors) we
+provide an RSS feed with information about all official release mirrors.
+
+    >>> browser.open('http://launchpad.dev/ubuntu/+cdmirrors-rss')
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+cdmirrors-rss'
+    >>> print browser.headers['content-type']
+    text/xml;charset=utf-8
+
+    >>> print browser.contents
+    <?xml version="1.0" encoding="utf-8"?>
+    <rss ...
+      <channel>
+        <title>Ubuntu CD Mirrors Status</title>
+        <link>...</link>
+        <description>...</description>
+        ...
+        <item>
+          <title>Releases-mirror</title>
+          <link>http://localhost:11375/valid-mirror/releases/</link>
+          <description>...</description>
+          <mirror:bandwidth>...</mirror:bandwidth>
+          <mirror:location>
+            <mirror:continent>Europe</mirror:continent>
+            <mirror:country>France</mirror:country>
+            <mirror:countrycode>FR</mirror:countrycode>
+          </mirror:location>
+          <guid>http://localhost:11375/valid-mirror/releases/</guid>
+        </item>
+        <item>
+        ...
+        </item>
+        <item>
+        ...
+        </item>
+      </channel>
+    </rss>

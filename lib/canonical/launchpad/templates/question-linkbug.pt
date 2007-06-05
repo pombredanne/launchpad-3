@@ -1,0 +1,60 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-bugs" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+      <div>
+        <img alt="" src="/@@/question" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+
+    <h1 i18n:translate=""
+        metal:fill-slot="heading">Link question to a bug report</h1>
+
+    <div metal:fill-slot="extra_info">
+      <p i18n:translate="">Enter the number or nickname of the Launchpad bug report
+        that should be linked to question #<tal:id i18n:name="id" replace="context/id" />
+        &ldquo;<tal:title i18n:name="title" replace="context/title"/>&rdquo;.
+      </p>
+
+      <p i18n:translate="">If you don't know the bug number, you can search for it
+        on the <a href=""
+                  tal:attributes="href string:${context/target/fmt:url}/+bugs"
+                  >Bug listing</a> page.
+      </p>
+    </div>
+  </div>
+</div>
+
+<metal:help fill-slot="help">
+  <p>You can link a bug to a question. You should do this, if the problem
+    described in the question is related
+    to a bug already filed. The link to the bug report will appear on the
+    question page, and a link to the question will appear on
+    the target bug page.
+  </p>
+  <p>You need to know the bug number that you want to link to. You will
+    probably want to use the search page to locate the bug, if you don't
+    know its ID.
+  </p>
+</metal:help>
+</body>
+</html>
+

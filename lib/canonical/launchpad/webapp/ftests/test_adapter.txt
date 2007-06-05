@@ -15,10 +15,6 @@ Imports and test setup:
     >>> from canonical.config import config
     >>> from canonical.launchpad.webapp.adapter import *
 
-    >>> from canonical.launchpad.ftests.harness import (
-    ...     LaunchpadFunctionalTestSetup)
-    >>> LaunchpadFunctionalTestSetup().setUp()
-
 
 The Launchpad database connection is created by getting the
 IZopeDatabaseAdapter for the connection name in question.  The
@@ -28,6 +24,15 @@ SQLOS uses:
     >>> name = getUtility(IConnectionName)
     >>> da = getUtility(IZopeDatabaseAdapter, name.name)
     >>> isinstance(da, LaunchpadDatabaseAdapter)
+    True
+
+
+The database adapter is a reconnecting database adapter, so handles
+connection drops (as tested elsewhere):
+
+    >>> from canonical.launchpad.webapp.adapter import (
+    ...     ReconnectingDatabaseAdapter)
+    >>> isinstance(da, ReconnectingDatabaseAdapter)
     True
 
 
@@ -71,8 +76,7 @@ Set the timeout to 5000ms for the next tests:
     >>> cursor = conn.cursor()
     >>> cursor.execute('SHOW statement_timeout')
     >>> print cursor.fetchone()[0]
-    5000
-
+    5s
 
 
 Request Timeout
@@ -461,7 +465,3 @@ thread will have succeeded.
     Traceback (most recent call last):
     ...
     Retry: ...
-
-Cleanup:
-
-    >>> LaunchpadFunctionalTestSetup().tearDown()

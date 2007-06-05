@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 """Librarian garbage collector.
@@ -11,76 +11,73 @@ rows in the database.
 __metaclass__ = type
 
 import _pythonpath
+import logging
 
-import sys, logging
-from optparse import OptionParser
-
-from canonical.launchpad.scripts import logger_options, logger
-from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.librarian import librariangc
-from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
+from canonical.database.sqlbase import AUTOCOMMIT_ISOLATION
 from canonical.config import config
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 
-_default_lock_file = '/var/lock/librarian-gc.lock'
 
-def main():
-    parser = OptionParser(description=__doc__)
-    logger_options(parser)
+class LibrarianGC(LaunchpadCronScript):
+    def add_my_options(self):
+        self.parser.add_option(
+                '', "--skip-duplicates", action="store_true", default=False,
+                dest="skip_duplicates",
+                help="Skip duplicate LibraryFileContent merging"
+                )
+        self.parser.add_option(
+                '', "--skip-aliases", action="store_true", default=False,
+                dest="skip_aliases",
+                help="Skip unreferenced LibraryFileAlias removal"
+                )
+        self.parser.add_option(
+                '', "--skip-content", action="store_true", default=False,
+                dest="skip_content",
+                help="Skip unreferenced LibraryFileContent removal"
+                )
+        self.parser.add_option(
+                '', "--skip-blobs", action="store_true", default=False,
+                dest="skip_blobs",
+                help="Skip removing expired TemporaryBlobStorage rows"
+                )
+        self.parser.add_option(
+                '', "--skip-files", action="store_true", default=False,
+                dest="skip_files",
+                help="Skip removing files on disk with no database references"
+                )
 
-    parser.add_option(
-            '', "--skip-duplicates", action="store_true", default=False,
-            dest="skip_duplicates",
-            help="Skip duplicate LibraryFileContent merging"
-            )
-    parser.add_option(
-            '', "--skip-aliases", action="store_true", default=False,
-            dest="skip_aliases",
-            help="Skip unreferenced LibraryFileAlias removal"
-            )
-    parser.add_option(
-            '', "--skip-content", action="store_true", default=False,
-            dest="skip_content",
-            help="Skip unreferenced LibraryFileContent removal"
-            )
-    parser.add_option(
-            '', "--skip-blobs", action="store_true", default=False,
-            dest="skip_blobs",
-            help="Skip removing expired TemporaryBlobStorage rows"
-            )
+    def main(self):
+        librariangc.log = self.logger
 
-    (options, args) = parser.parse_args()
+        if self.options.loglevel <= logging.DEBUG:
+            librariangc.debug = True
 
-    log = logger(options)
-    librariangc.log = log
+        self.txn.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        conn = self.txn.conn()
 
-    lockfile = LockFile(_default_lock_file, logger=log)
-    try:
-        lockfile.acquire()
-    except OSError:
-        log.info('Lockfile %s in use', _default_lock_file)
-        sys.exit(1)
+        # Refuse to run if we have significant clock skew between the
+        # librarian and the database.
+        librariangc.confirm_no_clock_skew(conn)
 
-    if options.loglevel <= logging.DEBUG:
-        librariangc.debug = True
-
-    try:
-        con = connect(config.librarian.gc.dbuser)
-        con.set_isolation_level(AUTOCOMMIT_ISOLATION)
         # Note that each of these next steps will issue commit commands
         # as appropriate to make this script transaction friendly
-        if not options.skip_content:
-            librariangc.delete_unreferenced_content(con) # first sweep
-        if not options.skip_blobs:
-            librariangc.delete_expired_blobs(con)
-        if not options.skip_duplicates:
-            librariangc.merge_duplicates(con)
-        if not options.skip_aliases:
-            librariangc.delete_unreferenced_aliases(con)
-        if not options.skip_content:
-            librariangc.delete_unreferenced_content(con) # second sweep
-    finally:
-        lockfile.release()
+        if not self.options.skip_content:
+            librariangc.delete_unreferenced_content(conn) # first sweep
+        if not self.options.skip_blobs:
+            librariangc.delete_expired_blobs(conn)
+        if not self.options.skip_duplicates:
+            librariangc.merge_duplicates(conn)
+        if not self.options.skip_aliases:
+            librariangc.delete_unreferenced_aliases(conn)
+        if not self.options.skip_content:
+            librariangc.delete_unreferenced_content(conn) # second sweep
+        if not self.options.skip_files:
+            librariangc.delete_unwanted_files(conn)
 
 
 if __name__ == '__main__':
-    main()
+    script = LibrarianGC('librarian-gc',
+                         dbuser=config.librarian.gc.dbuser)
+    script.lock_and_run()
+

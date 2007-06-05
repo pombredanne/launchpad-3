@@ -43,14 +43,15 @@
 </metal:block>
 
 <metal:block define-macro="simple-search-form">
-<form method="get" name="search" action="">
+<form method="get" name="search" class="primary search" action=""
+      tal:attributes="action search_url|string:">
   <tal:searchbox replace="structure view/searchtext_widget" />
   <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
   <input type="submit" name="search" value="Search" />
   <tal:widget replace="structure view/status_widget/hidden" />
   <tal:widget replace="structure view/importance_widget/hidden" />
   <tal:widget replace="structure view/assignee_widget/hidden" />
-  <tal:widget replace="structure view/owner_widget/hidden" />
+  <tal:widget replace="structure view/bug_reporter_widget/hidden" />
   <tal:widget replace="structure view/milestone_widget/hidden" />
   <tal:widget replace="structure view/omit_dupes_widget/hidden" />
   <tal:widget replace="structure view/has_patch_widget/hidden" />

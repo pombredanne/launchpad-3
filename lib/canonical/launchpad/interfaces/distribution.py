@@ -9,17 +9,25 @@ __all__ = [
     'IDistributionSet',
     ]
 
-from zope.schema import Choice, Int, Text, TextLine, Bool
-from zope.interface import Interface, Attribute
+from zope.schema import (
+    Object, Choice, Int, Text, TextLine, Bool)
+from zope.interface import (
+    Interface, Attribute)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.fields import (
+    Title, Summary, Description)
+from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.karma import IKarmaContext
+from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
-    IHasOwner, IHasDrivers, IBugTarget, ISpecificationTarget,
-    IHasSecurityContact, PillarNameField)
+    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
+    ISpecificationTarget, IHasSecurityContact, PillarNameField,
+    IHasLogo, IHasMugshot, IHasIcon)
+from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import SmallImageUpload, LargeImageUpload
+from canonical.launchpad.fields import (
+    IconImageUpload, LogoImageUpload, MugshotImageUpload)
 
 
 class DistributionNameField(PillarNameField):
@@ -29,8 +37,9 @@ class DistributionNameField(PillarNameField):
         return IDistribution
 
 
-class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
-                    IHasSecurityContact, IKarmaContext):
+class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
+                    ISpecificationTarget, IHasSecurityContact,
+                    IKarmaContext, IHasMentoringOffers, IHasSprints):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -57,17 +66,28 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
             "The content of this distribution's home page. Edit this and it "
             "will be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
-    emblem = SmallImageUpload(
-        title=_("Emblem"), required=False,
-        description=_(
-            "A small image, max 16x16 pixels and 25k in file size, that can "
-            "be used to refer to this distribution."))
-    gotchi = LargeImageUpload(
+    icon = IconImageUpload(
         title=_("Icon"), required=False,
+        default_image_resource='/@@/distribution',
         description=_(
-            "An image, maximum 170x170 pixels, that will be displayed on "
-            "this distribution's home page. It should be no bigger than 100k "
-            "in size. "))
+            "A small image of exactly 14x14 pixels and at most 5kb in size, "
+            "that can be used to identify this distribution. The icon will "
+            "be displayed everywhere we list the distribution and link "
+            "to it."))
+    logo = LogoImageUpload(
+        title=_("Logo"), required=False,
+        default_image_resource='/@@/distribution-logo',
+        description=_(
+            "An image of exactly 64x64 pixels that will be displayed in "
+            "the heading of all pages related to this distribution. It "
+            "should be no bigger than 50kb in size."))
+    mugshot = MugshotImageUpload(
+        title=_("Brand"), required=False,
+        default_image_resource='/@@/distribution-mugshot',
+        description=_(
+            "A large image of exactly 192x192 pixels, that will be displayed "
+            "on this distribution's home page in Launchpad. It should be no "
+            "bigger than 100kb in size. "))
     description = Description(
         title=_("Description"),
         description=_("The distro's description."),
@@ -98,6 +118,7 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     owner = Int(
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
+    date_created = Attribute("The date this distribution was registered.")
     bugcontact = Choice(
         title=_("Bug Contact"),
         description=_(
@@ -108,10 +129,10 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         title=_("Driver"),
         description=_(
             "The person or team responsible for decisions about features "
-            "and bugs that will be targeted for any release in this "
+            "and bugs that will be targeted for any series in this "
             "distribution. Note that you can also specify a driver "
-            "on each release who's permissions will be limited to that "
-            "specific release."),
+            "on each series who's permissions will be limited to that "
+            "specific series."),
         required=False, vocabulary='ValidPersonOrTeam')
     drivers = Attribute(
         "Presents the distro driver as a list for consistency with "
@@ -130,19 +151,21 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         description=_("The Lucille Config."), required=False)
     archive_mirrors = Attribute(
         "All enabled and official ARCHIVE mirrors of this Distribution.")
-    release_mirrors = Attribute(
+    cdimage_mirrors = Attribute(
         "All enabled and official RELEASE mirrors of this Distribution.")
     disabled_mirrors = Attribute(
         "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(
         "All unofficial mirrors of this Distribution.")
-    releases = Attribute("DistroReleases inside this Distributions")
+    serieses = Attribute("DistroSeries'es inside this Distribution")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
     milestones = Attribute(_(
-        "The release milestones associated with this distribution. "
-        "Release milestones are primarily used by the QA team to assign "
-        "specific bugs for fixing by specific milestones."))
+        "The visible milestones associated with this distribution, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All milestones associated with this distribution, ordered "
+        "by date expected."))
     source_package_caches = Attribute("The set of all source package "
         "info caches for this distribution.")
     is_read_only = Attribute(
@@ -151,27 +174,32 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     upload_sender = TextLine(
         title=_("Uploader sender"),
         description=_("The default upload processor sender name."),
-        required=False
-        )
+        required=False)
     upload_admin = Choice(
         title=_("Upload Manager"),
         description=_("The distribution upload admin."),
         required=False, vocabulary='ValidPersonOrTeam')
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
-    official_malone = Bool(title=_('Uses Malone Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this distribution officially uses Malone for bug tracking.'))
-    official_rosetta = Bool(title=_('Uses Rosetta Officially'),
-        required=True, description=_('Check this box to indicate that '
-        'this distribution officially uses Rosetta for translation.'))
+    official_answers = Bool(
+        title=_('Uses Answers Officially'), required=True, 
+        description=_("Check this box to indicate that this distribution "
+            "officially uses Launchpad for community support."))
+    official_malone = Bool(
+        title=_('Uses Bugs Officially'), required=True, 
+        description=_("Check this box to indicate that this distribution "
+            "officially uses Launchpad for bug tracking."))
+    official_rosetta = Bool(
+        title=_('Uses Translations Officially'), required=True, 
+        description=_("Check this box to indicate that this distribution "
+            "officially uses Launchpad for translation."))
 
     # properties
-    currentrelease = Attribute(
-        "The current development release of this distribution. Note that "
-        "all maintainerships refer to the current release. When people ask "
+    currentseries = Attribute(
+        "The current development series of this distribution. Note that "
+        "all maintainerships refer to the current series. When people ask "
         "about the state of packages in the distribution, we should "
-        "interpret that query in the context of the currentrelease.")
+        "interpret that query in the context of the currentseries.")
 
     full_functionality = Attribute(
         "Whether or not we enable the full functionality of Launchpad for "
@@ -181,33 +209,26 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
     translation_focus = Choice(
         title=_("Translation Focus"),
         description=_(
-            "The DistroRelease that should get the translation effort focus."
-            ),
+            "The DistroSeries that should get the translation effort focus."),
         required=False,
-        vocabulary='FilteredDistroReleaseVocabulary')
+        vocabulary='FilteredDistroSeriesVocabulary')
 
-    main_archive = Int(
-            title=_('Main Archive ID'), required=True, readonly=True,
-            )
-
-    def traverse(name):
-        """Traverse the distribution. Check for special names, and return
-        appropriately, otherwise use __getitem__"""
+    main_archive = Object(
+        title=_('Distribution Main Archive.'), readonly=True, schema=IArchive
+        )
 
     def __getitem__(name):
-        """Returns a DistroRelease that matches name, or raises and
+        """Returns a DistroSeries that matches name, or raises and
         exception if none exists."""
 
     def __iter__():
-        """Iterate over the distribution releases for this distribution."""
+        """Iterate over the series for this distribution."""
 
-    def getDevelopmentReleases():
-        """Return the DistroReleases which are marked as in development."""
+    def getDevelopmentSerieses():
+        """Return the DistroSerieses which are marked as in development."""
 
-    def getRelease(name_or_version):
-        """Return the distribution release with the name or version
-        given.
-        """
+    def getSeries(name_or_version):
+        """Return the series with the name or version given."""
 
     def getMirrorByName(name):
         """Return the mirror with the given name for this distribution or None
@@ -219,7 +240,7 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
                   rsync_base_url=None, enabled=False,
                   official_candidate=False):
         """Create a new DistributionMirror for this distribution.
-        
+
         At least one of http_base_url or ftp_base_url must be provided in
         order to create a mirror.
         """
@@ -245,9 +266,9 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         None.
         """
 
-    def getDistroReleaseAndPocket(distroreleasename):
-        """Return a (distrorelease,pocket) tuple which is the given textual
-        distroreleasename in this distribution."""
+    def getDistroSeriesAndPocket(distroseriesname):
+        """Return a (distroseries,pocket) tuple which is the given textual
+        distroseriesname in this distribution."""
 
     def removeOldCacheItems(log):
         """Delete any cache records for removed packages."""
@@ -275,13 +296,15 @@ class IDistribution(IHasDrivers, IHasOwner, IBugTarget, ISpecificationTarget,
         matching.
         """
 
-    def getFileByName(filename, source=True, binary=True):
+    def getFileByName(filename, archive=None, source=True, binary=True):
         """Find and return a LibraryFileAlias for the filename supplied.
 
         The file returned will be one of those published in the distribution.
 
         If searching both source and binary, and the file is found in the
         source packages it'll return that over a file for a binary package.
+
+        If 'archive' is not passed the distribution.main_archive is assumed.
 
         At least one of source and binary must be true.
 
@@ -320,5 +343,5 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner, main_archive, gotchi, emblem):
-        """Create a new distribution."""
+            members, owner, main_archive, mugshot=None, logo=None, icon=None):
+        """Creaste a new distribution."""

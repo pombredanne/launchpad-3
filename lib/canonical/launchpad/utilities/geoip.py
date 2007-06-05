@@ -57,7 +57,8 @@ class RequestLocalLanguages(object):
         if country in [None, 'A0', 'A1', 'A2']:
             return []
 
-        return [language for language in country.languages if language.visible]
+        languages = [language for language in country.languages if language.visible]
+        return sorted(languages, key=lambda x: x.englishname)
 
 
 class RequestPreferredLanguages(object):
@@ -96,5 +97,5 @@ class RequestPreferredLanguages(object):
             except KeyError:
                 pass
 
-        return [language for language in languages if language.visible]
-
+        languages = [language for language in languages if language.visible]
+        return sorted(languages, key=lambda x: x.englishname)

@@ -2,9 +2,12 @@
 
 __metaclass__ = type
 
+from zope.publisher.publish import mapply
+
 from new import instancemethod
 import thread
 import traceback
+import urllib
 
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
@@ -18,7 +21,7 @@ from zope.component import getUtility, queryView
 from zope.event import notify
 from zope.interface import implements, providedBy
 
-from zope.publisher.interfaces import IPublishTraverse, Retry, Redirect
+from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
 
 from zope.security.interfaces import Unauthorized
@@ -26,13 +29,15 @@ from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent, BeforeTraverseEvent,
-    IPersonSet, IPerson, ITeam, ILaunchpadCelebrities)
+from canonical.launchpad.webapp.interfaces import (
+    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent,
+    BeforeTraverseEvent, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 __all__ = [
@@ -176,8 +181,12 @@ class LaunchpadBrowserPublication(
 
         request.setPrincipal(p)
         self.maybeRestrictToTeam(request)
+        self.maybeBlockOffsiteFormPost(request)
 
     def maybeRestrictToTeam(self, request):
+
+        from canonical.launchpad.interfaces import (
+            IPersonSet, IPerson, ITeam, ILaunchpadCelebrities)
         restrict_to_team = config.launchpad.restrict_to_team
         if not restrict_to_team:
             return
@@ -211,10 +220,91 @@ class LaunchpadBrowserPublication(
             else:
                 location = '/%s' % restrictedinfo
 
+        non_restricted_url = self.getNonRestrictedURL(request)
+        if non_restricted_url is not None:
+            location += '?production=%s' % urllib.quote(non_restricted_url)
+
         request.response.setResult('')
         request.response.redirect(location, temporary_if_possible=True)
         # Quash further traversal.
         request.setTraversalStack([])
+
+    def getNonRestrictedURL(self, request):
+        """Returns the non-restricted version of the request URL.
+
+        The intended use is for determining the equivalent URL on the
+        production Launchpad instance if a user accidentally ends up
+        on a restrict_to_team Launchpad instance.
+
+        If a non-restricted URL can not be determined, None is returned.
+        """
+        base_host = config.launchpad.vhosts.mainsite.hostname
+        production_host = config.launchpad.non_restricted_hostname
+        # If we don't have a production hostname, or it is the same as
+        # this instance, then we can't provide a nonRestricted URL.
+        if production_host is None or base_host == production_host:
+            return None
+
+        # Are we under the main site's domain?
+        uri = URI(request.getURL())
+        if not uri.host.endswith(base_host):
+            return None
+
+        # Update the hostname, and complete the URL from the request:
+        new_host = uri.host[:-len(base_host)] + production_host
+        uri = uri.replace(host=new_host, path=request['PATH_INFO'])
+        query_string = request.get('QUERY_STRING')
+        if query_string:
+            uri = uri.replace(query=query_string)
+        return str(uri)
+
+    def maybeBlockOffsiteFormPost(self, request):
+        """Check if an attempt was made to post a form from a remote site.
+
+        The OffsiteFormPostError exception is raised if the following
+        holds true:
+          1. the request method is POST
+          2. the HTTP referer header is not empty
+          3. the host portion of the referrer is not a registered vhost
+        """
+        if request.method != 'POST':
+            return
+        referrer = request.getHeader('referer') # match HTTP spec misspelling
+        if not referrer:
+            return
+        # XXX: 20070426 jamesh
+        # The Zope testing infrastructure sets a default (incorrect)
+        # referrer value of "localhost" or "localhost:9000" if no
+        # referrer is included in the request.  We let it pass through
+        # here for the benefits of the tests.  Web browsers send full
+        # URLs so this does not open us up to extra XSRF attacks.
+        #     https://bugs.launchpad.net/zope3/+bug/98437
+        if referrer in ['localhost', 'localhost:9000']:
+            return
+        # Extract the hostname from the referrer URI
+        try:
+            hostname = URI(referrer).host
+        except InvalidURIError:
+            hostname = None
+        if hostname not in allvhosts.hostnames:
+            raise OffsiteFormPostError(referrer)
+
+    def callObject(self, request, ob):
+
+        # Don't render any content on a redirect.
+        if request.response.getStatus() in [301, 302, 303, 307]:
+            return ''
+
+        # Set the launchpad user-id and page-id (if available) in the
+        # wsgi environment, so that the request logger can access it.
+        request.setInWSGIEnvironment('launchpad.userid', request.principal.id)
+        usedfor = getattr(removeSecurityProxy(ob), '__used_for__', None)
+        if usedfor is not None:
+            name = getattr(removeSecurityProxy(ob), '__name__', '')
+            pageid = '%s:%s' % (usedfor.__name__, name)
+            request.setInWSGIEnvironment('launchpad.pageid', pageid)
+
+        return mapply(ob, request.getPositionalArguments(), request)
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does

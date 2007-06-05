@@ -16,7 +16,7 @@
 
     </div>
 
-    <h2 tal:condition="context/products">Related products</h2>
+    <h2 tal:condition="context/products">Related projects</h2>
 
     <div tal:condition="context/products"
          class="portletBody portletContent">
