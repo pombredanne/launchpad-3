@@ -129,7 +129,7 @@
     <include file="questiontarget.zcml" />
     <include file="translationgroup.zcml" />
     <include file="translationimportqueue.zcml" />
-    <include file="translationimportqueuetarget.zcml" />
+    <include file="translationimportqueuelink.zcml" />
     <include file="translator.zcml" />
     <include file="wikiname.zcml" />
     <include file="component.zcml" />

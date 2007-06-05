@@ -1,11 +1,11 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
-"""Browser view for ITranslationImportQueueTarget."""
+"""Browser view for ITranslationImportQueueLink."""
 
 __metaclass__ = type
 
 __all__ = [
-    'TranslationImportQueueTargetView',
+    'TranslationImportQueueLinkView',
     ]
 
 import datetime
@@ -13,18 +13,23 @@ import pytz
 from zope.app.form.browser.widget import renderElement
 
 from canonical.launchpad.interfaces import (
-    ITranslationImportQueueTarget, UnexpectedFormData)
-from canonical.launchpad.webapp import LaunchpadFormView
+    ITranslationImportQueueLink, UnexpectedFormData)
+from canonical.launchpad.webapp import LaunchpadFormView, action
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.lp.dbschema import RosettaImportStatus
 
-class TranslationImportQueueTargetView(LaunchpadFormView):
-    """View class used for Translation Import Queue Target management."""
-    schema = ITranslationImportQueueTarge
-    fields = []
+class TranslationImportQueueLinkView(LaunchpadFormView):
+    """View class used for Translation Import Queue Link management."""
+    schema = ITranslationImportQueueLink
+    field_names = []
 
+    def __init__(self, context, request):
+        LaunchpadFormView.__init__(self, context, request)
+
+        # Validate the filtering arguments.
+        self._validateFilteringOptions()
 
     def _validateFilteringOptions(self):
         """Validate the filtering options for this form.
@@ -34,11 +39,12 @@ class TranslationImportQueueTargetView(LaunchpadFormView):
 
         Raise UnexpectedFormData if we get something wrong.
         """
+        form = self.request.form
         # Get the filtering arguments.
-        self.status = str(self.form.get('status', 'all'))
-        self.type = str(self.form.get('type', 'all'))
-        self.target = str(self.form.get('target', 'all'))
-        self.importer = str(self.form.get('importer', 'any'))
+        self.status = str(form.get('status', 'all'))
+        self.type = str(form.get('type', 'all'))
+        self.target = str(form.get('target', 'all'))
+        self.importer = str(form.get('importer', 'any'))
 
         # Fix the case to our needs.
         if self.status is not None:
@@ -81,58 +87,14 @@ class TranslationImportQueueTargetView(LaunchpadFormView):
             # Selected all importers.
             self.importer = None
 
-    def initialize(self):
-        """Useful initialization for this view class."""
-        # Get the filtering arguments.
-        self.form = self.request.form
-
-        # Validate the filtering arguments.
-        self._validateFilteringOptions()
-
-        # Entries in the queue for this target.
-        self._entries = self.context.getTranslationImportQueueEntries(
-            status=self.status, file_extension=self.type)
-
-        self.has_entries = self._entries.count() > 0
-
-        # Setup the batching for this page.
-        self.batchnav = BatchNavigator(self._entries, self.request)
-
-        # Flag to control whether the view page should be rendered.
-        self.redirecting = False
-
-        # Process the form.
-        self.processForm()
-
-    def processForm(self):
-        """Block or remove entries from the queue based on the selection of
-        the form.
-        """
-        if self.request.method != 'POST' or self.user is None:
-            # The form was not submitted or the user is not logged in.
-            return
-
-        dispatch_table = {
-            'handle_queue': self._handle_queue,
-            }
-        dispatch_to = [(key, method)
-                        for key, method in dispatch_table.items()
-                        if key in self.form
-                      ]
-        if len(dispatch_to) != 1:
-            raise UnexpectedFormData(
-                "There should be only one command in the form",
-                dispatch_to)
-        key, method = dispatch_to[0]
-        method()
-
-    def _handle_queue(self):
+    @action("Change status")
+    def change_status_action(self, action, data):
         """Handle a queue submission changing the status of its entries."""
         # The user must be logged in.
         assert self.user is not None
 
         number_of_changes = 0
-        for form_item in self.form:
+        for form_item in data:
             if not form_item.startswith('status-'):
                 # We are not interested on this form_item.
                 continue
@@ -150,15 +112,15 @@ class TranslationImportQueueTargetView(LaunchpadFormView):
                 raise UnexpectedFormData(
                     'Ignored your request because it is broken.')
             # Get the entry we are working on.
-            entry = self.context.get(id)
-            new_status_name = self.form.get(form_item)
+            import_queue_set = getUtility(ITranslationImportQueueSet)
+            entry = import_queue_set.get(id)
+            new_status_name = data.get(form_item)
             if new_status_name == entry.status.name:
                 # The entry's status didn't change we can jump to the next
                 # entry.
                 continue
 
             # The status changed.
-
             number_of_changes += 1
 
             # Only the importer, launchpad admins or Rosetta experts have
@@ -196,14 +158,22 @@ class TranslationImportQueueTargetView(LaunchpadFormView):
             self.request.response.addInfoNotification(
                 "Changed the status of %d queue entries." % number_of_changes)
 
-        # We do a redirect so the submit doesn't breaks if the rendering of
-        # the page takes too much time.
-        url_string = self.request.getURL()
-        query_string = self.request.environment.get("QUERY_STRING")
-        if query_string:
-            url_string = "%s?%s" % (url_string, query_string)
-        self.request.response.redirect(url_string)
-        self.redirecting = True
+    @property
+    def entries(self):
+        """Return the entries in the queue for this context."""
+        return self.context.getTranslationImportQueueEntries(
+            status=self.status, file_extension=self.type)
+
+    @property
+    def has_entries(self):
+        """Whether there are entries in the queue."""
+        return self.entries.count() > 0
+
+    @property
+    def batchnav(self):
+        """Return batch object for this page."""
+        return BatchNavigator(self._entries, self.request)
+
 
     def renderOption(self, status, selected=False, check_status=None,
                      empty_if_check_fails=False):
@@ -236,7 +206,7 @@ class TranslationImportQueueTargetView(LaunchpadFormView):
 
     def getStatusFilteringSelect(self):
         """Return a select html tag with all status for filtering purposes."""
-        selected_status = self.form.get('status', 'all')
+        selected_status = self.request.form.get('status', 'all')
         html = ''
         for status in RosettaImportStatus.items:
             selected = (status.name.lower() == selected_status.lower())
@@ -296,11 +266,3 @@ class TranslationImportQueueTargetView(LaunchpadFormView):
             contents='%s\n%s\n%s\n%s\n%s\n%s\n' % (
                 approved_html, imported_html, deleted_html, failed_html,
                 needs_review_html, blocked_html))
-
-    def render(self):
-        if self.redirecting:
-            return u''
-        else:
-            return LaunchpadFormView.render(self)
-
-

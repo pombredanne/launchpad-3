@@ -165,11 +165,10 @@
       <tal:navigation
            replace="structure view/batchnav/@@+navigation-links-lower" />
     </tal:block>
-  </tal:block>
-
       <p tal:condition="not:view/has_entries">
         There are no files waiting to be imported into Rosetta.
       </p>
+    </div>
     </div>
   </body>
 </html>

@@ -34,10 +34,9 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IBinaryPackageName, IBuildSet, IDistroSeries, IDistroSeriesSet,
-    IHasBuildRecords, IHasQueueItems, IHasTranslationImports,
-    ILibraryFileAliasSet, IPublishedPackageSet, IPublishing, ISourcePackage,
-    ISourcePackageName, ISourcePackageNameSet, ITranslationImportQueueLink,
-    NotFoundError)
+    IHasBuildRecords, IHasQueueItems, ILibraryFileAliasSet,
+    IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
+    ISourcePackageNameSet, ITranslationImportQueueLink, NotFoundError)
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
