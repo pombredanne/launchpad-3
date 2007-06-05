@@ -327,6 +327,10 @@ class LaunchpadTransport(Transport):
             'rename', rel_from, self._translate_virtual_path(rel_to))
 
     def rmdir(self, relpath):
+        virtual_path = self._abspath(relpath)
+        path_segments = path = virtual_path.lstrip('/').split('/')
+        if len(path_segments) <= 3:
+            raise NoSuchFile(virtual_path)
         return self._call('rmdir', relpath)
 
     def stat(self, relpath):

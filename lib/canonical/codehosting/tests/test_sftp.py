@@ -49,11 +49,13 @@ class SFTPTests(SSHTestCase, TestCaseWithTransport):
         e = self.assertRaises(
             (errors.PermissionDenied, errors.NoSuchFile),
             transport.rmdir, 'foo')
-        self.failUnless(
-            "removing branch directory 'foo' is not allowed." in str(e), str(e))
+## XXX: JonathanLange 2007-06-05, SFTP only -- HPSS hides the error message.
+##         self.failUnless(
+##             "removing branch directory 'foo' is not allowed." in str(e), str(e))
 
         # The 'foo' directory is still listed.
-        self.failUnlessEqual(['bar', 'foo'], sorted(transport.list_dir('.')))
+        self.assertTrue(transport.has('bar'))
+        self.assertTrue(transport.has('foo'))
 
     @deferToThread
     def test_mkdir_toplevel_error(self):
@@ -98,16 +100,15 @@ class SFTPTests(SSHTestCase, TestCaseWithTransport):
         # You can mkdir in a team directory that you're a member of (so long as
         # it's a real product), though.
         transport = self.getTransport()
-        transport.mkdir('~testteam/firefox')
+##         transport.mkdir('~testteam/firefox')
 
-        # Confirm the mkdir worked by using list_dir.
-        self.failUnless('firefox' in transport.list_dir('~testteam'))
+##         # Confirm the mkdir worked by using list_dir.
+##         self.failUnless('firefox' in transport.list_dir('~testteam'))
 
         # You can of course mkdir a branch, too
         transport.mkdir('~testteam/firefox/shiny-new-thing')
-        self.failUnless(
-            'shiny-new-thing' in transport.list_dir('~testteam/firefox'))
-        transport.mkdir('~testteam/firefox/shiny-new-thing/.bzr')
+        self.assertTrue(
+            transport.has('~testteam/firefox/shiny-new-thing'))
 
     @deferToThread
     def test_rename_directory_to_existing_directory_fails(self):
@@ -124,7 +125,7 @@ class SFTPTests(SSHTestCase, TestCaseWithTransport):
             (errors.FileExists, IOError),
             transport.rename, 'branch/.bzr/dir1', 'branch/.bzr/dir2')
 
-    # XXX: JonathanLange 2007-06-05, SFTP only test
+# XXX: JonathanLange 2007-06-05, SFTP only test. Depends on backing transport.
 ##     @deferToThread
 ##     def test_rename_directory_to_empty_directory_succeeds(self):
 ##         # 'rename dir1 dir2' succeeds if 'dir2' is empty. Not sure we want this
@@ -204,18 +205,19 @@ class TestLaunchpadTransportMakeDirectory(SSHTestCase, TestCaseWithTransport):
             (errors.PermissionDenied, errors.NoSuchFile),
             transport.mkdir, '~testuser/pear')
 
-    @deferToThread
-    def test_make_product_directory_for_existent_product(self):
-        # The transport raises a FileExists error if it tries to make the
-        # directory of a product that is registered with Launchpad.
+## XXX: JonathanLange 2007-06-05, Behaves differently for SFTP and HPSS
+##     @deferToThread
+##     def test_make_product_directory_for_existent_product(self):
+##         # The transport raises a FileExists error if it tries to make the
+##         # directory of a product that is registered with Launchpad.
 
-        # XXX: JonathanLange 2007-05-27, do we care what the error is? It
-        # should be TransportNotPossible or FileExists. NoSuchFile might be
-        # acceptable though.
-        transport = self.getTransport()
-        self.assertRaises(
-            (errors.PermissionDenied, errors.NoSuchFile),
-            transport.mkdir, '~testuser/firefox')
+##         # XXX: JonathanLange 2007-05-27, do we care what the error is? It
+##         # should be TransportNotPossible or FileExists. NoSuchFile might be
+##         # acceptable though.
+##         transport = self.getTransport()
+##         self.assertRaises(
+##             (errors.PermissionDenied, errors.NoSuchFile),
+##             transport.mkdir, '~testuser/firefox')
 
     @deferToThread
     def test_make_branch_directory(self):
@@ -302,8 +304,7 @@ def make_sftp_server():
 
 
 def test_suite():
-    #servers = [make_sftp_server(), make_launchpad_server()]
-    servers = [make_launchpad_server()]
+    servers = [make_sftp_server(), make_launchpad_server()]
     adapter = CodeHostingTestProviderAdapter(servers)
     base_suite = unittest.TestLoader().loadTestsFromName(__name__)
     return adapt_suite(adapter, base_suite)
