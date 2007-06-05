@@ -15,6 +15,7 @@ Projects that can host a FAQ provides the IFAQTarget.
     >>> verifyObject(IFAQTarget, removeSecurityProxy(target))
     True
 
+
 == newFAQ() ===
 
 The newFAQ() method is used to create a new IFAQ object on the target.
@@ -88,3 +89,20 @@ attribute:
 
     >>> faq.target == target
     True
+
+It is an error to try to create a FAQ with both the url and content
+parameter:
+
+    >>> faq = target.newFAQ(
+    ...     no_priv, 'Title', 'Summary', content='Content', url='URL')
+    Traceback (most recent call last):
+      ...
+    AssertionError: only one of url or content should be provided
+
+As it is an error to omit both:
+
+    >>> faq = target.newFAQ(no_priv, 'Title', 'Summary')
+    Traceback (most recent call last):
+      ...
+    AssertionError: content or url must be provided
+

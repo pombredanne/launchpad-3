@@ -11,14 +11,12 @@ __all__ = [
 
 from zope.interface import Interface
 
-from canonical.database.constants import UTC_NOW
-
 
 class IFAQTarget(Interface):
     """An object that can contain a FAQ document."""
 
     def newFAQ(owner, title, summary, content=None, url=None,
-               date_created=UTC_NOW):
+               date_created=None):
         """Create a new FAQ hosted in this target.
 
         :param owner: The `IPerson` creating the FAQ document.

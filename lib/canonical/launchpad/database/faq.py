@@ -16,7 +16,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.interfaces import IFAQ
+from canonical.launchpad.interfaces import IFAQ, IPerson
 
 
 class FAQ(SQLBase):
@@ -62,3 +62,30 @@ class FAQ(SQLBase):
         else:
             return self.distribution
 
+    @staticmethod
+    def new(owner, title, summary, content=None, url=None,
+            date_created=None, product=None, distribution=None):
+        """Factory method to create a new FAQ.
+
+        It makes sure that only of url or content, and product or
+        distribution is given.
+        """
+        if not IPerson.providedBy(owner):
+            raise AssertionError(
+                'owner parameter should be an IPerson: %r' % owner)
+        if content is not None and url is not None:
+            raise AssertionError(
+                "only one of url or content should be provided")
+        if content is None and url is None:
+            raise AssertionError("content or url must be provided")
+        if product is not None and distribution is not None:
+             raise AssertionError(
+                "only one of product or distribution should be provided")
+        if product is None and distribution is None:
+            raise AssertionError("product or distribution must be provided")
+        if date_created is None:
+            date_created = DEFAULT
+        return FAQ(
+            owner=owner, title=title, summary=summary, content=content,
+            url=url, date_created=date_created, product=product,
+            distribution=distribution)
