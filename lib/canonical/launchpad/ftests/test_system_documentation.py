@@ -59,12 +59,11 @@ def tearDown(test):
     logout()
 
 def poExportSetUp(test):
-    LaunchpadZopelessTestSetup(dbuser='poexport').setUp()
+    LaunchpadZopelessLayer.switchDbUser('poexport')
     setUp(test)
 
 def poExportTearDown(test):
     tearDown(test)
-    LaunchpadZopelessTestSetup().tearDown()
 
 def uploaderSetUp(test):
     sqlos.connection.connCache = {}
@@ -225,12 +224,13 @@ special = {
     'poexport.txt': LayeredDocFileSuite(
             '../doc/poexport.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown,
-            optionflags=default_optionflags, layer=ZopelessLayer,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
             stdout_logging=False
             ),
     'poexport-template-tarball.txt': LayeredDocFileSuite(
             '../doc/poexport-template-tarball.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown, layer=ZopelessLayer
+            setUp=poExportSetUp, tearDown=poExportTearDown,
+            layer=LaunchpadZopelessLayer
             ),
     'poexport-queue.txt': FunctionalDocFileSuite(
             '../doc/poexport-queue.txt',
