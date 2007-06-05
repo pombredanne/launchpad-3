@@ -155,7 +155,7 @@ COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker en
 
 COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
 
-/* CodeImport */
+-- CodeImport
 
 COMMENT ON TABLE CodeImport IS 'The persistent record of an import from a foreign version control system to Bazaar, from the initial request to the regularly updated import branch.';
 COMMENT ON COLUMN CodeImport.name IS 'Unique name of the import used in the URL.';

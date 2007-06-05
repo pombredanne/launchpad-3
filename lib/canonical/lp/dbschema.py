@@ -2260,8 +2260,8 @@ class CodereleaseRelationships(DBSchema):
 class CodeImportReviewStatus(DBSchema):
     """CodeImport review status.
 
-    Before a code import is performed, it is reviewed. Only when the import
-    request has been reviewed will the import be processed.
+    Before a code import is performed, it is reviewed. Only reviewed imports
+    are processed.
     """
 
     NEW = Item(1, """Pending Review
