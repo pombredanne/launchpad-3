@@ -298,7 +298,8 @@ canbementored_mentoringoffer = 'Offer to mentor this work'
 
 canbementored_retractmentoring = 'Retract offer of mentorship'
 
-codeimport = 'Code Import' # XXX!
+def codeimport(context, view):
+    return "Code Import '%s'"%(context.name,)
 
 codeimport_list = 'Code Imports'
 

@@ -23,7 +23,7 @@ So far, there is only one CodeImport in the sample data:
 
 And it shows up in the page:
 
-  >>> 'sample' in browser.contents
+  >>> codeimport.name in browser.contents
   True
 
 If we click on the code import's name, we go to the page for that
@@ -33,10 +33,9 @@ import:
   >>> browser.url
   'http://code.launchpad.dev/+code-imports/sample'
 
-It is very simple at the moment, with barely any more information on
-the page than the import's name:
+It displays some information about the code import, for example the
+URL of the Subversion branch the import is from:
 
-  >>> 'sample' in browser.contents
+  >>> codeimport.svn_branch_url in browser.contents
   True
-
 
