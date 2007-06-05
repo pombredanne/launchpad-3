@@ -25,12 +25,7 @@ class CodeImportSetNavigation(Navigation):
         return "Code Imports"
 
     def traverse(self, name):
-        # XXX ICodeImportSet needs extending yes, why do you ask?
-        imports = [ci for ci in self.context.getAll() if ci.name == name]
-        if len(imports) != 1:
-            return None
-        else:
-            return imports[0]
+        return self.context.getByName(name)
 
 class CodeImportSetView(LaunchpadView):
     pass
