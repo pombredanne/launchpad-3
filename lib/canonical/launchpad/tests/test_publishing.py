@@ -4,6 +4,7 @@
 from unittest import TestLoader
 import os
 import shutil
+import tempfile
 from StringIO import StringIO
 
 from zope.component import getUtility
@@ -22,7 +23,8 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IDistributionSet, IPersonSet, ISectionSet,
-    IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet, IGPGKeySet)
+    IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
+    IGPGKeySet, IArchiveSet)
 
 from canonical.librarian.client import LibrarianClient
 
@@ -53,8 +55,9 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         self.config = Config(self.ubuntutest)
         self.config.setupArchiveDirs()
         self.pool_dir = self.config.poolroot
+        self.temp_dir = self.config.temproot
         self.logger = FakeLogger()
-        self.disk_pool = DiskPool(self.pool_dir, self.logger)
+        self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def addMockFile(self, filename, filecontent='nothing'):
         """Add a mock file in Librarian.
@@ -71,7 +74,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
                      filename=None, filecontent='I do not care about sources.',
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
-                     distrorelease=None, builddepends=None,
+                     distroseries=None, archive=None, builddepends=None,
                      builddependsindep=None, architecturehintlist='all',
                      dsc_standards_version='3.6.2', dsc_format='1.0',
                      dsc_binaries='foo-bin',
@@ -82,10 +85,12 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
 
         component = getUtility(IComponentSet)[component]
 
-        if distrorelease is None:
-            distrorelease = self.breezy_autotest
+        if distroseries is None:
+            distroseries = self.breezy_autotest
+        if archive is None:
+            archive = self.breezy_autotest.main_archive
 
-        spr = distrorelease.createUploadedSourcePackageRelease(
+        spr = distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=spn,
             maintainer=self.person,
             creator=self.person,
@@ -103,7 +108,8 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
-            dsc_binaries=dsc_binaries
+            dsc_binaries=dsc_binaries,
+            archive=archive,
             )
 
         if filename is None:
@@ -112,14 +118,15 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         spr.addFile(alias)
 
         sspph = SecureSourcePackagePublishingHistory(
-            distrorelease=distrorelease,
+            distroseries=distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
             section=spr.section,
             status=status,
             datecreated=UTC_NOW,
             pocket=pocket,
-            embargo=False
+            embargo=False,
+            archive=archive
             )
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
@@ -141,9 +148,11 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             pub_source = self.getPubSource(
                 sourcename=sourcename, status=status, pocket=pocket)
 
+        archive = pub_source.archive
         spr = pub_source.sourcepackagerelease
         build = spr.createBuild(
-            self.breezy_autotest_i386, pocket=PackagePublishingPocket.RELEASE)
+            self.breezy_autotest_i386, archive=archive,
+            pocket=PackagePublishingPocket.RELEASE)
 
         bpn = getUtility(IBinaryPackageNameSet).getOrCreateByName(binaryname)
 
@@ -175,7 +184,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         bpr.addFile(alias)
 
         sbpph = SecureBinaryPackagePublishingHistory(
-            distroarchrelease=self.breezy_autotest_i386,
+            distroarchseries=self.breezy_autotest_i386,
             binarypackagerelease=bpr,
             component=bpr.component,
             section=bpr.section,
@@ -183,7 +192,8 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             status=status,
             datecreated=UTC_NOW,
             pocket=pocket,
-            embargo=False
+            embargo=False,
+            archive=archive
             )
 
         return BinaryPackagePublishingHistory.get(sbpph.id)
@@ -306,6 +316,33 @@ class TestNativePublishing(TestNativePublishingBase):
         self.assertEqual(
             pub_source3.status, PackagePublishingStatus.PENDING)
 
+    def testPublishInAnotherArchive(self):
+        """Publication in another archive
+
+        Basically test if publishing records target to other archive
+        than Distribution.main_archive work as expected
+        """
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        test_pool_dir = tempfile.mkdtemp()
+        test_temp_dir = tempfile.mkdtemp()
+        test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
+
+        pub_source = self.getPubSource(
+            sourcename="foo", filename="foo.dsc",
+            filecontent='Am I a PPA Record ?',
+            archive=cprov.archive)
+        pub_source.publish(test_disk_pool, self.logger)
+        LaunchpadZopelessTestSetup.txn.commit()
+
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_source.sourcepackagerelease.upload_archive,
+                         cprov.archive)
+        foo_name = "%s/main/f/foo/foo.dsc" % test_pool_dir
+        self.assertEqual(open(foo_name).read().strip(), 'Am I a PPA Record ?')
+
+        # remove locally created dir
+        shutil.rmtree(test_pool_dir)
+        shutil.rmtree(test_temp_dir)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

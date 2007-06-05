@@ -162,11 +162,11 @@ edited.
     >>> ubuntu_firefox_task.status.name
     'NEEDSINFO'
 
-If a distro release is given, but the bug is only targeted to the
-distribution and not to the distro release, the distribution task is
+If a distro series is given, but the bug is only targeted to the
+distribution and not to the distro series, the distribution task is
 edited.
 
-    >>> ubuntu_warty = ubuntu.getRelease('warty')
+    >>> ubuntu_warty = ubuntu.getSeries('warty')
     >>> warty_firefox = ubuntu_warty.getSourcePackage('mozilla-firefox')
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     warty_firefox, BugTaskStatus.CONFIRMED, no_priv)
@@ -175,7 +175,7 @@ edited.
     >>> ubuntu_firefox_task.status.name
     'CONFIRMED'
 
-    >>> ubuntu_hoary = ubuntu.getRelease('hoary')
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
     >>> hoary_firefox = ubuntu_hoary.getSourcePackage('mozilla-firefox')
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     hoary_firefox, BugTaskStatus.UNCONFIRMED, no_priv)
@@ -184,20 +184,20 @@ edited.
     >>> ubuntu_firefox_task.status.name
     'UNCONFIRMED'
 
-However, if the bug is targeted to the current release, passing a
-non-current release won't modify any bugtask, unless the bug is already
-targeted to the non-current release of course.
+However, if the bug is targeted to the current series, passing a
+non-current series won't modify any bugtask, unless the bug is already
+targeted to the non-current series of course.
 
-    >>> ubuntu.currentrelease.name
+    >>> ubuntu.currentseries.name
     u'hoary'
 
-    # Need to be privileged user to target the bug to a release.
+    # Need to be privileged user to target the bug to a series.
     >>> login('foo.bar@canonical.com')
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> bug = getUtility(IBugSet).get(bug_id)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_hoary = ubuntu.getRelease('hoary')
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
     >>> nomination = bug.addNomination(
     ...     getUtility(ILaunchBag).user, ubuntu_hoary)
     >>> nomination.isApproved()
@@ -209,7 +209,7 @@ targeted to the non-current release of course.
     >>> bug = getUtility(IBugSet).get(bug_id)
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_warty = ubuntu.getRelease('warty')
+    >>> ubuntu_warty = ubuntu.getSeries('warty')
     >>> warty_firefox = ubuntu_warty.getSourcePackage('mozilla-firefox')
     >>> bug.setStatus(warty_firefox, BugTaskStatus.NEEDSINFO, no_priv) is None
     True
@@ -219,7 +219,7 @@ targeted to the non-current release of course.
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> bug = getUtility(IBugSet).get(bug_id)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_warty = ubuntu.getRelease('warty')
+    >>> ubuntu_warty = ubuntu.getSeries('warty')
     >>> nomination = bug.addNomination(
     ...     getUtility(ILaunchBag).user, ubuntu_warty)
     >>> nomination.isApproved()
@@ -231,7 +231,7 @@ targeted to the non-current release of course.
     >>> bug = getUtility(IBugSet).get(bug_id)
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_warty = ubuntu.getRelease('warty')
+    >>> ubuntu_warty = ubuntu.getSeries('warty')
     >>> warty_firefox = ubuntu_warty.getSourcePackage('mozilla-firefox')
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     warty_firefox, BugTaskStatus.NEEDSINFO, no_priv)

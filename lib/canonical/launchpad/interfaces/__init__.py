@@ -53,14 +53,14 @@ from canonical.launchpad.interfaces.distributionmirror import *
 from canonical.launchpad.interfaces.distributionsourcepackage import *
 from canonical.launchpad.interfaces.distributionsourcepackagecache import *
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
-from canonical.launchpad.interfaces.distroarchrelease import *
-from canonical.launchpad.interfaces.distroarchreleasebinarypackage import *
-from canonical.launchpad.interfaces.distroarchreleasebinarypackagerelease import *
-from canonical.launchpad.interfaces.distrorelease import *
-from canonical.launchpad.interfaces.distroreleasebinarypackage import *
-from canonical.launchpad.interfaces.distroreleaselanguage import *
-from canonical.launchpad.interfaces.distroreleasepackagecache import *
-from canonical.launchpad.interfaces.distroreleasesourcepackagerelease import *
+from canonical.launchpad.interfaces.distroarchseries import *
+from canonical.launchpad.interfaces.distroarchseriesbinarypackage import *
+from canonical.launchpad.interfaces.distroarchseriesbinarypackagerelease import *
+from canonical.launchpad.interfaces.distroseries import *
+from canonical.launchpad.interfaces.distroseriesbinarypackage import *
+from canonical.launchpad.interfaces.distroserieslanguage import *
+from canonical.launchpad.interfaces.distroseriespackagecache import *
+from canonical.launchpad.interfaces.distroseriessourcepackagerelease import *
 from canonical.launchpad.interfaces.emailaddress import *
 from canonical.launchpad.interfaces.externalbugtracker import *
 from canonical.launchpad.interfaces.files import *
@@ -153,4 +153,4 @@ from canonical.launchpad.interfaces.developmentmanifest import *
 from canonical.launchpad.interfaces.distrocomponentuploader import *
 
 from canonical.launchpad.interfaces.cal import *
-
+from canonical.launchpad.interfaces.archive import *

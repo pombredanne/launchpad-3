@@ -139,7 +139,7 @@ def statisticianTearDown(test):
     logout()
     LaunchpadZopelessTestSetup().tearDown()
 
-def distroreleasequeueSetUp(test):
+def distroseriesqueueSetUp(test):
     setUp(test)
     # The test requires that the umask be set to 022, and in fact this comment
     # was made in irc on 13-Apr-2007:
@@ -151,7 +151,7 @@ def distroreleasequeueSetUp(test):
     # Save the old umask so we can reset it in the tearDown().
     test.old_umask = os.umask(022)
 
-def distroreleasequeueTearDown(test):
+def distroseriesqueueTearDown(test):
     os.umask(test.old_umask)
     tearDown(test)
 
@@ -222,7 +222,7 @@ special = {
             ),
 
     # POExport stuff is Zopeless and connects as a different database user.
-    # poexport-distrorelease-(date-)tarball.txt is excluded, since they add
+    # poexport-distroseries-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
     'poexport.txt': LayeredDocFileSuite(
             '../doc/poexport.txt',
@@ -346,9 +346,9 @@ special = {
             setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
             layer=LaunchpadZopelessLayer
             ),
-    'distroreleasequeue-debian-installer.txt': FunctionalDocFileSuite(
-            '../doc/distroreleasequeue-debian-installer.txt',
-            setUp=distroreleasequeueSetUp, tearDown=distroreleasequeueTearDown,
+    'distroseriesqueue-debian-installer.txt': FunctionalDocFileSuite(
+            '../doc/distroseriesqueue-debian-installer.txt',
+            setUp=distroseriesqueueSetUp, tearDown=distroseriesqueueTearDown,
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer
             ),

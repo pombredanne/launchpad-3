@@ -31,8 +31,10 @@ def getDeathRow(distroname, log, pool_root_override):
     else:
         pool_root = pubconf.poolroot
 
+    temp_root = pubconf.temproot
+
     log.debug("Preparing on-disk pool representation.")
-    dp = DiskPool(pool_root, logging.getLogger("DiskPool"))
+    dp = DiskPool(pool_root, temp_root, logging.getLogger("DiskPool"))
     # Set the diskpool's log level to INFO to suppress debug output
     dp.logger.setLevel(20)
 

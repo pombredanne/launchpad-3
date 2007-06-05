@@ -34,8 +34,7 @@ Let's do it under the wraps:
 
 Persist the change:
 
-  >>> import transaction
-  >>> transaction.commit()
+  >>> tm.syncUpdate()
 
 And make sure that Sample Person is now an EXPIRED member of this team.
 

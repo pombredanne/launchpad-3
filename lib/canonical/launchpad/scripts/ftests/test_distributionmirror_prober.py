@@ -21,7 +21,7 @@ from canonical.config import config
 from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
-from canonical.launchpad.database import DistributionMirror, DistroRelease
+from canonical.launchpad.database import DistributionMirror, DistroSeries
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts import distributionmirror_prober
@@ -29,7 +29,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     ProberFactory, ArchiveMirrorProberCallbacks, BadResponseCode,
     MirrorCDImageProberCallbacks, ProberTimeout, RedirectAwareProberFactory,
     InfiniteLoopDetected, UnknownURLScheme, MAX_REDIRECTS, ConnectionSkipped,
-    RedirectAwareProberProtocol, probe_archive_mirror, probe_release_mirror,
+    RedirectAwareProberProtocol, probe_archive_mirror, probe_cdimage_mirror,
     should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
     MIN_REQUESTS_TO_CONSIDER_RATIO, _build_request_for_cdimage_file_list,
     restore_http_proxy)
@@ -443,33 +443,33 @@ class TestMirrorCDImageProberCallbacks(LaunchpadZopelessTestCase):
             self.logger.errorCalled = True
         self.logger.error = error
         mirror = DistributionMirror.get(1)
-        warty = DistroRelease.get(1)
+        warty = DistroSeries.get(1)
         flavour = 'ubuntu'
         log_file = StringIO()
         self.callbacks = MirrorCDImageProberCallbacks(
             mirror, warty, flavour, log_file)
 
-    def test_mirrorcdimagerelease_creation_and_deletion(self):
+    def test_mirrorcdimageseries_creation_and_deletion(self):
         callbacks = self.callbacks
         all_success = [(defer.SUCCESS, '200'), (defer.SUCCESS, '200')]
-        mirror_cdimage_release = callbacks.ensureOrDeleteMirrorCDImageRelease(
+        mirror_cdimage_series = callbacks.ensureOrDeleteMirrorCDImageSeries(
              all_success)
         self.failUnless(
-            mirror_cdimage_release is not None,
+            mirror_cdimage_series is not None,
             "If the prober gets a list of 200 Okay statuses, a new "
-            "MirrorCDImageRelease should be created.")
+            "MirrorCDImageSeries should be created.")
 
         not_all_success = [
             (defer.FAILURE, Failure(BadResponseCode(str(httplib.NOT_FOUND)))),
             (defer.SUCCESS, '200')]
-        callbacks.ensureOrDeleteMirrorCDImageRelease(not_all_success)
+        callbacks.ensureOrDeleteMirrorCDImageSeries(not_all_success)
         # If the prober gets at least one 404 status, we need to make sure
-        # there's no MirrorCDImageRelease for that release and flavour.
-        self.assertRaises(SQLObjectNotFound, mirror_cdimage_release.sync)
+        # there's no MirrorCDImageSeries for that series and flavour.
+        self.assertRaises(SQLObjectNotFound, mirror_cdimage_series.sync)
 
     def test_expected_failures_are_ignored(self):
         # Any errors included in callbacks.expected_failures are simply
-        # ignored by ensureOrDeleteMirrorCDImageRelease() because they've been
+        # ignored by ensureOrDeleteMirrorCDImageSeries() because they've been
         # logged by logMissingURL() already and they're expected to happen
         # some times.
         self.failUnlessEqual(
@@ -479,7 +479,7 @@ class TestMirrorCDImageProberCallbacks(LaunchpadZopelessTestCase):
                       ProberTimeout('http://localhost/', 5),
                       ConnectionSkipped()]
         for exception in exceptions:
-            failure = self.callbacks.ensureOrDeleteMirrorCDImageRelease(
+            failure = self.callbacks.ensureOrDeleteMirrorCDImageSeries(
                 [(defer.FAILURE, Failure(exception))])
             # Twisted callbacks may raise or return a failure; that's why we
             # check the return value.
@@ -492,7 +492,7 @@ class TestMirrorCDImageProberCallbacks(LaunchpadZopelessTestCase):
         # Errors which are not expected as logged using the
         # prober's logger to make sure people see it while still alowing other
         # mirrors to be probed.
-        failure = self.callbacks.ensureOrDeleteMirrorCDImageRelease(
+        failure = self.callbacks.ensureOrDeleteMirrorCDImageSeries(
             [(defer.FAILURE, Failure(ZeroDivisionError()))])
         # Twisted callbacks may raise or return a failure; that's why we
         # check the return value.
@@ -506,7 +506,7 @@ class TestArchiveMirrorProberCallbacks(LaunchpadZopelessTestCase):
 
     def setUp(self):
         mirror = DistributionMirror.get(1)
-        warty = DistroRelease.get(1)
+        warty = DistroSeries.get(1)
         pocket = PackagePublishingPocket.RELEASE
         component = warty.components[0]
         log_file = StringIO()
@@ -515,28 +515,28 @@ class TestArchiveMirrorProberCallbacks(LaunchpadZopelessTestCase):
             mirror, warty, pocket, component, url, log_file)
 
     def test_failure_propagation(self):
-        # Make sure that deleteMirrorRelease() does not propagate
+        # Make sure that deleteMirrorSeries() does not propagate
         # ProberTimeout, BadResponseCode or ConnectionSkipped failures.
         try:
-            self.callbacks.deleteMirrorRelease(
+            self.callbacks.deleteMirrorSeries(
                 Failure(ProberTimeout('http://localhost/', 5)))
         except Exception, e:
             self.fail("A timeout shouldn't be propagated. Got %s" % e)
         try:
-            self.callbacks.deleteMirrorRelease(
+            self.callbacks.deleteMirrorSeries(
                 Failure(BadResponseCode(str(httplib.INTERNAL_SERVER_ERROR))))
         except Exception, e:
             self.fail("A bad response code shouldn't be propagated. Got %s" % e)
         try:
-            self.callbacks.deleteMirrorRelease(Failure(ConnectionSkipped()))
+            self.callbacks.deleteMirrorSeries(Failure(ConnectionSkipped()))
         except Exception, e:
             self.fail("A ConnectionSkipped exception shouldn't be "
                       "propagated. Got %s" % e)
 
-        # Make sure that deleteMirrorRelease() propagate any failure that is
+        # Make sure that deleteMirrorSeries() propagate any failure that is
         # not a ProberTimeout, a BadResponseCode or a ConnectionSkipped.
         d = defer.Deferred()
-        d.addErrback(self.callbacks.deleteMirrorRelease)
+        d.addErrback(self.callbacks.deleteMirrorSeries)
         def got_result(result):
             self.fail(
                 "Any failure that's not a timeout/bad-response/skipped "
@@ -548,22 +548,22 @@ class TestArchiveMirrorProberCallbacks(LaunchpadZopelessTestCase):
         d.errback(Failure(ZeroDivisionError()))
         self.assertEqual([1], ok)
 
-    def test_mirrorrelease_creation_and_deletion(self):
-        mirror_distro_release_source = self.callbacks.ensureMirrorRelease(
+    def test_mirrorseries_creation_and_deletion(self):
+        mirror_distro_series_source = self.callbacks.ensureMirrorSeries(
              str(httplib.OK))
         self.failUnless(
-            mirror_distro_release_source is not None,
+            mirror_distro_series_source is not None,
             "If the prober gets a 200 Okay status, a new "
-            "MirrorDistroReleaseSource/MirrorDistroArchRelease should be "
+            "MirrorDistroSeriesSource/MirrorDistroArchSeries should be "
             "created.")
 
-        self.callbacks.deleteMirrorRelease(
+        self.callbacks.deleteMirrorSeries(
             Failure(BadResponseCode(str(httplib.NOT_FOUND))))
         # If the prober gets a 404 status, we need to make sure there's no
-        # MirrorDistroReleaseSource/MirrorDistroArchRelease referent to
+        # MirrorDistroSeriesSource/MirrorDistroArchSeries referent to
         # that url
         self.assertRaises(
-            SQLObjectNotFound, mirror_distro_release_source.sync)
+            SQLObjectNotFound, mirror_distro_series_source.sync)
 
 
 class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
@@ -574,13 +574,13 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
     def setUp(self):
         self.logger = None
 
-    def test_MirrorCDImageRelease_records_are_deleted_before_probing(self):
+    def test_MirrorCDImageSeries_records_are_deleted_before_probing(self):
         mirror = DistributionMirror.byName('releases-mirror2')
-        self.failUnless(mirror.cdimage_releases.count() > 0)
+        self.failUnless(mirror.cdimage_serieses.count() > 0)
         # Note that calling this function won't actually probe any mirrors; we
         # need to call reactor.run() to actually start the probing.
-        probe_release_mirror(mirror, StringIO(), [], logging)
-        self.failUnlessEqual(mirror.cdimage_releases.count(), 0)
+        probe_cdimage_mirror(mirror, StringIO(), [], logging)
+        self.failUnlessEqual(mirror.cdimage_serieses.count(), 0)
 
     def test_archive_mirror_probe_function(self):
         mirror1 = DistributionMirror.byName('archive-mirror')
@@ -589,12 +589,12 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
         self._test_one_semaphore_for_each_host(
             mirror1, mirror2, mirror3, probe_archive_mirror)
 
-    def test_release_mirror_probe_function(self):
+    def test_cdimage_mirror_probe_function(self):
         mirror1 = DistributionMirror.byName('releases-mirror')
         mirror2 = DistributionMirror.byName('releases-mirror2')
         mirror3 = DistributionMirror.byName('canonical-releases')
         self._test_one_semaphore_for_each_host(
-            mirror1, mirror2, mirror3, probe_release_mirror)
+            mirror1, mirror2, mirror3, probe_cdimage_mirror)
 
     def _test_one_semaphore_for_each_host(
             self, mirror1, mirror2, mirror3, probe_function):
@@ -604,7 +604,7 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
         mirror1.base_url and mirror2.base_url must be on the same host while
         mirror3.base_url must be on a different one.
 
-        The given probe_function must be either probe_release_mirror or
+        The given probe_function must be either probe_cdimage_mirror or
         probe_archive_mirror.
         """
         host_semaphores = {}
