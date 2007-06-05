@@ -43,8 +43,36 @@
             <th>Review Status:</th>
             <td tal:content="context/review_status/title">Syncing</td>
           </tr>
-          <tal:block condition="context/branch"
-                     replace="structure context/branch/@@+series-reference" />
+          <tr tal:condition="context/product">
+            <th>Product:</th>
+            <td>
+              <a href=""
+                 tal:content="context/product/displayname"
+                 tal:attributes="href context/product/fmt:url">
+                Evolution
+              </a>
+            </td>
+          </tr>
+          <tr tal:condition="context/series">
+            <th>Series:</th>
+            <td>
+              <a href=""
+                 tal:content="context/series/displayname"
+                 tal:attributes="href context/series/fmt:url">
+                head
+              </a>
+            </td>
+          </tr>
+          <tr tal:condition="context/branch">
+            <th>Bazaar branch:</th>
+            <td>
+              <a id="import-branch-link"
+                 tal:attributes="href context/branch/fmt:url"
+                 tal:content="context/branch/displayname">
+                Mozilla Thunderbird 0.9.1
+              </a>
+            </td>
+          </tr>
         </tbody>
       </table>
 
