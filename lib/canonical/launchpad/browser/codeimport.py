@@ -11,8 +11,6 @@ __all__ = [
     ]
 
 
-from zope.component import getUtility
-
 from canonical.launchpad.interfaces import ICodeImportSet
 from canonical.launchpad.webapp import LaunchpadView, Navigation
 
