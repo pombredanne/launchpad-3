@@ -8,7 +8,7 @@ updates it regularly.
 
 We can import code from CVS or Subversion.
 
-== Code import set ==
+== Code import set utility ==
 
 CodeImports are created and found using the ICodeImport interface, which is
 registered as a utility.
@@ -34,7 +34,7 @@ Subversion, takes values from the 'RevisionControlSystems' vocabulary.
 
   >>> from canonical.lp.dbschema import RevisionControlSystems
 
-== Code import from CVS ==
+=== Import from CVS ===
 
 Code imports from CVS specify the CVSROOT value, and the path to import in the
 repository, known as the "module".
@@ -58,7 +58,7 @@ create a Subversion import with the same series, clear it now.
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
 
-== Code import from Subversion ==
+=== Import from Subversion ===
 
 Code imports from Subversion specify the URL used with "svn checkout" to
 retrieve the tree to import.
@@ -72,3 +72,19 @@ retrieve the tree to import.
 
   >>> verifyObject(ICodeImport, svn_import)
   True
+
+Write the new code import to the database, so we can use it to test
+CodeImportSet.getByName.
+
+  >>> flush_database_updates()
+
+== Retrieving by name ==
+
+To retrieve a CodeImport by its unique name, as needed to implement navigation,
+use CodeImportSet.getByName.
+
+  >>> found_svn = code_import_set.getByName('svn-test')
+  >>> verifyObject(ICodeImport, found_svn)
+  True
+  >>> found_svn.svn_branch_url
+  u'svn://svn.example.com/trunk'

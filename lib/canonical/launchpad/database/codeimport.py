@@ -61,3 +61,7 @@ class CodeImportSet:
     def getAll(self):
         """See ICodeImportSet."""
         return CodeImport.select()
+
+    def getByName(self, name):
+        """See ICodeImportSet."""
+        return CodeImport.selectOneBy(name=name)

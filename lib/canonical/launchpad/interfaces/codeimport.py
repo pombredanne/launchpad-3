@@ -79,3 +79,6 @@ class ICodeImportSet(Interface):
 
     def getAll():
         """Return an iterable of all CodeImport objects."""
+
+    def getByName(name):
+        """Get a CodeImport by its unique name."""
