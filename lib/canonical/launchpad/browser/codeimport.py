@@ -14,5 +14,4 @@ from canonical.launchpad.webapp import LaunchpadView
 
 
 class CodeImportSetView(LaunchpadView):
-    def initialize(self):
-        self.results = getUtility(ICodeImportSet).getAll()
+    pass

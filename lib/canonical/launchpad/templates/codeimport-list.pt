@@ -5,7 +5,7 @@
   <h1 metal:fill-slot="heading">Code Imports</h1>
 
 <div metal:fill-slot="main" class="visualPadding"
-     tal:define="batch view/results">
+     tal:define="batch context/getAll">
 
 
   <tal:block tal:condition="not:batch">

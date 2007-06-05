@@ -27,4 +27,24 @@
     <allow interface="canonical.launchpad.interfaces.ICodeImportSet" />
   </securedutility>
 
+  <browser:url
+     for="canonical.launchpad.interfaces.ICodeImportSet"
+     path_expression="string:+code-imports"
+     parent_utility="canonical.launchpad.interfaces.IBazaarApplication"
+     rootsite="code" />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ICodeImportSet"
+    name="+code-imports"
+    layer="canonical.launchpad.layers.CodeLayer"
+    />
+
+  <browser:page
+     for="canonical.launchpad.interfaces.ICodeImportSet"
+     class="canonical.launchpad.browser.CodeImportSetView"
+     name="+code-imports"
+     template="../templates/codeimport-list.pt"
+     permission="zope.Public"
+     />
+
 </configure>
