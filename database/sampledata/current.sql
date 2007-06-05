@@ -1159,8 +1159,8 @@ ALTER TABLE calendarsubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE codeimport DISABLE TRIGGER ALL;
 
-INSERT INTO codeimport (id, date_created, name, product, series, branch, review_status, rcs_type, svn_branch_url, cvs_root, cvs_module) VALUES (1, '2007-06-05 16:17:50.551806', 'gnome-terminal-trunk-1', 6, 14, NULL, 1, 2, 'http://svn.example.org/svnroot/gnome-terminal/trunk', NULL, NULL);
-INSERT INTO codeimport (id, date_created, name, product, series, branch, review_status, rcs_type, svn_branch_url, cvs_root, cvs_module) VALUES (2, '2007-06-05 16:17:50.915794', 'a52dec-trunk-3', 12, 6, NULL, 20, 1, NULL, 'cvs.example.org/cvsroot', 'a52dec');
+INSERT INTO codeimport (id, date_created, name, product, series, branch, review_status, rcs_type, svn_branch_url, cvs_root, cvs_module) VALUES (1, '2007-06-05 17:28:58.775241', 'gnome-terminal-trunk-1', 6, NULL, 15, 20, 2, 'http://svn.example.org/svnroot/gnome-terminal/trunk', NULL, NULL);
+INSERT INTO codeimport (id, date_created, name, product, series, branch, review_status, rcs_type, svn_branch_url, cvs_root, cvs_module) VALUES (2, '2007-06-05 17:29:00.298719', 'a52dec-trunk-3', 12, 6, NULL, 1, 1, NULL, 'cvs.example.org/cvsroot', 'a52dec');
 
 
 ALTER TABLE codeimport ENABLE TRIGGER ALL;

@@ -24,12 +24,18 @@ review status and the URL of the Subversion branch the import is from:
 
   >>> extract_text(
   ...     find_tag_by_id(browser.contents, 'review-status'))
-  u'Pending Review'
+  u'Reviewed'
   >>> extract_text(
   ...     find_tag_by_id(browser.contents, 'subversion-url'))
   u'http://svn.example.org/svnroot/gnome-terminal/trunk'
 
-And similar for the other import:
+This import has a branch associated to it, so there's a link to the
+branch:
+
+  >>> browser.getLink('GNOME Terminal Mainline').url
+  'http://code.launchpad.dev/~name12/gnome-terminal/main'
+
+There's a similar page for the other import, which uses CVS:
 
   >>> browser.getLink('Code Imports').click()
   >>> browser.getLink('a52dec-trunk-3').click()
@@ -37,7 +43,7 @@ And similar for the other import:
   'http://code.launchpad.dev/+code-imports/a52dec-trunk-3'
   >>> extract_text(
   ...     find_tag_by_id(browser.contents, 'review-status'))
-  u'Reviewed'
+  u'Pending Review'
   >>> extract_text(
   ...     find_tag_by_id(browser.contents, 'cvs-root'))
   u'cvs.example.org/cvsroot'
