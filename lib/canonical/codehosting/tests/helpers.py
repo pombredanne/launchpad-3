@@ -4,11 +4,14 @@
 
 __metaclass__ = type
 __all__ = [
-    'AvatarTestCase', 'FakeLaunchpad', 'TwistedBzrlibLayer', 'deferToThread']
+    'AvatarTestCase', 'CodeHostingTestProviderAdapter',
+    'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
+    'TwistedBzrlibLayer', 'adapt_suite', 'deferToThread']
 
 import os
 import shutil
 import threading
+import unittest
 
 from canonical.testing import TwistedLayer, BzrlibLayer
 from canonical.tests.test_twisted import TwistedTestCase
@@ -150,3 +153,51 @@ class FakeLaunchpad:
                 result.append(
                     (product, self._product_set[product]['name'], branches))
         return result
+
+
+class CodeHostingTestProviderAdapter:
+
+    def __init__(self, servers):
+        self._servers = servers
+
+    def adaptForServer(self, test, server):
+        from copy import deepcopy
+        new_test = deepcopy(test)
+        new_test.installServer(server)
+        def make_new_test_id():
+            new_id = "%s(%s)" % (new_test.id(), server._schema)
+            return lambda: new_id
+        new_test.id = make_new_test_id()
+        return new_test
+
+    def adapt(self, test):
+        result = unittest.TestSuite()
+        for server in self._servers:
+            new_test = self.adaptForServer(test, server)
+            result.addTest(new_test)
+        return result
+
+
+class CodeHostingRepositoryTestProviderAdapter(CodeHostingTestProviderAdapter):
+
+    def __init__(self, format, servers):
+        self._repository_format = format
+        CodeHostingTestProviderAdapter.__init__(self, servers)
+
+    def adaptForServer(self, test, server):
+        from bzrlib.tests import default_transport
+        new_test = CodeHostingTestProviderAdapter.adaptForServer(
+            self, test, server)
+        new_test.transport_server = default_transport
+        new_test.transport_readonly_server = None
+        new_test.bzrdir_format = self._repository_format._matchingbzrdir
+        new_test.repository_format = self._repository_format
+        return new_test
+
+
+def adapt_suite(adapter, base_suite):
+    from bzrlib.tests import iter_suite_tests
+    suite = unittest.TestSuite()
+    for test in iter_suite_tests(base_suite):
+        suite.addTests(adapter.adapt(test))
+    return suite

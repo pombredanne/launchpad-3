@@ -27,7 +27,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
 from canonical.codehosting.tests.helpers import (
-    deferToThread, TwistedBzrlibLayer)
+    adapt_suite, deferToThread, TwistedBzrlibLayer)
 from canonical.config import config
 from canonical.database.sqlbase import cursor, commit, sqlvalues
 from canonical.launchpad import database
@@ -570,54 +570,6 @@ class AcceptanceTests(SSHTestCase, TestCaseWithRepository):
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
 
-class CodeHostingTestProviderAdapter:
-
-    def __init__(self, servers):
-        self._servers = servers
-
-    def adaptForServer(self, test, server):
-        from copy import deepcopy
-        new_test = deepcopy(test)
-        new_test.installServer(server)
-        def make_new_test_id():
-            new_id = "%s(%s)" % (new_test.id(), server._schema)
-            return lambda: new_id
-        new_test.id = make_new_test_id()
-        return new_test
-
-    def adapt(self, test):
-        result = unittest.TestSuite()
-        for server in self._servers:
-            new_test = self.adaptForServer(test, server)
-            result.addTest(new_test)
-        return result
-
-
-class CodeHostingRepositoryTestProviderAdapter(CodeHostingTestProviderAdapter):
-
-    def __init__(self, format, servers):
-        self._repository_format = format
-        CodeHostingTestProviderAdapter.__init__(self, servers)
-
-    def adaptForServer(self, test, server):
-        from bzrlib.tests import default_transport
-        new_test = CodeHostingTestProviderAdapter.adaptForServer(
-            self, test, server)
-        new_test.transport_server = default_transport
-        new_test.transport_readonly_server = None
-        new_test.bzrdir_format = self._repository_format._matchingbzrdir
-        new_test.repository_format = self._repository_format
-        return new_test
-
-
-def adapt_suite(adapter, base_suite):
-    from bzrlib.tests import iter_suite_tests
-    suite = unittest.TestSuite()
-    for test in iter_suite_tests(base_suite):
-        suite.addTests(adapter.adapt(test))
-    return suite
-
-
 def make_repository_tests(base_suite):
     # Construct a test suite that runs AcceptanceTests with several different
     # repository formats.
@@ -647,6 +599,8 @@ def make_repository_tests(base_suite):
 
 def make_server_tests(base_suite):
     from bzrlib.repository import RepositoryFormat
+    from canonical.codehosting.tests.helpers import (
+        CodeHostingRepositoryTestProviderAdapter)
     repository_format = RepositoryFormat.get_default_format()
 
     authserver = AuthserverWithKeys('testuser', 'testteam')

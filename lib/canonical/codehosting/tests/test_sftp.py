@@ -9,17 +9,16 @@ import stat
 
 from bzrlib import errors
 from bzrlib.transport import get_transport
-from bzrlib.tests import TestCaseWithTransport, TestCaseWithMemoryTransport
+from bzrlib.tests import TestCaseWithTransport
 
-from canonical.codehosting.transport import branch_id_to_path
 from canonical.codehosting.transport import LaunchpadServer
 
 from canonical.codehosting.tests.test_acceptance import (
-    adapt_suite, AuthserverWithKeys, CodeHostingTestProviderAdapter,
-    SSHCodeHostingServer, SSHTestCase)
+    AuthserverWithKeys, SSHCodeHostingServer, SSHTestCase)
+
 from canonical.codehosting.tests.helpers import (
-    FakeLaunchpad, TwistedBzrlibLayer, deferToThread)
-from canonical.testing import BzrlibLayer
+    CodeHostingTestProviderAdapter, FakeLaunchpad, TwistedBzrlibLayer,
+    adapt_suite, deferToThread)
 
 
 class TestFilesystem(SSHTestCase, TestCaseWithTransport):
