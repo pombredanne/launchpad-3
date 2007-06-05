@@ -102,6 +102,18 @@ if [ $? -ne 0 ]; then
   echo "Added devpad to ~/.ssh/config"
 fi
 
+grep -q "^Host .*bazaar.launchpad.dev" ~/.ssh/config
+if [ $? -ne 0 ]; then
+  echo "Host bazaar.launchpad.dev
+    Hostname localhost
+    HostKeyAlias bazaar.launchpad.dev
+    User sabdfl
+    Port 5022
+    IdentityFile ~/.ssh/launchpad_id_dsa
+" | tee -a ~/.ssh/config > /dev/null
+  echo "Added bazaar.launchpad.dev to ~/.ssh/config"
+fi
+
 echo "Testing ssh to devpad..."
 ssh devpad.canonical.com pwd > /dev/null
 if [ $? -ne 0 ]; then
@@ -246,6 +258,13 @@ push_location:policy = appendpath" | tee -a ~/.bazaar/locations.conf > /dev/null
 in ~/.bazaar/locations.conf to something other than localhost"
 fi
 
+# Setup access to the local supermirror
+if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
+  cp ~/canonical/lp-branches/trunk/lib/canonical/codehosting/tests/id_dsa ~/.ssh/launchpad_id_dsa
+  chmod 600 ~/.ssh/launchpad_id_dsa
+  echo "Setup ssh key for local supermirror ssh access."
+fi
+
 # Setup scripts in /usr/local/bin
 cd /usr/local/bin
 if [ ! -e rocketfuel-get ]; then
@@ -276,4 +295,17 @@ fi
 
 # Make sure we have all the right code in place for source dependencies
 /usr/local/bin/rocketfuel-get
+
+echo "
+Thank you for using this script. You can improve it for everyone by
+committing changes to LP in utilities/rocketfuel-setup.
+
+Now you can use "rocketfuel-branch foo" to create a new branch of LP called
+"foo", with all the source dependencies properly linked in.
+
+And you can use "rocketfuel-get" to update your copy of trunk and the
+necessary source dependencies.
+
+Happy hacking!
+"
 
