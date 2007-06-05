@@ -43,7 +43,8 @@ Check how many email the system have sent:
 
 We need to sort the list of emails by the second element, the recipient:
 
-  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
+  >>> from operator import itemgetter
+  >>> stub.test_emails.sort(key=itemgetter(1), reverse=True)
 
 The members of launchpad-buildd-admins are notified:
 
@@ -92,6 +93,7 @@ This same basic content applies to all types of notification.
    * Source Package: pmount
    * Version: 0.1-1
    * Architecture: i386
+   * Archive: ubuntu main archive
    * State: Failed to build
    * Duration: three minutes
    * Build Log: http://localhost:58000/1/netapplet-1.0.0.tar.gz
@@ -127,7 +129,7 @@ Check how many email the system have sent:
 
 We need to sort the list of emails by the second element, the recipient:
 
-  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
+  >>> stub.test_emails.sort(key=itemgetter(1), reverse=True)
 
 The members of launchpad-buildd-admins are notified:
 
@@ -167,6 +169,7 @@ Check the notification content:
    * Source Package: alsa-utils
    * Version: 1.0.9a-4ubuntu1
    * Architecture: i386
+   * Archive: ubuntu main archive
    * State: Needs building
    * Duration: not available
    * Build Log: not available
@@ -203,7 +206,7 @@ Check how many email the system have sent:
 
 We need to sort the list of emails by the second element, the recipient:
 
-  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
+  >>> stub.test_emails.sort(key=itemgetter(1), reverse=True)
 
 The members of launchpad-buildd-admins are notified:
 
@@ -243,6 +246,7 @@ Check the notification content:
    * Source Package: mozilla-firefox
    * Version: 0.9
    * Architecture: i386
+   * Archive: ubuntu main archive
    * State: Currently building
    * Duration: not finished
    * Build Log: see builder page
@@ -278,7 +282,7 @@ Check how many email the system have sent:
 
 We need to sort the list of emails by the second element, the recipient:
 
-  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
+  >>> stub.test_emails.sort(key=itemgetter(1), reverse=True)
 
 The members of launchpad-buildd-admins are notified:
 
@@ -318,6 +322,7 @@ Check the notification content:
    * Source Package: at
    * Version: 0.00
    * Architecture: i386
+   * Archive: ubuntu main archive
    * State: Build for superseded Source
    * Duration: not available
    * Build Log: not available
@@ -364,7 +369,7 @@ Check how many email the system have sent:
 
 We need to sort the list of emails by the second element, the recipient:
 
-  >>> stub.test_emails.sort(key=lambda x: x[1], reverse=True)
+  >>> stub.test_emails.sort(key=itemgetter(1), reverse=True)
 
 Only the members of launchpad-buildd-admins are notified:
 
@@ -380,4 +385,70 @@ Only the members of launchpad-buildd-admins are notified:
 Just to keep the config sane, as it was before:
 
   >>> config.builddmaster.notify_owner = True
+
+
+== PPA build notifications ==
+
+As for the normal (main archive) build candidates we are also able
+send notification about current (changed) PPA build record status.
+
+
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> naked_failed_candidate = removeSecurityProxy(failed_candidate)
+  >>> naked_failed_candidate.archive = cprov.archive
+
+  >>> failed_candidate.notify()
+  >>> transaction.commit()
+
+Check how many email the system have sent:
+
+  >>> len(stub.test_emails)
+  2
+
+Checking the first message contents:
+
+  >>> stub.test_emails.sort(key=itemgetter(1), reverse=True)
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> print raw_msg
+  Content-Type: text/plain; charset="utf-8"
+  ...
+  X-Creator-Recipient: mark@hbd.com
+  X-Launchpad-Build-State: FAILEDTOBUILD
+  To: celso.providelo@canonical.com
+  From: Launchpad Buildd System <noreply@launchpad.net>
+  Subject: [Build #17] i386 build of pmount 0.1-1 in ubuntu breezy-autotest
+    RELEASE (cprov PPA)
+  ...
+  <BLANKLINE>
+   * Source Package: pmount
+   * Version: 0.1-1
+   * Architecture: i386
+   * Archive: cprov PPA
+   * State: Failed to build
+   * Duration: three minutes
+   * Build Log: http://localhost:58000/1/netapplet-1.0.0.tar.gz
+   * Builder: http://launchpad.dev/+builds/bob
+   * Source: not available
+  ...
+
+Checking if the second recipient:
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['mark@hbd.com']
+
+
+PPA build notifications should be as much as possible similar to those
+in the main archive, the important differences are:
+
+ * We do not include 'buildd-admins' celebrity in its recipients,
+   instead we include the Archive owner;
+
+ * We try to be explicit in the subject and in the body of the message
+   that it is about a PPA build candidate;
+
+ * We don't have a 'source package' page for PPA sources.
 

@@ -217,6 +217,8 @@ class Build(SQLBase):
         if not config.builddmaster.send_build_notification:
             return
 
+        recipients = set()
+
         fromaddress = format_address(
             config.builddmaster.default_sender_name,
             config.builddmaster.default_sender_address)
@@ -224,9 +226,6 @@ class Build(SQLBase):
         extra_headers = {
             'X-Launchpad-Build-State': self.buildstate.name,
             }
-
-        buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
-        recipients = contactEmailAddresses(buildd_admins)
 
         # Currently there are 7038 SPR published in edgy which the creators
         # have no preferredemail. They are the autosync ones (creator = katie,
@@ -242,7 +241,31 @@ class Build(SQLBase):
         extra_headers['X-Creator-Recipient'] = ",".join(
             contactEmailAddresses(creator))
 
-        subject = "[Build #%d] %s" % (self.id, self.title)
+        # Modify notification contents according the targeted archive.
+        # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
+        # We only send build-notifications to 'buildd-admin' celebrity for
+        # main archive candidates.
+        # For PPA build notifications we include the archive.owner
+        # contact_address.
+        if self.is_trusted:
+            buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
+            recipients = recipients.union(
+                contactEmailAddresses(buildd_admins))
+            archive_tag = '%s main archive' % self.distribution.name
+            subject = "[Build #%d] %s" % (self.id, self.title)
+            source_url = canonical_url(self.distributionsourcepackagerelease)
+        else:
+            recipients = recipients.union(
+                contactEmailAddresses(self.archive.owner))
+            # For PPAs we run on risk to have no available contact_adress,
+            # for instance, when both, SPR.creator and Archive.owner have
+            # not enabled it.
+            if len(recipients) == 0:
+                return
+            archive_tag = '%s PPA' % self.archive.owner.name
+            subject = "[Build #%d] %s (%s)" % (
+                self.id, self.title, archive_tag)
+            source_url = 'not available'
 
         # XXX cprov 20060802: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(
@@ -287,9 +310,9 @@ class Build(SQLBase):
             'builder_url': builder_url,
             'build_title': self.title,
             'build_url': canonical_url(self),
-            'source_url': canonical_url(
-                self.distributionsourcepackagerelease),
+            'source_url': source_url,
             'extra_info': extra_info,
+            'archive_tag': archive_tag,
             }
         message = template % replacements
 
