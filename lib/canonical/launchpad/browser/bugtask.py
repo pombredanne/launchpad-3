@@ -86,6 +86,7 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
@@ -697,6 +698,9 @@ class BugTaskEditView(GeneralFormView):
         editable_field_names = self._getEditableFieldNames()
         read_only_field_names = self._getReadOnlyFieldNames()
 
+        if 'status' in editable_field_names:
+            editable_field_names.remove('status')
+
         if self.context.target_uses_malone:
             self.bugwatch_widget = None
         else:
@@ -715,8 +719,34 @@ class BugTaskEditView(GeneralFormView):
         setUpWidgets(
             self, self.schema, IInputWidget, names=editable_field_names,
             initial=self.initial_values, prefix=self.prefix)
-        setUpDisplayWidgets(
-            self, self.schema, names=read_only_field_names, prefix=self.prefix)
+        if read_only_field_names:
+            # If read_only_field_names is False in a boolean context
+            # (which here means the empty list) then
+            # setUpDisplayWidgets will set up all names in the schema
+            # which is not what we want because it will interfere with
+            # our special handling of the status widget later on.
+            setUpDisplayWidgets(
+                self, self.schema, names=read_only_field_names, prefix=self.prefix)
+
+        if 'status' not in read_only_field_names:
+            status_noshow = [BugTaskStatus.UNKNOWN]
+            if (self.user is None or
+                not self.user.inTeam(self.context.pillar.bugcontact)):
+                status_noshow.append(BugTaskStatus.WONTFIX)
+            if self.context.status in status_noshow:
+                # The user has to be able to see the current value.
+                status_noshow.remove(self.context.status)
+            status_vocab_factory = vocab_factory(
+                BugTaskStatus, noshow=status_noshow)
+            status_field = Choice(
+                __name__='status',
+                title=self.schema['status'].title,
+                vocabulary=status_vocab_factory(self.context),
+                default=self.schema['status'].default)
+            setUpWidget(self, 'status', status_field, IInputWidget,
+                        value=self.context.status)
+            # Ugly hack! Re-add the status field.
+            editable_field_names.append('status')
 
         self.fieldNames = editable_field_names
 

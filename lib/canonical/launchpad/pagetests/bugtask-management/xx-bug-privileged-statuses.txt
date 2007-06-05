@@ -1,0 +1,95 @@
+= Bug Privileged Statuses =
+
+Some statuses, e.g. Won't Fix, are restricted. Only members of the Bug
+Contact team may change a bug to that status.
+
+== Unprivileged users ==
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/'
+    ...     'mozilla-firefox/+bug/1/+editstatus')
+
+    >>> status_control = user_browser.getControl('Status')
+    >>> print status_control.displayValue
+    ['New']
+
+An unprivileged user can confirm the bug:
+
+    >>> status_control.displayValue = ['Confirmed']
+    >>> user_browser.getControl('Save Changes').click()
+
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
+
+But he should not be able to change the status to Won't Fix:
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/'
+    ...     'mozilla-firefox/+bug/1/+editstatus')
+
+    >>> status_control = user_browser.getControl('Status')
+    >>> print status_control.displayValue
+    ['Confirmed']
+
+    >>> status_control.displayValue = ["Won't Fix"]
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: Won't Fix
+
+== Bug Contact ==
+
+Ubuntu needs a Bug Contact first of all:
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/+bugcontact')
+    >>> admin_browser.getControl('Bug Contact').value = (
+    ...     'test@canonical.com')
+    >>> admin_browser.getControl('Change').click()
+
+    >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print tag.renderContents()
+    Successfully changed the distribution bug contact to test@canonical.com
+
+The new Bug Contact for Ubuntu can change the status to Won't Fix:
+
+    >>> from zope.testbrowser.testing import Browser
+
+    >>> bug_contact_browser = Browser()
+    >>> bug_contact_browser.addHeader(
+    ...     'Authorization', 'Basic test@canonical.com:test')
+
+    >>> bug_contact_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/'
+    ...     'mozilla-firefox/+bug/1/+editstatus')
+
+    >>> status_control = bug_contact_browser.getControl('Status')
+    >>> print status_control.displayValue
+    ['Confirmed']
+
+    >>> status_control.displayValue = ["Won't Fix"]
+    >>> bug_contact_browser.getControl('Save Changes').click()
+
+    >>> print bug_contact_browser.url
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
+
+Now the bug has been changed, a regular user can see the Won't Fix
+status. Earlier it was not even displayed as an option.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/'
+    ...     'mozilla-firefox/+bug/1/+editstatus')
+
+    >>> status_control = user_browser.getControl('Status')
+    >>> print status_control.displayValue
+    ["Won't Fix"]
+
+And a regular user can change other aspects of the bug:
+
+    >>> package_control = user_browser.getControl('Package')
+    >>> print package_control.value
+    mozilla-firefox
+
+    >>> package_control.value = 'iceweasel'
+    >>> user_browser.getControl('Save Changes').click()
+
+    >>> print bug_contact_browser.url
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1

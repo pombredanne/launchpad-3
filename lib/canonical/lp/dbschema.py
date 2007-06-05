@@ -2673,6 +2673,13 @@ class BugTaskStatus(DBSchema):
         This is not a bug. It could be a support request, spam, or a misunderstanding.
         """)
 
+    WONTFIX = Item(18, """
+        Won't Fix
+
+        This will not be fixed. For example, this might be a bug but it's not considered worth
+        fixing, or it might not be fixed in this release.
+        """)
+
     CONFIRMED = Item(20, """
         Confirmed
 
