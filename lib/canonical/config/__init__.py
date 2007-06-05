@@ -241,13 +241,52 @@ def loglevel(value):
 
 
 class DatabaseConfig:
-    """A class to provide the Launchpad database configuration
+    """A class to provide the Launchpad database configuration.
+
+    The dbconfig option overlays the database configurations of a
+    chosen config section over the base section:
+
+        >>> from canonical.config import config, dbconfig
+        >>> print config.dbhost
+        localhost
+        >>> print config.dbuser
+        Traceback (most recent call last):
+          ...
+        AttributeError: ...
+        >>> print config.launchpad.dbhost
+        None
+        >>> print config.launchpad.dbuser
+        launchpad
+        >>> print config.librarian.dbuser
+        librarian
+
+        >>> dbconfig.setConfigSection('librarian')
+        >>> print dbconfig.dbhost
+        localhost
+        >>> print dbconfig.dbuser
+        librarian
+
+        >>> dbconfig.setConfigSection('launchpad')
+        >>> print dbconfig.dbhost
+        localhost
+        >>> print dbconfig.dbuser
+        launchpad
+
+    Some values are required to have a value, such as dbuser.  So we
+    get an exception if they are not set:
+
+        >>> config.launchpad.dbuser = None
+        >>> print dbconfig.dbuser
+        Traceback (most recent call last):
+          ...
+        ValueError: dbuser must be set
+        >>> config.launchpad.dbuser = 'launchpad'
     """
     _config_section = None
-    _db_config_attrs = set([
+    _db_config_attrs = frozenset([
         'dbuser', 'dbhost', 'dbname', 'db_statement_timeout',
-        'soft_request_timeout', 'randomise_select_results'
-        ])
+        'soft_request_timeout', 'randomise_select_results'])
+    _db_config_required_attrs = frozenset(['dbuser', 'dbname'])
 
     def setConfigSection(self, section_name):
         self._config_section = section_name
@@ -269,6 +308,9 @@ class DatabaseConfig:
             value = getattr(section, name, None)
             if value is not None:
                 break
+        # Some values must be provided by the config
+        if value is None and name in self._db_config_required_attrs:
+            raise ValueError('%s must be set' % name)
         return value
 
 

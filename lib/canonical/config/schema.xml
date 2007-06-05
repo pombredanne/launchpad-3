@@ -951,11 +951,6 @@ k            </description>
     </sectiontype>
 
     <sectiontype name="canonical" extends="database_options">
-        <key name="dbuser" datatype="string" default="nosuchuser">
-            <description>
-                A non-existant database user.
-            </description>
-        </key>
         <key name="chunkydiff" datatype="boolean"
             required="no" default="true" />
         <key name="show_tracebacks" datatype="boolean"
