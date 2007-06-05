@@ -298,6 +298,8 @@ canbementored_mentoringoffer = 'Offer to mentor this work'
 
 canbementored_retractmentoring = 'Retract offer of mentorship'
 
+codeimport = 'Code Import' # XXX!
+
 codeimport_list = 'Code Imports'
 
 codeofconduct_admin = 'Administer Codes of Conduct'

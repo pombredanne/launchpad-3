@@ -26,5 +26,17 @@ And it shows up in the page:
   >>> 'sample' in browser.contents
   True
 
+If we click on the code import's name, we go to the page for that
+import:
+
+  >>> browser.getLink('sample').click()
+  >>> browser.url
+  'http://code.launchpad.dev/+code-imports/sample'
+
+It is very simple at the moment, with barely any more information on
+the page than the import's name:
+
+  >>> 'sample' in browser.contents
+  True
 
 
