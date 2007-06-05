@@ -353,7 +353,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 complete = False
             # make the new sighting or submission. note that this may not in
             # fact create a whole new submission
-            if index < len(active_submissions):
+            if index > len(active_submissions):
                 old_active_submission = active_submissions[index]
             else:
                 old_active_submission = None
@@ -371,6 +371,9 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
             if new_submission != old_active_submission:
                 has_changed = True
+                while index < len(active_submissions):
+                    active_submissions.append(None)
+                active_submissions[index] = new_submission
 
         if has_changed and is_editor:
             self.updateReviewerInfo(person)
@@ -409,7 +412,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                         # also the same.
                         self.isfuzzy = self.publishedfuzzy
                         self.iscomplete = self.publishedcomplete
-                    elif updated > 0:
+                    if updated > 0:
                         # There are some active translations different from
                         # published ones, so the message has been updated
                         self.isupdated = True
