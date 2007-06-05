@@ -206,7 +206,8 @@ When a spec or a bug is completed, it drops off the mentoring lists.
    >>> from canonical.database.sqlbase import flush_database_updates
    >>> for task in bug2.bugtasks:
    ...   if task.conjoined_master is None:
-   ...     task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+   ...     task.transitionToStatus(
+   ...       BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
    >>> flush_database_updates()
    >>> bug2.is_complete
    True

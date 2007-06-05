@@ -99,7 +99,8 @@ Let's first close a bug setting its status to 'Invalid'.
     >>> bug_task.bug.id
     9
     >>> old_status = bug_task.status
-    >>> bug_task.transitionToStatus(BugTaskStatus.INVALID)
+    >>> bug_task.transitionToStatus(
+    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
     >>> flush_database_updates()
 
 And now we query for it.

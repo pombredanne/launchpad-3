@@ -173,7 +173,8 @@ Accept a productseries task.
     >>> from canonical.launchpad.interfaces import IProductSeriesBugTask
     >>> old_bugtask = Snapshot(
     ...     evolution_trunk_task, providing=IProductSeriesBugTask)
-    >>> evolution_trunk_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> evolution_trunk_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> notify(SQLObjectModifiedEvent(
     ...     evolution_trunk_task, old_bugtask, ['status']))
     Karma added: action=bugaccepted, product=evolution

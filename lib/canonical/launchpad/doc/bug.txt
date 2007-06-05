@@ -452,7 +452,8 @@ Modifying a bugtask will update IBug.date_last_updated.
     ...     firefox_task, providing=IUpstreamBugTask)
 
     >>> firefox_task.importance = BugTaskImportance.CRITICAL
-    >>> firefox_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> firefox_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
 
     >>> bugtask_modified = SQLObjectModifiedEvent(
     ...     firefox_task, bugtask_before_modification,

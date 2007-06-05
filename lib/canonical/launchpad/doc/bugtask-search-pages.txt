@@ -242,7 +242,8 @@ need to be logged in.
     'NEW'
     >>> open_bugtask.bug.id
     3
-    >>> open_bugtask.transitionToStatus(BugTaskStatus.INVALID)
+    >>> open_bugtask.transitionToStatus(
+    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
     >>> flush_database_updates()
 
 And the advanced form allows us to query for specific bug statuses.
@@ -309,7 +310,8 @@ And now we'll change the status of one of the bugtasks (we are still
 logged in from earlier):
 
     >>> previous_status = open_bugtasks[0].status
-    >>> open_bugtasks[0].transitionToStatus(BugTaskStatus.INVALID)
+    >>> open_bugtasks[0].transitionToStatus(
+    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
     >>> flush_database_updates()
 
 And the advanced form allows us to query for specific bug statuses.
@@ -404,7 +406,8 @@ The critical bugs link and counts consider only unresolved bugs.
 
     >>> critical_task = bugfilters_portlet_view.context.critical_bugtasks[0]
     >>> prev_status = critical_task.status
-    >>> critical_task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> critical_task.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> flush_database_updates()
 
     >>> print bugfilters_portlet_view.context.critical_bugtasks.count()
@@ -463,7 +466,8 @@ they are.
 
 Then change the status.
 
-    >>> bug_four_in_firefox.transitionToStatus(BugTaskStatus.UNKNOWN)
+    >>> bug_four_in_firefox.transitionToStatus(
+    ...     BugTaskStatus.UNKNOWN, getUtility(ILaunchBag).user)
     >>> flush_database_updates()
 
 And the affected counts have been decremented.
@@ -481,13 +485,15 @@ And the affected counts have been decremented.
 
 The unassigned bug counts consider only bugs with an unresolved status.
 
-    >>> bug_four_in_firefox.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> bug_four_in_firefox.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> flush_database_updates()
 
     >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
     0
 
-    >>> bug_four_in_firefox.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
+    >>> bug_four_in_firefox.transitionToStatus(
+    ...     BugTaskStatus.FIXCOMMITTED, getUtility(ILaunchBag).user)
     >>> flush_database_updates()
 
     >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()

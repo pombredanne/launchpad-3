@@ -213,7 +213,8 @@ are shown, no matter if they are used in open bugs or closed ones.
     >>> login('test@canonical.com')
     >>> for bugtask in firefox.searchTasks(BugTaskSearchParams(
     ...     tag=u'layout-test', user=None)):
-    ...     bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    ...     bugtask.transitionToStatus(
+    ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 

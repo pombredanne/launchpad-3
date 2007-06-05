@@ -216,10 +216,12 @@ queue items have been processed.
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
     >>> [pmount_task] = pmount_bug.bugtasks
-    >>> pmount_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> pmount_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> another_pmount_bug = getUtility(IBugSet).get(another_pmount_bug_id)
     >>> [another_pmount_task] = another_pmount_bug.bugtasks
-    >>> another_pmount_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> another_pmount_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
 
 
     >>> commit()

@@ -264,7 +264,8 @@ text representations of the changes when a bug task is edited.
     >>> from canonical.lp.dbschema import BugTaskStatus
 
     >>> edited_bugtask = getUtility(IBugTaskSet).get(3)
-    >>> edited_bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> edited_bugtask.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> edited_bugtask.transitionToAssignee(sample_person)
     >>> bugtask_delta = BugTaskDelta(
     ...     bugtask=edited_bugtask,

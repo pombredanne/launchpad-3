@@ -126,7 +126,8 @@ EVENT: source package assignment edited
   ...     "importance", "assignee", "bugwatch"]
   >>> old_source_package_assignment = Snapshot(
   ...   source_package_assignment, providing=IDistroBugTask)
-  >>> source_package_assignment.transitionToStatus(BugTaskStatus.CONFIRMED)
+  >>> source_package_assignment.transitionToStatus(
+  ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
   >>> source_package_assignment_edited = SQLObjectModifiedEvent(
   ...     source_package_assignment, old_source_package_assignment, edit_fields)
   >>> notify(source_package_assignment_edited)
@@ -157,7 +158,8 @@ EVENT: upstream product assignment edited
   ...     "importance"]
   >>> old_product_assignment = Snapshot(
   ...     product_assignment, providing=IUpstreamBugTask)
-  >>> product_assignment.transitionToStatus(BugTaskStatus.INVALID)
+  >>> product_assignment.transitionToStatus(
+  ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
   >>> product_assignment_edited = SQLObjectModifiedEvent(
   ...     product_assignment, old_product_assignment, edit_fields)
   >>> notify(product_assignment_edited)

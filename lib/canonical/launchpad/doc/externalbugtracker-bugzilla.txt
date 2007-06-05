@@ -189,7 +189,8 @@ the remote status hasn't changed. This can happen if we change the
 status mapping.
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> thunderbird_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> thunderbird_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
     >>> print thunderbird_task.status.title
     In Progress

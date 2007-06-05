@@ -506,7 +506,8 @@ cases.
    >>> login('foo.bar@canonical.com')
    >>> for task in bug_2.bugtasks:
    ...   if task.conjoined_master is None:
-   ...     task.transitionToStatus(BugTaskStatus.CONFIRMED)
+   ...     task.transitionToStatus(
+   ...       BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
    >>> flush_database_updates()
    >>> bug_2.is_complete
    False
