@@ -73,7 +73,7 @@ class FakeLaunchpad:
                 matching_user_id = user_id
                 break
         if matching_user_id is None:
-            raise ValueError("Cannot find user for %r" % (loginID,))
+            return ''
         user_dict = self._lookup(self._person_set, matching_user_id)
         user_dict['teams'] = [
             self._lookup(self._person_set, id) for id in user_dict['teams']]
@@ -270,6 +270,16 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
             transport.clone('~testuser/firefox/baz').iter_files_recursive())
         backing_transport = self.backing_transport.clone('00/00/00/01')
         self.assertEqual(list(backing_transport.iter_files_recursive()), files)
+
+    def test_make_two_directories(self):
+        # Bazaar doesn't have a makedirs() facility for transports, so we need
+        # to make sure that we can make a directory on the backing transport if
+        # its parents exist and if they don't exist.
+        transport = get_transport(self.server.get_url())
+        transport.mkdir('~testuser/thunderbird/banana')
+        transport.mkdir('~testuser/thunderbird/orange')
+        self.assertTrue(transport.has('~testuser/thunderbird/banana'))
+        self.assertTrue(transport.has('~testuser/thunderbird/orange'))
 
 
 def test_suite():

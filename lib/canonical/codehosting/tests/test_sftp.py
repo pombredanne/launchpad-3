@@ -1,6 +1,6 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
-"""Tests for Supermirror SFTP server's bzr support."""
+"""Tests for the virtual filesystem presented by Launchpad codehosting."""
 
 __metaclass__ = type
 
@@ -17,13 +17,13 @@ from canonical.codehosting.transport import LaunchpadServer
 from canonical.codehosting.tests.test_acceptance import (
     adapt_suite, AuthserverWithKeys, CodeHostingTestProviderAdapter,
     SSHCodeHostingServer, SSHTestCase)
-from canonical.codehosting.tests.test_transport import FakeLaunchpad
+from canonical.codehosting.tests.test_plugin_transport import FakeLaunchpad
 from canonical.codehosting.tests.helpers import (
     TwistedBzrlibLayer, deferToThread)
 from canonical.testing import BzrlibLayer
 
 
-class SFTPTests(SSHTestCase, TestCaseWithTransport):
+class TestFilesystem(SSHTestCase, TestCaseWithTransport):
 
     layer = TwistedBzrlibLayer
 
@@ -36,7 +36,7 @@ class SFTPTests(SSHTestCase, TestCaseWithTransport):
         self.server = server
 
     @deferToThread
-    def test_rmdir_branch(self):
+    def test_remove_branch_directory(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty
         # branches)
         transport = self.getTransport('~testuser/+junk')
@@ -49,123 +49,10 @@ class SFTPTests(SSHTestCase, TestCaseWithTransport):
         e = self.assertRaises(
             (errors.PermissionDenied, errors.NoSuchFile),
             transport.rmdir, 'foo')
-## XXX: JonathanLange 2007-06-05, SFTP only -- HPSS hides the error message.
-##         self.failUnless(
-##             "removing branch directory 'foo' is not allowed." in str(e), str(e))
 
         # The 'foo' directory is still listed.
         self.assertTrue(transport.has('bar'))
         self.assertTrue(transport.has('foo'))
-
-    @deferToThread
-    def test_mkdir_toplevel_error(self):
-        # You cannot create a top-level directory.
-        transport = self.getTransport()
-        e = self.assertRaises(
-            (errors.PermissionDenied, errors.NoSuchFile),
-            transport.mkdir, 'foo')
-## XXX: JonathanLange 2007-06-05, SFTP only -- HPSS hides the error message.
-##         self.failUnless(
-##             "Branches must be inside a person or team directory." in str(e),
-##             str(e))
-
-    @deferToThread
-    def test_mkdir_invalid_product_error(self):
-        # Make some directories under ~testuser/+junk (i.e. create some empty
-        # branches)
-        transport = self.getTransport('~testuser')
-
-        # You cannot create a product directory unless the product name is
-        # registered in Launchpad.
-        e = self.assertRaises(
-            (errors.PermissionDenied, errors.NoSuchFile),
-            transport.mkdir, 'no-such-product')
-## XXX: JonathanLange 2007-06-05, SFTP only -- HPSS hides the error message.
-##         self.failUnless(
-##             "Directories directly under a user directory must be named after a "
-##             "product name registered in Launchpad" in str(e),
-##             str(e))
-
-    @deferToThread
-    def test_mkdir_not_team_member_error(self):
-        # You can't mkdir in a team directory unless you're a member of that
-        # team (in fact, you can't even see the directory).
-        transport = self.getTransport()
-        e = self.assertRaises(errors.NoSuchFile,
-                transport.mkdir, '~not-my-team/mozilla-firefox')
-        self.failUnless("~not-my-team" in str(e))
-
-    @deferToThread
-    def test_mkdir_team_member(self):
-        # You can mkdir in a team directory that you're a member of (so long as
-        # it's a real product), though.
-        transport = self.getTransport()
-##         transport.mkdir('~testteam/firefox')
-
-##         # Confirm the mkdir worked by using list_dir.
-##         self.failUnless('firefox' in transport.list_dir('~testteam'))
-
-        # You can of course mkdir a branch, too
-        transport.mkdir('~testteam/firefox/shiny-new-thing')
-        self.assertTrue(
-            transport.has('~testteam/firefox/shiny-new-thing'))
-
-    @deferToThread
-    def test_rename_directory_to_existing_directory_fails(self):
-        # 'rename dir1 dir2' should fail if 'dir2' exists. Unfortunately, it
-        # will only fail if they both contain files/directories.
-        transport = self.getTransport('~testuser/+junk')
-        transport.mkdir('branch')
-        transport.mkdir('branch/.bzr')
-        transport.mkdir('branch/.bzr/dir1')
-        transport.mkdir('branch/.bzr/dir1/foo')
-        transport.mkdir('branch/.bzr/dir2')
-        transport.mkdir('branch/.bzr/dir2/bar')
-        self.assertRaises(
-            (errors.FileExists, IOError),
-            transport.rename, 'branch/.bzr/dir1', 'branch/.bzr/dir2')
-
-# XXX: JonathanLange 2007-06-05, SFTP only test. Depends on backing transport.
-##     @deferToThread
-##     def test_rename_directory_to_empty_directory_succeeds(self):
-##         # 'rename dir1 dir2' succeeds if 'dir2' is empty. Not sure we want this
-##         # behaviour, but it's worth documenting.
-##         transport = self.getTransport('~testuser/+junk')
-##         transport.mkdir('branch')
-##         transport.mkdir('branch/.bzr')
-##         transport.mkdir('branch/.bzr/dir1')
-##         transport.mkdir('branch/.bzr/dir2')
-##         transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
-##         self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
-
-    @deferToThread
-    def test_rename_directory_succeeds(self):
-        # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
-        transport = self.getTransport('~testuser/+junk')
-        transport.mkdir('branch')
-        transport.mkdir('branch/.bzr')
-        transport.mkdir('branch/.bzr/dir1')
-        transport.mkdir('branch/.bzr/dir1/foo')
-        transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
-        self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
-
-
-class TestLaunchpadTransportMakeDirectory(SSHTestCase, TestCaseWithTransport):
-
-    layer = TwistedBzrlibLayer
-
-    def getDefaultServer(self):
-        authserver = FakeLaunchpad()
-        user_id = 1
-        backing_transport = self.get_transport()
-        server = LaunchpadServer(authserver, user_id, backing_transport)
-        return server
-
-    def installServer(self, server):
-        self.server = server
-
-    def getTransport(self):
-        return get_transport(self.server.get_url())
 
     @deferToThread
     def test_make_invalid_user_directory(self):
@@ -197,27 +84,31 @@ class TestLaunchpadTransportMakeDirectory(SSHTestCase, TestCaseWithTransport):
             transport.mkdir, '~testuser')
 
     @deferToThread
+    def test_mkdir_not_team_member_error(self):
+        # You can't make a branch under the directory of a team that you don't
+        # belong to.
+        transport = self.getTransport()
+        e = self.assertRaises(
+            errors.NoSuchFile,
+            transport.mkdir, '~not-my-team/firefox/new-branch')
+
+    @deferToThread
+    def test_make_team_branch_directory(self):
+        # You can make a branch directory under a team directory that you are a
+        # member of (so long as it's a real product), though.
+        transport = self.getTransport()
+        transport.mkdir('~testteam/firefox/shiny-new-thing')
+        self.assertTrue(
+            transport.has('~testteam/firefox/shiny-new-thing'))
+
+    @deferToThread
     def test_make_product_directory_for_nonexistent_product(self):
-        # Making a directory for a non-existent product is not allowed.
+        # Making a branch directory for a non-existent product is not allowed.
         # Products must first be registered in Launchpad.
         transport = self.getTransport()
         self.assertRaises(
             (errors.PermissionDenied, errors.NoSuchFile),
-            transport.mkdir, '~testuser/pear')
-
-## XXX: JonathanLange 2007-06-05, Behaves differently for SFTP and HPSS
-##     @deferToThread
-##     def test_make_product_directory_for_existent_product(self):
-##         # The transport raises a FileExists error if it tries to make the
-##         # directory of a product that is registered with Launchpad.
-
-##         # XXX: JonathanLange 2007-05-27, do we care what the error is? It
-##         # should be TransportNotPossible or FileExists. NoSuchFile might be
-##         # acceptable though.
-##         transport = self.getTransport()
-##         self.assertRaises(
-##             (errors.PermissionDenied, errors.NoSuchFile),
-##             transport.mkdir, '~testuser/firefox')
+            transport.mkdir, '~testuser/no-such-product/new-branch')
 
     @deferToThread
     def test_make_branch_directory(self):
@@ -225,13 +116,7 @@ class TestLaunchpadTransportMakeDirectory(SSHTestCase, TestCaseWithTransport):
         # existing product directory.
         transport = self.getTransport()
         transport.mkdir('~testuser/firefox/banana')
-        # This implicitly tests that the branch has been created in the
-        # database. The call to transport.has will blow up if it can't map the
-        # path to a branch ID, there won't be a branch ID unless the branch is
-        # in the database.
         self.assertTrue(transport.has('~testuser/firefox/banana'))
-        transport.mkdir('~testteam/firefox/banana')
-        self.assertTrue(transport.has('~testteam/firefox/banana'))
 
     @deferToThread
     def test_make_junk_branch(self):
@@ -261,16 +146,73 @@ class TestLaunchpadTransportMakeDirectory(SSHTestCase, TestCaseWithTransport):
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
 
     @deferToThread
-    def test_make_two_directories(self):
-        # Bazaar doesn't have a makedirs() facility for transports, so we need
-        # to make sure that we can make a directory on the backing transport if
-        # its parents exist and if they don't exist.
-        transport = self.getTransport()
-        transport.mkdir('~testuser/thunderbird/banana')
-        transport.mkdir('~testuser/thunderbird/orange')
-        self.assertTrue(transport.has('~testuser/thunderbird/banana'))
-        self.assertTrue(transport.has('~testuser/thunderbird/orange'))
+    def test_rename_directory_to_existing_directory_fails(self):
+        # 'rename dir1 dir2' should fail if 'dir2' exists. Unfortunately, it
+        # will only fail if they both contain files/directories.
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        transport.mkdir('branch/.bzr/dir1')
+        transport.mkdir('branch/.bzr/dir1/foo')
+        transport.mkdir('branch/.bzr/dir2')
+        transport.mkdir('branch/.bzr/dir2/bar')
+        self.assertRaises(
+            (errors.FileExists, IOError),
+            transport.rename, 'branch/.bzr/dir1', 'branch/.bzr/dir2')
 
+    @deferToThread
+    def test_rename_directory_succeeds(self):
+        # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        transport.mkdir('branch/.bzr/dir1')
+        transport.mkdir('branch/.bzr/dir1/foo')
+        transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
+        self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
+
+
+## XXX: JonathanLange 2007-06-05, SFTP only -- HPSS hides the error message.
+## Test the error message for making a top-level directory.
+##         self.failUnless(
+##             "Branches must be inside a person or team directory." in str(e),
+##             str(e))
+
+
+## XXX: JonathanLange 2007-06-05, Behaves differently for SFTP and HPSS
+##     @deferToThread
+##     def test_make_product_directory_for_existent_product(self):
+##         # The transport raises a FileExists error if it tries to make the
+##         # directory of a product that is registered with Launchpad.
+
+##         # XXX: JonathanLange 2007-05-27, do we care what the error is? It
+##         # should be TransportNotPossible or FileExists. NoSuchFile might be
+##         # acceptable though.
+##         transport = self.getTransport()
+##         self.assertRaises(
+##             (errors.PermissionDenied, errors.NoSuchFile),
+##             transport.mkdir, '~testuser/firefox')
+
+
+## XXX: JonathanLange 2007-06-05, SFTP only -- HPSS hides the error message.
+## Test the error message for removing a branch directory
+##         self.failUnless(
+##             "removing branch directory 'foo' is not allowed." in str(e), str(e))
+
+
+## XXX: JonathanLange 2007-06-05, SFTP only -- HPSS hides the error message.
+## Test the error message for creating product directories that aren't
+## registered in Launchpad.
+##         self.failUnless(
+##             "Directories directly under a user directory must be named after a "
+##             "product name registered in Launchpad" in str(e),
+##             str(e))
+
+
+## XXX: JonathanLange 2007-06-05, SFTP only -- HPSS hides the error message.
+## Test the error message for creating branches in team directories that don't
+## belong to you.
+##        self.failUnless("~not-my-team" in str(e))
 
 
 class FakeLaunchpadServer(LaunchpadServer):
