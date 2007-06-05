@@ -125,9 +125,9 @@ class TestIsolation(unittest.TestCase):
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
 
-        # Note that it doesn't stick if you use the dbapi call on an
-        # connection that has already been used, and the call silently does
-        # nothing. This is psycopg behavior.
+        # Note that it doesn't work to use the dbapi call on a
+        # connection that has already been used, as the call silently
+        # does nothing. This is psycopg behavior.
         con.set_isolation_level(READ_COMMITTED_ISOLATION)
         self.failIfEqual(self.getCurrentIsolation(con), 'read committed')
 
