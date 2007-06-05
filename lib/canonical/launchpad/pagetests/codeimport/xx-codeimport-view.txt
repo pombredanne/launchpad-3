@@ -1,51 +1,46 @@
-For now, we put a link on the `code` page:
+For now, there is no link to the page that lists all code imports, so
+we browse there directly:
 
-  >>> browser.open('http://code.launchpad.dev/')
-  >>> browser.getLink('View all imports').click()
-  >>> browser.url
-  'http://code.launchpad.dev/+code-imports'
+  >>> browser.open('http://code.launchpad.dev/+code-imports')
 
-There are two CodeImports in the sample data:
+There are two CodeImports in the sample data and they both show up in
+the page:
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import ICodeImportSet
-  >>> from canonical.lp.dbschema import RevisionControlSystems
-  >>> from canonical.launchpad.interfaces import IProductSeriesSet
-  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
-  >>> login(ANONYMOUS)
-  >>> codeimportset = getUtility(ICodeImportSet)
-  >>> codeimports = list(codeimportset.getAll())
-  >>> len(codeimports)
-  2
-  >>> sorted(ci.name for ci in codeimports)
-  [u'sample-cvs', u'sample-svn']
-  >>> svn_import ,= [ci for ci in codeimports if ci.name==u'sample-svn']
-  >>> cvs_import ,= [ci for ci in codeimports if ci.name==u'sample-cvs']
-  >>> logout()
-
-And they both show up in the page:
-
-  >>> [(ci.name in browser.contents) for ci in codeimports]
-  [True, True]
+  >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
+  >>> rows = table.tbody('tr')
+  >>> names = [extract_text(tr.td) for tr in rows]
+  >>> sorted(names)
+  [u'a52dec-trunk-3', u'gnome-terminal-trunk-1']
 
 If we click on the code import's name, we go to the page for that
 import:
 
-  >>> browser.getLink('sample-svn').click()
+  >>> browser.getLink('gnome-terminal-trunk-1').click()
   >>> browser.url
-  'http://code.launchpad.dev/+code-imports/sample-svn'
+  'http://code.launchpad.dev/+code-imports/gnome-terminal-trunk-1'
 
 It displays some information about the code import, for example the
-URL of the Subversion branch the import is from:
+review status and the URL of the Subversion branch the import is from:
 
-  >>> svn_import.svn_branch_url in browser.contents
-  True
+  >>> extract_text(
+  ...     find_tag_by_id(browser.contents, 'review-status'))
+  u'Pending Review'
+  >>> extract_text(
+  ...     find_tag_by_id(browser.contents, 'subversion-url'))
+  u'http://svn.example.org/svnroot/gnome-terminal/trunk'
 
 And similar for the other import:
 
   >>> browser.getLink('Code Imports').click()
-  >>> browser.getLink('sample-cvs').click()
+  >>> browser.getLink('a52dec-trunk-3').click()
   >>> browser.url
-  'http://code.launchpad.dev/+code-imports/sample-cvs'
-  >>> (cvs_import.cvs_root in browser.contents) and (cvs_import.cvs_module in browser.contents)
-  True
+  'http://code.launchpad.dev/+code-imports/a52dec-trunk-3'
+  >>> extract_text(
+  ...     find_tag_by_id(browser.contents, 'review-status'))
+  u'Reviewed'
+  >>> extract_text(
+  ...     find_tag_by_id(browser.contents, 'cvs-root'))
+  u'cvs.example.org/cvsroot'
+  >>> extract_text(
+  ...     find_tag_by_id(browser.contents, 'cvs-module'))
+  u'a52dec'

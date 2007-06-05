@@ -12,7 +12,7 @@
     <p>No code imports found!</p>
   </tal:block>
 
-  <table class="listing" tal:condition="batch">
+  <table class="listing" id="code-import-listing" tal:condition="batch">
     <thead>
       <tr>
         <th>

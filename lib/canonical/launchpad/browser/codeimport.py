@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Docstring."""
+"""Broswer views for CodeImports."""
 
 __metaclass__ = type
 
@@ -26,11 +26,11 @@ class CodeImportSetNavigation(Navigation):
 
     def traverse(self, name):
         # XXX ICodeImportSet needs extending yes, why do you ask?
-        imps = [ci for ci in self.context.getAll() if ci.name == name]
-        if len(imps) != 1:
+        imports = [ci for ci in self.context.getAll() if ci.name == name]
+        if len(imports) != 1:
             return None
         else:
-            return imps[0]
+            return imports[0]
 
 class CodeImportSetView(LaunchpadView):
     pass
