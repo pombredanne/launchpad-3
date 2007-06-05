@@ -25,7 +25,7 @@ Check that we can get a potlist for a product release:
   ...Listing of FEW templates...
   ...
 
-Check that we can get a potlist for a distrorelease:
+Check that we can get a potlist for a distroseries:
 
   >>> print http(r"""
   ... GET /ubuntu/hoary/+potlist HTTP/1.1

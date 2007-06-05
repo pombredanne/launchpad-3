@@ -2,25 +2,19 @@
   <h4>Want fast delivery of Ubuntu DVDs?</h4>
   <h5>If you live in the US, you can order online now!</h5>
   <div style="text-align: center">
-    <p>Ubuntu 6.06 LTS for PCs</p>
-    <iframe
-      src="http://rcm.amazon.com/e/cm?t=ubuntushipit-20&o=1&p=8&l=as1&asins=B000G62IDU&fc1=000000&IS2=1&lt1=_blank&lc1=0000ff&bc1=000000&bg1=ffffff&f=ifr"
+    <p>Ubuntu 7.04 for PCs</p>
+    <iframe 
+      src="http://rcm.amazon.com/e/cm?t=ubuntushipit-20&o=1&p=8&l=as1&asins=B000PSWZSC&fc1=000000&IS2=1&lt1=_blank&lc1=0000FF&bc1=000000&bg1=FFFFFF&f=ifr"
       style="width:120px;height:240px;" scrolling="no" marginwidth="0"
       marginheight="0" frameborder="0">
     </iframe>
     <br />
     <br />
-    <p>Ubuntu 6.06 LTS for 64-bit PCs</p>
+    <p>Ubuntu 7.04 for 64-bit PCs</p>
     <iframe
-      src="http://rcm.amazon.com/e/cm?t=ubuntushipit-20&o=1&p=8&l=as1&asins=B000G648GA&fc1=000000&IS2=1&lt1=_blank&lc1=0000ff&bc1=000000&bg1=ffffff&f=ifr"
+      src="http://rcm.amazon.com/e/cm?t=ubuntushipit-20&o=1&p=8&l=as1&asins=B000PU41VE&fc1=000000&IS2=1&lt1=_blank&lc1=0000FF&bc1=000000&bg1=FFFFFF&f=ifr"
       style="width:120px;height:240px;" scrolling="no" marginwidth="0"
-      marginheight="0" frameborder="0"></iframe>
-    <br />
-    <br />
-    <p>Ubuntu 6.06 LTS for Mac</p>
-    <iframe
-      src="http://rcm.amazon.com/e/cm?t=ubuntushipit-20&o=1&p=8&l=as1&asins=B000G6677S&fc1=000000&IS2=1&lt1=_blank&lc1=0000ff&bc1=000000&bg1=ffffff&f=ifr"
-      style="width:120px;height:240px;" scrolling="no" marginwidth="0"
-      marginheight="0" frameborder="0"></iframe>
+      marginheight="0" frameborder="0">
+    </iframe>
   </div>
 </div>

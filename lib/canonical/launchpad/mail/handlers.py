@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
     IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, IWeaklyAuthenticatedPrincipal, IQuestionSet,
+    IDistroSeriesBugTask, IWeaklyAuthenticatedPrincipal, IQuestionSet,
     ISpecificationSet)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail
@@ -53,7 +53,7 @@ def get_bugtask_type(bugtask):
     """Returns the specific IBugTask interface the the bugtask provides.
 
         >>> from canonical.launchpad.interfaces import (
-        ...     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
+        ...     IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask)
         >>> from zope.interface import classImplementsOnly
         >>> class BugTask:
         ...     pass
@@ -75,12 +75,12 @@ def get_bugtask_type(bugtask):
         >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
         <...IDistroBugTask>
 
-        >>> classImplementsOnly(BugTask, IDistroReleaseBugTask)
+        >>> classImplementsOnly(BugTask, IDistroSeriesBugTask)
         >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        <...IDistroReleaseBugTask>
+        <...IDistroSeriesBugTask>
     """
     bugtask_interfaces = [
-        IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask
+        IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask
         ]
     for interface in bugtask_interfaces:
         if interface.providedBy(bugtask):

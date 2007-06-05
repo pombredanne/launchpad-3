@@ -6,9 +6,7 @@
 # XXX: Carlos Perello Marin 2005-04-15: This code will be "componentized"
 # soon. https://launchpad.ubuntu.com/malone/bugs/403
 
-import sys
 import re
-import textwrap
 import codecs
 import logging
 import doctest
@@ -615,6 +613,7 @@ class POParser(object):
         self.header_factory = header_factory
         self.header = None
         self.messages = []
+        self._messageids = {}
         self._pending_chars = ''
         self._pending_unichars = u''
         self._lineno = 0
@@ -653,31 +652,56 @@ class POParser(object):
         self._pending_unichars += newchars
         self._pending_chars = self._pending_chars[length:]
 
-    def _get_line(self):
-        # do we know what charset the data is in yet?
+    def _get_header_line(self):
         if self.header:
-            parts = re.split(r'\n|\r\n|\r', self._pending_unichars, 1)
-            if len(parts) == 1:
-                # only one line
-                return None
-            line, self._pending_unichars = parts
-            return line
-        else:
-            parts = re.split(r'\n|\r\n|\r', self._pending_chars, 1)
-            if len(parts) == 1:
-                # only one line
-                return None
-            line, self._pending_chars = parts
-            return line
+            # We know what charset the data is in, as we've already
+            # parsed the header.  However, we're going to handle this
+            # more efficiently, so we don't want to use _get_header_line
+            # except for parsing the header.
+            raise AssertionError(
+                'using _get_header_line after header is parsed')
+
+        # We don't know what charset the data is in, so we parse it one line
+        # at a time until we have the header, and then we'll know how to
+        # treat the rest of the data.
+        parts = re.split(r'\n|\r\n|\r', self._pending_chars, 1)
+        if len(parts) == 1:
+            # only one line
+            return None
+        line, self._pending_chars = parts
+        return line
 
     def write(self, string):
         """Parse string as a PO file fragment."""
         self._pending_chars += string
-        self._convert_chars()
-        line = self._get_line()
+        if self.header:
+            self._convert_chars()
+            return
+
+        # Header not parsed yet. Do that first, inefficiently.
+        # It ought to be short, so this isn't disastrous.
+        line = self._get_header_line()
         while line is not None:
             self.parse_line(line)
-            line = self._get_line()
+            if self.header:
+                break
+            line = self._get_header_line()
+
+        if line is None:
+            # There is nothing left to parse.
+            return
+
+        # Parse anything left all in one go.
+        lines = re.split(r'\n|\r\n|\r', self._pending_unichars)
+        if lines:
+            # If we have any lines, the last one should be the empty string,
+            # if we have a properly-formed po file with a new line at the
+            # end.  So, put the last line into _pending_unichars so the rest
+            # of the parser gets what's expected.
+            self._pending_unichars = lines[-1]
+            lines = lines[:-1]
+        for line in lines:
+            self.parse_line(line)
 
     def _make_dataholder(self):
         self._partial_transl = {}
@@ -694,15 +718,14 @@ class POParser(object):
 
     def append(self):
         if self._partial_transl:
-            for message in self.messages:
-                if message.msgid == self._partial_transl['msgid']:
-                    lineno = self._partial_transl['_lineno']
-                    # XXX: I changed the exception below to use %r
-                    # because the original %d returned "<unprintable
-                    # instance object>" in a traceback in bug 2896
-                    #    -- kiko, 2005-10-06
-                    raise POInvalidInputError('Po file: duplicate msgid '
-                                              'ending on line %r' % lineno)
+            if self._messageids.has_key(self._partial_transl['msgid']):
+                lineno = self._partial_transl['_lineno']
+                # XXX: I changed the exception below to use %r
+                # because the original %d returned "<unprintable
+                # instance object>" in a traceback in bug 2896
+                #    -- kiko, 2005-10-06
+                raise POInvalidInputError('Po file: duplicate msgid '
+                                          'ending on line %r' % lineno)
             try:
                 transl = self.translation_factory(header=self.header,
                                                   **self._partial_transl)
@@ -711,6 +734,7 @@ class POParser(object):
                     e.lno = self._partial_transl['_lineno']
                 raise
             self.messages.append(transl)
+            self._messageids[self._partial_transl['msgid']] = True
         self._partial_transl = None
 
     def _make_header(self):

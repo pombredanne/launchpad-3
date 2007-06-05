@@ -71,14 +71,14 @@ class IPOTemplate(IRosettaStats):
         vocabulary="ValidOwner")
 
     productseries = Choice(
-        title=_("Release Series"),
+        title=_("Series"),
         required=False,
         vocabulary="ProductSeries")
 
-    distrorelease = Choice(
-        title=_("Distribution Release"),
+    distroseries = Choice(
+        title=_("Series"),
         required=False,
-        vocabulary="DistroRelease")
+        vocabulary="DistroSeries")
 
     sourcepackagename = Choice(
         title=_("Source Package Name"),
@@ -167,7 +167,7 @@ class IPOTemplate(IRosettaStats):
         "some number of translations.")
 
     translationtarget = Attribute("The object for which this template is "
-        "a translation. This will either be a SourcePackage or a Release "
+        "a translation. This will either be a SourcePackage or an upstream "
         "Series.")
 
     date_last_updated = Datetime(
@@ -321,8 +321,8 @@ class IPOTemplateSubset(Interface):
     sourcepackagename = Attribute(
         "The sourcepackagename associated with this subset of POTemplates.")
 
-    distrorelease = Attribute(
-        "The distrorelease associated with this subset of POTemplates.")
+    distroseries = Attribute(
+        "The distroseries associated with this subset of POTemplates.")
 
     productseries = Attribute(
         "The productseries associated with this subset of POTemplates.")
@@ -389,18 +389,18 @@ class IPOTemplateSet(Interface):
     def getAllOrderByDateLastUpdated():
         """Return an iterator over all POTemplate sorted by modification."""
 
-    def getSubset(distrorelease=None, sourcepackagename=None,
+    def getSubset(distroseries=None, sourcepackagename=None,
                   productseries=None):
         """Return a POTemplateSubset object depending on the given arguments.
         """
 
     def getSubsetFromImporterSourcePackageName(
-        distrorelease, sourcepackagename):
+        distroseries, sourcepackagename):
         """Return a POTemplateSubset based on the origin sourcepackagename.
         """
 
     def getPOTemplateByPathAndOrigin(path, productseries=None,
-        distrorelease=None, sourcepackagename=None):
+        distroseries=None, sourcepackagename=None):
         """Return an IPOTemplate that is stored at 'path' in source code and
            came from the given arguments.
 

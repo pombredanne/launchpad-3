@@ -41,22 +41,24 @@ pocketsuffix = {
 class IPublishing(Interface):
     """Ability to publish associated publishing records."""
 
-    def getPendingPublications(self, pocket, is_careful):
+    def getPendingPublications(self, archive, pocket, is_careful):
         """Return the specific group of records to be published.
 
-        IDistroRelease -> ISourcePackagePublishing
-        IDistroArchRelease -> IBinaryPackagePublishing
+        IDistroSeries -> ISourcePackagePublishing
+        IDistroArchSeries -> IBinaryPackagePublishing
 
-        'pocket' argument restrict the results to a given value.
+        'pocket' & 'archive' are mandatory arguments, they  restrict the
+        results to the given value.
 
-        If the distroreleases is already released, it automatically refuses
+        If the distroseries is already released, it automatically refuses
         to publish records to RELEASE pocket.
         """
 
-    def publish(diskpool, log, pocket, careful=False):
+    def publish(diskpool, log, archive, pocket, careful=False):
         """Publish associated publishing records targeted for a given pocket.
 
         Require an initialised diskpool instance and a logger instance.
+        Require an 'archive' which will restrict the publications.
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
         published files.)
@@ -141,8 +143,8 @@ class IBaseSourcePackagePublishing(Interface):
     distribution = Int(
             title=_('Distribution ID'), required=True, readonly=True,
             )
-    distroreleasename = TextLine(
-            title=_('Distro Release name'), required=True, readonly=True,
+    distroseriesname = TextLine(
+            title=_('Series name'), required=True, readonly=True,
             )
     sourcepackagename = TextLine(
             title=_('Binary package name'), required=True, readonly=True,
@@ -155,6 +157,9 @@ class IBaseSourcePackagePublishing(Interface):
             )
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
+            )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
             )
 
 
@@ -186,8 +191,8 @@ class ISourcePackagePublishingBase(Interface):
             title=_('The status of this publishing record'),
             required=False, readonly=False,
             )
-    distrorelease = Int(
-            title=_('The distrorelease being published into'),
+    distroseries = Int(
+            title=_('The distroseries being published into'),
             required=False, readonly=False,
             )
     component = Int(
@@ -209,6 +214,9 @@ class ISourcePackagePublishingBase(Interface):
     pocket = Int(
             title=_('The pocket into which this entry is published'),
             required=True, readonly=True,
+            )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
             )
 
 
@@ -253,7 +261,7 @@ class ISourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
     """A source package publishing history record."""
     meta_sourcepackage = Attribute(
         "Return an ISourcePackage meta object correspondent to the "
-        "sourcepackagerelease attribute inside a specific distrorelease")
+        "sourcepackagerelease attribute inside a specific distroseries")
     meta_sourcepackagerelease = Attribute(
         "Return an IDistribuitionSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute")
@@ -261,16 +269,16 @@ class ISourcePackagePublishingHistory(IExtendedSourcePackagePublishing):
         "Return an IDistribuitionSourcePackageRelease meta object "
         "correspondent to the supersededby attribute. if supersededby "
         "is None return None.")
-    meta_distroreleasesourcepackagerelease = Attribute(
-        "Return an IDistroReleaseSourcePackageRelease meta object "
+    meta_distroseriessourcepackagerelease = Attribute(
+        "Return an IDistroSeriesSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute inside "
-        "a specific distrorelease")
+        "a specific distroseries")
 
     def publishedBinaries():
         """Return all resulted IBinaryPackagePublishingHistory.
 
         Follow the build record and return every PUBLISHED binary publishing
-        record for DistroArchReleases in this DistroRelease, ordered by
+        record for DistroArchSeriess in this DistroSeries, ordered by
         architecturetag.
         """
 
@@ -284,8 +292,8 @@ class IBaseBinaryPackagePublishing(Interface):
     distribution = Int(
             title=_('Distribution ID'), required=True, readonly=True,
             )
-    distroreleasename = TextLine(
-            title=_('Distribution release name'), required=True, readonly=True,
+    distroseriesname = TextLine(
+            title=_('Series name'), required=True, readonly=True,
             )
     componentname = TextLine(
             title=_('Component name'), required=True, readonly=True,
@@ -295,6 +303,9 @@ class IBaseBinaryPackagePublishing(Interface):
             )
     pocket = Int(
             title=_('Package publishing pocket'), required=True, readonly=True,
+            )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
             )
 
 
@@ -331,8 +342,8 @@ class IExtendedBinaryPackagePublishing(Interface):
             title=_('The binary package being published'), required=False,
             readonly=False,
             )
-    distroarchrelease = Int(
-            title=_('The distroarchrelease being published into'),
+    distroarchseries = Int(
+            title=_('The distroarchseries being published into'),
             required=False, readonly=False,
             )
     component = Int(
@@ -384,6 +395,10 @@ class IExtendedBinaryPackagePublishing(Interface):
                     'published set'),
             required=False, readonly=False,
             )
+    archive = Int(
+            title=_('Archive ID'), required=True, readonly=True,
+            )
+
 
 class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
     """A binary package publishing record."""
@@ -401,8 +416,8 @@ class ISecureBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
 class IBinaryPackagePublishingHistory(IExtendedBinaryPackagePublishing):
     """A binary package publishing record."""
 
-    distroarchreleasebinarypackagerelease = Attribute("The object that "
-        "represents this binarypacakgerelease in this distroarchrelease.")
+    distroarchseriesbinarypackagerelease = Attribute("The object that "
+        "represents this binarypacakgerelease in this distroarchseries.")
 
     hasRemovalRequested = Bool(
             title=_('Whether a removal has been requested for this record')

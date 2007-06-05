@@ -203,10 +203,10 @@
               <a tal:attributes="href spec/productseries/fmt:url"
                  tal:content="spec/productseries/name">1.0</a>
             </tal:series>
-            <tal:distrorelease condition="spec/distrorelease">
-              <a tal:attributes="href spec/distrorelease/fmt:url"
-                 tal:content="spec/distrorelease/name">1.0</a>
-            </tal:distrorelease>
+            <tal:distroseries condition="spec/distroseries">
+              <a tal:attributes="href spec/distroseries/fmt:url"
+                 tal:content="spec/distroseries/name">1.0</a>
+            </tal:distroseries>
           </td>
         </tr>
       </tbody>

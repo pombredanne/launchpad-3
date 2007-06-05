@@ -106,8 +106,8 @@ class SignableTagFile:
         if person is None and self.policy.create_people:
             package = self._dict['source']
             version = self._dict['version']
-            if self.policy.distrorelease and self.policy.pocket:
-                policy_suite = ('%s/%s' % (self.policy.distrorelease.name,
+            if self.policy.distroseries and self.policy.pocket:
+                policy_suite = ('%s/%s' % (self.policy.distroseries.name,
                                            self.policy.pocket.name))
             else:
                 policy_suite = '(unknown)'
@@ -311,7 +311,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
             try:
                 library_file = self.policy.distro.getFileByName(
-                    sub_dsc_file.filename, source=True, binary=False)
+                    sub_dsc_file.filename, source=True, binary=False,
+                    archive=self.policy.archive)
             except NotFoundError, error:
                 library_file = None
             else:
@@ -431,7 +432,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         source_name = getUtility(
             ISourcePackageNameSet).getOrCreateByName(self.source)
 
-        release = self.policy.distrorelease.createUploadedSourcePackageRelease(
+        release = self.policy.distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=source_name,
             version=self.dsc_version,
             maintainer=self.maintainer['person'],
@@ -450,6 +451,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             component=self.component,
             changelog=guess_encoding(self.changes.simulated_changelog),
             section=self.section,
+            archive=self.policy.archive,
             # dateuploaded by default is UTC:now in the database
             )
 
