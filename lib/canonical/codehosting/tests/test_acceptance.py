@@ -570,30 +570,44 @@ class AcceptanceTests(SSHTestCase, TestCaseWithRepository):
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
 
-
 class CodeHostingTestProviderAdapter:
+
+    def __init__(self, servers):
+        self._servers = servers
+
+    def adaptForServer(self, test, server):
+        from copy import deepcopy
+        new_test = deepcopy(test)
+        new_test.installServer(server)
+        def make_new_test_id():
+            new_id = "%s(%s)" % (new_test.id(), server._schema)
+            return lambda: new_id
+        new_test.id = make_new_test_id()
+        return new_test
+
+    def adapt(self, test):
+        result = unittest.TestSuite()
+        for server in self._servers:
+            new_test = self.adaptForServer(test, server)
+            result.addTest(new_test)
+        return result
+
+
+class CodeHostingRepositoryTestProviderAdapter(CodeHostingTestProviderAdapter):
 
     def __init__(self, format, servers):
         self._repository_format = format
-        self._servers = servers
+        CodeHostingTestProviderAdapter.__init__(self, servers)
 
-    def adapt(self, test):
-        from copy import deepcopy
+    def adaptForServer(self, test, server):
         from bzrlib.tests import default_transport
-        result = unittest.TestSuite()
-        for server in self._servers:
-            new_test = deepcopy(test)
-            new_test.transport_server = default_transport
-            new_test.transport_readonly_server = None
-            new_test.bzrdir_format = self._repository_format._matchingbzrdir
-            new_test.repository_format = self._repository_format
-            new_test.installServer(server)
-            def make_new_test_id():
-                new_id = "%s(%s)" % (new_test.id(), server._schema)
-                return lambda: new_id
-            new_test.id = make_new_test_id()
-            result.addTest(new_test)
-        return result
+        new_test = CodeHostingTestProviderAdapter.adaptForServer(
+            self, test, server)
+        new_test.transport_server = default_transport
+        new_test.transport_readonly_server = None
+        new_test.bzrdir_format = self._repository_format._matchingbzrdir
+        new_test.repository_format = self._repository_format
+        return new_test
 
 
 def adapt_suite(adapter, base_suite):
@@ -640,7 +654,8 @@ def make_server_tests(base_suite):
     servers = [
         SSHCodeHostingServer('sftp', authserver, branches_root),
         SSHCodeHostingServer('bzr+ssh', authserver, branches_root)]
-    adapter = CodeHostingTestProviderAdapter(repository_format, servers)
+    adapter = CodeHostingRepositoryTestProviderAdapter(
+        repository_format, servers)
     return adapt_suite(adapter, base_suite)
 
 

@@ -14,7 +14,9 @@ from bzrlib.tests import TestCaseWithTransport, TestCaseWithMemoryTransport
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.codehosting.transport import LaunchpadServer
 
-from canonical.codehosting.tests.test_acceptance import SSHTestCase
+from canonical.codehosting.tests.test_acceptance import (
+    adapt_suite, AuthserverWithKeys, CodeHostingTestProviderAdapter,
+    SSHCodeHostingServer, SSHTestCase)
 from canonical.codehosting.tests.test_transport import FakeLaunchpad
 from canonical.codehosting.tests.helpers import (
     TwistedBzrlibLayer, deferToThread)
@@ -29,6 +31,9 @@ class SFTPTests(SSHTestCase, TestCaseWithTransport):
         print "Overriding Twisted's cleanup because it causes errors."
         from twisted.internet import defer
         return defer.succeed(None)
+
+    def installServer(self, server):
+        self.server = server
 
     @deferToThread
     def test_rmdir_branch(self):
@@ -135,10 +140,9 @@ class SFTPTests(SSHTestCase, TestCaseWithTransport):
         self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
 
 
-class TestLaunchpadTransportMakeDirectory(SSHTestCase,
-                                          TestCaseWithMemoryTransport):
+class TestLaunchpadTransportMakeDirectory(SSHTestCase, TestCaseWithTransport):
 
-    layer = BzrlibLayer
+    layer = TwistedBzrlibLayer
 
     def getDefaultServer(self):
         authserver = FakeLaunchpad()
@@ -149,38 +153,49 @@ class TestLaunchpadTransportMakeDirectory(SSHTestCase,
 
     def installServer(self, server):
         self.server = server
-        self.backing_transport = server.backing_transport
 
     def getTransport(self):
         return get_transport(self.server.get_url())
 
+    @deferToThread
     def test_make_invalid_user_directory(self):
         # The top-level directory must always be of the form '~user'. However,
         # sometimes a transport will ask to look at files that aren't of that
         # form. In that case, we raise NoSuchFile.
         transport = self.getTransport()
         self.assertRaises(
-            errors.NoSuchFile, transport.mkdir, 'apple')
+            (errors.PermissionDenied, errors.NoSuchFile),
+            transport.mkdir, 'apple')
 
+    @deferToThread
     def test_make_valid_user_directory(self):
         # Making a top-level directory is not supported by the Launchpad
         # transport.
         transport = self.getTransport()
-        self.assertRaises(errors.NoSuchFile, transport.mkdir, '~apple')
+        self.assertRaises(
+            (errors.PermissionDenied, errors.NoSuchFile),
+            transport.mkdir, '~apple')
 
+    @deferToThread
     def test_make_existing_user_directory(self):
         # Making a user directory raises an error. We don't really care what
         # the error is, but it should be one of FileExists,
         # TransportNotPossible or NoSuchFile
         transport = self.getTransport()
-        self.assertRaises(errors.NoSuchFile, transport.mkdir, '~foo')
+        self.assertRaises(
+            (errors.PermissionDenied, errors.NoSuchFile),
+            transport.mkdir, '~foo')
 
+    @deferToThread
     def test_make_product_directory_for_nonexistent_product(self):
         # Making a directory for a non-existent product is not allowed.
         # Products must first be registered in Launchpad.
         transport = self.getTransport()
-        self.assertRaises(errors.NoSuchFile, transport.mkdir, '~foo/pear')
+        self.assertRaises(
+            (errors.PermissionDenied, errors.NoSuchFile),
+            transport.mkdir, '~foo/pear')
 
+    @deferToThread
     def test_make_product_directory_for_existent_product(self):
         # The transport raises a FileExists error if it tries to make the
         # directory of a product that is registered with Launchpad.
@@ -189,8 +204,11 @@ class TestLaunchpadTransportMakeDirectory(SSHTestCase,
         # should be TransportNotPossible or FileExists. NoSuchFile might be
         # acceptable though.
         transport = self.getTransport()
-        self.assertRaises(errors.NoSuchFile, transport.mkdir, '~foo/bar')
+        self.assertRaises(
+            (errors.PermissionDenied, errors.NoSuchFile),
+            transport.mkdir, '~foo/bar')
 
+    @deferToThread
     def test_make_branch_directory(self):
         # We allow users to create new branches by pushing them beneath an
         # existing product directory.
@@ -204,6 +222,7 @@ class TestLaunchpadTransportMakeDirectory(SSHTestCase,
         transport.mkdir('~team1/bar/banana')
         self.assertTrue(transport.has('~team1/bar/banana'))
 
+    @deferToThread
     def test_make_junk_branch(self):
         # Users can make branches beneath their '+junk' folder.
         transport = self.getTransport()
@@ -211,19 +230,17 @@ class TestLaunchpadTransportMakeDirectory(SSHTestCase,
         # See comment in test_make_branch_directory.
         self.assertTrue(transport.has('~foo/+junk/banana'))
 
+    @deferToThread
     def test_directory_inside_branch(self):
         # We allow users to create new branches by pushing them beneath an
         # existing product directory.
         transport = self.getTransport()
         transport.mkdir('~foo/bar/banana')
         transport.mkdir('~foo/bar/banana/.bzr')
-        # WHITEBOX ALERT. The transport doesn't have any API for providing the
-        # branch ID (which is a good thing), and we need the id to find the
-        # path on the underlying transport.
-        branch_id = self.server._branches[('foo', 'bar', 'banana')]
-        self.assertTrue(
-            self.backing_transport.has(branch_id_to_path(branch_id)))
+        self.assertTrue(transport.has('~foo/bar/banana'))
+        self.assertTrue(transport.has('~foo/bar/banana/.bzr'))
 
+    @deferToThread
     def test_make_directory_without_prefix(self):
         # Because the user and product directories don't exist on the
         # filesystem, we can create a branch directory for a product even if
@@ -232,6 +249,7 @@ class TestLaunchpadTransportMakeDirectory(SSHTestCase,
         transport.mkdir('~foo/product2/banana')
         self.assertTrue(transport.has('~foo/product2/banana'))
 
+    @deferToThread
     def test_make_two_directories(self):
         # Bazaar doesn't have a makedirs() facility for transports, so we need
         # to make sure that we can make a directory on the backing transport if
@@ -243,5 +261,39 @@ class TestLaunchpadTransportMakeDirectory(SSHTestCase,
         self.assertTrue(transport.has('~foo/product2/orange'))
 
 
+
+class FakeLaunchpadServer(LaunchpadServer):
+    def __init__(self, authserver, user_id):
+        LaunchpadServer.__init__(self, authserver, user_id, None)
+        self._schema = 'lp'
+
+    def getTransport(self, path=None):
+        if path is None:
+            path = ''
+        transport = get_transport(self.get_url()).clone(path)
+        return transport
+
+    def setUp(self):
+        from bzrlib.transport.memory import MemoryTransport
+        self.backing_transport = MemoryTransport()
+        self.authserver = FakeLaunchpad()
+        self._branches = dict(self._iter_branches())
+        LaunchpadServer.setUp(self)
+
+
+def make_launchpad_server():
+    user_id = 1
+    return FakeLaunchpadServer(FakeLaunchpad(), user_id)
+
+
+def make_sftp_server():
+    authserver = AuthserverWithKeys('testuser', 'testteam')
+    branches_root = '/tmp/sftp-test'
+    return SSHCodeHostingServer('sftp', authserver, branches_root)
+
+
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    servers = [make_sftp_server(), make_launchpad_server()]
+    adapter = CodeHostingTestProviderAdapter(servers)
+    base_suite = unittest.TestLoader().loadTestsFromName(__name__)
+    return adapt_suite(adapter, base_suite)
