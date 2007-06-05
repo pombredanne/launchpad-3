@@ -9,14 +9,15 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
-    IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
+    IDistribution, IFAQTarget, ITeamMembership, IMilestone, IBug, ITranslator,
     ITranslationGroup, ITranslationGroupSet, IProduct, IProductSeries,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
     ISourcePackage, ILaunchpadCelebrities, IDistroSeries, IBugTracker,
     IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
+    IQuestion, IQuestionTarget,
     IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, IQuestion, ITranslationImportQueueEntry,
+    IShippingRun, ISpecification, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
     IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
@@ -888,6 +889,21 @@ class QuestionOwner(AuthorizationBase):
         """Allow the question's owner."""
         return user.inTeam(self.obj.owner)
 
+
+class ModerateFAQTarget(EditByOwnersOrAdmins):
+    permission = 'launchpad.Moderate'
+    usedfor = IFAQTarget
+
+    def checkAuthenticated(self, user):
+        """Allow people with launchpad.Edit or an answer contact."""
+        if EditByOwnersOrAdmins.checkAuthenticated(self, user):
+            return True
+        if IQuestionTarget.providedBy(self.obj):
+            for answer_contact in self.obj.answer_contacts:
+                if user.inTeam(answer_contact):
+                    return True
+        return False
+        
 
 def can_admin_team(team, user):
     """Return True if the given user has admin rights for the given team."""

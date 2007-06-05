@@ -35,6 +35,9 @@ Any logged in user can create a new FAQ document on a project.
     ...     'How to configure sound on Feisty.',
     ...     content="You don't! It is plug-and-play(tm)")
 
+(The complete description of the IFAQTarget is available in
+lib/canonical/launchpad/interfaces/ftests/faqtarget.txt)
+
 == IFAQ ==
 
 FAQ document provides the IFAQ interface.

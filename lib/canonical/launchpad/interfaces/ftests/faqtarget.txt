@@ -1,0 +1,90 @@
+= IFAQTarget Interface =
+
+The Launchpad Answer Tracker can be used to track answers to commonly
+asked questions. Regular user questions can then be answered with a
+referral to the FAQ document.
+
+Projects that can host a FAQ provides the IFAQTarget.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces import IFAQTarget
+
+    # removeSecurityProxy() is needed because some attributes are
+    # protected.
+    >>> verifyObject(IFAQTarget, removeSecurityProxy(target))
+    True
+
+== newFAQ() ===
+
+The newFAQ() method is used to create a new IFAQ object on the target.
+
+That method is only available to a user who has 'launchpad.Moderate' on
+the target.
+
+    >>> login('no-priv@canonical.com')
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> check_permission('launchpad.Moderate', target)
+    False
+
+    >>> no_priv = getUtility(ILaunchBag).user
+    >>> target.newFAQ(no_priv, 'Title', 'Summary', content='Content')
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
+
+In practice, this means that only the project's owner (aka registrant)
+or one of its answer contacts is authorized to create a new FAQ.
+
+    >>> old_owner = target.owner
+
+    # Usually, only the previous owner can change this.
+    >>> removeSecurityProxy(target).owner = no_priv
+    >>> check_permission('launchpad.Moderate', target)
+    True
+
+    >>> removeSecurityProxy(target).owner = old_owner
+    >>> target.addAnswerContact(no_priv)
+    True
+    >>> check_permission('launchpad.Moderate', target)
+    True
+
+    >>> faq = target.newFAQ(no_priv, 'Title', 'Summary', content='Content')
+
+The returned object provides the IFAQ interface:
+
+    >>> from canonical.launchpad.interfaces import IFAQ
+    >>> verifyObject(IFAQ, faq)
+    True
+
+The newFAQ() requires an owner, title, summary and either a url or content
+parameter. It also accepts an optional date_created attribute (which
+defaults to the current time).
+
+    >>> from datetime import datetime
+    >>> from pytz import UTC
+    >>> now = datetime.now(UTC)
+
+    >>> faq = target.newFAQ(
+    ...     no_priv, 'How to do something', 'Explain how to do something.',
+    ...     url='http://wiki.ubuntu.org/HowtoSomething', date_created=now)
+
+    >>> print faq.owner.displayname
+    No Privileges Person
+    >>> print faq.title
+    How to do something
+    >>> print faq.summary
+    Explain how to do something.
+    >>> print faq.content
+    None
+    >>> print faq.url
+    http://wiki.ubuntu.org/HowtoSomething
+    >>> faq.date_created == now
+    True
+
+The project where the FAQ was created is available through the target
+attribute:
+
+    >>> faq.target == target
+    True

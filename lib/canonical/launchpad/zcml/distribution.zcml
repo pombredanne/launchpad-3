@@ -29,7 +29,7 @@
       />
     <!-- IFAQTarget -->
     <require
-      permission="launchpad.AnyPerson"
+      permission="launchpad.Moderate"
       attributes="newFAQ"
       />
   </content>
