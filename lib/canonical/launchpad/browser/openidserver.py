@@ -157,6 +157,8 @@ class OpenIdView(LaunchpadView):
         'sabdfl'
         >>> view.extractName('https://launchpad.dev/%7Esabdfl')
         'sabdfl'
+        >>> view.extractName('https://launchpad.dev/~sabdfl/')
+        'sabdfl'
         """
         rooturl = allvhosts.configs['mainsite'].rooturl
         if rooturl.startswith('http:'):
@@ -168,7 +170,7 @@ class OpenIdView(LaunchpadView):
 
         # Note that we accept
         match = re.search(
-                r'^\s*%s(?:~|%%7E)(\w+)\s*$' % url_match_string, identity
+                r'^\s*%s(?:~|%%7E)(\w+)/?\s*$' % url_match_string, identity
                 )
 
         if match is None:

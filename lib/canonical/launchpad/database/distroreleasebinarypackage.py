@@ -76,15 +76,17 @@ class DistroReleaseBinaryPackage:
     def current_publishings(self):
         """See IDistroReleaseBinaryPackage."""
         ret = BinaryPackagePublishingHistory.select("""
-            BinaryPackagePublishingHistory.distroarchrelease = 
+            BinaryPackagePublishingHistory.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(self.distrorelease.id,
-                            self.binarypackagename.id,
+            """ % sqlvalues(self.distrorelease,
+                            self.distrorelease.main_archive,
+                            self.binarypackagename,
                             PackagePublishingStatus.REMOVED),
             orderBy=['-datecreated'],
             clauseTables=['DistroArchRelease', 'BinaryPackageRelease'])

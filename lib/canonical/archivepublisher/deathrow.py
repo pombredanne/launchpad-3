@@ -51,22 +51,26 @@ class DeathRow:
         source_files = SourcePackageFilePublishing.select("""
             publishingstatus = %s AND
             distribution = %s AND
+            sourcepackagefilepublishing.archive = %s AND
             SourcePackagePublishingHistory.id =
                  SourcePackageFilePublishing.sourcepackagepublishing AND
             SourcePackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.distribution, UTC_NOW),
+                            self.distribution, self.distribution.main_archive,
+                            UTC_NOW),
             clauseTables=['SourcePackagePublishingHistory'],
             orderBy="id")
 
         binary_files = BinaryPackageFilePublishing.select("""
             publishingstatus = %s AND
             distribution = %s AND
+            binarypackagefilepublishing.archive = %s AND
             BinaryPackagePublishingHistory.id =
                  BinaryPackageFilePublishing.binarypackagepublishing AND
             BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.distribution, UTC_NOW),
+                            self.distribution, self.distribution.main_archive,
+                            UTC_NOW),
             clauseTables=['BinaryPackagePublishingHistory'],
             orderBy="id")
         return (source_files, binary_files)
@@ -96,13 +100,15 @@ class DeathRow:
 
         live_source_files = SourcePackageFilePublishing.select(
             """
-            distribution = %s AND 
+            distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             publishingstatus != %s AND
             SourcePackagePublishingHistory.id =
             SourcePackageFilePublishing.sourcepackagepublishing AND
             (publishingstatus != %s OR
              SourcePackagePublishingHistory.scheduleddeletiondate > %s)
             """ % sqlvalues(self.distribution,
+                            self.distribution.main_archive,
                             PackagePublishingStatus.REMOVED,
                             PackagePublishingStatus.PENDINGREMOVAL,
                             UTC_NOW),
@@ -110,16 +116,18 @@ class DeathRow:
             orderBy="id")
         live_binary_files = BinaryPackageFilePublishing.select(
             """
-            distribution = %s AND 
+            distribution = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             publishingstatus != %s AND
             BinaryPackagePublishingHistory.id =
             BinaryPackageFilePublishing.binarypackagepublishing AND
             (publishingstatus != %s OR
              BinaryPackagePublishingHistory.scheduleddeletiondate > %s)
              """ % sqlvalues(self.distribution,
-                            PackagePublishingStatus.REMOVED,
-                            PackagePublishingStatus.PENDINGREMOVAL,
-                            UTC_NOW),
+                             self.distribution.main_archive,
+                             PackagePublishingStatus.REMOVED,
+                             PackagePublishingStatus.PENDINGREMOVAL,
+                             UTC_NOW),
             clauseTables = ["BinaryPackagePublishingHistory"],
             orderBy="id")
 

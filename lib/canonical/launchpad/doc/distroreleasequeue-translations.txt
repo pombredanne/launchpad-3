@@ -48,7 +48,7 @@ queue:
   ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner,
   ...     None, None, 'i386', Component.get(1), dapper.owner,
   ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
-  ...     Manifest.get(1), None, None, None, None)
+  ...     Manifest.get(1), None, None, None, None, dapper.main_archive)
 
   >>> publishing_history = SecureSourcePackagePublishingHistory(
   ...     distrorelease=dapper.id,
@@ -58,12 +58,13 @@ queue:
   ...     status=PackagePublishingStatus.PUBLISHED,
   ...     datecreated=UTC_NOW,
   ...     pocket=PackagePublishingPocket.RELEASE,
-  ...     embargo=False)
+  ...     embargo=False,
+  ...     archive=dapper.main_archive)
 
   # Do the upload into the system.
 
   >>> build = source_package_release.createBuild(
-  ...      dapper_amd64, PackagePublishingPocket.RELEASE)
+  ...      dapper_amd64, PackagePublishingPocket.RELEASE, dapper.main_archive)
 
   >>> buildd_policy = getPolicy(
   ...     name='buildd', distro='ubuntu', distrorelease='dapper',
@@ -118,9 +119,9 @@ queue:
 
 An upload to the RELEASE pocket will add items to the import queue:
 
-  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.lp.dbschema import PackageUploadStatus
   >>> queue_item = dapper.getQueueItems(
-  ...     status=DistroReleaseQueueStatus.NEW)[0]
+  ...     status=PackageUploadStatus.NEW)[0]
   >>> queue_item.customfiles[0].publish()
 
   # There are exactly the 10 entries imported by pmount.
@@ -140,7 +141,7 @@ An upload to the BACKPORTS pocket will not add items to the import queue:
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> dapper = distro_release_set.queryByName(ubuntu, 'dapper')
-  >>> queue_item = dapper.getQueueItems(status=DistroReleaseQueueStatus.NEW)[0]
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
   >>> queue_item.pocket = PackagePublishingPocket.BACKPORTS
   >>> queue_item.customfiles[0].publish()
 
@@ -156,10 +157,42 @@ But an upload to the UPDATE pocket will add items to the import queue:
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> dapper = distro_release_set.queryByName(ubuntu, 'dapper')
-  >>> queue_item = dapper.getQueueItems(status=DistroReleaseQueueStatus.NEW)[0]
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
   >>> queue_item.pocket = PackagePublishingPocket.UPDATES
   >>> queue_item.customfiles[0].publish()
 
   # And we get 10 new entries imported.
   >>> translation_import_queue.getAllEntries(target='distros').count()
   10
+
+  # Let's abort the transaction so we can check the same upload in a different
+  # pocket.
+  >>> transaction.abort()
+
+
+== Translations from PPA build ==
+
+For now we simply ignore translations for other archive than the
+Distribution main_archive (PPAs).
+
+  >>> from canonical.launchpad.interfaces import (
+  ...    IPersonSet, IArchiveSet)
+
+  >>> foobar_archive = getUtility(IArchiveSet).new(
+  ...     owner=getUtility(IPersonSet).getByName('name16'))
+
+  >>> dapper = getUtility(IDistributionSet)['ubuntu']['dapper']
+  >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+  >>> queue_item.archive = foobar_archive
+
+  >>> queue_item.customfiles[0].publish(mock_logger)
+  DEBUG: Publishing custom pmount,pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz to ubuntu/dapper
+  DEBUG: Skipping translations since it is a PPA.
+
+
+  # And this time, we see that there are no entries imported in the queue.
+  >>> translation_import_queue.getAllEntries(target='distros').count()
+  0
+
+
+

@@ -321,7 +321,18 @@ priority requests.
   ...         for idx in range(len(fields)):
   ...             format = "%%%ds" % longest_heading
   ...             heading = format % headings[idx]
-  ...             print "%s: %s" % (heading, fields[idx])
+  ...             value = fields[idx]
+  ...             try:
+  ...                 float(value)
+  ...                 try:
+  ...                     int(value)
+  ...                 except ValueError:
+  ...                     # This is a numeric value and is not an integer, so
+  ...                     # we'll round it to two decimal places.
+  ...                     value = "%.4s" % value
+  ...             except ValueError:
+  ...                 pass
+  ...             print "%s: %s" % (heading, value)
 
   >>> pprint_csv(run.csvfile.read())
   ------------------------------------------------------------ Line 1
@@ -985,6 +996,53 @@ requests for CDs of the current distrorelease or all requests.
          Edubuntu Requested PC CDs: 0
   Edubuntu Requested 64-bit PC CDs: 0
         Edubuntu Requested Mac CDs: 0
+
+
+To help identifying if we're reaching new users with every release, we have a
+report which shows the distribution of requests. Both for the current release
+and to the previous one.
+
+  >>> csv_file = requestset.generateRequestDistributionReport()
+
+  # Skip the first two lines since they have headers which are supposed to
+  # span across multiple columns, screwing our pprint_csv() function.
+  >>> header1, header2, content = csv_file.read().split('\n', 2)
+  >>> print header1
+  "","","Current Release Only","","","","","Previous Releases Only",""
+  >>> print header2
+  "","requests","","shipped","","requests","","shipped",""
+  >>> pprint_csv(content)
+  ------------------------------------------------------------ Line 1
+         # of requests: 0
+           # of people: 0 (0.0%)
+   avg CDs per request: 0
+           # of people: 0 (0.0%)
+  avg CDs per shipment: 0
+           # of people: 8 (80.0%)
+   avg CDs per request: 0.0
+           # of people: 8 (80.0%)
+  avg CDs per shipment: 0.0
+  ------------------------------------------------------------ Line 2
+         # of requests: 1
+           # of people: 9 (90.0%)
+   avg CDs per request: 7.66
+           # of people: 7 (87.5%)
+  avg CDs per shipment: 7.28
+           # of people: 2 (20.0%)
+   avg CDs per request: 24.0
+           # of people: 2 (20.0%)
+  avg CDs per shipment: 24.0
+  ------------------------------------------------------------ Line 3
+         # of requests: 2
+           # of people: 1 (10.0%)
+   avg CDs per request: 1.5
+           # of people: 1 (12.5%)
+  avg CDs per shipment: 1.5
+           # of people: 0 (0.0%)
+   avg CDs per request: 0
+           # of people: 0 (0.0%)
+  avg CDs per shipment: 0
+
 
 All these reports are generated periodically and stored in the Librarian by
 the shipit-reports cronscript.

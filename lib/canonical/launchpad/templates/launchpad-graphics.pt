@@ -51,7 +51,7 @@
       this for a pillar object using <code>/image:icon</code>. Pillar objects
       should optionally have custom icons, and they should be used in
       detailed listings (not simple listings - for those please use badges).
-      Team "emblems" should be of the icon size, not badge size.
+      Team icons should be of the icon size, not badge size.
     </dd>
     <dt>
       <img alt="" src="/@@/nyet-large" style="float: right;" />

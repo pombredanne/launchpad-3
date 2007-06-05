@@ -8,9 +8,9 @@ Launchpad can show you a product's packages by distribution, with links to each.
     'http://launchpad.dev/evolution/+distributions'
     >>> print anon_browser.contents
     <...
-    ...<h1>Packages by distribution</h1>
+    <h1>Packages by distribution</h1>
     ...
-    ...<h2>Ubuntu Linux</h2>
+    <h2>Ubuntu Linux</h2>
     ...
     >>> anon_browser.getLink(url='/ubuntu/warty/+source/evolution').click()
     >>> print anon_browser.contents

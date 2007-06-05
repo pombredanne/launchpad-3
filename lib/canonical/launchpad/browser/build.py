@@ -196,6 +196,7 @@ class BuildRecordsView(LaunchpadView):
             'depwait': BuildStatus.MANUALDEPWAIT,
             'chrootwait': BuildStatus.CHROOTWAIT,
             'superseded': BuildStatus.SUPERSEDED,
+            'uploadfail': BuildStatus.FAILEDTOUPLOAD,
             'all': None,
             }
         # include pristine (not yet assigned to a builder) builds

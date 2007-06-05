@@ -73,19 +73,30 @@ def _safestr(obj):
                    lambda match: '\\x%02x' % ord(match.group(0)), value)
     return value
 
-def _is_sensitive(name):
+def _is_sensitive(request, name):
     """Return True if the given request variable name is sensitive.
 
     Sensitive request variables should not be recorded in OOPS
     reports.  Currently we consider the following to be sensitive:
      * any name containing 'password' or 'passwd'
-     * session cookies of the various Launchpad instances
+     * cookies
      * the HTTP_COOKIE header.
     """
-    return (name in ['HTTP_COOKIE', 'launchpad', 'launchpad_dev',
-                     'launchpad_tests', 'launchpad_demo', 'edge', 'beta',
-                     'staging'] or
-            'password' in name.lower() or 'passwd' in name.lower())
+    upper_name = name.upper()
+    # Block passwords
+    if ('PASSWORD' in upper_name or 'PASSWD' in upper_name):
+        return True
+
+    # Block HTTP_COOKIE
+    if name == 'HTTP_COOKIE':
+        return True
+
+    # Allow remaining UPPERCASE names and remaining form variables
+    if name == upper_name or name in request.form:
+        return False
+
+    # Block everything else
+    return True
 
 
 class ErrorReport:
@@ -101,13 +112,7 @@ class ErrorReport:
         self.username = username
         self.url = url
         self.duration = duration
-        self.req_vars = []
-        # hide passwords that might be present in the request variables
-        for (name, value) in req_vars:
-            if _is_sensitive(name):
-                self.req_vars.append((name, '<hidden>'))
-            else:
-                self.req_vars.append((name, value))
+        self.req_vars = req_vars
         self.db_statements = db_statements
 
     def __repr__(self):
@@ -315,8 +320,13 @@ class ErrorReportingUtility:
                 except AttributeError:
                     pass
 
-                req_vars = sorted((_safestr(key), _safestr(value))
-                                  for (key, value) in request.items())
+                req_vars = []
+                for key, value in request.items():
+                    if _is_sensitive(request, key):
+                        req_vars.append((_safestr(key), '<hidden>'))
+                    else:
+                        req_vars.append((_safestr(key), _safestr(value)))
+                req_vars.sort()
             strv = _safestr(info[1])
 
             strurl = _safestr(url)
@@ -399,6 +409,10 @@ class ScriptRequest(ErrorReportRequest):
 
     def items(self):
         return self._data
+
+    @property
+    def form(self):
+        return dict(self.items())
 
 
 class SoftRequestTimeout(RequestExpired):
