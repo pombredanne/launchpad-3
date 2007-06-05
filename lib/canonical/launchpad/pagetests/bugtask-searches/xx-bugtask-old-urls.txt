@@ -53,7 +53,7 @@ to allow user agents (and users) to update bookmarks, etc.
     Medium
     New
 
-Searching amonsgt all bugs should also redirect to an updated
+Searching amongst all bugs should also redirect to an updated
 location with the new status names in place of the old.
 
     >>> url = (

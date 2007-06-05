@@ -33,7 +33,7 @@ Info' and 'Rejected' are converted.
 
     >>> uri = URI(
     ...     'http://somewhere/over/the/rainbow?'
-    ...     'freddy=kruger&'
+    ...     'freddy=krueger&'
     ...     'field.status%3Alist=Unconfirmed&'
     ...     'field.status%3Alist=Needs+Info&'
     ...     'field.status%3Alist=Rejected&'
@@ -46,7 +46,7 @@ Info' and 'Rejected' are converted.
     >>> print converted_uri.path
     /over/the/rainbow
     >>> print converted_uri.query.split('&')
-    ['freddy=kruger',
+    ['freddy=krueger',
      'field.status%3Alist=New',
      'field.status%3Alist=Incomplete',
      'field.status%3Alist=Invalid',
