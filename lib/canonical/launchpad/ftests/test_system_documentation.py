@@ -111,30 +111,18 @@ def branchStatusTearDown(test):
     test._authserver.tearDown()
 
 def bugNotificationSendingSetUp(test):
-    sqlos.connection.connCache = {}
-    # XXX: Note that the DB is already setup by the layer - this call just
-    # reconnects us as a different user. This should use a more obvious API.
-    # Note that the layer still tears things down as necessary
-    # -- StuartBishop 20060712
-    LaunchpadZopelessTestSetup(
-        dbuser=config.malone.bugnotification_dbuser).setUp()
-    setGlobs(test)
-    login(ANONYMOUS)
+    LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
+    setUp(test)
 
 def bugNotificationSendingTearDown(test):
-    logout()
-    LaunchpadZopelessTestSetup().tearDown()
+    tearDown(test)
 
 def statisticianSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(
-        dbuser=config.statistician.dbuser).setUp()
-    setGlobs(test)
-    login(ANONYMOUS)
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
 
 def statisticianTearDown(test):
-    logout()
-    LaunchpadZopelessTestSetup().tearDown()
+    tearDown(test)
 
 def distroseriesqueueSetUp(test):
     setUp(test)
@@ -284,12 +272,12 @@ special = {
     'bugnotification-sending.txt': LayeredDocFileSuite(
             '../doc/bugnotification-sending.txt',
             optionflags=default_optionflags,
-            layer=ZopelessLayer, setUp=bugNotificationSendingSetUp,
+            layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
             tearDown=bugNotificationSendingTearDown
             ),
     'bugmail-headers.txt': LayeredDocFileSuite(
             '../doc/bugmail-headers.txt',
-            optionflags=default_optionflags, layer=ZopelessLayer,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
             setUp=bugNotificationSendingSetUp,
             tearDown=bugNotificationSendingTearDown),
     'branch-status-client.txt': LayeredDocFileSuite(
@@ -337,7 +325,7 @@ special = {
     'package-cache.txt': LayeredDocFileSuite(
             '../doc/package-cache.txt',
             setUp=statisticianSetUp, tearDown=statisticianTearDown,
-            optionflags=default_optionflags, layer=ZopelessLayer
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     'script-monitoring.txt': LayeredDocFileSuite(
             '../doc/script-monitoring.txt',
