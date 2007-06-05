@@ -233,7 +233,7 @@ if [ ! -e ~/.bazaar/locations.conf ]; then
 fi
 grep -q "canonical\/lp-branches" ~/.bazaar/locations.conf
 if [ $? -ne 0 ]; then
-  branchloc=$(eval echo "~/.bazaar/locations.conf")
+  branchloc=$(eval echo "~/canonical/lp-branches")
   echo "[${branchloc}]
 pqm_email = Canonical PQM <pqm@pqm.ubuntu.com>
 pqm_branch = sftp://devpad.canonical.com/code/rocketfuel/launchpad/devel
