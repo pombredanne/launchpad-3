@@ -28,19 +28,19 @@ class FAQ(SQLBase):
     _defaultOrder = ['date_created', 'id']
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    
+
     title = StringCol(notNull=True)
-    
+
     summary = StringCol(notNull=True)
-    
+
     keywords = StringCol(notNull=False, default=None)
-    
+
     content = StringCol(notNull=False, default=None)
-    
+
     url = StringCol(notNull=False, default=None)
-    
+
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    
+
     last_updated_by = ForeignKey(
         dbName='last_updated_by', foreignKey='Person', notNull=False,
         default=None)
@@ -49,7 +49,7 @@ class FAQ(SQLBase):
 
     product = ForeignKey(
         dbName='product', foreignKey='Product', notNull=False, default=None)
-        
+
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=False,
         default=None)
@@ -57,4 +57,8 @@ class FAQ(SQLBase):
     @property
     def target(self):
         """See `IFAQ`."""
-        return None
+        if self.product:
+            return self.product
+        else:
+            return self.distribution
+
