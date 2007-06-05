@@ -6,7 +6,7 @@ CREATE TABLE CodeImport (
         DEFAULT timezone('UTC', now()) NOT NULL,
     name text NOT NULL UNIQUE,
     product integer REFERENCES Product NOT NULL,
-    series integer REFERENCES ProductSeries UNIQUE,
+    series integer REFERENCES ProductSeries,
     branch integer REFERENCES Branch,
 
     review_status integer DEFAULT 1 NOT NULL,
