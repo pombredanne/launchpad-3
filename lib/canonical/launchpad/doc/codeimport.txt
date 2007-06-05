@@ -50,14 +50,6 @@ repository, known as the "module".
   >>> verifyObject(ICodeImport, cvs_import)
   True
 
-The CodeImport.series foreign key is unique. It is used to set the series
-branch when the import branch is published, then it is cleared. To let us
-create a Subversion import with the same series, clear it now.
-
-  >>> cvs_import.series = None
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> flush_database_updates()
-
 === Import from Subversion ===
 
 Code imports from Subversion specify the URL used with "svn checkout" to
@@ -76,6 +68,7 @@ retrieve the tree to import.
 Write the new code import to the database, so we can use it to test
 CodeImportSet.getByName.
 
+  >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
 
 == Retrieving by name ==
