@@ -17,8 +17,7 @@ from canonical.archiveuploader.uploadpolicy import AbstractUploadPolicy
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import (
-    import_public_test_keys, syncUpdate)
+from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistroSeriesSet, IPersonSet, IArchiveSet,
     ILaunchpadCelebrities)

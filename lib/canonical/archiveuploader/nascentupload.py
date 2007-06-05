@@ -28,9 +28,6 @@ from canonical.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile)
 from canonical.archiveuploader.template_messages import (
     rejection_template, new_template, accepted_template, announce_template)
-from canonical.config import config
-from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.mail import format_address
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     NotFoundError, IDistributionSet)
