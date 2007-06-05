@@ -699,7 +699,24 @@ class BugTaskEditView(GeneralFormView):
         read_only_field_names = self._getReadOnlyFieldNames()
 
         if 'status' in editable_field_names:
-            editable_field_names.remove('status')
+            # Display different options depending on the logged-in
+            # user by creating a vocab at request time.
+            status_noshow = [BugTaskStatus.UNKNOWN]
+            if (self.user is None or
+                not self.user.inTeam(self.context.pillar.bugcontact)):
+                status_noshow.append(BugTaskStatus.WONTFIX)
+            if self.context.status in status_noshow:
+                # The user has to be able to see the current value.
+                status_noshow.remove(self.context.status)
+            status_vocab_factory = vocab_factory(
+                BugTaskStatus, noshow=status_noshow)
+            status_field = Choice(
+                __name__='status',
+                title=self.schema['status'].title,
+                vocabulary=status_vocab_factory(self.context),
+                default=self.schema['status'].default)
+            setUpWidget(self, 'status', status_field, IInputWidget,
+                        value=self.context.status)
 
         if self.context.target_uses_malone:
             self.bugwatch_widget = None
@@ -719,34 +736,8 @@ class BugTaskEditView(GeneralFormView):
         setUpWidgets(
             self, self.schema, IInputWidget, names=editable_field_names,
             initial=self.initial_values, prefix=self.prefix)
-        if read_only_field_names:
-            # If read_only_field_names is False in a boolean context
-            # (which here means the empty list) then
-            # setUpDisplayWidgets will set up all names in the schema
-            # which is not what we want because it will interfere with
-            # our special handling of the status widget later on.
-            setUpDisplayWidgets(
-                self, self.schema, names=read_only_field_names, prefix=self.prefix)
-
-        if 'status' not in read_only_field_names:
-            status_noshow = [BugTaskStatus.UNKNOWN]
-            if (self.user is None or
-                not self.user.inTeam(self.context.pillar.bugcontact)):
-                status_noshow.append(BugTaskStatus.WONTFIX)
-            if self.context.status in status_noshow:
-                # The user has to be able to see the current value.
-                status_noshow.remove(self.context.status)
-            status_vocab_factory = vocab_factory(
-                BugTaskStatus, noshow=status_noshow)
-            status_field = Choice(
-                __name__='status',
-                title=self.schema['status'].title,
-                vocabulary=status_vocab_factory(self.context),
-                default=self.schema['status'].default)
-            setUpWidget(self, 'status', status_field, IInputWidget,
-                        value=self.context.status)
-            # Ugly hack! Re-add the status field.
-            editable_field_names.append('status')
+        setUpDisplayWidgets(
+            self, self.schema, names=read_only_field_names, prefix=self.prefix)
 
         self.fieldNames = editable_field_names
 
