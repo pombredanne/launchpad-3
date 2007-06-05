@@ -21,7 +21,8 @@ __all__ = [
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'RESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES',
+    'BUG_CONTACT_BUGTASK_STATUSES']
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
@@ -54,6 +55,9 @@ UNRESOLVED_BUGTASK_STATUSES = (
 RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.INVALID)
+
+BUG_CONTACT_BUGTASK_STATUSES = (
+    dbschema.BugTaskStatus.WONTFIX,)
 
 
 class ConjoinedBugTaskEditError(Exception):

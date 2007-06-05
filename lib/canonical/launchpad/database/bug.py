@@ -735,7 +735,7 @@ class Bug(SQLBase):
 
         bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
-        bugtask.transitionToStatus(status)
+        bugtask.transitionToStatus(status, user)
         if bugtask_before_modification.status != bugtask.status:
             notify(SQLObjectModifiedEvent(
                 bugtask, bugtask_before_modification, ['status'], user=user))

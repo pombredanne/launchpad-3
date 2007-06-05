@@ -49,6 +49,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
+    BUG_CONTACT_BUGTASK_STATUSES,
     )
 from canonical.launchpad.helpers import shortlist
 # XXX: see bug 49029 -- kiko, 2006-06-14
@@ -614,6 +615,12 @@ class BugTask(SQLBase, BugTaskMixin):
             # normal status form, don't always submit a status when
             # testing the edit form.
             return
+
+        if (new_status in BUG_CONTACT_BUGTASK_STATUSES and
+            not user.inTeam(self.pillar.bugcontact)):
+            raise AssertionError(
+                "Only Bug Contacts may change status to %s" % (
+                    new_status.title,))
 
         if self.status == new_status:
             # No change in the status, so nothing to do.
