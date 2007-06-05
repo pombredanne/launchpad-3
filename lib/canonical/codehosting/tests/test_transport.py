@@ -20,14 +20,14 @@ class FakeLaunchpad:
 
     def __init__(self):
         self._person_set = {
-            1: dict(name='foo', displayname='Test User',
+            1: dict(name='testuser', displayname='Test User',
                     emailaddresses=['test@test.com'], wikiname='TestUser',
                     teams=[1, 2]),
-            2: dict(name='team1', displayname='Test Team', teams=[]),
+            2: dict(name='testteam', displayname='Test Team', teams=[]),
             }
         self._product_set = {
-            1: dict(name='bar'),
-            2: dict(name='product2'),
+            1: dict(name='firefox'),
+            2: dict(name='thunderbird'),
             }
         self._branch_set = {}
         self.createBranch(1, 1, 'baz')
@@ -112,7 +112,7 @@ class TestLaunchpadServer(TestCaseInTempDir):
     def test_construct(self):
         self.assertEqual(self.backing_transport, self.server.backing_transport)
         self.assertEqual(self.user_id, self.server.user_id)
-        self.assertEqual('foo', self.server.user_name)
+        self.assertEqual('testuser', self.server.user_name)
         self.assertEqual(self.authserver, self.server.authserver)
 
     def test_base_path_translation(self):
@@ -120,19 +120,19 @@ class TestLaunchpadServer(TestCaseInTempDir):
         # hexadecimal number and then split into four path segments.
         self.assertEqual(
             '00/00/00/01/',
-            self.server.translate_virtual_path('/~foo/bar/baz'))
+            self.server.translate_virtual_path('/~testuser/firefox/baz'))
         self.assertEqual(
             '00/00/00/04/',
-            self.server.translate_virtual_path('/~team1/bar/qux'))
+            self.server.translate_virtual_path('/~testteam/firefox/qux'))
         self.assertEqual(
             '00/00/00/03/',
-            self.server.translate_virtual_path('/~foo/+junk/random'))
+            self.server.translate_virtual_path('/~testuser/+junk/random'))
 
     def test_extend_path_translation(self):
         # Trailing path segments are preserved.
         self.assertEqual(
             '00/00/00/01/.bzr',
-            self.server.translate_virtual_path('/~foo/bar/baz/.bzr'))
+            self.server.translate_virtual_path('/~testuser/firefox/baz/.bzr'))
 
     def test_setUp(self):
         # Setting up the server registers its schema with the protocol
@@ -187,13 +187,14 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         # the base transport.
         transport = get_transport(self.server.get_url())
         self.assertEqual(
-            'Hello World!', transport.get_bytes('~foo/bar/baz/hello.txt'))
+            'Hello World!',
+            transport.get_bytes('~testuser/firefox/baz/hello.txt'))
 
     def test_put_mapped_file(self):
         # Putting a file from a public branch URL stores the file in the mapped
         # URL on the base transport.
         transport = get_transport(self.server.get_url())
-        transport.put_bytes('~foo/bar/baz/goodbye.txt', "Goodbye")
+        transport.put_bytes('~testuser/firefox/baz/goodbye.txt', "Goodbye")
         self.assertEqual(
             "Goodbye",
             self.backing_transport.get_bytes('00/00/00/01/goodbye.txt'))
@@ -202,31 +203,34 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         # Cloning a LaunchpadTransport maintains the base path.
         transport = get_transport(self.server.get_url())
         self.assertEqual(self.server.get_url(), transport.base)
-        transport = transport.clone('~foo')
-        self.assertEqual(self.server.get_url() + '~foo', transport.base)
+        transport = transport.clone('~testuser')
+        self.assertEqual(self.server.get_url() + '~testuser', transport.base)
 
     def test_abspath_without_schema(self):
         # _abspath returns the absolute path for a given relative path, but
         # without the schema part of the URL that is included by abspath.
         transport = get_transport(self.server.get_url())
-        self.assertEqual('/~foo/bar/baz', transport._abspath('~foo/bar/baz'))
-        transport = transport.clone('~foo')
-        self.assertEqual('/~foo/bar/baz', transport._abspath('bar/baz'))
+        self.assertEqual(
+            '/~testuser/firefox/baz',
+            transport._abspath('~testuser/firefox/baz'))
+        transport = transport.clone('~testuser')
+        self.assertEqual(
+            '/~testuser/firefox/baz', transport._abspath('firefox/baz'))
 
     def test_cloning_preserves_path_mapping(self):
         # The public branch URL -> filesystem mapping uses the base URL to do
         # its mapping, thus ensuring that clones map correctly.
         transport = get_transport(self.server.get_url())
-        transport = transport.clone('~foo')
+        transport = transport.clone('~testuser')
         self.assertEqual(
-            'Hello World!', transport.get_bytes('bar/baz/hello.txt'))
+            'Hello World!', transport.get_bytes('firefox/baz/hello.txt'))
 
     def test_abspath(self):
         # abspath for a relative path is the same as the base URL for a clone
         # for that relative path.
         transport = get_transport(self.server.get_url())
         self.assertEqual(
-            transport.clone('~foo').base, transport.abspath('~foo'))
+            transport.clone('~testuser').base, transport.abspath('~testuser'))
 
     def test_incomplete_path_not_found(self):
         # For a branch URL to be complete, it needs to have a person, product
@@ -234,7 +238,7 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         # an error. Which kind of error is not particularly important.
         transport = get_transport(self.server.get_url())
         self.assertRaises(
-            errors.NoSuchFile, transport.get, '~foo')
+            errors.NoSuchFile, transport.get, '~testuser')
 
     def test_complete_non_existent_path_not_found(self):
         # Bazaar looks for files inside a branch directory before it looks for
@@ -243,14 +247,17 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         transport = get_transport(self.server.get_url())
         self.assertRaises(
             errors.NoSuchFile,
-            transport.get, '~foo/bar/new-branch/.bzr/branch-format')
+            transport.get, '~testuser/firefox/new-branch/.bzr/branch-format')
 
     def test_rename(self):
         # rename needs to translate the target path as well as the source path,
         # so we need a separate test for it.
         transport = get_transport(self.server.get_url())
-        transport.rename('~foo/bar/baz/hello.txt', '~foo/bar/baz/goodbye.txt')
-        self.assertEqual(['goodbye.txt'], transport.list_dir('~foo/bar/baz'))
+        transport.rename(
+            '~testuser/firefox/baz/hello.txt',
+            '~testuser/firefox/baz/goodbye.txt')
+        self.assertEqual(
+            ['goodbye.txt'], transport.list_dir('~testuser/firefox/baz'))
         self.assertEqual(['goodbye.txt'],
                          self.backing_transport.list_dir('00/00/00/01'))
 
@@ -259,7 +266,8 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         # do a path-based operation on the backing transport. Thus, we need a
         # separate test for it.
         transport = get_transport(self.server.get_url())
-        files = list(transport.clone('~foo/bar/baz').iter_files_recursive())
+        files = list(
+            transport.clone('~testuser/firefox/baz').iter_files_recursive())
         backing_transport = self.backing_transport.clone('00/00/00/01')
         self.assertEqual(list(backing_transport.iter_files_recursive()), files)
 
