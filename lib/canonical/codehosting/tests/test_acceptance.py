@@ -346,7 +346,7 @@ class SSHTestCase(TrialTestCase):
         return self.server.getTransport(relpath)
 
 
-class AcceptanceTests(TrialTestCase, TestCaseWithRepository):
+class AcceptanceTests(SSHTestCase, TestCaseWithRepository):
     """Acceptance tests for the Launchpad codehosting service's Bazaar support.
 
     Originally converted from the English at
@@ -357,31 +357,8 @@ class AcceptanceTests(TrialTestCase, TestCaseWithRepository):
 
     server = None
 
-    def getDefaultServer(self):
-        authserver = AuthserverWithKeys('testuser', 'testteam')
-        branches_root = '/tmp/sftp-test'
-        return SSHCodeHostingServer('sftp', authserver, branches_root)
-
-    def installServer(self, server):
-        self.server = server
-        self.default_user = server.authserver.testUser
-        self.default_team = server.authserver.testTeam
-
-    def setUpSignalHandling(self):
-        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-
     def setUp(self):
         super(AcceptanceTests, self).setUp()
-
-        # Install the default SIGCHLD handler so that read() calls don't get
-        # EINTR errors when child processes exit.
-        self.setUpSignalHandling()
-
-        if self.server is None:
-            self.installServer(self.getDefaultServer())
-
-        self.server.setUp()
 
         # Create a local branch with one revision
         tree = self.make_branch_and_tree('.')
@@ -389,18 +366,6 @@ class AcceptanceTests(TrialTestCase, TestCaseWithRepository):
         self.build_tree(['foo'])
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
-
-    def tearDown(self):
-        self.server.tearDown()
-        signal.signal(signal.SIGCHLD, self._oldSigChld)
-        super(AcceptanceTests, self).tearDown()
-
-    def __str__(self):
-        return self.id()
-
-    def getTransport(self, relpath=None):
-        return self.server.getTransport(relpath)
-
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         old_dir = os.getcwdu()
