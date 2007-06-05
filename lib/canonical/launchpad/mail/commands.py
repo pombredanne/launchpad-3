@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError,
         CreateBugParams, IPillarNameSet, BugTargetNotFound, IProject,
-        ISourcePackage, IProductSeries)
+        ISourcePackage, IProductSeries, BUG_CONTACT_BUGTASK_STATUSES)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
@@ -684,8 +684,16 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
 
     def setAttributeValue(self, context, attr_name, attr_value):
         """See EmailCommand."""
-        context.transitionToStatus(
-            attr_value, getUtility(ILaunchBag).user)
+        user = getUtility(ILaunchBag).user
+        
+        if (attr_value in BUG_CONTACT_BUGTASK_STATUSES and
+            not user.inTeam(context.pillar.bugcontact)):
+            raise EmailProcessingError(
+                'The status cannot be changed to %s because you are not '
+                'a bug contact for %s.' % (
+                    attr_value.name.lower(), context.pillar.displayname))
+
+        context.transitionToStatus(attr_value, user)
 
 
 class ImportanceEmailCommand(DBSchemaEditEmailCommand):
