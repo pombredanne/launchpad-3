@@ -5,7 +5,7 @@ For now, we put a link on the `code` page:
   >>> browser.url
   'http://code.launchpad.dev/+code-imports'
 
-So far, there is only one CodeImport in the sample data:
+There are two CodeImports in the sample data:
 
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.interfaces import ICodeImportSet
@@ -13,29 +13,39 @@ So far, there is only one CodeImport in the sample data:
   >>> from canonical.launchpad.interfaces import IProductSeriesSet
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
   >>> login(ANONYMOUS)
-  >>> series = getUtility(IProductSeriesSet).get(1)
-  >>> product = series.product
   >>> codeimportset = getUtility(ICodeImportSet)
-  >>> codeimport, = codeimportset.getAll()
-  >>> codeimport.name
-  u'sample'
+  >>> codeimports = list(codeimportset.getAll())
+  >>> len(codeimports)
+  2
+  >>> sorted(ci.name for ci in codeimports)
+  [u'sample-cvs', u'sample-svn']
+  >>> svn_import ,= [ci for ci in codeimports if ci.name==u'sample-svn']
+  >>> cvs_import ,= [ci for ci in codeimports if ci.name==u'sample-cvs']
   >>> logout()
 
-And it shows up in the page:
+And they both show up in the page:
 
-  >>> codeimport.name in browser.contents
-  True
+  >>> [(ci.name in browser.contents) for ci in codeimports]
+  [True, True]
 
 If we click on the code import's name, we go to the page for that
 import:
 
-  >>> browser.getLink('sample').click()
+  >>> browser.getLink('sample-svn').click()
   >>> browser.url
-  'http://code.launchpad.dev/+code-imports/sample'
+  'http://code.launchpad.dev/+code-imports/sample-svn'
 
 It displays some information about the code import, for example the
 URL of the Subversion branch the import is from:
 
-  >>> codeimport.svn_branch_url in browser.contents
+  >>> svn_import.svn_branch_url in browser.contents
   True
 
+And similar for the other import:
+
+  >>> browser.goBack()
+  >>> browser.getLink('sample-cvs').click()
+  >>> browser.url
+  'http://code.launchpad.dev/+code-imports/sample-cvs'
+  >>> (cvs_import.cvs_root in browser.contents) and (cvs_import.cvs_module in browser.contents)
+  True
