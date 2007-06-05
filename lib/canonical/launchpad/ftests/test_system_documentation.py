@@ -22,10 +22,6 @@ from canonical.database.sqlbase import (
     flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.launchpad.ftests.harness import (
-        LaunchpadTestSetup, LaunchpadZopelessTestSetup,
-        _disconnect_sqlos, _reconnect_sqlos
-        )
 from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
 from canonical.launchpad.mail import stub
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
