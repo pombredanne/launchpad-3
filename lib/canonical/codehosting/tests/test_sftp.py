@@ -9,7 +9,7 @@ import stat
 
 from bzrlib import errors
 from bzrlib.transport import get_transport
-from bzrlib.tests import TestCaseWithMemoryTransport
+from bzrlib.tests import TestCaseWithTransport, TestCaseWithMemoryTransport
 
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.codehosting.transport import LaunchpadServer
@@ -21,7 +21,7 @@ from canonical.codehosting.tests.helpers import (
 from canonical.testing import BzrlibLayer
 
 
-class SFTPTests(SSHTestCase):
+class SFTPTests(SSHTestCase, TestCaseWithTransport):
 
     layer = TwistedBzrlibLayer
 
@@ -140,7 +140,7 @@ class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
     layer = BzrlibLayer
 
     def setUp(self):
-        TestCaseWithMemoryTransport.setUp(self)
+        super(TestLaunchpadTransportMakeDirectory, self).setUp()
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = self.get_transport()

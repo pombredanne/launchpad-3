@@ -304,14 +304,12 @@ class TestBazaarFileTransferServer(BazaarFileTransferServer):
         return d
 
 
-class SSHTestCase(TrialTestCase, TestCaseWithRepository):
+class SSHTestCase(TrialTestCase):
 
     server = None
-    default_user = 'testuser'
-    default_team = 'testteam'
 
     def getDefaultServer(self):
-        authserver = AuthserverWithKeys(self.default_user, self.default_team)
+        authserver = AuthserverWithKeys('testuser', 'testteam')
         branches_root = '/tmp/sftp-test'
         return SSHCodeHostingServer('sftp', authserver, branches_root)
 
@@ -321,9 +319,8 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository):
         self.default_team = server.authserver.testTeam
 
     def setUpSignalHandling(self):
-        oldSigChld = signal.getsignal(signal.SIGCHLD)
+        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
         signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-        self.addCleanup(lambda: signal.signal(signal.SIGCHLD, oldSigChld))
 
     def setUp(self):
         super(SSHTestCase, self).setUp()
@@ -336,7 +333,11 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository):
             self.installServer(self.getDefaultServer())
 
         self.server.setUp()
-        self.addCleanup(self.server.tearDown)
+
+    def tearDown(self):
+        self.server.tearDown()
+        signal.signal(signal.SIGCHLD, self._oldSigChld)
+        super(SSHTestCase, self).tearDown()
 
     def __str__(self):
         return self.id()
@@ -345,7 +346,7 @@ class SSHTestCase(TrialTestCase, TestCaseWithRepository):
         return self.server.getTransport(relpath)
 
 
-class AcceptanceTests(SSHTestCase):
+class AcceptanceTests(TrialTestCase, TestCaseWithRepository):
     """Acceptance tests for the Launchpad codehosting service's Bazaar support.
 
     Originally converted from the English at
@@ -353,6 +354,53 @@ class AcceptanceTests(SSHTestCase):
     """
 
     layer = TwistedBzrlibLayer
+
+    server = None
+
+    def getDefaultServer(self):
+        authserver = AuthserverWithKeys('testuser', 'testteam')
+        branches_root = '/tmp/sftp-test'
+        return SSHCodeHostingServer('sftp', authserver, branches_root)
+
+    def installServer(self, server):
+        self.server = server
+        self.default_user = server.authserver.testUser
+        self.default_team = server.authserver.testTeam
+
+    def setUpSignalHandling(self):
+        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
+        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+
+    def setUp(self):
+        super(AcceptanceTests, self).setUp()
+
+        # Install the default SIGCHLD handler so that read() calls don't get
+        # EINTR errors when child processes exit.
+        self.setUpSignalHandling()
+
+        if self.server is None:
+            self.installServer(self.getDefaultServer())
+
+        self.server.setUp()
+
+        # Create a local branch with one revision
+        tree = self.make_branch_and_tree('.')
+        self.local_branch = tree.branch
+        self.build_tree(['foo'])
+        tree.add('foo')
+        tree.commit('Added foo', rev_id='rev1')
+
+    def tearDown(self):
+        self.server.tearDown()
+        signal.signal(signal.SIGCHLD, self._oldSigChld)
+        super(AcceptanceTests, self).tearDown()
+
+    def __str__(self):
+        return self.id()
+
+    def getTransport(self, relpath=None):
+        return self.server.getTransport(relpath)
+
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         old_dir = os.getcwdu()
@@ -391,16 +439,6 @@ class AcceptanceTests(SSHTestCase):
         if relpath is None:
             relpath = ''
         return self.server.get_url(username) + relpath
-
-    def setUp(self):
-        super(AcceptanceTests, self).setUp()
-
-        # Create a local branch with one revision
-        tree = self.make_branch_and_tree('.')
-        self.local_branch = tree.branch
-        self.build_tree(['foo'])
-        tree.add('foo')
-        tree.commit('Added foo', rev_id='rev1')
 
     @deferToThread
     def test_bzr_sftp(self):
