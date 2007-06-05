@@ -94,6 +94,11 @@ class BuildQueue(SQLBase):
             return now - self.buildstart
         return None
 
+    @property
+    def is_trusted(self):
+        """See IBuildQueue"""
+        return self.build.is_trusted
+
 
 class BuildQueueSet(object):
     """See IBuildQueueSet"""

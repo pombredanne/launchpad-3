@@ -3,7 +3,9 @@
 
 import apt_pkg, re
 
-__all__ = ['TagFile', 'TagStanza', 'TagFileParseError', 'parse_tagfile']
+__all__ = [
+    'TagFile', 'TagStanza', 'TagFileParseError',
+    'parse_tagfile', 'parse_tagfile_lines']
 
 class TagFile(object):
     """Provide an iterable interface to the apt_pkg.TagFile object"""
@@ -65,31 +67,29 @@ class TagFileParseError(Exception):
 re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)");
 re_multi_line_field = re.compile(r"^\s(.*)");
 
-def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
-    """Parses a tag file and returns a dictionary where each field is a
-    key.  The mandatory first argument is the filename of the tag file.
+
+def parse_tagfile_lines(lines, dsc_whitespace_rules=0, allow_unsigned=False,
+                        filename=None):
+    """Parses a tag file and returns a dictionary where each field is a key.
+
+    The mandatory first argument is the contents of the tag file as a
+    list of lines.
 
     dsc_whitespace_rules is an optional boolean argument which defaults
     to off.  If true, it turns on strict format checking to avoid
     allowing in source packages which are unextracable by the
     inappropriately fragile dpkg-source.
-    
+
     The rules are:
 
     o The PGP header consists of '-----BEGIN PGP SIGNED MESSAGE-----'
       followed by any PGP header data and must end with a blank line.
 
     o The data section must end with a blank line and must be followed by
-      '-----BEGIN PGP SIGNATURE-----'.  """
-
+      '-----BEGIN PGP SIGNATURE-----'.
+    """
     error = ""
     changes = {}
-
-    changes_in = open(filename, "r")
-    lines = changes_in.readlines()
-
-    if not lines:
-        raise TagFileParseError( "%s: empty file" % filename )
 
     # Reindex by line number so we can easily verify the format of
     # .dsc files...
@@ -166,11 +166,29 @@ def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
     if dsc_whitespace_rules and inside_signature:
         raise TagFileParseError("%s: invalid .dsc format at line %d" % (filename, index))
 
-    changes_in.close()
     changes["filecontents"] = "".join(lines)
 
     if error:
         raise TagFileParseError("%s: unable to parse .changes file: %s" % (filename, error))
 
     return changes
+
+
+def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
+    """Parses a tag file and returns a dictionary where each field is a key.
+
+    The mandatory first argument is the filename of the tag file, and
+    the contents of that file is passed on to parse_tagfile_lines.
+
+    See parse_tagfile_lines's docstring for description of the
+    dsc_whitespace_rules and allow_unsigned arguments.
+    """
+    changes_in = open(filename, "r")
+    lines = changes_in.readlines()
+    changes_in.close()
+    if not lines:
+        raise TagFileParseError( "%s: empty file" % filename )
+    return parse_tagfile_lines(
+        lines, dsc_whitespace_rules=dsc_whitespace_rules,
+        allow_unsigned=allow_unsigned, filename=filename)
 

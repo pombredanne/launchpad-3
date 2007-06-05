@@ -13,13 +13,12 @@ import shutil
 import tempfile
 import unittest
 
-from twisted.conch.ssh import filetransfer
 from twisted.internet import defer
 
-from canonical.supermirrorsftp import bazaarfs
-from canonical.supermirrorsftp.sftponly import (
+from canonical.codehosting import bazaarfs
+from canonical.codehosting.sftponly import (
     BazaarFileTransferServer, SFTPOnlyAvatar)
-from canonical.supermirrorsftp.tests.helpers import AvatarTestCase
+from canonical.codehosting.tests.helpers import AvatarTestCase
 
 
 class Launchpad:

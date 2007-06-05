@@ -550,7 +550,7 @@ class TestBlobCollection(TestCase):
             VALUES (%s, 'whatever', 'whatever')
             """, (self.expired2_lfc_id,))
         cur.execute("""
-            UPDATE Person SET gotchi=currval('libraryfilealias_id_seq')
+            UPDATE Person SET mugshot=currval('libraryfilealias_id_seq')
             WHERE name='stub'
             """)
 

@@ -20,22 +20,6 @@ Retrieve its respective View class:
 
   >>> pmount_view = queryView(pmount, "+index", request)
 
-Check the correct 'linkification' of the concatenated changelog.
-
-  >>> print pmount_view.linkified_changelog()
-  This is a placeholder changelog for pmount 0.1-2
-  <BLANKLINE>
-  pmount (<a href="0.1-1">0.1-1</a>) hoary; urgency=low
-  <BLANKLINE>
-   * Fix description (Malone #1)
-   * Fix debian (Debian #2000)
-   * Fix warty (Warty Ubuntu #1)
-  <BLANKLINE>
-   -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
-  <BLANKLINE>
-  <BLANKLINE>
-
-
 Check the consistence of a handy strcuture containing the organized
 published history of a sourcepackage. It should containg a list of
 dictionaries containing all supported pocket as key 'pocketdetails'
@@ -121,9 +105,9 @@ return a IPackageRelationshipSet object (see package-relationship.txt).
 Ensure we have fixed bug 31039, by properly escape the
 sourcepackagename before passing to regexp.
 
-  >>> libc = hoary.getSourcePackage('libstdc++')
-  >>> libc_view = queryView(libc, "+index", request)
-  >>> print libc_view.linkified_changelog()
+  >>> libc = hoary.getSourcePackage('libstdc++')['b8p']
+  >>> libc_view = queryView(libc, "+changelog", request)
+  >>> print libc_view.changelog()
   libstdc++ (<a href="9.9-1">9.9-1</a>) hoary; urgency=high
   <BLANKLINE>
    * Placeholder

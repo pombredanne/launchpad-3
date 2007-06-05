@@ -1,6 +1,16 @@
 #!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
+"""Furnish distrorelease with lacking translations that its parent does have.
+
+This can be used either to update a distrorelease's translations, or to
+provide a new distrorelease in a series with its initial translation data.
+Only current translations are copied.
+
+Make sure no more than one instance of this script is running at a time on the
+same distrorelease.
+"""
+
 import _pythonpath
 import sys
 from optparse import OptionParser
@@ -42,7 +52,7 @@ def main(argv):
     release = distribution[options.release]
 
     logger_object.info('Starting...')
-    release.copyMissingTranslationsFromParent()
+    release.copyMissingTranslationsFromParent(ztm)
 
     # We would like to update the DistroRelase statistics, but it takes
     # too long so this should be done after.

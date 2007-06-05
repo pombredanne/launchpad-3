@@ -1,0 +1,103 @@
+= Personal Package Archives =
+
+An Archive models a Debian Archive ...
+
+  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPerson, IPersonSet, IArchiveSet, IArchive,
+  ...     IDistributionSet)
+
+Let get the IArchiveSet utility:
+
+  >>> archive_set = getUtility(IArchiveSet)
+
+A new Archive can be created by passing a name and an owner
+
+  >>> name16 = getUtility(IPersonSet).getByName('name16')
+  >>> sandbox_archive = archive_set.new(owner=name16)
+
+  >>> verifyObject(IArchive, sandbox_archive)
+  True
+
+  >>> sandbox_archive.owner == name16
+  True
+
+An Archive can be retrieved via IPerson.archive SingleJoin:
+
+  >>> name16.archive == sandbox_archive
+  True
+
+
+IArchive has a method to provide a modified Publisher Configuration (see
+lib/archivepublisher/config.py), which provides the right paths for its
+publication according to the given distribution:
+
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+
+  >>> proxied_pubconfig = sandbox_archive.getPubConfig(ubuntutest)
+
+XXX cprov 20061127: Publisher Config is missing interface.
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> pubconfig = removeSecurityProxy(proxied_pubconfig)
+
+The base Archive publication location is set in the current Launchpad
+configuration file:
+
+  >>> from canonical.config import config
+  >>> pubconfig.distroroot == config.personalpackagearchive.root
+  True
+
+Then, the archive topology will follow:
+
+<PPA_BASE_DIR>/<PERSONNAME>/<DISTRIBUTION>
+
+  >>> pubconfig.archiveroot
+  u'/var/tmp/ppa.test/name16/ubuntutest'
+
+  >>> pubconfig.poolroot
+  u'/var/tmp/ppa.test/name16/ubuntutest/pool'
+
+  >>> pubconfig.distsroot
+  u'/var/tmp/ppa.test/name16/ubuntutest/dists'
+
+Path not used in *personal* archives publication workflow are set to
+None, so they won't get created:
+
+  >>> pubconfig.overrideroot is None
+  True
+  >>> pubconfig.cacheroot is None
+  True
+  >>> pubconfig.miscroot is None
+  True
+
+Usual methods from Publisher Configuration are preserved:
+
+  >>> pubconfig.distroReleaseNames()
+  ['breezy-autotest', 'hoary-test']
+
+  >>> pubconfig.archTagsForRelease('breezy-autotest')
+  []
+
+  >>> pubconfig.componentsForRelease('breezy-autotest')
+  ['main', 'restricted', 'universe', 'multiverse']
+
+
+IArchiveSet.getAllPPAs provides all present *personal* archive:
+
+  >>> [archive.owner.name for archive in archive_set.getAllPPAs()]
+  [u'cprov', u'sabdfl', u'name16']
+
+
+Iteration over the own utility is performed against all archives,
+including the *main_archives*:
+
+  >>> main_archives = 0
+  >>> ppas = 0
+  >>> for archive in archive_set:
+  ...     if archive.owner is None:
+  ...          main_archives += 1
+  ...     else:
+  ...          ppas += 1
+  >>> main_archives, ppas
+  (7, 3)

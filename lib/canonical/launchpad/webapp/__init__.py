@@ -41,6 +41,7 @@ __all__ = [
     'expand_numbers',
     'sorted_version_numbers',
     'sorted_dotted_numbers',
+    'UnsafeFormGetSubmissionError',
     ]
 
 import re
@@ -167,4 +168,3 @@ class StandardLaunchpadFacets(FacetMenu):
         text = 'Code'
         summary = 'View related branches of code'
         return Link('', text, summary=summary)
-

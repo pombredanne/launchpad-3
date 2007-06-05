@@ -12,20 +12,18 @@ __all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
 
 from warnings import warn
 import operator
+import os
 
 from zope.interface import implements
-
 from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
 from canonical.lp.dbschema import (
     PackagePublishingPriority, PackagePublishingStatus,
     PackagePublishingPocket)
-
 from canonical.launchpad.interfaces import (
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
@@ -34,12 +32,10 @@ from canonical.launchpad.interfaces import (
     PoolFileOverwriteError)
 
 
-
 # XXX cprov 20060818: move it away, perhaps archivepublisher/pool.py
 def makePoolPath(source_name, component_name):
     """Return the pool path for a given source name and component name."""
     from canonical.archivepublisher.diskpool import poolify
-    import os
     return os.path.join(
         'pool', poolify(source_name, component_name))
 
@@ -115,6 +111,8 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     pocket = EnumCol(dbName='pocket', unique=False,
                      notNull=True, schema=PackagePublishingPocket)
 
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+
 
 class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     """A binary package file which is published.
@@ -161,6 +159,8 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     pocket = EnumCol(dbName='pocket', unique=False,
                      notNull=True, schema=PackagePublishingPocket)
 
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+
 
 class ArchiveSafePublisherBase:
     """Base class to grant ability to publish a record in a safe manner."""
@@ -203,6 +203,7 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
                      notNull=True)
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
     @classmethod
     def selectBy(cls, *args, **kwargs):
@@ -246,6 +247,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
     @classmethod
     def selectBy(cls, *args, **kwargs):
@@ -339,6 +341,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
     def publishedBinaries(self):
         """See ISourcePackagePublishingHistory."""
@@ -352,9 +355,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 BinaryPackageName.id AND
             Build.sourcepackagerelease=%s AND
             DistroArchRelease.distrorelease=%s AND
+            BinaryPackagePublishingHistory.archive=%s AND
             BinaryPackagePublishingHistory.status=%s
-            """ % sqlvalues(self.sourcepackagerelease.id,
-                            self.distrorelease.id,
+            """ % sqlvalues(self.sourcepackagerelease,
+                            self.distrorelease,
+                            self.distrorelease.main_archive,
                             PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
@@ -464,7 +469,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
-
+    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
     @property
     def distroarchreleasebinarypackagerelease(self):
@@ -513,6 +518,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         bin_filename = bin_file.libraryfile.filename
         bin_size = bin_file.libraryfile.content.filesize
         bin_md5 = bin_file.libraryfile.content.md5
+        bin_filepath = os.path.join(
+            makePoolPath(spr.name, self.component.name), bin_filename)
         # description field in index is an association of summary and
         # description, as:
         #
@@ -537,7 +544,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Provides', bpr.provides)
         fields.append('Depends', bpr.depends)
         fields.append('Conflicts', bpr.conflicts)
-        fields.append('Filename', bin_filename)
+        fields.append('Filename', bin_filepath)
         fields.append('Size', bin_size)
         fields.append('MD5sum', bin_md5)
         fields.append('Description', bin_description)
