@@ -43,7 +43,7 @@ URL of the Subversion branch the import is from:
 
 And similar for the other import:
 
-  >>> browser.goBack()
+  >>> browser.getLink('Code Imports').click()
   >>> browser.getLink('sample-cvs').click()
   >>> browser.url
   'http://code.launchpad.dev/+code-imports/sample-cvs'

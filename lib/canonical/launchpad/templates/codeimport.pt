@@ -17,11 +17,8 @@
             </td>
 	  </tr>
           <tal:block condition="context/rcs_type/enumvalue:CVS">
-            <tr>
-              <th>CVS</th>
-	    </tr>
 	    <tr>
-              <th>Root:</th>
+              <th>CVS Root:</th>
               <td tal:content="context/cvs_root">
                 :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome
               </td>
@@ -33,7 +30,7 @@
           </tal:block>
           <tal:block condition="context/rcs_type/enumvalue:SVN">
             <tr>
-              <th>Subversion:</th>
+              <th>Subversion URL:</th>
               <td tal:content="context/svn_branch_url">
                 http://svn.gnome.org/evolution/trunk
               </td>

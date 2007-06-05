@@ -21,6 +21,9 @@ class CodeImportSetNavigation(Navigation):
 
     usedfor = ICodeImportSet
 
+    def breadcrumb(self):
+        return "Code Imports"
+
     def traverse(self, name):
         # XXX ICodeImportSet needs extending yes, why do you ask?
         imps = [ci for ci in self.context.getAll() if ci.name == name]
