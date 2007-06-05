@@ -46,7 +46,7 @@ class TestFilesystem(SSHTestCase, TestCaseWithTransport):
         self.failUnless(stat.S_ISDIR(transport.stat('bar').st_mode))
 
         # Try to remove a branch directory, which is not allowed.
-        e = self.assertRaises(
+        self.assertRaises(
             (errors.PermissionDenied, errors.NoSuchFile),
             transport.rmdir, 'foo')
 
@@ -88,7 +88,7 @@ class TestFilesystem(SSHTestCase, TestCaseWithTransport):
         # You can't make a branch under the directory of a team that you don't
         # belong to.
         transport = self.getTransport()
-        e = self.assertRaises(
+        self.assertRaises(
             errors.NoSuchFile,
             transport.mkdir, '~not-my-team/firefox/new-branch')
 
@@ -172,47 +172,58 @@ class TestFilesystem(SSHTestCase, TestCaseWithTransport):
         self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
 
 
-## XXX: JonathanLange 2007-06-05, SFTP only -- HPSS hides the error message.
-## Test the error message for making a top-level directory.
-##         self.failUnless(
-##             "Branches must be inside a person or team directory." in str(e),
-##             str(e))
+class TestErrorMessages(SSHTestCase, TestCaseWithTransport):
 
+    layer = TwistedBzrlibLayer
 
-## XXX: JonathanLange 2007-06-05, Behaves differently for SFTP and HPSS
-##     @deferToThread
-##     def test_make_product_directory_for_existent_product(self):
-##         # The transport raises a FileExists error if it tries to make the
-##         # directory of a product that is registered with Launchpad.
+    def _cleanUp(self, result):
+        print "Overriding Twisted's cleanup because it causes errors."
+        from twisted.internet import defer
+        return defer.succeed(None)
 
-##         # XXX: JonathanLange 2007-05-27, do we care what the error is? It
-##         # should be TransportNotPossible or FileExists. NoSuchFile might be
-##         # acceptable though.
-##         transport = self.getTransport()
-##         self.assertRaises(
-##             (errors.PermissionDenied, errors.NoSuchFile),
-##             transport.mkdir, '~testuser/firefox')
+    def installServer(self, server):
+        self.server = server
 
+    def getDefaultServer(self):
+        return make_sftp_server()
 
-## XXX: JonathanLange 2007-06-05, SFTP only -- HPSS hides the error message.
-## Test the error message for removing a branch directory
-##         self.failUnless(
-##             "removing branch directory 'foo' is not allowed." in str(e), str(e))
+    @deferToThread
+    def test_make_toplevel_directory_error(self):
+        transport = self.getTransport()
+        e = self.assertRaises(
+            errors.PermissionDenied, transport.mkdir, 'directory')
+        self.assertIn(
+            "Branches must be inside a person or team directory.", str(e))
 
+    @deferToThread
+    def test_remove_branch_error(self):
+        transport = self.getTransport()
+        transport.mkdir('~testuser/+junk/foo')
+        e = self.assertRaises(
+            errors.PermissionDenied, transport.rmdir, '~testuser/+junk/foo')
+        self.assertIn(
+            "removing branch directory 'foo' is not allowed.", str(e))
 
-## XXX: JonathanLange 2007-06-05, SFTP only -- HPSS hides the error message.
-## Test the error message for creating product directories that aren't
-## registered in Launchpad.
-##         self.failUnless(
-##             "Directories directly under a user directory must be named after a "
-##             "product name registered in Launchpad" in str(e),
-##             str(e))
+    @deferToThread
+    def test_make_product_directory_for_nonexistent_product_error(self):
+        transport = self.getTransport()
+        e = self.assertRaises(
+            errors.PermissionDenied,
+            transport.mkdir, '~testuser/no-such-product/new-branch')
+        self.assertIn(
+            "Directories directly under a user directory must be named after "
+            "a product name registered in Launchpad",
+            str(e))
 
-
-## XXX: JonathanLange 2007-06-05, SFTP only -- HPSS hides the error message.
-## Test the error message for creating branches in team directories that don't
-## belong to you.
-##        self.failUnless("~not-my-team" in str(e))
+    @deferToThread
+    def test_mkdir_not_team_member_error(self):
+        # You can't make a branch under the directory of a team that you don't
+        # belong to.
+        transport = self.getTransport()
+        e = self.assertRaises(
+            errors.NoSuchFile,
+            transport.mkdir, '~not-my-team/firefox/new-branch')
+        self.assertIn("~not-my-team", str(e))
 
 
 class FakeLaunchpadServer(LaunchpadServer):
@@ -248,5 +259,8 @@ def make_sftp_server():
 def test_suite():
     servers = [make_sftp_server(), make_launchpad_server()]
     adapter = CodeHostingTestProviderAdapter(servers)
-    base_suite = unittest.TestLoader().loadTestsFromName(__name__)
-    return adapt_suite(adapter, base_suite)
+    loader = unittest.TestLoader()
+    filesystem_suite = loader.loadTestsFromTestCase(TestFilesystem)
+    error_suite = loader.loadTestsFromTestCase(TestErrorMessages)
+    return unittest.TestSuite(
+        [adapt_suite(adapter, filesystem_suite), error_suite])
