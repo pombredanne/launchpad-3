@@ -366,7 +366,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 published=published,
                 validation_status=validation_status,
                 force_edition_rights=is_editor,
-                force_suggestion=force_suggestion)
+                force_suggestion=force_suggestion,
+                active_submission=old_active_submission)
 
             if new_submission != old_active_submission:
                 has_changed = True
@@ -396,11 +397,12 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                     updated = 0
                     for pluralform in range(self.pluralforms):
                         active = active_submissions[pluralform]
-                        if active is not None:
-                            if active.published:
-                                matches += 1
-                            else:
+                        published = self.getPublishedSubmission(pluralform)
+                        if active:
+                            if published and active != published:
                                 updated += 1
+                            else:
+                                matches += 1
                     if matches == self.pluralforms:
                         # The active submission is exactly the same as the
                         # published one, so the fuzzy and complete flags should be
@@ -417,15 +419,16 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 updated = 0
                 for pluralform in range(self.pluralforms):
                     active = active_submissions[pluralform]
-                    if active is not None:
-                        if not active.published:
-                            updated += 1
+                    published = self.getPublishedSubmission(pluralform)
+                    if active and published and active != published:
+                        updated += 1
                 if updated > 0:
                     self.isupdated = True
 
     def _makeSubmission(self, person, text, is_fuzzy, pluralform, published,
             validation_status=TranslationValidationStatus.UNKNOWN,
-            force_edition_rights=False, force_suggestion=False):
+            force_edition_rights=False, force_suggestion=False,
+            active_submission=None):
         """Record a translation submission by the given person.
 
         :arg person: Who submitted this entry.
@@ -478,8 +481,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         # should be None by this stage
         assert text != u'', 'Empty string received, should be None'
 
-        active_submission = self.getActiveSubmission(pluralform)
-        published_submission = self.getPublishedSubmission(pluralform)
+        if active_submission and active_submission.published:
+            published_submission = active_submission
+        else:
+            published_submission = self.getPublishedSubmission(pluralform)
 
         # submitting an empty (None) translation gets rid of the published
         # or active submissions for that translation. But a null published
