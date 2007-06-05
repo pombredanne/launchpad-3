@@ -14,9 +14,6 @@
     <b>Status:</b>
     <span tal:replace="context/status/title">Open</span><br />
 
-    <b>Priority:</b>
-    <span tal:replace="context/priority/title">Normal</span><br />
-
     <b>For:</b>
     <span tal:condition="context/product"
           tal:replace="context/product/name">Firefox</span>

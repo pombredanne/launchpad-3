@@ -49,7 +49,7 @@ class ProductReleaseFinder:
         for product in products:
             filters = []
 
-            for series in product.serieslist:
+            for series in product.serieses:
                 if not series.releasefileglob:
                     continue
 

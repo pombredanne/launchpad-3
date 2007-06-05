@@ -203,7 +203,7 @@ If we now set bug one's tag to 'some-tag', it will be found.
 When viewing a bug listing for a context we want to display all the tags
 that are used in that context. For this we have a method on each bug
 target to return all the used tags. For source packages we return the
-tags used in its distribution/distrorelease, since it's good to see
+tags used in its distribution/distroseries, since it's good to see
 which tags can be used. The tags are ordered alphabetically.  All tags
 are shown, no matter if they are used in open bugs or closed ones.
 
@@ -233,7 +233,7 @@ are shown, no matter if they are used in open bugs or closed ones.
     [u'crash', u'dataloss', u'pebcak', u'sco', u'svg']
 
     >>> debian = getUtility(IDistributionSet).getByName('debian')
-    >>> debian_woody = debian.getRelease('woody')
+    >>> debian_woody = debian.getSeries('woody')
     >>> debian_woody.getUsedBugTags()
     [u'dataloss', u'layout-test', u'pebcak']
 

@@ -66,7 +66,7 @@ class TestPublishDistro(TestNativePublishingBase):
         pub_source = self.getPubSource(filecontent='foo')
         pub_source2 = self.getPubSource(
             sourcename='baz', filecontent='baz',
-            distrorelease=self.ubuntutest['hoary-test'])
+            distroseries=self.ubuntutest['hoary-test'])
         self.layer.txn.commit()
 
         rc, out, err = self.runPublishDistro(['-s', 'hoary-test'])
