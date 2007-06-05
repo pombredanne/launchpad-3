@@ -10,8 +10,7 @@ __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.event import notify
 
-from sourcerer.deb.version import Version
-
+from canonical.archivepublisher.debversion import Version
 from canonical.launchpad import _
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
