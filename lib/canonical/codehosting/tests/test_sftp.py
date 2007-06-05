@@ -135,19 +135,21 @@ class SFTPTests(SSHTestCase, TestCaseWithTransport):
         self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
 
 
-class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
+class TestLaunchpadTransportMakeDirectory(SSHTestCase,
+                                          TestCaseWithMemoryTransport):
 
     layer = BzrlibLayer
 
-    def setUp(self):
-        super(TestLaunchpadTransportMakeDirectory, self).setUp()
-        self.authserver = FakeLaunchpad()
-        self.user_id = 1
-        self.backing_transport = self.get_transport()
-        self.server = LaunchpadServer(
-            self.authserver, self.user_id, self.backing_transport)
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
+    def getDefaultServer(self):
+        authserver = FakeLaunchpad()
+        user_id = 1
+        backing_transport = self.get_transport()
+        server = LaunchpadServer(authserver, user_id, backing_transport)
+        return server
+
+    def installServer(self, server):
+        self.server = server
+        self.backing_transport = server.backing_transport
 
     def getTransport(self):
         return get_transport(self.server.get_url())
