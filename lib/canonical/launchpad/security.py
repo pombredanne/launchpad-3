@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import (
     IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
     ITranslationGroup, ITranslationGroupSet, IProduct, IProductSeries,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
-    ISourcePackage, ILaunchpadCelebrities, IDistroRelease, IBugTracker,
+    ISourcePackage, ILaunchpadCelebrities, IDistroSeries, IBugTracker,
     IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
     IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
@@ -24,7 +24,8 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
-    IDistroReleaseLanguage, IBranch)
+    IDistroSeriesLanguage, IBranch)
+
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -102,7 +103,7 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
     """We want everybody "related" to a specification to be able to edit it.
     You are related if you have a role on the spec, or if you have a role on
-    the spec target (distro/product) or goal (distrorelease/productseries).
+    the spec target (distro/product) or goal (distroseries/productseries).
     """
 
     permission = 'launchpad.Edit'
@@ -301,7 +302,7 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Only the Launchpad admins need this, we are only going to use it
-        for connecting up series and distroreleases where we did not have
+        for connecting up series and distroseriess where we did not have
         them."""
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
@@ -384,7 +385,7 @@ class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 class AdminDistribution(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
-    and distroreleases to the Launchpad admin team."""
+    and distroseriess to the Launchpad admin team."""
     permission = 'launchpad.Admin'
     usedfor = IDistribution
 
@@ -393,7 +394,7 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of a distribution should be able to edit its
     information; it is mainly administrative data, such as bug
     contacts. Note that creation of new distributions and distribution
-    releases is still protected with launchpad.Admin"""
+    series is still protected with launchpad.Admin"""
     permission = 'launchpad.Edit'
     usedfor = IDistribution
 
@@ -403,10 +404,10 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
-class AdminDistroRelease(AdminByAdminsTeam):
+class AdminDistroSeries(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
-    and distroreleases to the Launchpad admin team.
+    and distroseriess to the Launchpad admin team.
 
     NB: Please consult with SABDFL before modifying this permission because
         changing it could cause the archive to get rearranged, with tons of
@@ -414,18 +415,18 @@ class AdminDistroRelease(AdminByAdminsTeam):
         upset. Then James T would be on your case.
     """
     permission = 'launchpad.Admin'
-    usedfor = IDistroRelease
+    usedfor = IDistroSeries
 
 
-class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
-    """The owner of the distro release should be able to modify some of the
-    fields on the IDistroRelease
+class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
+    """The owner of the distro series should be able to modify some of the
+    fields on the IDistroSeries
 
     NB: there is potential for a great mess if this is not done correctly so
     please consult with SABDFL before modifying these permissions.
     """
     permission = 'launchpad.Edit'
-    usedfor = IDistroRelease
+    usedfor = IDistroSeries
 
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
@@ -434,10 +435,10 @@ class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
-class ReleaseAndSeriesDrivers(AuthorizationBase):
+class SeriesDrivers(AuthorizationBase):
     """Drivers can approve or decline features and target bugs.
 
-    Drivers exist for distribution releases and product series.
+    Drivers exist for distribution and product series.
     """
     permission = 'launchpad.Driver'
     usedfor = IHasDrivers
@@ -792,11 +793,11 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
     usedfor = IPackageUploadQueue
 
     def checkAuthenticated(self, user):
-        """Check user presence in admins or distrorelease upload admin team."""
+        """Check user presence in admins or distroseries upload admin team."""
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 
-        return user.inTeam(self.obj.distrorelease.distribution.upload_admin)
+        return user.inTeam(self.obj.distroseries.distribution.upload_admin)
 
 
 class ViewPackageUploadQueue(EditPackageUploadQueue):
@@ -938,11 +939,11 @@ class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
     usedfor = IPOTemplateSubset
 
 
-class AdminDistroReleaseLanguage(OnlyRosettaExpertsAndAdmins):
+class AdminDistroSeriesLanguage(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
-    usedfor = IDistroReleaseLanguage
+    usedfor = IDistroSeriesLanguage
 
 
-class AdminDistroReleaseTranslations(OnlyRosettaExpertsAndAdmins):
+class AdminDistroSeriesTranslations(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.TranslationsAdmin'
-    usedfor = IDistroRelease
+    usedfor = IDistroSeries

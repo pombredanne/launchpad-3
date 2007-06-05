@@ -140,9 +140,12 @@ Branches with no URL are primarily hosted on the supermirror.
 The IBranchSet can tell us how many branches there are registered.
 
     >>> branchset.count()
-    30
+    32
 
-(28 in the sample data, and two added above.)
+(30 in the sample data, and two added above.)
+
+# XXX thumper 2007-05-28
+# Rework example so it doesn't get stuffed everytime we update sample data.
 
 
 == Determing the number of branches with bugs ==
@@ -663,6 +666,7 @@ Lets make gnome terminal have a user branch as the dev focus.
     firefox        5 2005-03-09 15:50:00
     gnome-terminal 8 None
     iso-codes      1 None
+    landscape      2 None
     thunderbird    1 None
 
 
@@ -721,6 +725,8 @@ return all branches associated with that person:
     New ~name12/gnome-terminal/mirrored
     New ~name12/gnome-terminal/pushed
     New ~name12/gnome-terminal/scanned
+    New ~name12/landscape/feature-x
+    New ~landscape-developers/landscape/trunk
     Experimental ~name12/+junk/junk.dev
     New ~name12/+junk/junk.contrib
 
@@ -729,6 +735,8 @@ return all branches associated with that person:
     New ~name12/firefox/main
     Merged ~name12/gnome-terminal/slowness
     Experimental ~name12/gnome-terminal/klingon
+    New ~name12/landscape/feature-x
+    New ~landscape-developers/landscape/trunk
     New ~name12/+junk/junk.contrib
 
     >>> for branch in branchset.getBranchesRegisteredByPerson(sample_person):

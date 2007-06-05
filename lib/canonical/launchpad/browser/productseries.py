@@ -258,7 +258,7 @@ class ProductSeriesView(LaunchpadView):
         # let's find out what source package is associated with this
         # productseries in the current release of ubuntu
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.curr_ubuntu_release = ubuntu.currentrelease
+        self.curr_ubuntu_series = ubuntu.currentseries
         self.setUpPackaging()
 
         # Check the form submission.
@@ -301,18 +301,18 @@ class ProductSeriesView(LaunchpadView):
         self.curr_ubuntu_package = None
         self.curr_ubuntu_pkgname = ''
         try:
-            cr = self.curr_ubuntu_release
+            cr = self.curr_ubuntu_series
             self.curr_ubuntu_package = self.context.getPackage(cr)
             cp = self.curr_ubuntu_package
             self.curr_ubuntu_pkgname = cp.sourcepackagename.name
         except NotFoundError:
             pass
-        ubuntu = self.curr_ubuntu_release.distribution
+        ubuntu = self.curr_ubuntu_series.distribution
         self.ubuntu_history = self.context.getPackagingInDistribution(ubuntu)
 
     def setCurrentUbuntuPackage(self):
         """Set the Packaging record for this product series in the current
-        Ubuntu distrorelease to be for the source package name that is given
+        Ubuntu distroseries to be for the source package name that is given
         in the form.
         """
         form = self.form
@@ -337,8 +337,8 @@ class ProductSeriesView(LaunchpadView):
             self.has_errors = True
             return
         # set the packaging record for this productseries in the current
-        # ubuntu release. if none exists, one will be created
-        self.context.setPackaging(self.curr_ubuntu_release, spn, self.user)
+        # ubuntu series. if none exists, one will be created
+        self.context.setPackaging(self.curr_ubuntu_series, spn, self.user)
         self.setUpPackaging()
 
     def requestCountry(self):

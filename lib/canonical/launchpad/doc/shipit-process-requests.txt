@@ -10,7 +10,7 @@ than just a system that they can easily game.
 == Pending Special Consideration ==
 
 All requests made by a given person when that person has at least two
-other requests for that same distrorelease and flavour already shipped will
+other requests for that same distroseries and flavour already shipped will
 be flagged with the PENDINGSPECIAL status. By default, they won't show up
 on the list of pending requests seen by shipit admins.  Then, from time to
 time, if we have too many of these requests we'll run a script to either
@@ -18,7 +18,7 @@ approve or deny them all at once.
 
 == Duplicated address ==
 
-When somebody makes a request for CDs of a given distrorelease we check our
+When somebody makes a request for CDs of a given distroseries we check our
 records to see if the shipping address has already been used by another user.
 If it has, the request is marked with the DUPLICATEDADDRESS so that we can
 process them all as a batch later.

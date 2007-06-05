@@ -5,7 +5,7 @@ __metaclass__ = type
 __all__ = [
     'PkgBuild',
     'PkgVersion',
-    'DistroReleaseVersions',
+    'DistroSeriesVersions',
     'BinPackage',
     ]
 
@@ -16,10 +16,10 @@ from canonical.launchpad.interfaces import ILaunchBag
 class PkgBuild:
 
     def __init__(self, id, processorfamilyname,
-                 distroarchrelease):
+                 distroarchseries):
         self.id = id
         self.processorfamilyname = processorfamilyname
-        self.distroarchrelease = distroarchrelease
+        self.distroarchseries = distroarchseries
 
     def html(self):
         return '<a href="/soyuz/packages/'+str(self.id)+'">'+self.processorfamilyname+'</a>'
@@ -33,10 +33,10 @@ class PkgVersion:
     def buildlisthtml(self):
         return ', '.join([ build.html() for build in self.builds ])
 
-class DistroReleaseVersions:
+class DistroSeriesVersions:
 
-    def __init__(self, distroreleasename):
-        self.distroreleasename = distroreleasename
+    def __init__(self, distroseriesname):
+        self.distroseriesname = distroseriesname
         self.versions = {}
 
 class BinPackage:
@@ -45,6 +45,6 @@ class BinPackage:
         self.name = name
         self.summary = summary
         self.description = description
-        self.distroreleases = {}
+        self.distroseriess = {}
 
 

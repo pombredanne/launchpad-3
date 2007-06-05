@@ -30,7 +30,7 @@ Check the series order. Development focus is at the top:
 
 Now let's add another product series for 1.5.
 
-   >>> browser.getLink('Register a release series').click()
+   >>> browser.getLink('Register a series').click()
    >>> browser.getControl('Name').value = '1.5'
    >>> browser.getControl('Summary').value= 'A slightly newer firefox'
    >>> browser.getControl('Register Series').click()
