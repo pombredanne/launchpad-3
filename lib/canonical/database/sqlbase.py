@@ -32,8 +32,8 @@ __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
 AUTOCOMMIT_ISOLATION=0
 READ_COMMITTED_ISOLATION=1
 SERIALIZABLE_ISOLATION=3
-# Default we want for scripts, and psycopg2 default. Note psycopg1 will
-# use SERIALIZABLE unless we override.
+# Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
+# use SERIALIZABLE unless we override, but psycopg2 will not.
 DEFAULT_ISOLATION=READ_COMMITTED_ISOLATION
 
 # First, let's monkey-patch SQLObject a little:
