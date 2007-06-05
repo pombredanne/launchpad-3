@@ -3,7 +3,8 @@
 """Common helpers for codehosting tests."""
 
 __metaclass__ = type
-__all__ = ['AvatarTestCase', 'TwistedBzrlibLayer']
+__all__ = [
+    'AvatarTestCase', 'FakeLaunchpad', 'TwistedBzrlibLayer', 'deferToThread']
 
 import os
 import shutil
@@ -67,3 +68,85 @@ def deferToThread(f):
         t.start()
         return d
     return mergeFunctionMetadata(f, decorated)
+
+
+class FakeLaunchpad:
+    """Stub RPC interface to Launchpad."""
+
+    def __init__(self):
+        self._person_set = {
+            1: dict(name='testuser', displayname='Test User',
+                    emailaddresses=['test@test.com'], wikiname='TestUser',
+                    teams=[1, 2]),
+            2: dict(name='testteam', displayname='Test Team', teams=[]),
+            }
+        self._product_set = {
+            1: dict(name='firefox'),
+            2: dict(name='thunderbird'),
+            }
+        self._branch_set = {}
+        self.createBranch(1, 1, 'baz')
+        self.createBranch(1, 1, 'qux')
+        self.createBranch(1, '', 'random')
+        self.createBranch(2, 1, 'qux')
+
+    def _lookup(self, item_set, item_id):
+        row = dict(item_set[item_id])
+        row['id'] = item_id
+        return row
+
+    def _insert(self, item_set, item_dict):
+        new_id = max(item_set.keys() + [0]) + 1
+        item_set[new_id] = item_dict
+        return new_id
+
+    def createBranch(self, user_id, product_id, branch_name):
+        """See IHostedBranchStorage.createBranch."""
+        new_branch = dict(
+            name=branch_name, user_id=user_id, product_id=product_id)
+        for branch in self._branch_set.values():
+            if branch == new_branch:
+                raise ValueError("Already have branch: %r" % (new_branch,))
+        return self._insert(self._branch_set, new_branch)
+
+    def fetchProductID(self, name):
+        """See IHostedBranchStorage.fetchProductID."""
+        if name == '+junk':
+            return ''
+        for product_id, product_info in self._product_set.iteritems():
+            if product_info['name'] == name:
+                return product_id
+        return None
+
+    def getUser(self, loginID):
+        """See IUserDetailsStorage.getUser."""
+        matching_user_id = None
+        for user_id, user_dict in self._person_set.iteritems():
+            loginIDs = [user_id, user_dict['name']]
+            loginIDs.extend(user_dict.get('emailaddresses', []))
+            if loginID in loginIDs:
+                matching_user_id = user_id
+                break
+        if matching_user_id is None:
+            return ''
+        user_dict = self._lookup(self._person_set, matching_user_id)
+        user_dict['teams'] = [
+            self._lookup(self._person_set, id) for id in user_dict['teams']]
+        return user_dict
+
+    def getBranchesForUser(self, personID):
+        """See IHostedBranchStorage.getBranchesForUser."""
+        product_branches = {}
+        for branch_id, branch in self._branch_set.iteritems():
+            if branch['user_id'] != personID:
+                continue
+            product_branches.setdefault(
+                branch['product_id'], []).append((branch_id, branch['name']))
+        result = []
+        for product, branches in product_branches.iteritems():
+            if product == '':
+                result.append(('', '', branches))
+            else:
+                result.append(
+                    (product, self._product_set[product]['name'], branches))
+        return result

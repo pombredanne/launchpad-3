@@ -17,9 +17,8 @@ from canonical.codehosting.transport import LaunchpadServer
 from canonical.codehosting.tests.test_acceptance import (
     adapt_suite, AuthserverWithKeys, CodeHostingTestProviderAdapter,
     SSHCodeHostingServer, SSHTestCase)
-from canonical.codehosting.tests.test_plugin_transport import FakeLaunchpad
 from canonical.codehosting.tests.helpers import (
-    TwistedBzrlibLayer, deferToThread)
+    FakeLaunchpad, TwistedBzrlibLayer, deferToThread)
 from canonical.testing import BzrlibLayer
 
 
