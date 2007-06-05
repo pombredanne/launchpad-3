@@ -106,3 +106,44 @@ As it is an error to omit both:
       ...
     AssertionError: content or url must be provided
 
+== findSimilarFAQs() ==
+
+The method findSimilarFAQs() can be use to find FAQ document that are
+likely to answer a particular question. The question's summary or a
+sentence describing the issue should be given in parameter. The FAQ's
+title, summary, keywords and content can be the source of the match.
+
+This method uses a "natural language" search algorithm
+(see lib/canonical/doc/textsearching.txt for the details) which ignore
+common words and stop words.
+
+    # Create more FAQs.
+    >>> faq = target.newFAQ(
+    ...     no_priv, 'How to answer a question',
+    ...     'Describe how to use the Answer Tracker.',
+    ...     url='http://help.launchpad.net/AnswerTrackerDocumentation')
+    >>> faq = target.newFAQ(
+    ...     no_priv, 'How to become a Launchpad king',
+    ...     'Describe how to achieve uber-karma',
+    ...     content='Answer questions using the Launchpad Answer Tracker')
+    >>> faq = target.newFAQ(
+    ...     no_priv, 'How to use bug mail',
+    ...     'Describe the syntax of bug mail commands',
+    ...     url='http://help.launchpad.net/UsingMaloneEmail')
+
+    >>> for faq in target.findSimilarFAQs('How do I use the Answer Tracker'):
+    ...     print faq.title
+    How to answer a question
+    How to become a Launchpad king
+
+The results are ordered by relevancy. The first document is considered
+more relevant because 'Answer Tracker' appeared in the summary (they
+appear in the content in the other document).
+
+If there are no similar FAQ, no result should be returned:
+
+    >>> for faq in target.findSimilarFAQs('How do I do this?'):
+    ...     print faq.title
+
+Since only common and stop words are in that summary, no similar FAQ
+could be found.

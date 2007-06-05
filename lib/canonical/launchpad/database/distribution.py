@@ -593,10 +593,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def newFAQ(self, owner, title, summary, content=None, url=None,
                date_created=UTC_NOW):
-        """See `IFAQ`."""
+        """See `IFAQTarget`."""
         return FAQ.new(
             owner=owner, title=title, summary=summary, content=content,
             url=url, date_created=date_created, distribution=self)
+
+    def findSimilarFAQs(self, summary):
+        """See `IFAQTarget`."""
+        return FAQ.findSimilar(summary, distribution=self)
     
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""

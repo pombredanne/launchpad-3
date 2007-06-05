@@ -9,12 +9,14 @@ __all__ = [
     ]
 
 from sqlobject import ForeignKey, StringCol
+from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.nl_search import nl_phrase_search
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import IFAQ, IPerson
 
@@ -89,3 +91,29 @@ class FAQ(SQLBase):
             owner=owner, title=title, summary=summary, content=content,
             url=url, date_created=date_created, product=product,
             distribution=distribution)
+
+    @staticmethod
+    def findSimilar(summary, product=None, distribution=None):
+        """Return the FAQs similar to summary.
+
+        See `IFAQTarget.findSimilarFAQs` for details.
+        """
+        assert not(product and distribution), (
+            'only one of product or distribution should be provided')
+        if product:
+            target_constraint = 'product = %s' % sqlvalues(product)
+        elif distribution:
+            target_constraint = 'distribution = %s' % sqlvalues(distribution)
+        else:
+            raise AssertionError('must provide product or distribution')
+
+        fti_search = nl_phrase_search(summary, FAQ, target_constraint)
+        if not fti_search:
+            # No useful words to search on in that summary.
+            return FAQ.select('1 = 2')
+        
+        return FAQ.select(
+            '%s AND FAQ.fti @@ %s' % (target_constraint, quote(fti_search)),
+            orderBy=[
+                SQLConstant("-rank(FAQ.fti, ftq(%s))" % quote(fti_search)),
+                "-FAQ.date_created"])

@@ -28,3 +28,13 @@ class IFAQTarget(Interface):
 
         Either content or url must be prrovided. It is an error to specify both.
         """
+
+    def findSimilarFAQs(summary):
+        """Return FAQs contained in this target similar to summary.
+
+        Return a list of FAQs similar to the summary provided. These
+        FAQs should be found using a fuzzy search. The list should be
+        ordered from the most similar FAQ to the least similar FAQ
+
+        :param summary: A summary phrase.
+        """

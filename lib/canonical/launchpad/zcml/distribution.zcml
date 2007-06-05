@@ -28,6 +28,9 @@
       attributes="newQuestion addAnswerContact removeAnswerContact"
       />
     <!-- IFAQTarget -->
+    <allow
+      attributes="findSimilarFAQs"
+      />
     <require
       permission="launchpad.Moderate"
       attributes="newFAQ"

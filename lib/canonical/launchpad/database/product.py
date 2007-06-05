@@ -394,11 +394,15 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     
     def newFAQ(self, owner, title, summary, content=None, url=None,
                date_created=None):
-        """See `IFAQ`."""
+        """See `IFAQTarget`."""
         return FAQ.new(
             owner=owner, title=title, summary=summary, content=content,
             url=url, date_created=date_created, product=self)
-            
+    
+    def findSimilarFAQs(self, summary):
+        """See `IFAQTarget`."""
+        return FAQ.findSimilar(summary, product=self)
+
     @property
     def translatable_packages(self):
         """See IProduct."""
