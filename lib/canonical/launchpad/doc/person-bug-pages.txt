@@ -121,7 +121,8 @@ And now we query for it.
     ...         for bugtask in closed_reported_bugtasks])
     [(9, 'INVALID', None)]
 
-    >>> bug_task.transitionToStatus(old_status)
+    >>> bug_task.transitionToStatus(
+    ...     old_status, getUtility(ILaunchBag).user)
     >>> flush_database_updates()
 
 

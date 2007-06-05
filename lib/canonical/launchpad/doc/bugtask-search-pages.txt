@@ -329,7 +329,8 @@ And the advanced form allows us to query for specific bug statuses.
     ...     print bugtask.bug.id, bugtask.product.name, bugtask.status.name
     5 firefox INVALID
 
-    >>> open_bugtasks[0].transitionToStatus(previous_status)
+    >>> open_bugtasks[0].transitionToStatus(
+    ...     previous_status, getUtility(ILaunchBag).user)
     >>> flush_database_updates()
 
 This view does *not* render the upstream status widget.
@@ -413,7 +414,8 @@ The critical bugs link and counts consider only unresolved bugs.
     >>> print bugfilters_portlet_view.context.critical_bugtasks.count()
     0
 
-    >>> critical_task.transitionToStatus(prev_status)
+    >>> critical_task.transitionToStatus(
+    ...     prev_status, getUtility(ILaunchBag).user)
     >>> flush_database_updates()
 
 Moving along...

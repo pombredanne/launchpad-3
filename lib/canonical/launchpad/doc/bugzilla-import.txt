@@ -389,7 +389,7 @@ Bugzilla severities are mapped to the equivalent Launchpad importance values:
 
   >>> bug = bugzilla.Bug(bz.backend, 1)
   >>> class FakeBugTask:
-  ...     def transitionToStatus(self, status):
+  ...     def transitionToStatus(self, status, user):
   ...         self.status = status
   >>> bugtask = FakeBugTask()
   >>> for severity in ['blocker', 'critical', 'major', 'normal',
