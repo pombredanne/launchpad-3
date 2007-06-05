@@ -83,13 +83,11 @@ def builddmasterSetUp(test):
     setGlobs(test)
 
 def importdSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(dbuser='importd').setUp()
+    LaunchpadZopelessLayer.switchDbUser('importd')
     setUp(test)
 
 def importdTearDown(test):
     tearDown(test)
-    LaunchpadZopelessTestSetup().tearDown()
 
 def answerTrackerSetUp(test):
     setGlobs(test)
@@ -269,7 +267,7 @@ special = {
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
             setUp=importdSetUp, tearDown=importdTearDown,
-            optionflags=default_optionflags, layer=ZopelessLayer
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     'answer-tracker-emailinterface.txt': LayeredDocFileSuite(
             '../doc/answer-tracker-emailinterface.txt',
