@@ -4,6 +4,9 @@
 # cron as the launchpad user once a day. Typically the output
 # will be sent to an email address for inspection.
 
+# Note that http/ftp proxies are needed by the product 
+# release finder
+
 export LPCONFIG=lpnet1
 export http_proxy=http://squid.internal:3128/
 export ftp_proxy=http://squid.internal:3128/
