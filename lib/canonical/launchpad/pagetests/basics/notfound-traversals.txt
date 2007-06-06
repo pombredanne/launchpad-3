@@ -298,12 +298,12 @@ not yet been reported.
 >>> check_not_found("/ubuntu/+source/thunderbird/+bug/1/+viewstatus")
 >>> check_not_found("/ubuntu/+source/thunderbird/+bug/1/+editstatus")
 
-Viewing the bug in the context of a distro release source package in
+Viewing the bug in the context of a distro series source package in
 which the bug has already been reported.
 
 >>> check("/ubuntu/warty/+source/mozilla-firefox/+bug/5")
 
-Viewing the bug in the context of a distro release source package in
+Viewing the bug in the context of a distro series source package in
 which the bug has not yet been reported.
 
 >>> check("/ubuntu/warty/+source/mozilla-firefox/+bug/1")
@@ -327,8 +327,8 @@ The bug filing pages.
 >>> check("/ubuntu/+source/mozilla-firefox/+filebug-advanced", auth=True)
 
 Note that you should not be able to directly file a bug on a
-distrorelease or sourcepackage; an IBugTask reported against a
-distrorelease or sourcepackage is *targeted* to be fixed in that
+distroseries or sourcepackage; an IBugTask reported against a
+distroseries or sourcepackage is *targeted* to be fixed in that
 specific release. Instead, you get redirected to the appropriate distro
 or distrosourcepackage filebug page.
 

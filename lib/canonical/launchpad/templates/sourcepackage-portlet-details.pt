@@ -21,7 +21,7 @@
     </tal:currentrelease>
     <tal:norelease tal:condition="not: context/currentrelease">
       <i>No published releases of this package have been uploaded in
-      <tal:block content="context/distrorelease/fullreleasename" />
+      <tal:block content="context/distroseries/fullseriesname" />
       </i>
     </tal:norelease>
   </div>

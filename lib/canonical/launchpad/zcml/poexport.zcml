@@ -10,8 +10,8 @@
         factory="canonical.launchpad.components.poexport.POTemplateExporter" />
 
     <adapter
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        provides="canonical.launchpad.interfaces.IDistroReleasePOExporter"
-        factory="canonical.launchpad.components.poexport.DistroReleasePOExporter" />
+        for="canonical.launchpad.interfaces.IDistroSeries"
+        provides="canonical.launchpad.interfaces.IDistroSeriesPOExporter"
+        factory="canonical.launchpad.components.poexport.DistroSeriesPOExporter" />
 
 </configure>

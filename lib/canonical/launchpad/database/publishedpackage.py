@@ -27,13 +27,13 @@ class PublishedPackage(SQLBase):
     distribution = ForeignKey(dbName='distribution',
                               foreignKey='Distribution',
                               immutable=True)
-    distroarchrelease = ForeignKey(dbName='distroarchrelease',
-                                   foreignKey='DistroArchRelease',
+    distroarchseries = ForeignKey(dbName='distroarchrelease',
+                                   foreignKey='DistroArchSeries',
                                    immutable=True)
-    distrorelease = ForeignKey(dbName='distrorelease',
-                               foreignKey='DistroRelease',
+    distroseries = ForeignKey(dbName='distrorelease',
+                               foreignKey='DistroSeries',
                                immutable=True)
-    distroreleasename = StringCol(immutable=True)
+    distroseriesname = StringCol(dbName='distroreleasename', immutable=True)
     processorfamily = ForeignKey(dbName="processorfamily",
                                  foreignKey="ProcessorFamily",
                                  immutable=True)
@@ -66,7 +66,7 @@ class PublishedPackageSet:
         return iter(PublishedPackage.select())
 
     def query(self, name=None, text=None, distribution=None,
-              distrorelease=None, distroarchrelease=None, component=None):
+              distroseries=None, distroarchseries=None, component=None):
         queries = []
         if name:
             name = name.lower().strip().split()[0]
@@ -74,10 +74,10 @@ class PublishedPackageSet:
                            % quote_like(name))
         if distribution:
             queries.append("distribution = %d" % distribution.id)
-        if distrorelease:
-            queries.append("distrorelease = %d" % distrorelease.id)
-        if distroarchrelease:
-            queries.append("distroarchrelease = %d" % distroarchrelease.id)
+        if distroseries:
+            queries.append("distrorelease = %d" % distroseries.id)
+        if distroarchseries:
+            queries.append("distroarchrelease = %d" % distroarchseries.id)
         if component:
             queries.append("component = %s" % quote(component))
         if text:
@@ -85,7 +85,7 @@ class PublishedPackageSet:
             queries.append("binarypackagefti @@ ftq(%s)" % quote(text))
         return PublishedPackage.select(" AND ".join(queries), orderBy=['-datebuilt',])
 
-    def findDepCandidate(self, name, distroarchrelease):
+    def findDepCandidate(self, name, distroarchseries):
         """See IPublishedSet."""
         return PublishedPackage.selectOneBy(binarypackagename=name,
-                                            distroarchrelease=distroarchrelease)
+                                            distroarchseries=distroarchseries)

@@ -369,11 +369,46 @@ def drop_tables(cur, tables):
     cur.execute("DROP TABLE IF EXISTS %s" % ','.join(tables))
 
 
+def allow_sequential_scans(cur, permission):
+    """Allow database to ignore indexes and scan sequentially when it wants?
+
+    This is an unfortunate hack.  In some cases we have found that postgres
+    will resort to costly sequential scans when a perfectly good index is
+    available.  Specifically, this happened when we deleted one-third or so of
+    a table's rows without an ANALYZE (as done by autovacuum) on the indexed
+    column(s).  Telling the database to regenerate its statistics for one
+    primary-key indexed column costs almost nothing, but it will block for an
+    autovacuum to complete.  Autovacuums can take a long time, and currently
+    cannot be disabled temporarily or selectively.
+
+    Instead, this function lets us tell the database to ignore the index
+    degradation, and rely on autovacuum to restore it periodically.  Pass a
+    True or a False to change the setting for the ongoing database session.
+    Default in PostgreSQL is False, though we seem to have it set to True in
+    some of our databases.
+
+    >>> allow_sequential_scans(cur, True)
+    >>> cur.execute("SHOW enable_seqscan")
+    >>> print cur.fetchall()[0][0]
+    on
+
+    >>> allow_sequential_scans(cur, False)
+    >>> cur.execute("SHOW enable_seqscan")
+    >>> print cur.fetchall()[0][0]
+    off
+    """
+    permission_value = 'false'
+    if permission:
+        permission_value = 'true'
+
+    cur.execute("SET enable_seqscan=%s" % permission_value)
+
+
 if __name__ == '__main__':
     import psycopg
     con = psycopg.connect('dbname=launchpad_dev user=launchpad')
     cur = con.cursor()
-    
+
     for table, column in listReferences(cur, 'person', 'id'):
         print '%32s %32s' % (table, column)
 

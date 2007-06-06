@@ -231,6 +231,11 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         description=_('The timezone of where you live.'),
         vocabulary='TimezoneName')
 
+    openid_identifier = TextLine(
+            title=_("Key used to generate opaque OpenID identities."),
+            readonly=True, required=False,
+            )
+
     # Properties of the Person object.
     karma_category_caches = Attribute(
         'The caches of karma scores, by karma category.')
@@ -540,12 +545,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         changed.
         """
 
-    def shippedShipItRequestsOfCurrentRelease():
+    def shippedShipItRequestsOfCurrentSeries():
         """Return all requests made by this person that were sent to the
         shipping company already.
 
         This only includes requests for CDs of
-        ShipItConstants.current_distrorelease.
+        ShipItConstants.current_distroseries.
         """
 
     def currentShipItRequest():
@@ -570,7 +575,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """Return SourcePackageReleases maintained by this person.
 
         This method will only include the latest source package release
-        for each source package name, distribution release combination.
+        for each source package name, distribution series combination.
         """
 
     def latestUploadedButNotMaintainedPackages():
@@ -578,8 +583,16 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         not maintained by him.
 
         This method will only include the latest source package release
-        for each source package name, distribution release combination.
+        for each source package name, distribution series combination.
         """
+
+    def isUploader(distribution):
+        """Return whether this person is an uploader for distribution.
+
+        Returns True if this person is an uploader for distribution, or
+        False otherwise.
+        """
+
 
     def validateAndEnsurePreferredEmail(email):
         """Ensure this person has a preferred email.
@@ -878,6 +891,9 @@ class IPersonSet(Interface):
         Return None if there is no person with the given name.
         """
 
+    def getByOpenIdIdentifier(openid_identity):
+        """Return the person with the given OpenID identifier, or None."""
+
     def getAllTeams(orderBy=None):
         """Return all Teams.
 
@@ -890,8 +906,8 @@ class IPersonSet(Interface):
     def getPOFileContributors(pofile):
         """Return people that have contributed to the specified POFile."""
 
-    def getPOFileContributorsByDistroRelease(self, distrorelease, language):
-        """Return people who translated strings in distroRelease to language.
+    def getPOFileContributorsByDistroSeries(self, distroseries, language):
+        """Return people who translated strings in distroseries to language.
 
         The people that translated only IPOTemplate objects that are not
         current will not appear in the returned list.

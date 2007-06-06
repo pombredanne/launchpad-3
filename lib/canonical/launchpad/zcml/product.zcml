@@ -114,6 +114,17 @@
     template="../templates/bugtarget-bugs.pt"
     />
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.BugTargetBugListingView"
+    facet="bugs"
+    permission="zope.Public">
+    <browser:page
+      name="+portlet-bugtasklist-seriesbugs"
+      template="../templates/bugtask-portlet-seriesbugs.pt"
+      />
+  </browser:pages>
+
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"
         name="+download"

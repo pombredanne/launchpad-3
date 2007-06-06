@@ -4,18 +4,21 @@
 
 __metaclass__ = type
 
+import datetime
 from difflib import unified_diff
 
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEMessage import MIMEMessage
 from email.Utils import formatdate
-import rfc822
+
+from operator import attrgetter
 import re
+import rfc822
 import textwrap
-import datetime
 
 from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
@@ -23,8 +26,10 @@ from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IBranch, IBugTask, IEmailAddressSet, ILanguageSet, ISpecification,
-    ITeamMembershipSet, IUpstreamBugTask)
+    IBranch, IBugTask, IDistributionSourcePackage, IEmailAddressSet,
+    ILanguageSet, INotificationRecipientSet, IPerson, ISourcePackage,
+    ISpecification, ITeamMembershipSet, IUpstreamBugTask,
+    UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -104,6 +109,229 @@ class MailWrapper:
         # We added one line too much, remove it.
         wrapped_lines = wrapped_lines[:-1]
         return '\n'.join(wrapped_lines)
+
+
+class NotificationRecipientSet:
+    """Set of recipients along the rationale for being in the set."""
+
+    implements(INotificationRecipientSet)
+
+    def __init__(self):
+        """Create a new empty set."""
+        # We maintain a mapping of person to rationale, as well as a
+        # a mapping of all the emails to the person that hold the rationale
+        # for that email. That way, adding a person and a team containing
+        # that person will preserve the rationale associated when the email
+        # was first added.
+        self._personToRationale = {}
+        self._emailToPerson = {}
+
+    def getEmails(self):
+        """See `INotificationRecipientSet`."""
+        return sorted(self._emailToPerson.keys())
+
+    def getRecipients(self):
+        """See `INotificationRecipientSet`."""
+        return sorted(
+            self._personToRationale.keys(),  key=attrgetter('displayname'))
+
+    def __iter__(self):
+        """See `INotificationRecipientSet`."""
+        return iter(self.getRecipients())
+
+    def __contains__(self, person_or_email):
+        """See `INotificationRecipientSet`."""
+        if zope_isinstance(person_or_email, (str, unicode)):
+            return person_or_email in self._emailToPerson
+        elif IPerson.providedBy(person_or_email):
+            return person_or_email in self._personToRationale
+        else:
+            return False
+
+    def __nonzero__(self):
+        """See `INotificationRecipientSet`."""
+        return bool(self._personToRationale)
+
+    def getReason(self, person_or_email):
+        """See `INotificationRecipientSet`."""
+        if zope_isinstance(person_or_email, basestring):
+            try:
+                person = self._emailToPerson[person_or_email]
+            except KeyError:
+                raise UnknownRecipientError(person_or_email)
+        elif IPerson.providedBy(person_or_email):
+            person = person_or_email
+        else:
+            raise AssertionError(
+                'Not an IPerson or email address: %r' % person_or_email)
+        try:
+            return self._personToRationale[person]
+        except KeyError:
+            raise UnknownRecipientError(person)
+            
+    def add(self, persons, reason, header):
+        """See `INotificationRecipientSet`."""
+
+        if IPerson.providedBy(persons):
+            persons = [persons]
+
+        for person in persons:
+            assert IPerson.providedBy(person), (
+                'You can only add() IPerson: %r' % person)
+            # If the person already has a rationale, keep the first one.
+            if person in self._personToRationale:
+                continue
+            self._personToRationale[person] = reason, header
+            for email in contactEmailAddresses(person):
+                old_person = self._emailToPerson.get(email)
+                # Only associate this email to the person, if there was
+                # no association or if the previous one was to a team and
+                # the newer one is to a person.
+                if (old_person is None
+                    or (old_person.isTeam() and not person.isTeam())):
+                    self._emailToPerson[email] = person
+
+    def update(self, recipient_set):
+        """See `INotificationRecipientSet`."""
+        for person in recipient_set:
+            if person in self._personToRationale:
+                continue
+            reason, header = recipient_set.getReason(person)
+            self.add(person, reason, header)
+
+
+class BugNotificationRecipients(NotificationRecipientSet):
+    """A set of emails and rationales notified for a bug change.
+
+    Each email address registered in a BugNotificationRecipients is
+    associated to a string and a header that explain why the address is
+    being emailed. For instance, if the email address is that of a
+    distribution bug contact for a bug, the string and header will make
+    that fact clear.
+
+    The string is meant to be rendered in the email footer. The header
+    is meant to be used in an X-Launchpad-Message-Rationale header.
+
+    The first rationale registered for an email address is the one
+    which will be used, regardless of other rationales being added
+    for it later. This gives us a predictable policy of preserving
+    the first reason added to the registry; the callsite should
+    ensure that the manipulation of the BugNotificationRecipients
+    instance is done in preferential order.
+
+    Instances of this class are meant to be returned by
+    IBug.getBugNotificationRecipients().
+    """
+    implements(INotificationRecipientSet)
+    def __init__(self, duplicateof=None):
+        """Constructs a new BugNotificationRecipients instance.
+
+        If this bug is a duplicate, duplicateof should be used to
+        specify which bug ID it is a duplicate of.
+
+        Note that there are two duplicate situations that are
+        important:
+          - One is when this bug is a duplicate of another bug:
+            the subscribers to the main bug get notified of our
+            changes.
+          - Another is when the bug we are changing has
+            duplicates; in that case, direct subscribers of
+            duplicate bugs get notified of our changes.
+        These two situations are catered respectively by the
+        duplicateof parameter above and the addDupeSubscriber method.
+        Don't confuse them!
+        """
+        NotificationRecipientSet.__init__(self)
+        self.duplicateof = duplicateof
+
+    def _addReason(self, person, reason, header):
+        """Adds a reason (text and header) for a person.
+
+        It takes care of modifying the message when the person is notified
+        via a duplicate.
+        """
+        if self.duplicateof is not None:
+            reason = reason + " (via bug %s)" % self.duplicateof.id
+            header = header + " via Bug %s" % self.duplicateof.id
+        reason = "You received this bug notification because you %s." % reason
+        self.add(person, reason, header)
+
+    def addDupeSubscriber(self, person):
+        """Registers a subscriber of a duplicate of this bug."""
+        reason = "Subscriber of Duplicate"
+        if person.isTeam():
+            text = ("are a member of %s, which is a subscriber "
+                    "of a duplicate bug" % person.displayname)
+            reason += " @%s" % person.name
+        else:
+            text = "are a direct subscriber of a duplicate bug"
+        self._addReason(person, text, reason)
+
+    def addDirectSubscriber(self, person):
+        """Registers a direct subscriber of this bug."""
+        reason = "Subscriber"
+        if person.isTeam():
+            text = ("are a member of %s, which is a direct subscriber"
+                    % person.displayname)
+            reason += " @%s" % person.name
+        else:
+            text = "are a direct subscriber of the bug"
+        self._addReason(person, text, reason)
+
+    def addAssignee(self, person):
+        """Registers an assignee of a bugtask of this bug."""
+        reason = "Assignee"
+        if person.isTeam():
+            text = ("are a member of %s, which is a bug assignee"
+                    % person.displayname)
+            reason += " @%s" % person.name
+        else:
+            text = "are a bug assignee"
+        self._addReason(person, text, reason)
+
+    def addDistroBugContact(self, person, distro):
+        """Registers a distribution bug contact for this bug."""
+        reason = "Bug Contact (%s)" % distro.displayname
+        if person.isTeam():
+            text = ("are a member of %s, which is the bug contact for %s" %
+                (person.displayname, distro.displayname))
+            reason += " @%s" % person.name
+        else:
+            text = "are the bug contact for %s" % distro.displayname
+        self._addReason(person, text, reason)
+
+    def addPackageBugContact(self, person, package):
+        """Registers a package bug contact for this bug."""
+        reason = "Bug Contact (%s)" % package.displayname
+        if person.isTeam():
+            text = ("are a member of %s, which is a bug contact for %s" %
+                (person.displayname, package.displayname))
+            reason += " @%s" % person.name
+        else:
+            text = "are a bug contact for %s" % package.displayname
+        self._addReason(person, text, reason)
+
+    def addUpstreamBugContact(self, person, upstream):
+        """Registers an upstream bug contact for this bug."""
+        reason = "Bug Contact (%s)" % upstream.displayname
+        if person.isTeam():
+            text = ("are a member of %s, which is the bug contact for %s" %
+                (person.displayname, upstream.displayname))
+            reason += " @%s" % person.name
+        else:
+            text = "are the bug contact for %s" % upstream.displayname
+        self._addReason(person, text, reason)
+
+    def addUpstreamRegistrant(self, person, upstream):
+        """Registers an upstream product registrant for this bug."""
+        reason = "Registrant (%s)" % upstream.displayname
+        if person.isTeam():
+            text = ("are a member of %s, which is the registrant for %s" %
+                (person.displayname, upstream.displayname))
+            reason += " @%s" % person.name
+        else:
+            text = "are the registrant for %s" % upstream.displayname
+        self._addReason(person, text, reason)
 
 
 def construct_bug_notification(bug, from_address, address, body, subject,
@@ -924,11 +1152,55 @@ def notify_team_join(event):
 
 
 def dispatch_linked_question_notifications(bugtask, event):
-    """Send notifications to linked questitn subscribers when the bugtask
+    """Send notifications to linked question subscribers when the bugtask
     status change.
     """
     for question in bugtask.bug.questions:
         QuestionLinkedBugStatusChangeNotification(question, event)
+
+class QuestionNotificationRecipientSet(NotificationRecipientSet):
+    """`NotificationRecipientSet` that knows how to add answer contact."""
+
+    # XXX flacoste 20070521 This should probably better live as a method
+    # on IQuestionTarget that returns an INotificationRecipientSet. Once
+    # curtis' branch that add getAnswerContactsForLanguage lands. Move that
+    # in that method.
+    def addAnswerContacts(self, target):
+        """Add the answer_contacts for a target as recipients."""
+        # We need to special case the source package case because some are
+        # contacts for the distro while others are only registered for the
+        # package. And we also want the name of the package in context in
+        # the header.
+        if (ISourcePackage.providedBy(target)
+            or IDistributionSourcePackage.providedBy(target)):
+            self._addAnswerContacts(
+                target.direct_answer_contacts, target.displayname,
+                target.displayname)
+            distribution = target.distribution
+            self._addAnswerContacts(
+                distribution.answer_contacts, distribution.name,
+                distribution.displayname)
+        else:
+            self._addAnswerContacts(
+                target.answer_contacts, target.name, target.displayname)
+
+    def _addAnswerContacts(self, answer_contacts, target_name,
+                           target_display_name):
+        # Take care of adding the contacts with the correct rationale.
+        for person in answer_contacts:
+            reason_start = (
+            "You received this question notification because you are ")
+            if person.isTeam():
+                reason = reason_start + (
+                    'a member of %s, which is an answer contact for %s.' % (
+                        person.displayname, target_display_name))
+                header = 'Answer Contact (%s) @%s' % (
+                    target_name, person.name)
+            else:
+                reason = reason_start + (
+                    'an answer contact for %s.' % target_display_name)
+                header = 'Answer Contact (%s)' % target_name
+            self.add(person, reason, header)
 
 
 class QuestionNotification:
@@ -1012,6 +1284,9 @@ class QuestionNotification:
         language. When a subscriber is a team and it doesn't have an email
         set nor supported languages, only contacts the members that speaks
         the supported language.
+
+        :return: A `INotificationRecipientSet` containing the recipients and
+            rationale.
         """
         # Optimize the English case.
         english = getUtility(ILanguageSet)['en']
@@ -1019,22 +1294,27 @@ class QuestionNotification:
         if question_language == english:
             return self.question.getSubscribers()
 
-        recipients = set()
+        recipients = NotificationRecipientSet()
         skipped = set()
-        subscribers = set(self.question.getSubscribers())
+        original_recipients = self.question.getSubscribers()
+        subscribers = dict((person, original_recipients.getReason(person))
+                           for person in original_recipients)
         while subscribers:
-            person = subscribers.pop()
+            person, rationale = subscribers.popitem()
             if person == self.question.owner:
-                recipients.add(person)
+                recipients.add(person, *rationale)
             elif question_language not in person.getSupportedLanguages():
                 skipped.add(person)
             elif not person.preferredemail and not list(person.languages):
                 # For teams without an email address nor a set of supported
                 # languages, only notify the members that actually speak the
                 # language.
-                subscribers |= set(person.activemembers) - recipients - skipped
+                for member in person.activemembers:
+                    if member in recipients or member in skipped:
+                        continue
+                    subscribers[member] = rationale
             else:
-                recipients.add(person)
+                recipients.add(person, *rationale)
         return recipients
 
     def initialize(self):
@@ -1056,18 +1336,26 @@ class QuestionNotification:
         return True
 
     def send(self):
-        """Sends the notification to all the notification recipients."""
-        sent_addrs = set()
+        """Sends the notification to all the notification recipients.
+
+        This method takes care of adding the rationale for contacting each
+        recipient and also sets the X-Launchpad-Message-Rationale header on
+        each message.
+        """
         from_address = self.getFromAddress()
         subject = self.getSubject()
         body = self.getBody()
         headers = self.getHeaders()
-        for notified_person in self.getRecipients():
-            for address in contactEmailAddresses(notified_person):
-                if address not in sent_addrs:
-                    simple_sendmail(
-                        from_address, address, subject, body, headers)
-                    sent_addrs.add(address)
+        recipients = self.getRecipients()
+        wrapper = MailWrapper()
+        for email in recipients.getEmails():
+            rationale, header = recipients.getReason(email)
+            headers['X-Launchpad-Message-Rationale'] = header
+            body_parts = [body, wrapper.format(rationale)]
+            if '-- ' not in body:
+                body_parts.insert(1, '-- ')
+            simple_sendmail(
+                from_address, email, subject, '\n'.join(body_parts), headers)
 
     @property
     def unsupported_language(self):
@@ -1221,11 +1509,17 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         return get_email_template(self.body_template) % replacements
 
     def getRecipients(self):
-        """The default notification goes to all question susbcribers that
-        speaks the request language, except the owner.
+        """The default notification goes to all question subscribers that
+        speak the request language, except the owner.
         """
-        return [person for person in QuestionNotification.getRecipients(self)
-                if person != self.question.owner]
+        original_recipients = QuestionNotification.getRecipients(self)
+        recipients = NotificationRecipientSet()
+        owner = self.question.owner
+        for person in original_recipients:
+            if person != self.question.owner:
+                rationale, header = original_recipients.getReason(person)
+                recipients.add(person, rationale, header)
+        return recipients
 
     # Header template used when a new message is added to the question.
     action_header_template = {
@@ -1296,10 +1590,13 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
 
     def getRecipients(self):
         """Return the owner of the question if he's still subscribed."""
-        if self.question.isSubscribed(self.question.owner):
-            return [self.question.owner]
-        else:
-            return []
+        recipients = NotificationRecipientSet()
+        owner = self.question.owner
+        if self.question.isSubscribed(owner):
+            original_recipients = self.question.getDirectSubscribers()
+            rationale, header = original_recipients.getReason(owner)
+            recipients.add(owner, rationale, header)
+        return recipients
 
     def getBody(self):
         """See QuestionNotification."""
@@ -1310,7 +1607,7 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
 
 
 class QuestionUnsupportedLanguageNotification(QuestionNotification):
-    """Notification sent to support contacts for unsupported languages."""
+    """Notification sent to answer contacts for unsupported languages."""
 
     def getSubject(self):
         """See QuestionNotification."""
@@ -1323,8 +1620,10 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
         return self.unsupported_language
 
     def getRecipients(self):
-        """Notify all the support contacts."""
-        return self.question.target.answer_contacts
+        """Notify only the answer contacts."""
+        recipients = QuestionNotificationRecipientSet()
+        recipients.addAnswerContacts(self.question.target)
+        return recipients
 
     def getBody(self):
         """See QuestionNotification."""

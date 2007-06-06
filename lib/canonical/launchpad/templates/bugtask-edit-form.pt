@@ -79,7 +79,7 @@
   <div class="field">
     <table>
       <tal:distrotask
-        condition="python:context.distribution or context.distrorelease"
+        condition="python:context.distribution or context.distroseries"
       >
         <tr>
           <td>

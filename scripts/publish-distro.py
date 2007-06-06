@@ -110,12 +110,12 @@ def main():
     allowed_suites = set()
     for suite in options.suite:
         try:
-            distrorelease, pocket = distribution.getDistroReleaseAndPocket(
+            distroseries, pocket = distribution.getDistroSeriesAndPocket(
                 suite)
         except NotFoundError, info:
             log.error(info)
             raise
-        allowed_suites.add((distrorelease.name, pocket))
+        allowed_suites.add((distroseries.name, pocket))
 
     if not options.ppa:
         archives = [distribution.main_archive]
