@@ -304,7 +304,7 @@ class SecurityUploadPolicy(AbstractUploadPolicy):
         self.name = "security"
         self.unsigned_dsc_ok = True
         self.unsigned_changes_ok = True
-        self.can_upload_mixed = False
+        self.can_upload_mixed = True
         self.can_upload_binaries = True
 
     def policySpecificChecks(self, upload):

@@ -161,6 +161,39 @@ binary and source packages but for which only the source is published:
     >>> source_name.name
     u'alsa-utils'
 
+It's possible for a binary package to have the same name as a source
+package, yet not be derived from that source package. In this case, we
+want to prefer the source package with that name.
+
+First, we need a function to help testing:
+
+    >>> def print_guessed_names(package_name):
+    ...     source, binary = ubuntu.guessPackageNames(package_name)
+    ...     print "source: %r" % source.name
+    ...     print "binary: %r" % getattr(binary, 'name', None)
+
+Note that source packages can produces lots of differently named
+binary packages so only return a match if it's got the same name as
+the source package rather than returning an arbitrary binary package:
+
+Both iceweasel and mozilla-firefox source packages produce
+mozilla-firefox binary packages.
+
+    >>> print_guessed_names('mozilla-firefox')
+    source: u'mozilla-firefox'
+    binary: u'mozilla-firefox'
+    >>> print_guessed_names('iceweasel')
+    source: u'iceweasel'
+    binary: None
+
+If we don't get a hit on the source package we search binary
+packages. Because there is a many to one relationship from binary
+packages to source packages we can always return a source package
+name even if it differs:
+
+    >>> print_guessed_names('linux-2.6.12')
+    source: u'linux-source-2.6.15'
+    binary: u'linux-2.6.12'
 
 == Distribution Sorting ==
 

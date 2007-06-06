@@ -71,23 +71,22 @@ see the tables in buildmaster/master.py in the scoreBuildQueueEntry()
 method.
 
   >>> bm.scoreBuildQueueEntry(bq0, LOCAL_NOW)
+  WARNING:root:MISSING DEP: [('mozilla-firefox', '0.9', '=')] in warty i386
   >>> bq0.name, bq0.lastscore
-  ('Null', 1010)
+  ('Null', 1005)
 
 
  * 1000 points for main components
  * 5 point for priority LOW
  * nothing for queue_time
- * -10 points for 1 unsatisfied dependency
+ * -5 points for ONE satisfied dependency
 
   >>> time1 = LOCAL_NOW - datetime.timedelta(seconds=300)
   >>> bq1 = MockBuildQueue('Eins', SourcePackageUrgency.LOW, 'main',
   ...                      warty386, time1, 'mozilla-firefox (= 1.0)')
   >>> bm.scoreBuildQueueEntry(bq1, LOCAL_NOW)
-  WARNING:root:MISSING DEP: [('mozilla-firefox', '1.0', '=')] in warty i386
-
   >>> bq1.name, bq1.lastscore
-  ('Eins', 995)
+  ('Eins', 1000)
 
 
 * 250 points for universe component universe
@@ -137,18 +136,18 @@ method.
 * 750 points for restricted component
 * 5 points for LOW priority
 * 20 points for queue_time ( > 3600 seconds)
-* -20 points for TWO unsatisfied dependency
+* -10 points for ONE unsatisfied dependency
+* -5 points for ONE satisfied dependency
 
   >>> time5 = LOCAL_NOW - datetime.timedelta(seconds=4000)
   >>> bq5 = MockBuildQueue('Funf', SourcePackageUrgency.LOW,
   ...                      'restricted', warty386, time5,
   ...                      'mozilla-firefox (= 1.0), pmount (= 0.2-1)')
   >>> bm.scoreBuildQueueEntry(bq5, LOCAL_NOW)
-  WARNING:root:MISSING DEP: [('mozilla-firefox', '1.0', '=')] in warty i386
   WARNING:root:MISSING DEP: [('pmount', '0.2-1', '=')] in warty i386
 
   >>> bq5.name, bq5.lastscore
-  ('Funf', 755)
+  ('Funf', 760)
 
 
 * 1000 points for main component

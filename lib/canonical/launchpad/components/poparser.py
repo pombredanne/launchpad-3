@@ -613,6 +613,7 @@ class POParser(object):
         self.header_factory = header_factory
         self.header = None
         self.messages = []
+        self._messageids = {}
         self._pending_chars = ''
         self._pending_unichars = u''
         self._lineno = 0
@@ -717,15 +718,14 @@ class POParser(object):
 
     def append(self):
         if self._partial_transl:
-            for message in self.messages:
-                if message.msgid == self._partial_transl['msgid']:
-                    lineno = self._partial_transl['_lineno']
-                    # XXX: I changed the exception below to use %r
-                    # because the original %d returned "<unprintable
-                    # instance object>" in a traceback in bug 2896
-                    #    -- kiko, 2005-10-06
-                    raise POInvalidInputError('Po file: duplicate msgid '
-                                              'ending on line %r' % lineno)
+            if self._messageids.has_key(self._partial_transl['msgid']):
+                lineno = self._partial_transl['_lineno']
+                # XXX: I changed the exception below to use %r
+                # because the original %d returned "<unprintable
+                # instance object>" in a traceback in bug 2896
+                #    -- kiko, 2005-10-06
+                raise POInvalidInputError('Po file: duplicate msgid '
+                                          'ending on line %r' % lineno)
             try:
                 transl = self.translation_factory(header=self.header,
                                                   **self._partial_transl)
@@ -734,6 +734,7 @@ class POParser(object):
                     e.lno = self._partial_transl['_lineno']
                 raise
             self.messages.append(transl)
+            self._messageids[self._partial_transl['msgid']] = True
         self._partial_transl = None
 
     def _make_header(self):

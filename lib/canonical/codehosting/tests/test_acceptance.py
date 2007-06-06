@@ -249,13 +249,22 @@ class SFTPTestCase(TrialTestCase, TestCaseWithRepository, SSHKeyMixin):
         super(SFTPTestCase, self).tearDown()
 
         shutil.rmtree(self.userHome)
-
+        shutil.rmtree(self.server.root)
         # XXX spiv 2006-04-28: as the comment bzrlib.tests.run_suite says, this
         # is "a little bogus".  Because we aren't using the bzr test runner, we
         # have to manually clean up the test????.tmp dirs.
         shutil.rmtree(TestCaseWithMemoryTransport.TEST_ROOT)
         TestCaseWithMemoryTransport.TEST_ROOT = None
         signal.signal(signal.SIGCHLD, self._oldSigChld)
+
+    def getTransport(self, path=None):
+        """Get a paramiko transport pointing to `path` on the base server."""
+        if path is None:
+            path = ''
+        transport = get_transport(self.server_base + path)
+        self.addCleanup(transport._sftp.close)
+        self.addCleanup(transport._sftp.sock.transport.close)
+        return transport
 
     def closeAllConnections(self):
         """Closes all open bzrlib SFTP connections.
@@ -411,7 +420,7 @@ class AcceptanceTests(SFTPTestCase):
         return self._test_2_namespace_restrictions()
 
     def _test_missing_parent_directory(self, relpath):
-        transport = get_transport(self.server_base + relpath).clone('..')
+        transport = self.getTransport(relpath).clone('..')
         self.assertRaises((NoSuchFile, PermissionDenied),
                           self.run_and_wait_for_sftp_session_close,
                           transport.mkdir, 'hello')

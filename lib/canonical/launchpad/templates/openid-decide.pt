@@ -6,9 +6,8 @@
     <div metal:fill-slot="main">
         <p>A site identifying as
             <em tal:content="view/openid_request/trust_root" />
-            has asked us for confirmation that
-            <em tal:content="view/openid_request/identity" />
-            is your identity URL.
+            has asked us for confirmation that you are
+            <em tal:content="view/user/displayname" />.
         </p>
 
         <p class="warning message" tal:condition="not:view/trust_root/isSane">
@@ -19,8 +18,7 @@
 
         <p>If you click the <strong>Allow</strong> button, we will
             confirm to <tal:x content="view/openid_request/trust_root" />
-            that <tal:x content="view/openid_request/identity" />
-            belongs to you.
+            that you are who you claim you are.
         </p>
 
         <p>If you click the <strong>Deny</strong> button, we will send you
@@ -28,16 +26,9 @@
             without confirming your identity.
         </p>
 
-        <tal:comment condition="nothing">
-            The form method needs to be GET, as if we are not
-            authenticated the login system needs to issue redirects
-            (see canonical/launchpad/webapp/login.py 'Application error.
-            Unauthentiated user POSTing to page that requires
-            authentication.'
-        </tal:comment>
-        <form method="get" action=".">
-            <input type="hidden" name="token"
-                tal:attributes="value view/token" />
+        <form method="post" action=".">
+            <input type="hidden" name="nonce"
+                tal:attributes="value view/nonce" />
             <select name="allow_duration">
                 <option value="once">Once only</option>
                 <option value="300">5 minutes</option>
