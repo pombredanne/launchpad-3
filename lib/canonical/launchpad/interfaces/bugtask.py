@@ -58,7 +58,8 @@ RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.WONTFIX)
 
 BUG_CONTACT_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.WONTFIX,)
+    dbschema.BugTaskStatus.WONTFIX,
+    dbschema.BugTaskStatus.TRIAGED)
 
 
 class ConjoinedBugTaskEditError(Exception):

@@ -21,7 +21,7 @@ An unprivileged user can confirm the bug:
     >>> print user_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
 
-But he should not be able to change the status to Won't Fix:
+But he should not be able to change the status to Won't Fix or to Triaged:
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/ubuntu/+source/'
@@ -35,6 +35,11 @@ But he should not be able to change the status to Won't Fix:
     Traceback (most recent call last):
     ...
     ItemNotFoundError: Won't Fix
+
+    >>> status_control.displayValue = ["Triaged"]
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: Triaged
 
 == Bug Contact ==
 
@@ -93,3 +98,19 @@ And a regular user can change other aspects of the bug:
 
     >>> print bug_contact_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
+
+The Bug Contact for Ubuntu can also change the status to Triaged:
+
+    >>> bug_contact_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/'
+    ...     'iceweasel/+bug/1/+editstatus')
+
+    >>> status_control = bug_contact_browser.getControl('Status')
+    >>> print status_control.displayValue
+    ["Won't Fix"]
+
+    >>> status_control.displayValue = ["Triaged"]
+    >>> bug_contact_browser.getControl('Save Changes').click()
+
+    >>> print bug_contact_browser.url
+    http://bugs.launchpad.dev/ubuntu/+source/iceweasel/+bug/1

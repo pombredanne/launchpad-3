@@ -15,7 +15,8 @@
     ...     nopriv_user, 'Test bug', 'Something')
     >>> firefox_bug = firefox.createBug(bug_params)
 
-Bug Contacts should be able to assign status Won't Fix to a bug.
+Bug Contacts should be able to assign status Won't Fix and Triaged to
+a bug.
 
     >>> [firefox_bugtask] = firefox_bug.bugtasks
     >>> firefox_bugtask.transitionToStatus(
@@ -23,7 +24,13 @@ Bug Contacts should be able to assign status Won't Fix to a bug.
     >>> print firefox_bugtask.status.title
     Won't Fix
 
-The product registrant should be able to assign Won't Fix too.
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.TRIAGED, nopriv_user)
+    >>> print firefox_bugtask.status.title
+    Triaged
+
+The product registrant should be able to assign Won't Fix and Triaged
+too.
 
     >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, nopriv_user)
@@ -38,17 +45,29 @@ The product registrant should be able to assign Won't Fix too.
     >>> print firefox_bugtask.status.title
     Won't Fix
 
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.TRIAGED, firefox.owner)
+    >>> print firefox_bugtask.status.title
+    Triaged
+
 Non Bug Contacts should not be permitted to change the status to Won't
-Fix. The option should not be offered in the UI, but we check here
-(and raise an AssertionError) to ensure that all call sites adhere to
-this.
+Fix or Triaged. The option should not be offered in the UI, and we
+check here (raising an AssertionError on failure) to ensure that all
+call sites adhere to this.
 
     >>> login('foo.bar@canonical.com')
     >>> firefox.bugcontact = None
 
     >>> login('no-priv@canonical.com')
+
     >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.WONTFIX, nopriv_user)
     Traceback (most recent call last):
     ...
     AssertionError: Only Bug Contacts may change status to Won't Fix
+
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.TRIAGED, nopriv_user)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only Bug Contacts may change status to Triaged

@@ -2684,7 +2684,16 @@ class BugTaskStatus(DBSchema):
         Confirmed
 
         This bug has been reviewed, verified, and confirmed as something needing
-        fixing.
+        fixing. Anyone can set this status.
+        """)
+
+    TRIAGED = Item(21, """
+        Triaged
+
+        This bug has been reviewed, verified, and confirmed as
+        something needing fixing. The user must be a bug contact to
+        set this status, so it carries more weight than merely
+        Confirmed.
         """)
 
     INPROGRESS = Item(22, """
