@@ -32,7 +32,32 @@ from canonical.launchpad.interfaces import (
     ITeamCreation, ITeamMember, ITeam)
 
 
-class TeamEditView(LaunchpadEditFormView):
+class HasRenewalPolicyMixin:
+    """Mixin to be used on forms which contain ITeam.renewal_policy.
+
+    This mixin will short-circuit Launchpad*FormView when defining whether
+    the renewal_policy widget should be displayed in a single or multi-line
+    layout. We need that because that field has a very long title, thus
+    breaking the page layout.
+
+    Since this mixin short-circuits Launchpad*FormView in some cases, it must
+    always precede Launchpad*FormView in the inheritance list.
+    """
+
+    def isMultiLineLayout(self, field_name):
+        if field_name == 'renewal_policy':
+            return True
+        return super(HasRenewalPolicyMixin, self).isMultiLineLayout(
+            field_name)
+
+    def isSingleLineLayout(self, field_name):
+        if field_name == 'renewal_policy':
+            return False
+        return super(HasRenewalPolicyMixin, self).isSingleLineLayout(
+            field_name)
+
+
+class TeamEditView(HasRenewalPolicyMixin, LaunchpadEditFormView):
 
     schema = ITeam
     field_names = [
@@ -49,19 +74,6 @@ class TeamEditView(LaunchpadEditFormView):
     def action_save(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
-
-    # Override isMultiLineLayout and isSingleLineLayout because the
-    # renewal_policy field has a _very_ long label and so we need to use a
-    # multi-line layout to display the widget properly. 
-    def isMultiLineLayout(self, field_name):
-        if field_name == 'renewal_policy':
-            return True
-        return LaunchpadEditFormView.isMultiLineLayout(self, field_name)
-
-    def isSingleLineLayout(self, field_name):
-        if field_name == 'renewal_policy':
-            return False
-        return LaunchpadEditFormView.isSingleLineLayout(self, field_name)
 
 
 def generateTokenAndValidationEmail(email, team):
@@ -168,7 +180,7 @@ class TeamEmailView:
             "for up to an hour or two.)" % email)
 
 
-class TeamAddView(LaunchpadFormView):
+class TeamAddView(HasRenewalPolicyMixin, LaunchpadFormView):
 
     schema = ITeamCreation
     label = ''
@@ -208,19 +220,6 @@ class TeamAddView(LaunchpadFormView):
                 "message for up to an hour or two.)" % email)
 
         self.next_url = canonical_url(team)
-
-    # Override isMultiLineLayout and isSingleLineLayout because the
-    # renewal_policy field has a _very_ long label and so we need to use a
-    # multi-line layout to display the widget properly. 
-    def isMultiLineLayout(self, field_name):
-        if field_name == 'renewal_policy':
-            return True
-        return LaunchpadFormView.isMultiLineLayout(self, field_name)
-
-    def isSingleLineLayout(self, field_name):
-        if field_name == 'renewal_policy':
-            return False
-        return LaunchpadFormView.isSingleLineLayout(self, field_name)
 
 
 class ProposedTeamMembersEditView:

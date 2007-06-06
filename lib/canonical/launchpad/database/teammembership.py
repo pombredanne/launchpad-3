@@ -104,22 +104,21 @@ class TeamMembership(SQLBase):
         subject = ('Launchpad: renewed %s as member of %s'
                    % (member.name, team.name))
 
-        member_addrs = []
         if member.isTeam():
-            member_addrs.extend(contactEmailAddresses(member.teamowner))
-            templatename = 'membership-auto-renewed-impersonal.txt'
+            member_addrs = contactEmailAddresses(member.teamowner)
+            template_name = 'membership-auto-renewed-impersonal.txt'
         else:
-            templatename = 'membership-auto-renewed-personal.txt'
-            member_addrs.extend(contactEmailAddresses(member))
-        template = get_email_template(templatename)
+            template_name = 'membership-auto-renewed-personal.txt'
+            member_addrs = contactEmailAddresses(member)
+        template = get_email_template(template_name)
         msg = MailWrapper().format(template % replacements)
         for address in member_addrs:
             simple_sendmail(from_addr, address, subject, msg)
 
-        templatename = 'membership-auto-renewed-impersonal.txt'
+        template_name = 'membership-auto-renewed-impersonal.txt'
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         admins_addrs = set(admins_addrs).difference(member_addrs)
-        template = get_email_template(templatename)
+        template = get_email_template(template_name)
         msg = MailWrapper().format(template % replacements)
         for address in admins_addrs:
             simple_sendmail(from_addr, address, subject, msg)

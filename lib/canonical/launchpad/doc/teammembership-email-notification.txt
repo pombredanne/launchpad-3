@@ -498,8 +498,9 @@ is automatically renewed.
     >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
     >>> utc_now = datetime.now(pytz.timezone('UTC'))
     >>> lp_admins = personset.getByName('admins')
-    >>> lp_admins.renewal_policy == TeamMembershipRenewalPolicy.NONE
-    True
+    >>> lp_admins.renewal_policy
+    <Item NONE ... TeamMembershipRenewalPolicy...
+
     >>> sabdfl_on_admins = membershipset.getByPersonAndTeam(sabdfl, lp_admins)
     >>> sabdfl_on_admins.dateexpires = utc_now
 

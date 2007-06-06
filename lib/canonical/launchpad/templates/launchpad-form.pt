@@ -114,7 +114,8 @@
           </th>
         </tr>
         <tr>
-          <td colspan="2" tal:attributes="class error_class">
+          <td>&nbsp;</td>
+          <td tal:attributes="class error_class">
             <div tal:content="structure widget">
               <input type="text" style="width: 100%" />
             </div>

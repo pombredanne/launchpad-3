@@ -543,20 +543,20 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
     def __init__(self, context):
         if not context:
             raise AssertionError('ValidTeamOwnerVocabulary needs a context.')
-        if (not ITeam.providedBy(context) 
-                and not IPersonSet.providedBy(context)):
-            raise AssertionError(
-                    "ValidTeamOwnerVocabulary's context must provide ITeam "
-                    "or IPersonSet.")
-        elif ITeam.providedBy(context):
+
+        if ITeam.providedBy(context):
             self.extra_clause = """
                 (person.teamowner != %d OR person.teamowner IS NULL) AND
                 person.id != %d""" % (context.id, context.id)
-        else:
+        elif IPersonSet.providedBy(context):
             # The context is an IPersonSet, which means we're creating a new
             # team and thus we don't need any extra_clause --any valid person
             # or team can be the owner of a newly created team.
             pass
+        else:
+            raise AssertionError(
+                "ValidTeamOwnerVocabulary's context must provide ITeam "
+                "or IPersonSet.")
         ValidPersonOrTeamVocabulary.__init__(self, context)
 
 

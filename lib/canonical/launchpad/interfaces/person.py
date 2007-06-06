@@ -385,7 +385,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     renewal_policy = Choice(
         title=_("When someone's membership is about to expire, Launchpad "
-                "should notify them and:"),
+                "should notify them and"),
         required=True, vocabulary='TeamMembershipRenewalPolicy',
         default=TeamMembershipRenewalPolicy.NONE)
 
