@@ -68,7 +68,7 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
     valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
-    IProductSeries, BUG_CONTACT_BUGTASK_STATUSES)
+    IProductSeries)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -701,10 +701,14 @@ class BugTaskEditView(GeneralFormView):
         if 'status' in editable_field_names:
             # Display different options depending on the logged-in
             # user by creating a vocab at request time.
-            status_noshow = [BugTaskStatus.UNKNOWN]
-            if (self.user is None or
-                not self.user.inTeam(self.context.pillar.bugcontact)):
-                status_noshow.extend(BUG_CONTACT_BUGTASK_STATUSES)
+            if self.user is None:
+                status_noshow = list(BugTaskStatus.items)
+            else:
+                status_noshow = [BugTaskStatus.UNKNOWN]
+                status_noshow.extend(
+                    status for status in BugTaskStatus.items
+                    if not self.context.canTransitionToStatus(
+                        status, self.user))
             if self.context.status in status_noshow:
                 # The user has to be able to see the current value.
                 status_noshow.remove(self.context.status)

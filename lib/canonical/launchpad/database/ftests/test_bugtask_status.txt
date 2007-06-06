@@ -15,11 +15,26 @@
     ...     nopriv_user, 'Test bug', 'Something')
     >>> firefox_bug = firefox.createBug(bug_params)
 
-Only Bug Contacts should be able to assign status Won't Fix to a bug.
+Bug Contacts should be able to assign status Won't Fix to a bug.
 
     >>> [firefox_bugtask] = firefox_bug.bugtasks
     >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.WONTFIX, nopriv_user)
+    >>> print firefox_bugtask.status.title
+    Won't Fix
+
+The product registrant should be able to assign Won't Fix too.
+
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, nopriv_user)
+    >>> print firefox_bugtask.status.title
+    Confirmed
+
+    >>> firefox.owner.inTeam(firefox.bugcontact)
+    False
+
+    >>> firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.WONTFIX, firefox.owner)
     >>> print firefox_bugtask.status.title
     Won't Fix
 

@@ -308,7 +308,7 @@ class BugTask(SQLBase, BugTaskMixin):
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed")
-    _NON_CONJOINED_STATUSES = (BugTaskStatus.INVALID,)
+    _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
@@ -608,6 +608,14 @@ class BugTask(SQLBase, BugTaskMixin):
             raise ValueError('Unknown debbugs severity "%s"' % severity)
         return self.importance
 
+    def canTransitionToStatus(self, new_status, user):
+        """See `IBugTask`."""
+        if (user.inTeam(self.pillar.bugcontact) or
+            user.inTeam(self.pillar.owner)):
+            return True
+        else:
+            return new_status not in BUG_CONTACT_BUGTASK_STATUSES
+
     def transitionToStatus(self, new_status, user):
         """See canonical.launchpad.interfaces.IBugTask."""
         if not new_status:
@@ -616,8 +624,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # testing the edit form.
             return
 
-        if (new_status in BUG_CONTACT_BUGTASK_STATUSES and
-            not user.inTeam(self.pillar.bugcontact)):
+        if not self.canTransitionToStatus(new_status, user):
             raise AssertionError(
                 "Only Bug Contacts may change status to %s" % (
                     new_status.title,))

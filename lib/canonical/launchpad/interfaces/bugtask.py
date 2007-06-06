@@ -54,7 +54,8 @@ UNRESOLVED_BUGTASK_STATUSES = (
 
 RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXRELEASED,
-    dbschema.BugTaskStatus.INVALID)
+    dbschema.BugTaskStatus.INVALID,
+    dbschema.BugTaskStatus.WONTFIX)
 
 BUG_CONTACT_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.WONTFIX,)
@@ -188,6 +189,16 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
         the Launchpad importance values, and returns the relevant Launchpad 
         importance.
+        """
+
+    def canTransitionToStatus(new_status, user):
+        """Return True if the user is allowed to change the status to
+        `new_status`.
+
+        :new_status: new status from `BugTaskStatus`
+        :user: the user requesting the change
+
+        The user must be a bug contact or the owner of the project.
         """
 
     def transitionToStatus(new_status, user):

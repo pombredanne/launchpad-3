@@ -685,12 +685,11 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
     def setAttributeValue(self, context, attr_name, attr_value):
         """See EmailCommand."""
         user = getUtility(ILaunchBag).user
-        
-        if (attr_value in BUG_CONTACT_BUGTASK_STATUSES and
-            not user.inTeam(context.pillar.bugcontact)):
+
+        if not context.canTransitionToStatus(attr_value, user):
             raise EmailProcessingError(
                 'The status cannot be changed to %s because you are not '
-                'a bug contact for %s.' % (
+                'the registrant or a bug contact for %s.' % (
                     attr_value.name.lower(), context.pillar.displayname))
 
         context.transitionToStatus(attr_value, user)

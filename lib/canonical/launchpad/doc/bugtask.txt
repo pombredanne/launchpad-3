@@ -852,9 +852,9 @@ The generic tasks are not directly editable.
 
 
 A conjoined relationship can be broken, though. If the development
-task (i.e the conjoined master) is Invalid, it means that the bug is
+task (i.e the conjoined master) is Won't Fix, it means that the bug is
 deferred to the next series. In this case the development task should
-be Invalid, while the generic task keeps the value it had before,
+be Won't Fix, while the generic task keeps the value it had before,
 allowing it to stay open.
 
 First let's change the status from Fix Released, since it doesn't make
@@ -872,16 +872,18 @@ sense to reject such a task.
     True
 
 
-Now, if we reject the current series task, the generic task will still
-be confirmed.
+Now, if we set the current series task to Won't Fix, the generic task
+will still be confirmed.
+
+    >>> netapplet_owner = current_series_netapplet_task.pillar.owner
 
     >>> current_series_netapplet_task.transitionToStatus(
-    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
+    ...     BugTaskStatus.WONTFIX, netapplet_owner)
 
     >>> print generic_netapplet_task.status.title
     Confirmed
     >>> print current_series_netapplet_task.status.title
-    Invalid
+    Won't Fix
 
     >>> generic_netapplet_task.date_closed is None
     True
@@ -894,6 +896,27 @@ And the bugtasks are no longer conjoined:
     True
     >>> current_series_netapplet_task.conjoined_slave is None
     True
+
+If the current development release is marked as Invalid, then the
+bug is invalid for all future series too, and so the general bugtask
+is therefore Invalid also. In other words, conjoined again.
+
+    >>> current_series_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
+    >>> # XXX: We must make two transitions, see bug 112746
+    >>> #   -- Gavin Panella, 2007-06-06
+    >>> current_series_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
+
+    >>> print generic_netapplet_task.status.title
+    Invalid
+    >>> print current_series_netapplet_task.status.title
+    Invalid
+
+    >>> generic_netapplet_task.date_closed is None
+    False
+    >>> current_series_netapplet_task.date_closed is None
+    False
 
 Null Bug Tasks
 --------------
