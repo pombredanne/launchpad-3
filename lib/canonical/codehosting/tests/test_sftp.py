@@ -8,13 +8,10 @@ import unittest
 import stat
 
 from bzrlib import errors
-from bzrlib.transport import get_transport
 from bzrlib.tests import TestCaseWithTransport
 
-from canonical.codehosting.transport import LaunchpadServer
-
-from canonical.codehosting.tests.test_acceptance import (
-    AuthserverWithKeys, SSHCodeHostingServer)
+from canonical.codehosting.tests.servers import (
+    AuthserverWithKeys, FakeLaunchpadServer, SSHCodeHostingServer)
 
 from canonical.codehosting.tests.helpers import (
     CodeHostingTestProviderAdapter, FakeLaunchpad, ServerTestCase,
@@ -219,25 +216,6 @@ class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
             errors.NoSuchFile,
             transport.mkdir, '~not-my-team/firefox/new-branch')
         self.assertIn("~not-my-team", str(e))
-
-
-class FakeLaunchpadServer(LaunchpadServer):
-    def __init__(self, authserver, user_id):
-        LaunchpadServer.__init__(self, authserver, user_id, None)
-        self._schema = 'lp'
-
-    def getTransport(self, path=None):
-        if path is None:
-            path = ''
-        transport = get_transport(self.get_url()).clone(path)
-        return transport
-
-    def setUp(self):
-        from bzrlib.transport.memory import MemoryTransport
-        self.backing_transport = MemoryTransport()
-        self.authserver = FakeLaunchpad()
-        self._branches = dict(self._iter_branches())
-        LaunchpadServer.setUp(self)
 
 
 def make_launchpad_server():
