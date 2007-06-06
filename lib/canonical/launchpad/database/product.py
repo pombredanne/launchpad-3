@@ -16,7 +16,8 @@ from sqlobject import (
     SQLObjectNotFound, AND)
 from sqlobject.sqlbuilder import SQLConstant
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues, cursor
+from canonical.database.sqlbase import (
+    quote, SQLBase, sqlvalues, cursor, quote_like)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol

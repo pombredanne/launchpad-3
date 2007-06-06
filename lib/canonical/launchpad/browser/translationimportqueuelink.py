@@ -14,7 +14,8 @@ from zope.app.form.browser.widget import renderElement
 
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueLink, UnexpectedFormData)
-from canonical.launchpad.webapp import LaunchpadFormView, action
+from canonical.launchpad.webapp import (
+    LaunchpadFormView, action, canonical_url)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 
@@ -31,6 +32,9 @@ class TranslationImportQueueLinkView(LaunchpadFormView):
         # Validate the filtering arguments.
         self._validateFilteringOptions()
 
+        self.label = 'Translation files waiting to be imported for %s' % (
+            self.context.displayname)
+
     def _validateFilteringOptions(self):
         """Validate the filtering options for this form.
 
@@ -43,8 +47,6 @@ class TranslationImportQueueLinkView(LaunchpadFormView):
         # Get the filtering arguments.
         self.status = str(form.get('status', 'all'))
         self.type = str(form.get('type', 'all'))
-        self.target = str(form.get('target', 'all'))
-        self.importer = str(form.get('importer', 'any'))
 
         # Fix the case to our needs.
         if self.status is not None:
@@ -62,15 +64,11 @@ class TranslationImportQueueLinkView(LaunchpadFormView):
         # Sanity checks so we don't accept broken input.
         if (not (self.status and self.type) or
             (self.status not in available_status) or
-            (self.type not in ('all', 'po', 'pot')) or
-            (self.target not in ('all', 'distros', 'products')) or
-            (self.importer not in ('any', 'automatic', 'manual', 'me'))):
+            (self.type not in ('all', 'po', 'pot'))):
             raise UnexpectedFormData(
                 'The queue filtering got an unexpected value.')
 
-        # Set to None target, status and type if they have the default value.
-        if self.target == 'all':
-            self.target = None
+        # Set to None status and type if they have the default value.
         if self.status == 'ALL':
             # Selected all status, the status is None to get all values.
             self.status = None
@@ -82,10 +80,20 @@ class TranslationImportQueueLinkView(LaunchpadFormView):
             # Selected all types, so the type is None to get all values.
             self.type = None
 
-        # XXX: Get the 
-        if self.importer == 'any':
-            # Selected all importers.
-            self.importer = None
+        if 'filter' in form:
+            # Got a filter action, we should redirect with the given
+            # arguments.
+            arguments = []
+            if self.status is not None:
+                arguments.append('status=%s' % self.status.name)
+            if self.type is not None:
+                arguments.append('type=%s' % self.type)
+            if len(arguments) > 0:
+                arg_string = '?%s' % '&'.join(arguments)
+            else:
+                arg_string = ''
+            self.request.response.redirect('/'.join(
+                [canonical_url(self.context), '+imports%s' % arg_string]))
 
     @action("Change status")
     def change_status_action(self, action, data):
@@ -172,7 +180,7 @@ class TranslationImportQueueLinkView(LaunchpadFormView):
     @property
     def batchnav(self):
         """Return batch object for this page."""
-        return BatchNavigator(self._entries, self.request)
+        return BatchNavigator(self.entries, self.request)
 
 
     def renderOption(self, status, selected=False, check_status=None,
