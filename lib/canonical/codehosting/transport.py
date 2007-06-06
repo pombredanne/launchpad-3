@@ -55,6 +55,10 @@ def makedirs(base_transport, path, mode=None):
         transport.mkdir('.', mode)
 
 
+def get_path_segments(path):
+    return path.lstrip('/').split('/')
+
+
 class UntranslatablePath(BzrError):
 
     _fmt = ("Could not translate %(path)s onto backing transport for "
@@ -107,7 +111,7 @@ class LaunchpadServer(Server):
         the branch in the database then create a matching directory on the
         backing transport.
         """
-        path_segments = virtual_path.lstrip('/').split('/')
+        path_segments = get_path_segments(virtual_path)
         if len(path_segments) != 3:
             raise NoSuchFile(virtual_path)
         branch_id = self._make_branch(*path_segments)
@@ -125,7 +129,7 @@ class LaunchpadServer(Server):
         :param branch: The name of the new branch.
 
         :raise TransportNotPossible: If 'user' doesn't begin with a '~'.
-        :raise PermissionDenied: If 'product' is not the name of an existing
+        :raise NoSuchFile: If 'product' is not the name of an existing
             product.
         :return: The database ID of the new branch.
         """
@@ -137,8 +141,8 @@ class LaunchpadServer(Server):
         if not user_dict:
             raise NoSuchFile("%s doesn't exist" % (user,))
         user_id = user_dict['id']
-        # If product is '+junk', then product_id will be '', which is XML-RPC's
-        # way of saying None.
+        # If product is '+junk', then product_id should be '', which is
+        # XML-RPC's way of saying None.
         if product == '+junk':
             if user_id == self.user_id:
                 product_id = ''
@@ -314,6 +318,12 @@ class LaunchpadTransport(Transport):
         # If we can't translate the path, then perhaps we are being asked to
         # create a new branch directory. Delegate to the server, as it knows
         # how to deal with absolute virtual paths.
+        abspath = self._abspath(relpath)
+        segments = get_path_segments(abspath)
+        if len(segments) == 4 and segments[-1] != '.bzr':
+            raise NoSuchFile(path=relpath,
+                             extra=("Can only create .bzr directories "
+                                    "directly beneath branch directories."))
         try:
             return self._call('mkdir', relpath, mode)
         except NoSuchFile:

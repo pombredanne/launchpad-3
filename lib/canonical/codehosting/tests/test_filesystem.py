@@ -137,6 +137,17 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTrue(transport.has('~testuser/firefox/banana/.bzr'))
 
     @deferToThread
+    def test_non_bzr_directory_inside_branch(self):
+        # Users can only create '.bzr' directories inside a branch. Other
+        # directories are strictly forbidden.
+        # XXX: JonathanLange 2007-06-06, What about files?
+        transport = self.getTransport()
+        transport.mkdir('~testuser/+junk/banana')
+        self.assertRaises(
+            (errors.PermissionDenied, errors.NoSuchFile),
+            transport.mkdir, '~testuser/+junk/banana/republic')
+
+    @deferToThread
     def test_make_directory_without_prefix(self):
         # Because the user and product directories don't exist on the
         # filesystem, we can create a branch directory for a product even if
