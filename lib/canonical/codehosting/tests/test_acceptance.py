@@ -8,7 +8,7 @@ import os
 import unittest
 
 import bzrlib.branch
-from bzrlib.errors import NoSuchFile, NotBranchError, PermissionDenied
+from bzrlib.errors import NotBranchError
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
 from bzrlib.urlutils import local_path_from_url
@@ -17,7 +17,7 @@ from bzrlib.workingtree import WorkingTree
 from canonical.codehosting.tests.helpers import (
     adapt_suite, deferToThread, ServerTestCase, TwistedBzrlibLayer)
 from canonical.codehosting.tests.servers import (
-    AuthserverWithKeys, SSHCodeHostingServer)
+    make_bzr_ssh_server, make_sftp_server)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
@@ -35,9 +35,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
     server = None
 
     def getDefaultServer(self):
-        authserver = AuthserverWithKeys('testuser', 'testteam')
-        branches_root = '/tmp/sftp-test'
-        return SSHCodeHostingServer('sftp', authserver, branches_root)
+        return make_sftp_server()
 
     def installServer(self, server):
         super(AcceptanceTests, self).installServer(server)
@@ -269,11 +267,7 @@ def make_server_tests(base_suite):
         CodeHostingRepositoryTestProviderAdapter)
     repository_format = RepositoryFormat.get_default_format()
 
-    authserver = AuthserverWithKeys('testuser', 'testteam')
-    branches_root = '/tmp/sftp-test'
-    servers = [
-        SSHCodeHostingServer('sftp', authserver, branches_root),
-        SSHCodeHostingServer('bzr+ssh', authserver, branches_root)]
+    servers = [make_sftp_server(), make_bzr_ssh_server()]
     adapter = CodeHostingRepositoryTestProviderAdapter(
         repository_format, servers)
     return adapt_suite(adapter, base_suite)

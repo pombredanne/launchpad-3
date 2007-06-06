@@ -11,7 +11,7 @@ from bzrlib import errors
 from bzrlib.tests import TestCaseWithTransport
 
 from canonical.codehosting.tests.servers import (
-    AuthserverWithKeys, FakeLaunchpadServer, SSHCodeHostingServer)
+    make_launchpad_server, make_sftp_server)
 
 from canonical.codehosting.tests.helpers import (
     CodeHostingTestProviderAdapter, ServerTestCase, TwistedBzrlibLayer,
@@ -235,17 +235,6 @@ class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
             errors.NoSuchFile,
             transport.mkdir, '~not-my-team/firefox/new-branch')
         self.assertIn("~not-my-team", str(e))
-
-
-def make_launchpad_server():
-    user_id = 1
-    return FakeLaunchpadServer(user_id)
-
-
-def make_sftp_server():
-    authserver = AuthserverWithKeys('testuser', 'testteam')
-    branches_root = '/tmp/sftp-test'
-    return SSHCodeHostingServer('sftp', authserver, branches_root)
 
 
 def test_suite():
