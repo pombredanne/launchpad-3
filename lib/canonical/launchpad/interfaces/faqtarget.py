@@ -33,6 +33,13 @@ class IFAQTarget(Interface):
         both.
         """
 
+    def getFAQ(id):
+        """Return the `IFAQ` in this target with the requested id.
+
+        :return: The `IFAQ` with the requested id or None if there is no
+            document with that id.
+        """
+
     def findSimilarFAQs(summary):
         """Return FAQs contained in this target similar to summary.
 

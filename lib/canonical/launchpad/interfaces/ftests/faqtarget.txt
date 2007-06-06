@@ -106,6 +106,39 @@ As it is an error to omit both:
       ...
     AssertionError: content or url must be provided
 
+== getFAQ() ==
+
+It is possible to retrieve the FAQ from its container when you know
+the id of the FAQ by using the get() method.
+
+    >>> target.getFAQ(faq.id) == faq
+    True
+
+It returns None when there is FAQ with that ID in the context:
+
+    >>> print target.getFAQ(12345)
+    None
+
+It also returns None when asking an ID for a FAQ that isn't in the
+requested target:
+
+    # Create a FAQ on Ubuntu.
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ILaunchBag)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu != target
+    True
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = getUtility(ILaunchBag).user
+    >>> ubuntu_faq = ubuntu.newFAQ(
+    ...     foo_bar, 'Ubuntu Installation HowTo',
+    ...     'Describe installation procedure',
+    ...     url='https://help.ubuntu.com/community/Installation')
+
+    >>> login('no-priv@canonical.com')
+    >>> print target.getFAQ(ubuntu_faq.id)
+    None
+
 == findSimilarFAQs() ==
 
 The method findSimilarFAQs() can be use to find FAQ document that are

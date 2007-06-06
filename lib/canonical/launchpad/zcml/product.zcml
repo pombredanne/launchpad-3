@@ -45,7 +45,7 @@
       />
     <!-- IFAQTarget -->
     <allow
-      attributes="findSimilarFAQs"
+      attributes="findSimilarFAQs getFAQ"
       />
     <require
       permission="launchpad.Moderate"

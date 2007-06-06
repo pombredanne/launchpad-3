@@ -8,7 +8,8 @@ __all__ = [
     'FAQ',
     ]
 
-from sqlobject import ForeignKey, SQLMultipleJoin, StringCol
+from sqlobject import (
+    ForeignKey, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
@@ -120,3 +121,19 @@ class FAQ(SQLBase):
             orderBy=[
                 SQLConstant("-rank(FAQ.fti, ftq(%s))" % quote(fti_search)),
                 "-FAQ.date_created"])
+
+    @staticmethod
+    def getForTarget(id, target):
+        """Return the FAQ with the requested id.
+
+        When target is not None, the target will be checked to make sure
+        that the FAQ is in the expected target or return None otherwise.
+        """
+        try:
+            faq = FAQ.get(id)
+            if target is None or target == faq.target:
+                return faq
+            else:
+                return None
+        except SQLObjectNotFound:
+            return None
