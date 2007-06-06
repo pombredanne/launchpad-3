@@ -11,9 +11,11 @@ __all__ = [
 import datetime
 import pytz
 from zope.app.form.browser.widget import renderElement
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    ITranslationImportQueueLink, UnexpectedFormData)
+    ITranslationImportQueueLink, ITranslationImportQueue,
+    UnexpectedFormData)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -25,15 +27,6 @@ class TranslationImportQueueLinkView(LaunchpadFormView):
     """View class used for Translation Import Queue Link management."""
     schema = ITranslationImportQueueLink
     field_names = []
-
-    def __init__(self, context, request):
-        LaunchpadFormView.__init__(self, context, request)
-
-        # Validate the filtering arguments.
-        self._validateFilteringOptions()
-
-        self.label = 'Translation files waiting to be imported for %s' % (
-            self.context.displayname)
 
     def _validateFilteringOptions(self):
         """Validate the filtering options for this form.
@@ -80,20 +73,19 @@ class TranslationImportQueueLinkView(LaunchpadFormView):
             # Selected all types, so the type is None to get all values.
             self.type = None
 
-        if 'filter' in form:
-            # Got a filter action, we should redirect with the given
-            # arguments.
-            arguments = []
-            if self.status is not None:
-                arguments.append('status=%s' % self.status.name)
-            if self.type is not None:
-                arguments.append('type=%s' % self.type)
-            if len(arguments) > 0:
-                arg_string = '?%s' % '&'.join(arguments)
-            else:
-                arg_string = ''
-            self.request.response.redirect('/'.join(
-                [canonical_url(self.context), '+imports%s' % arg_string]))
+        if 'field.actions.filter' in form:
+            # Got a filter action, redirect to the next url.
+            self.request.response.redirect(self.next_url)
+
+    def initialize(self):
+        # Validate the filtering arguments.
+        self._validateFilteringOptions()
+
+        self.label = 'Translation files waiting to be imported for %s' % (
+            self.context.displayname)
+
+        LaunchpadFormView.initialize(self)
+
 
     @action("Change status")
     def change_status_action(self, action, data):
@@ -101,9 +93,13 @@ class TranslationImportQueueLinkView(LaunchpadFormView):
         # The user must be logged in.
         assert self.user is not None
 
+        # We are not rendering rows automatically based on an Interface and
+        # thus, data is always empty. We fill it with form's content.
+        data = self.request.form
+
         number_of_changes = 0
         for form_item in data:
-            if not form_item.startswith('status-'):
+            if not form_item.startswith('field.status-'):
                 # We are not interested on this form_item.
                 continue
 
@@ -120,7 +116,7 @@ class TranslationImportQueueLinkView(LaunchpadFormView):
                 raise UnexpectedFormData(
                     'Ignored your request because it is broken.')
             # Get the entry we are working on.
-            import_queue_set = getUtility(ITranslationImportQueueSet)
+            import_queue_set = getUtility(ITranslationImportQueue)
             entry = import_queue_set.get(id)
             new_status_name = data.get(form_item)
             if new_status_name == entry.status.name:
@@ -181,6 +177,20 @@ class TranslationImportQueueLinkView(LaunchpadFormView):
     def batchnav(self):
         """Return batch object for this page."""
         return BatchNavigator(self.entries, self.request)
+
+    @property
+    def next_url(self):
+        arguments = []
+        if self.status is not None:
+            arguments.append('status=%s' % self.status.name)
+        if self.type is not None:
+            arguments.append('type=%s' % self.type)
+        if len(arguments) > 0:
+            arg_string = '?%s' % '&'.join(arguments)
+        else:
+            arg_string = ''
+        return '/'.join(
+                [canonical_url(self.context), '+imports%s' % arg_string])
 
 
     def renderOption(self, status, selected=False, check_status=None,
@@ -270,7 +280,8 @@ class TranslationImportQueueLinkView(LaunchpadFormView):
             blocked_html = ''
 
         # Generate the final select html tag with the possible values.
-        return renderElement('select', name='status-%d' % entry.id,
+        entry_id = 'field.status-%d' % entry.id
+        return renderElement('select', id=entry_id, name=entry_id,
             contents='%s\n%s\n%s\n%s\n%s\n%s\n' % (
                 approved_html, imported_html, deleted_html, failed_html,
                 needs_review_html, blocked_html))

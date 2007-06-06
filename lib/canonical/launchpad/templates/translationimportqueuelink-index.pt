@@ -61,7 +61,8 @@
               Only .pot files
             </option>
           </select>
-          <input type="submit" name="filter" value="Filter" />
+          <input type="submit" id="field.actions.filter"
+                 name="field.actions.filter" value="Filter" class="button" />
         </div>
 
         <!-- Queue entries -->
@@ -74,72 +75,70 @@
         <tal:block condition="view/batchnav/currentBatch">
           <tal:navigation
                replace="structure view/batchnav/@@+navigation-links-upper" />
-          <form name="entries_to_import" action="" method="POST">
-            <table class="listing" width="100%">
-              <tal:loop repeat="entry view/batchnav/currentBatch">
-                <tr>
-                  <tal:comment replace="nothing">
-                    XXX: CarlosPerelloMarin 20060309:
-                    We are using here condition="entry/import_into/title|nothing"
-                    because, sometimes, entry/import_into evaluates as false when
-                    it should not. See bug #34213 for more information.
-                  </tal:comment>
-                  <td tal:condition="entry/import_into/title|nothing" rowspan="3">
-                    <img alt="" src="/@@/download.png" />
-                  </td>
-                  <td tal:condition="not: entry/import_into/title|nothing" rowspan="2">
-                    <img alt="" src="/@@/download.png" />
-                  </td>
-                  <td>
-                    <a tal:attributes="href entry/content/http_url"
-                       tal:content="entry/path">po/foo.pot</a> in
-                    <a tal:condition="entry/sourcepackage"
-                       tal:content="entry/sourcepackage/title"
-                       tal:attributes="href entry/sourcepackage/fmt:url"
-                       >evolution in Ubuntu Hoary</a>
-                    <a tal:condition="entry/productseries"
-                       tal:content="entry/productseries/title"
-                       tal:attributes="href entry/productseries/fmt:url"
-                       >Evolution Series: MAIN</a>
-                  </td>
-                  <td tal:condition="entry/required:launchpad.Edit"
-                      tal:content="structure python: view.getStatusSelect(entry)">
-                  </td>
-                  <td tal:condition="not: entry/required:launchpad.Edit"
-                      tal:content="entry/status/title">Needs Review
-                  </td>
-                  <td>
-                    <tal:block condition="entry/required:launchpad.Admin">
-                      [<a tal:attributes="href entry/fmt:url">Edit</a>]
-                    </tal:block>
-                  </td>
-                </tr>
-                <tr class="discreet secondary">
-                  <td colspan="3">
-                    Uploaded by 
-                    <a tal:content="entry/importer/browsername"
-                       tal:attributes="href entry/importer/fmt:url"
-                       >Mark Shuttleworth</a>
-                    on <span tal:content="entry/dateimported/fmt:datetime">date</span>
-                  </td>
-                </tr>
+          <table class="listing" width="100%">
+            <tal:loop repeat="entry view/batchnav/currentBatch">
+              <tr>
                 <tal:comment replace="nothing">
                   XXX: CarlosPerelloMarin 20060309:
                   We are using here condition="entry/import_into/title|nothing"
                   because, sometimes, entry/import_into evaluates as false when
                   it should not. See bug #34213 for more information.
                 </tal:comment>
-                <tr tal:condition="entry/import_into/title|nothing" class="discreet secondary">
-                  <td colspan="3">
-                    Will be imported into 
-                    <a tal:content="entry/import_into/title"
-                       tal:attributes="href entry/import_into/fmt:url"
-                       >Foo</a>
-                  </td>
-                </tr>
-              </tal:loop>
-            </table>
-          </form>
+                <td tal:condition="entry/import_into/title|nothing" rowspan="3">
+                  <img alt="" src="/@@/download.png" />
+                </td>
+                <td tal:condition="not: entry/import_into/title|nothing" rowspan="2">
+                  <img alt="" src="/@@/download.png" />
+                </td>
+                <td>
+                  <a tal:attributes="href entry/content/http_url"
+                     tal:content="entry/path">po/foo.pot</a> in
+                  <a tal:condition="entry/sourcepackage"
+                     tal:content="entry/sourcepackage/title"
+                     tal:attributes="href entry/sourcepackage/fmt:url"
+                     >evolution in Ubuntu Hoary</a>
+                  <a tal:condition="entry/productseries"
+                     tal:content="entry/productseries/title"
+                     tal:attributes="href entry/productseries/fmt:url"
+                     >Evolution Series: MAIN</a>
+                </td>
+                <td tal:condition="entry/required:launchpad.Edit"
+                    tal:content="structure python: view.getStatusSelect(entry)">
+                </td>
+                <td tal:condition="not: entry/required:launchpad.Edit"
+                    tal:content="entry/status/title">Needs Review
+                </td>
+                <td>
+                  <tal:block condition="entry/required:launchpad.Admin">
+                    [<a tal:attributes="href entry/fmt:url">Edit</a>]
+                  </tal:block>
+                </td>
+              </tr>
+              <tr class="discreet secondary">
+                <td colspan="3">
+                  Uploaded by 
+                  <a tal:content="entry/importer/browsername"
+                     tal:attributes="href entry/importer/fmt:url"
+                     >Mark Shuttleworth</a>
+                  on <span tal:content="entry/dateimported/fmt:datetime">date</span>
+                </td>
+              </tr>
+              <tal:comment replace="nothing">
+                XXX: CarlosPerelloMarin 20060309:
+                We are using here condition="entry/import_into/title|nothing"
+                because, sometimes, entry/import_into evaluates as false when
+                it should not. See bug #34213 for more information.
+              </tal:comment>
+              <tr tal:condition="entry/import_into/title|nothing" class="discreet secondary">
+                <td colspan="3">
+                  Will be imported into 
+                  <a tal:content="entry/import_into/title"
+                     tal:attributes="href entry/import_into/fmt:url"
+                     >Foo</a>
+                </td>
+              </tr>
+            </tal:loop>
+          </table>
           <tal:navigation
                replace="structure view/batchnav/@@+navigation-links-lower" />
         </tal:block>
