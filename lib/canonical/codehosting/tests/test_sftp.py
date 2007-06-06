@@ -30,9 +30,6 @@ class TestFilesystem(SSHTestCase, TestCaseWithTransport):
         from twisted.internet import defer
         return defer.succeed(None)
 
-    def installServer(self, server):
-        self.server = server
-
     @deferToThread
     def test_remove_branch_directory(self):
         # Make some directories under ~testuser/+junk (i.e. create some empty

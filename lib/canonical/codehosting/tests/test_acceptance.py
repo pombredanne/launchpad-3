@@ -309,14 +309,10 @@ class SSHTestCase(TrialTestCase):
     server = None
 
     def getDefaultServer(self):
-        authserver = AuthserverWithKeys('testuser', 'testteam')
-        branches_root = '/tmp/sftp-test'
-        return SSHCodeHostingServer('sftp', authserver, branches_root)
+        raise NotImplementedError("No default server")
 
     def installServer(self, server):
         self.server = server
-        self.default_user = server.authserver.testUser
-        self.default_team = server.authserver.testTeam
 
     def setUpSignalHandling(self):
         self._oldSigChld = signal.getsignal(signal.SIGCHLD)
@@ -356,6 +352,16 @@ class AcceptanceTests(SSHTestCase, TestCaseWithRepository):
     layer = TwistedBzrlibLayer
 
     server = None
+
+    def getDefaultServer(self):
+        authserver = AuthserverWithKeys('testuser', 'testteam')
+        branches_root = '/tmp/sftp-test'
+        return SSHCodeHostingServer('sftp', authserver, branches_root)
+
+    def installServer(self, server):
+        super(AcceptanceTests, self).installServer(server)
+        self.default_user = server.authserver.testUser
+        self.default_team = server.authserver.testTeam
 
     def setUp(self):
         super(AcceptanceTests, self).setUp()
