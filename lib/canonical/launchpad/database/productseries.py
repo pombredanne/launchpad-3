@@ -445,6 +445,25 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         self.datefinished = None
         self.syncinterval = None
 
+    def wipeOutImport(self):
+        """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = None
+        self.import_branch = None
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.date_published_sync = None
+        self.syncinterval = None
+        self.datestarted = None
+        self.datefinished = None
+        self.rcstype = None
+        self.cvsroot = None
+        self.cvsmodule = None
+        self.cvsbranch = None
+        self.cvstarfileurl = None
+        self.svnrepository = None
+
     def syncCertified(self):
         """Return true or false indicating if the sync is enabled"""
         return self.dateprocessapproved is not None

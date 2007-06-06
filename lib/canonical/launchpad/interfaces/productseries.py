@@ -306,6 +306,12 @@ class IProductSeriesSourceAdmin(Interface):
         """Mark this import as DONTSYNC (see dbschema.ImportStatus
         for what this means)."""
 
+    def wipeOutImport():
+        """Do our best to forget that this series ever had an import
+        associated with it.
+
+        Use with care!"""
+
     def enableAutoSync():
         """enable this series RCS for automatic baz syncronisation"""
 

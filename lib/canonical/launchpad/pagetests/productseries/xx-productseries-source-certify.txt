@@ -68,7 +68,7 @@ Check that that import status was indeed updated.
   ...
 
 On the edit page, there are buttons for marking imports as TESTFAILED
-or DONTSYNC:
+or DONTSYNC and another for wiping out an import:
 
   >>> browser.getLink('Edit source').click()
   >>> browser.url
@@ -76,6 +76,8 @@ or DONTSYNC:
   >>> browser.getControl('Mark import TESTFAILED')
   <SubmitControl ...>
   >>> browser.getControl('Mark import DONTSYNC')
+  <SubmitControl ...>
+  >>> browser.getControl('Wipe out import')
   <SubmitControl ...>
 
 These are only for VCS operators:
@@ -90,8 +92,12 @@ These are only for VCS operators:
   Traceback (most recent call last):
     ...
   LookupError: label 'Mark import DONTSYNC'
+  >>> user_browser.getControl('Wipe out import')
+  Traceback (most recent call last):
+    ...
+  LookupError: label 'Wipe out import'
 
-Clicking these buttons changes the status of the import:
+Clicking the first two buttons changes the status of the import:
 
   >>> browser.open('http://launchpad.dev/a52dec/trunk/+source')
   >>> browser.getControl('Mark import TESTFAILED').click()
@@ -115,4 +121,18 @@ Clicking these buttons changes the status of the import:
   <th>Import status:</th>
   <td>Do Not Import</td>
   </tr>
+  ...
+
+The last button has to be tested last, because it erases all knowledge of the
+import:
+
+  >>> browser.open('http://launchpad.dev/a52dec/trunk/+source')
+  >>> browser.getControl('Wipe out import').click()
+  >>> print browser.url
+  http://launchpad.dev/a52dec/trunk
+  >>> print find_main_content(browser.contents)
+  <...
+  <p>
+    No revision control details recorded for trunk.
+  </p>
   ...

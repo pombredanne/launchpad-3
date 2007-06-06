@@ -634,7 +634,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
 
     @action(_('Mark import TESTFAILED'), name='testfailed',
             condition=isAdmin)
-    def mark_testfailed(self, action, data):
+    def markTestFailed_action(self, action, data):
         self.updateContextFromData(data)
         self.context.markTestFailed()
         self.request.response.addInfoNotification(
@@ -642,11 +642,19 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
 
     @action(_('Mark import DONTSYNC'), name='dontsync',
             condition=isAdmin)
-    def mark_dontsync(self, action, data):
+    def markDontSync_action(self, action, data):
         self.updateContextFromData(data)
         self.context.markDontSync()
         self.request.response.addInfoNotification(
             'Source import marked as DONTSYNC.')
+
+    @action(_('Wipe out import'), name='wipeout',
+            condition=isAdmin)
+    def wipeOutImport_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.wipeOutImport()
+        self.request.response.addInfoNotification(
+            'Source import wiped out.')
 
     @property
     def next_url(self):
