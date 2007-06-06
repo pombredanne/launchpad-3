@@ -63,7 +63,7 @@ The FAQ document information is available in the object attributes.
     >>> print firefox_faq.owner.displayname
     Sample Person
 
-The project that contain the FAQ is available using the target
+The project that contains the FAQ is available using the target
 attribute:
 
     >>> print firefox_faq.target.name
@@ -94,13 +94,13 @@ Once the FAQ is linked, the question is considered 'answered':
     >>> print fnord_question.status.title
     Answered
 
-The 'faq' attribute contain the FAQ supposed to answer the question:
+The 'faq' attribute contains the FAQ supposed to answer the question:
 
     >>> print fnord_question.faq.title
     How can I see the Fnords?
 
-The FAQ's 'related_questions' contain the questions that are answered
-by the FAQ:
+The FAQ's 'related_questions' attribute contains the questions that are
+answered by the FAQ:
 
     # Flush the faq attribute change.
     >>> from canonical.launchpad.ftests import syncUpdate

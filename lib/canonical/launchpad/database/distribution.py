@@ -592,7 +592,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             clauseTables=['Question'], distinct=True))
 
     def newFAQ(self, owner, title, summary, content=None, url=None,
-               date_created=UTC_NOW):
+               date_created=None):
         """See `IFAQTarget`."""
         return FAQ.new(
             owner=owner, title=title, summary=summary, content=content,
