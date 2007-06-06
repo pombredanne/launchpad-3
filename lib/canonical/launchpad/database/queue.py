@@ -482,6 +482,8 @@ class PackageUpload(SQLBase):
 
         if self.isPPA():
             # PPA uploads receive an acceptance message.
+            interpolations["SUBJECT"] = "[%s-PPA] Accepted" % (
+                self.archive.owner.name)
             self._sendMail(accepted_template % interpolations)
             return
 

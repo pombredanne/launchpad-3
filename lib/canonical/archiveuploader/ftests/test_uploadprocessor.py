@@ -311,7 +311,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = ["Subject: Accepted bar 1.0-1 (source)"]
+        contents = ["Subject: [name16-PPA] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         self.assertNotEqual(name16.archive, None)
@@ -347,7 +347,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "bar_1.0-1", "~name16/ubuntu/hoary")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = ["Subject: Accepted bar 1.0-1 (source)"]
+        contents = ["Subject: [name16-PPA] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         self.assertNotEqual(name16.archive, None)
@@ -375,7 +375,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~ubuntu-team/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = ["Subject: Accepted bar 1.0-1 (source)"]
+        contents = ["Subject: [ubuntu-team-PPA] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         self.assertNotEqual(ubuntu_team.archive, None)

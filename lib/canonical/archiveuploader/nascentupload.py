@@ -793,7 +793,10 @@ class NascentUpload:
 
         if not self.queue_root:
             self.queue_root = self._createQueueEntry()
-            self.queue_root.setRejected()
+
+        # Ensure the package upload is set as rejected, or the wrong type
+        # of email will be sent out.
+        self.queue_root.setRejected()
 
         changes_file_object = open(self.changes.filepath, "r")
         self.queue_root.notify(summary_text=self.rejection_message,
