@@ -41,7 +41,7 @@ class BuildOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = ['retry', 'rescore']
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Edit')
     def retry(self):
         """Only enabled for build records that are active."""
         text = 'Retry build'

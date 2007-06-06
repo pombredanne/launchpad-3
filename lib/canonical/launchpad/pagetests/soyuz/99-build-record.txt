@@ -222,12 +222,38 @@ Let's check the PPA owner can 'retry' a build.
   >>> no_priv_browser.contents
   '...Build record active...'
 
-Perform re-scoring as PPA owner:
+
+Ensure PPA owner can't re-score the build record:
+
+(They could heavily mess with the PPA build ordering by having the
+ability to assign *any* enormous score value)
 
   >>> no_priv_browser.getLink("Rescore build").click()
-  >>> no_priv_browser.getControl(name="SCORE").value = '100'
-  >>> no_priv_browser.getControl("Update").click()
-  >>> no_priv_browser.contents
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
+
+'admins' and 'lp-build-admins' are the only entities able to
+re-scoring PPA jobs:
+
+  >>> admin_browser.open("http://localhost/+builds/+build/23")
+  >>> admin_browser.getLink('Rescore build').click()
+  >>> admin_browser.getControl(name="SCORE").value
+  '0'
+  >>> admin_browser.getControl(name="SCORE").value = '100'
+  >>> admin_browser.getControl("Update").click()
+  >>> admin_browser.contents
   '...Rescore i386 build of cdrkit 1.0 in ubuntu warty...
   ...Build Record rescored to 100...'
 
+
+  >>> cprov_browser.open("http://localhost/+builds/+build/23")
+  >>> cprov_browser.getLink('Rescore build').click()
+  >>> cprov_browser.getControl(name="SCORE").value
+  '100'
+  >>> cprov_browser.getControl(name="SCORE").value = '200'
+  >>> cprov_browser.getControl("Update").click()
+  >>> cprov_browser.contents
+  '...Rescore i386 build of cdrkit 1.0 in ubuntu warty...
+  ...Build Record rescored to 200...'

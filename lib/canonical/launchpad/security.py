@@ -859,6 +859,11 @@ class EditBuilder(AdminByBuilddAdmin):
 class AdminBuildRecord(AdminByBuilddAdmin):
     usedfor = IBuild
 
+
+class EditBuildRecord(AdminByBuilddAdmin):
+    permission = 'launchpad.Edit'
+    usedfor = IBuild
+
     def checkAuthenticated(self, user):
         """Allow only BuilddAdmins and PPA owner."""
         if AdminByBuilddAdmin.checkAuthenticated(self, user):
@@ -868,6 +873,7 @@ class AdminBuildRecord(AdminByBuilddAdmin):
             return True
 
         return False
+
 
 class AdminQuestion(AdminByAdminsTeam):
     permission = 'launchpad.Admin'
