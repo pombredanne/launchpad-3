@@ -37,7 +37,7 @@ from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    EmailAddressStatus, QuestionAction, QuestionSort, QuestionStatus,
+    QuestionAction, QuestionSort, QuestionStatus,
     QuestionParticipation, QuestionPriority)
 
 from canonical.launchpad.database.answercontact import AnswerContact
@@ -436,7 +436,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def getIndirectSubscribers(self):
         """See IQuestion."""
         subscribers = QuestionNotificationRecipientSet()
-        subscribers.addAnswerContacts(self.target)
+        subscribers.addAnswerContacts(self.target, self.language)
         if self.assignee:
             reason = ('You received this question notification because you '
                       'are the assignee for this question.')
@@ -920,6 +920,9 @@ class QuestionTargetMixin:
             person=person, **self._getTargetTypes())
         if answer_contact is not None:
             return False
+        # Person must speak a language to be an answer contact.
+        assert person.languages.count() > 0, (
+            "An Answer Contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
         params.update(self._getTargetTypes())
         AnswerContact(person=person, **params)
@@ -946,34 +949,16 @@ class QuestionTargetMixin:
                     target)
             constraints.append(constraint)
         
-        # Persons and teams may set the preferred languages.
-        # Teams without preferred languages will support the languages
-        # their members speaks.
         constraints.append("""
             AnswerContact.person = PersonLanguage.person AND
-            PersonLanguage.language = %s AND
-            AnswerContact.person = EmailAddress.person AND
-            EmailAddress.status = %s""" % sqlvalues(
-                language, EmailAddressStatus.PREFERRED))
-        speakers = set(self._selectPersonFromAnswerContacts(
-                constraints, ['PersonLanguage', 'EmailAddress']))
-        constraints[-1] = ("""
-            AnswerContact.person = Person.id AND
-            Person.teamowner IS NOT NULL AND
-            AnswerContact.person = TeamParticipation.team AND
-            TeamParticipation.person = PersonLanguage.person AND
-            PersonLanguage.language = %s AND
-            NOT EXISTS (
-                SELECT TRUE 
-                FROM EmailAddress 
-                WHERE EmailAddress.person = AnswerContact.person AND
-                EmailAddress.status = %s)""" % sqlvalues(
-                    language, EmailAddressStatus.PREFERRED))
-        teams = set(self._selectPersonFromAnswerContacts(
-                constraints, 
-                ['Person', 'PersonLanguage', 'TeamParticipation']))
-        teams -= speakers
-        for member in teams:
-            if language in member.getSupportedLanguages():
-                speakers.add(member)
-        return speakers
+            PersonLanguage.language = %s""" % sqlvalues(language))
+        return set(self._selectPersonFromAnswerContacts(
+            constraints, ['PersonLanguage']))
+        
+    def getSupportedLanguages(self):
+        """See IQuestionTarget.getSupportedLanguages()."""
+        languages = set()
+        for contact in self.answer_contacts:
+            languages |= contact.getSupportedLanguages()
+        languages.add(getUtility(ILanguageSet)['en'])
+        return languages

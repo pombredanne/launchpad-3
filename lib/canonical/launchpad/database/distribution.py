@@ -66,7 +66,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
-    get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH,\
+    QUESTION_STATUS_DEFAULT_SEARCH,\
     IHasLogo, IHasMugshot, IHasIcon)
 
 from canonical.archivepublisher.debversion import Version
@@ -504,10 +504,6 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distribution=self, name=name)
-
-    def getSupportedLanguages(self):
-        """See IQuestionTarget."""
-        return get_supported_languages(self)
 
     def newQuestion(self, owner, title, description, language=None,
                   datecreated=None):

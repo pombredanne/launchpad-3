@@ -23,7 +23,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, IQuestionTarget,
-    get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH)
+    QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.answercontact import AnswerContact
@@ -138,10 +138,6 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return sorted(
             [contact.person for contact in answer_contacts],
             key=attrgetter('displayname'))
-
-    def getSupportedLanguages(self):
-        """See IQuestionTarget."""
-        return get_supported_languages(self)
 
     def getQuestionLanguages(self):
         """See IQuestionTarget."""

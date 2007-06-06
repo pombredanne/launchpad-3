@@ -1165,28 +1165,30 @@ class QuestionNotificationRecipientSet(NotificationRecipientSet):
     # on IQuestionTarget that returns an INotificationRecipientSet. Once
     # curtis' branch that add getAnswerContactsForLanguage lands. Move that
     # in that method.
-    def addAnswerContacts(self, target):
+    def addAnswerContacts(self, target, language):
         """Add the answer_contacts for a target as recipients."""
         # We need to special case the source package case because some are
         # contacts for the distro while others are only registered for the
         # package. And we also want the name of the package in context in
         # the header.
-        # XXX sinzui 2007-06-04
-        # addAnswerContacts() must late language as a param and use
-        # getAnswerContactsForLanguage(self, language) to get the
-        # right list of subscribers the first time.
         if (ISourcePackage.providedBy(target)
             or IDistributionSourcePackage.providedBy(target)):
             self._addAnswerContacts(
                 target.direct_answer_contacts, target.displayname,
                 target.displayname)
             distribution = target.distribution
+            if language is None:
+                contacts = distribution.answer_contacts
+            else:
+                contacts = distribution.getAnswerContactsForLanguage(language)
             self._addAnswerContacts(
-                distribution.answer_contacts, distribution.name,
-                distribution.displayname)
+                contacts, distribution.name, distribution.displayname)
         else:
-            self._addAnswerContacts(
-                target.answer_contacts, target.name, target.displayname)
+            if language is None:
+                contacts = target.answer_contacts
+            else:
+                contacts = target.getAnswerContactsForLanguage(language)
+            self._addAnswerContacts(contacts, target.name, target.displayname)
 
     def _addAnswerContacts(self, answer_contacts, target_name,
                            target_display_name):
@@ -1285,37 +1287,12 @@ class QuestionNotification:
 
         Default to the question's subscribers that speaks the request
         languages. If the question owner is subscribed, he's always consider
-        to speak the language. When a subscriber is a team and it doesn't
-        have an email set nor supported languages, only contacts the members
-        that speaks the supported language.
+        to speak the language.
 
         :return: A `INotificationRecipientSet` containing the recipients and
                  rationale.
         """
-        # Optimize the English case.
-        english = getUtility(ILanguageSet)['en']
-        question_language = self.question.language
-        if question_language == english:
-            return self.question.getSubscribers()
-
-        recipients = NotificationRecipientSet()
-        original_recipients = self.question.getSubscribers()
-        subscribers = dict((person, original_recipients.getReason(person))
-                           for person in original_recipients)
-
-        while subscribers:
-            person, rationale = subscribers.popitem()
-            if not person.preferredemail and not list(person.languages):
-                # For teams without an email address nor a set of supported
-                # languages, only notify the members that actually speak the
-                # language.
-                for member in person.activemembers:
-                    if (question_language in member.getSupportedLanguages()
-                    and member not in recipients):
-                        subscribers[member] = rationale
-            else:
-                recipients.add(person, *rationale)
-        return recipients
+        return self.question.getSubscribers()
 
     def initialize(self):
         """Initialization hook for subclasses.
@@ -1622,7 +1599,7 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
     def getRecipients(self):
         """Notify only the answer contacts."""
         recipients = QuestionNotificationRecipientSet()
-        recipients.addAnswerContacts(self.question.target)
+        recipients.addAnswerContacts(self.question.target, None)
         return recipients
 
     def getBody(self):

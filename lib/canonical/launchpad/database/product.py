@@ -55,7 +55,6 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    get_supported_languages,
     ICalendarOwner,
     IHasIcon,
     IHasLogo,
@@ -309,10 +308,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def _getBugTaskContextClause(self):
         """See BugTargetBase."""
         return 'BugTask.product = %s' % sqlvalues(self)
-
-    def getSupportedLanguages(self):
-        """See IQuestionTarget."""
-        return get_supported_languages(self)
 
     def newQuestion(self, owner, title, description, language=None,
                     datecreated=None):

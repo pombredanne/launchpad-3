@@ -396,6 +396,17 @@ False when it was already on the list:
     >>> target.addAnswerContact(name18)
     False
 
+An answer contact must have at least one language among his 
+preferred languages. 
+
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> sample_person.languages.count()
+    0
+    >>> target.addAnswerContact(sample_person)
+    Traceback (most recent call last):
+      ...
+    AssertionError: An Answer Contact must speak a language...
+    
 Answer contacts can be removed by using the removeAnswerContact()
 method. Like its counterpart, it returns True when the answer contact
 was removed and False when the person wasn't on the answer contact
@@ -422,8 +433,9 @@ Only registered users can remove an answer contact:
 
 The supported languages for a given IQuestionTarget are given by
 getSupportedLanguages(). The supported languages of a question target
-include English plus all languages spoken by at least one of its answer
-contacts (with the exception of all English variations).
+include all languages spoken by at least one of its answer contacts,
+with the exception of all English variations. English is the assumed
+language for support when there are no answer contacts.
 
     >>> [lang.code for lang in target.getSupportedLanguages()]
     [u'en']
@@ -441,12 +453,12 @@ Let's add some answer contacts which speak different languages.
     True
 
     >>> [lang.code for lang in carlos.languages]
-    [u'ca', u'es']
+    [u'ca', u'en', u'es']
 
 Note that daf has en_GB as one of his preferred languages...
 
     >>> [lang.code for lang in daf.languages]
-    [u'en_GB', u'ja', u'cy']
+    [u'en', u'en_GB', u'ja', u'cy']
 
 ... but en_GB is not included in the target's supported languages,
 because we ignore all English variants.
@@ -461,11 +473,7 @@ because we ignore all English variants.
 
 Continuing from the previous section with Carlos and Daf, the
 getAnswerContactsForLanguage() method returns a list of answer contacts
-who support the specified language. Support is determined in two ways:
-One, the person is a regular answer contact and the language is the
-default support language of English (Dafydd in this example). Or two,
-the language is among the contacts preferred languages (both Dafydd and
-Carlos).
+who support the specified language in their preferred languages.
 
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> answer_contacts = target.getAnswerContactsForLanguage(spanish)
@@ -474,7 +482,7 @@ Carlos).
 
     >>> answer_contacts = target.getAnswerContactsForLanguage(english)
     >>> sorted([person.name for person in answer_contacts])
-    [u'daf']
+    [u'carlos', u'daf']
 
 
 == getQuestionLanguages() ==

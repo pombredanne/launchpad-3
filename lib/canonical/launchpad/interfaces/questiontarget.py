@@ -8,7 +8,6 @@ __all__ = [
     'IAnswersFrontPageSearchForm',
     'IQuestionTarget',
     'ISearchQuestionsForm',
-    'get_supported_languages',
     ]
 
 import sets
@@ -22,16 +21,6 @@ from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.questioncollection import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.lp.dbschema import QuestionSort
-
-
-def get_supported_languages(question_target):
-    """Common implementation for IQuestionTarget.getSupportedLanguages()."""
-    assert IQuestionTarget.providedBy(question_target)
-    langs = set()
-    for contact in question_target.answer_contacts:
-        langs |= contact.getSupportedLanguages()
-    langs.add(getUtility(ILanguageSet)['en'])
-    return langs
 
 
 class IQuestionTarget(ISearchableByQuestionOwner):
@@ -79,7 +68,8 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :person: An IPerson.
 
         Returns True if the person was added, False if the person already was
-        an answer contact..
+        an answer contact. A person must have at least one preferred 
+        language to be an answer contact.
         """
 
     def removeAnswerContact(person):
