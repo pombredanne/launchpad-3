@@ -594,7 +594,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
             if self.context.syncCertified():
                 self.addError('Import has already been approved.')
 
-    def isAdmin(self):
+    def isAdmin(self, action=None):
         return check_permission('launchpad.Admin', self.context)
 
     @action(_('Update RCS Details'), name='update')
@@ -631,6 +631,16 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         self.context.certifyForSync()
         self.request.response.addInfoNotification(
             'Source import certified for publication')
+
+    @action(_('Mark import TESTFAILED'), name='testfailed',
+            condition=isAdmin)
+    def mark_testfailed(self, action, data):
+        pass
+
+    @action(_('Mark import DONTSYNC'), name='dontsync',
+            condition=isAdmin)
+    def mark_dontsync(self, action, data):
+        pass
 
     @property
     def next_url(self):

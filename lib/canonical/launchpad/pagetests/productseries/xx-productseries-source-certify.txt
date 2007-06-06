@@ -67,3 +67,22 @@ Check that that import status was indeed updated.
   </tr>
   ...
 
+On the edit page, there are buttons for marking imports as TESTFAILED
+or DONTSYNC:
+
+  >>> browser.getLink('Edit source').click()
+  >>> browser.getControl('Mark import TESTFAILED')
+  <SubmitControl ...>
+  >>> browser.getControl('Mark import DONTSYNC')
+  <SubmitControl ...>
+
+These are only for VCS operators:
+
+  >>> user_browser.getControl('Mark import TESTFAILED')
+  Traceback (most recent call last):
+    ...
+  LookupError: label 'Mark import TESTFAILED'
+  >>> user_browser.getControl('Mark import DONTSYNC')
+  Traceback (most recent call last):
+    ...
+  LookupError: label 'Mark import DONTSYNC'
