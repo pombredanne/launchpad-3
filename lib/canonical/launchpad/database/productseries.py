@@ -424,6 +424,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                                  % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
+    def markTestFailed(self):
+        """See `IProductSeriesSourceAdmin`."""
+
+    def markDontSync(self):
+        """See `IProductSeriesSourceAdmin`."""
+
     def syncCertified(self):
         """Return true or false indicating if the sync is enabled"""
         return self.dateprocessapproved is not None

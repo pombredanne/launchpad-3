@@ -71,6 +71,8 @@ On the edit page, there are buttons for marking imports as TESTFAILED
 or DONTSYNC:
 
   >>> browser.getLink('Edit source').click()
+  >>> browser.url
+  'http://launchpad.dev/a52dec/trunk/+source'
   >>> browser.getControl('Mark import TESTFAILED')
   <SubmitControl ...>
   >>> browser.getControl('Mark import DONTSYNC')
@@ -78,6 +80,8 @@ or DONTSYNC:
 
 These are only for VCS operators:
 
+  >>> user_browser.url
+  'http://launchpad.dev/a52dec/trunk/+source'
   >>> user_browser.getControl('Mark import TESTFAILED')
   Traceback (most recent call last):
     ...
@@ -86,3 +90,11 @@ These are only for VCS operators:
   Traceback (most recent call last):
     ...
   LookupError: label 'Mark import DONTSYNC'
+
+Clicking these buttons adds a notification (which doesn't appear in a
+page test?), but doesn't do much else yet:
+
+  >>> browser.open('http://launchpad.dev/a52dec/trunk/+source')
+  >>> browser.getControl('Mark import TESTFAILED').click()
+  >>> browser.open('http://launchpad.dev/a52dec/trunk/+source')
+  >>> browser.getControl('Mark import DONTSYNC').click()

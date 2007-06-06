@@ -298,6 +298,14 @@ class IProductSeriesSourceAdmin(Interface):
     def certifyForSync():
         """enable this to sync"""
 
+    def markTestFailed():
+        """Mark this import as TESTFAILED (see dbschema.ImportStatus
+        for what this means)."""
+
+    def markDontSync():
+        """Mark this import as DONTSYNC (see dbschema.ImportStatus
+        for what this means)."""
+
     def enableAutoSync():
         """enable this series RCS for automatic baz syncronisation"""
 

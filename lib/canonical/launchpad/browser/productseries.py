@@ -635,12 +635,18 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     @action(_('Mark import TESTFAILED'), name='testfailed',
             condition=isAdmin)
     def mark_testfailed(self, action, data):
-        pass
+        self.updateContextFromData(data)
+        self.context.markTestFailed()
+        self.request.response.addInfoNotification(
+            'Source import marked as TESTFAILED.')
 
     @action(_('Mark import DONTSYNC'), name='dontsync',
             condition=isAdmin)
     def mark_dontsync(self, action, data):
-        pass
+        self.updateContextFromData(data)
+        self.context.markDontSync()
+        self.request.response.addInfoNotification(
+            'Source import marked as DONTSYNC.')
 
     @property
     def next_url(self):
