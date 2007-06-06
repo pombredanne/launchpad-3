@@ -21,7 +21,7 @@ __all__ = [
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'PageTestLayer',
     'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
-    'BzrlibZopelessLayer'
+    'BzrlibZopelessLayer', 'BzrlibLayer'
     ]
 
 import shutil
@@ -633,7 +633,7 @@ class TwistedLayer(LaunchpadZopelessLayer):
                 reactor.threadpool = None
 
 
-class BzrlibZopelessLayer(LaunchpadZopelessLayer):
+class BzrlibLayer(BaseLayer):
     """Clean up the test directory created by TestCaseInTempDir tests."""
 
     @classmethod
@@ -659,3 +659,5 @@ class BzrlibZopelessLayer(LaunchpadZopelessLayer):
         pass
 
 
+class BzrlibZopelessLayer(BzrlibLayer, LaunchpadZopelessLayer):
+    """Clean up the test directory created by TestCaseInTempDir tests."""
