@@ -446,7 +446,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         self.datefinished = None
         self.syncinterval = None
 
-    def wipeOutImport(self):
+    def deleteImport(self):
         """See `IProductSeriesSourceAdmin`."""
         self.importstatus = None
         self.import_branch = None

@@ -301,16 +301,18 @@ class IProductSeriesSourceAdmin(Interface):
     def markTestFailed():
         """Mark this import as TESTFAILED.
 
-        See dbschema.ImportStatus for what this means).
+        See `dbschema.ImportStatus` for what this means.  This method also
+        clears timestamps and other ancillary data.
         """
 
     def markDontSync():
         """Mark this import as DONTSYNC.
 
-        See dbschema.ImportStatus for what this means).
+        See `dbschema.ImportStatus` for what this means.  This method also
+        clears timestamps and other ancillary data.
         """
 
-    def wipeOutImport():
+    def deleteImport():
         """Do our best to forget that this series ever had an import
         associated with it.
 
@@ -318,7 +320,7 @@ class IProductSeriesSourceAdmin(Interface):
         """
 
     def enableAutoSync():
-        """enable this series RCS for automatic baz synchronisation"""
+        """Enable this series RCS for automatic baz synchronisation."""
 
 
 class IProductSeriesSet(Interface):

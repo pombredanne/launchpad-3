@@ -632,29 +632,29 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Source import certified for publication')
 
-    @action(_('Mark import TESTFAILED'), name='testfailed',
+    @action(_('Mark Import TESTFAILED'), name='testfailed',
             condition=isAdmin)
-    def markTestFailed_action(self, action, data):
+    def testfailed_action(self, action, data):
         self.updateContextFromData(data)
         self.context.markTestFailed()
         self.request.response.addInfoNotification(
             'Source import marked as TESTFAILED.')
 
-    @action(_('Mark import DONTSYNC'), name='dontsync',
+    @action(_('Mark Import DONTSYNC'), name='dontsync',
             condition=isAdmin)
-    def markDontSync_action(self, action, data):
+    def dontsync_action(self, action, data):
         self.updateContextFromData(data)
         self.context.markDontSync()
         self.request.response.addInfoNotification(
             'Source import marked as DONTSYNC.')
 
-    @action(_('Wipe out import'), name='wipeout',
+    @action(_('Delete Import'), name='delete',
             condition=isAdmin)
     def wipeOutImport_action(self, action, data):
         self.updateContextFromData(data)
-        self.context.wipeOutImport()
+        self.context.deleteImport()
         self.request.response.addInfoNotification(
-            'Source import wiped out.')
+            'Source import deleted.')
 
     @property
     def next_url(self):
