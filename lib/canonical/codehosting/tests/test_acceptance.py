@@ -220,6 +220,21 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         # Check that the pushed branch looks right
         self.assertEqual(remote_revision, self.local_branch.last_revision())
 
+    @deferToThread
+    def test_push_new_branch_creates_branch_in_database(self):
+        remote_url = self.getTransportURL('~testuser/+junk/totally-new-branch')
+        self.push(remote_url)
+
+        # Retrieve the branch from the database. selectOne will fail if the
+        # branch does not exist (or if somehow multiple branches match!).
+        branch = database.Branch.selectOne(
+            "owner = %s AND product IS NULL AND name = %s"
+            % sqlvalues(database.Person.byName('testuser').id,
+                        'totally-new-branch'))
+
+        self.assertEqual(
+            '~testuser/+junk/totally-new-branch', branch.unique_name)
+
 
 def make_repository_tests(base_suite):
     # Construct a test suite that runs AcceptanceTests with several different
