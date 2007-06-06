@@ -130,42 +130,6 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         self.assertEqual(remote_revision, 'rev2')
 
     @deferToThread
-    def test_namespace_restrictions(self):
-        """
-        The namespace restrictions described in
-        SupermirrorFilesystemHierarchy should be enforced. So operations
-        such as:
-            * `bzr push sftp://testinstance/~user/missing-product/new-branch`
-            * `bzr push sftp://testinstance/~not-my-team/real-product/some-branch`
-            * `bzr push sftp://testinstance/~team/+junk/anything`
-        should fail.
-        """
-        # Cannot push branches to products that don't exist
-        self._testMissingParentDirectory(
-            '~testuser/product-that-does-not-exist/hello')
-
-        # Teams do not have +junk products
-        self._testMissingParentDirectory('~testteam/+junk/hello')
-
-        # Cannot push to team directories that the user isn't a member of --
-        # they cannot see them at all.
-        self._testMissingParentDirectory('~not-my-team/real-product/hello')
-
-        # XXX spiv 2006-01-11: what about lp-incompatible branch dir names (e.g.
-        # capital Letters) -- Are they disallowed or accepted?  If accepted,
-        # what will that branch's Branch.name be in the database?  Probably just
-        # disallow, and try to have a tolerable error.
-
-    def _testMissingParentDirectory(self, relpath):
-        transport = self.server.getTransport(relpath).clone('..')
-        try:
-            self.assertRaises(
-                (NoSuchFile, PermissionDenied),
-                self.runAndWaitForDisconnect, transport.mkdir, 'hello')
-        except self.failureException, e:
-            raise AssertionError("%s: %s" % (e, relpath))
-
-    @deferToThread
     def test_db_rename_branch(self):
         """
         Branches should be able to be renamed in the Launchpad webapp, and

@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Tests for the virtual filesystem presented by Launchpad codehosting."""
 
@@ -92,6 +92,14 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.mkdir('~testteam/firefox/shiny-new-thing')
         self.assertTrue(
             transport.has('~testteam/firefox/shiny-new-thing'))
+
+    @deferToThread
+    def test_make_team_junk_branch_directory(self):
+        # Teams do not have +junk products
+        transport = self.getTransport()
+        self.assertRaises(
+            (errors.PermissionDenied, errors.NoSuchFile),
+            transport.mkdir, '~testteam/+junk/new-branch')
 
     @deferToThread
     def test_make_product_directory_for_nonexistent_product(self):
