@@ -235,7 +235,7 @@ REJECT
   <BLANKLINE>
 
 
-Also works for rejecting DistroReleaseQueueBuilds (issue mentioned in
+Also works for rejecting PackageUploadBuilds (issue mentioned in
 bug #57662)
 
   >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",

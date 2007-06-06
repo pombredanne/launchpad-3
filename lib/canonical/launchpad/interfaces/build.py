@@ -29,7 +29,8 @@ class IBuild(Interface):
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
     pocket = Attribute("Target pocket of this build")
     dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
-
+    archive = Attribute("The archive")
+    
     # useful properties
     title = Attribute("Build Title")
     changesfile = Attribute("The Build Changesfile object, returns None if "
@@ -54,6 +55,9 @@ class IBuild(Interface):
     calculated_buildstart = Attribute(
         "Emulates a buildstart timestamp by calculating it from "
         "datebuilt - buildduration.")
+    is_trusted = Attribute(
+        "whether or not the record corresponds to a source targeted to "
+        "the distribution main_archive (archive == distro.main_archive).")
 
     def retry():
         """Restore the build record to its initial state.

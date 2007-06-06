@@ -38,8 +38,8 @@ from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet)
 from canonical.librarian.utils import filechunks
 from canonical.lp.dbschema import (
-    PackagePublishingPriority, DistroReleaseQueueCustomFormat,
-    DistroReleaseQueueStatus, BinaryPackageFormat, BuildStatus)
+    PackagePublishingPriority, PackageUploadCustomFormat,
+    PackageUploadStatus, BinaryPackageFormat, BuildStatus)
 
 
 apt_pkg.InitSystem()
@@ -233,10 +233,10 @@ class CustomUploadFile(NascentUploadFile):
     # the marker in the codebase and make sure the same changes are made
     # everywhere which needs them.
     custom_sections = {
-        'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
-        'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
-        'raw-dist-upgrader': DistroReleaseQueueCustomFormat.DIST_UPGRADER,
-        'raw-ddtp-tarball': DistroReleaseQueueCustomFormat.DDTP_TARBALL,
+        'raw-installer': PackageUploadCustomFormat.DEBIAN_INSTALLER,
+        'raw-translations': PackageUploadCustomFormat.ROSETTA_TRANSLATIONS,
+        'raw-dist-upgrader': PackageUploadCustomFormat.DIST_UPGRADER,
+        'raw-ddtp-tarball': PackageUploadCustomFormat.DDTP_TARBALL,
         }
 
     @property
@@ -729,7 +729,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         distrorelease = self.policy.distrorelease
         spphs = distrorelease.getPublishedReleases(
             self.source_name, version=self.source_version,
-            include_pending=True)
+            include_pending=True, archive=self.policy.archive)
 
         sourcepackagerelease = None
         if spphs:
@@ -745,9 +745,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
             self.logger.debug("No source published, checking the ACCEPTED queue")
 
             queue_candidates = distrorelease.getQueueItems(
-                status=DistroReleaseQueueStatus.ACCEPTED,
+                status=PackageUploadStatus.ACCEPTED,
                 name=self.source_name, version=self.source_version,
-                exact_match=True)
+                archive=self.policy.archive, exact_match=True)
 
             for queue_item in queue_candidates:
                 if queue_item.sources.count():
@@ -799,7 +799,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         if build_id is None:
             # Check if there's a suitable existing build.
-            build = sourcepackagerelease.getBuildByArch(dar)
+            build = sourcepackagerelease.getBuildByArch(
+                dar, self.policy.archive)
             if build is not None:
                 build.buildstate = BuildStatus.FULLYBUILT
                 self.logger.debug("Updating build for %s: %s" % (
@@ -808,7 +809,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
                 # No luck. Make one.
                 # Usually happen for security binary uploads.
                 build = sourcepackagerelease.createBuild(
-                    dar, self.policy.pocket, status=BuildStatus.FULLYBUILT)
+                    dar, self.policy.pocket, self.policy.archive,
+                    status=BuildStatus.FULLYBUILT)
                 self.logger.debug("Build %s created" % build.id)
         else:
             build = getUtility(IBuildSet).getByBuildID(build_id)
@@ -823,7 +825,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         # source package).
         if (build.sourcepackagerelease != sourcepackagerelease or
             build.pocket != self.policy.pocket or
-            build.distroarchrelease != dar):
+            build.distroarchrelease != dar or
+            build.archive != self.policy.archive):
             raise UploadError(
                 "Attempt to upload binaries specifying "
                 "build %s, where they don't fit." % build.id)

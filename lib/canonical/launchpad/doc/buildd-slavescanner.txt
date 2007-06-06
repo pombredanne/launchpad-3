@@ -12,7 +12,8 @@ The Master side of Buildd requires access to Launchpad Database, the
 user designed for this kind of access is 'fiera', as in all test the
 transaction should be retrieved.
 
-  >>> import transaction
+  >>> from canonical.database.sqlbase import ZopelessTransactionManager
+  >>> local_transaction = ZopelessTransactionManager._installed
 
 The master also requires an 'logging' instance to not compromise the
 standard output with noisely output.
@@ -28,7 +29,8 @@ BuildersGroup() class, by creating an empty BuilderGroup object
 
   >>> from canonical.buildmaster.buildergroup import BuilderGroup
 
-  >>> buildergroup = BuilderGroup(logging.getLogger(), transaction)
+  >>> buildergroup = BuilderGroup(
+  ...     logging.getLogger(), local_transaction)
 
 Mock Builder, a class to emulate the Builder behaviour:
 
@@ -40,6 +42,7 @@ Mock Builder, a class to emulate the Builder behaviour:
   ...         self.url = 'http://fake:0000'
   ...         slave.urlbase = self.url
   ...         self.name = name
+  ...         self.trusted = False
   ...     def failbuilder(self, reason):
   ...         self.builderok = False
   ...         self.failnotes = reason
@@ -161,7 +164,7 @@ slave has the requested file in cache.
   ...         print info
   ...         return (True, info)
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
-  ...         info = 'OkSlaves BUILDING'
+  ...         info = 'OkSlave BUILDING'
   ...         print info
   ...         return ('BuildStatus.Building', info)
 
@@ -242,9 +245,6 @@ slave has the requested file in cache.
   >>> buildergroup.firstAvailable() is builder2
   True
 
-  >>> buildergroup.countAvailable() is 1
-  True
-
   Stub classes to emulate Build and BuildQueue
 
   >>> from canonical.launchpad.interfaces import IBuildSet
@@ -262,18 +262,21 @@ following states: FAILEDTOBUILD and CHROOTWAIT
   ...         self.buildlog = None
   ...         self.dependencies = None
   ...         tmp_build = getUtility(IBuildSet).getByBuildID(7)
+  ...         self.archive = tmp_build.archive
   ...         self.distroarchrelease = tmp_build.distroarchrelease
   ...         self.sourcepackagerelease = tmp_build.sourcepackagerelease
   ...         self.pocket = tmp_build.pocket
   ...         self.title = 'Mock Build'
   ...         self.notification_sent = False
+  ...         self.is_trusted = tmp_build.is_trusted
+  ...         self.binarypackages = ['one', 'two', 'three']
   ...     @property
   ...     def distrorelease(self):
   ...         return self.distroarchrelease.distrorelease
   ...     @property
   ...     def distribution(self):
   ...         return self.distroarchrelease.distrorelease.distribution
-  ...     def notify(self):
+  ...     def notify(self, extra_info=None):
   ...         self.notification_sent = True
 
   >>> import datetime, pytz
@@ -290,6 +293,9 @@ following states: FAILEDTOBUILD and CHROOTWAIT
   ...         self.files = []
   ...         self.component_name = "main"
   ...         self.archhintlist = ""
+  ...         self.is_trusted = build.is_trusted
+  ...         self.archrelease = build.distroarchrelease
+  ...         self.version = build.sourcepackagerelease.version
   ...     def destroySelf(self):
   ...         pass
 
@@ -419,10 +425,74 @@ Let's check the procedures to verify/collect running build process:
   'Waiting for slave process to be terminated'
 
 
-  WAITING - OK -> builder has finished the job and is waiting for
-  master to collect its results
+== Builder WAITING in OK state ==
 
-  >>> bqItem10 = MockBuildQueue(8, builder10, MockBuild(8))
+This situation happens when the builder has finished the job and is
+waiting for the master to collect its results.
+
+The build record in question can end up in the following states:
+
+ * FULLYBUILT: when binaries were collected and uploaded correctly;
+ * FAILEDTOUPLOAD: binaries were collected but the upload was rejected/failed.
+
+
+=== Failed to Upload (FAILEDTOUPLOAD) ===
+
+
+We need to pick a correspondent 'real' build record to satisfy the
+internal lookup in 'updateBuild'. For this we choose a BUILDING build
+record:
+
+  >>> from canonical.launchpad.interfaces import IBuildSet
+  >>> real_build = getUtility(IBuildSet).getByBuildID(8)
+  >>> real_build.buildstate.name
+  'BUILDING'
+
+  >>> mock_build = MockBuild(8)
+  >>> mock_build.buildstate = real_build.buildstate
+
+Build a mock BuildQueueItem using the 'real' Build ID and the
+mock_builder and mock_build as information containers:
+
+  >>> bqItem10 = MockBuildQueue(8, builder10, mock_build)
+
+If the build record wasn't updated before/during the updateBuild
+(precisely on binary upload time), the build will be considered
+FAILEDTOUPLOAD:
+
+  >>> buildergroup.updateBuild(bqItem10, librarian)
+  >>> bqItem10.build.builder is not None
+  True
+  >>> bqItem10.build.datebuilt is not None
+  True
+  >>> bqItem10.build.buildduration is not None
+  True
+  >>> bqItem10.build.buildlog is not None
+  True
+  >>> bqItem10.build.notification_sent
+  True
+  >>> bqItem10.build.buildstate.title
+  'Failed to upload'
+
+
+=== Successfully collected and uploaded  (FULLYBUILT) ===
+
+Similar to what we have done in FAILEDTOUPLOAD we will map this
+procedure to same 'real' build record ID in FULLYBUILT state:
+
+  >>> mock_build = MockBuild(2)
+  >>> bqItem10 = MockBuildQueue(2, builder10, mock_build)
+
+Now in order to emulate a successfully binary upload we will update
+the mock build record to FULLYBUILT, as the process-upload would do:
+
+  >>> from canonical.lp.dbschema import BuildStatus
+  >>> mock_build.buildstate = BuildStatus.FULLYBUILT
+
+Now the updateBuild should recognise this build record as a
+Successfully built and uploaded procedure, not sending any
+notification and updating the build information:
+
   >>> buildergroup.updateBuild(bqItem10, librarian)
   >>> bqItem10.build.builder is not None
   True
@@ -450,9 +520,9 @@ can't be sure if logtail will contain any information, because it
 depends on how long the build took to be processed and how often we
 scanned it)
 
-  >>> bqItem11.builder is not None
+  >>> bqItem11.builder is None
   True
-  >>> bqItem11.buildstart is not None
+  >>> bqItem11.buildstart is None
   True
   >>> bqItem11.lastscore
   0
@@ -490,9 +560,10 @@ let's see how this method works:
   >>> logfile.filename, logfile.mimetype
   (u'buildlog_ubuntu-hoary-i386.pmount_0.1-1_FULLYBUILT.txt.gz', u'text/plain')
 
-  Force Librarian to write down the stuff
-  XXX cprov 20051010: is this a bug on librarian_client API ?
-  >>> transaction.commit()
+
+Needed so that the Librarian can serve the new file.
+
+  >>> local_transaction.commit()
 
 Since LibrarianFileAlias does not implement required attributes for
 gzip.open() (like tell() or seek()) we are obligated to read it again
@@ -525,8 +596,8 @@ Check the log from the uploader run has made it into the upload directory:
 
   >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
   >>> failed_uploads = os.listdir(failed_dir)
-  >>> len(failed_uploads) == 1
-  True
+  >>> len(failed_uploads)
+  2
 
   >>> failed_upload = failed_uploads[0]
   >>> uploader_log = open(os.path.join(failed_dir, failed_upload,
@@ -552,7 +623,7 @@ Remove build upload results root
     BuilddMaster class
     ===================
 
-  >>> bm = BuilddMaster(logging.getLogger(), transaction)
+  >>> bm = BuilddMaster(logging.getLogger(), local_transaction)
 
 Retrive a known DistroArchrelease
 
@@ -571,8 +642,12 @@ Create a totally bogus CHROOT
 
 
 As we do when building the BuildQueue entries we need to recognise
-all available distroarchrelease and figure out which slave builder
-is able to build stuff properly for that one
+all available distroarchreleases and figure out which slave builder
+is able to build stuff properly for that one.
+
+
+Initialiase the BuildMaster with all available distroarchreleases.
+Because the sampledata builders are busy we issue and warning stating that.
 
   >>> from canonical.launchpad.interfaces import IDistroArchReleaseSet
   >>> for dar in sorted(getUtility(IDistroArchReleaseSet),
@@ -581,20 +656,15 @@ is able to build stuff properly for that one
   ...                                    dar.architecturetag)):
   ...     bm.addDistroArchRelease(dar)
   ...     bm.setupBuilders(dar)
-  WARNING:root:Chroot missing for debian/woody/i386, skipping
-  WARNING:root:Chroot missing for ubuntu/breezy-autotest/i386, skipping
-  WARNING:root:Chroot missing for ubuntu/hoary/hppa, skipping
   WARNING:root.builders.x86:No builders are available
-  WARNING:root:Chroot missing for ubuntu/warty/hppa, skipping
-  WARNING:root:Chroot missing for ubuntu/warty/i386, skipping
-  WARNING:root:Chroot missing for ubuntutest/hoary-test/amd64, skipping
-  WARNING:root:Chroot missing for ubuntutest/hoary-test/i386, skipping
 
 Inspect private attribute _archrelease contents. Remember
-archrelease was fetched in the begin of the test, it is warty/x86
+archrelease was fetched in the beginning of the test.
 
   >>> len(bm._archreleases)
   1
+
+It should be hoary/x86:
 
   >>> bm._archreleases.keys()[0].title
   u'The Hoary Hedgehog Release for i386 (x86)'
@@ -639,7 +709,7 @@ goes nothing.
   >>> from canonical.lp.dbschema import PackagePublishingStatus
 
   >>> class MockBG:
-  ...     def firstAvailable(self):
+  ...     def firstAvailable(self, is_trusted=False):
   ...         return "Something which is not None"
 
   >>> class MockProcessor:
@@ -664,27 +734,39 @@ goes nothing.
   >>> qbuild.buildstate
   <Item SUPERSEDED (5) ...>
 
+
 Initialize BuildQueue missing attributes for building:
 
   >>> bqItem3.version = 'Demo'
   >>> bqItem3.archrelease = hoary_i386
+  >>> bqItem3.build.archive = bqItem3.build.distroarchrelease.main_archive
+
 
 Request a Mock slave build process, see OkSlave() class implementation
 for further details:
 
   >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
   OkSlave has everything
-  OkSlaves BUILDING
+  OkSlave BUILDING
 
-Check chroot assertion:
+When there is no chroot it should not alter the buildstate:
 
   >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> PocketChroot.selectBy(
+  ...     distroarchrelease=bqItem3.archrelease,
+  ...     pocket=PackagePublishingPocket.SECURITY).count()
+  0
+
   >>> bqItem3.build.pocket = PackagePublishingPocket.SECURITY
+  >>> bqItem3.build.buildstate = BuildStatus.NEEDSBUILD
+
   >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
-   WARNING:root:Missing CHROOT for ubuntu/hoary/i386/SECURITY
+
+  >>> bqItem3.build.buildstate.name
+  'NEEDSBUILD'
 
 
-Check if builddmaster stops before start building a denied build, for
+Check if builddmaster stops before starting building a denied build, for
 this we will create the previous missing CHROOT for
 ubuntu/hoary/i386/SECURITY
 
@@ -692,15 +774,15 @@ ubuntu/hoary/i386/SECURITY
   ...                  pocket=PackagePublishingPocket.SECURITY,
   ...                  chroot=LibraryFileAlias.get(2))
 
-Since hoary is in development:
-
   >>> hoary_i386.distrorelease.releasestatus.name
   'DEVELOPMENT'
 
-The assertion in startBuild will happen:
+Since hoary is in development, we should not be able to dispatch
+builds for post-release pockets:
 
   >>> bm.startBuild(real_buildergroup, builder2, bqItem3)
   Traceback (most recent call last):
   ...
   AssertionError: Mock Build (1) can not be built for pocket SECURITY: illegal status
+
 

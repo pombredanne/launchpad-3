@@ -27,7 +27,7 @@ from canonical.lp.dbschema import (
     SpecificationFilter, SprintSpecificationStatus)
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
-    BranchVisibilityPolicyList)
+    BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -45,7 +45,7 @@ from canonical.launchpad.database.question import QuestionTargetSearch
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              HasSprintsMixin, KarmaContextMixin):
+              HasSprintsMixin, KarmaContextMixin, BranchVisibilityPolicyMixin):
     """A Project"""
 
     implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
@@ -67,11 +67,11 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
-        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    mugshot = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+        dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
-        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
+        dbName='logo', foreignKey='LibraryFileAlias', default=None)
+    mugshot = ForeignKey(
+        dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
         default=None)
@@ -97,11 +97,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
-
-    @property
-    def branch_visibility_policy(self):
-        """See IHasBranchVisibilityPolicy."""
-        return BranchVisibilityPolicyList(project=self)
 
     @property
     def products(self):

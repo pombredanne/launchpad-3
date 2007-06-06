@@ -67,7 +67,8 @@ existing builds that are in sampledata!
   ...   datesuperseded=None,
   ...   supersededby=None,
   ...   datemadepending=None,
-  ...   dateremoved=None)
+  ...   dateremoved=None,
+  ...   archive=hoary_i386.main_archive)
 
 
   >>> bpr = Build.get(8).createBinaryPackageRelease(
@@ -105,7 +106,8 @@ existing builds that are in sampledata!
   ...   datesuperseded=None,
   ...   supersededby=None,
   ...   datemadepending=None,
-  ...   dateremoved=None)
+  ...   dateremoved=None,
+  ...   archive=hoary_i386.main_archive)
 
 Then, we ensure that grabbing the current release of pmount and the old release
 both are sane.

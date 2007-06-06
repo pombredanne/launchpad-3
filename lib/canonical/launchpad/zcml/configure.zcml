@@ -136,6 +136,7 @@
     <include file="section.zcml" />
     <include file="vpoexport.zcml" />
     <include file="vpotexport.zcml" />
+    <include file="archive.zcml" />
 
     <include file="fields.zcml" />
     <include file="resources.zcml" />

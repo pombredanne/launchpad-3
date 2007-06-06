@@ -13,7 +13,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IProductRelease, IProductReleaseFile, IProductReleaseSet)
+    IProductRelease, IProductReleaseFile, IProductReleaseSet,
+    NotFoundError)
 
 from canonical.lp.dbschema import UpstreamFileType
 
@@ -38,9 +39,8 @@ class ProductRelease(SQLBase):
     manifest = ForeignKey(dbName='manifest', foreignKey='Manifest',
                           default=None)
 
-    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease')
-
-    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease')
+    files = SQLMultipleJoin('ProductReleaseFile', joinColumn='productrelease',
+                            orderBy='-date_uploaded')
 
     # properties
     @property
@@ -69,6 +69,20 @@ class ProductRelease(SQLBase):
                                   description=description,
                                   uploader=uploader)
 
+    def deleteFileAlias(self, alias):
+        """See IProductRelease."""
+        for f in self.files:
+            if f.libraryfile.id == alias.id:
+                f.destroySelf()
+                return
+        raise NotFoundError(alias.filename)
+
+    def getFileAliasByName(self, name):
+        """See IProductRelase."""
+        for f in self.files:
+            if f.libraryfile.filename == name:
+                return f.libraryfile
+        raise NotFoundError(name)
 
 class ProductReleaseFile(SQLBase):
     """A file of a product release."""

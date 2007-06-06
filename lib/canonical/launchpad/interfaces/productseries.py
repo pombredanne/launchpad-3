@@ -62,7 +62,7 @@ def validate_cvs_module(cvsmodule):
     if cvsmodule == 'CVS':
         raise LaunchpadValidationError('A CVS module can not be called "CVS".')
     return True
-    
+
 def validate_cvs_branch(branch):
     if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
         return True
@@ -106,7 +106,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     displayname = Attribute(
         'Display name, in this case we have removed the underlying '
         'database field, and this attribute just returns the name.')
-    summary = Text(title=_("Summary"), 
+    summary = Text(title=_("Summary"),
         description=_('A single paragraph introduction or overview '
         'of this series. For example: "The 2.0 series of Apache represents '
         'the current stable series, and is recommended for all new '
@@ -114,6 +114,10 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     releases = Attribute("An iterator over the releases in this "
         "Series, sorted with latest release first.")
+
+    release_files = Attribute("An iterator over the release files in this "
+        "Series, sorted with latest release first.")
+
     potemplates = Attribute(
         _("Return an iterator over this productrelease's PO templates."))
     currentpotemplates = Attribute(
@@ -144,13 +148,13 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     # I've used this name to make sure code that works with the
     # vcs-imports branch (which used to be called branch) doesn't use
     # this attribute by accident.
-    
+
     series_branch = Choice(
         title=_('Series Branch'),
         vocabulary='Branch',
         readonly=True,
         description=_("The Bazaar branch for this series."))
-        
+
     user_branch = Choice(
         title=_('Branch'),
         vocabulary='Branch',
@@ -322,7 +326,7 @@ class IProductSeriesSet(Interface):
     def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):
         """Return the ProductSeries with the given CVS details.
 
-        Return the default value if there is no ProductSeries with the 
+        Return the default value if there is no ProductSeries with the
         given details.
         """
 

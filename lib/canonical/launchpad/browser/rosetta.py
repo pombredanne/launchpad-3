@@ -96,7 +96,7 @@ class RosettaApplicationNavigation(Navigation):
         target_url= canonical_url(
             getUtility(ILaunchpadRoot), rootsite='translations')
         return self.redirectSubTree(
-            target_url + '+translation-groups', status=301)
+            target_url + '+groups', status=301)
 
     @stepto('imports')
     def imports(self):

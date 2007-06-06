@@ -358,3 +358,24 @@ a list of isolated attributes for each mentioned item.
   TEXT: "not_linked_item"
   LINK: "linked with spaces" -> somewhereelse
   TEXT: "text with spaces"
+
+== get_feedback_messages ==
+
+When testing an error condition or a notification we often are only
+interested in the feedback messages.  This helper will get
+informational messages and error messages, based on the CSS class.
+
+  >>> get_feedback_messages = test.globs['get_feedback_messages']
+  >>> class FakeBrowser:
+  ...     pass
+  >>> browser = FakeBrowser()
+  >>> browser.contents = '''
+  ... <html>
+  ...   <div class="informational message">1 file has been deleted.</div>
+  ...   <p>blah blah</p>
+  ...   <div class="error message">Red Alert!</div>
+  ... </html>'''
+
+  >>> get_feedback_messages(browser)
+  [u'1 file has been deleted.', u'Red Alert!']
+

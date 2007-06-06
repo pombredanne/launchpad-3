@@ -154,26 +154,80 @@ The other argurments are strings:
   >>> dsc_standards_version = '2.6.1'
   >>> dsc_format = '1.0'
   >>> dsc_binaries = 'pmount'
+  >>> archive = hoary.main_archive
 
 Having proper arguments in hand we can create a new
 ISourcePackageRelease, it will automatically set the
 'uploaddistrorelease' to the API entry point, in this case Hoary.
 
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
-  ...     arg_name, version, arg_maintainer, 
+  ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
   ...     arg_urgency, changelog, dsc, arg_key, arg_sect, arg_manifest,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-  ...     dsc_binaries)
+  ...     dsc_binaries, archive)
 
   >>> new_spr.uploaddistrorelease.name
   u'hoary'
   >>> new_spr.version
   u'0.0.99'
+  >>> new_spr.upload_archive.id == hoary.main_archive.id
+  True
 
 Throw away the DB changes:
 
   >>> transaction.abort()
+
+Let's get a sample SourcePackageRelease:
+
+   >>> spr_test = SourcePackageRelease.get(20)
+   >>> spr_test.name
+   u'pmount'
+
+
+== Creating Build records ==
+
+The SourcePackageRelease has the ability to create Build records,
+however it needs fully support to treat architecturehintlist and P-a-s
+information, see further information in buildd-queuebuilder.txt.
+
+The base method createBuild() is able to create build to a given
+distroarchrelease and pocket.
+
+Build.buildstate, by default is set to NEEDSBUILD and build.archive is
+the default distribution.main_archive.
+
+   >>> from canonical.lp.dbschema import PackagePublishingPocket
+   >>> pocket = PackagePublishingPocket.RELEASE
+
+   >>> dar = spr_test.uploaddistrorelease['i386']
+
+   >>> test_build = spr_test.createBuild(
+   ...     dar, pocket, dar.distrorelease.main_archive)
+
+   >>> test_build.buildstate.name
+   'NEEDSBUILD'
+
+   >>> test_build.distroarchrelease.architecturetag
+   u'i386'
+
+   >>> test_build.archive.id == dar.distrorelease.main_archive.id
+   True
+
+Optionally you can pass also status & archive:
+
+   >>> from canonical.launchpad.interfaces import IPersonSet
+   >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+   >>> from canonical.lp.dbschema import BuildStatus
+   >>> ppa_build = spr_test.createBuild(
+   ...    dar, pocket, cprov.archive, status=BuildStatus.SUPERSEDED)
+
+   >>> ppa_build.buildstate.name
+   'SUPERSEDED'
+
+   >>> ppa_build.archive.id == cprov.archive.id
+   True
 
 
 Counting bugs
@@ -253,7 +307,7 @@ The first one, approves the import.
 
     >>> import subprocess, sys
     >>> process = subprocess.Popen([
-    ...     sys.executable, 'cronscripts/rosetta-poimport.py'
+    ...     sys.executable, 'cronscripts/rosetta-approve-imports.py'
     ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.STDOUT
     ...     )
