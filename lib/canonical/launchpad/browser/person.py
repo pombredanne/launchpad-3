@@ -193,6 +193,10 @@ class PersonNavigation(CalendarTraversalMixin,
     def breadcrumb(self):
         return self.context.displayname
 
+    @stepto('+archive')
+    def traverse_archive(self):
+        return self.context.archive
+
 
 class PersonDynMenu(DynMenu):
 
@@ -569,7 +573,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys',
              'memberships', 'mentoringoffers',
-             'codesofconduct', 'karma', 'common_packages', 'administer',]
+             'codesofconduct', 'karma', 'common_packages', 'administer',
+             'archive',]
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -667,6 +672,11 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+review'
         text = 'Administer'
         return Link(target, text, icon='edit')
+
+    def archive(self):
+        target = '+archive'
+        text = 'Show PPA'
+        return Link(target, text, icon='info')
 
 
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):

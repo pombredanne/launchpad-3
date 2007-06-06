@@ -98,6 +98,8 @@ class ContextBugId(SubstitutionHelper):
 
 # Functions and strings used as the titles of pages.
 
+archive_index = ContextTitle('%s')
+
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Code'

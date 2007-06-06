@@ -86,7 +86,7 @@ Usual methods from Publisher Configuration are preserved:
 IArchiveSet.getAllPPAs provides all present *personal* archive:
 
   >>> [archive.owner.name for archive in archive_set.getAllPPAs()]
-  [u'cprov', u'sabdfl', u'name16']
+  [u'cprov', u'sabdfl', u'no-priv', u'name16']
 
 
 Iteration over the own utility is performed against all archives,
@@ -100,4 +100,4 @@ including the *main_archives*:
   ...     else:
   ...          ppas += 1
   >>> main_archives, ppas
-  (7, 3)
+  (7, 4)

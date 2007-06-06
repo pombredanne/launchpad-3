@@ -10,6 +10,36 @@
        <allow interface="canonical.launchpad.interfaces.IArchive"/>
     </content>
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IArchive"
+        name="+index" />
+
+    <browser:menus
+        module="canonical.launchpad.browser.archive"
+        classes="ArchiveFacets ArchiveOverviewMenu" />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ArchiveNavigation"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IArchive"
+        path_expression="string:+archive"
+        attribute_to_parent="owner" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IArchive"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ArchiveView">
+        <browser:page
+            template="../templates/archive-index.pt"
+            facet="overview"
+            name="+index"
+            />
+    </browser:pages>
+
+
     <!-- ArchiveSet -->
     <content class="canonical.launchpad.database.ArchiveSet">
         <allow interface="canonical.launchpad.interfaces.IArchiveSet"/>

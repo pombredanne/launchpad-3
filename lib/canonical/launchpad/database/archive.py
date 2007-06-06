@@ -8,7 +8,7 @@ __all__ = ['Archive', 'ArchiveSet']
 
 import os
 
-from sqlobject import StringCol, ForeignKey
+from sqlobject import StringCol, ForeignKey, SingleJoin
 from zope.interface import implements
 
 from canonical.archivepublisher.config import Config as PubConfig
@@ -27,7 +27,18 @@ class Archive(SQLBase):
 
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False)
+
     description = StringCol(dbName='description', notNull=False, default=None)
+
+    @property
+    def distribution(self):
+        """See IArchive."""
+        # XXX cprov 20070606: Why our SQLObject is so broken and old ?
+        # Our SingleJoin is broken as described in #3424. See further
+        # fix in http://pythonpaste.org/archives/message/\
+        # 20050817.013453.5c129f83.en.html
+        from canonical.launchpad.database.distribution import Distribution
+        return Distribution.selectOneBy(main_archive=self.id)
 
     def getPubConfig(self, distribution):
         """See IArchive."""
@@ -56,6 +67,13 @@ class Archive(SQLBase):
         return urlappend(
             config.personalpackagearchive.base_url, self.owner.name)
 
+    @property
+    def title(self):
+        """See IArchive."""
+        if self.owner is not None:
+            return '%s PPA' % self.owner.displayname
+        # XXX cprov 20070606: We really need to have a FK to the distri
+        return '%s main archive' % self.distribution.title
 
 class ArchiveSet:
     implements(IArchiveSet)
