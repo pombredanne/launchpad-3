@@ -329,6 +329,14 @@ class POMessage(object):
             ret = ret.replace(u'\t', u'\\t')
             return ret.replace(u'\n', u'\\n')
 
+        # Quickly get escaped character byte widths using
+        #   escaped_length.get(char, 1)
+        escaped_length = {
+            '\\': 2,
+            '\"': 2,
+            '\t': 2,
+            '\n': 2}
+
         # What characters to wrap at
         wrap_at = [' ', '\t', '\n', '-', '\\']
 
@@ -361,34 +369,38 @@ class POMessage(object):
                 escaped_new_block_len = 0
                 wrapped_line = []
                 for char in paragraph:
+                    escaped_char_len = escaped_length.get(char, 1)
                     if (escaped_line_len + escaped_new_block_len
-                        + len(local_escape(char)) <= wrap_width):
+                        + escaped_char_len <= wrap_width):
                         if char in wrap_at:
                             line += u'%s%s' % (new_block, char)
                             escaped_line_len += (escaped_new_block_len
-                                                 + len(local_escape(char)))
+                                                 + escaped_char_len)
                             new_block = u''
                             escaped_new_block_len = 0
                         else:
                             new_block += char
-                            escaped_new_block_len += len(local_escape(char))
+                            escaped_new_block_len += escaped_char_len
                     else:
                         if escaped_line_len == 0:
                             # Word is too long to fit into single line,
                             # break it carefully, watching not to break
                             # in the middle of the escape
                             line = new_block
+                            line_len = len(line)
                             escaped_line_len = escaped_new_block_len
                             while escaped_line_len > wrap_width:
-                                escaped_line_len -= len(local_escape(line[-1]))
-                                line = line[:-1]
-                            new_block = new_block[len(line):]
+                                escaped_line_len -= (
+                                    escaped_length.get(line[line_len-1], 1))
+                                line_len -= 1
+                            line = line[:line_len]
+                            new_block = new_block[line_len:]
                             escaped_new_block_len -= escaped_line_len
                         wrapped_line.append(line)
                         line = u''
                         escaped_line_len = 0
                         new_block += char
-                        escaped_new_block_len += len(local_escape(char))
+                        escaped_new_block_len += escaped_char_len
                 if line or new_block:
                     wrapped_line.append(u'%s%s' % (line, new_block))
             for line in wrapped_line:
