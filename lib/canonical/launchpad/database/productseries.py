@@ -442,6 +442,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         self.dateprocessapproved = None
         self.datesyncapproved = None
         self.datelastsynced = None
+        self.datestarted = None
         self.datefinished = None
         self.syncinterval = None
 
@@ -473,7 +474,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return self.importstatus == ImportStatus.SYNCING
 
     def enableAutoSync(self):
-        """Enable autosyncing?"""
+        """Enable autosyncing."""
         self.datesyncapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 

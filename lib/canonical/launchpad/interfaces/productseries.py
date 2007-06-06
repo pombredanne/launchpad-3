@@ -299,21 +299,26 @@ class IProductSeriesSourceAdmin(Interface):
         """enable this to sync"""
 
     def markTestFailed():
-        """Mark this import as TESTFAILED (see dbschema.ImportStatus
-        for what this means)."""
+        """Mark this import as TESTFAILED.
+
+        See dbschema.ImportStatus for what this means).
+        """
 
     def markDontSync():
-        """Mark this import as DONTSYNC (see dbschema.ImportStatus
-        for what this means)."""
+        """Mark this import as DONTSYNC.
+
+        See dbschema.ImportStatus for what this means).
+        """
 
     def wipeOutImport():
         """Do our best to forget that this series ever had an import
         associated with it.
 
-        Use with care!"""
+        Use with care!
+        """
 
     def enableAutoSync():
-        """enable this series RCS for automatic baz syncronisation"""
+        """enable this series RCS for automatic baz synchronisation"""
 
 
 class IProductSeriesSet(Interface):
