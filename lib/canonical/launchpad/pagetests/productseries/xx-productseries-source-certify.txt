@@ -91,10 +91,28 @@ These are only for VCS operators:
     ...
   LookupError: label 'Mark import DONTSYNC'
 
-Clicking these buttons adds a notification (which doesn't appear in a
-page test?), but doesn't do much else yet:
+Clicking these buttons changes the status of the import:
 
   >>> browser.open('http://launchpad.dev/a52dec/trunk/+source')
   >>> browser.getControl('Mark import TESTFAILED').click()
+  >>> print browser.url
+  http://launchpad.dev/a52dec/trunk
+  >>> print find_main_content(browser.contents)
+  <...
+  <tr>
+  <th>Import status:</th>
+  <td>Test Failed</td>
+  </tr>
+  ...
+
   >>> browser.open('http://launchpad.dev/a52dec/trunk/+source')
   >>> browser.getControl('Mark import DONTSYNC').click()
+  >>> print browser.url
+  http://launchpad.dev/a52dec/trunk
+  >>> print find_main_content(browser.contents)
+  <...
+  <tr>
+  <th>Import status:</th>
+  <td>Do Not Import</td>
+  </tr>
+  ...

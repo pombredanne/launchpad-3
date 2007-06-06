@@ -426,9 +426,24 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def markTestFailed(self):
         """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = ImportStatus.TESTFAILED
+        self.import_branch = None
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.syncinterval = None
 
     def markDontSync(self):
         """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = ImportStatus.DONTSYNC
+        self.import_branch = None
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.datefinished = None
+        self.syncinterval = None
 
     def syncCertified(self):
         """Return true or false indicating if the sync is enabled"""
