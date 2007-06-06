@@ -5,11 +5,12 @@
 __metaclass__ = type
 __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
-    'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
+    'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad', 'SSHTestCase',
     'TwistedBzrlibLayer', 'adapt_suite', 'deferToThread']
 
 import os
 import shutil
+import signal
 import threading
 import unittest
 
@@ -18,6 +19,7 @@ from canonical.tests.test_twisted import TwistedTestCase
 
 from twisted.internet import defer, threads
 from twisted.python.util import mergeFunctionMetadata
+from twisted.trial.unittest import TestCase as TrialTestCase
 
 
 class AvatarTestCase(TwistedTestCase):
@@ -52,6 +54,44 @@ class AvatarTestCase(TwistedTestCase):
         # twisted.trial.unittest.TestCase.mktemp outside the trial test runner.
         tmpdir_root = self.tmpdir.split(os.sep, 1)[0]
         shutil.rmtree(tmpdir_root)
+
+
+class SSHTestCase(TrialTestCase):
+
+    server = None
+
+    def getDefaultServer(self):
+        raise NotImplementedError("No default server")
+
+    def installServer(self, server):
+        self.server = server
+
+    def setUpSignalHandling(self):
+        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
+        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+
+    def setUp(self):
+        super(SSHTestCase, self).setUp()
+
+        # Install the default SIGCHLD handler so that read() calls don't get
+        # EINTR errors when child processes exit.
+        self.setUpSignalHandling()
+
+        if self.server is None:
+            self.installServer(self.getDefaultServer())
+
+        self.server.setUp()
+
+    def tearDown(self):
+        self.server.tearDown()
+        signal.signal(signal.SIGCHLD, self._oldSigChld)
+        super(SSHTestCase, self).tearDown()
+
+    def __str__(self):
+        return self.id()
+
+    def getTransport(self, relpath=None):
+        return self.server.getTransport(relpath)
 
 
 class TwistedBzrlibLayer(TwistedLayer, BzrlibLayer):

@@ -14,11 +14,11 @@ from bzrlib.tests import TestCaseWithTransport
 from canonical.codehosting.transport import LaunchpadServer
 
 from canonical.codehosting.tests.test_acceptance import (
-    AuthserverWithKeys, SSHCodeHostingServer, SSHTestCase)
+    AuthserverWithKeys, SSHCodeHostingServer)
 
 from canonical.codehosting.tests.helpers import (
-    CodeHostingTestProviderAdapter, FakeLaunchpad, TwistedBzrlibLayer,
-    adapt_suite, deferToThread)
+    CodeHostingTestProviderAdapter, FakeLaunchpad, SSHTestCase,
+    TwistedBzrlibLayer, adapt_suite, deferToThread)
 
 
 class TestFilesystem(SSHTestCase, TestCaseWithTransport):

@@ -7,7 +7,6 @@ __metaclass__ = type
 import gc
 import os
 import shutil
-import signal
 import tempfile
 import threading
 import unittest
@@ -22,12 +21,11 @@ from bzrlib.workingtree import WorkingTree
 
 from twisted.conch.ssh import keys
 from twisted.python.util import sibpath
-from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, deferToThread, TwistedBzrlibLayer)
+    adapt_suite, deferToThread, SSHTestCase, TwistedBzrlibLayer)
 from canonical.config import config
 from canonical.database.sqlbase import cursor, commit, sqlvalues
 from canonical.launchpad import database
@@ -302,44 +300,6 @@ class TestBazaarFileTransferServer(BazaarFileTransferServer):
         if event is not None:
             d.addBoth(lambda ignored: event.set())
         return d
-
-
-class SSHTestCase(TrialTestCase):
-
-    server = None
-
-    def getDefaultServer(self):
-        raise NotImplementedError("No default server")
-
-    def installServer(self, server):
-        self.server = server
-
-    def setUpSignalHandling(self):
-        self._oldSigChld = signal.getsignal(signal.SIGCHLD)
-        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
-
-    def setUp(self):
-        super(SSHTestCase, self).setUp()
-
-        # Install the default SIGCHLD handler so that read() calls don't get
-        # EINTR errors when child processes exit.
-        self.setUpSignalHandling()
-
-        if self.server is None:
-            self.installServer(self.getDefaultServer())
-
-        self.server.setUp()
-
-    def tearDown(self):
-        self.server.tearDown()
-        signal.signal(signal.SIGCHLD, self._oldSigChld)
-        super(SSHTestCase, self).tearDown()
-
-    def __str__(self):
-        return self.id()
-
-    def getTransport(self, relpath=None):
-        return self.server.getTransport(relpath)
 
 
 class AcceptanceTests(SSHTestCase, TestCaseWithRepository):
