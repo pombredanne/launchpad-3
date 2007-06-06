@@ -39,7 +39,7 @@
       <tr tal:repeat="codeimport codeimports">
 
         <td>
-          <a href="name" tal:attributes="href codeimport/name" tal:content="codeimport/name">
+          <a href="name" tal:attributes="href codeimport/fmt:url" tal:content="codeimport/name">
             name
           </a>
         </td>

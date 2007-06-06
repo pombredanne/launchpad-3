@@ -17,7 +17,7 @@
 
   <browser:url
      for="canonical.launchpad.interfaces.ICodeImport"
-     path_expression="string:+code-imports/${name}"
+     path_expression="name"
      parent_utility="canonical.launchpad.interfaces.ICodeImportSet"
      rootsite="code" />
 
@@ -55,7 +55,7 @@
   <browser:url
      for="canonical.launchpad.interfaces.ICodeImportSet"
      path_expression="string:+code-imports"
-     parent_utility="canonical.launchpad.interfaces.IBazaarApplication"
+     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
      rootsite="code" />
 
   <browser:defaultView
