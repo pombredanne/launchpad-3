@@ -896,8 +896,8 @@ class NascentUpload:
                 self.logger.debug("Setting it to ACCEPTED")
                 self.queue_root.setAccepted()
                 # If it is a pure-source upload we can further process it
-                # in order to have a pending publishing record for it in place.
-                # This *hack* is based on discussions for bug #77853 and aims
+                # in order to have a pending publishing record in place.
+                # This change is based on discussions for bug #77853 and aims
                 # to fix a deficiency on published file lookup system.
                 if ((queue_root.sources.count() == 1) and
                     (queue_root.builds.count() == 0) and
