@@ -1,4 +1,4 @@
--- Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+-- Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 /* This is created as a function so the same definition can be used with
     many tables
@@ -248,18 +248,6 @@ $$;
 
 COMMENT ON FUNCTION is_printable_ascii(text) IS
     'True if the string is pure printable US-ASCII';
-
-
-CREATE OR REPLACE FUNCTION sleep_for_testing(double precision) RETURNS boolean
-LANGUAGE plpythonu AS
-$$
-    import time
-    time.sleep(args[0])
-    return True
-$$;
-
-COMMENT ON FUNCTION sleep_for_testing(double precision) IS
-    'Sleep for the given number of seconds and return True.  This function is intended to be used by tests to trigger timeout conditions.';
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_distribution() RETURNS TRIGGER
