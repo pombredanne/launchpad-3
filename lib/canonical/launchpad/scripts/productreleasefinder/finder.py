@@ -11,7 +11,7 @@ import mimetypes
 import urlparse
 import urllib
 
-from hct.util import path
+from cscvs.dircompare import path
 
 from zope.component import getUtility
 
@@ -23,6 +23,7 @@ from canonical.launchpad.validators.version import sane_version
 from canonical.launchpad.scripts.productreleasefinder.hose import Hose
 from canonical.launchpad.scripts.productreleasefinder.filter import (
     FilterPattern)
+from canonical.launchpad.scripts.productreleasefinder import log
 
 
 class ProductReleaseFinder:
