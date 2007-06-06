@@ -204,7 +204,7 @@ class SSHCodeHostingServer(CodeHostingServer):
         self._real_home, self._fake_home = self.setUpFakeHome()
         self._old_vendor_manager = self.forceParamiko()
         CodeHostingServer.setUp(self)
-        self.server = TestSSHService()
+        self.server = _TestSSHService()
         self.server.startService()
 
     def tearDown(self):
@@ -239,11 +239,11 @@ class SSHCodeHostingServer(CodeHostingServer):
                 done.wait()
 
 
-class TestSSHService(SSHService):
-    """SSH service that uses the the TestLaunchpadAvatar and installs the test
+class _TestSSHService(SSHService):
+    """SSH service that uses the the _TestLaunchpadAvatar and installs the test
     keys in a place that the SSH server can find them.
 
-    This class, TestLaunchpadAvatar and TestBazaarFileTransferServer work
+    This class, _TestLaunchpadAvatar and _TestBazaarFileTransferServer work
     together to provide a threading event which is set when the first
     connecting XXX client closes its connection to the SSH server.
     """
@@ -270,13 +270,13 @@ class TestSSHService(SSHService):
         return realm
 
     def makeAvatar(self, avatarId, homeDirsRoot, userDict, launchpad):
-        self.avatar = TestLaunchpadAvatar(self, avatarId, homeDirsRoot,
-                                          userDict, launchpad)
+        self.avatar = _TestLaunchpadAvatar(self, avatarId, homeDirsRoot,
+                                           userDict, launchpad)
         return self.avatar
 
 
-class TestLaunchpadAvatar(LaunchpadAvatar):
-    """SSH avatar that uses the TestBazaarFileTransferServer."""
+class _TestLaunchpadAvatar(LaunchpadAvatar):
+    """SSH avatar that uses the _TestBazaarFileTransferServer."""
 
     def __init__(self, service, avatarId, homeDirsRoot, userDict, launchpad):
         LaunchpadAvatar.__init__(self, avatarId, homeDirsRoot, userDict,
@@ -291,10 +291,10 @@ class TestLaunchpadAvatar(LaunchpadAvatar):
         return self.service.getConnectionMadeEvent()
 
     def makeFileTransferServer(self, data=None, avatar=None):
-        return TestBazaarFileTransferServer(data, avatar)
+        return _TestBazaarFileTransferServer(data, avatar)
 
 
-class TestBazaarFileTransferServer(BazaarFileTransferServer):
+class _TestBazaarFileTransferServer(BazaarFileTransferServer):
     """BazaarFileTransferServer that sets a threading event when it loses its
     first connection.
     """
