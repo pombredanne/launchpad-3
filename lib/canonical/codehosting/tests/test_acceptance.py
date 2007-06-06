@@ -25,7 +25,7 @@ from twisted.python.util import sibpath
 from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, deferToThread, SSHTestCase, TwistedBzrlibLayer)
+    adapt_suite, deferToThread, ServerTestCase, TwistedBzrlibLayer)
 from canonical.config import config
 from canonical.database.sqlbase import cursor, commit, sqlvalues
 from canonical.launchpad import database
@@ -302,7 +302,7 @@ class TestBazaarFileTransferServer(BazaarFileTransferServer):
         return d
 
 
-class AcceptanceTests(SSHTestCase, TestCaseWithRepository):
+class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
     """Acceptance tests for the Launchpad codehosting service's Bazaar support.
 
     Originally converted from the English at

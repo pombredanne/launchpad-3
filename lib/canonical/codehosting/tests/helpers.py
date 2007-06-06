@@ -5,8 +5,8 @@
 __metaclass__ = type
 __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
-    'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad', 'SSHTestCase',
-    'TwistedBzrlibLayer', 'adapt_suite', 'deferToThread']
+    'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
+    'ServerTestCase', 'TwistedBzrlibLayer', 'adapt_suite', 'deferToThread']
 
 import os
 import shutil
@@ -56,7 +56,7 @@ class AvatarTestCase(TwistedTestCase):
         shutil.rmtree(tmpdir_root)
 
 
-class SSHTestCase(TrialTestCase):
+class ServerTestCase(TrialTestCase):
 
     server = None
 
@@ -71,7 +71,7 @@ class SSHTestCase(TrialTestCase):
         signal.signal(signal.SIGCHLD, signal.SIG_DFL)
 
     def setUp(self):
-        super(SSHTestCase, self).setUp()
+        super(ServerTestCase, self).setUp()
 
         # Install the default SIGCHLD handler so that read() calls don't get
         # EINTR errors when child processes exit.
@@ -85,7 +85,7 @@ class SSHTestCase(TrialTestCase):
     def tearDown(self):
         self.server.tearDown()
         signal.signal(signal.SIGCHLD, self._oldSigChld)
-        super(SSHTestCase, self).tearDown()
+        super(ServerTestCase, self).tearDown()
 
     def __str__(self):
         return self.id()

@@ -17,11 +17,11 @@ from canonical.codehosting.tests.test_acceptance import (
     AuthserverWithKeys, SSHCodeHostingServer)
 
 from canonical.codehosting.tests.helpers import (
-    CodeHostingTestProviderAdapter, FakeLaunchpad, SSHTestCase,
+    CodeHostingTestProviderAdapter, FakeLaunchpad, ServerTestCase,
     TwistedBzrlibLayer, adapt_suite, deferToThread)
 
 
-class TestFilesystem(SSHTestCase, TestCaseWithTransport):
+class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
     layer = TwistedBzrlibLayer
 
@@ -167,7 +167,7 @@ class TestFilesystem(SSHTestCase, TestCaseWithTransport):
         self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
 
 
-class TestErrorMessages(SSHTestCase, TestCaseWithTransport):
+class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
 
     layer = TwistedBzrlibLayer
 
