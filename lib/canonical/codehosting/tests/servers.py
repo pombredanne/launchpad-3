@@ -124,7 +124,8 @@ class AuthserverWithKeys(Authserver):
 
 class FakeLaunchpadServer(LaunchpadServer):
 
-    def __init__(self, authserver, user_id):
+    def __init__(self, user_id):
+        authserver = FakeLaunchpad()
         LaunchpadServer.__init__(self, authserver, user_id, None)
         self._schema = 'lp'
 

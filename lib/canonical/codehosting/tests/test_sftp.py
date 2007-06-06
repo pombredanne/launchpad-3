@@ -14,8 +14,8 @@ from canonical.codehosting.tests.servers import (
     AuthserverWithKeys, FakeLaunchpadServer, SSHCodeHostingServer)
 
 from canonical.codehosting.tests.helpers import (
-    CodeHostingTestProviderAdapter, FakeLaunchpad, ServerTestCase,
-    TwistedBzrlibLayer, adapt_suite, deferToThread)
+    CodeHostingTestProviderAdapter, ServerTestCase, TwistedBzrlibLayer,
+    adapt_suite, deferToThread)
 
 
 class TestFilesystem(ServerTestCase, TestCaseWithTransport):
@@ -220,7 +220,7 @@ class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
 
 def make_launchpad_server():
     user_id = 1
-    return FakeLaunchpadServer(FakeLaunchpad(), user_id)
+    return FakeLaunchpadServer(user_id)
 
 
 def make_sftp_server():
