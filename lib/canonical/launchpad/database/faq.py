@@ -8,7 +8,7 @@ __all__ = [
     'FAQ',
     ]
 
-from sqlobject import ForeignKey, StringCol
+from sqlobject import ForeignKey, SQLMultipleJoin, StringCol
 from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
@@ -55,6 +55,9 @@ class FAQ(SQLBase):
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution', notNull=False,
         default=None)
+
+    related_questions = SQLMultipleJoin(
+        'Question', joinColumn='faq', orderBy=['Question.datecreated'])
 
     @property
     def target(self):

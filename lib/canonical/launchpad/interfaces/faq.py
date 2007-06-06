@@ -8,6 +8,7 @@ __all__ = [
     'IFAQ',
     ]
 
+from zope.interface import Attribute
 from zope.schema import (
      Choice, Datetime,  Int, Object, Text, TextLine)
 
@@ -72,3 +73,5 @@ class IFAQ(IHasOwner):
         schema=IFAQTarget,
         required=True)
 
+    related_questions = Attribute(
+        _('The set of questions linked to this FAQ.'))

@@ -17,6 +17,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.faq import IFAQ
 from canonical.launchpad.interfaces.questionmessage import IQuestionMessage
 from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
 from canonical.lp.dbschema import QuestionStatus, QuestionPriority
@@ -114,6 +115,12 @@ class IQuestion(IHasOwner):
     target = Object(title=_('Project'), required=True, schema=IQuestionTarget,
         description=_('The distribution, source package, or product the '
                       'question pertains to.'))
+
+    faq = Object(
+        title=_('Linked FAQ'),
+        description=_('The FAQ document containing the long answer to this '
+                      'question.'),
+        readonly=True, required=False, schema=IFAQ)
 
     # joins
     subscriptions = Attribute(
@@ -236,6 +243,25 @@ class IQuestion(IHasOwner):
         :user: IPerson giving the answer.
         :answer: A string or IMessage containing the answer.
         :datecreated: Date for the message. Defaults to the current time.
+        """
+
+    def linkFAQ(user, faq, comment, datecreated=None):
+        """Link a FAQ as an answer to this question.
+
+        Exactly like giveAnswer() but also link the IFAQ faq object to this
+        question.
+        
+        Return the created IQuestionMessage.
+
+        This method should fire an ISQLObjectCreatedEvent for the created
+        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
+
+        :param user: IPerson linking the faq.
+        :param faq: The IFAQ containing the answer.
+        :param comment: A string or IMessage explaining how the FAQ is
+            relevant.
+        :param datecreated: Date for the message. Defaults to the current
+            time.
         """
 
     can_confirm_answer = Attribute(

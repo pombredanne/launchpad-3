@@ -456,6 +456,79 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
         getattr(self.question, 'giveAnswer')
 
 
+class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
+    """Test cases for the giveAnswer() workflow action method."""
+
+    def setUp(self):
+        """Create an additional FAQ."""
+        BaseAnswerTrackerWorkflowTestCase.setUp(self)
+
+        # Only admin can create FAQ on ubuntu.
+        login(self.admin.preferredemail.email)
+        self.faq = self.ubuntu.newFAQ(
+            self.admin, 'Generic HowTo', 'Describe how to do anything.',
+            url='http://www.everythingyouwantedtoknowbutwereafraidtoask.com')
+
+        # Logs back as owner.
+        login(self.owner.preferredemail.email)
+
+    def test_linkFAQ(self):
+        """Test that linkFAQ can be called when the question status is
+        one of OPEN, NEEDSINFO or ANSWERED and check that it returns a
+        valid IQuestionMessage.
+        """
+        # Do not check the edited_fields attributes since it
+        # changes based on departure state.
+        def checkFAQ(message):
+            """Check that the FAQ attribute was set correctly."""
+            self.assertEquals(self.question.faq, self.faq)
+    
+        self._testValidTransition(
+            [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
+             QuestionStatus.ANSWERED],
+            expected_owner=self.answerer,
+            expected_action=QuestionAction.ANSWER,
+            expected_status=QuestionStatus.ANSWERED,
+            extra_message_check=checkFAQ,
+            transition_method=self.question.linkFAQ,
+            transition_method_args=(
+                self.answerer, self.faq, "Check the FAQ!",),
+            edited_fields=None)
+
+        # When the owner links the FAQ, the question moves straight to
+        # SOLVED.
+        def checkAnswerMessage(message):
+            """Check additional attributes set when the owner gives the
+            answers.
+            """
+            checkFAQ(message)
+            self.assertEquals(message, self.question.answer)
+            self.assertEquals(self.owner, self.question.answerer)
+            self.assertEquals(message.datecreated, self.question.dateanswered)
+            
+        self._testValidTransition(
+            [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
+             QuestionStatus.ANSWERED],
+            expected_owner=self.owner,
+            expected_action=QuestionAction.CONFIRM,
+            expected_status=QuestionStatus.SOLVED,
+            extra_message_check=checkAnswerMessage,
+            transition_method=self.question.linkFAQ,
+            transition_method_args=(
+                self.owner, self.faq, "I found the solution in that FAQ.",),
+            transition_method_kwargs={'datecreated': self.nowPlus(3)},
+            edited_fields=['status', 'messages', 'dateanswered', 'answerer',
+                           'answer', 'datelastquery'])
+
+    def test_linkFAQPermission(self):
+        """Test that only a logged in user can access linkFAQ()."""
+        login(ANONYMOUS)
+        self.assertRaises(Unauthorized, getattr, self.question, 'linkFAQ')
+
+        login(self.answerer.preferredemail.email)
+        getattr(self.question, 'linkFAQ')
+
+
 class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
     """Test cases for the confirmAnswer() workflow action method."""
 

@@ -36,7 +36,7 @@ contacts.)
     Sample Person
 
     >>> firefox_faq = firefox.newFAQ(
-    ...     sample_person, 'How can I see the Fnords',
+    ...     sample_person, 'How can I see the Fnords?',
     ...     'Describe installation of the Fnords highlighter extension.',
     ...     content="Install the extension and see the Fnords!")
 
@@ -54,7 +54,7 @@ FAQ document provides the IFAQ interface.
 The FAQ document information is available in the object attributes.
 
     >>> print firefox_faq.title
-    How can I see the Fnords
+    How can I see the Fnords?
     >>> print firefox_faq.summary
     Describe installation of the Fnords highlighter extension.
     >>> print firefox_faq.content
@@ -69,3 +69,84 @@ attribute:
     >>> print firefox_faq.target.name
     firefox
 
+== Linking a FAQ to a question ==
+
+An IFAQ can be used to answer a question. The linkFAQ() method on
+IQuestion is used for that purpose. It takes as parameters the user
+posting the answer, the FAQ containing the answer and a comment that
+will be added to the question explaining the FAQ link.
+
+    >>> fnord_question = firefox.newQuestion(
+    ...     sample_person, 'Are there Fnords on the web?',
+    ...     'Do Fnords also exists on the web?')
+
+Any user can link an existing FAQ to a question.
+
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(ILaunchBag).user
+    >>> message = fnord_question.linkFAQ(
+    ...     no_priv, firefox_faq, 'See the FAQ.')
+
+Once the FAQ is linked, the question is considered 'answered':
+
+    >>> print message.action.title
+    Answer
+    >>> print fnord_question.status.title
+    Answered
+
+The 'faq' attribute contain the FAQ supposed to answer the question:
+
+    >>> print fnord_question.faq.title
+    How can I see the Fnords?
+
+The FAQ's 'related_questions' contain the questions that are answered
+by the FAQ:
+
+    # Flush the faq attribute change.
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(fnord_question)
+
+    >>> for question in firefox_faq.related_questions:
+    ...     print question.title
+    Are there Fnords on the web?
+
+A FAQ can be linked to multiple question:
+
+    >>> other_question = firefox.getQuestion(4)
+    >>> message = other_question.linkFAQ(
+    ...     no_priv, firefox_faq,
+    ...     'If you lose focus and gets stuck it must be the fnords!')
+
+    >>> print other_question.faq.title
+    How can I see the Fnords?
+    >>> print other_question.status.title
+    Answered
+
+    >>> syncUpdate(other_question)
+    >>> for question in firefox_faq.related_questions:
+    ...     print question.title
+    Firefox loses focus and gets stuck
+    Are there Fnords on the web?
+
+The FAQ link can be changed or removed by using the linkFAQ() method
+again:
+
+    >>> message = other_question.linkFAQ(
+    ...     no_priv, None, "This has nothing to do with Fnords.")
+
+    >>> print other_question.faq
+    None
+
+That change is also considered an answer:
+
+    >>> print message.action.title
+    Answer
+    >>> print other_question.status.title
+    Answered
+
+It is not possible to modify the faq attribute directly:
+
+    >>> fnord_question.faq = None
+    Traceback (most recent call last):
+      ...
+    ForbiddenAttribute: ...
