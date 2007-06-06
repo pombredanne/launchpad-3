@@ -34,10 +34,6 @@ class BaseBranchVisibilityPolicyItemView(LaunchpadFormView):
         return {IBranchVisibilityPolicyItem: self.context}
 
     @property
-    def policy(self):
-        return self.context.branch_visibility_policy
-
-    @property
     def next_url(self):
         return canonical_url(self.context) + '/+branchvisibility'
 
@@ -52,7 +48,8 @@ class AddBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
     @action(_('Set policy for team'), name='set_policy')
     def set_policy_action(self, action, data):
         "Set the branch policy for the team."
-        self.policy.setTeamPolicy(data['team'], data['policy'])
+        self.context.setTeamBranchVisibilityPolicy(
+            data['team'], data['policy'])
 
 
 class RemoveBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
@@ -84,7 +81,7 @@ class RemoveBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
         """
         terms = [SimpleTerm(item, self._policyToken(item),
                             self._policyDescription(item))
-                 for item in self.policy.items]
+                 for item in self.context.branch_visibility_policy_items]
 
         return form.Fields(
             List(
@@ -103,19 +100,15 @@ class RemoveBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
     def remove_action(self, action, data):
         """Remove selected policy items."""
         for item in data['policy_items']:
-            self.policy.removeTeam(item.team)
+            self.context.removeTeamFromBranchVisibilityPolicy(item.team)
 
 
 class BranchVisibilityPolicyView(LaunchpadView):
     """Simple view for displaying branch visibility policies."""
 
-    @property
-    def policy(self):
-        return self.context.branch_visibility_policy
-
     @cachedproperty
     def items(self):
-        return self.policy.items
+        return self.context.branch_visibility_policy_items
 
     @property
     def can_remove_items(self):
@@ -123,7 +116,7 @@ class BranchVisibilityPolicyView(LaunchpadView):
         if there is only the default policy item.
         """
         return (len(self.items) > 0 and
-                not self.policy.isUsingInheritedPolicy())
+                not self.context.isUsingInheritedBranchVisibilityPolicy())
 
     @property
     def default_policy(self):

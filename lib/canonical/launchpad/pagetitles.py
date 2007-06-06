@@ -138,6 +138,9 @@ branch_subscription = ContextDisplayName(smartquote(
 
 branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
 
+def branch_visibility_edit(context, view):
+    return view.pagetitle
+
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
 bug_activity = ContextBugId('Bug #%s - Activity log')
@@ -959,9 +962,6 @@ signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
-
-def simple_launchpad_form(context, view):
-    return view.pagetitle
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 

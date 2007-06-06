@@ -18,12 +18,12 @@
 
   <h1>Branch visibility policy</h1>
 
-  <p tal:condition="view/policy/isUsingInheritedPolicy" 
+  <p tal:condition="context/isUsingInheritedBranchVisibilityPolicy"
      id="inherited">
     Using inherted policy from
     <strong>
-      <a tal:attributes="href view/policy/inherited_policy/context/fmt:url"
-         tal:content="view/policy/inherited_policy/context/displayname">
+      <a tal:attributes="href context/project/fmt:url"
+         tal:content="context/project/displayname">
         Project</a></strong>.
   </p>
 
@@ -50,11 +50,11 @@
   </div>
 
   <div style="padding-left: 1em" id="policy-actions">
-  <tal:using-inhertied-policy condition="view/policy/isUsingInheritedPolicy">
+  <tal:using-inhertied-policy condition="context/isUsingInheritedBranchVisibilityPolicy">
       <p>
         <img src="/@@/edit" alt="edit" />
-        <a tal:define="inherited_url view/policy/inherited_policy/context/fmt:url"
-            tal:attributes="href string:${inherited_url}/+branchvisibility">
+        <a tal:define="inherited_url context/project/fmt:url"
+           tal:attributes="href string:${inherited_url}/+branchvisibility">
           Edit inherited policy
         </a>
       </p>
@@ -67,7 +67,7 @@
       </p>
   </tal:using-inhertied-policy>
 
-  <tal:no-inhertied-policy condition="not: view/policy/isUsingInheritedPolicy">
+  <tal:no-inhertied-policy condition="not: context/isUsingInheritedBranchVisibilityPolicy">
       <p>
         <img src="/@@/add" alt="add" />
         <a href="+addbranchvisibilitypolicy">Set policy for a team</a>
@@ -86,6 +86,21 @@
   <p>NOTE: Changing the branch visibility policies for teams does not change
   the visibility of any existing branches.</p>
 
+</div>
+
+<div metal:fill-slot="help">
+  <p>The branch visibility policy is used to define the default visibility
+  of branches when they are created.</p>
+
+  <p>Both projects and products can define a branch visibility policy.  If a
+  policy does not exist for a product, it uses the policy defined by its
+  project (if it exists).</p>
+
+  <p>There is an implicit policy defined for both products and projects.
+  The implicit policy is that everyone can create public branches.
+  In order to override this implicit policy you need to explicitly
+  define a policy for everyone, and this is done by
+  not specifying a team when adding a new policy.</p>
 </div>
 
 </body>
