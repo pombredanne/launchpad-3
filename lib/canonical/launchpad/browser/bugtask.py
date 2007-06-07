@@ -16,6 +16,7 @@ __all__ = [
     'BugTaskListingView',
     'BugListingPortletView',
     'BugTaskSearchListingView',
+    'BugNominationsView',
     'BugTaskTableRowView',
     'BugTargetView',
     'BugTasksAndNominationsView',
@@ -1716,6 +1717,16 @@ class BugTaskSearchListingView(LaunchpadView):
         search_url = (
             "%s/+bugs?field.has_cve=on" % canonical_url(self.context))
         return dict(count=open_cve_bugs.count(), url=search_url)
+
+
+class BugNominationsView(BugTaskSearchListingView):
+    """View for accepting/declining bug nominations."""
+
+    def search(self):
+        """"""
+        return BugTaskSearchListingView.search(
+            self, context=self.context.distribution,
+            extra_params=dict(nominated_for=self.context))
 
 
 class BugTargetView(LaunchpadView):

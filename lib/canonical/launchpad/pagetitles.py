@@ -395,6 +395,8 @@ distroseries_edit = ContextTitle('Edit details of %s')
 def distroseries_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
 
+distroseries_nominations = ContextDisplayName('Bugs nominated for %s')
+
 distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
     'for %s')
 
