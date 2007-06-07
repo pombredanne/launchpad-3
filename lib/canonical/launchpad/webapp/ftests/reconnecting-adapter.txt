@@ -192,6 +192,6 @@ exception by the publication machinery:
     Retry: ...
 
 
-Cleanup:
+== Cleanup ==
 
     >>> portforward.tearDown()

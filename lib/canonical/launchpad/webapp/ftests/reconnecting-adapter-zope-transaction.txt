@@ -49,7 +49,7 @@ connection should be usable:
     >>> cursor.execute("SELECT 1")
     >>> cursor.fetchone()[0]
     1
-    
+
 
 == Disconnection on commit() ==
 
@@ -98,6 +98,6 @@ again:
     1
 
 
-Cleanup:
+== Cleanup ==
 
     >>> portforward.tearDown()
