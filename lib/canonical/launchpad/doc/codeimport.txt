@@ -88,3 +88,19 @@ use CodeImportSet.getByName.
   True
   >>> found_svn.svn_branch_url
   u'svn://svn.example.com/trunk'
+
+
+== Canonical URLs ==
+
+We've registered the ICodeImportSet utility on the 'code' part of the
+site:
+
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> canonical_url(code_import_set)
+    u'http://code.launchpad.dev/+code-imports'
+
+Each code import can be found at '<url of ICodeImportSet>/<name of
+import>':
+
+    >>> canonical_url(found_svn)
+    u'http://code.launchpad.dev/+code-imports/svn-test'
