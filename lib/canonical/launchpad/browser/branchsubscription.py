@@ -4,7 +4,8 @@ __metaclass__ = type
 
 __all__ = [
     'BranchSubscriptionAddView',
-    'BranchSubscriptionEditView'
+    'BranchSubscriptionEditView',
+    'BranchSubscriptionAddOtherView',
     ]
 
 from canonical.lp.dbschema import BranchSubscriptionNotificationLevel
@@ -19,7 +20,7 @@ from canonical.widgets import LaunchpadDropdownWidget
 class _BranchSubscriptionView(LaunchpadFormView):
 
     """Contains the common functionality of the Add and Edit views."""
-    
+
     schema = IBranchSubscription
     field_names = ['notification_level', 'max_diff_lines']
 
@@ -44,7 +45,7 @@ class _BranchSubscriptionView(LaunchpadFormView):
             lines_message = '<li>%s</li>' % max_diff_lines.description
         else:
             lines_message = ''
-            
+
         message = ('%s<ul><li>%s</li>%s</ul>' % (
                    initial, notification_level.description, lines_message))
         self.request.response.addNotification(message)
@@ -55,7 +56,10 @@ class _BranchSubscriptionView(LaunchpadFormView):
         else:
             return None
 
+
 class BranchSubscriptionAddView(_BranchSubscriptionView):
+
+    subscribing_self = True
 
     @action("Subscribe")
     def subscribe(self, action, data):
@@ -64,7 +68,7 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
             notification_level, data['max_diff_lines'])
 
         self.context.subscribe(self.user, notification_level, max_diff_lines)
-        
+
         self.add_notification_message(
             'You have subscribed to this branch with: ',
             notification_level, max_diff_lines)
@@ -72,8 +76,8 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
     @action("Cancel")
     def cancel_edit(self, action, data):
         "Cancel the request, and take user back to branch page."
-    
-    
+
+
 class BranchSubscriptionEditView(_BranchSubscriptionView):
 
     @property
@@ -91,7 +95,7 @@ class BranchSubscriptionEditView(_BranchSubscriptionView):
         self.context.unsubscribe(self.user)
         self.request.response.addNotification(
             "You have unsubscribed from this branch.")
-                
+
     @action("Change")
     def change_details(self, action, data):
         subscription = self.context.getSubscription(self.user)
@@ -99,7 +103,7 @@ class BranchSubscriptionEditView(_BranchSubscriptionView):
         subscription.max_diff_lines = self.optional_max_diff_lines(
             subscription.notification_level,
             data['max_diff_lines'])
-        
+
         self.add_notification_message(
             'Subscription updated to: ',
             subscription.notification_level,
@@ -108,4 +112,43 @@ class BranchSubscriptionEditView(_BranchSubscriptionView):
     @action("Cancel")
     def cancel_edit(self, action, data):
         "Cancel the request, and take user back to branch page."
-    
+
+
+class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
+
+    field_names = ['person', 'notification_level', 'max_diff_lines']
+    for_input=True
+
+    # Since we are subscribing other people, the current user
+    # is never concidered subscribed.
+    user_is_subscribed = False
+    subscribing_self = False
+
+    @action("Subscribe")
+    def subscribe(self, action, data):
+        notification_level = data['notification_level']
+        max_diff_lines = self.optional_max_diff_lines(
+            notification_level, data['max_diff_lines'])
+        person = data['person']
+
+        subscription = self.context.getSubscription(person)
+        if subscription is None:
+            self.context.subscribe(person, notification_level, max_diff_lines)
+
+            self.add_notification_message(
+                '%s has been subscribed to this branch with: '
+                % (person.displayname),
+                notification_level, max_diff_lines)
+        else:
+            if person.isTeam():
+                word = 'were'
+            else:
+                word = 'was'
+            self.add_notification_message(
+                '%s %s already subscribed to this branch with: '
+                % (person.displayname, word),
+                subscription.notification_level, subscription.max_diff_lines)
+
+    @action("Cancel")
+    def cancel_edit(self, action, data):
+        "Cancel the request, and take user back to branch page."

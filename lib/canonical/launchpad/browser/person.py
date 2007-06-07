@@ -3126,5 +3126,5 @@ class PersonTeamBranchesView(LaunchpadView):
     @cachedproperty
     def teams_with_branches(self):
         return [team for team in self.context.teams_participated_in
-                if team.branches.count() > 0]
+                if team.branches.count() > 0 if team != self.context]
 

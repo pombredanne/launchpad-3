@@ -122,6 +122,14 @@
     permission="launchpad.AnyPerson"
     template="../templates/branch-subscription.pt" />
 
+  <browser:page
+    name="+addsubscriber"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchSubscriptionAddOtherView"
+    facet="branches"
+    permission="launchpad.AnyPerson"
+    template="../templates/branch-subscription.pt" />
+
   <!-- Edit subscription or unsubscribe from a branch -->
   <browser:page
     name="+edit-subscription"

@@ -23,7 +23,7 @@
 
   <div metal:use-macro="context/@@launchpad_form/form" >
     <metal:extra fill-slot="extra_info">
-      <p class="documentDescription">
+      <p class="documentDescription" tal:condition="view/subscribing_self">
         If you subscribe to a branch it will show up on your
         personal pages.
       </p>
