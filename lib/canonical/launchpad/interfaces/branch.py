@@ -113,6 +113,11 @@ class IBranch(IHasOwner):
         title=_('The last message we got when mirroring this branch '
                 'into supermirror.'), required=False, readonly=False)
 
+    private = Bool(
+        title=_("Keep branch confidential"), required=False,
+        description=_("Make this branch visible only to its subscribers"),
+        default=False)
+
     # People attributes
     """Product owner, it can either a valid Person or Team
             inside Launchpad context."""

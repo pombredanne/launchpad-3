@@ -45,6 +45,8 @@ class Branch(SQLBase):
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
+    private = BoolCol(default=False, notNull=True)
+
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     author = ForeignKey(dbName='author', foreignKey='Person', default=None)
 

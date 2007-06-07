@@ -11,7 +11,7 @@ from os.path import join, isdir, exists
 from shutil import rmtree
 from subprocess import Popen, PIPE
 import tempfile
-from unittest import TestLoader
+from unittest import TestCase, TestLoader
 
 import bzrlib.branch
 
@@ -21,18 +21,17 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
-from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.scripts.supermirror.ftests import createbranch
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class BranchScannerTest(LaunchpadFunctionalTestCase):
-    layer = LaunchpadFunctionalLayer
+class BranchScannerTest(TestCase):
+    layer = LaunchpadZopelessLayer
     branch_id = 7
     """Branch to install branch-scanner test data on."""
 
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
+        TestCase.setUp(self)
         # Clear the HOME environment variable in order to ignore existing
         # user config files.
         self.testdir = tempfile.mkdtemp()
@@ -44,6 +43,7 @@ class BranchScannerTest(LaunchpadFunctionalTestCase):
         rmtree(self.testdir)
         os.environ.clear()
         os.environ.update(self._saved_environ)
+        TestCase.tearDown(self)
 
     def setupWarehouse(self):
         """Create a sandbox branch warehouse for testing.
@@ -69,7 +69,6 @@ class BranchScannerTest(LaunchpadFunctionalTestCase):
 
     def test_branch_scanner_script(self):
         # this test checks that branch-scanner.py does something
-        login(ANONYMOUS)
         self.setupWarehouse()
         branch = getUtility(IBranchSet)[self.branch_id]
         assert branch.revision_history.count() == 0
