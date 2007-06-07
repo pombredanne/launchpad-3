@@ -3,35 +3,46 @@
 __metaclass__ = type
 
 __all__ = [
-    'PoSupport'
+    'TranslationFormatImporter'
     ]
 
-import datetime
-import pytz
+import os.path
 from email.Utils import parseaddr
+from zope.component import getUtility
 from zope.interface import implements
-from canonical.launchpad.interfaces import ITranslationImport
+
+from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.interfaces import ITranslationFormatImporter
 from canonical.launchpad.components.poparser import POParser
-from canonical.lp.dbschema import RosettaFileFormat
+from canonical.librarian.interfaces import ILibrarianClient
+from canonical.lp.dbschema import RosettaFileFormat, RosettaImportStatus
 
-class PoSupport:
-    implements(ITranslationImport)
 
-    def __init__(self, path, productseries=None, distrorelease=None,
-                 sourcepackagename=None, is_published=False, content=None,
-                 logger=None):
-        self.basepath = path
-        self.productseries = productseries
-        self.distrorelease = distrorelease
-        self.sourcepackagename = sourcepackagename
-        self.is_published = is_published
-        self.content = content
+class TranslationFormatImporter:
+    """Support class to import gettext .po files."""
+    implements(ITranslationFormatImporter)
+
+    def __init__(self, translation_import_queue_entry, logger=None):
+        self.basepath = translation_import_queue_entry.path
+        self.productseries = translation_import_queue_entry.productseries
+        self.distrorelease = translation_import_queue_entry.distrorelease
+        self.sourcepackagename = (
+            translation_import_queue_entry.sourcepackagename)
+        self.is_published = translation_import_queue_entry.is_published
         self.logger = logger
+
+        librarian_client = getUtility(ILibrarianClient)
+        self.content = librarian_client.getFileByAlias(
+            translation_import_queue_entry.content.id)
+
+    @cachedproperty
+    def format(self):
+        """See ITranslationImporter."""
+        return RosettaFileFormat.PO
 
     @property
     def allentries(self):
-        """See ITranslationImport."""
-
+        """See ITranslationImporter."""
         filename = self.basepath.lower()
         if filename.endswith('.pot'):
             language = None
@@ -52,6 +63,10 @@ class PoSupport:
                       'state' : RosettaImportStatus.NEEDS_REVIEW,
                       'format' : RosettaFileFormat.PO } ]
         return entries
+
+    def canHandleFileExtension(self, extension):
+        """See ITranslationImporter."""
+        return extension in ['.po', '.pot']
 
     def getLastTranslator(self, parser):
         """Return the person that appears as Last-Translator in a PO file.

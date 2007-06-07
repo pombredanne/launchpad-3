@@ -3,25 +3,24 @@
 __metaclass__ = type
 
 __all__ = [
-    'MozillaSupport',
+    'TranslationFormatImporter',
     'PropertySyntaxError'
     ]
 
-import codecs
 import os
 import re
 
 from UserDict import DictMixin
 from StringIO import StringIO
 from xml.parsers.xmlproc import dtdparser, xmldtd, utils
-from zipfile import ZipFile, ZipInfo
+from zipfile import ZipFile
 from zope.interface import implements
-from zope.component import getUtility
 
-from canonical.librarian.interfaces import ILibrarianClient
-from canonical.launchpad.interfaces.translationformats import ITranslationImporter
+from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.interfaces.translationformats import (
+    ITranslationFormatImporter)
 from canonical.lp.dbschema import RosettaImportStatus, RosettaFileFormat
-from canonical.launchpad.scripts import logger
+
 
 class UnsupportedEncoding(Exception):
     """Raised when files use non standard encodings."""
@@ -383,8 +382,9 @@ class PropertyFile (LocalizableFile):
                 translation = u''
 
 
-class MozillaSupport:
-    implements(ITranslationImporter)
+class TranslationFormatImporter:
+    """Support class to import Mozilla .xpi files."""
+    implements(ITranslationFormatImporter)
 
     def __init__(self, path, productseries=None, distrorelease=None,
                  sourcepackagename=None, is_published=False, content=None,
@@ -396,6 +396,11 @@ class MozillaSupport:
         self.is_published = is_published
         self.content = content
         self.logger = logger
+
+    @cachedproperty
+    def format(self):
+        """See ITranslationImporter."""
+        return RosettaFileFormat.XPI
 
     @property
     def allentries(self):
@@ -422,8 +427,12 @@ class MozillaSupport:
                           'template' : self.sourcepackagename,
                           'language' : language,
                           'state' : RosettaImportStatus.NEEDS_REVIEW,
-                          'format' : RosettaFileFormat.XPI } )
+                          'format' : self.format } )
         return entries
+
+    def canHandleFileExtension(self, extension):
+        """See ITranslationImporter."""
+        return extension in ['.xpi']
 
     def getTemplate(self, path):
         mozimport = MozillaZipFile(path, self.content, self.logger)
@@ -469,7 +478,7 @@ class MozillaSupport:
             "lasttranslatoremail" : None,
             "lasttranslatorname" : None,
             "header" : None,
-            "format" : RosettaFileFormat.XPI,
+            "format" : self.format,
             "messages" : messages
             }
 
@@ -496,6 +505,6 @@ class MozillaSupport:
             "lasttranslatoremail" : None,
             "lasttranslatorname" : None,
             "header" : None,
-            "format" : RosettaFileFormat.XPI,
+            "format" : self.format,
             "messages" : messages,
             }

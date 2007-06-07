@@ -9,20 +9,23 @@ __all__ = [
 import gettextpo
 import datetime
 import pytz
-from email.Utils import parseaddr
 from zope.component import getUtility
 from zope.interface import implements
-from sqlobject import SQLObjectNotFound
 
 from canonical.config import config
+from canonical.launchpad.components.translationformats.gettext_po_importer import (
+    TranslationFormatImporter as GettextPoImporter)
 from canonical.launchpad.interfaces import (
-        IPOTemplate, IPOFile, IPersonSet, ITranslationImporter,
-        TranslationConstants, TranslationConflict, OldTranslationImported,
-        NotExportedFromLaunchpad)
-from canonical.librarian.interfaces import ILibrarianClient
-from canonical.lp.dbschema import (
-    RosettaFileFormat, PersonCreationRationale)
+        IPersonSet, ITranslationImporter, TranslationConstants,
+        TranslationConflict, OldTranslationImported, NotExportedFromLaunchpad)
 from canonical.launchpad.webapp import canonical_url
+from canonical.lp.dbschema import (
+    RosettaFileFormat, RosettaImportStatus, PersonCreationRationale)
+
+# Registered importers.
+importers = {
+    RosettaFileFormat.PO: GettextPoImporter,
+    }
 
 
 class TranslationImporter:
@@ -61,44 +64,64 @@ class TranslationImporter:
 
         return person
 
+    def getImporterByFileFormat(self, file_format):
+        """Return an ITranslationFormatImporter that handles given file format.
+
+        Return None if there is no importer to handle it.
+        """
+        return importers.get(file_format, None)
+
     def import_file(self, translation_import_queue_entry, logger=None):
         """See ITranslationImporter."""
         assert translation_import_queue_entry is not None, (
             "The translation import queue entry cannot be None.")
+        assert (translation_import_queue_entry.status ==
+                RosettaImportStatus.APPROVED), (
+            "The entry is not approved!.")
+        assert translation_import_queue_entry.potemplate is not None, (
+            "The entry is not linked with a translation template")
 
-        librarian_client = getUtility(ILibrarianClient)
-        import_file = librarian_client.getFileByAlias(entry_to_import.content.id)
+        importer_class = self.getImporterByFileFormat(
+            translation_import_queue_entry.format)
+        assert importer_class is not None, (
+            'There is no importer available for %s files' % (
+                translation_import_queue_entry.format.name))
 
-        if translation_import_queue_entry.lower().endswith('.xpi'):
-            file = MozillaSupport(
-                path=entry_to_import.path,
-                productseries=entry_to_import.productseries,
-                distrorelease=entry_to_import.distrorelease,
-                sourcepackagename=entry_to_import.sourcepackagename,
-                is_published=entry_to_import.is_published,
-                content=import_file.read(),
-                logger=logger)
-            self.source_file = entry_to_import.content
-            self.source_file_format = entry_to_import.format
-        else:
-            file = PoSupport(
-                path=entry_to_import.path,
-                productseries=entry_to_import.productseries,
-                distrorelease=entry_to_import.distrorelease,
-                sourcepackagename=entry_to_import.sourcepackagename,
-                is_published=entry_to_import.is_published,
-                content=import_file.read(),
-                logger=logger)
-
-        header = file['header']
-        messages = file['messages']
+        importer = importer_class(translation_import_queue_entry, logger=logger)
 
         # This var will hold an special IPOFile for 'English' which will have
         # the English strings to show instead of arbitrary IDs.
         english_pofile = None
-        if IPOFile.providedBy(pofile_or_potemplate):
-            self.pofile = pofile_or_potemplate
-            self.potemplate = self.pofile.potemplate
+        self.potemplate = translation_import_queue_entry.potemplate
+        self.pofile = translation_import_queue_entry.pofile
+        if self.pofile is None:
+            # We are importing a translation template.
+            parsed_template = importer.getTemplate(
+                translation_import_queue_entry.path)
+            header = parsed_template['header']
+            messages = parsed_template['messages']
+            self.potemplate.source_file_format = (
+                translation_import_queue_entry.format)
+            # XXX: This should be done in a generic way so we handle this
+            # automatically without knowing the exact formats that need it.
+            if translation_import_queue_entry.format == RosettaFileFormat.XPI:
+                english_pofile = self.potemplate.getPOFileByLang('en')
+                if english_pofile is None:
+                    english_pofile = self.potemplate.newPOFile('en')
+            # Expire old messages
+            self.potemplate.expireAllMessages()
+            if header is not None:
+                # Update the header
+                self.potemplate.header = header.msgstr
+            UTC = pytz.timezone('UTC')
+            self.potemplate.date_last_updated = datetime.datetime.now(UTC)
+        else:
+            # We are importing a translation.
+            parsed_translation = importer.getTranslation(
+                translation_import_queue_entry.path)
+            header = parsed_translation['header']
+            messages = parsed_translation['messages']
+
             # Check whether we are importing a new version.
             if header and self.pofile.isPORevisionDateOlder(header):
                 # The new imported file is older than latest one imported, we
@@ -111,7 +134,8 @@ class TranslationImporter:
             # it was not exported from Rosetta, it will be None.
             lock_timestamp = header.getRosettaExportDate()
 
-            if not published and lock_timestamp is None:
+            if (not translation_import_queue_entry.published and
+                lock_timestamp is None):
                 # We got a translation file from offline translation (not
                 # published) and it misses the export time so we don't have a
                 # way to figure whether someone changed the same translations
@@ -130,28 +154,6 @@ class TranslationImporter:
                 # We were not able to guess it from the translation file, so
                 # we take the importer as the last translator.
                 last_translator = importer
-
-        elif IPOTemplate.providedBy(pofile_or_potemplate):
-            self.pofile = None
-            self.potemplate = pofile_or_potemplate
-            self.potemplate.source_file_format = file['format']
-            # XXX: This should be done in a generic way so we handle this
-            # automatically without knowing the exact formats that need it.
-            if file['format'] == RosettaFileFormat.XPI:
-                english_pofile = self.potemplate.getPOFileByLang('en')
-                if english_pofile is None:
-                    english_pofile = self.potemplate.newPOFile('en')
-            # Expire old messages
-            self.potemplate.expireAllMessages()
-            if header is not None:
-                # Update the header
-                self.potemplate.header = header.msgstr
-            UTC = pytz.timezone('UTC')
-            potemplate.date_last_updated = datetime.datetime.now(UTC)
-        else:
-            raise TypeError(
-                'Bad argument %s, an IPOTemplate or IPOFile was expected.' %
-                    repr(pofile_or_potemplate))
 
         count = 0
 
@@ -307,12 +309,13 @@ class TranslationImporter:
 
             try:
                 pomsgset.updateTranslationSet(
-                    last_translator, translations, fuzzy, published,
-                    lock_timestamp, force_edition_rights=is_editor)
+                    last_translator, translations, fuzzy,
+                    translation_import_queue_entry.published, lock_timestamp,
+                    force_edition_rights=is_editor)
             except TranslationConflict:
                 error = {
                     'pomsgset': pomsgset,
-                    'pomessage': pomessage,
+                    'pomessage': pomsg,
                     'error-message': (
                         "This message was updated by someone else after you"
                         " got the translation file.\n This translation is now"
@@ -327,9 +330,9 @@ class TranslationImporter:
                 # this time asking to store it as a translation with
                 # errors.
                 pomsgset.updateTranslationSet(
-                    last_translator, translations, fuzzy, published,
-                    lock_timestamp, ignore_errors=True,
-                    force_edition_rights=is_editor)
+                    last_translator, translations, fuzzy,
+                    translation_import_queue_entry.published, lock_timestamp,
+                    ignore_errors=True, force_edition_rights=is_editor)
 
                 # Add the pomsgset to the list of pomsgsets with errors.
                 error = {

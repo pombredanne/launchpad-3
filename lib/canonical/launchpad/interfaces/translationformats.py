@@ -1,6 +1,8 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface, Attribute, Choice
+
+from canonical.lp.dbschema import RosettaFileFormat
 
 __metaclass__ = type
 
@@ -49,6 +51,16 @@ class ITranslationFormatImporter(Interface):
 
     allentries = Attribute(
         'List of Templates and translations provided by this file.')
+
+    format = Choice(
+        title=u'The file format of the import.',
+        values=RosettaFileFormat.items,
+        required=True)
+
+    def canHandleFileExtension(extension):
+        """Whether this importer is able to handle the given file extension.
+
+        :arg extension: File extension"""
 
     def getTemplate(path):
         """Return a dictionary representing a translation template.
