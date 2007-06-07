@@ -16,6 +16,7 @@ __all__ = [
     'BranchReviewStatusVocabulary',
     'BranchSubscriptionDiffSizeVocabulary',
     'BranchSubscriptionNotificationLevelVocabulary',
+    'BranchVisibilityPolicyVocabulary', 
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
@@ -24,7 +25,7 @@ __all__ = [
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
     'CveStatusVocabulary',
-    'DistributionReleaseStatusVocabulary',
+    'DistroSeriesStatusVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
     'MirrorContentVocabulary',
@@ -73,6 +74,7 @@ BranchSubscriptionDiffSizeVocabulary = \
     sortkey_ordered_vocab_factory(dbschema.BranchSubscriptionDiffSize)
 BranchSubscriptionNotificationLevelVocabulary = \
     vocab_factory(dbschema.BranchSubscriptionNotificationLevel)
+BranchVisibilityPolicyVocabulary = vocab_factory(dbschema.BranchVisibilityPolicy)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
@@ -85,7 +87,7 @@ BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS,
             dbschema.BugTrackerType.SOURCEFORGE])
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
-DistributionReleaseStatusVocabulary = vocab_factory(dbschema.DistributionReleaseStatus)
+DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 MirrorContentVocabulary = vocab_factory(dbschema.MirrorContent)

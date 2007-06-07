@@ -11,7 +11,7 @@ translations.
   http://translations.launchpad.dev/netapplet/+changetranslators
 
   >>> test_browser.getControl(
-  ...     'Translation group').value = ['testing-translation-team']
+  ...     'Translation group').value = ['renamed-group']
   >>> test_browser.getControl(
   ...     'Translation Permission System').value = ['Structured']
   >>> test_browser.getControl('Change').click()

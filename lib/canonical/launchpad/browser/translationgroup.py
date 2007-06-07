@@ -3,31 +3,28 @@
 """Browser code for translation groups."""
 
 __metaclass__ = type
-__all__ = ['TranslationGroupNavigation',
-           'TranslationGroupSetNavigation',
-           'TranslationGroupView',
-           'TranslationGroupSetContextMenu',
-           'TranslationGroupContextMenu',
-           'TranslationGroupAddTranslatorView',
-           'TranslationGroupReassignmentView',
-           'TranslationGroupSetAddView']
+__all__ = [
+    'TranslationGroupAddTranslatorView',
+    'TranslationGroupAddView',
+    'TranslationGroupEditView',
+    'TranslationGroupNavigation',
+    'TranslationGroupReassignmentView',
+    'TranslationGroupSetNavigation',
+    'TranslationGroupView',
+    ]
 
 import operator
 
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 
-from canonical.launchpad.browser.launchpad import RosettaContextMenu
 from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ITranslator, ITranslatorSet,
-    ILanguageSet, IPersonSet, ILaunchBag, NotFoundError
+    NotFoundError
     )
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.webapp import (
-    action, canonical_url, enabled_with_permission, GetitemNavigation,
-    LaunchpadFormView, Link
+    action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView
     )
 
 
@@ -41,78 +38,14 @@ class TranslationGroupSetNavigation(GetitemNavigation):
     usedfor = ITranslationGroupSet
 
 
-class TranslationGroupSetContextMenu(RosettaContextMenu):
-    usedfor = ITranslationGroupSet
-
-
-class TranslationGroupContextMenu(RosettaContextMenu):
-    usedfor = ITranslationGroup
-    links = RosettaContextMenu.links + ['appoint', 'reassign']
-
-    @enabled_with_permission('launchpad.Edit')
-    def appoint(self):
-        return Link('+appoint', "Appoint translator")
-
-    @enabled_with_permission('launchpad.Edit')
-    def reassign(self):
-        return Link('+reassign', "Change owner")
-
-
-
 class TranslationGroupView:
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.notices = []
+        self.translation_groups = getUtility(ITranslationGroupSet)
 
-        self.parseUrlNotices()
-
-    def parseUrlNotices(self):
-        """Parse any notice message as an argument to the page."""
-
-        # Check if we have the 'removed' key as an argument. This argument is
-        # used by the +rm form to tell us 'who' was removed from 'where'.
-        form_removed = self.request.form.get('removed', '')
-        if '-' in form_removed:
-            # The key exists and follows the format we expect:
-            # languagecode-personame
-            code, name = form_removed.split('-', 1)
-
-            try:
-                language = getUtility(ILanguageSet)[code]
-            except NotFoundError:
-                # We got a non valid language code.
-                language = None
-
-            translator = getUtility(IPersonSet).getByName(name)
-
-            if language is not None and translator is not None:
-                # The language and the person got as arguments are valid in
-                # our system, so we should show the message:
-                self.notices.append(
-                    '%s removed as translator for %s.' % (
-                        translator.browsername, language.displayname))
-
-    def removals(self):
-        """Remove a translator/team for a concrete language."""
-        if 'remove' in self.request.form:
-            code = self.request.form['remove']
-            try:
-                translator = self.context[code]
-            except NotFoundError:
-                translator = None
-
-            new_url = '.'
-            if translator is not None:
-                new_url = '%s?removed=%s-%s' % (
-                            new_url, translator.language.code,
-                            translator.translator.name)
-
-                self.context.remove_translator(translator)
-
-            self.request.response.redirect(new_url)
-
+    @property
     def translator_list(self):
         result = []
         for item in self.context.translators:
@@ -143,20 +76,74 @@ class TranslationGroupAddTranslatorView(LaunchpadFormView):
         translator = data.get('translator')
         getUtility(ITranslatorSet).new(self.context, language, translator)
 
-        self.next_url = canonical_url(self.context)
-
     def validate(self, data):
-        """Do not allow an appointment to overwrite an existing translator.
-
-        We don't allow a translator to be appointed for a language that
-        already has a translator within that group.  If we did, it would be
-        too easy accidentally to replace a translator, e.g. by picking the
-        wrong language in this form.
-        """
+        """Do not allow new translators for already existing languages."""
         language = data.get('language')
         if self.context.query_translator(language):
             self.setFieldError('language',
                 "There is already a translator for this language")
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+
+class TranslationGroupEditView(LaunchpadEditFormView):
+    """View class to edit ITranslationGroup details."""
+
+    schema = ITranslationGroup
+    field_names = ['name', 'title', 'summary']
+
+    @action("Change")
+    def change_action(self, action, data):
+        """Edit ITranslationGroup details."""
+        self.updateContextFromData(data)
+
+    def validate(self, data):
+        """Check that we follow fields restrictions."""
+        new_name = data.get('name')
+        translation_group = getUtility(ITranslationGroupSet)
+        if (self.context.name != new_name):
+            try:
+                translation_group[new_name]
+            except NotFoundError:
+                # The new name doesn't exist so it's valid.
+                return
+            self.setFieldError('name',
+                "There is already a translation group with this name")
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+
+class TranslationGroupAddView(LaunchpadFormView):
+    """View class to add ITranslationGroup objects."""
+
+    schema = ITranslationGroup
+    field_names = ['name', 'title', 'summary']
+
+    @action("Add", name="add")
+    def add_action(self, action, data):
+        """Add a new translation group to Launchpad."""
+        name = data.get('name')
+        title = data.get('title')
+        summary = data.get('summary')
+        new_group = getUtility(ITranslationGroupSet).new(
+            name=name, title=title, summary=summary, owner=self.user)
+
+        self.next_url = canonical_url(new_group)
+
+    def validate(self, data):
+        """Do not allow new groups with duplicated names."""
+        name = data.get('name')
+        try:
+            self.context[name]
+        except NotFoundError:
+            # The given name doesn't exist so it's valid.
+            return
+        self.setFieldError('name',
+            "There is already a translation group with such name")
 
 
 class TranslationGroupReassignmentView(ObjectReassignmentView):
@@ -169,34 +156,3 @@ class TranslationGroupReassignmentView(ObjectReassignmentView):
     @property
     def next_url(self):
         return canonical_url(self.context)
-
-
-class TranslationGroupSetAddView(AddView):
-
-    __used_for__ = ITranslationGroupSet
-
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        self._nextURL = '.'
-        AddView.__init__(self, context, request)
-
-    def createAndAdd(self, data):
-        # Add the owner information for the new translation group.
-        owner = getUtility(ILaunchBag).user
-        if not owner:
-            raise AssertionError(
-                "User must be authenticated to create a translation group")
-
-        group = getUtility(ITranslationGroupSet).new(
-            name=data['name'],
-            title=data['title'],
-            summary=data['summary'],
-            owner=owner)
-        notify(ObjectCreatedEvent(group))
-        self._nextURL = group.name
-        return group
-
-    def nextURL(self):
-        return self._nextURL
-

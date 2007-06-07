@@ -381,12 +381,12 @@ class ProjectSetView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.form = self.request.form
-        self.soyuz = self.form.get('soyuz', None)
-        self.rosetta = self.form.get('rosetta', None)
-        self.malone = self.form.get('malone', None)
-        self.bazaar = self.form.get('bazaar', None)
-        self.text = self.form.get('text', None)
+        self.form = self.request.form_ng
+        self.soyuz = self.form.getOne('soyuz', None)
+        self.rosetta = self.form.getOne('rosetta', None)
+        self.malone = self.form.getOne('malone', None)
+        self.bazaar = self.form.getOne('bazaar', None)
+        self.text = self.form.getOne('text', None)
         self.searchrequested = False
         if (self.text is not None or
             self.bazaar is not None or
@@ -484,6 +484,25 @@ class ProjectAddQuestionView(QuestionAddView):
         # Add a 'product' field to the beginning of the form.
         QuestionAddView.setUpFields(self)
         self.form_fields = self.createProductField() + self.form_fields
+        
+    def setUpWidgets(self):
+        # Only setup the widgets that needs validation
+        if not self.add_action.submitted():
+            fields = self.form_fields.select(*self.search_field_names)
+        else:
+            fields = self.form_fields
+
+        # We need to initialize the widget in two phases because
+        # the language vocabulary factory will try to access the product
+        # widget to find the final context.        
+        self.widgets = form.setUpWidgets(
+            fields.select('product'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
+        self.widgets += form.setUpWidgets(
+            fields.omit('product'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
 
     def createProductField(self):
         """Create a Choice field to select one of the project's products."""

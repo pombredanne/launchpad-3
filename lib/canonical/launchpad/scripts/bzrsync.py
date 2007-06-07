@@ -388,7 +388,8 @@ class BzrSync:
 
         diff_content = StringIO()
         show_diff_trees(tree_old, tree_new, diff_content)
-        return diff_content.getvalue()
+        raw_diff = diff_content.getvalue()
+        return raw_diff.decode('utf8', 'replace')
 
     def getRevisionMessage(self, bzr_revision):
         outf = StringIO()

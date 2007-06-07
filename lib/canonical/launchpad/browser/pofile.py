@@ -195,7 +195,7 @@ class POFileUploadView(POFileView):
         translation_import_queue.addOrUpdateEntry(
             path, content, published, self.user,
             sourcepackagename=self.context.potemplate.sourcepackagename,
-            distrorelease=self.context.potemplate.distrorelease,
+            distroseries=self.context.potemplate.distroseries,
             productseries=self.context.potemplate.productseries,
             potemplate=self.context.potemplate, pofile=self.context)
 

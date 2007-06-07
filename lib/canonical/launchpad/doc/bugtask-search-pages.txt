@@ -166,7 +166,7 @@ The same if we try with an invalid assignee.
     u"There's no person with the name or email address 'invalid-assignee'"
 
 Searching by component is possible, as long as the context has defined a
-.currentrelease.
+.currentseries.
 
     >>> form_values = {
     ...     'search': 'Search bugs in Ubuntu',
@@ -185,9 +185,9 @@ Searching by component is possible, as long as the context has defined a
     >>> sorted([bug.id for bug in found_bugs])
     [25]
 
-If the context does *not* have a currentrelease, component searching is
+If the context does *not* have a currentseries, component searching is
 ambiguous, because a package may be published in a different component
-in each release. In this case, the component search widget is hidden.
+in each series. In this case, the component search widget is hidden.
 
     >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
 
@@ -203,10 +203,10 @@ in each release. In this case, the component search widget is hidden.
     >>> distro_advanced_search_listingview.shouldShowComponentWidget()
     False
 
-Distribution Release search page
+Distribution Series search page
 ================================
 
-    >>> sarge = debian.getRelease('sarge')
+    >>> sarge = debian.getSeries('sarge')
 
 The simple search form returns only open bugtasks.
 
@@ -215,10 +215,10 @@ The simple search form returns only open bugtasks.
     ...     'field.searchtext': '',
     ...     'field.orderby': '-importance'}
 
-    >>> distrorelease_search_listingview = create_view(
+    >>> distroseries_search_listingview = create_view(
     ...     sarge, "+bugs", form_values)
 
-    >>> open_bugtasks = list(distrorelease_search_listingview.search().batch)
+    >>> open_bugtasks = list(distroseries_search_listingview.search().batch)
     >>> [(bugtask.id, bugtask.bug.id, bugtask.status.name, bugtask.importance.name)
     ...  for bugtask in open_bugtasks]
     [(19, 3, 'UNCONFIRMED', 'MEDIUM')]
@@ -254,23 +254,23 @@ And the advanced form allows us to query for specific bug statuses.
     ...     'field.searchtext': '',
     ...     'field.orderby': '-importance'}
 
-    >>> distrorelease_advanced_search_view = create_view(
+    >>> distroseries_advanced_search_view = create_view(
     ...     sarge, '+bugs', form_values)
     >>> rejected_bugtasks = list(
-    ...     distrorelease_advanced_search_view.search().batch)
+    ...     distroseries_advanced_search_view.search().batch)
     >>> [(bugtask.bug.id, bugtask.status.name)
     ...     for bugtask in rejected_bugtasks]
     [(3, 'REJECTED')]
 
 The upstream status widget is also present here.
 
-    >>> distrorelease_advanced_search_view.shouldShowUpstreamStatusBox()
+    >>> distroseries_advanced_search_view.shouldShowUpstreamStatusBox()
     True
 
 There are no milestones to filter on, since sarge doesn't have any
 milestones.
 
-    >>> distrorelease_advanced_search_view.getMilestoneWidgetValues()
+    >>> distroseries_advanced_search_view.getMilestoneWidgetValues()
     []
 
 The same is true for a sarge package.

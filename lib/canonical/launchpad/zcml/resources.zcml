@@ -32,6 +32,7 @@
     <resource name="build-building" file="../images/build-building.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
+    <resource name="build-failedtoupload" file="../images/build-failedtoupload.png" />
     <resource name="build-failure" file="../images/build-failure.png" />
     <resource name="build-needed" file="../images/build-needed.png" />
     <resource name="build-success" file="../images/build-success.png" />

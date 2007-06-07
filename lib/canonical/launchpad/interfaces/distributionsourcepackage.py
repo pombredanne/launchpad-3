@@ -35,17 +35,17 @@ class IDistributionSourcePackage(IBugTarget):
     # XXX sabdfl 16/10/2005
     distro = Attribute("The distribution.")
 
-    by_distroreleases = Attribute(
-        "Return a list of DistroReleaseSourcePackage objects, each "
-        "representing this same source package in the releases of this "
+    by_distroseries = Attribute(
+        "Return a list of DistroSeriesSourcePackage objects, each "
+        "representing this same source package in the serieses of this "
         "distribution.")
 
     subscribers = Attribute("The subscribers to this package.")
 
     currentrelease = Attribute(
         "The latest published SourcePackageRelease of a source package with "
-        "this name in the distribution or distrorelease, or None if no source "
-        "package with that name is published in this distrorelease.")
+        "this name in the distribution or distroseries, or None if no source "
+        "package with that name is published in this distroseries.")
 
     releases = Attribute(
         "The list of all releases of this source package in this distribution.")

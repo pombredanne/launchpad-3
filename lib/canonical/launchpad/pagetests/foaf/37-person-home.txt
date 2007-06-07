@@ -58,6 +58,20 @@ information:
   <b>Karma:</b>
   <span id="karma-total">...
 
+Launchpad creates profiles for people that have contributed to free software
+(e.g. in a bug import or a translation template upload). It's clearly
+stated that those people don't use Launchpad and why there's a profile for
+them.
+
+  >>> browser.open('http://launchpad.dev/~limi')
+  >>> browser.title
+  'Alexander Limi does not use Launchpad'
+
+  >>> content = find_main_content(browser.contents).find('p')
+  >>> print extract_text(content)
+  Alexander Limi does not use Launchpad. This page was created on 2005-06-06
+  when importing bugs from http://bugzilla.ubuntu.com/.
+
 
 == Table of contributions ==
 

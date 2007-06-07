@@ -1,5 +1,4 @@
-Source Packages
-===============
+= Source Packages =
 
 A source package is a thing from which binary packages are built, to then be
 installed using a package management tool like apt-get or rpm. One named source
@@ -8,11 +7,11 @@ packages, on one or more architectures. One named binary package in a distro
 may have been built from more than one named source package (e.g. a different
 source package may have been used to build "foo" on i386 vs. "foo" on ppc.)
 
-Named Source Package
---------------------
+
+== Named Source Package ==
 
 The are various metadata we're interested in collecting about a bundle of code
-used to build binary packages for installation in a particular distro release.
+used to build binary packages for installation in a particular distro series.
 One such thing is the name of that bundle of code. This is abstracted into a
 separate SourcePackageName table.
 
@@ -44,13 +43,13 @@ If the package doesn't exist, queryByName returns None:
     >>> print biscoito
     None
 
-Distribution Source Packages
-----------------------------
+
+== Distribution Source Packages ==
 
 In some cases it's useful to be able to refer to a source package at a
-distribution level, independent of any particular distrorelease. For
+distribution level, independent of any particular distroseries. For
 example, with Malone, a bug is usually filed on a distribution
-sourcepackage (filing a bug on a specific distrorelease actually means
+sourcepackage (filing a bug on a specific distroseries actually means
 something quite different, but is outside the scope of this document.)
 
 To retrieve a distribution source package, use the getSourcePackage
@@ -97,8 +96,8 @@ You can search for bugs in an IDistroSourcePackage using the
     >>> tasks[0].id
     17
 
-Packaging
----------
+
+== Packaging ==
 
 Distribution packages are linked to upstream productseries through the
 packaging process. Here we test the code that links all of those.
@@ -112,17 +111,17 @@ First, let's get some useful objects from the db.
     >>> firefox = SourcePackageName.byName('mozilla-firefox')
     >>> pmount = SourcePackageName.byName('pmount')
 
-    >>> from canonical.launchpad.database import DistroRelease
-    >>> warty = DistroRelease.get(1)
-    >>> hoary = DistroRelease.get(3)
-    >>> sarge = DistroRelease.get(7)
-    >>> sid = DistroRelease.get(8)
-    >>> g2k5 = DistroRelease.get(9)
+    >>> from canonical.launchpad.database import DistroSeries
+    >>> warty = DistroSeries.get(1)
+    >>> hoary = DistroSeries.get(3)
+    >>> sarge = DistroSeries.get(7)
+    >>> sid = DistroSeries.get(8)
+    >>> g2k5 = DistroSeries.get(9)
 
 Now let's make sure that we can see a productseries for a source package.
 
     >>> from canonical.launchpad.database import SourcePackage
-    >>> sp = SourcePackage(sourcepackagename=firefox, distrorelease=hoary)
+    >>> sp = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
     >>> sp.productseries.name
     u'1.0'
 
@@ -130,14 +129,14 @@ Now we make sure there is no Packaging data for a52dec in hoary.
 
     >>> from canonical.launchpad.database import PackagingUtil
     >>> a52decsp = SourcePackage(sourcepackagename=a52dec,
-    ...     distrorelease=hoary) 
+    ...     distroseries=hoary) 
     >>> a52decsp.productseries.name
     u'trunk'
 
     >>> PackagingUtil().packagingEntryExists(
     ...     productseries=a52decsp.productseries,
     ...     sourcepackagename=a52dec,
-    ...     distrorelease=hoary)
+    ...     distroseries=hoary)
     False
 
 So far so good.
@@ -148,14 +147,14 @@ fact that we have Warty data for it
     >>> PackagingUtil().packagingEntryExists(
     ...     productseries=a52decsp.productseries,
     ...     sourcepackagename=a52dec,
-    ...     distrorelease=warty)
+    ...     distroseries=warty)
     True
 
     >>> a52decsp.productseries.product.name
     u'a52dec'
 
 Similarly, we should be able to get the packaging information from a parent
-distrorelease, on the basis that a derivative is highly unlikely to change
+distroseries, on the basis that a derivative is highly unlikely to change
 the packaging drastically without changing the name of the package.
 
 First, show there is no packging data for a52dec in g2k5:
@@ -163,17 +162,17 @@ First, show there is no packging data for a52dec in g2k5:
     >>> PackagingUtil().packagingEntryExists(
     ...     productseries=a52decsp.productseries,
     ...     sourcepackagename=a52dec,
-    ...     distrorelease=g2k5)
+    ...     distroseries=g2k5)
     False 
 
 Now verify we still get a product for that source package
 
-    >>> sp = SourcePackage(sourcepackagename=a52dec, distrorelease=g2k5)
+    >>> sp = SourcePackage(sourcepackagename=a52dec, distroseries=g2k5)
     >>> sp.productseries.product.name
     u'a52dec'
 
 And if we want to link that productseries to a source package in that
-distrorelease
+distroseries
 
     >>> from canonical.lp.dbschema import PackagingType
     >>> from canonical.launchpad.database import Person
@@ -181,29 +180,38 @@ distrorelease
     >>> PackagingUtil().createPackaging(
     ...     productseries=sp.productseries,
     ...     sourcepackagename=a52dec,
-    ...     distrorelease=g2k5,
+    ...     distroseries=g2k5,
     ...     packaging=PackagingType.PRIME,
     ...     owner=foobar)
 
     >>> PackagingUtil().packagingEntryExists(
     ...     productseries=sp.productseries,
     ...     sourcepackagename=a52dec,
-    ...     distrorelease=g2k5)
+    ...     distroseries=g2k5)
     True
 
-Test the Changelog concatenation process:
+Linkified changelogs are available through SourcePackageReleaseView:
 
-    >>> sp = SourcePackage(sourcepackagename=pmount, distrorelease=hoary)
-    >>> print sp.changelog
+    >>> from zope.component import queryView
+    >>> from zope.publisher.browser import TestRequest
+    >>> mock_form = {}
+    >>> request = TestRequest(form=mock_form)
+    >>> sp = SourcePackage(sourcepackagename=pmount, distroseries=hoary)
+    >>> spr = sp['0.1-2']
+    >>> spr_view = queryView(spr, "+changelog", request)
+    >>> print spr_view.changelog()
     This is a placeholder changelog for pmount 0.1-2
-    <BLANKLINE>
-    pmount (0.1-1) hoary; urgency=low
+
+    >>> spr = sp['0.1-1']
+    >>> spr_view = queryView(spr, "+changelog", request)
+    >>> print spr_view.changelog()
+    pmount (<a href="0.1-1">0.1-1</a>) hoary; urgency=low
     <BLANKLINE>
      * Fix description (Malone #1)
      * Fix debian (Debian #2000)
      * Fix warty (Warty Ubuntu #1)
     <BLANKLINE>
-     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300
+     -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
     <BLANKLINE>
     <BLANKLINE>
 
@@ -218,18 +226,20 @@ than nothing ... bug # 29659
     >>> len(sp.releases)
     2
 
-    >>> sp.releasehistory.count()
+SQLObject won't let us use .count on the results set returned from 
+distinctreleases, so we use this ugly hack:
+
+    >>> len(list(sp.distinctreleases))
     2
 
 
-Comparing Sourcepackages
-------------------------
+== Comparing Sourcepackages ==
 
 Lastly, note that sourcepackages know how to compare to each other:
 
-    >>> hoary_firefox_one = SourcePackage(sourcepackagename=firefox, distrorelease=hoary)
-    >>> hoary_firefox_two = SourcePackage(sourcepackagename=firefox, distrorelease=hoary)
-    >>> warty_firefox = SourcePackage(sourcepackagename=firefox, distrorelease=warty)
+    >>> hoary_firefox_one = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
+    >>> hoary_firefox_two = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
+    >>> warty_firefox = SourcePackage(sourcepackagename=firefox, distroseries=warty)
 
     >>> hoary_firefox_one == hoary_firefox_two
     True
@@ -238,8 +248,7 @@ Lastly, note that sourcepackages know how to compare to each other:
     >>> hoary_firefox_one == warty_firefox
     False
 
-Direct Packagings
------------------
+== Direct Packagings ==
 
     >>> print sp.direct_packaging
     None
@@ -248,9 +257,8 @@ Direct Packagings
     >>> print warty_firefox.direct_packaging.productseries.title
     Mozilla Firefox Series: trunk
 
-releasehistory
---------------
+== Release History ==
 
-    >>> hoary_firefox_one.releasehistory.count()
-    2
+    >>> len(list(hoary_firefox_one.distinctreleases))
+    1
 

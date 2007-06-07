@@ -6,10 +6,23 @@ distribution.
 
 == Products ==
 
+The product's overview page list the latest questions that were asked
+with their status.
+
+    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> user_browser.open('http://launchpad.dev/firefox')
+    >>> questions = find_portlet(user_browser.contents, 'Latest questions')
+    >>> print extract_text(
+    ...     questions.find('div')).encode('ASCII', 'backslashreplace')
+    [Open] Problemas de Impress\xe3o no Firefox
+    [Answered] Newly installed plug-in doesn't seem to be used
+    [Open] Firefox loses focus and gets stuck
+    [Open] Problem showing the SVG demo on W3C site
+    [Open] Firefox cannot render Bank Site
+
 Creating a new question is possible directly from the main page of a
 product. Users simply click the 'Ask a question' buttion.
 
-    >>> user_browser.open('http://launchpad.dev/firefox')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
     Ask a question about Mozilla Firefox
@@ -21,6 +34,7 @@ product:
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
     Ask a question about Mozilla Firefox
+
 
 The list of all the currently active questions for the product is
 available from the 'Answers' facet.
@@ -60,9 +74,20 @@ question page.
 
 == Distributions ==
 
-Distributions also have the 'Ask a question' button on the front page:
+Distributions also have the 'Latest questions' porlet and
+'Ask a question' button on the front page:
 
     >>> user_browser.open('http://launchpad.dev/ubuntu')
+
+    >>> questions = find_portlet(user_browser.contents, 'Latest questions')
+    >>> print extract_text(
+    ...     questions.find('div')).encode('ASCII', 'backslashreplace')
+    [Open] Problema al recompilar kernel con soporte smp (doble-n\xfacleo)
+    [Open] Continue playing after shutdown
+    [Answered] Play DVDs in Totem
+    [Solved] mailto: problem in webpage
+    [Answered] Installation of Java Runtime Environment for Mozilla
+
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
     Ask a question about Ubuntu
@@ -96,7 +121,7 @@ On that facet, we will find the same common listings:
 
 == Distroreleases ==
 
-On a distrorelease there is a "Ask Question" link, but note that it
+On a distroseries there is a "Ask Question" link, but note that it
 points at its distro, not itself. Questions are linked to distro,
 and optionally source package too.
 
@@ -160,9 +185,20 @@ page:
 
 == Project ==
 
-Project also have the 'Ask a question' button on their overview page.
+Project also have the 'Latest questions' portlet and the
+'Ask a question' button on their overview page.
 
     >>> user_browser.open('http://launchpad.dev/mozilla')
+
+    >>> questions = find_portlet(user_browser.contents, 'Latest questions')
+    >>> print extract_text(
+    ...     questions.find('div')).encode('ASCII', 'backslashreplace')
+    [Open] Problemas de Impress\xe3o no Firefox
+    [Answered] Newly installed plug-in doesn't seem to be used
+    [Open] Firefox loses focus and gets stuck
+    [Open] Problem showing the SVG demo on W3C site
+    [Open] Firefox cannot render Bank Site
+
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
     Ask a question about a project in the Mozilla Project

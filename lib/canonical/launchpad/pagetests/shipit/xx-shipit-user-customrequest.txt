@@ -174,7 +174,7 @@ before approving.
 
 Now, let's pretend this request was approved and shipped, so that we can see
 how shipit would behave if this guy (name16) comes back asking for more CDs
-of this same distrorelease.
+of this same distroseries.
 
   >>> login(ANONYMOUS)
   >>> shipit_request = Person.byName('name16').currentShipItRequest()

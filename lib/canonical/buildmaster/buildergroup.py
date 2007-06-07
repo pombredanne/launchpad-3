@@ -22,8 +22,11 @@ from canonical.launchpad.interfaces import (
     IBuildQueueSet, IBuildSet, IBuilderSet, pocketsuffix
     )
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import (
+    flush_database_updates, clear_current_connection_cache, cursor)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.buildd.slave import BuilderStatus
+
 
 class BuildDaemonError(Exception):
     """The class of errors raised by the buildd classes"""
@@ -61,25 +64,21 @@ class BuilderGroup:
         self.logger.debug("Finding XMLRPC clients for the builders")
 
         for builder in self.builders:
-            # verify if the builder has been disabled
-            if not builder.builderok:
-                continue
             try:
+                self.logger.info('Checking %s' % builder.name)
+                if not builder.builderok:
+                    continue
                 # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
                 slave = removeSecurityProxy(builder.slave)
-
                 # verify the echo method
                 if slave.echo("Test")[0] != "Test":
                     raise BuildDaemonError("Failed to echo OK")
-
                 # ask builder information
                 # XXX: mechanisms is ignored? -- kiko
                 builder_vers, builder_arch, mechanisms = slave.info()
-
                 # attempt to wrong builder version
                 if builder_vers != '1.0':
                     raise ProtocolVersionMismatch("Protocol version mismatch")
-
                 # attempt to wrong builder architecture
                 if builder_arch != arch.architecturetag:
                     raise BuildDaemonError(
@@ -93,6 +92,9 @@ class BuilderGroup:
                 self.logger.debug("Builder on %s marked as failed due to: %r",
                                   builder.url, reason, exc_info=True)
             else:
+                # Update the successfully probed builder to OK state.
+                builder.builderok = True
+                builder.failnotes = None
                 # verify if the builder slave is working with sane information
                 self.rescueBuilderIfLost(builder)
 
@@ -156,12 +158,38 @@ class BuilderGroup:
         if not self.okslaves:
             self.logger.warn("No builders are available")
 
+    def resumeBuilder(self, builder):
+        """Resume Builder via SSH trigger account."""
+        # XXX cprov 20070510: Please FIX ME ASAP !
+        # The ssh command line should be in the respective configuration
+        # file. The builder XEN-host should be stored in DB (Builder.vmhost)
+        # and not be calculated on the fly (this is gross).
+
+        # Skipping 'resumming' for trusted builders
+        if builder.trusted:
+            return
+
+        self.logger.debug("Resuming %s" % builder.url)
+        hostname = builder.url.split(':')[1][2:].split('.')[0]
+        host_url = '%s-host.ppa' % hostname
+        resume_argv = [
+            'ssh', '-i' , '~/.ssh/ppa-reset-builder', 'ppa@%s' % host_url]
+        self.logger.debug('Running: %s' % resume_argv)
+        resume_process = subprocess.Popen(
+            resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        resume_process.communicate()
+
     def failBuilder(self, builder, reason):
         """Mark builder as failed.
 
         Set builderok as False, store the reason in failnotes and update
         the list of working builders (self.okslaves).
         """
+        # XXX cprov 20070417: ideally we should be able to notify the
+        # the buildd-admins about FAILED builders. One alternative is to
+        # make the buildd_cronscript (slave-scanner, in this case) to exit
+        # with error, for those cases buildd-sequencer automatically sends
+        # an email to admins with the script output.
         builder.failbuilder(reason)
         self.updateOkSlaves()
 
@@ -210,22 +238,21 @@ class BuilderGroup:
         pocket and return the Librarian file identifier for it, return None
         if it wasn't found or wasn't able to calculate.
         """
-        chroot = build_candidate.archrelease.getChroot(pocket)
+        chroot = build_candidate.archseries.getChroot(pocket)
         if chroot:
             return chroot.content.sha1
 
     def startBuild(self, builder, queueItem, filemap, buildtype, pocket, args):
         """Request a build procedure according given parameters."""
         buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
-        self.logger.debug("Initiating build %s on %s"
-                          % (buildid, builder.url))
+        self.logger.debug("Initiating build %s on %s" % (buildid, builder.url))
 
-        # explodes before start building a denied build in distrorelease/pocket
+        # PPA builds are not submitted to the main distribution policies.
         build = queueItem.build
-        assert build.distrorelease.canUploadToPocket(build.pocket), (
-            "%s (%s) can not be built for pocket %s: illegal status"
-            % (build.title, build.id,
-               build.pocket.name))
+        if build.is_trusted:
+            assert build.distroseries.canUploadToPocket(build.pocket), (
+                "%s (%s) can not be built for pocket %s: illegal status"
+                % (build.title, build.id, build.pocket.name))
 
         # refuse builds for missing CHROOTs
         chroot = self.findChrootFor(queueItem, pocket)
@@ -241,10 +268,12 @@ class BuilderGroup:
         status, info = slave.build(buildid, buildtype, chroot, filemap, args)
         message = """%s (%s):
         ***** RESULT *****
+        %s
+        %s
         %s: %s
         ******************
-        """ % (builder.name, builder.url, status, info)
-        self.logger.debug(message)
+        """ % (builder.name, builder.url, filemap, args, status, info)
+        self.logger.info(message)
 
     def getLogFromSlave(self, slave, queueItem, librarian):
         """Get last buildlog from slave.
@@ -257,9 +286,9 @@ class BuilderGroup:
         # in the state handling methods.
         state = queueItem.build.buildstate.name
 
-        dar = queueItem.build.distroarchrelease
-        distroname = dar.distrorelease.distribution.name
-        distroreleasename = dar.distrorelease.name
+        dar = queueItem.build.distroarchseries
+        distroname = dar.distroseries.distribution.name
+        distroseriesname = dar.distroseries.name
         archname = dar.architecturetag
 
         # logfilename format:
@@ -269,7 +298,7 @@ class BuilderGroup:
         # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
         # it fix request from bug # 30617
         logfilename = ('buildlog_%s-%s-%s.%s_%s_%s.txt'
-                       % (distroname, distroreleasename,
+                       % (distroname, distroseriesname,
                           archname, sourcename, version, state))
 
         return self.getFileFromSlave(slave, logfilename,
@@ -466,35 +495,41 @@ class BuilderGroup:
         """
         self.logger.debug("Processing successful build %s" % buildid)
         # Explode before collect a binary that is denied in this
-        # distrorelease/pocket
+        # distroseries/pocket
         build = queueItem.build
-        assert build.distrorelease.canUploadToPocket(build.pocket), (
-            "%s (%s) can not be built for pocket %s: illegal status"
-            % (build.title, build.id,
-               build.pocket.name))
+        if build.archive == build.distroseries.main_archive:
+            assert build.distroseries.canUploadToPocket(build.pocket), (
+                "%s (%s) can not be built for pocket %s: illegal status"
+                % (build.title, build.id,
+                   build.pocket.name))
 
         # ensure we have the correct build root as:
-        # <BUILDMASTER_ROOT>/incoming/<BUILD_ID>/files/
+        # <BUILDMASTER_ROOT>/incoming/<UPLOAD_LEAF>/<TARGET_PATH>/[FILES]
         root = os.path.abspath(config.builddmaster.root)
-        if not os.path.isdir(root):
-            self.logger.debug("Creating BuilddMaster root '%s'"
-                              % root)
-            os.mkdir(root)
-
         incoming = os.path.join(root, 'incoming')
-        if not os.path.isdir(incoming):
-            self.logger.debug("Creating Incoming directory '%s'"
-                              % incoming)
-            os.mkdir(incoming)
+
         # create a single directory to store build result files
+        # UPLOAD_LEAF: <TIMESTAMP>-<BUILD_ID>-<BUILDQUEUE_ID>
         upload_leaf = "%s-%s" % (time.strftime("%Y%m%d-%H%M%S"), buildid)
         upload_dir = os.path.join(incoming, upload_leaf)
-        os.mkdir(upload_dir)
         self.logger.debug("Storing build result at '%s'" % upload_dir)
+
+        # build the right UPLOAD_PATH so the distribution and archive
+        # can be correctly found during the upload:
+        #  * For trusted:        <distribution>/[FILES]
+        #  * For PPA(untrusted): ~<person>/<distribution>/[FILES]
+        distribution_name = queueItem.build.distribution.name
+        if queueItem.is_trusted:
+            target_path = "%s" % distribution_name
+        else:
+            archive = queueItem.build.archive
+            target_path = "~%s/%s" % (archive.owner.name, distribution_name)
+        upload_path = os.path.join(upload_dir, target_path)
+        os.makedirs(upload_path)
 
         for filename in filemap:
             slave_file = slave.getFile(filemap[filename])
-            out_file_name = os.path.join(upload_dir, filename)
+            out_file_name = os.path.join(upload_path, filename)
             out_file = open(out_file_name, "wb")
             copy_and_close(slave_file, out_file)
 
@@ -507,7 +542,7 @@ class BuilderGroup:
         extra_args = [
             "--log-file", "%s" %  uploader_logfilename,
             "-d", "%s" % queueItem.build.distribution.name,
-            "-r", "%s" % (queueItem.build.distrorelease.name +
+            "-s", "%s" % (queueItem.build.distroseries.name +
                           pocketsuffix[queueItem.build.pocket]),
             "-b", "%s" % queueItem.build.id,
             "-J", "%s" % upload_leaf,
@@ -518,34 +553,74 @@ class BuilderGroup:
 
         self.logger.debug("Invoking uploader on %s" % root)
         self.logger.debug("%s" % uploader_argv)
-        uploader_process = subprocess.Popen(uploader_argv,
-                                            stdout=subprocess.PIPE)
-        # nothing would be written to the stdout/stderr, but it's safe
-        stdout, stderr = uploader_process.communicate()
-        result_code = uploader_process.returncode
 
+        uploader_process = subprocess.Popen(
+            uploader_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Nothing should be written to the stdout/stderr.
+        upload_stdout, upload_stderr = uploader_process.communicate()
+
+        # XXX cprov 20070417: we do not check uploader_result_code
+        # anywhere. We need to find out what will be best strategy
+        # when it failed HARD (there is a huge effort in process-upload
+        # to not return error, it only happen when the code is broken).
+        uploader_result_code = uploader_process.returncode
+        self.logger.debug("Uploader returned %d" % uploader_result_code)
+
+        # Quick and dirty hack to carry on on process-upload failures
         if os.path.exists(upload_dir):
             self.logger.debug("The upload directory did not get moved.")
             failed_dir = os.path.join(root, "failed-to-move")
             if not os.path.exists(failed_dir):
                 os.mkdir(failed_dir)
-            os.rename(upload_dir, os.path.join(failed_dir,
-                                               upload_leaf))
+            os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
 
-        self.logger.debug("Uploader returned %d" % result_code)
+        # Store build information, build record was already updated during
+        # the binary upload.
+        self.storeBuildInfo(
+            queueItem, slave, librarian, buildid, dependencies)
 
-        self.logger.debug("Gathered build of %s completely"
-                          % queueItem.name)
-        # store build info
-        queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
-        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
+        # The famous 'flush_updates + clear_cache' will make visible the
+        # DB changes done in process-upload, considering that the
+        # transaction was set with READ_COMMITED_ISOLATION isolation level.
+        cur = cursor()
+        cur.execute('SHOW transaction_isolation')
+        isolation_str = cur.fetchone()[0]
+        assert isolation_str == 'read committed', (
+            'BuildMaster/BuilderGroup transaction isolation should be '
+            'READ_COMMITTED_ISOLATION (not "%s")' % isolation_str)
+
+        flush_database_updates()
+        clear_current_connection_cache()
+
+        # Retrive the up-to-date build record and perform consistency
+        # checks. The build record should be updated during the binary
+        # upload processing, if it wasn't something is broken and needs
+        # admins attention. Even when we have a FULLYBUILT build record,
+        # if it is not related with at least one binary, there is also
+        # a problem.
+        # For both situations we will mark the builder as FAILEDTOUPLOAD
+        # and the and update the build details (datebuilt, duration,
+        # buildlog, builder) in LP. A build-failure-notification will be
+        # sent to the lp-build-admin celebrity and to the sourcepackagerelease
+        # uploader about this occurrence. The failure notification will
+        # also contain the information required to manually reprocess the
+        # binary upload when it was the case.
+        build = getUtility(IBuildSet).getByBuildID(queueItem.build.id)
+        if (build.buildstate != dbschema.BuildStatus.FULLYBUILT or
+            len(build.binarypackages) == 0):
+            self.logger.debug("Build %s upload failed." % build.id)
+            queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOUPLOAD
+            queueItem.build.notify(extra_info=upload_stderr)
+        else:
+            self.logger.debug("Gathered build %s completely" % queueItem.name)
+
+        # Remove BuildQueue record.
         queueItem.destroySelf()
-
-        # release the builder
+        # Release the builder for another job.
         slave.clean()
-
         # Commit the transaction so that the uploader can see the updated
-        # build record
+        # build record.
         self.commit()
 
     def buildStatus_PACKAGEFAIL(self, queueItem, slave, librarian, buildid,
@@ -608,6 +683,7 @@ class BuilderGroup:
                           "for its status"))
         # simply reset job
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
+        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
         queueItem.builder = None
         queueItem.buildstart = None
 
@@ -622,63 +698,49 @@ class BuilderGroup:
         self.logger.warning("***** %s is GIVENBACK by %s *****"
                             % (buildid, queueItem.builder.name))
         queueItem.build.buildstate = dbschema.BuildStatus.NEEDSBUILD
-        slave.clean()
+        self.storeBuildInfo(queueItem, slave, librarian, buildid, dependencies)
         # XXX cprov 20060530: Currently this information is not
         # properly presented in the Web UI. We will discuss it in
         # the next Paris Summit, infinity has some ideas about how
         # to use this content. For now we just ensure it's stored.
+        queueItem.builder = None
+        queueItem.buildstart = None
+        queueItem.logtail = None
         queueItem.lastscore = 0
+        slave.clean()
 
-    def countAvailable(self):
-        """Return the number of available builder slaves.
-
-        Return the number of not failed, accessible and IDLE slave.
-        Do not count failed and MANUAL MODE slaves.
-        """
-        count = 0
-        for builder in self.builders:
-            if builder.builderok:
-                # refuse builders in MANUAL MODE
-                if builder.manual:
-                    self.logger.debug("Builder %s wasn't count due it is in "
-                                      "MANUAL MODE." % builder.url)
-                    continue
-
-                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-                slave = removeSecurityProxy(builder.slave)
-
-                try:
-                    slavestatus = slave.status()
-                except (xmlrpclib.Fault, socket.error), info:
-                    self.logger.debug("Builder %s wasn't counted due to (%s)."
-                                      % (builder.url, info))
-                    continue
-
-                # ensure slave is IDLE
-                if slavestatus[0] == BuilderStatus.IDLE:
-                    count += 1
-        return count
-
-    def firstAvailable(self):
+    def firstAvailable(self, is_trusted=False):
         """Return the first available builder slave.
 
-        Refuse failed and MANUAL MODE slaves. Return None if there is none
-        available.
+        Refuse failed and MANUAL MODE slaves.
+        Control whether or not the builder should be *trusted* via
+        'is_trusted' given argument, by default *untrusted* build
+        are returned.
+        Return None if there is none available.
         """
         for builder in self.builders:
-            if builder.builderok:
-                if builder.manual:
-                    continue
+            #self.logger.debug('Probing: %s' % builder.url)
+            if not builder.builderok:
+                #self.logger.debug('builder not OK')
+                continue
+            if builder.manual:
+                #self.logger.debug('builder in MANUAL')
+                continue
+            if builder.trusted != is_trusted:
+                #self.logger.debug('builder INCOMPATIBLE')
+                continue
+            # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+            slave = removeSecurityProxy(builder.slave)
+            try:
+                slavestatus = slave.status()
+            except (xmlrpclib.Fault, socket.error), info:
+                #self.logger.debug('builder DEAD')
+                continue
+            if slavestatus[0] != BuilderStatus.IDLE:
+                #self.logger.debug('builder not IDLE')
+                continue
+            return builder
 
-                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
-                slave = removeSecurityProxy(builder.slave)
-
-                try:
-                    slavestatus = slave.status()
-                except (xmlrpclib.Fault, socket.error), info:
-                    continue
-                if slavestatus[0] == BuilderStatus.IDLE:
-                    return builder
         return None
 
 

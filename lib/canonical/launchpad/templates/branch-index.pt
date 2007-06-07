@@ -143,7 +143,7 @@
       tal:content="context/last_mirror_attempt/fmt:displaydate" />.
     <span tal:condition="context/mirror_status_message">
       The error was:
-      <span tal:replace="context/mirror_status_message">Error 1</span>
+      <span tal:replace="view/mirror_status_message">Error 1</span>
     </span>
     <span tal:condition="not:context/mirror_status_message">
       No error message was recorded.
