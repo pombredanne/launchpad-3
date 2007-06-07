@@ -23,7 +23,7 @@
     </thead>
     <tbody>
       <tr tal:repeat="bugtask context/getBugListingItems">
-        <td>
+        <td tal:content="structure bugtask/review_action_widget">
 	  <input type="radio" value="accept"
                  tal:attributes="name string:field.review_action.${bugtask/id}" />
 	  <input type="radio" value="decline"
