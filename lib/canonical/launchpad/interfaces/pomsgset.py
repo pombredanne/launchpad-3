@@ -111,6 +111,15 @@ class IPOMsgSet(Interface):
         msgset and plural form or None.
         """
 
+    def populateActivePublishedCache(self, sequence):
+        """Populate active/published caches from sequence of submissions.
+
+        This fills the self.active_submissions and self.published_submissions
+        dicts, creating them if necessary.  The dicts map pluralforms found in
+        POSubmissions for this POMsgSet to their current active or published
+        submissions, respectively.
+        """
+
     def getSuggestedTexts(pluralform):
         """Return an iterator over any suggestions Rosetta might have for
         this plural form on the messageset. The suggestions would not
@@ -120,6 +129,18 @@ class IPOMsgSet(Interface):
     def getWikiSubmissions(pluralform):
         """Return an iterator over all the submissions in any PO file for
         this pluralform in this language, for the same msgid."""
+
+    def getSuggestions():
+        """Return iterator over (non-fuzzy) translation suggestions for self.
+
+        A suggestion is a POSubmission for the same POMsgId as self's, in the
+        same language as self, that is not fuzzy, that is not actually
+        attached to self, and if self has an active submission for the same
+        pluralform, does not point to the same POTranslation as that active
+        submission.
+
+        An iterator is returned.  It yields suggestions in new-to-old order.
+        """
 
     def getSuggestedSubmissions(pluralfom):
         """Return an iterator over any submissions that have come in for

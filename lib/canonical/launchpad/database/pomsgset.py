@@ -12,8 +12,8 @@ from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
 from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (SQLBase, sqlvalues,
-                                        flush_database_updates)
+from canonical.database.sqlbase import (flush_database_updates, quote,
+                                        SQLBase, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import IPOMsgSet, TranslationConflict
 from canonical.launchpad.database.posubmission import POSubmission
@@ -28,6 +28,11 @@ class POMsgSetMixIn:
     You should inherite from it and implement full IPOMsgSet interface to use
     the methods and properties defined here.
     """
+
+    # Cached active submissions dict, mapping pluralform to POSubmission
+    active_submissions = None
+    # Cached published submissions dict, mapping pluralform to POSubmission
+    published_submissions = None
 
     @property
     def pluralforms(self):
@@ -44,6 +49,46 @@ class POMsgSetMixIn:
             entries = 1
         return entries
 
+    def getSuggestions(self):
+        """See IPOMsgSet."""
+
+        # We don't want submissions coming from this very POMsgSet, or
+        # translations that we already have as active.  (Of course that's only
+        # a concern if we already have an id).
+        skip_same_sql = 'true'
+        if self.id is not None:
+            skip_same_sql = 'POMsgSet.id <> %s' % quote(self)
+
+            if self.active_submissions is None:
+                self.fetchActiveAndPublishedSubmissions()
+            active_translations = set(
+                submission.potranslation
+                for submission in self.active_submissions.values())
+            if len(active_translations) > 0:
+                skip_same_sql += (" AND potranslation NOT IN (%s)" %
+                    sqlvalues(active_translations))
+
+        parameters = sqlvalues(
+            language=self.pofile.language,
+            primemsgid=self.potmsgset.primemsgid_ID,
+            skip_same=skip_same_sql)
+
+        joins = ['POMsgSet', 'POFile', 'POTMsgSet']
+        query = """
+                POSubmission.pomsgset = POMsgSet.id AND
+                POMsgSet.pofile = POFile.id AND
+                POMsgSet.potmsgset = POTMsgSet.id AND
+                NOT POMsgSet.isfuzzy AND
+                POFile.language = %(language)s AND
+                POTMsgSet.primemsgid = %(primemsgid)s AND
+                %(skip_same)s
+            """ % parameters
+
+        return POSubmission.select(
+            query, clauseTables=joins, orderBy='-datecreated', distinct=True)
+
+    # XXX: 2007-06-06 JeroenVermeulen, retire this method in favour of
+    # getSuggestions()!
     def getWikiSubmissions(self, pluralform):
         """See IPOMsgSet."""
         filter_pomsgset_sql = ''
@@ -218,6 +263,9 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         if submission is not None:
             submission.active = True
 
+        # Update cache
+        self.active_submissions[pluralform] = submission
+
     def setPublishedSubmission(self, pluralform, submission):
         """See IPOMsgSet."""
         if submission is not None and submission.published:
@@ -235,21 +283,53 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         if submission is not None:
             submission.published = True
 
+        # Update cache
+        self.published_submissions[pluralform] = submission
+
+    def populateActivePublishedCache(self, sequence):
+        """See IPOMsgSet."""
+        active = {}
+        published = {}
+        for submission in sequence:
+            pluralform = submission.pluralform
+            if submission.active:
+                active[pluralform] = submission
+            if submission.published:
+                published[pluralform] = submission
+        self.active_submissions = active
+        self.published_submissions = published
+
+    def fetchActiveAndPublishedSubmissions(self):
+        """Populate active/published submissions caches from database.
+
+        Creates self.active_submissions and self.published_submissions as
+        dicts, each mapping pluralform to that pluralform's active or
+        published submission, respectively.
+        """
+        if not (self.active_submissions is None and
+                self.published_submissions is None):
+            raise AssertionError(
+                "Unnecessary re-fetch of POMsgSet's active/published cache")
+
+        iterator = POSubmission.select(
+            "pomsgset = %s AND (active OR published)" % quote(self))
+        self.populateActivePublishedCache(iterator)
+
     def getActiveSubmission(self, pluralform):
         """See IPOMsgSet."""
-        return POSubmission.selectOne("""
-            POSubmission.pomsgset = %s AND
-            POSubmission.pluralform = %s AND
-            POSubmission.active IS TRUE
-            """ % sqlvalues(self, pluralform))
+        if self.id is None and self.active_submissions is None:
+            return None
+        if self.active_submissions is None:
+            self.fetchActiveAndPublishedSubmissions()
+        return self.active_submissions.get(pluralform)
 
     def getPublishedSubmission(self, pluralform):
         """See IPOMsgSet."""
-        return POSubmission.selectOne("""
-            POSubmission.pomsgset = %s AND
-            POSubmission.pluralform = %s AND
-            POSubmission.published IS TRUE
-            """ % sqlvalues(self, pluralform))
+        if self.id is None and self.published_submissions is None:
+            return None
+        if self.published_submissions is None:
+            self.fetchActiveAndPublishedSubmissions()
+        return self.published_submissions.get(pluralform)
 
     def updateReviewerInfo(self, reviewer):
         """See IPOMsgSet."""
