@@ -1,0 +1,11 @@
+Lets check that the canonical urls of the CodeImport objects are what
+we expect.
+
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import ICodeImportSet
+    >>> code_import_set = getUtility(ICodeImportSet)
+    >>> canonical_url(code_import_set)
+    u'http://code.launchpad.dev/+code-imports'
+    >>> canonical_url(code_import_set.getByName('gnome-terminal-trunk-1'))
+    u'http://code.launchpad.dev/+code-imports/gnome-terminal-trunk-1'
