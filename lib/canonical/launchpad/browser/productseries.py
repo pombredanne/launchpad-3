@@ -650,7 +650,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
 
     @action(_('Delete Import'), name='delete',
             condition=isAdmin)
-    def wipeOutImport_action(self, action, data):
+    def delete_action(self, action, data):
         self.updateContextFromData(data)
         self.context.deleteImport()
         self.request.response.addInfoNotification(
