@@ -9,20 +9,30 @@ He is on Rosetta About page and wants to change his preferred languages.
   >>> browser.url
   'http://launchpad.dev/translations/+about'
 
-So, he looks for the 'Select Languages...' link, and clicks on that which 
-should take him to his +editlanguages page.
+So, he looks for the 'Your preferred languages' portlet for the 
+'Select Languages...' link, and clicks on that which will take him to 
+his +editlanguages page.
 
+  >>> from canonical.launchpad.helpers import backslashreplace
+  >>> portlet = find_portlet(browser.contents, 'Your preferred languages')
+  >>> print backslashreplace(extract_text(portlet.find('ul')))
+  Catalan
+  Spanish
   >>> browser.getLink('Select Languages...').click()
   >>> browser.url
   'http://launchpad.dev/~carlos/+editlanguages'
 
 So far, he has Spanish selected as one of his preferred languages, but not 
-Welsh. 
+Welsh. English is checked but it is not a translatable language.
 
+  >>> browser.getControl('Catalan').selected
+  True
   >>> browser.getControl('Spanish').selected
   True
   >>> browser.getControl('Welsh').selected
   False
+  >>> browser.getControl('English', index=0).selected
+  True
 
 Now let's suppose that Carlos decides that he doesn't like Spanish after all,
 and that Welsh is a much nicer language. When he adjusts his preferences,
@@ -32,30 +42,27 @@ Spanish will no longer be selected, and Welsh will.
   >>> browser.getControl('Welsh').selected = True
   >>> browser.getControl('Save').click()
 
-After he submits the form, he should again be redirected back to Rosetta's
-About page, and it should contain notices about the changes he made.
+After he submits the form, he should again be redirected back to 
+Rosetta's About page. The 'Your preferred languages' portlet displays
+his two translatable languages. The page displays two messages 
+confirming his changes. The 'Your preferred languages' portlet
+displays his translatable languages.
 
+  >>> for message in find_tags_by_class(browser.contents, 'message'):
+  ...     print message.renderContents()
+  Added Welsh to your preferred languages.
+  Removed Spanish from your preferred languages.
+  
   # XXX: salgado 2006-11-21: This test is commented out because of
-  # http://www.zope.org/Collectors/Zope3-dev/710
-  >> browser.url
-  'http://launchpad.dev/translations/+about'
-
-  >>> print browser.contents
-  <!DOCTYPE...
-  ...Added Welsh to your preferred languages...
-  ...Removed Spanish from your preferred languages...
-
-And finally, lets revisit the +editlanguages page to check if the languages
-have been properly selected.
-
-  >>> browser.open('http://launchpad.dev/~carlos/+editlanguages')
-  >>> browser.url
-  'http://launchpad.dev/~carlos/+editlanguages'
-  >>> browser.getControl('Spanish').selected
-  False
-  >>> browser.getControl('Welsh').selected
-  True
-
+  # bug 98437, redirects will not work because the HTTP_REFFERER
+  # is localhost.
+  #>>> browser.url
+  #'http://launchpad.dev/translations/+about'
+  >>> browser.open('http://launchpad.dev/translations/+about')
+  >>> portlet = find_portlet(browser.contents, 'Your preferred languages')
+  >>> print backslashreplace(extract_text(portlet.find('ul')))
+  Catalan
+  Welsh
 
 When a user doesn't have a preferred language set, we determine it from the
 user's browser headers. If his browser send us any non-utf8 encoded string in 
