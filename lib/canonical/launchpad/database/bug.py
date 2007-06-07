@@ -868,14 +868,7 @@ class BugSet:
         # make sure we did not get TOO MUCH information
         assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both")
-
-        celebs = getUtility(ILaunchpadCelebrities)
-        # XXX This list should be determined from a flag in the DB
-        # with a way for LP admins to set the flag when a project
-        # pays us for privacy features. -- elliot, 2007-04-19
-        private_bug_products = (celebs.landscape, celebs.redfish)
-
-        if params.product in private_bug_products:
+        if params.product and params.product.private_bugs:
             # These bugs are always private, because details of the
             # project, like bug reports, are not yet meant to be
             # publically disclosed.
@@ -915,7 +908,7 @@ class BugSet:
         if params.tags:
             bug.tags = params.tags
 
-        if params.product in private_bug_products:
+        if params.product and params.product.private_bugs:
             # Subscribe the bugcontact to all bugs,
             # because all their bugs are private by default
             # otherwise only subscribe the bug reporter by default.
