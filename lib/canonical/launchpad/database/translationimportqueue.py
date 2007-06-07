@@ -27,6 +27,8 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, IPOFileSet,
     IPOTemplateSet, ILanguageSet, NotFoundError, IHasTranslationImports)
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.lp.dbschema import RosettaImportStatus
+from canonical.lp.dbschema import RosettaFileFormat
 
 from canonical.launchpad.database.pillar import pillar_sort_key
 
@@ -57,6 +59,8 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False, default=None)
     potemplate = ForeignKey(foreignKey='POTemplate',
         dbName='potemplate', notNull=False, default=None)
+    format = EnumCol(dbName='format', schema=RosettaFileFormat,
+        default=RosettaFileFormat.PO, notNull=True)
     status = EnumCol(dbName='status', notNull=True,
         schema=RosettaImportStatus, default=RosettaImportStatus.NEEDS_REVIEW)
     date_status_changed = UtcDateTimeCol(dbName='date_status_changed',
@@ -529,7 +533,7 @@ class TranslationImportQueue:
 
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, pofile=None):
+        potemplate=None, pofile=None, format=RosettaFileFormat.PO):
         """See ITranslationImportQueue."""
         if ((sourcepackagename is not None or distroseries is not None) and
             productseries is not None):
@@ -552,11 +556,12 @@ class TranslationImportQueue:
         size = len(content)
         file = StringIO(content)
         client = getUtility(ILibrarianClient)
+        ctype = 'application/x-po'
         alias = client.addFile(
             name=filename,
             size=size,
             file=file,
-            contentType='application/x-po')
+            contentType=ctype)
 
         # Check if we got already this request from this user.
         if sourcepackagename is not None:
@@ -611,7 +616,7 @@ class TranslationImportQueue:
                 importer=importer, sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
                 is_published=is_published, potemplate=potemplate,
-                pofile=pofile)
+                pofile=pofile, format=format)
             return entry
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,

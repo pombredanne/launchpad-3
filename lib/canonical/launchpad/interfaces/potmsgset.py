@@ -1,6 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
+from zope.schema import Field
+from canonical.launchpad import _
 
 __metaclass__ = type
 
@@ -17,11 +19,6 @@ class IPOTMsgSet(Interface):
 
     id = Attribute("""An identifier for this POTMsgSet""")
 
-    # The primary message ID is the same as the message ID with plural
-    # form 0 -- i.e. it's redundant. However, it acts as a cached value.
-
-    primemsgid_ = Attribute("The primary msgid for this set.")
-
     sequence = Attribute("The ordering of this set within its file.")
 
     potemplate = Attribute("The template this set is associated with.")
@@ -34,6 +31,18 @@ class IPOTMsgSet(Interface):
 
     flagscomment = Attribute("The flags this set has.")
 
+    msgid = Field(
+        title=_("The singular id for this message."), readonly=True)
+
+    msgid_plural = Field(
+        title=_("The plural id for this message or None."), readonly=True)
+
+    singular_text = Field(
+        title=_("The singular text for this message."), readonly=True)
+
+    plural_text = Field(
+        title=_("The plural text for this message or None."), readonly=True)
+
     def getCurrentSubmissions(language, pluralform):
         """Return a selectresults for the submissions that are currently
         published or active in any PO file for the same language and
@@ -42,17 +51,6 @@ class IPOTMsgSet(Interface):
 
     def flags():
         """Return a list of flags on this set."""
-
-    def getPOMsgIDs():
-        """Return an iterator over this set's IPOMsgID.
-
-        The maximum number of items this iterator returns is 2.
-        """
-
-    def getPOMsgIDSighting(pluralForm):
-        """Return the IPOMsgIDSighting that is current and has the plural
-        form provided.
-        """
 
     def translationsForLanguage(language):
         """Return an iterator over the active translation strings for this

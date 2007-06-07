@@ -54,6 +54,8 @@ from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
+from canonical.launchpad.components.translationformats.translation_import import *
+
 from canonical.launchpad import _
 
 
@@ -383,9 +385,15 @@ class ProductSeriesView(LaunchpadView):
 
         if filename.endswith('.pot') or filename.endswith('.po'):
             # Add it to the queue.
-            translation_import_queue_set.addOrUpdateEntry(
-                filename, content, True, self.user,
-                productseries=self.context)
+            newimport = PoSupport(path=filename,
+                                  productseries=self.context,
+                                  file=file)
+            entries = newimport.allentries
+            for entry in entries:
+                translation_import_queue_set.addOrUpdateEntry(
+                    entry['path'], content, True, self.user,
+                    productseries=entry['productseries'],
+                    format=entry['format'])
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be'
@@ -393,7 +401,6 @@ class ProductSeriesView(LaunchpadView):
                 ' You can track its status from the <a href="%s">Translation'
                 ' Import Queue</a>' %
                     canonical_url(translation_import_queue_set))
-
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
             num = translation_import_queue_set.addOrUpdateEntriesFromTarball(

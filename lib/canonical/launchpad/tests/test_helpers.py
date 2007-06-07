@@ -8,7 +8,7 @@ from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import implements
 
 from canonical.launchpad import helpers
-from canonical.launchpad.components.poexport import RosettaWriteTarFile
+from canonical.launchpad.components.translationformats.gettext_po_exporter import RosettaWriteTarFile
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
 
 

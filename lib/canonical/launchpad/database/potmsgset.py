@@ -17,7 +17,8 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.posubmission import POSubmission
-
+from canonical.launchpad.interfaces import TranslationConstants
+from canonical.lp.dbschema import RosettaFileFormat
 
 class POTMsgSet(SQLBase):
     implements(IPOTMsgSet)
@@ -33,6 +34,36 @@ class POTMsgSet(SQLBase):
     filereferences = StringCol(dbName='filereferences', notNull=False)
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
+
+    @property
+    def msgid(self):
+        """See IPOTMsgSet."""
+        return self.primemsgid_.msgid
+
+    @property
+    def msgid_plural(self):
+        """See IPOTMsgSet."""
+        plural = POMsgID.selectOne('''
+            POMsgIDSighting.potmsgset = %s AND
+            POMsgIDSighting.pomsgid = POMsgID.id AND
+            POMsgIDSighting.pluralform = 1 AND
+            POMsgIDSighting.inlastrevision = TRUE
+            ''' % sqlvalues(self),
+            clauseTables=['POMsgIDSighting'])
+        if plural is not None:
+            return plural.msgid
+        else:
+            return None
+
+    @property
+    def singular_text(self):
+        """See IPOTMsgSet."""
+        return self.msgid
+
+    @property
+    def plural_text(self):
+        """See IPOTMsgSet."""
+        return self.msgid_plural
 
     def getCurrentSubmissions(self, language, pluralform):
         """See IPOTMsgSet."""
@@ -58,26 +89,6 @@ class POTMsgSet(SQLBase):
                     for flag in self.flagscomment.replace(' ', '').split(',')
                     if flag != '']
 
-    def getPOMsgIDs(self):
-        """See IPOTMsgSet."""
-        return POMsgID.select('''
-            POMsgIDSighting.potmsgset = %d AND
-            POMsgIDSighting.pomsgid = POMsgID.id AND
-            POMsgIDSighting.inlastrevision = TRUE
-            ''' % self.id,
-            clauseTables=['POMsgIDSighting'],
-            orderBy='POMsgIDSighting.pluralform')
-
-    def getPOMsgIDSighting(self, pluralForm):
-        """See IPOTMsgSet."""
-        sighting = POMsgIDSighting.selectOneBy(
-            potmsgset=self,
-            pluralform=pluralForm,
-            inlastrevision=True)
-        if sighting is None:
-            raise NotFoundError(pluralForm)
-        else:
-            return sighting
 
     def getPOMsgSet(self, language_code, variant=None):
         """See IPOTMsgSet."""
@@ -123,7 +134,7 @@ class POTMsgSet(SQLBase):
 
         assert existing_pomsgset is None, (
             "There is already a valid IPOMsgSet for the '%s' msgid on %s" % (
-                self.primemsgid_.msgid, pofile.title))
+                self.msgid, pofile.title))
 
         return DummyPOMsgSet(pofile, self)
 
@@ -141,7 +152,7 @@ class POTMsgSet(SQLBase):
 
         # If we only have a msgid, we change pluralforms to 1, if it's a
         # plural form, it will be the number defined in the pofile header.
-        if len(list(self.getPOMsgIDs())) == 1:
+        if self.plural_text is None:
             pluralforms = 1
 
         assert pluralforms != None, (
@@ -171,12 +182,25 @@ class POTMsgSet(SQLBase):
         except SQLObjectNotFound:
             messageID = POMsgID(msgid=text)
 
+        # Get current sighting so we can deactivate it, if needed.
+        current_sighting = POMsgIDSighting.selectOneBy(
+            potmsgset=self,
+            pluralform=pluralForm,
+            inlastrevision=True)
+
         existing = POMsgIDSighting.selectOneBy(
             potmsgset=self,
             pomsgid_=messageID,
             pluralform=pluralForm)
 
         if existing is None:
+            if current_sighting is not None:
+                current_sighting.inlastrevision = False
+                # We need to flush this change to prevent that the new one
+                # that we are going to create conflicts with this due a race
+                # condition applying the changes to the DB.
+                current_sighting.updateSync()
+
             return POMsgIDSighting(
                 potmsgset=self,
                 pomsgid_=messageID,
@@ -185,11 +209,18 @@ class POTMsgSet(SQLBase):
                 inlastrevision=True,
                 pluralform=pluralForm)
         else:
-            if not update:
-                raise NameNotAvailable(
-                    "There is already a message ID sighting for this "
-                    "message set, text, and plural form")
-            existing.set(datelastseen=UTC_NOW, inlastrevision=True)
+            assert (current_sighting is None or
+                    current_sighting == existing or update), (
+                "There is already a message ID sighting for this "
+                "message set, text, and plural form")
+            if current_sighting is not None and current_sighting != existing:
+                current_sighting.inlastrevision = False
+                # We need to flush this change to prevent that the new one
+                # that we are going to create conflicts with this due a race
+                # condition applying the changes to the DB.
+                current_sighting.updateSync()
+            existing.datelastseen = UTC_NOW
+            existing.inlastrevision = True
             return existing
 
     def applySanityFixes(self, text):
@@ -206,93 +237,97 @@ class POTMsgSet(SQLBase):
 
     def convertDotToSpace(self, text):
         """See IPOTMsgSet."""
-        if u'\u2022' in self.primemsgid_.msgid or u'\u2022' not in text:
+        if u'\u2022' in self.singular_text or u'\u2022' not in text:
             return text
 
         return text.replace(u'\u2022', ' ')
 
-    def normalizeWhitespaces(self, text):
+    def normalizeWhitespaces(self, translation_text):
         """See IPOTMsgSet."""
-        if text is None:
-            return text
+        if translation_text is None:
+            return None
 
-        msgid = self.primemsgid_.msgid
-        stripped_msgid = msgid.strip()
-        stripped_text = text.strip()
-        new_text = None
+        stripped_singular_text = self.singular_text.strip()
+        stripped_translation_text = translation_text.strip()
+        new_translation_text = None
 
-        if len(stripped_msgid) > 0 and len(stripped_text) == 0:
+        if (len(stripped_singular_text) > 0 and
+            len(stripped_translation_text) == 0):
             return ''
 
-        if len(stripped_msgid) != len(msgid):
+        if len(stripped_singular_text) != len(self.singular_text):
             # There are whitespaces that we should copy to the 'text'
             # after stripping it.
-            prefix = msgid[:-len(msgid.lstrip())]
-            postfix = msgid[len(msgid.rstrip()):]
-            new_text = '%s%s%s' % (prefix, stripped_text, postfix)
-        elif len(stripped_text) != len(text):
+            prefix = self.singular_text[:-len(self.singular_text.lstrip())]
+            postfix = self.singular_text[len(self.singular_text.rstrip()):]
+            new_translation_text = '%s%s%s' % (
+                prefix, stripped_translation_text, postfix)
+        elif len(stripped_translation_text) != len(translation_text):
             # msgid does not have any whitespace, we need to remove
             # the extra ones added to this text.
-            new_text = stripped_text
+            new_translation_text = stripped_translation_text
         else:
             # The text is not changed.
-            new_text = text
+            new_translation_text = translation_text
 
-        return new_text
+        return new_translation_text
 
-    def normalizeNewLines(self, text):
+    def normalizeNewLines(self, translation_text):
         """See IPOTMsgSet."""
-        msgid = self.primemsgid_.msgid
         # There are three different kinds of newlines:
         windows_style = '\r\n'
         mac_style = '\r'
         unix_style = '\n'
         # We need the stripped variables because a 'windows' style will be at
         # the same time a 'mac' and 'unix' style.
-        stripped_text = text.replace(windows_style, '')
-        stripped_msgid = msgid.replace(windows_style, '')
+        stripped_translation_text = translation_text.replace(
+            windows_style, '')
+        stripped_singular_text = self.singular_text.replace(windows_style, '')
 
-        # Get the style that uses the msgid.
-        msgid_style = None
-        if windows_style in msgid:
-            msgid_style = windows_style
+        # Get the style that uses singular_text.
+        original_style = None
+        if windows_style in self.singular_text:
+            original_style = windows_style
 
-        if mac_style in stripped_msgid:
-            if msgid_style is not None:
-                raise BrokenTextError(
-                    "msgid (%r) mixes different newline markers" % msgid)
-            msgid_style = mac_style
+        if (mac_style in stripped_singular_text and
+            original_style is not None):
+            raise BrokenTextError(
+                "original text (%r) mixes different newline markers" %
+                    self.singular_text)
+            original_style = mac_style
 
-        if unix_style in stripped_msgid:
-            if msgid_style is not None:
-                raise BrokenTextError(
-                    "msgid (%r) mixes different newline markers" % msgid)
-            msgid_style = unix_style
+        if (unix_style in stripped_singular_text and
+            original_style is not None):
+            raise BrokenTextError(
+                "original text (%r) mixes different newline markers" %
+                    self.singular_text)
+            original_style = unix_style
 
         # Get the style that uses the given text.
-        text_style = None
-        if windows_style in text:
-            text_style = windows_style
+        translation_style = None
+        if windows_style in translation_text:
+            translation_style = windows_style
 
-        if mac_style in stripped_text:
-            if text_style is not None:
-                raise BrokenTextError(
-                    "text (%r) mixes different newline markers" % text)
-            text_style = mac_style
+        if (mac_style in stripped_translation_text and
+            translation_style is not None):
+            raise BrokenTextError(
+                "translation text (%r) mixes different newline markers" %
+                    translation_text)
+            translation_style = mac_style
 
-        if unix_style in stripped_text:
-            if text_style is not None:
-                raise BrokenTextError(
-                    "text (%r) mixes different newline markers" % text)
-            text_style = unix_style
+        if (unix_style in stripped_translation_text and
+            translation_style is not None):
+            raise BrokenTextError(
+                "translation text (%r) mixes different newline markers" %
+                    translation_text)
+            translation_style = unix_style
 
-        if msgid_style is None or text_style is None:
+        if original_style is None or translation_style is None:
             # We don't need to do anything, the text is not changed.
-            return text
+            return translation_text
 
         # Fix the newline chars.
-        return text.replace(text_style, msgid_style)
-
+        return translation_text.replace(translation_style, original_style)
 
     @property
     def hide_translations_from_anonymous(self):

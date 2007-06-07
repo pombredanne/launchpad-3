@@ -7,7 +7,7 @@ import unittest
 from StringIO import StringIO
 from datetime import datetime
 
-from canonical.launchpad.components.poexport import export_rows
+from canonical.launchpad.components.translationformats.gettext_po_exporter import export_rows
 from canonical.launchpad.helpers import test_diff
 
 class TestPOTemplate:

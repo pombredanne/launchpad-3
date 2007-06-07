@@ -119,6 +119,13 @@ class IPOTemplate(IRosettaStats):
         title=_("Path of the template in the source tree, including filename."),
         required=False)
 
+    source_file = Attribute("Source file for this template, if needed.")
+
+    source_file_format = Choice(
+        title=_("File format for the source file"),
+        required=False,
+        vocabulary="RosettaFileFormat")
+
     priority = Int(
         title=_('Priority'),
         required=True,
