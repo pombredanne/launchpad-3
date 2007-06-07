@@ -1,67 +1,67 @@
 For now, there is no link to the page that lists all code imports, so
 we browse there directly:
 
-  >>> browser.open('http://code.launchpad.dev/+code-imports')
+    >>> browser.open('http://code.launchpad.dev/+code-imports')
 
 There are two CodeImports in the sample data and they both show up in
 the page:
 
-  >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
-  >>> rows = table.tbody('tr')
-  >>> names = [extract_text(tr.td) for tr in rows]
-  >>> sorted(names)
-  [u'a52dec-trunk-3', u'gnome-terminal-trunk-1']
+    >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
+    >>> rows = table.tbody('tr')
+    >>> names = [extract_text(tr.td) for tr in rows]
+    >>> sorted(names)
+    [u'a52dec-trunk-3', u'gnome-terminal-trunk-1']
 
 If we click on the code import's name, we go to the page for that
 import:
 
-  >>> browser.getLink('gnome-terminal-trunk-1').click()
-  >>> browser.url
-  'http://code.launchpad.dev/+code-imports/gnome-terminal-trunk-1'
+    >>> browser.getLink('gnome-terminal-trunk-1').click()
+    >>> browser.url
+    'http://code.launchpad.dev/+code-imports/gnome-terminal-trunk-1'
 
 It displays some information about the code import, for example the
 review status and the URL of the Subversion branch the import is from:
 
-  >>> extract_text(
-  ...     find_tag_by_id(browser.contents, 'review-status'))
-  u'Reviewed'
-  >>> extract_text(
-  ...     find_tag_by_id(browser.contents, 'subversion-url'))
-  u'http://svn.example.org/svnroot/gnome-terminal/trunk'
+    >>> extract_text(
+    ...     find_tag_by_id(browser.contents, 'review-status'))
+    u'Reviewed'
+    >>> extract_text(
+    ...     find_tag_by_id(browser.contents, 'subversion-url'))
+    u'http://svn.example.org/svnroot/gnome-terminal/trunk'
 
 This import has a branch associated to it, so there's a link to the
 branch:
 
-  >>> browser.getLink('GNOME Terminal Mainline').url
-  'http://code.launchpad.dev/~name12/gnome-terminal/main'
+    >>> browser.getLink('GNOME Terminal Mainline').url
+    'http://code.launchpad.dev/~name12/gnome-terminal/main'
 
 There's a similar page for the other import, which uses CVS:
 
-  >>> browser.getLink('Code Imports').click()
-  >>> browser.getLink('a52dec-trunk-3').click()
-  >>> browser.url
-  'http://code.launchpad.dev/+code-imports/a52dec-trunk-3'
-  >>> extract_text(
-  ...     find_tag_by_id(browser.contents, 'review-status'))
-  u'Pending Review'
-  >>> extract_text(
-  ...     find_tag_by_id(browser.contents, 'cvs-root'))
-  u'cvs.example.org/cvsroot'
-  >>> extract_text(
-  ...     find_tag_by_id(browser.contents, 'cvs-module'))
-  u'a52dec'
+    >>> browser.getLink('Code Imports').click()
+    >>> browser.getLink('a52dec-trunk-3').click()
+    >>> browser.url
+    'http://code.launchpad.dev/+code-imports/a52dec-trunk-3'
+    >>> extract_text(
+    ...     find_tag_by_id(browser.contents, 'review-status'))
+    u'Pending Review'
+    >>> extract_text(
+    ...     find_tag_by_id(browser.contents, 'cvs-root'))
+    u'cvs.example.org/cvsroot'
+    >>> extract_text(
+    ...     find_tag_by_id(browser.contents, 'cvs-module'))
+    u'a52dec'
 
 Lets check that the canonical urls of the CodeImport objects are what
 we expect.  These tests are probably in the wrong place.
 
-  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
-  >>> login(ANONYMOUS)
-  >>> from canonical.launchpad.webapp import canonical_url
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import ICodeImportSet
-  >>> code_import_set = getUtility(ICodeImportSet)
-  >>> canonical_url(code_import_set)
-  u'http://code.launchpad.dev/+code-imports'
-  >>> canonical_url(code_import_set.getByName('gnome-terminal-trunk-1'))
-  u'http://code.launchpad.dev/+code-imports/gnome-terminal-trunk-1'
-  >>> logout()
+    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+    >>> login(ANONYMOUS)
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import ICodeImportSet
+    >>> code_import_set = getUtility(ICodeImportSet)
+    >>> canonical_url(code_import_set)
+    u'http://code.launchpad.dev/+code-imports'
+    >>> canonical_url(code_import_set.getByName('gnome-terminal-trunk-1'))
+    u'http://code.launchpad.dev/+code-imports/gnome-terminal-trunk-1'
+    >>> logout()
