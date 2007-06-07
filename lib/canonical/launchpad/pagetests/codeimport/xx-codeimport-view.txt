@@ -73,3 +73,26 @@ There's a similar page for the other import, which uses CVS:
     >>> extract_text(
     ...     find_tag_by_id(browser.contents, 'cvs-module'))
     u'a52dec'
+
+If we create a lot of imports, the listing view will be batched.
+
+    >>> from canonical.launchpad.ftests import login, ANONYMOUS, logout
+    >>> login(ANONYMOUS)
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import ICodeImportSet
+    >>> from canonical.lp.dbschema import RevisionControlSystems
+    >>> code_import_set = getUtility(ICodeImportSet)
+    >>> svn = RevisionControlSystems.SVN
+    >>> svn_url = 'svn://svn.example.com/trunk-%s'
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> product = getUtility(IProductSet).get(1)
+    >>> for i in range(100):
+    ...     new_import = code_import_set.new(
+    ...         rcs_type=svn, product=product, series=None,
+    ...         name="import-%s"%(i,), svn_branch_url=svn_url%(i,))
+    >>> logout()
+
+    >>> browser.open('http://code.launchpad.dev/+code-imports')
+    >>> browser.getLink('Next').click()
+    >>> browser.url
+    'http://code.launchpad.dev/+code-imports/+index?start=50'
