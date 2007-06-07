@@ -389,7 +389,7 @@ class POFile(SQLBase, RosettaStats):
 
         return results
 
-    def getPOTMsgSetChangedInLaunchpad(self, slice=None):
+    def getPOTMsgSetChangedInLaunchpad(self):
         """See IPOFile."""
         # POT set has been changed in Launchpad if it contains active
         # translation which didn't come from a published package
@@ -415,9 +415,6 @@ class POFile(SQLBase, RosettaStats):
                 POTMsgSet.potemplate = %s)
             ''' % sqlvalues(self, self.potemplate),
             orderBy='POTmsgSet.sequence')
-
-        if slice is not None:
-            results = results[slice]
 
         return results
 
