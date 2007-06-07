@@ -404,6 +404,10 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def findSimilarFAQs(self, summary):
         """See `IFAQTarget`."""
         return FAQ.findSimilar(summary, product=self)
+    
+    def getFAQ(self, id):
+        """See `IFAQTarget`."""
+        return FAQ.getForTarget(id, self)
 
     @property
     def translatable_packages(self):

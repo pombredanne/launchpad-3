@@ -601,7 +601,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def findSimilarFAQs(self, summary):
         """See `IFAQTarget`."""
         return FAQ.findSimilar(summary, distribution=self)
-    
+
+    def getFAQ(self, id):
+        """See `IFAQTarget`."""
+        return FAQ.getForTarget(id, self)
+
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""
         for curr_bounty in self.bounties:
