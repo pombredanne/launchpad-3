@@ -472,7 +472,8 @@ class BugTaskSearchParams:
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
                  only_resolved_upstream=False, has_no_upstream_bugtask=False,
-                 tag=None, has_cve=False, bug_contact=None, bug_reporter=None):
+                 tag=None, has_cve=False, bug_contact=None, bug_reporter=None,
+                 nominated_for=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -495,6 +496,7 @@ class BugTaskSearchParams:
         self.has_cve = has_cve
         self.bug_contact = bug_contact
         self.bug_reporter = bug_reporter
+        self.nominated_for = nominated_for
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
