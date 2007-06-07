@@ -9,11 +9,13 @@ __all__ = [
     'IQuestion',
     'IQuestionAddMessageForm',
     'IQuestionChangeStatusForm',
+    'IQuestionLinkFAQForm',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
      Bool, Choice, Datetime,  Int, List, Object, Text, TextLine)
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
@@ -454,3 +456,15 @@ class IQuestionChangeStatusForm(Interface):
         description=_('Enter an explanation for the status change'),
         required=True)
 
+
+class IQuestionLinkFAQForm(Interface):
+    """Form schema for the `QuestionLinkFAQView`."""
+
+    faq = Choice(
+        title=_('Which is the relevant FAQ?'),
+        description=_('Select the FAQ that is the most relevant for this '
+        'question.'),
+        vocabulary=SimpleVocabulary([
+            SimpleTerm(None, 'none', 'No existing FAQs are relevant')]),
+        required=True,
+        default=None)

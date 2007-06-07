@@ -23,15 +23,19 @@ on 'This is a FAQ' to answer the question:
 
     >>> user_browser.getLink('This is a FAQ').click()
     >>> print backslashreplace(user_browser.title)
-    Is question #2 a FAQ? - Mozilla Firefox
+    Is question #2 a FAQ?
 
 That page lists the existing FAQs that matches the question's title.
 In this case, there are no matching FAQ so the user can only choose
 'No FAQ answers this question':
 
-    >>> user_browser.getControl(
-    ...     'Select the FAQ that answers this question').displayValues
-    ['No FAQ answers this question']
+    # Since radio widget is a virtual widget with no explicitely
+    # associated label, we must resort to name lookup.
+    >>> for label in user_browser.getControl(
+    ...     name='field.faq').displayOptions:
+    ...     # Remove the non-breaking space from the label
+    ...     print label[1:]
+    No existing FAQs are relevant
 
 Since No Privileges Person isn't an answer contact for the project nor
 part of the project registrant, he doesn't have the possibility to

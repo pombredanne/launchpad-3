@@ -11,6 +11,7 @@ __all__ = [
     'QuestionConfirmAnswerView',
     'QuestionContextMenu',
     'QuestionEditView',
+    'QuestionLinkFAQView',
     'QuestionMakeBugView',
     'QuestionMessageDisplayView',
     'QuestionSetContextMenu',
@@ -46,10 +47,10 @@ from canonical.launchpad.event import (
 from canonical.launchpad.helpers import is_english_variant, request_languages
 
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IAnswersFrontPageSearchForm, IBug, ILanguageSet,
-    ILaunchpadStatisticSet, IProject, IQuestion, IQuestionAddMessageForm,
-    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget,
-    UnexpectedFormData)
+    CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQTarget,
+    ILanguageSet, ILaunchpadStatisticSet, IProject, IQuestion,
+    IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
+    IQuestionSet, IQuestionTarget, UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
@@ -58,6 +59,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
+from canonical.widgets import LaunchpadRadioWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
@@ -854,6 +856,22 @@ class SearchAllQuestionsView(SearchQuestionsView):
                 self.request.response.redirect(canonical_url(question))
 
 
+class QuestionLinkFAQView(LaunchpadFormView):
+    """View to search for and link an existing FAQ to a question."""
+
+    schema = IQuestionLinkFAQForm
+
+    custom_widget('faq', LaunchpadRadioWidget)
+
+    label = _('Is this a FAQ?')
+
+    @cachedproperty
+    def faq_target(self):
+        """Return the IFAQTarget that should be use for this question."""
+        # Adapt the question's target.
+        return IFAQTarget(self.context.target)
+
+
 class QuestionSOP(StructuralObjectPresentation):
     """Provides the structural heading for IQuestion."""
 
@@ -877,6 +895,7 @@ class QuestionContextMenu(ContextMenu):
         'linkbug',
         'unlinkbug',
         'makebug',
+        'linkfaq',
         ]
 
     def initialize(self):
@@ -931,6 +950,12 @@ class QuestionContextMenu(ContextMenu):
         summary = 'Create a bug report from this question.'
         return Link('+makebug', text, summary, icon='add',
                     enabled=not self.has_bugs)
+
+    def linkfaq(self):
+        """Link for This is a FAQ."""
+        text = 'This is a FAQ'
+        summary = 'Answer this question using a FAQ.'
+        return Link('+linkfaq', text, summary)
 
 
 class QuestionSetContextMenu(ContextMenu):

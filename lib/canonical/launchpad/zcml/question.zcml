@@ -194,6 +194,14 @@
     template="../templates/questionmessage-display.pt"
     />
 
+  <browser:page
+    name="+linkfaq"
+    for="canonical.launchpad.interfaces.IQuestion"
+    class="canonical.launchpad.browser.QuestionLinkFAQView"
+    permission="launchpad.AnyPerson"
+    template="../templates/question-linkfaq.pt"
+    />
+  
   <!-- QuestionSet -->
   <content class="canonical.launchpad.database.QuestionSet">
     <allow interface="canonical.launchpad.interfaces.IQuestionSet" />
