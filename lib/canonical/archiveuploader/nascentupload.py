@@ -171,8 +171,8 @@ class NascentUpload:
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
 
+        signer_components = self.getAutoAcceptedComponents()
         if not self.is_new:
-            signer_components = self.getAutoAcceptedComponents()
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
 
