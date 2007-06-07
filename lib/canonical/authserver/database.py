@@ -16,7 +16,7 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import begin, commit, rollback, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
 from canonical.config import config
@@ -24,6 +24,8 @@ from canonical.config import config
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
     IUserDetailsStorageV2)
+
+from twisted.internet.threads import deferToThread
 
 
 def utf8(x):
@@ -402,22 +404,20 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
     def fetchProductID(self, productName):
         """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._fetchProductIDInteraction, productName)
+        return deferToThread(self._fetchProductIDInteraction, productName)
 
-    def _fetchProductIDInteraction(self, transaction, productName):
+    def _fetchProductIDInteraction(self, productName):
         """The interaction for fetchProductID."""
-        transaction.execute(utf8('''
-            SELECT id FROM Product WHERE name = %s'''
-            % sqlvalues(productName))
-        )
-        row = transaction.fetchone()
-        if row is None:
-            # No product by that name in the DB.
-            productID = ''
-        else:
-            (productID,) = row
-        return productID
+        from canonical.launchpad.database import Product
+        begin()
+        try:
+            product = Product.selectOne('name = %s' % sqlvalues(productName))
+            if product is None:
+                return ''
+            else:
+                return product.id
+        finally:
+            rollback()
 
     def createBranch(self, personID, productID, branchName):
         """See IHostedBranchStorage."""
