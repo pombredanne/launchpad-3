@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
-    IDistroReleaseLanguage)
+    IDistroReleaseLanguage, ICodeImport, ICodeImportSet)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -659,6 +659,13 @@ class AdminTheBazaar(OnlyVcsImportsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IBazaarApplication
 
+class EveryOneCanSeeCodeImportSet(OnlyVcsImportsAndAdmins):
+    permission = 'launchpad.View'
+    usedfor = ICodeImportSet
+
+class EveryOneCanSeeCodeImports(OnlyVcsImportsAndAdmins):
+    permission = 'launchpad.View'
+    usedfor = ICodeImport
 
 class EditPOTemplateDetails(EditByOwnersOrAdmins):
     usedfor = IPOTemplate

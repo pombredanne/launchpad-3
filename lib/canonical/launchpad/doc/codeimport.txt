@@ -8,6 +8,11 @@ updates it regularly.
 
 We can import code from CVS or Subversion.
 
+CodeImports are hidden from regular users currently.  David Allouce is
+a member of the vcs-imports team and can access the objects freely.
+
+  >>> login('david.allouche@canonical.com')
+
 == Code import set utility ==
 
 CodeImports are created and found using the ICodeImport interface, which is

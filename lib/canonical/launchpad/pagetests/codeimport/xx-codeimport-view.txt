@@ -1,7 +1,30 @@
+Currently, the pages relating to code imports are only visible to
+members of the vcs-imports team and Launchpad admins.  We log in as
+David Allouche, a member of vcs-imports (and not an admin):
+
+    >>> browser.addHeader('Authorization',
+    ...                   'Basic david.allouche@canonical.com:test')
+
 For now, there is no link to the page that lists all code imports, so
 we browse there directly:
 
     >>> browser.open('http://code.launchpad.dev/+code-imports')
+
+Admins can also browse to this page, although anonymous and ordinary
+users cannot:
+
+    >>> admin_browser.open('http://code.launchpad.dev/+code-imports')
+    >>> admin_browser.url
+    'http://code.launchpad.dev/+code-imports'
+    >>> anon_browser.open('http://code.launchpad.dev/+code-imports')
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
+    >>> user_browser.open('http://code.launchpad.dev/+code-imports')
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
+
 
 There are two CodeImports in the sample data and they both show up in
 the page:

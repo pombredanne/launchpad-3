@@ -8,9 +8,12 @@
   <!-- CodeImport -->
 
   <content class="canonical.launchpad.database.CodeImport">
-    <allow interface="canonical.launchpad.interfaces.ICodeImport" />
     <require
-      permission="zope.Public"
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImport"
+      />
+    <require
+      permission="launchpad.Edit"
       set_schema="canonical.launchpad.interfaces.ICodeImport"
       />
   </content>
@@ -32,13 +35,16 @@
     class="canonical.launchpad.browser.CodeImportView"
     name="+index"
     template="../templates/codeimport.pt"
-    permission="zope.Public"
+    permission="launchpad.View"
     />
 
   <!-- CodeImportSet -->
 
   <content class="canonical.launchpad.database.CodeImportSet">
-    <allow interface="canonical.launchpad.interfaces.ICodeImportSet" />
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImport"
+      />
   </content>
 
   <securedutility
@@ -69,7 +75,7 @@
     class="canonical.launchpad.browser.CodeImportSetView"
     name="+index"
     template="../templates/codeimport-list.pt"
-    permission="zope.Public"
+    permission="launchpad.View"
     />
 
 </configure>
