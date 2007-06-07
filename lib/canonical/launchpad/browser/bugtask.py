@@ -58,9 +58,9 @@ from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
+    IBug, IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
-    IBugWatchSet, IDistribution, IDistributionSourcePackage, IBug,
+    IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
     IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
@@ -1221,11 +1221,11 @@ class BugTaskListingItem:
     def __init__(self, bugtask, bugbranches):
         self.bugtask = bugtask
         self.bugbranches = bugbranches
-        
+
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
-    
+
     def __init__(self, tasks, request, columns_to_show, size):
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
@@ -1235,8 +1235,9 @@ class BugListingBatchNavigator(TableBatchNavigator):
         # Create a map from the bug id to the branches.
         self.bug_id_mapping = {}
         for bugbranch in bugbranches:
-            self.bug_id_mapping.setdefault(
-                bugbranch.bug.id, []).append(bugbranch)
+            if check_permission('launchpad.View', bugbranch.branch):
+                self.bug_id_mapping.setdefault(
+                    bugbranch.bug.id, []).append(bugbranch)
 
     def getBugListingItems(self):
         """Return a decorated list of visible bug tasks."""

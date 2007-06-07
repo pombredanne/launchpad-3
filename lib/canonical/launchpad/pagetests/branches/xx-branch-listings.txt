@@ -12,6 +12,10 @@ and badge decoration.
 Batching is applied to branch listings where there are many items.
 Luckily for us, many is 5 in the tests.
 
+Since this test is testing listings rather than privacy, the
+user logged in is Sample Person, as he has the private branches.
+
+   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
    >>> browser.open('http://code.launchpad.dev/~name12')
    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
    >>> print links.renderContents()

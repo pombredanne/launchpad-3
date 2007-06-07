@@ -25,7 +25,7 @@ from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, enabled_with_permission,
-    Link, Navigation, stepto)
+    LaunchpadView, Link, Navigation, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
 import canonical.launchpad.layers
 
@@ -43,12 +43,11 @@ class BazaarBranchesMenu(ApplicationMenu):
         return Link(target, text, summary, icon='branch')
 
 
-class BazaarApplicationView:
+class BazaarApplicationView(LaunchpadView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.seriesset = getUtility(IProductSeriesSet)
+    @cachedproperty
+    def seriesset(self):
+        return getUtility(IProductSeriesSet)
 
     def branch_count(self):
         return getUtility(IBranchSet).count()
@@ -83,17 +82,20 @@ class BazaarApplicationView:
     @cachedproperty
     def recently_changed_branches(self):
         """Return the five most recently changed branches."""
-        return list(getUtility(IBranchSet).getRecentlyChangedBranches(5))
+        return list(getUtility(IBranchSet).getRecentlyChangedBranches(
+            5, self.user))
 
     @cachedproperty
     def recently_imported_branches(self):
         """Return the five most recently imported branches."""
-        return list(getUtility(IBranchSet).getRecentlyImportedBranches(5))
+        return list(getUtility(IBranchSet).getRecentlyImportedBranches(
+            5, self.user))
 
     @cachedproperty
     def recently_registered_branches(self):
         """Return the five most recently registered branches."""
-        return list(getUtility(IBranchSet).getRecentlyRegisteredBranches(5))
+        return list(getUtility(IBranchSet).getRecentlyRegisteredBranches(
+            5, self.user))
 
 
 class BazaarApplicationNavigation(Navigation):
@@ -105,10 +107,10 @@ class BazaarApplicationNavigation(Navigation):
     @stepto('series')
     def series(self):
         return getUtility(IProductSeriesSet)
- 
+
 
 class ProductInfo:
-    
+
     decorates(IProduct, 'product')
 
     def __init__(self, product, num_branches, branch_size, elapsed):

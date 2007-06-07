@@ -29,7 +29,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.database.answercontact import AnswerContact
-from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.branch import Branch, BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -277,12 +277,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IBugTarget."""
         return '%s (upstream)' % self.name
 
-    def getLatestBranches(self, quantity=5):
+    def getLatestBranches(self, quantity=5, visible_by_user=None):
         """See IProduct."""
-        # XXX Should use Branch.date_created. See bug 38598.
-        # -- David Allouche 2006-04-11
-        return shortlist(Branch.selectBy(product=self,
-            orderBy='-id').limit(quantity))
+        return shortlist(
+            BranchSet().getLatestBranchesForProduct(
+                self, quantity, visible_by_user))
 
     def getPackage(self, distroseries):
         """See IProduct."""
@@ -613,6 +612,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def newBranch(self, name, title, url, home_page, lifecycle_status,
                   summary, whiteboard):
         """See IProduct."""
+        # XXX thumper-angry - FIX THIS!!!!
+        # use BranchSet
         from canonical.launchpad.database import Branch
         return Branch(
             product=self, name=name, title=title, url=url, home_page=home_page,
