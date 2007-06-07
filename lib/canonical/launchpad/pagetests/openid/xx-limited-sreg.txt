@@ -10,7 +10,8 @@ Canonical/Ubuntu sites participating in single sign-on.
 
 == Behaviour for unknown trust roots ==
 
-First we'll see what happens on a normal OpenID request.
+First we'll see what happens with an OpenID request from an unknown
+trust root.
 
 First acquire an association handle:
 
@@ -27,7 +28,9 @@ First acquire an association handle:
     >>> import re
     >>> [assoc_handle] = re.findall('assoc_handle:(.*)', anon_browser.contents)
 
-Now log in and allow authentication:
+Now log in and allow authentication.  Note that we temporarily turn on
+error handling so that the Unauthorized error causes the redirection
+to the login page:
 
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_setup',
@@ -90,7 +93,7 @@ We now see the user's full name, nickname, email address and time zone.
     <BLANKLINE>
 
 
-Cleanup:
+== Cleanup ==
 
     >>> config.launchpad.openid_sreg_trustroots.remove(
     ...     'http://launchpad.dev/+openid-consumer')
