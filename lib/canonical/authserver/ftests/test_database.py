@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 """Tests for lib/canonical/authserver/database.py"""
 
@@ -22,6 +22,8 @@ from canonical.lp import dbschema
 
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 
+from canonical.testing.layers import LaunchpadZopelessLayer
+
 
 class TestDatabaseSetup(LaunchpadTestCase):
     def setUp(self):
@@ -36,6 +38,8 @@ class TestDatabaseSetup(LaunchpadTestCase):
 
 
 class DatabaseStorageTestCase(TestDatabaseSetup):
+
+    layer = LaunchpadZopelessLayer
 
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
@@ -156,11 +160,11 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
 
     def test_fetchProductID(self):
         storage = DatabaseUserDetailsStorageV2(None)
-        productID = storage._fetchProductIDInteraction(self.cursor, 'firefox')
+        productID = storage._fetchProductIDInteraction('firefox')
         self.assertEqual(4, productID)
     
         # Invalid product names are signalled by a return value of ''
-        productID = storage._fetchProductIDInteraction(self.cursor, 'xxxxx')
+        productID = storage._fetchProductIDInteraction('xxxxx')
         self.assertEqual('', productID)
 
     def test_getBranchesForUser(self):

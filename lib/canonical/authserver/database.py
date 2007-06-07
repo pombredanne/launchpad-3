@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -16,7 +16,8 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
-from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.database import Product
+from canonical.database.sqlbase import begin, rollback, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
 from canonical.config import config
@@ -24,6 +25,8 @@ from canonical.config import config
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
     IUserDetailsStorageV2)
+
+from twisted.internet.threads import deferToThread
 
 
 def utf8(x):
@@ -402,22 +405,19 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
     def fetchProductID(self, productName):
         """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._fetchProductIDInteraction, productName)
+        return deferToThread(self._fetchProductIDInteraction, productName)
 
-    def _fetchProductIDInteraction(self, transaction, productName):
+    def _fetchProductIDInteraction(self, productName):
         """The interaction for fetchProductID."""
-        transaction.execute(utf8('''
-            SELECT id FROM Product WHERE name = %s'''
-            % sqlvalues(productName))
-        )
-        row = transaction.fetchone()
-        if row is None:
-            # No product by that name in the DB.
-            productID = ''
+        begin()
+        try:
+            product = Product.selectOneBy(name=productName)
+        finally:
+            rollback()
+        if product is None:
+            return ''
         else:
-            (productID,) = row
-        return productID
+            return product.id
 
     def createBranch(self, personID, productID, branchName):
         """See IHostedBranchStorage."""
