@@ -44,7 +44,7 @@ from zope.app.form.utility import (
     applyWidgetsChanges)
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
-from zope.interface import providedBy
+from zope.interface import alsoProvides, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IList
 from zope.schema.vocabulary import (
@@ -68,7 +68,7 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
     valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
-    IProductSeries)
+    IProductSeries, INominationsReviewTableBatchNavigator)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -1723,10 +1723,13 @@ class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
 
     def search(self):
-        """"""
-        return BugTaskSearchListingView.search(
+        """Return all the nominated tasks for this series."""
+        batch_navigator = BugTaskSearchListingView.search(
             self, context=self.context.distribution,
             extra_params=dict(nominated_for=self.context))
+        # Add marker interface to display custom bug listings.
+        alsoProvides(batch_navigator, INominationsReviewTableBatchNavigator)
+        return batch_navigator
 
 
 class BugTargetView(LaunchpadView):

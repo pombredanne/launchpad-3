@@ -20,6 +20,7 @@ __all__ = [
     'IProductSeriesBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
+    'INominationsReviewTableBatchNavigator',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES']
 
@@ -36,6 +37,7 @@ from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 
 
 # XXX: Brad Bollenbach, 2005-12-02: In theory, NEEDSINFO belongs in
@@ -630,3 +632,7 @@ class IAddBugTaskForm(Interface):
         title=_('URL'), required=False,
         description=_("The URL of this bug in the remote bug tracker."))
 
+
+class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
+    """Marker interface to choose custom template for the bug
+    nominations review view."""
