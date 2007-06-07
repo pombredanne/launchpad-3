@@ -172,11 +172,11 @@ class POFileUploadView(POFileView):
 
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        if not filename.endswith('.po') and not filename.endswith('.xpi'):
+        if not filename.endswith('.po'):
             self.request.response.addWarningNotification(
                 "Ignored your upload because the file you uploaded was not"
                 " recognised as a file that can be imported as it does not"
-                " end with the '.po' or '.xpi' suffix.")
+                " end with the '.po' suffix.")
             return
 
         # We only set the 'published' flag if the upload is marked as an
@@ -186,7 +186,7 @@ class POFileUploadView(POFileView):
         else:
             published = False
 
-        if self.context.path is None or filename.endswith('.xpi'):
+        if self.context.path is None:
             # The POFile is a dummy one, we use the filename as the path.
             path = filename
         else:

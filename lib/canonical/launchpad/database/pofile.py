@@ -633,24 +633,14 @@ class POFile(SQLBase, RosettaStats):
         #   list of faulty messages.
         import_rejected = False
         try:
-            if entry_to_import.path.lower().endswith('.xpi'):
-                importer = MozillaSupport(
-                    path=entry_to_import.path,
-                    productseries=entry_to_import.productseries,
-                    distrorelease=entry_to_import.distrorelease,
-                    sourcepackagename=entry_to_import.sourcepackagename,
-                    is_published=entry_to_import.is_published,
-                    content=import_file.read(),
-                    logger=logger)
-            else:
-                importer = PoSupport(
-                    path=entry_to_import.path,
-                    productseries=entry_to_import.productseries,
-                    distrorelease=entry_to_import.distrorelease,
-                    sourcepackagename=entry_to_import.sourcepackagename,
-                    is_published=entry_to_import.is_published,
-                    content=import_file.read(),
-                    logger=logger)
+            importer = PoSupport(
+                path=entry_to_import.path,
+                productseries=entry_to_import.productseries,
+                distrorelease=entry_to_import.distrorelease,
+                sourcepackagename=entry_to_import.sourcepackagename,
+                is_published=entry_to_import.is_published,
+                content=import_file.read(),
+                logger=logger)
             newtranslation = importer.getTranslation(entry_to_import.
                                                      path,
                                                      self.language)

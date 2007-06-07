@@ -58,16 +58,6 @@ class POTMsgSet(SQLBase):
     @property
     def singular_text(self):
         """See IPOTMsgSet."""
-        if self.potemplate.source_file_format == RosettaFileFormat.XPI:
-            # This format uses English translations as the way to store the
-            # singular_text.
-            pomsgset = self.getPOMsgSet('en')
-            if (pomsgset is not None and
-                pomsgset.active_texts[
-                    TranslationConstants.SINGULAR_FORM] is not None):
-                return pomsgset.active_texts[
-                    TranslationConstants.SINGULAR_FORM]
-        # By default, singular text is the msgid.
         return self.msgid
 
     @property

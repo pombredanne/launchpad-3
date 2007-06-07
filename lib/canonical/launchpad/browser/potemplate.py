@@ -318,8 +318,7 @@ class POTemplateView(LaunchpadView):
 
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        if (filename.endswith('.pot') or filename.endswith('.po')
-            or filename=='en-US.xpi'):
+        if filename.endswith('.pot') or filename.endswith('.po'):
             # Add it to the queue.
             if filename.endswith('.po'):
                 # It's a .po file attached to the template at self.context,
@@ -335,7 +334,7 @@ class POTemplateView(LaunchpadView):
                 distroseries=self.context.distroseries,
                 productseries=self.context.productseries,
                 potemplate=self.context,
-                format=RosettaFileFormat.XPI)
+                format=RosettaFileFormat.PO)
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be imported'

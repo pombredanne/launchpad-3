@@ -80,9 +80,8 @@ class TranslationImportQueueEntry(SQLBase):
     @property
     def guessed_potemplate(self):
         """See ITranslationImportQueueEntry."""
-        if self.path != 'en-US.xpi':
-            assert self.path.endswith('.pot'), (
-                "We cannot handle the file %s here." % self.path)
+        assert self.path.endswith('.pot'), (
+            "We cannot handle the file %s here." % self.path)
 
         # It's an IPOTemplate
         potemplate_set = getUtility(IPOTemplateSet)
@@ -177,8 +176,7 @@ class TranslationImportQueueEntry(SQLBase):
         if self.pofile is not None:
             # The entry has an IPOFile associated where it should be imported.
             return self.pofile
-        elif (self.potemplate is not None and
-              (self.path.endswith('.pot') or self.path == 'en-US.xpi')):
+        elif self.potemplate is not None and self.path.endswith('.pot'):
             # The entry has an IPOTemplate associated where it should be
             # imported.
             return self.potemplate
@@ -558,11 +556,7 @@ class TranslationImportQueue:
         size = len(content)
         file = StringIO(content)
         client = getUtility(ILibrarianClient)
-        if filename.endswith('.xpi'):
-            # using "application/x-xpinstall" would trigger installation in ff
-            ctype = 'application/zip'
-        else:
-            ctype = 'application/x-po'
+        ctype = 'application/x-po'
         alias = client.addFile(
             name=filename,
             size=size,
