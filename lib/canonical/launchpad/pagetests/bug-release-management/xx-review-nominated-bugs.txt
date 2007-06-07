@@ -1,0 +1,18 @@
+= Review Nominated Bugs =
+
+== Distribution Series ==
+
+From the distribution series bug page you can go to a page to review
+all the bugs nominated for this series.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
+    
+    >>> anon_browser.getLink('Review nominations').click()
+    >>> print anon_browser.title
+    Bugs nominated for Hoary
+
+All the basic bug details are displayed.
+
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
+    >>> print_bugtasks(anon_browser.contents)
+    1  Firefox does not support SVG  mozilla-firefox  Medium  Unconfirmed
