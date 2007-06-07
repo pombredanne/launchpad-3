@@ -26,14 +26,14 @@ def process_team(teamname, display_option=False):
             else:
                 email = '--none--'
             output.append('%s, %s' % (member.name, email))
-        return output
+        return sorted(output)
     elif display_option == 'email':
         for member in memberset.allmembers:
             if member.preferredemail:
                 output.append(member.preferredemail.email)
             for email in member.validatedemails:
                 output.append(email.email)
-        return output
+        return sorted(output)
     elif display_option == 'full':
         for member in memberset.allmembers:
             prefmail = member.preferredemail
@@ -55,4 +55,4 @@ def process_team(teamname, display_option=False):
                 ubuntite = "no"
             output.append('%s|%s|%s|%s|%s|%s' % (teamname, member.id, member.name, email,
                                          displayname, ubuntite))
-        return output
+        return sorted(output)
