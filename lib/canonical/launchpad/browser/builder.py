@@ -17,8 +17,6 @@ __all__ = ['BuilderSetNavigation',
 import datetime
 import pytz
 
-from sqlobject import SQLObjectNotFound
-
 import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
@@ -28,14 +26,14 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from canonical.launchpad.browser.build import BuildRecordsView
 
 from canonical.launchpad.interfaces import (
-    IPerson, IBuilderSet, IBuilder, IBuildSet
+    IPerson, IBuilderSet, IBuilder, IBuildSet, NotFoundError
     )
 
 from canonical.lp.dbschema import BuildStatus
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, Navigation, stepthrough, Link,
-    ApplicationMenu, enabled_with_permission)
+    ApplicationMenu, enabled_with_permission, canonical_url)
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 
 
@@ -45,6 +43,19 @@ class BuilderSetNavigation(GetitemNavigation):
 
     def breadcrumb(self):
         return 'Build Farm'
+
+    @stepthrough('+build')
+    def traverse_build(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            build = getUtility(IBuildSet).getByBuildID(build_id)
+        except NotFoundError:
+            return None
+        else:
+            return self.redirectSubTree(canonical_url(build))
 
 
 class BuilderNavigation(Navigation):

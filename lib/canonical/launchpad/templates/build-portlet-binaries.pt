@@ -6,9 +6,9 @@
 
     <ul>
       <li tal:repeat="binpkg context/distroarchreleasebinarypackages">
-        <a tal:attributes="href binpkg/fmt:url">
-           <span tal:replace="binpkg/name">foopkg</span>
-           <span tal:replace="binpkg/version">1.2-3</span>
+        <a tal:attributes="href binpkg/fmt:url"
+           tal:content="string:${binpkg/name} ${binpkg/version}">
+           foopkg 1.2-3
         </a>
       </li>
     </ul>

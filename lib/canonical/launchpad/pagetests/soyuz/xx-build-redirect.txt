@@ -1,0 +1,9 @@
+
+Check that going to +builds/+build/nn redirects to 
+$distro/+source/$package/$version/+build/nn
+
+  >>> browser.open("http://launchpad.dev/+builds/+build/18")
+  >>> browser.url
+  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/18'
+
+  

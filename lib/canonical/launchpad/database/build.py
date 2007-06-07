@@ -8,7 +8,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    StringCol, ForeignKey, IntervalCol)
+    StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.config import config
@@ -321,7 +321,12 @@ class BuildSet:
 
     def getByBuildID(self, id):
         """See IBuildSet."""
-        return Build.get(id)
+        try:
+            build = Build.get(id)
+        except SQLObjectNotFound, e:
+            raise NotFoundError(str(e))
+        else:
+            return build
 
     def getPendingBuildsForArchSet(self, archreleases):
         """See IBuildSet."""

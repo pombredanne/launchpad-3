@@ -3,6 +3,7 @@
   <h2>Provides</h2>
 
   <div class="portletBody portletContent"
+       id="provides"
        tal:define="relationships view/provides">
 
      <tal:has_dep condition="relationships/has_items">

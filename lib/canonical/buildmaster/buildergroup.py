@@ -19,7 +19,7 @@ from canonical.config import config
 from canonical.lp import dbschema
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.interfaces import (
-    IBuildQueueSet, IBuildSet, IBuilderSet, pocketsuffix
+    IBuildQueueSet, IBuildSet, IBuilderSet, pocketsuffix, NotFoundError
     )
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
@@ -142,7 +142,7 @@ class BuilderGroup:
             if queue_item.build.id != build.id:
                 raise BuildJobMismatch('Job build entry mismatch')
 
-        except (SQLObjectNotFound, BuildJobMismatch), reason:
+        except (SQLObjectNotFound, NotFoundError, BuildJobMismatch), reason:
             slave.clean()
             self.logger.warn("Builder '%s' rescued from '%s-%s: %s'" % (
                 builder.name, build_id, queue_item_id, reason))
