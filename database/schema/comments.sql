@@ -169,7 +169,7 @@ COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone
 COMMENT ON TABLE CodeImport IS 'The persistent record of an import from a foreign version control system to Bazaar, from the initial request to the regularly updated import branch.';
 COMMENT ON COLUMN CodeImport.name IS 'Unique name of the import used in the URL.';
 COMMENT ON COLUMN CodeImport.product IS 'The product associated to this code import.';
-COMMENT ON COLUMN CodeImport.series IS 'The ProductSeries whose branch will be set to the imported branch when it is first published. Only used when the import is pending, and cleared when the import is published.'; 
+COMMENT ON COLUMN CodeImport.series IS 'The ProductSeries whose branch will be set to the imported branch when it is first published. Only used when the import is pending, and cleared when the import is published. Not unique, so users are not prevented from setting it in their import because of old unused import requests.'; 
 COMMENT ON COLUMN CodeImport.branch IS 'The Bazaar branch produced by the import system. Initially NULL until the import is published.';
 COMMENT ON COLUMN CodeImport.review_status IS 'Whether this code import request has been reviewed, and whether it was accepted.';
 COMMENT ON COLUMN CodeImport.rcs_type IS 'The revision control system used by the import source. The value is defined in dbschema.RevisionControlSystems.';

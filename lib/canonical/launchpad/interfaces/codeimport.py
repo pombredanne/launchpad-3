@@ -73,7 +73,7 @@ class ICodeImport(Interface):
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(name, product, rcs_type, svn_branch_url=None,
+    def new(name, product, series, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
         """Create a new CodeImport."""
 

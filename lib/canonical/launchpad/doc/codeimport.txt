@@ -16,8 +16,9 @@ registered as a utility.
   >>> from canonical.launchpad.interfaces import ICodeImport, ICodeImportSet
   >>> from zope.interface.verify import verifyObject
   >>> from zope.component import getUtility
+  >>> from zope.security.proxy import removeSecurityProxy
   >>> code_import_set = getUtility(ICodeImportSet)
-  >>> verifyObject(ICodeImportSet, code_import_set)
+  >>> verifyObject(ICodeImportSet, removeSecurityProxy(code_import_set))
   True
 
 We still need to have a ProductSeries around that the imports will be
@@ -47,16 +48,8 @@ repository, known as the "module".
   ...     product=product, series=series,
   ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
 
-  >>> verifyObject(ICodeImport, cvs_import)
+  >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
   True
-
-The CodeImport.series foreign key is unique. It is used to set the series
-branch when the import branch is published, then it is cleared. To let us
-create a Subversion import with the same series, clear it now.
-
-  >>> cvs_import.series = None
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> flush_database_updates()
 
 === Import from Subversion ===
 
@@ -70,12 +63,13 @@ retrieve the tree to import.
   ...     product=product, series=series,
   ...     rcs_type=svn, svn_branch_url=svn_url)
 
-  >>> verifyObject(ICodeImport, svn_import)
+  >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
   True
 
 Write the new code import to the database, so we can use it to test
 CodeImportSet.getByName.
 
+  >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
 
 == Retrieving by name ==
@@ -84,7 +78,7 @@ To retrieve a CodeImport by its unique name, as needed to implement navigation,
 use CodeImportSet.getByName.
 
   >>> found_svn = code_import_set.getByName('svn-test')
-  >>> verifyObject(ICodeImport, found_svn)
+  >>> verifyObject(ICodeImport, removeSecurityProxy(found_svn))
   True
   >>> found_svn.svn_branch_url
   u'svn://svn.example.com/trunk'
