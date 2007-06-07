@@ -16,7 +16,8 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
-from canonical.database.sqlbase import begin, commit, rollback, sqlvalues
+from canonical.launchpad.database import Product
+from canonical.database.sqlbase import begin, rollback, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
 from canonical.config import config
@@ -408,16 +409,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
     def _fetchProductIDInteraction(self, productName):
         """The interaction for fetchProductID."""
-        from canonical.launchpad.database import Product
         begin()
         try:
-            product = Product.selectOne('name = %s' % sqlvalues(productName))
-            if product is None:
-                return ''
-            else:
-                return product.id
+            product = Product.selectOneBy(name=productName)
         finally:
             rollback()
+        if product is None:
+            return ''
+        else:
+            return product.id
 
     def createBranch(self, personID, productID, branchName):
         """See IHostedBranchStorage."""
