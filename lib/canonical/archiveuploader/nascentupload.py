@@ -899,11 +899,11 @@ class NascentUpload:
                 # in order to have a pending publishing record in place.
                 # This change is based on discussions for bug #77853 and aims
                 # to fix a deficiency on published file lookup system.
-                if ((queue_root.sources.count() == 1) and
-                    (queue_root.builds.count() == 0) and
-                    (queue_root.customfiles.count() == 0)):
+                if ((self.queue_root.sources.count() == 1) and
+                    (self.queue_root.builds.count() == 0) and
+                    (self.queue_root.customfiles.count() == 0)):
                     self.logger.debug("Creating PENDING publishing record.")
-                    queue_root.realiseUpload()
+                    self.queue_root.realiseUpload()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 self.queue_root.setUnapproved()
