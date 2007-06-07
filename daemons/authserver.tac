@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 #
 # This configuration creates an XML-RPC service listening on port 8999.
 # See canonical.launchpad.daemons.authserver for more information.
