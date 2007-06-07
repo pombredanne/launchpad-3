@@ -13,6 +13,7 @@ __all__ = [
 
 from canonical.launchpad.interfaces import ICodeImportSet
 from canonical.launchpad.webapp import LaunchpadView, Navigation
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class CodeImportSetNavigation(Navigation):
@@ -26,7 +27,9 @@ class CodeImportSetNavigation(Navigation):
         return self.context.getByName(name)
 
 class CodeImportSetView(LaunchpadView):
-    pass
+    def initialize(self):
+        self.batchnav = BatchNavigator(
+            self.context.getAll(), self.request, size=50)
 
 class CodeImportView(LaunchpadView):
     pass

@@ -5,81 +5,83 @@
   <h1 metal:fill-slot="heading">Code Imports</h1>
 
 <div metal:fill-slot="main" class="visualPadding"
-     tal:define="codeimports context/getAll">
+     tal:define="codeimports view/batchnav/currentBatch">
 
 
   <tal:block tal:condition="not:codeimports">
     <p>No code imports found!</p>
   </tal:block>
 
-  <table class="listing" id="code-import-listing" tal:condition="codeimports">
-    <thead>
-      <tr>
-        <th>
-          Name
-        </th>
-        <th>
-          Date Created
-        </th>
-        <th>
-          Status
-        </th>
-        <th>
-          Product
-        </th>
-        <th>
-          Series
-        </th>
-        <th>
-          Branch
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="codeimport codeimports">
+  <tal:block tal:condition="codeimports">
+    <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-upper" />
+    <table class="listing" id="code-import-listing" width="100%">
+      <thead>
+        <tr>
+          <th>
+            Name
+          </th>
+          <th>
+            Date Created
+          </th>
+          <th>
+            Status
+          </th>
+          <th>
+            Product
+          </th>
+          <th>
+            Series
+          </th>
+          <th>
+            Branch
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="codeimport codeimports">
 
-        <td>
-          <a href="name" tal:attributes="href codeimport/fmt:url" tal:content="codeimport/name">
-            name
-          </a>
-        </td>
+          <td>
+            <a href="name" tal:attributes="href codeimport/fmt:url" tal:content="codeimport/name">
+              name
+            </a>
+          </td>
 
-        <td tal:content="structure codeimport/date_created/fmt:datetime">
-          some date
-        </td>
+          <td tal:content="structure codeimport/date_created/fmt:datetime">
+            some date
+          </td>
 
-        <td tal:content="codeimport/review_status/name">
-          status
-        </td>
+          <td tal:content="codeimport/review_status/name">
+            status
+          </td>
 
-        <td>
-          <a tal:condition="codeimport/product"
-             tal:content="codeimport/product/name"
-             tal:attributes="href codeimport/product/fmt:url">
-            product-name
-          </a>
-        </td>
+          <td>
+            <a tal:content="codeimport/product/name"
+               tal:attributes="href codeimport/product/fmt:url">
+              product-name
+            </a>
+          </td>
 
-        <td>
-          <a tal:condition="codeimport/series"
-             tal:content="codeimport/series/name"
-             tal:attributes="href codeimport/series/fmt:url">
-            series-name
-          </a>
-        </td>
+          <td>
+            <a tal:condition="codeimport/series"
+               tal:content="codeimport/series/name"
+               tal:attributes="href codeimport/series/fmt:url">
+              series-name
+            </a>
+          </td>
 
-        <td>
-          <a tal:condition="codeimport/branch"
-             tal:content="codeimport/branch/name"
-             tal:attributes="href codeimport/branch/fmt:url">
-            branch-name
-          </a>
-        </td>
+          <td>
+            <a tal:condition="codeimport/branch"
+               tal:content="codeimport/branch/name"
+               tal:attributes="href codeimport/branch/fmt:url">
+              branch-name
+            </a>
+          </td>
 
-      </tr>
-    </tbody>
-  </table>
-
+        </tr>
+      </tbody>
+    </table>
+    <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-lower" />
+  </tal:block>
 </div>
 
 </body>
