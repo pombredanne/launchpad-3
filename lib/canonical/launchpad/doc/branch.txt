@@ -403,6 +403,8 @@ True
 >>> gterm_dev.unsubscribe(sabdfl)
 >>> gterm_dev.subscribers.count()
 0
+>>> from canonical.launchpad.webapp import canonical_url
+>>> print canonical_url(subscription)
 
 == Branches related to a person ==
 

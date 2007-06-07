@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'BranchSubscriptionAddView',
     'BranchSubscriptionEditView',
+    'BranchSubscriptionEditOwnView',
     'BranchSubscriptionAddOtherView',
     ]
 
@@ -13,8 +14,7 @@ from canonical.lp.dbschema import BranchSubscriptionNotificationLevel
 from canonical.launchpad.interfaces import IBranchSubscription
 from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView,
-    action, canonical_url, custom_widget)
-from canonical.widgets import LaunchpadDropdownWidget
+    action, canonical_url)
 
 
 class _BranchSubscriptionView(LaunchpadFormView):
@@ -78,7 +78,7 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
         "Cancel the request, and take user back to branch page."
 
 
-class BranchSubscriptionEditView(_BranchSubscriptionView):
+class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
 
     @property
     def initial_values(self):
@@ -152,3 +152,33 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     @action("Cancel")
     def cancel_edit(self, action, data):
         "Cancel the request, and take user back to branch page."
+
+
+class BranchSubscriptionEditView(LaunchpadEditFormView):
+
+    schema = IBranchSubscription
+    field_names = ['notification_level', 'max_diff_lines']
+
+    def initialize(self):
+        self.branch = self.context.branch
+        self.person = self.context.person
+        LaunchpadEditFormView.initialize(self)
+
+    @action("Unsubscribe")
+    def unsubscribe(self, action, data):
+        self.branch.unsubscribe(self.person)
+        self.request.response.addNotification(
+            "%s has been unsubscribed from this branch."
+            % self.person.displayname)
+
+    @action("Change")
+    def change_details(self, action, data):
+        self.updateContextFromData(data)
+
+    @action("Cancel")
+    def cancel_edit(self, action, data):
+        "Cancel the request, and take user back to branch page."
+
+    @property
+    def next_url(self):
+        return canonical_url(self.branch)

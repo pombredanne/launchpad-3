@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
-    IDistroSeriesLanguage)
+    IDistroSeriesLanguage, IBranchSubscription)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -920,3 +920,12 @@ class AdminDistroSeriesLanguage(OnlyRosettaExpertsAndAdmins):
 class AdminDistroSeriesTranslations(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
+
+
+class BranchSubscriptionEdit(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IBranchSubscription
+
+    def checkAuthenticated(self, user):
+        """If the user is a member of the team that is subscribed, they can edit."""
+        return user.inTeam(self.obj.person)

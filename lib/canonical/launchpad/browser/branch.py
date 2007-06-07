@@ -14,6 +14,7 @@ __all__ = [
     'BranchInPersonView',
     'BranchInProductView',
     'BranchView',
+    'BranchSubscriptionsView',
     ]
 
 import cgi
@@ -23,20 +24,22 @@ import pytz
 from zope.event import notify
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+
+from canonical.lp import decorates
+
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, IBugSet, ILaunchpadCelebrities)
+    IBranch, IBranchSet, IBranchSubscription, IBugSet, ILaunchpadCelebrities,
+    IPersonSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
-    LaunchpadEditFormView, action, custom_widget)
+    LaunchpadEditFormView, action)
 from canonical.launchpad.webapp.uri import URI
-from canonical.widgets import ContextWidget
 
 
 def quote(text):
@@ -59,6 +62,14 @@ class BranchNavigation(Navigation):
     @stepto(".bzr")
     def dotbzr(self):
         return BranchRef(self.context)
+
+    @stepthrough("+subscription")
+    def traverse_subscription(self, name):
+        """Traverses to an IBranchSubcription."""
+        person = getUtility(IPersonSet).getByName(name)
+
+        if person is not None:
+            return self.context.getSubscription(person)
 
 
 class BranchContextMenu(ContextMenu):
@@ -395,3 +406,33 @@ class BranchReassignmentView(ObjectReassignmentView):
                    quote(branch.product.displayname),
                    branch.name))
             return False
+
+
+def subscription_sort_key(subscription):
+    return subscription.person.browsername
+
+
+class DecoratedSubscription:
+    decorates(IBranchSubscription, 'subscription')
+
+    def __init__(self, subscription, editable):
+        self.subscription = subscription
+        self.editable = editable
+
+
+class BranchSubscriptionsView(LaunchpadView):
+
+    def isEditable(self, subscription):
+        """A subscription is editable by members of the subscribed team."""
+        # We don't want to say editable if the logged in user
+        # is the same as the person of the subscription.
+        if self.user == subscription.person:
+            return False
+        return self.user.inTeam(subscription.person)
+
+    def subscriptions(self):
+        sorted_subscriptions = sorted(
+            self.context.subscriptions, key=subscription_sort_key)
+        return [DecoratedSubscription(
+                    subscription, self.isEditable(subscription))
+                for subscription in sorted_subscriptions]
