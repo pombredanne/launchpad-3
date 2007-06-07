@@ -11,7 +11,8 @@
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getQuestionLanguages 
-      getAnswerContactsForLanguage getSupportedLanguages"
+      getAnswerContactsForLanguage getSupportedLanguages
+      getAnswerContactRecipients"
       />
     <require 
       permission="launchpad.AnyPerson"

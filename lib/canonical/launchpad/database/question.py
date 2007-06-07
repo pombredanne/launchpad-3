@@ -51,7 +51,7 @@ from canonical.launchpad.database.questionsubscription import (
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import (
-    QuestionNotificationRecipientSet)
+    NotificationRecipientSet)
 from canonical.launchpad.webapp.enum import Item
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -427,7 +427,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getDirectSubscribers(self):
         """See IQuestion."""
-        subscribers = QuestionNotificationRecipientSet()
+        subscribers = NotificationRecipientSet()
         reason = ("You received this question notification because you are "
                   "a direct subscriber of the question.")
         subscribers.add(self.subscribers, reason, 'Subscriber')
@@ -435,8 +435,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getIndirectSubscribers(self):
         """See IQuestion."""
-        subscribers = QuestionNotificationRecipientSet()
-        subscribers.addAnswerContacts(self.target, self.language)
+        subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:
             reason = ('You received this question notification because you '
                       'are the assignee for this question.')
@@ -954,6 +953,32 @@ class QuestionTargetMixin:
             PersonLanguage.language = %s""" % sqlvalues(language))
         return set(self._selectPersonFromAnswerContacts(
             constraints, ['PersonLanguage']))
+
+    def getAnswerContactRecipients(self, language):
+        """See IQuestionTarget."""
+        recipients = NotificationRecipientSet()
+        if language is None:
+            contacts = self.answer_contacts
+        else:
+            contacts = self.getAnswerContactsForLanguage(language)
+        self._addRecipients(recipients, contacts)
+        return recipients
+        
+    def _addRecipients(self, recipients, answer_contacts):
+        """Take care of adding the contacts with the correct rationale."""
+        for person in answer_contacts:
+            reason_start = (
+                "You received this question notification because you are ")
+            if person.isTeam():
+                reason = reason_start + (
+                    'a member of %s, which is an answer contact for %s.' % (
+                        person.displayname, self.displayname))
+                header = 'Answer Contact (%s) @%s' % (self.name, person.name)
+            else:
+                reason = reason_start + (
+                    'an answer contact for %s.' % self.displayname)
+                header = 'Answer Contact (%s)' % self.name
+            recipients.add(person, reason, header)
         
     def getSupportedLanguages(self):
         """See IQuestionTarget.getSupportedLanguages()."""

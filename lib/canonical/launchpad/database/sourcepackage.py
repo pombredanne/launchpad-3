@@ -44,6 +44,7 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
 from canonical.launchpad.database.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.build import Build
+from canonical.launchpad.mailnotification import NotificationRecipientSet
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -109,6 +110,22 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return sorted(
             [person for person in persons], key=attrgetter('displayname'))
     
+    def getAnswerContactRecipients(self, language):
+        """See IQuestionTarget."""
+        # We need to special case the source package case because some are
+        # contacts for the distro while others are only registered for the
+        # package. And we also want the name of the package in context in
+        # the header.
+        recipients = NotificationRecipientSet()
+        self._addRecipients(recipients, self.direct_answer_contacts)
+        distribution = self.distribution
+        if language is None:
+            contacts = distribution.answer_contacts
+        else:
+            contacts = distribution.getAnswerContactsForLanguage(language)
+        self._addRecipients(recipients, contacts)
+        return recipients
+        
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
         answer_contact = AnswerContact.selectOneBy(

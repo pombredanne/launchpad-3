@@ -1158,56 +1158,6 @@ def dispatch_linked_question_notifications(bugtask, event):
     for question in bugtask.bug.questions:
         QuestionLinkedBugStatusChangeNotification(question, event)
 
-class QuestionNotificationRecipientSet(NotificationRecipientSet):
-    """`NotificationRecipientSet` that knows how to add answer contact."""
-
-    # XXX flacoste 20070521 This should probably better live as a method
-    # on IQuestionTarget that returns an INotificationRecipientSet. Once
-    # curtis' branch that add getAnswerContactsForLanguage lands. Move that
-    # in that method.
-    def addAnswerContacts(self, target, language):
-        """Add the answer_contacts for a target as recipients."""
-        # We need to special case the source package case because some are
-        # contacts for the distro while others are only registered for the
-        # package. And we also want the name of the package in context in
-        # the header.
-        if (ISourcePackage.providedBy(target)
-            or IDistributionSourcePackage.providedBy(target)):
-            self._addAnswerContacts(
-                target.direct_answer_contacts, target.displayname,
-                target.displayname)
-            distribution = target.distribution
-            if language is None:
-                contacts = distribution.answer_contacts
-            else:
-                contacts = distribution.getAnswerContactsForLanguage(language)
-            self._addAnswerContacts(
-                contacts, distribution.name, distribution.displayname)
-        else:
-            if language is None:
-                contacts = target.answer_contacts
-            else:
-                contacts = target.getAnswerContactsForLanguage(language)
-            self._addAnswerContacts(contacts, target.name, target.displayname)
-
-    def _addAnswerContacts(self, answer_contacts, target_name,
-                           target_display_name):
-        # Take care of adding the contacts with the correct rationale.
-        for person in answer_contacts:
-            reason_start = (
-            "You received this question notification because you are ")
-            if person.isTeam():
-                reason = reason_start + (
-                    'a member of %s, which is an answer contact for %s.' % (
-                        person.displayname, target_display_name))
-                header = 'Answer Contact (%s) @%s' % (
-                    target_name, person.name)
-            else:
-                reason = reason_start + (
-                    'an answer contact for %s.' % target_display_name)
-                header = 'Answer Contact (%s)' % target_name
-            self.add(person, reason, header)
-
 
 class QuestionNotification:
     """Base class for a notification related to a question.
@@ -1598,9 +1548,7 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
 
     def getRecipients(self):
         """Notify only the answer contacts."""
-        recipients = QuestionNotificationRecipientSet()
-        recipients.addAnswerContacts(self.question.target, None)
-        return recipients
+        return self.question.target.getAnswerContactRecipients(None)
 
     def getBody(self):
         """See QuestionNotification."""
