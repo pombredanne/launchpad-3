@@ -7,7 +7,7 @@ CREATE TABLE CodeImport (
     name text NOT NULL UNIQUE,
     product integer REFERENCES Product NOT NULL,
     series integer REFERENCES ProductSeries,
-    branch integer REFERENCES Branch,
+    branch integer REFERENCES Branch UNIQUE,
 
     review_status integer DEFAULT 1 NOT NULL,
 
