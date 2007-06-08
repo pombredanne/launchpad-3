@@ -19,7 +19,7 @@ __metaclass__ = type
 __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
-    'LaunchpadZopelessLayer', 'PageTestLayer',
+    'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
     'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
     'BzrlibZopelessLayer'
     ]
@@ -40,7 +40,7 @@ from bzrlib.tests import TestCaseInTempDir
 
 from twisted.trial.runner import TrialSuite
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
@@ -557,6 +557,42 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
         cls.txn.uninstall()
         cls.txn = initZopeless(**kw)
         LaunchpadZopelessTestSetup.txn = cls.txn
+
+
+class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
+    """Testing layer for scripts using the main Launchpad database adapter"""
+    
+    @classmethod
+    def setUp(cls):
+        # Make a TestMailBox available
+        # This is registered via ZCML in the LaunchpadFunctionalLayer
+        # XXX flacoste 2006/10/25 This should be configured from ZCML
+        # but execute_zcml_for_scripts() doesn't cannot support a different
+        # testing configuration (bug #68189).
+        getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
+
+    @classmethod
+    def tearDown(cls):
+        # Signal Layer cannot be torn down fully
+        raise NotImplementedError
+
+    @classmethod
+    def testSetUp(cls):
+        from canonical.launchpad.ftests.harness import _reconnect_sqlos
+        # Connect SQLOS
+        _reconnect_sqlos()
+
+    @classmethod
+    def testTearDown(cls):
+        # Disconnect SQLOS so it doesn't get in the way of database resets
+        from canonical.launchpad.ftests.harness import _disconnect_sqlos
+        _disconnect_sqlos()
+
+    @classmethod
+    def switchDbConfig(cls, database_config_section):
+        from canonical.launchpad.ftests.harness import _reconnect_sqlos
+        # Connect SQLOS
+        _reconnect_sqlos(database_config_section=database_config_section)
 
 
 class PageTestLayer(LaunchpadFunctionalLayer):
