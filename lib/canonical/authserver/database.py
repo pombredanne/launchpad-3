@@ -10,12 +10,14 @@ __all__ = [
 
 import os
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
+from canonical.launchpad.interfaces import (
+    UBUNTU_WIKI_URL, IBranchSet, IPersonSet)
 from canonical.launchpad.database import Product
 from canonical.database.sqlbase import begin, rollback, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -462,12 +464,25 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
     def getBranchInformation(self, loginID, userName, productName, branchName):
         """See IHostedBranchStorage."""
-        return self._getBranchInformationInteraction(
-            loginID, userName, productName, branchName)
+        return deferToThread(
+            self._getBranchInformationInteraction, loginID, userName,
+            productName, branchName)
 
     def _getBranchInformationInteraction(self, loginID, userName, productName,
                                          branchName):
-        return (25, 'w')
+        begin()
+        try:
+            branch = getUtility(IBranchSet).getByUniqueName(
+                '~%s/%s/%s' % (userName, productName, branchName))
+            if branch is None:
+                return '', ''
+            requester = getUtility(IPersonSet).get(loginID)
+            if requester.inTeam(branch.owner):
+                return branch.id, 'w'
+            else:
+                return branch.id, 'r'
+        finally:
+            rollback()
 
 
 class DatabaseBranchDetailsStorage:

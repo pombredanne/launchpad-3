@@ -136,8 +136,7 @@ class IHostedBranchStorage(Interface):
 
         :returns: (branch_id, permissions), where 'permissions' is 'w' if the
             user represented by 'loginID' can write to the branch, and 'r' if
-            they cannot. If the branch doesn't exist, return ''. If the branch
-            exists and 'loginID' doesn't have read access to it, return ''.
+            they cannot. If the branch doesn't exist, return ('', '').
         """
 
     def fetchProductID(productName):

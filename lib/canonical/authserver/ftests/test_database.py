@@ -240,6 +240,26 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(25, branch_id)
         self.assertEqual('w', permissions)
 
+    def test_getBranchInformation_nonexistent(self):
+        # When we get the branch information for a non-existent branch, we get
+        # a tuple of two empty strings (the empty string being an approximation
+        # of 'None').
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'name12', 'gnome-terminal', 'doesnt-exist')
+        self.assertEqual('', branch_id)
+        self.assertEqual('', permissions)
+
+    def test_getBranchInformation_unowned(self):
+        # When we get the branch information for a branch that we don't own, we
+        # get the database id and a flag saying that we can only read that
+        # branch.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'sabdfl', 'firefox', 'release-0.8')
+        self.assertEqual(13, branch_id)
+        self.assertEqual('r', permissions)
+
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
