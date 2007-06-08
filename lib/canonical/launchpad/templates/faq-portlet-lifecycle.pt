@@ -1,0 +1,22 @@
+<div class="portlet">
+  <h2>Lifecycle</h2>
+  <div class="portletBody">
+    <table>
+      <tbody>
+        <tr>
+          <th>Created by:</th>
+          <td tal:content="structure context/owner/fmt:link">
+            Foo Bar
+          </td>
+        </tr>
+        <tr>
+          <th>When:</th>
+          <td tal:attributes="title context/date_created/fmt:datetime"
+              tal:content="context/date_created/fmt:displaydate"
+              >2005-10-05
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

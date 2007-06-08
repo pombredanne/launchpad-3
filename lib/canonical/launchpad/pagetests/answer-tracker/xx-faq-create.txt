@@ -119,6 +119,8 @@ The answer message was added to the question's discussion:
     Read the Fine Answer:
     FAQ...: \u201cDisplaying SVG in Firefox\u201d.
 
+== Viewing a FAQ ==
+
 A link to the FAQ appears in the question details portlet:
 
     >>> print extract_text(
@@ -130,5 +132,38 @@ A link to the FAQ appears in the question details portlet:
     >>> print backslashreplace(admin_browser.title)
     Mozilla Firefox FAQ #...: \u201cDisplaying SVG in Firefox\u201d
 
+The FAQ's title appears as the prime heading:
 
+    >>> main_content = find_main_content(admin_browser.contents)
+    >>> print main_content.find('h1').renderContents()
+    Displaying SVG in Firefox
 
+The FAQ summmary and content appears just below:
+
+    >>> print find_tag_by_id(
+    ...     admin_browser.contents, 'faq-summary').renderContents()
+    Describe how to get Firefox to display SVG.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     admin_browser.contents, 'faq-content'))
+    Upgrade your browser to Firefox 2.0.
+
+The FAQ's original author and creation date appears in the the
+'Lifecycle' portlet:
+
+    >>> print extract_text(find_portlet(admin_browser.contents, 'Lifecycle'))
+    Lifecycle
+    Created by: Foo Bar
+    When: ...
+
+A 'Related questions' portlet contains links to the question answered by
+the FAQ:
+
+    >>> print extract_text(find_portlet(
+    ...     admin_browser.contents, 'Related questions'))
+    Related questions
+    #2 Problem showing the SVG demo on W3C site
+
+    >>> print admin_browser.getLink(
+    ...     'Problem showing the SVG demo on W3C site').url
+    http://answers.launchpad.dev/firefox/+question/2

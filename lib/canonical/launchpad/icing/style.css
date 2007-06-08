@@ -1469,7 +1469,7 @@ li {
 }
 */
 
-.bug-summary {
+.bug-summary, .summary {
   font-weight: bold;
 }
 

@@ -26,7 +26,20 @@
     permission="zope.Public"
     template="../templates/faq-index.pt"
     />
-
+  
+  <browser:page
+    name="+portlet-lifecycle"
+    for="canonical.launchpad.interfaces.IFAQ"
+    permission="zope.Public"
+    template="../templates/faq-portlet-lifecycle.pt"
+    />
+  <browser:page
+    name="+portlet-related-questions"
+    for="canonical.launchpad.interfaces.IFAQ"
+    permission="zope.Public"
+    template="../templates/faq-portlet-related-questions.pt"
+    />
+  
   <adapter
     for="canonical.launchpad.interfaces.IFAQ"
     provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
