@@ -48,7 +48,8 @@ class IFAQ(IHasOwner):
 
     content = Text(
         title=_('Content'),
-        description=_('The FAQ content. This is in plain text format.'),
+        description=_('The FAQ content. This is in plain text format. '
+                      'Used as an alternative to using an external link.'),
         required=False)
 
     url = URIField(

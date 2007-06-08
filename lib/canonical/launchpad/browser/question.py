@@ -10,6 +10,7 @@ __all__ = [
     'QuestionChangeStatusView',
     'QuestionConfirmAnswerView',
     'QuestionContextMenu',
+    'QuestionCreateFAQView',
     'QuestionEditView',
     'QuestionLinkFAQView',
     'QuestionMakeBugView',
@@ -47,7 +48,7 @@ from canonical.launchpad.event import (
 from canonical.launchpad.helpers import is_english_variant, request_languages
 
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQTarget,
+    CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQ, IFAQTarget,
     ILanguageSet, ILaunchpadStatisticSet, IProject, IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
     IQuestionSet, IQuestionTarget, UnexpectedFormData)
@@ -856,6 +857,58 @@ class SearchAllQuestionsView(SearchQuestionsView):
                 self.request.response.redirect(canonical_url(question))
 
 
+class QuestionCreateFAQView(LaunchpadFormView):
+    """View to create a new FAQ."""
+
+    schema = IFAQ
+
+    label = _('Create a new FAQ')
+
+    field_names = ['title', 'keywords', 'url', 'summary', 'content']
+
+    @cachedproperty
+    def faq_target(self):
+        """Return the IFAQTarget that should be use for this question."""
+        # Adapt the question's target.
+        return IFAQTarget(self.context.target)
+
+    @property
+    def initial_values(self):
+        """Fill title and summary based on the question."""
+        question = self.context
+        return {
+            'title': question.title,
+            'summary': question.description,
+            'message': self.default_message,
+            }
+
+    @property
+    def default_message(self):
+        """The default link message to use."""
+        return '%s suggests this article as an answer to your question:' % (
+            self.user.displayname)
+        
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+
+        Adds a message field to the form.
+        """
+        super(QuestionCreateFAQView, self).setUpFields()
+        self.form_fields += form.Fields(IQuestionAddMessageForm['message'])
+
+    @action(_('Create and Link'), name='create_and_link')
+    def create_and_link_action(self, action, data):
+        """Creates the FAQ and link it to the question."""
+
+        faq = self.faq_target.newFAQ(
+            self.user, data['title'], data['summary'], url=data['url'],
+            content=data['content'])
+        self.context.linkFAQ(self.user, faq, data['message'])
+        
+        # Redirect to the question.
+        self.next_url = canonical_url(self.context)
+
+
 class QuestionLinkFAQView(LaunchpadFormView):
     """View to search for and link an existing FAQ to a question."""
 
@@ -871,7 +924,7 @@ class QuestionLinkFAQView(LaunchpadFormView):
         # Adapt the question's target.
         return IFAQTarget(self.context.target)
 
-
+    
 class QuestionSOP(StructuralObjectPresentation):
     """Provides the structural heading for IQuestion."""
 

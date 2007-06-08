@@ -893,6 +893,9 @@ question_change_status = ContextId('Change status of question #%s')
 
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
 
+def question_createfaq(context, view):
+    return "Create a FAQ for %s" % view.faq_target.displayname
+
 question_edit = ContextId('Edit question #%s details')
 
 question_history = ContextId('History of question #%s')

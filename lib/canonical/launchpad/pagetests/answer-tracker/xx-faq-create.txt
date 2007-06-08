@@ -74,6 +74,11 @@ He can also enters keywords describing the FAQ:
     >>> admin_browser.getControl('Keywords').value = (
     ...     'SVG scalable vector graphic')
 
+And he enters the FAQ content in the text field:
+
+    >>> admin_browser.getControl('Content').value = (
+    ...     'Upgrade your browser to Firefox 2.0.')
+
 There is a 'Message' field that will be used to answer the question.
 It is pre-filled, but he can change its value:
 
