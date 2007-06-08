@@ -169,14 +169,17 @@ class FakeLaunchpad:
                              branch_name):
         for branch_id, branch in self._branch_set.iteritems():
             owner = self._person_set[branch['user_id']]
-            product = self._product_set[branch['product_id']]
-            if ((owner['name'], product['name'], branch['name'])
+            if branch['product_id'] == '':
+                product = '+junk'
+            else:
+                product = self._product_set[branch['product_id']]['name']
+            if ((owner['name'], product, branch['name'])
                 == (user_name, product_name, branch_name)):
                 if login_id in owner['teams']:
                     return branch_id, 'w'
                 else:
                     return branch_id, 'r'
-        return ''
+        return '', ''
 
     def getUser(self, loginID):
         """See IUserDetailsStorage.getUser."""

@@ -86,22 +86,6 @@ class LaunchpadServer(Server):
         self.user_id = self.user_dict['id']
         self.user_name = self.user_dict['name']
         self.backing_transport = transport
-        # XXX: JonathanLange 2007-05-29, Instead of fetching branch information
-        # as needed, we load it all when the server is started. This mimics the
-        # behaviour of the SFTP server, and is the path of least resistance
-        # given the authserver's present API. However, in the future, we will
-        # want to get branch information as required.
-        self._branches = dict(self._iter_branches())
-
-    def _iter_branches(self):
-        for team_dict in self.user_dict['teams']:
-            products = self.authserver.getBranchesForUser(team_dict['id'])
-            for product_id, product_name, branches in products:
-                if product_name == '':
-                    product_name = '+junk'
-                for branch_id, branch_name in branches:
-                    yield ((team_dict['name'], product_name, branch_name),
-                           branch_id)
 
     def mkdir(self, virtual_path):
         """Make a new directory for the given virtual path.
@@ -165,11 +149,7 @@ class LaunchpadServer(Server):
                     "Directories directly under a user directory must be "
                     "named after a product name registered in Launchpad "
                     "<https://launchpad.net/>.")
-        branch_id = self.authserver.createBranch(user_id, product_id, branch)
-        # Maintain the local cache of branch information. Alternatively, we
-        # could do: self._branches = dict(self._iter_branches())
-        self._branches[(user, product, branch)] = branch_id
-        return branch_id
+        return self.authserver.createBranch(user_id, product_id, branch)
 
     def translate_virtual_path(self, virtual_path):
         """Translate an absolute virtual path into the real path on the backing
@@ -198,9 +178,9 @@ class LaunchpadServer(Server):
             raise TransportNotPossible(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
-        try:
-            branch_id = self._branches[(user, product, branch)]
-        except KeyError:
+        branch_id, permissions = self.authserver.getBranchInformation(
+            self.user_id, user, product, branch)
+        if branch_id == '':
             raise UntranslatablePath(path=virtual_path, user=self.user_name)
         return '/'.join([branch_id_to_path(branch_id), path])
 
