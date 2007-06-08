@@ -6,9 +6,7 @@
 # XXX: Carlos Perello Marin 2005-04-15: This code will be "componentized"
 # soon. https://launchpad.ubuntu.com/malone/bugs/403
 
-import sys
 import re
-import textwrap
 import codecs
 import logging
 import doctest
@@ -264,25 +262,95 @@ class POMessage(object):
         "\n"
         msgstr ""
 
+        When the wrapping size was exactly gotten past by in the middle of
+        escape sequence like \" or \\, it got cut off in there, thus
+        creating a broken PO message.  This is bug #46156.
+        >>> pomsg = POMessage(
+        ...     msgid="1234567890abcde word\"1234567890abcdefghij",
+        ...     msgstr="")
+        >>> print pomsg.__unicode__(20)
+        msgid ""
+        "1234567890abcde "
+        "word\"1234567890abcd"
+        "efghij"
+        msgstr ""
+
+        Lets also make sure that the unconditional break is not occurring
+        inside a single long word in the middle of the escape sequence
+        like \" or \\:
+
+        >>> pomsg = POMessage(
+        ...     msgid="1234567890abcdefghij\\klmno",
+        ...     msgstr="")
+        >>> print pomsg.__unicode__(20)
+        msgid ""
+        "1234567890abcdefghij"
+        "\\klmno"
+        msgstr ""
+        >>> pomsg = POMessage(
+        ...     msgid="1234567890abcdefgh\\ijklmno",
+        ...     msgstr="")
+        >>> print pomsg.__unicode__(20)
+        msgid ""
+        "1234567890abcdefgh\\"
+        "ijklmno"
+        msgstr ""
+        >>> pomsg = POMessage(
+        ...     msgid="1234567890abcdefg\\\\hijklmno",
+        ...     msgstr="")
+        >>> print pomsg.__unicode__(20)
+        msgid ""
+        "1234567890abcdefg\\"
+        "\\hijklmno"
+        msgstr ""
+
+
+        For compatibility with msgcat -w, it also wraps on \\ properly.
+
+        >>> pomsg = POMessage(
+        ...     msgid="\\\\\\\\\\",
+        ...     msgstr="")
+        >>> print pomsg.__unicode__(5)
+        msgid ""
+        "\\\\"
+        "\\\\"
+        "\\"
+        msgstr ""
+        >>> print pomsg.__unicode__(6)
+        msgid ""
+        "\\\\\\"
+        "\\\\"
+        msgstr ""
 
         '''
+        def local_escape(text):
+            ret = text.replace(u'\\', u'\\\\')
+            ret = ret.replace(ur'"', ur'\"')
+            ret = ret.replace(u'\t', u'\\t')
+            return ret.replace(u'\n', u'\\n')
+
+        # Quickly get escaped character byte widths using
+        #   escaped_length.get(char, 1)
+        escaped_length = {
+            '\\': 2,
+            '\"': 2,
+            '\t': 2,
+            '\n': 2}
+
+        # What characters to wrap at
+        wrap_at = [' ', '\t', '\n', '-', '\\']
+
         if wrap_width is None:
             raise AssertionError('wrap_width should not be None')
         wrapped_lines = [u'%s%s' % (prefix, u' ""')]
         if not text:
             return wrapped_lines
-        text = text.replace(u'\\', u'\\\\')
-        text = text.replace(ur'"', ur'\"')
-        text = text.replace(u'\t', u'\\t')
-        if (text.endswith('\n') and '\n' not in text[:-1]):
-            # If there is only one newline char and it's at the end of the
-            # string.
-            text = text.replace(u'\n', u'\\n')
-        unwrapped_line = u'%s "%s"' % (prefix, text)
-        if ('\n' not in unwrapped_line and
-            len(unwrapped_line) <= wrap_width):
-            return [unwrapped_line]
-        del unwrapped_line
+        if '\n' not in text[:-1]:
+            # If there are no new-lines, or it's at the end of string.
+            unwrapped_line = u'%s "%s"' % (prefix, local_escape(text))
+            if len(unwrapped_line) <= wrap_width:
+                return [unwrapped_line]
+            del unwrapped_line
         paragraphs = text.split('\n')
         end = len(paragraphs) - 1
         for i, paragraph in enumerate(paragraphs):
@@ -290,29 +358,53 @@ class POMessage(object):
                 if not paragraph:
                     break
             else:
-                paragraph += u'\\n'
-            if len(paragraph) <= wrap_width:
-                wrapped_line = [u'%s%s' % (u'"', paragraph)]
+                paragraph += '\n'
+
+            if len(local_escape(paragraph)) <= wrap_width:
+                wrapped_line = [paragraph]
             else:
                 line = u''
+                escaped_line_len = 0
                 new_block = u''
+                escaped_new_block_len = 0
                 wrapped_line = []
                 for char in paragraph:
-                    if len(line) + len(new_block) < wrap_width:
-                        if char in [' ', '\t', '\n', '-']:
+                    escaped_char_len = escaped_length.get(char, 1)
+                    if (escaped_line_len + escaped_new_block_len
+                        + escaped_char_len <= wrap_width):
+                        if char in wrap_at:
                             line += u'%s%s' % (new_block, char)
+                            escaped_line_len += (escaped_new_block_len
+                                                 + escaped_char_len)
                             new_block = u''
+                            escaped_new_block_len = 0
                         else:
                             new_block += char
+                            escaped_new_block_len += escaped_char_len
                     else:
-                        wrapped_line.append(u'%s%s' % (u'"', line))
-                        line = u'%s%s' % (new_block, char)
-                        new_block = u''
+                        if escaped_line_len == 0:
+                            # Word is too long to fit into single line,
+                            # break it carefully, watching not to break
+                            # in the middle of the escape
+                            line = new_block
+                            line_len = len(line)
+                            escaped_line_len = escaped_new_block_len
+                            while escaped_line_len > wrap_width:
+                                escaped_line_len -= (
+                                    escaped_length.get(line[line_len-1], 1))
+                                line_len -= 1
+                            line = line[:line_len]
+                            new_block = new_block[line_len:]
+                            escaped_new_block_len -= escaped_line_len
+                        wrapped_line.append(line)
+                        line = u''
+                        escaped_line_len = 0
+                        new_block += char
+                        escaped_new_block_len += escaped_char_len
                 if line or new_block:
-                    wrapped_line.append(u'%s%s%s' % (u'"', line, new_block))
-            for line in wrapped_line[:-1]:
-                wrapped_lines.append(u'%s%s' % (line, u'"'))
-            wrapped_lines.append(u'%s%s' % (wrapped_line[-1], u'"'))
+                    wrapped_line.append(u'%s%s' % (line, new_block))
+            for line in wrapped_line:
+                wrapped_lines.append(u'"%s"' % (local_escape(line)))
         return wrapped_lines
 
 class POHeader(dict, POMessage):
@@ -615,6 +707,7 @@ class POParser(object):
         self.header_factory = header_factory
         self.header = None
         self.messages = []
+        self._messageids = {}
         self._pending_chars = ''
         self._pending_unichars = u''
         self._lineno = 0
@@ -653,31 +746,56 @@ class POParser(object):
         self._pending_unichars += newchars
         self._pending_chars = self._pending_chars[length:]
 
-    def _get_line(self):
-        # do we know what charset the data is in yet?
+    def _get_header_line(self):
         if self.header:
-            parts = re.split(r'\n|\r\n|\r', self._pending_unichars, 1)
-            if len(parts) == 1:
-                # only one line
-                return None
-            line, self._pending_unichars = parts
-            return line
-        else:
-            parts = re.split(r'\n|\r\n|\r', self._pending_chars, 1)
-            if len(parts) == 1:
-                # only one line
-                return None
-            line, self._pending_chars = parts
-            return line
+            # We know what charset the data is in, as we've already
+            # parsed the header.  However, we're going to handle this
+            # more efficiently, so we don't want to use _get_header_line
+            # except for parsing the header.
+            raise AssertionError(
+                'using _get_header_line after header is parsed')
+
+        # We don't know what charset the data is in, so we parse it one line
+        # at a time until we have the header, and then we'll know how to
+        # treat the rest of the data.
+        parts = re.split(r'\n|\r\n|\r', self._pending_chars, 1)
+        if len(parts) == 1:
+            # only one line
+            return None
+        line, self._pending_chars = parts
+        return line
 
     def write(self, string):
         """Parse string as a PO file fragment."""
         self._pending_chars += string
-        self._convert_chars()
-        line = self._get_line()
+        if self.header:
+            self._convert_chars()
+            return
+
+        # Header not parsed yet. Do that first, inefficiently.
+        # It ought to be short, so this isn't disastrous.
+        line = self._get_header_line()
         while line is not None:
             self.parse_line(line)
-            line = self._get_line()
+            if self.header:
+                break
+            line = self._get_header_line()
+
+        if line is None:
+            # There is nothing left to parse.
+            return
+
+        # Parse anything left all in one go.
+        lines = re.split(r'\n|\r\n|\r', self._pending_unichars)
+        if lines:
+            # If we have any lines, the last one should be the empty string,
+            # if we have a properly-formed po file with a new line at the
+            # end.  So, put the last line into _pending_unichars so the rest
+            # of the parser gets what's expected.
+            self._pending_unichars = lines[-1]
+            lines = lines[:-1]
+        for line in lines:
+            self.parse_line(line)
 
     def _make_dataholder(self):
         self._partial_transl = {}
@@ -694,15 +812,14 @@ class POParser(object):
 
     def append(self):
         if self._partial_transl:
-            for message in self.messages:
-                if message.msgid == self._partial_transl['msgid']:
-                    lineno = self._partial_transl['_lineno']
-                    # XXX: I changed the exception below to use %r
-                    # because the original %d returned "<unprintable
-                    # instance object>" in a traceback in bug 2896
-                    #    -- kiko, 2005-10-06
-                    raise POInvalidInputError('Po file: duplicate msgid '
-                                              'ending on line %r' % lineno)
+            if self._messageids.has_key(self._partial_transl['msgid']):
+                lineno = self._partial_transl['_lineno']
+                # XXX: I changed the exception below to use %r
+                # because the original %d returned "<unprintable
+                # instance object>" in a traceback in bug 2896
+                #    -- kiko, 2005-10-06
+                raise POInvalidInputError('Po file: duplicate msgid '
+                                          'ending on line %r' % lineno)
             try:
                 transl = self.translation_factory(header=self.header,
                                                   **self._partial_transl)
@@ -711,6 +828,7 @@ class POParser(object):
                     e.lno = self._partial_transl['_lineno']
                 raise
             self.messages.append(transl)
+            self._messageids[self._partial_transl['msgid']] = True
         self._partial_transl = None
 
     def _make_header(self):

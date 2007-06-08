@@ -3,7 +3,7 @@ trackers.
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/')
   >>> user_browser.title
-  'Bug trackers registered in Malone'
+  'Bug trackers registered in Launchpad'
 
 Now we are going to add a bug tracker. First, can we see the form?
 

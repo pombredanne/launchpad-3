@@ -1,0 +1,48 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Versions</h1>
+    <tal:has-serieses condition="context/serieses">
+    <ul>
+      <li class="distroseries" tal:repeat="series context/serieses">
+        <a tal:attributes="href series/fmt:url">
+          <tal:version replace="series/version" />
+          (<tal:codename replace="series/displayname" />)
+        </a>
+        <div tal:content="series/summary" />
+        <div>
+          <strong>Status:</strong>
+          <span tal:replace="series/status/title" />
+        </div>
+        <div tal:condition="series/parentseries">
+          <strong>Derives from:</strong>
+          <a tal:attributes="href series/parentseries/fmt:url">
+            <tal:distro
+              replace="series/parentseries/distribution/displayname" />
+            <tal:distroseries replace="series/parentseries/displayname" />
+          </a>
+        </div>
+        <br />
+      </li>
+    </ul>
+    </tal:has-serieses>
+
+    <tal:no-serieses condition="not: context/serieses">
+    <p><tal:name replace="context/displayname" /> has no versions registered
+      yet.
+    </p>
+    </tal:no-serieses>
+</div>
+</body>
+</html>
+

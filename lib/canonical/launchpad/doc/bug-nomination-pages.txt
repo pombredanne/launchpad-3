@@ -1,10 +1,10 @@
 Bug Nomination Pages
 ====================
 
-Release targeting is done on the +nominate page of a bug. From here,
+Series targeting is done on the +nominate page of a bug. From here,
 normal users can propose that the bug be fixed in specific distribution
-releases and product series, and release managers can directly target
-the bug to releases for which they are drivers.
+and product series, and release managers can directly target
+the bug to series for which they are drivers.
 
     >>> from zope.component import getUtility, getView
 
@@ -30,13 +30,14 @@ Submitting Nominations
 BugNominationView is a LaunchpadFormView. It expects a "submit" action
 to process nominations.
 
-Here's an example of nominating a bug for a distrorelease.
+Here's an example of nominating a bug for a distroseries.
 
     >>> login("no-priv@canonical.com")
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     "field.actions.submit": "Submit Nominations",
-    ...     "field.nominatable_releases": ["warty"]})
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={"field.actions.submit": "Submit Nominations",
+    ...           "field.nominatable_serieses": ["warty"]})
 
     >>> nomination_view = getView(
     ...     bug_one_in_ubuntu_firefox, "+nominate", request)
@@ -50,7 +51,7 @@ Here's an example of nominating a bug for a distrorelease.
     >>> launchbag.add(bug_one_in_ubuntu_firefox.distribution)
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> ubuntu_warty = ubuntu.getRelease("warty")
+    >>> ubuntu_warty = ubuntu.getSeries("warty")
 
     >>> bug_one = bug_one_in_ubuntu_firefox.bug
     >>> bug_one.canBeNominatedFor(ubuntu_warty)
@@ -79,9 +80,10 @@ Here's an example of nominating a bug for a productseries.
 
     >>> firefox = bug_one_in_firefox.target
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     "field.actions.submit": "Submit Nominations",
-    ...     "field.nominatable_releases": ["trunk"]})
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={"field.actions.submit": "Submit Nominations",
+    ...           "field.nominatable_serieses": ["trunk"]})
 
     >>> nomination_view = getView(
     ...     bug_one_in_firefox, "+nominate", request)
@@ -119,7 +121,7 @@ from bugtasks.
 The +edit-form renders the form that lets a driver approve and decline
 nominations.
 
-    >>> ubuntu_hoary = ubuntu.getRelease("hoary")
+    >>> ubuntu_hoary = ubuntu.getSeries("hoary")
     >>> hoary_nomination = bug_one.getNominationFor(ubuntu_hoary)
 
 A Proposed nomination shows as "Nominated", including an approve/decline
@@ -147,7 +149,7 @@ approval.
     >>> hoary_nomination_edit_form.shouldShowDeclineButton()
     False
 
-Release Targeting For Release Managers
+Series Targeting For Release Managers
 --------------------------------------
 
 When a release manager "nominates" a bug, the nomination is immediately
@@ -189,9 +191,10 @@ launchpad.Driver permission on the nomination.
     >>> cprov.inTeam(ubuntu_team)
     True
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     "field.actions.submit": "Submit Nominations",
-    ...     "field.nominatable_releases": ["grumpy"]})
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={"field.actions.submit": "Submit Nominations",
+    ...           "field.nominatable_serieses": ["grumpy"]})
 
     >>> nomination_view = getView(bug_one_in_ubuntu_firefox, "+nominate", request)
     >>> launchbag.clear()

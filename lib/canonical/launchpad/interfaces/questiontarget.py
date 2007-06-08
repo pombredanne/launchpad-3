@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'IAnswersFrontPageSearchForm',
     'IQuestionTarget',
-    'IManageAnswerContactsForm',
     'ISearchQuestionsForm',
     'get_supported_languages',
     ]
@@ -16,7 +15,7 @@ import sets
 
 from zope.component import getUtility
 from zope.interface import Interface
-from zope.schema import Bool, Choice, List, Set, TextLine
+from zope.schema import Choice, List, Set, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.language import ILanguageSet
@@ -119,18 +118,6 @@ class IQuestionTarget(ISearchableByQuestionOwner):
 
 # These schemas are only used by browser/questiontarget.py and should really
 # live there. See Bug #66950.
-class IManageAnswerContactsForm(Interface):
-    """Schema for managing answer contacts."""
-
-    want_to_be_answer_contact = Bool(
-        title=_("Subscribe me automatically to new question"),
-        required=False)
-    answer_contact_teams = List(
-        title=_("Team answer contacts"),
-        value_type=Choice(vocabulary="PersonTeamParticipations"),
-        required=False)
-
-
 class ISearchQuestionsForm(Interface):
     """Schema for the search question form."""
 

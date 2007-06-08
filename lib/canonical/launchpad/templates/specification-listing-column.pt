@@ -1,0 +1,6 @@
+<img src="/@@/blueprint" tal:replace="structure context/image:icon" />
+<a tal:content="context/name"
+   tal:attributes="href context/fmt:url; title context/title">
+   spec-listing-name</a> for
+<a tal:content="context/target/name"
+   tal:attributes="href context/target/fmt:url">ubuntu</a>

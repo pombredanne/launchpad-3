@@ -38,12 +38,13 @@ comment, of the bug report.
     >>> login("foo.bar@canonical.com")
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> request = LaunchpadTestRequest(form={
-    ...     'field.title': 'bug in bin pkg',
-    ...     'field.comment': 'a bug in a bin pkg',
-    ...     'packagename_option': 'choose',
-    ...     'field.packagename': 'linux-2.6.12',
-    ...     'field.actions.submit_bug': 'Submit Bug Report'})
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.title': 'bug in bin pkg',
+    ...           'field.comment': 'a bug in a bin pkg',
+    ...           'packagename_option': 'choose',
+    ...           'field.packagename': 'linux-2.6.12',
+    ...           'field.actions.submit_bug': 'Submit Bug Report'})
 
     >>> ubuntu_filebug = getView(ubuntu, "+filebug", request)
     >>> launchbag.clear()
@@ -78,10 +79,11 @@ the bugtask.
 2. Filing a bug on a product.
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
-    >>> request = LaunchpadTestRequest(form={
-    ...     'field.title': 'a firefox bug',
-    ...     'field.comment': 'a test bug',
-    ...     'field.actions.submit_bug': 'Submit Bug Report'})
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.title': 'a firefox bug',
+    ...           'field.comment': 'a test bug',
+    ...           'field.actions.submit_bug': 'Submit Bug Report'})
 
     >>> firefox_filebug = getView(firefox, "+filebug", request)
 
@@ -94,12 +96,13 @@ You can also access the +filebug page from a sourcepackage.
 
     >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     'field.title': 'a firefox bug',
-    ...     'field.comment': 'a test bug',
-    ...     'packagename_option': 'choose',
-    ...     'field.packagename': 'mozilla-firefox',
-    ...     'field.actions.submit_bug': 'Submit Bug Report'})
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.title': 'a firefox bug',
+    ...           'field.comment': 'a test bug',
+    ...           'packagename_option': 'choose',
+    ...           'field.packagename': 'mozilla-firefox',
+    ...           'field.actions.submit_bug': 'Submit Bug Report'})
 
     >>> ubuntu_firefox_filebug = getView(
     ...     ubuntu_firefox, "+filebug", request)
@@ -122,21 +125,21 @@ the database.
 
 To add new comments, users POST to the +addcomment page:
 
-    >>> request = LaunchpadTestRequest(form={
-    ...                 "field.subject": latest_ubuntu_bugtask.bug.title,
-    ...                 "field.comment": "I can reproduce this bug.",
-    ...                 'field.actions.save': 'Save Changes'})
-    ...             })
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': latest_ubuntu_bugtask.bug.title,
+    ...           'field.comment': 'I can reproduce this bug.',
+    ...           'field.actions.save': 'Save Changes'})
     >>> ubuntu_addcomment = getView(latest_ubuntu_bugtask, "+addcomment-form", request)
     >>> ubuntu_addcomment.initialize()
 
 They may even, by mistake, post the same comment twice:
 
-    >>> request = LaunchpadTestRequest(form={
-    ...                 "field.subject": latest_ubuntu_bugtask.bug.title,
-    ...                 "field.comment": "I can reproduce this bug.",
-    ...                 'field.actions.save': 'Save Changes'})
-    ...             })
+    >>> request = LaunchpadTestRequest(
+    ...     method="POST",
+    ...     form={'field.subject': latest_ubuntu_bugtask.bug.title,
+    ...           'field.comment': 'I can reproduce this bug.',
+    ...           'field.actions.save': 'Save Changes'})
     >>> ubuntu_addcomment = getView(latest_ubuntu_bugtask, "+addcomment-form", request)
     >>> ubuntu_addcomment.initialize()
 
@@ -451,7 +454,7 @@ approved nomination will have created a task anyway.
     bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
 
-Let's nominate the bug for upstream and an Ubuntu release and see how
+Let's nominate the bug for upstream and an Ubuntu series and see how
 the list changes.
 
 (Login as an unprivileged user to be able to nominate.)
@@ -459,7 +462,7 @@ the list changes.
     >>> login("no-priv@canonical.com")
 
     >>> current_user = getUtility(ILaunchBag).user
-    >>> ubuntu_warty = ubuntu.getRelease("warty")
+    >>> ubuntu_warty = ubuntu.getSeries("warty")
     >>> firefox_trunk = firefox.getSeries("trunk")
 
     >>> bug_one.addNomination(current_user, target=ubuntu_warty)
@@ -517,7 +520,7 @@ approve/decline nominations.)
     >>> login("foo.bar@canonical.com")
     >>> current_user = getUtility(ILaunchBag).user
 
-    >>> ubuntu_hoary = ubuntu.getRelease("hoary")
+    >>> ubuntu_hoary = ubuntu.getSeries("hoary")
     >>> hoary_nomination = bug_one.getNominationFor(ubuntu_hoary)
     >>> warty_nomination = bug_one.getNominationFor(ubuntu_warty)
 

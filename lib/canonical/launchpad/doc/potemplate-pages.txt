@@ -23,10 +23,10 @@ Let's got some needed objects.
     >>> sourcepackagename = sourcepackagenameset['evolution']
     >>> distributionset = getUtility(IDistributionSet)
     >>> distribution = distributionset['ubuntu']
-    >>> release = distribution['hoary']
+    >>> series = distribution['hoary']
     >>> potemplateset = getUtility(IPOTemplateSet)
     >>> potemplatesubset = potemplateset.getSubset(
-    ...     distrorelease=release, sourcepackagename=sourcepackagename)
+    ...     distroseries=series, sourcepackagename=sourcepackagename)
     >>> potemplate = potemplatesubset['evolution-2.2']
 
 It's time to check that the upload form sets the right fields.

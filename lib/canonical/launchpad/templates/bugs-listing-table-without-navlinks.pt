@@ -18,7 +18,9 @@
     </thead>
     <tbody>
       <tr tal:repeat="bugtask context/getBugListingItems">
-        <td class="icon right" tal:content="structure bugtask/image:icon" />
+        <td class="icon right">
+          <img src="/@@/bug" tal:replace="structure bugtask/image:icon" />
+        </td>
         <td
           class="amount"
           tal:content="bugtask/bug/id"
@@ -31,16 +33,7 @@
              tal:condition="context/show_column/summary|nothing">
             drop-down list in search bar disappears when using blah blah blah
           </a>
-
-          <!-- BugBranch badges -->
-          <tal:bugbranch repeat="bugbranch bugtask/bugbranches">
-            <a tal:define="branch bugbranch/branch"
-               tal:attributes="href branch/fmt:url;
-                               title string:${branch/displayname} (${bugbranch/status/title})">
-              <img src="/@@/branch" />
-            </a>
-          </tal:bugbranch>
-
+          <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
         </td>
         <td tal:content="bugtask/targetname"
             tal:condition="context/show_column/targetname|nothing"

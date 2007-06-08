@@ -77,7 +77,6 @@ Verify that the instructions are in clear text.
   Thanks,
   <BLANKLINE>
   The Launchpad Team
-  launchpad@ubuntu.com
 
 Finally, kill zeca:
 

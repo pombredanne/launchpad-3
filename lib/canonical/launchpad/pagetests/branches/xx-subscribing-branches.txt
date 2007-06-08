@@ -72,10 +72,10 @@ There should be only one person subscribed to the branch now.
   >>> print_subscribers(browser.contents)
   Sample Person
 
-Now the link should say "Edit Subscription" in the actions menu.
+Now the link should say "Edit subscription" in the actions menu.
 Lets go to that page.
 
-  >>> browser.getLink('Edit Subscription').click()
+  >>> browser.getLink('Edit subscription').click()
 
 Clicking 'Cancel' should take us back to the branch page, and not
 alter anything to do with our subscription.
@@ -87,7 +87,7 @@ alter anything to do with our subscription.
 
 Now back to the editing page to change the details of our subscription.
 
-  >>> browser.getLink('Edit Subscription').click()
+  >>> browser.getLink('Edit subscription').click()
 
 Let's change our subscription to getting emails for modifications, and diffs,
 and limit our diffs to 5000 lines.
@@ -112,7 +112,7 @@ informational message for us to see.
 
 We do not really want to be subscribed. We load the edit subcription page.
 
-  >>> browser.getLink('Edit Subscription').click()
+  >>> browser.getLink('Edit subscription').click()
 
 And when we post this form, we see a message saying we are no longer a
 subscriber.

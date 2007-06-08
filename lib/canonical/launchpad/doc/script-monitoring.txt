@@ -63,15 +63,15 @@ None:
 
 == LaunchpadScript Integration ==
 
-LaunchpadScript based cron scripts will automatically record their
-successful runs.  We will write out a simple LaunchpadScript based
-script to demonstrate this.
+A LaunchpadScript subclass is provided that will automatically log the
+result of successful runs.  This is intended for use by cron scripts
+and others where it is useful to monitor the result.
 
   >>> script_file = tempfile.NamedTemporaryFile()
   >>> script_file.write("""
-  ... from canonical.launchpad.scripts.base import LaunchpadScript
+  ... from canonical.launchpad.scripts.base import LaunchpadCronScript
   ... 
-  ... class TestScript(LaunchpadScript):
+  ... class TestScript(LaunchpadCronScript):
   ...     def main(self):
   ...         # Fail if we are told to do so
   ...         if self.args[0] == 'fail':

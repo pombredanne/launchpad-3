@@ -39,12 +39,13 @@ Since Salgado has no logo, the widget will display the default person-logo
 image and the 'Keep' radio button will be selected. The
 other radio button allows the user to upload a new image.
 
-    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.image import ImageChangeWidget
     >>> add_style = ImageChangeWidget.ADD_STYLE
     >>> edit_style = ImageChangeWidget.EDIT_STYLE
     >>> person_logo = IPerson['logo'].bind(salgado)
-    >>> widget = ImageChangeWidget(person_logo, TestRequest(), edit_style)
+    >>> widget = ImageChangeWidget(
+    ...     person_logo, LaunchpadTestRequest(), edit_style)
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> html = widget()
@@ -75,7 +76,8 @@ well as an option to delete the image that was just uploaded.
 
     # Need to create a new widget instance since we changed our context
     # manually.
-    >>> widget = ImageChangeWidget(person_logo, TestRequest(), edit_style)
+    >>> widget = ImageChangeWidget(
+    ...     person_logo, LaunchpadTestRequest(), edit_style)
 
     >>> html = widget()
     >>> logo.getURL() == BeautifulSoup(html).find('img').get('src')
@@ -95,7 +97,7 @@ First, let's tell it to keep the existing image.
     >>> from canonical.launchpad.fields import KEEP_SAME_IMAGE
     >>> form = {'field.logo.action': 'keep'}
     >>> widget = ImageChangeWidget(
-    ...     person_logo, TestRequest(form=form), edit_style)
+    ...     person_logo, LaunchpadTestRequest(form=form), edit_style)
     >>> widget.getInputValue() == KEEP_SAME_IMAGE
     True
 
@@ -103,7 +105,7 @@ Then we tell it to delete the existing one.
 
     >>> form = {'field.logo.action': 'delete'}
     >>> widget = ImageChangeWidget(
-    ...     person_logo, TestRequest(form=form), edit_style)
+    ...     person_logo, LaunchpadTestRequest(form=form), edit_style)
     >>> widget.getInputValue() is None
     True
 
@@ -120,7 +122,7 @@ And now we change it to a random image.
     >>> form = {'field.logo.action': 'change',
     ...         'field.logo.image': logo}
     >>> widget = ImageChangeWidget(
-    ...     person_logo, TestRequest(form=form), edit_style)
+    ...     person_logo, LaunchpadTestRequest(form=form), edit_style)
     >>> fileupload = widget.getInputValue()
     >>> fileupload.filename
     u'logo.png'
@@ -134,7 +136,7 @@ the field represents.
     >>> personset_logo = IPerson['logo'].bind(getUtility(IPersonSet))
     >>> form = {'field.logo.action': 'keep'}
     >>> widget = ImageChangeWidget(
-    ...     personset_logo, TestRequest(form=form), add_style)
+    ...     personset_logo, LaunchpadTestRequest(form=form), add_style)
 
 Note that in this case the KEEP_SAME_IMAGE flag doesn't make sense, so we
 return None, which is a sensible value that can be fed to a method which
@@ -149,7 +151,7 @@ creates a new database object for us.
     >>> form = {'field.logo.action': 'change',
     ...         'field.logo.image': logo}
     >>> widget = ImageChangeWidget(
-    ...     personset_logo, TestRequest(form=form), add_style)
+    ...     personset_logo, LaunchpadTestRequest(form=form), add_style)
     >>> print_radio_items(widget())
     keep: NOT SELECTED
     change: SELECTED
@@ -174,7 +176,7 @@ creates a new database object for us.
 #    >>> form = {'field.mugshot.action': 'change',
 #    ...         'field.mugshot.image': mugshot}
 #    >>> widget = LogoTiedWithMugshotWidget(
-#    ...     person_mugshot, TestRequest(form=form), edit_style)
+#    ...     person_mugshot, LaunchpadTestRequest(form=form), edit_style)
 #    >>> image, smaller_img = widget.getInputValue()
 #
 #    >>> image.content.filesize == mugshot.len
@@ -203,7 +205,7 @@ creates a new database object for us.
 #    >>> form = {'field.gotchi.action': 'change',
 #    ...         'field.gotchi.image': mugshot}
 #    >>> widget = GotchiTiedWithHeadingWidget(
-#    ...     person_gotchi, TestRequest(form=form), edit_style)
+#    ...     person_gotchi, LaunchpadTestRequest(form=form), edit_style)
 #    >>> image, smaller_img = widget.getInputValue()
 #    >>> transaction.commit()
 #    >>> orig_image = PIL.Image.open(StringIO(image.read()))
@@ -227,7 +229,7 @@ creates a new database object for us.
 #
 #    >>> form = {'field.gotchi.action': 'delete'}
 #    >>> widget = GotchiTiedWithHeadingWidget(
-#    ...     person_gotchi, TestRequest(form=form), edit_style)
+#    ...     person_gotchi, LaunchpadTestRequest(form=form), edit_style)
 #    >>> widget.getInputValue()
 #    (None, None)
 #
@@ -235,7 +237,7 @@ creates a new database object for us.
 #
 #    >>> form = {'field.gotchi.action': 'keep'}
 #    >>> widget = GotchiTiedWithHeadingWidget(
-#    ...     person_gotchi, TestRequest(form=form), edit_style)
+#    ...     person_gotchi, LaunchpadTestRequest(form=form), edit_style)
 #    >>> widget.getInputValue() == (KEEP_SAME_IMAGE, KEEP_SAME_IMAGE)
 #    True
 
@@ -373,7 +375,7 @@ smaller than person_mugshot.dimensions, it must be rejected.
 
     >>> form = {'field.mugshot.action': 'change', 'field.mugshot.image': logo}
     >>> widget = ImageChangeWidget(
-    ...     person_mugshot, TestRequest(form=form), edit_style)
+    ...     person_mugshot, LaunchpadTestRequest(form=form), edit_style)
     >>> widget.getInputValue()
     Traceback (most recent call last):
     ...
@@ -404,7 +406,7 @@ Image is the correct dimensions:
     >>> form = {'field.mugshot.action': 'change',
     ...         'field.mugshot.image': mugshot}
     >>> widget = ImageChangeWidget(
-    ...     person_mugshot, TestRequest(form=form), edit_style)
+    ...     person_mugshot, LaunchpadTestRequest(form=form), edit_style)
     >>> fileupload = widget.getInputValue()
     >>> fileupload.filename
     u'mugshot.png'
@@ -417,7 +419,7 @@ get a validation error.
     >>> person_mugshot.max_size = mugshot.len - 1
     >>> mugshot.seek(0)
     >>> widget = ImageChangeWidget(
-    ...     person_mugshot, TestRequest(form=form), edit_style)
+    ...     person_mugshot, LaunchpadTestRequest(form=form), edit_style)
     >>> widget.getInputValue()
     Traceback (most recent call last):
     ...
@@ -431,7 +433,7 @@ maximum we allow.
     >>> person_mugshot.dimensions = (image.size[0] - 1, image.size[1] + 1)
     >>> mugshot.seek(0)
     >>> widget = ImageChangeWidget(
-    ...     person_mugshot, TestRequest(form=form), edit_style)
+    ...     person_mugshot, LaunchpadTestRequest(form=form), edit_style)
     >>> widget.getInputValue()
     Traceback (most recent call last):
     ...
@@ -441,7 +443,7 @@ maximum we allow.
     >>> person_mugshot.dimensions = (image.size[0] + 1, image.size[1] - 1)
     >>> mugshot.seek(0)
     >>> widget = ImageChangeWidget(
-    ...     person_mugshot, TestRequest(form=form), edit_style)
+    ...     person_mugshot, LaunchpadTestRequest(form=form), edit_style)
     >>> widget.getInputValue()
     Traceback (most recent call last):
     ...
@@ -456,7 +458,7 @@ what can be parsed by the Python Imaging Library module.
     >>> form = {'field.mugshot.action': 'change',
     ...         'field.mugshot.image': mugshot}
     >>> widget = ImageChangeWidget(
-    ...     person_mugshot, TestRequest(form=form), edit_style)
+    ...     person_mugshot, LaunchpadTestRequest(form=form), edit_style)
     >>> widget.getInputValue()
     Traceback (most recent call last):
     ...
@@ -469,7 +471,7 @@ to be uploaded.
 
     >>> form = {'field.mugshot.action': 'change', 'field.mugshot.image': ''}
     >>> widget = ImageChangeWidget(
-    ...     person_mugshot, TestRequest(form=form), edit_style)
+    ...     person_mugshot, LaunchpadTestRequest(form=form), edit_style)
     >>> widget.getInputValue()
     Traceback (most recent call last):
     ...

@@ -24,6 +24,7 @@
           class="download">
         <a tal:attributes="href attachment/libraryfile/http_url"
            tal:content="attachment/title">foo.txt</a>
+        (<span tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />, <span tal:replace="attachment/libraryfile/mimetype" />)
       </li>
     </ul>
 

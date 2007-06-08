@@ -248,7 +248,7 @@ class BranchToMirror:
 
     def isUploadBranch(self):
         """Whether this branch is pulled from the private SFTP area."""
-        upload_source_prefix = config.supermirrorsftp.branches_root
+        upload_source_prefix = config.codehosting.branches_root
         return self.source.startswith(upload_source_prefix)
 
     def isImportBranch(self):

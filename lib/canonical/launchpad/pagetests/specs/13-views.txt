@@ -64,7 +64,7 @@ on sprint, product, person, project and distribution.
   ...
 
 Also, we should have "+documentation" views on product, productseries,
-project, distro and distrorelease.
+project, distro and distroseries.
 
 
   >>> print http(r"""

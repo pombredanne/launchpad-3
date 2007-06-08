@@ -195,13 +195,13 @@ class POFileUploadView(POFileView):
         translation_import_queue.addOrUpdateEntry(
             path, content, published, self.user,
             sourcepackagename=self.context.potemplate.sourcepackagename,
-            distrorelease=self.context.potemplate.distrorelease,
+            distroseries=self.context.potemplate.distroseries,
             productseries=self.context.potemplate.productseries,
             potemplate=self.context.potemplate, pofile=self.context)
 
         self.request.response.addInfoNotification(
             'Thank you for your upload. The PO file content will be imported'
-            ' soon into Rosetta. You can track its status from the'
+            ' soon into Launchpad. You can track its status from the'
             ' <a href="%s">Translation Import Queue</a>' %
                 canonical_url(translation_import_queue))
 
@@ -330,25 +330,20 @@ class POFileTranslateView(BaseTranslationView):
         self.show = self.request.form.get('show')
 
         if self.show not in (
-            'translated', 'untranslated', 'all', 'need_review'):
+            'translated', 'untranslated', 'all', 'need_review',
+            'changed_in_launchpad'):
             # XXX: should this be an UnexpectedFormData?
             self.show = self.DEFAULT_SHOW
-        self.show_all = False
-        self.show_need_review = False
-        self.show_translated = False
-        self.show_untranslated = False
         if self.show == 'all':
-            self.show_all = True
             self.shown_count = self.context.messageCount()
         elif self.show == 'translated':
-            self.show_translated = True
             self.shown_count = self.context.translatedCount()
         elif self.show == 'untranslated':
-            self.show_untranslated = True
             self.shown_count = self.context.untranslatedCount()
         elif self.show == 'need_review':
-            self.show_need_review = True
             self.shown_count = self.context.fuzzy_count
+        elif self.show == 'changed_in_launchpad':
+            self.shown_count = self.context.updatesCount()
         else:
             raise AssertionError("Bug in _initializeShowOption")
 
@@ -366,6 +361,8 @@ class POFileTranslateView(BaseTranslationView):
             ret = pofile.getPOTMsgSetFuzzy()
         elif self.show == 'untranslated':
             ret = pofile.getPOTMsgSetUntranslated()
+        elif self.show == 'changed_in_launchpad':
+            ret = pofile.getPOTMsgSetChangedInLaunchpad()
         else:
             raise UnexpectedFormData('show = "%s"' % self.show)
         # We cannot listify the results to avoid additional count queries,

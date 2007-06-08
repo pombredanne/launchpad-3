@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
   <body>
@@ -118,6 +118,12 @@
               request/htmlform:show/selected/translated"
               >
               translated
+            </option>
+            <option value="changed_in_launchpad"
+              tal:attributes="selected
+              request/htmlform:show/selected/changed_in_launchpad"
+              >
+              changed in Launchpad
             </option>
           </select>
           <input

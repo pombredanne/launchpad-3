@@ -7,14 +7,14 @@ import _pythonpath
 
 from zope.component import getUtility
 from canonical.lp import READ_COMMITTED_ISOLATION
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILaunchpadStatisticSet, IPersonSet
     )
 from canonical.config import config
 
 
-class StatUpdater(LaunchpadScript):
+class StatUpdater(LaunchpadCronScript):
     def main(self):
         self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
 
@@ -24,8 +24,8 @@ class StatUpdater(LaunchpadScript):
         # objects are responsible for committing.
         distroset = getUtility(IDistributionSet)
         for distro in distroset:
-            for distrorelease in distro.releases:
-                distrorelease.updateStatistics(self.txn)
+            for distroseries in distro.serieses:
+                distroseries.updateStatistics(self.txn)
 
         launchpad_stats = getUtility(ILaunchpadStatisticSet)
         launchpad_stats.updateStatistics(self.txn)

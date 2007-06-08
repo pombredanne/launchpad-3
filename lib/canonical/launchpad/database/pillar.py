@@ -113,7 +113,7 @@ class PillarNameSet:
     def build_search_query(self, text):
         return """
             SELECT 'distribution' AS otype, id, name, title, description,
-                   emblem,
+                   icon,
                    rank(fti, ftq(%(text)s)) AS rank
             FROM distribution
             WHERE fti @@ ftq(%(text)s)
@@ -122,7 +122,7 @@ class PillarNameSet:
 
             UNION ALL
 
-            SELECT 'project' AS otype, id, name, title, description, emblem,
+            SELECT 'project' AS otype, id, name, title, description, icon,
                 rank(fti, ftq(%(text)s)) AS rank
             FROM product
             WHERE fti @@ ftq(%(text)s)
@@ -133,7 +133,7 @@ class PillarNameSet:
             UNION ALL
 
             SELECT 'project group' AS otype, id, name, title, description,
-                emblem,
+                icon,
                 rank(fti, ftq(%(text)s)) AS rank
             FROM project
             WHERE fti @@ ftq(%(text)s)
@@ -144,7 +144,7 @@ class PillarNameSet:
             UNION ALL
 
             SELECT 'distribution' AS otype, id, name, title, description,
-                emblem,
+                icon,
                 9999999 AS rank
             FROM distribution 
             WHERE name = lower(%(text)s) OR lower(title) = lower(%(text)s)
@@ -152,7 +152,7 @@ class PillarNameSet:
             UNION ALL
 
             SELECT 'project group' AS otype, id, name, title, description,
-                emblem,
+                icon,
                 9999999 AS rank
             FROM project
             WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
@@ -161,7 +161,7 @@ class PillarNameSet:
             UNION ALL
 
             SELECT 'project' AS otype, id, name, title, description,
-                emblem,
+                icon,
                 9999999 AS rank
             FROM product
             WHERE (name = lower(%(text)s) OR lower(title) = lower(%(text)s))
@@ -189,7 +189,7 @@ class PillarNameSet:
             """ % limit
         cur = cursor()
         cur.execute(query)
-        keys = ['type', 'id', 'name', 'title', 'description', 'emblem', 'rank']
+        keys = ['type', 'id', 'name', 'title', 'description', 'icon', 'rank']
         # People shouldn't be calling this method with too big limits
         longest_expected = 2 * config.launchpad.default_batch_size
         return shortlist(

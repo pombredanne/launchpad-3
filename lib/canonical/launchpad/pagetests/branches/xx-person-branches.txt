@@ -20,7 +20,7 @@ message.
 
   >>> browser.open('http://code.launchpad.dev/~kinnison')
   >>> print find_tag_by_id(browser.contents, 'no-branch-message').renderContents()
-  There may be branches related to Daniel Silverstone but none 
+  There may be branches related to Daniel Silverstone but none
   of them match the current filter criteria for this page. Try
   filtering on "Any Status".
 
@@ -60,6 +60,8 @@ the authored branches page.
    ...     print extract_text(row)
    main         60 New           firefox
    klingon      30 Experimental  gnome-terminal
+   feature-x    60 New           landscape
+   trunk        60 New           landscape
    junk.contrib 60 New
       2005-10-31 12:03:57 ... weeks ago
 

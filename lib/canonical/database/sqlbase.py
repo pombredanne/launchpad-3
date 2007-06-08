@@ -32,7 +32,9 @@ __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
 AUTOCOMMIT_ISOLATION=0
 READ_COMMITTED_ISOLATION=1
 SERIALIZABLE_ISOLATION=3
-DEFAULT_ISOLATION=SERIALIZABLE_ISOLATION
+# Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
+# use SERIALIZABLE unless we override, but psycopg2 will not.
+DEFAULT_ISOLATION=READ_COMMITTED_ISOLATION
 
 # First, let's monkey-patch SQLObject a little:
 import zope.security.proxy
@@ -636,7 +638,7 @@ def rollback():
 def commit():
     ZopelessTransactionManager._installed.commit()
 
-def connect(user, dbname=None):
+def connect(user, dbname=None, isolation=DEFAULT_ISOLATION):
     """Return a fresh DB-API connecction to the database.
 
     Use None for the user to connect as the default PostgreSQL user.
@@ -649,7 +651,10 @@ def connect(user, dbname=None):
         con_str += ' user=%s' % user
     if config.dbhost:
         con_str += ' host=%s' % config.dbhost
-    return psycopg.connect(con_str)
+    con = psycopg.connect(con_str)
+    con.set_isolation_level(isolation)
+    return con
+
 
 def cursor():
     '''Return a cursor from the current database connection.

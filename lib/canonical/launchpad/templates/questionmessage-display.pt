@@ -31,7 +31,7 @@
       <input type="hidden" name="field.message" value="" />
       <input type="submit"
               name="field.actions.confirm"
-              value="This Solved my Problem"
+              value="This Solved My Problem"
               i18n:attributes="value" />
     </form>
   </div>

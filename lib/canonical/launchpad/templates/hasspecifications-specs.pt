@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>
@@ -171,12 +171,8 @@
                tal:attributes="
                  href spec/fmt:url;
                  title spec/title">foo-bar-baz</a>
-            <img src="/@@/branch" alt="Branch"
-                 title="Branch is available"
-                 tal:condition="spec/branch_links/count" />
-            <img src="/@@/info" alt="Informational specification"
-                 title="Informational specification"
-                 tal:condition="spec/informational" />
+            <img src="/@@/alert"
+                 tal:replace="structure spec/image:badges" />
           </td>
           <td tal:condition="view/show_design">
             <span class="sortkey" tal:content="spec/status/sortkey" />
@@ -207,10 +203,10 @@
               <a tal:attributes="href spec/productseries/fmt:url"
                  tal:content="spec/productseries/name">1.0</a>
             </tal:series>
-            <tal:distrorelease condition="spec/distrorelease">
-              <a tal:attributes="href spec/distrorelease/fmt:url"
-                 tal:content="spec/distrorelease/name">1.0</a>
-            </tal:distrorelease>
+            <tal:distroseries condition="spec/distroseries">
+              <a tal:attributes="href spec/distroseries/fmt:url"
+                 tal:content="spec/distroseries/name">1.0</a>
+            </tal:distroseries>
           </td>
         </tr>
       </tbody>
