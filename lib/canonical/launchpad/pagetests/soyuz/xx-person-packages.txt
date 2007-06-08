@@ -26,7 +26,7 @@ as it has working links in the sample data:
 Same process for the second column should take us to a distribution series 
 source package page:
 
-  >>> browser.goBack()
+  >>> browser.open("http://launchpad.dev/~name16/+packages")
   >>> link = browser.getLink(url="/ubuntu/breezy-autotest/+source/foobar")
   >>> print link
   <Link text='Ubuntu Breezy-autotest' url='http://launchpad.dev/ubuntu/breezy-autotest/+source/foobar'>
@@ -37,7 +37,7 @@ source package page:
 Same again for the third column should take us to a distribution source 
 package release page:
 
-  >>> browser.goBack()
+  >>> browser.open("http://launchpad.dev/~name16/+packages")
   >>> link = browser.getLink(url="/ubuntu/+source/foobar/1.0")
   >>> print link
   <Link text='1.0' url='http://launchpad.dev/ubuntu/+source/foobar/1.0'>
