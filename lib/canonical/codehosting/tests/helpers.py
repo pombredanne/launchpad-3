@@ -165,6 +165,19 @@ class FakeLaunchpad:
                 return product_id
         return None
 
+    def getBranchInformation(self, login_id, user_name, product_name,
+                             branch_name):
+        for branch_id, branch in self._branch_set.iteritems():
+            owner = self._person_set[branch['user_id']]
+            product = self._product_set[branch['product_id']]
+            if ((owner['name'], product['name'], branch['name'])
+                == (user_name, product_name, branch_name)):
+                if login_id in owner['teams']:
+                    return branch_id, 'w'
+                else:
+                    return branch_id, 'r'
+        return ''
+
     def getUser(self, loginID):
         """See IUserDetailsStorage.getUser."""
         matching_user_id = None
