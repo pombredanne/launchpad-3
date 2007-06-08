@@ -480,21 +480,18 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             self._getBranchInformationInteraction, loginID, userName,
             productName, branchName)
 
+    @read_only_transaction
     def _getBranchInformationInteraction(self, loginID, userName, productName,
                                          branchName):
-        begin()
-        try:
-            branch = getUtility(IBranchSet).getByUniqueName(
-                '~%s/%s/%s' % (userName, productName, branchName))
-            if branch is None:
-                return '', ''
-            requester = getUtility(IPersonSet).get(loginID)
-            if requester.inTeam(branch.owner):
-                return branch.id, WRITABLE
-            else:
-                return branch.id, READ_ONLY
-        finally:
-            rollback()
+        branch = getUtility(IBranchSet).getByUniqueName(
+            '~%s/%s/%s' % (userName, productName, branchName))
+        if branch is None:
+            return '', ''
+        requester = getUtility(IPersonSet).get(loginID)
+        if requester.inTeam(branch.owner):
+            return branch.id, WRITABLE
+        else:
+            return branch.id, READ_ONLY
 
 
 class DatabaseBranchDetailsStorage:
