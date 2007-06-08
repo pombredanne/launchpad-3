@@ -460,6 +460,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         # xmlrpc doesn't let us return None. True is an acceptable substitute.
         return True
 
+    def getBranchInformation(self, loginID, userName, productName, branchName):
+        """See IHostedBranchStorage."""
+        return self._getBranchInformationInteraction(
+            loginID, userName, productName, branchName)
+
+    def _getBranchInformationInteraction(self, loginID, userName, productName,
+                                         branchName):
+        return (25, 'w')
+
 
 class DatabaseBranchDetailsStorage:
     """Launchpad-database backed implementation of IUserDetailsStorage"""

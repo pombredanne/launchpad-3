@@ -230,6 +230,16 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual((1, None, 'foo', None, None, 1),
                          self.cursor.fetchone())
 
+    def test_getBranchInformation_owned(self):
+        # When we get the branch information for one of our own branches (i.e.
+        # owned by us or by a team we are on), we get the database id of the
+        # branch, and a flag saying that we can write to that branch.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'name12', 'gnome-terminal', 'pushed')
+        self.assertEqual(25, branch_id)
+        self.assertEqual('w', permissions)
+
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)

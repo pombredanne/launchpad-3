@@ -157,6 +157,15 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         hosted_branch_id = 25
         self.server.requestMirror(hosted_branch_id)
 
+    def test_getBranchInformation(self):
+        # Don't test the full range of values for getBranchInformation, as we
+        # rely on the database tests to do that. This test just confirms it's
+        # all hooked up correctly.
+        branch_id, permissions = self.server.getBranchInformation(
+            12, 'name12', 'gnome-terminal', 'pushed')
+        self.assertEqual(25, branch_id)
+        self.assertEqual('w', permissions)
+
 
 class BranchAPITestCase(LaunchpadTestCase):
     """Tests for the branch details API."""
