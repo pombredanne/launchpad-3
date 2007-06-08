@@ -146,34 +146,41 @@ viewable branches.
     ...         branches.append(extract_text(row))
     ...     landscape_branches = [branch for branch in branches
     ...                           if 'landscape' in branch]
-    ...     print "%d branches listed" % len(branches)
-    ...     for branch in landscape_branches:
-    ...         print branch
+    ...     print "Total of %d branches listed" % len(branches)
+    ...     if landscape_branches:
+    ...         for branch in landscape_branches:
+    ...             print branch
+    ...     else:
+    ...         print "No landscape branches"
 
     >>> print_person_code_listing(anon_browser)
-    10 branches listed
+    Total of 10 branches listed
+    No landscape branches
     >>> print_person_code_listing(anon_browser, '/+authoredbranches')
-    3 branches listed
+    Total of 3 branches listed
+    No landscape branches
 
     >>> print_person_code_listing(no_priv_browser)
-    10 branches listed
+    Total of 10 branches listed
+    No landscape branches
     >>> print_person_code_listing(no_priv_browser, '/+authoredbranches')
-    3 branches listed
+    Total of 3 branches listed
+    No landscape branches
 
     >>> print_person_code_listing(landscape_dev_browser)
-    12 branches listed
+    Total of 12 branches listed
     feature-x ... landscape Author
     trunk ... landscape Author
     >>> print_person_code_listing(landscape_dev_browser, '/+authoredbranches')
-    5 branches listed
+    Total of 5 branches listed
     feature-x ... landscape
     trunk ... landscape
 
     >>> print_person_code_listing(admin_browser)
-    12 branches listed
+    Total of 12 branches listed
     feature-x ... landscape Author
     trunk ... landscape Author
     >>> print_person_code_listing(admin_browser, '/+authoredbranches')
-    5 branches listed
+    Total of 5 branches listed
     feature-x ... landscape
     trunk ... landscape

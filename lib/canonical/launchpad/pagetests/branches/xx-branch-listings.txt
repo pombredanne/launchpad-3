@@ -12,8 +12,8 @@ and badge decoration.
 Batching is applied to branch listings where there are many items.
 Luckily for us, many is 5 in the tests.
 
-Since this test is testing listings rather than privacy, the
-user logged in is Sample Person, as he has the private branches.
+Sample Person is used as the logged in user in order to also show
+the his private branches in the listings.
 
    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
    >>> browser.open('http://code.launchpad.dev/~name12')

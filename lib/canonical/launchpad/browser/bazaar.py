@@ -46,7 +46,7 @@ class BazaarBranchesMenu(ApplicationMenu):
 class BazaarApplicationView(LaunchpadView):
 
     @cachedproperty
-    def seriesset(self):
+    def series_set(self):
         return getUtility(IProductSeriesSet)
 
     def branch_count(self):
@@ -59,25 +59,25 @@ class BazaarApplicationView(LaunchpadView):
         return getUtility(IBranchSet).countBranchesWithAssociatedBugs()
 
     def import_count(self):
-        return self.seriesset.importcount()
+        return self.series_set.importcount()
 
     def testing_count(self):
-        return self.seriesset.importcount(ImportStatus.TESTING.value)
+        return self.series_set.importcount(ImportStatus.TESTING.value)
 
     def autotested_count(self):
-        return self.seriesset.importcount(ImportStatus.AUTOTESTED.value)
+        return self.series_set.importcount(ImportStatus.AUTOTESTED.value)
 
     def testfailed_count(self):
-        return self.seriesset.importcount(ImportStatus.TESTFAILED.value)
+        return self.series_set.importcount(ImportStatus.TESTFAILED.value)
 
     def processing_count(self):
-        return self.seriesset.importcount(ImportStatus.PROCESSING.value)
+        return self.series_set.importcount(ImportStatus.PROCESSING.value)
 
     def syncing_count(self):
-        return self.seriesset.importcount(ImportStatus.SYNCING.value)
+        return self.series_set.importcount(ImportStatus.SYNCING.value)
 
     def stopped_count(self):
-        return self.seriesset.importcount(ImportStatus.STOPPED.value)
+        return self.series_set.importcount(ImportStatus.STOPPED.value)
 
     @cachedproperty
     def recently_changed_branches(self):
