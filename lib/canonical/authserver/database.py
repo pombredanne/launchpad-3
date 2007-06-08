@@ -30,12 +30,25 @@ from canonical.authserver.interfaces import (
     IUserDetailsStorageV2)
 
 from twisted.internet.threads import deferToThread
+from twisted.python.util import mergeFunctionMetadata
 
 
 def utf8(x):
     if isinstance(x, unicode):
         x = x.encode('utf-8')
     return x
+
+
+def read_only_transaction(function):
+    def transacted(*args, **kwargs):
+        login(ANONYMOUS)
+        begin()
+        try:
+            return function(*args, **kwargs)
+        finally:
+            abort()
+            logout()
+    return mergeFunctionMetadata(function, transacted)
 
 
 class UserDetailsStorageMixin:
@@ -410,15 +423,10 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         """See IHostedBranchStorage."""
         return deferToThread(self._fetchProductIDInteraction, productName)
 
+    @read_only_transaction
     def _fetchProductIDInteraction(self, productName):
         """The interaction for fetchProductID."""
-        login(ANONYMOUS)
-        begin()
-        try:
-            product = getUtility(IProductSet).getByName(productName)
-        finally:
-            abort()
-            logout()
+        product = getUtility(IProductSet).getByName(productName)
         if product is None:
             return ''
         else:
