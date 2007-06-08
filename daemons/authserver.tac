@@ -7,14 +7,12 @@ from twisted.application import service
 from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.daemons.tachandler import ReadyService
 
-from canonical.config import config
-from canonical.lp import initZopeless
+from canonical.config import dbconfig
 
-initZopeless(
-    dbuser=config.authserver.dbuser,
-    dbhost=config.dbhost,
-    dbname=config.dbname,
-    implicitBegin=False)
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+
+dbconfig.setConfigSection('authserver')
+execute_zcml_for_scripts()
 
 application = service.Application("authserver")
 svc = AuthserverService()

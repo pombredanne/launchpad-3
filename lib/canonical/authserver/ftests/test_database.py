@@ -22,10 +22,11 @@ from canonical.lp import dbschema
 
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadScriptLayer
 
 
 class TestDatabaseSetup(LaunchpadTestCase):
+
     def setUp(self):
         super(TestDatabaseSetup, self).setUp()
         self.connection = self.connect()
@@ -39,7 +40,11 @@ class TestDatabaseSetup(LaunchpadTestCase):
 
 class DatabaseStorageTestCase(TestDatabaseSetup):
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        LaunchpadScriptLayer.switchDbConfig('authserver')
+        super(DatabaseStorageTestCase, self).setUp()
 
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,

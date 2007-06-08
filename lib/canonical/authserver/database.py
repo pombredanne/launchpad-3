@@ -10,6 +10,8 @@ __all__ = [
 
 import os
 
+from transaction import abort, begin
+
 from zope.interface import implements
 
 from canonical.launchpad.webapp import urlappend
@@ -17,7 +19,7 @@ from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
 from canonical.launchpad.database import Product
-from canonical.database.sqlbase import begin, rollback, sqlvalues
+from canonical.database.sqlbase import sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
 from canonical.config import config
@@ -413,7 +415,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         try:
             product = Product.selectOneBy(name=productName)
         finally:
-            rollback()
+            abort()
         if product is None:
             return ''
         else:
