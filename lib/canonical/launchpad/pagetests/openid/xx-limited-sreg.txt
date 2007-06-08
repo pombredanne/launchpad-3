@@ -55,7 +55,7 @@ to the login page:
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.assoc_handle:...
-    openid.identity:http://openid.launchpad.dev/+openid/+id/temp1
+    openid.identity:http://openid.launchpad.dev/+openid/+id/sabdfl_oid
     openid.mode:id_res
     openid.return_to:http://launchpad.dev/+openid-consumer
     openid.sig:...
@@ -81,7 +81,7 @@ We now see the user's full name, nickname, email address and time zone.
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.assoc_handle:...
-    openid.identity:http://openid.launchpad.dev/+openid/+id/temp1
+    openid.identity:http://openid.launchpad.dev/+openid/+id/sabdfl_oid
     openid.mode:id_res
     openid.return_to:http://launchpad.dev/+openid-consumer
     openid.sig:...

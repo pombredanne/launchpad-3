@@ -4,7 +4,7 @@ hostile trust_root, a warning message is displayed to the user.
 >>> from urllib import urlencode
 >>> args = urlencode({
 ...     'openid.mode': 'checkid_setup',
-...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp1',
+...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/sabdfl_oid',
 ...     'openid.return_to': 'http://launchpad.dev/',
 ...     'openid.trust_root': 'http://*.dev',
 ...     })
@@ -25,7 +25,7 @@ If the trust_root looks fine, no warning is displayed.
 
 >>> args = urlencode({
 ...     'openid.mode': 'checkid_setup',
-...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp1',
+...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/sabdfl_oid',
 ...     'openid.return_to': 'http://example.com/whatever',
 ...     'openid.trust_root': 'http://example.com',
 ...     })
