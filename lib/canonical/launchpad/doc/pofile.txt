@@ -614,7 +614,7 @@ Lets get Evolution Spanish translation in distribution Hoary.
   >>> release = distribution['hoary']
   >>> potemplateset = getUtility(IPOTemplateSet)
   >>> potemplatesubset = potemplateset.getSubset(
-  ...     distrorelease=release, sourcepackagename=sourcepackagename)
+  ...     distroseries=release, sourcepackagename=sourcepackagename)
   >>> potemplate = potemplatesubset['evolution-2.2']
   >>> pofile_changed = potemplate.getPOFileByLang('es')
 
