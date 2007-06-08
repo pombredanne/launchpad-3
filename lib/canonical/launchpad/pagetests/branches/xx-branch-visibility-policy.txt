@@ -75,12 +75,12 @@ Projects never have inherited policies, so they look a little different.
 
 Products that don't have an associated project look similar to projects.
 
-    >>> admin_browser.open('http://launchpad.dev/launchpad/+branchvisibility')
+    >>> admin_browser.open('http://launchpad.dev/alsa-utils/+branchvisibility')
 
     >>> print find_tag_by_id(admin_browser.contents, 'inherited')
     None
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'default-policy'))
-    Default branch visibility for all branches in Launchpad is Public.
+    Default branch visibility for all branches in alsa-utils is Public.
     >>> actions = find_tag_by_id(admin_browser.contents, 'policy-actions')
     >>> for anchor in actions.fetch('a'):
     ...     print '%s -> %s' % (anchor.renderContents(), anchor['href'])

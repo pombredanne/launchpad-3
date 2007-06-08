@@ -31,7 +31,7 @@
   <p id="default-policy">
     Default branch visibility for all branches in
     <strong tal:content="context/displayname">Project</strong>
-    is <strong tal:content="view/default_policy/title">Public</strong>.
+    is <strong tal:content="context/branch_visibility_base_policy/title">Public</strong>.
   </p>
 
   <tal:has-policies condition="view/team_policies">

@@ -119,17 +119,6 @@ class BranchVisibilityPolicyView(LaunchpadView):
                 not self.context.isUsingInheritedBranchVisibilityPolicy())
 
     @property
-    def default_policy(self):
-        """The default policy is the item with None for the team."""
-        if len(self.items) == 0:
-            # No items set, so Public
-            return BranchVisibilityPolicy.PUBLIC
-        elif self.items[0].team is None:
-            return self.items[0].policy
-        else:
-            return BranchVisibilityPolicy.PUBLIC
-
-    @property
     def team_policies(self):
         """The policy items that have a valid team."""
         return [item for item in self.items if item.team is not None]
