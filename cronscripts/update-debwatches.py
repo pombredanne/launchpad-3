@@ -13,7 +13,7 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.launchpad.scripts import debbugs
-from canonical.launchpad.scripts.base import (LaunchpadScript,
+from canonical.launchpad.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (IBugSet,
     ILaunchpadCelebrities, InvalidEmailMessage, IBugTaskSet,
@@ -24,7 +24,7 @@ from canonical.database.constants import UTC_NOW
 debbugs_location_default = '/srv/bugs-mirror.debian.org/'
 
 
-class DebWatchUpdater(LaunchpadScript):
+class DebWatchUpdater(LaunchpadCronScript):
     loglevel = logging.WARNING
 
     def add_my_options(self):

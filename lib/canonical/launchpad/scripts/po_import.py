@@ -26,7 +26,7 @@ class ImportProcess:
         # Get the queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        # Get the list of each product or distrorelease with pending imports
+        # Get the list of each product or distroseries with pending imports
         importqueues = (
             translation_import_queue.getPillarObjectsWithApprovedImports() )
         queues_empty = (len(importqueues) == 0)

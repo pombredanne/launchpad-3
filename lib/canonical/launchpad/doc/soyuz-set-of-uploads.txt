@@ -49,15 +49,15 @@ Import public keyring into current LPDB.
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
-Having set up that infrastructure we need to prepare a breezy distrorelease
+Having set up that infrastructure we need to prepare a breezy distroseries
 for the ubuntutest distribution.
 
   >>> from canonical.launchpad.database import Distribution
-  >>> from canonical.launchpad.database import DistroReleaseSet
+  >>> from canonical.launchpad.database import DistroSeriesSet
   >>> ubuntu = Distribution.byName('ubuntu')
   >>> breezy_autotest = ubuntu['breezy-autotest']
   >>> ubuntutest = Distribution.byName('ubuntutest')
-  >>> drs = DistroReleaseSet()
+  >>> drs = DistroSeriesSet()
   >>> breezy = drs.new(
   ...     ubuntutest, 'breezy', 'Breezy Badger', 'The Breezy Badger',
   ...     'Black and White', 'Someone', '5.10', breezy_autotest,
@@ -99,7 +99,7 @@ And then we need a way to process the uploads from the queue
 
   >>> from canonical.config import config
   >>> import subprocess, sys
-  >>> def process_uploads(upload_policy, build_id, release):
+  >>> def process_uploads(upload_policy, build_id, series):
   ...     # reset previous log content if it exists
   ...     if os.path.exists(uploader_log):
   ...         open(uploader_log, 'w').write('')
@@ -108,8 +108,8 @@ And then we need a way to process the uploads from the queue
   ...             upload_policy]
   ...     if build_id is not None:
   ...         args.extend(["-b", build_id])
-  ...     if release is not None:
-  ...         args.extend(["-r", release])
+  ...     if series is not None:
+  ...         args.extend(["-s", series])
   ...     args.extend([temp_dir, "--log-file", uploader_log])
   ...     process = subprocess.Popen(args)
   ...     return process.wait() == 0
@@ -126,8 +126,8 @@ And we need a way to process the accepted queue
 
   >>> def process_accepted(distro):
   ...     distribution = getUtility(IDistributionSet)[distro]
-  ...     for release in distribution:
-  ...         items = release.getQueueItems(
+  ...     for series in distribution.serieses:
+  ...         items = series.getQueueItems(
   ...            status=PackageUploadStatus.ACCEPTED)
   ...         for item in items:
   ...             item.realiseUpload()
@@ -137,11 +137,11 @@ And we need a way to process the accepted queue
 If an upload of ours ends up in the NEW queue, we need a way to process
 it into the accepted queue
 
-  >>> def process_new(distro, release):
+  >>> def process_new(distro, series):
   ...     distribution = getUtility(IDistributionSet)[distro]
-  ...     if release is None:
-  ...         release = "breezy"
-  ...     dr, pocket = distribution.getDistroReleaseAndPocket(release)
+  ...     if series is None:
+  ...         series = "breezy"
+  ...     dr, pocket = distribution.getDistroSeriesAndPocket(series)
   ...     items = dr.getQueueItems(status=PackageUploadStatus.NEW)
   ...     for item in items:
   ...         item.setAccepted()
@@ -197,16 +197,16 @@ process_new and simple_publish we are in a position to run the tests.
 We can also define another helper function...
 
   >>> def expect_okays(leafname, is_new=False, upload_policy='anything',
-  ...                  build_id=None, release=None, distro="ubuntutest"):
+  ...                  build_id=None, series=None, distro="ubuntutest"):
   ...     transaction.commit()
   ...     punt_upload_into_queue(leafname, distro=distro)
-  ...     assert (process_uploads(upload_policy, build_id, release),
+  ...     assert (process_uploads(upload_policy, build_id, series),
   ...             "Upload processes failed")
   ...     assert len(os.listdir(incoming_dir)) == 0, "Incoming should be empty: %s" % os.listdir(incoming_dir)
   ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty: %s" % os.listdir(rejected_dir)
   ...     assert len(os.listdir(failed_dir)) == 0, "Failed should be empty: %s" % os.listdir(failed_dir)
   ...     if is_new:
-  ...         process_new(distro=distro, release=release)
+  ...         process_new(distro=distro, series=series)
   ...     process_accepted(distro=distro)
   ...     assert (simple_publish(distro=distro),
   ...             "Should publish at least one item")
@@ -277,7 +277,7 @@ Remove rejected uploads.
   >>> import shutil
   >>> shutil.rmtree(os.path.join(rejected_dir, 'bar_1.0-3'))
 
-Check the rejection (instead of failure) of an upload to a release or
+Check the rejection (instead of failure) of an upload to a series or
 pocket which does not exist. We use the security upload policy for easier
 testing, as unsigned uploads are allowed.
 
@@ -294,7 +294,7 @@ testing, as unsigned uploads are allowed.
   DEBUG       Recipients: Celso Providelo <celso.providelo@canonical.com>
   DEBUG       Body:
   DEBUG   Rejected:
-  DEBUG   Unable to find distrorelease: unstable
+  DEBUG   Unable to find distroseries: unstable
   ...
   <BLANKLINE>
 
@@ -333,7 +333,7 @@ Revert changes:
 
 Check if we forcibly add the changer as recipient for "sync" uploads,
 which contains unsigned changesfile. Ensure it sends email to the
-changer and the distrorelease changes maillisting.
+changer and the distroseries changes maillisting.
 
   >>> expect_okays('bar_1.0-5', upload_policy='sync')
   >>> print open(uploader_log).read()
@@ -451,11 +451,11 @@ And its binary:
   DEBUG    Distribution: breezy
   ...
 
-Set ubuntutest/breezy as the "current release" to activate post-release
+Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
 
-  >>> from canonical.lp.dbschema import DistributionReleaseStatus
-  >>> breezy.releasestatus = DistributionReleaseStatus.CURRENT
+  >>> from canonical.lp.dbschema import DistroSeriesStatus
+  >>> breezy.status = DistroSeriesStatus.CURRENT
   >>> syncUpdate(breezy)
   >>> transaction.commit()
 
@@ -482,7 +482,7 @@ Upload a newer version of source package "foo" to breezy-backports:
 
 
 In order to verify if the binary ancestry lookup algorithm works we
-will need to build a new DistroArchRelease for powerpc in
+will need to build a new DistroArchSeries for powerpc in
 ubuntutest/breezy.
 
   >>> from canonical.launchpad.database import (
@@ -493,7 +493,7 @@ ubuntutest/breezy.
   >>> powerpc_dar = breezy.newArch('powerpc', powerpc_pf, True, breezy.owner)
 
 
-After having the respective DistroArchRelease in place we will submit a
+After having the respective DistroArchSeries in place we will submit a
 binary upload for the last source in BACKPORTS. The ancestry should be
 found in i386/RELEASE, because it's the only one available.
 
@@ -589,7 +589,7 @@ Remove rejected upload:
 Set ubuntutest/breezy to 'experimental' state again to not affect the
 rest of the test:
 
-  >>> breezy.releasestatus = DistributionReleaseStatus.EXPERIMENTAL
+  >>> breezy.status = DistroSeriesStatus.EXPERIMENTAL
   >>> flush_database_updates()
   >>> transaction.commit()
 
@@ -598,18 +598,18 @@ rest of the test:
 
 Perform a staged (source-first) security upload, simulating a run of
 the buildd-queuebuilder inbetween, to verify fix for bug 53437. To be
-allowed a security upload, we need to use a released distrorelease,
+allowed a security upload, we need to use a released distroseries,
 eg ubuntu/warty.
 
   >>> from canonical.launchpad.database.section import (
   ...     Section, SectionSelection)
   >>> warty = ubuntu['warty']
   >>> devel = Section.selectOneBy(name="devel")
-  >>> ss = SectionSelection(distrorelease=warty, section=devel)
+  >>> ss = SectionSelection(distroseries=warty, section=devel)
   >>> transaction.commit()
 
   >>> expect_okays('baz_1.0-1', is_new=True, upload_policy="security",
-  ...     release="warty-security", distro="ubuntu")
+  ...     series="warty-security", distro="ubuntu")
 
 Check there's a SourcePackageRelease with no build.
 
@@ -643,7 +643,7 @@ Upload the i386 binary:
 
   >>> expect_okays(
   ...     'baz_1.0-1_single_binary', is_new=True, upload_policy="security",
-  ...     distro="ubuntu", release="warty-security")
+  ...     distro="ubuntu", series="warty-security")
 
 Should still just have one build, and it should now be FULLYBUILT.
 
