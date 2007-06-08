@@ -10,6 +10,8 @@ __all__ = [
 
 import os
 
+from transaction import abort, begin
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -17,9 +19,9 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.interfaces import (
-    UBUNTU_WIKI_URL, IBranchSet, IPersonSet)
-from canonical.launchpad.database import Product
-from canonical.database.sqlbase import begin, rollback, sqlvalues
+    UBUNTU_WIKI_URL, IBranchSet, IPersonSet, IProductSet)
+from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.database.sqlbase import sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
 from canonical.config import config
@@ -29,12 +31,25 @@ from canonical.authserver.interfaces import (
     IUserDetailsStorageV2, READ_ONLY, WRITABLE)
 
 from twisted.internet.threads import deferToThread
+from twisted.python.util import mergeFunctionMetadata
 
 
 def utf8(x):
     if isinstance(x, unicode):
         x = x.encode('utf-8')
     return x
+
+
+def read_only_transaction(function):
+    def transacted(*args, **kwargs):
+        login(ANONYMOUS)
+        begin()
+        try:
+            return function(*args, **kwargs)
+        finally:
+            abort()
+            logout()
+    return mergeFunctionMetadata(function, transacted)
 
 
 class UserDetailsStorageMixin:
@@ -409,13 +424,10 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         """See IHostedBranchStorage."""
         return deferToThread(self._fetchProductIDInteraction, productName)
 
+    @read_only_transaction
     def _fetchProductIDInteraction(self, productName):
         """The interaction for fetchProductID."""
-        begin()
-        try:
-            product = Product.selectOneBy(name=productName)
-        finally:
-            rollback()
+        product = getUtility(IProductSet).getByName(productName)
         if product is None:
             return ''
         else:
