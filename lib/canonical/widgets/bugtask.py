@@ -491,6 +491,8 @@ class NewLineToSpacesWidget(StrippedTextWidget):
 class NominationReviewActionWidget(LaunchpadRadioWidget):
     """
     """
+    orientation = "horizontal"
+
     # The label will always be the empty string.
     _joinButtonToMessageTemplate = '%s%s'
 

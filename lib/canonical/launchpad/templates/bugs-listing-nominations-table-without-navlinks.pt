@@ -1,4 +1,4 @@
-<form method="post" action="request/URL" condition="context/batch">
+<form method="post" tal:attributes="action request/URL" condition="context/batch">
   <table class="listing" id="buglisting">
     <thead>
       <tr>
@@ -24,14 +24,9 @@
     <tbody>
       <tr tal:repeat="bugtask context/getBugListingItems">
         <td tal:content="structure bugtask/review_action_widget">
-	  <input type="radio" value="accept"
-                 tal:attributes="name string:field.review_action.${bugtask/id}" />
-	  <input type="radio" value="decline"
-                 tal:attributes="name string:field.review_action.${bugtask/id}" />
-	  <label style="background-color: #777; padding: 3px">
-	    <input type="radio" value="no-change"
-                   tal:attributes="name string:field.review_action.${bugtask/id}" />
-          </label>
+	  <input type="radio" value="accept" />
+          <input type="radio" value="decline" />
+          <input type="radio" value="no-change" />
         </td>
         <td
           class="amount"
@@ -63,4 +58,5 @@
       </tr>
     </tbody>
   </table>
+  <tal:submit tal:replace="structure view/submit_action/render" />
 </form>

@@ -17,6 +17,7 @@ __all__ = [
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'BugNominationsView',
+    'NominationsReviewTableBatchNavigatorView',
     'BugTaskTableRowView',
     'BugTargetView',
     'BugTasksAndNominationsView',
@@ -44,6 +45,7 @@ from zope.app.form.utility import (
     applyWidgetsChanges)
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
+from zope.formlib.form import Widgets
 from zope.interface import alsoProvides, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IList
@@ -56,8 +58,8 @@ from canonical.lp import dbschema, decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    canonical_url, GetitemNavigation, Navigation, stepthrough,
-    redirection, LaunchpadView)
+    action, canonical_url, GetitemNavigation, Navigation, stepthrough,
+    redirection, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.interfaces import (
     IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
@@ -1224,11 +1226,11 @@ class BugTaskListingItem:
     def __init__(self, bugtask, bugbranches):
         self.bugtask = bugtask
         self.bugbranches = bugbranches
-        
+
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
-    
+
     def __init__(self, tasks, request, columns_to_show, size):
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
@@ -1275,24 +1277,30 @@ class NominatedBugReviewAction(DBSchema):
 class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
     """
     """
+    def __init__(self, tasks, request, columns_to_show, size, nomination_target):
+        BugListingBatchNavigator.__init__(self, tasks, request, columns_to_show, size)
+        self.nomination_target = nomination_target
+
     def _getListingItem(self, bugtask):
         bugtask_listing_item = BugListingBatchNavigator._getListingItem(self, bugtask)
 
         review_action_vocab = vocab_factory(NominatedBugReviewAction)
+        bug_nomination = bugtask_listing_item.bug.getNominationFor(self.nomination_target)
         review_action_field = Choice(
-            __name__='review_action_%d' % (bugtask_listing_item.id,),
+            __name__='review_action_%d' % (bug_nomination.id,),
             vocabulary=review_action_vocab(None),
-            title=u'Review action')
+            title=u'Review action', required=True)
 
         # This is so setUpWidget expects a view, and so
         # view.request. We're not passing a view but we still want it
         # to work.
         bugtask_listing_item.request = self.request
 
-        bugtask_listing_item.review_action_widget = CustomWidgetFactory(NominationReviewActionWidget)
+        bugtask_listing_item.review_action_widget = CustomWidgetFactory(
+            NominationReviewActionWidget)
         setUpWidget(
             bugtask_listing_item, 'review_action', review_action_field, IInputWidget,
-            value=NominatedBugReviewAction.NO_CHANGE, context=bugtask_listing_item)
+            value=NominatedBugReviewAction.NO_CHANGE, context=bug_nomination)
 
         return bugtask_listing_item
 
@@ -1779,7 +1787,7 @@ class BugNominationsView(BugTaskSearchListingView):
     def _getBatchNavigator(self, tasks):
         batch_navigator = NominatedBugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
-            size=config.malone.buglist_batch_size)
+            size=config.malone.buglist_batch_size, nomination_target=self.context)
         # Add marker interface to display custom bug listings.
         alsoProvides(batch_navigator, INominationsReviewTableBatchNavigator)
         return batch_navigator
@@ -1789,6 +1797,57 @@ class BugNominationsView(BugTaskSearchListingView):
         return BugTaskSearchListingView.search(
             self, context=self.context.distribution,
             extra_params=dict(nominated_for=self.context))
+
+
+class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
+    """
+    """
+    def setUpFields(self):
+        """
+        """
+        self.form_fields = []
+
+    def setUpWidgets(self):
+        """
+        """
+        self.widgets = Widgets(
+            [(True, bug_listing_item.review_action_widget)
+             for bug_listing_item in self.context.getBugListingItems()],
+            len(self.prefix)+1)
+
+    @action('Save changes', name='submit')
+    def submit_action(self, action, data):
+        """
+        """
+        accepted = declined = 0
+
+        for name, review_action in data.items():
+            if review_action == NominatedBugReviewAction.NO_CHANGE:
+                continue
+            field = self.widgets[name].context
+            bug_nomination = field.context
+            if review_action == NominatedBugReviewAction.ACCEPT:
+                bug_nomination.approve(self.user)
+                accepted += 1
+            elif review_action == NominatedBugReviewAction.DECLINE:
+                bug_nomination.decline(self.user)
+                declined += 1
+            else:
+                raise AssertionError(
+                    'Unknown NominatedBugReviewAction: %r' % (
+                        review_action,))
+
+        if accepted > 0:
+            self.request.response.addInfoNotification(
+                '%d nomination(s) accepted' % accepted)
+        if declined > 0:
+            self.request.response.addInfoNotification(
+                '%d nomination(s) declined' % declined)
+
+        self.next_url = self.request.getURL()
+        query_string = self.request.get('QUERY_STRING')
+        if query_string:
+            self.next_url += '?%s' % query_string
 
 
 class BugTargetView(LaunchpadView):
