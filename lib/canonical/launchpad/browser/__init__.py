@@ -45,6 +45,7 @@ from canonical.launchpad.browser.distroseriesbinarypackage import *
 from canonical.launchpad.browser.distroserieslanguage import *
 from canonical.launchpad.browser.distroseriessourcepackagerelease import *
 from canonical.launchpad.browser.branding import *
+from canonical.launchpad.browser.faq import *
 from canonical.launchpad.browser.faqtarget import *
 from canonical.launchpad.browser.karma import *
 from canonical.launchpad.browser.language import *

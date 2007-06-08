@@ -26,6 +26,12 @@
     permission="zope.Public"
     template="../templates/faq-index.pt"
     />
+
+  <adapter
+    for="canonical.launchpad.interfaces.IFAQ"
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    factory="canonical.launchpad.browser.FAQStructuralObjectPresentation"
+    />
 </facet>
 
 </configure>
