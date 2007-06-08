@@ -5,6 +5,7 @@ __metaclass__ = type
 import unittest
 
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.database import Person
 
@@ -17,17 +18,19 @@ class TestPerson(LaunchpadFunctionalTestCase):
         ubuntu_team = Person.byName('ubuntu-team')
         # Sample Person is an active member of Warty Security Team which in
         # turn is a proposed member of Ubuntu Team. That means
-        # sample_person._getDirectMemberIParticipateIn(ubuntu_team) won't
-        # return anything.
+        # sample_person._getDirectMemberIParticipateIn(ubuntu_team) will fail
+        # with an AssertionError.
         self.failUnless(sample_person in warty_team.activemembers)
-        self.failUnless(warty_team in ubuntu_team.proposedmembers)
-        self.failUnlessEqual(
-            sample_person._getDirectMemberIParticipateIn(ubuntu_team), None)
+        self.failUnless(warty_team in ubuntu_team.invited_members)
+        self.failUnlessRaises(
+            AssertionError, sample_person._getDirectMemberIParticipateIn,
+            ubuntu_team)
 
         # If we make warty_team an active member of Ubuntu team, then the
         # _getDirectMemberIParticipateIn() call will actually return
         # warty_team.
-        ubuntu_team.addMember(warty_team, reviewer=sample_person)
+        login(warty_team.teamowner.preferredemail.email)
+        warty_team.acceptInvitationToBeMemberOf(ubuntu_team, comment="foo")
         flush_database_updates()
         self.failUnless(warty_team in ubuntu_team.activemembers)
         self.failUnlessEqual(

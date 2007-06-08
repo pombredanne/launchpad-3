@@ -4,9 +4,10 @@
 __metaclass__ = type
 
 import threading
+import xmlrpclib
 
 from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
-from zope.publisher.xmlrpc import XMLRPCRequest
+from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.app.session.interfaces import ISession
 from zope.interface import implements
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
@@ -34,6 +35,7 @@ from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
+from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.opstats import OpStats
 
 
@@ -179,6 +181,7 @@ class LaunchpadRequestPublicationFactory:
         vhrps.append(VHRP('bugs', BugsBrowserRequest, BugsPublication))
         vhrps.append(VHRP('answers', AnswersBrowserRequest,
             AnswersPublication))
+        vhrps.append(VHRP('openid', OpenIdBrowserRequest, OpenIdPublication))
         vhrps.append(VHRP('shipitubuntu', UbuntuShipItBrowserRequest,
             ShipItPublication))
         vhrps.append(VHRP('shipitkubuntu', KubuntuShipItBrowserRequest,
@@ -522,7 +525,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         """Receives a completed task and logs it in launchpad log format.
 
         task IP address
-        HTTP_X_FORWARDED_FOR
+        X_FORWARDED_FOR
         HOST
         datetime task started
         request string  (1st line of request)
@@ -537,7 +540,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         request_headers = task.request_data.headers
         cgi_env = task.getCGIEnvironment()
 
-        x_forwarded_for = request_headers.get('HTTP_X_FORWARDED_FOR', '')
+        x_forwarded_for = request_headers.get('X_FORWARDED_FOR', '')
         host = request_headers.get('HOST', '')
         start_time = self.log_date_string(task.start_time)
         first_line = task.request_data.first_line
@@ -592,18 +595,6 @@ debughttp = wsgi.ServerType(
 
 class MainLaunchpadPublication(LaunchpadBrowserPublication):
     """The publication used for the main Launchpad site."""
-
-class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
-    """The publication used for XML-RPC requests."""
-    def handleException(self, object, request, exc_info, retry_allowed=True):
-        LaunchpadBrowserPublication.handleException(
-                self, object, request, exc_info, retry_allowed
-                )
-        OpStats.stats['xml-rpc faults'] += 1
-
-    def endRequest(self, request, object):
-        OpStats.stats['xml-rpc requests'] += 1
-        return LaunchpadBrowserPublication.endRequest(self, request, object)
 
 # ---- blueprint
 
@@ -663,8 +654,49 @@ class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- xmlrpc
 
+class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
+    """The publication used for XML-RPC requests."""
+    def handleException(self, object, request, exc_info, retry_allowed=True):
+        LaunchpadBrowserPublication.handleException(
+                self, object, request, exc_info, retry_allowed
+                )
+        OpStats.stats['xml-rpc faults'] += 1
+
+    def endRequest(self, request, object):
+        OpStats.stats['xml-rpc requests'] += 1
+        return LaunchpadBrowserPublication.endRequest(self, request, object)
+
+
 class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
                              ErrorReportRequest):
     """Request type for doing XMLRPC in Launchpad."""
 
+    def _createResponse(self):
+        return LaunchpadXMLRPCResponse()
+
+
+class LaunchpadXMLRPCResponse(XMLRPCResponse):
+    """Response type for doing XMLRPC in Launchpad."""
+
+    def handleException(self, exc_info):
+        # If we don't have a proper xmlrpclib.Fault, and we have
+        # logged an OOPS, create a Fault that reports the OOPS ID to
+        # the user.
+        exc_value = exc_info[1]
+        if not isinstance(exc_value, xmlrpclib.Fault):
+            request = get_current_browser_request()
+            if request is not None and request.oopsid is not None:
+                exc_info = (xmlrpclib.Fault,
+                            xmlrpclib.Fault(-1, request.oopsid),
+                            None)
+        XMLRPCResponse.handleException(self, exc_info)
+
+
+# ---- openid
+
+class OpenIdPublication(LaunchpadBrowserPublication):
+    """The publication used for OpenId requests."""
+
+class OpenIdBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.OpenIdLayer)
 

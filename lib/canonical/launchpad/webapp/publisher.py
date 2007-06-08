@@ -321,9 +321,9 @@ def canonical_url(
                     "Shipit canonical urls must be used only with request "
                     "== None or a request providing one of the ShipIt Layers")
         else:
-            raise AssertionError(
-                "rootsite is %s.  Must be 'launchpad', 'blueprint' or 'shipit'."
-                % rootsite)
+            raise AssertionError("rootsite is %s.  Must be in %r." % (
+                    rootsite, sorted(allvhosts.configs.keys())
+                    ))
     path = u'/'.join(reversed(urlparts))
     if (path_only_if_possible and
         request is not None and

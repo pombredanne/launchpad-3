@@ -2,7 +2,7 @@ The Build table
 ^^^^^^^^^^^^^^^
 
 The build table contains the information pertaining to a given build
-of a sourcepackagerelease on a distroarchrelease.
+of a sourcepackagerelease on a distroarchseries.
 
 The build record may have many BinaryPackageRelease records pointing
 at it and it may reference a build log if the build was done on a
@@ -25,7 +25,7 @@ First up, can we get the builds out of the sample data?
 
 Let's check the complex properties of a build object.
 
-  >>> firefox_build.distrorelease.name
+  >>> firefox_build.distroseries.name
   u'breezy-autotest'
 
   >>> firefox_build.title
@@ -43,6 +43,9 @@ Let's check the complex properties of a build object.
 
   >>> firefox_build.calculated_buildstart
   datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
+
+  >>> firefox_build.is_trusted
+  True
 
 Test "retry" functionality:
 
@@ -251,18 +254,18 @@ Checking optional 'pocket' restriction:
   5
 
 
-We can find recent and pending builds for a given distrorelease.
+We can find recent and pending builds for a given distroseries.
 
   >>> hoary.getBuildRecords().count()
   5
 
-Or for a given distroarchrelease.
+Or for a given distroarchseries.
 
   >>> hoaryi386 = hoary['i386']
   >>> hoaryi386.title
   u'The Hoary Hedgehog Release for i386 (x86)'
 
-Exercises IHasBuildRecords abilities for distroarchreleases
+Exercises IHasBuildRecords abilities for distroarchseriess
 
   >>> hoaryi386.getBuildRecords().count()
   5
@@ -282,7 +285,7 @@ Exercises IHasBuildRecords abilities for distroarchreleases
   0
 
 
-Same for distroreleases:
+Same for distroseriess:
 
   >>> hoary.getBuildRecords().count()
   5
@@ -324,7 +327,7 @@ For sourcepackage:
 For a given distribution as well:
 
   >>> ubuntu.getBuildRecords().count()
-  16
+  17
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
@@ -361,7 +364,7 @@ Using the optional name argument to filter build results:
   >>> builds = ubuntu.getBuildRecords(name='pm')
   >>> builds.count()
   5
-  >>> [(b.sourcepackagerelease.name, b.distrorelease.name) for b in builds]
+  >>> [(b.sourcepackagerelease.name, b.distroseries.name) for b in builds]
   [(u'pmount', u'breezy-autotest'), (u'pmount', u'warty'), (u'pmount', u'breezy-autotest'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
 
 or using optional pocket argument:
@@ -385,7 +388,7 @@ Check IHasBuildRecords when implemented by Builder:
 
   >>> bob_builds = bob.getBuildRecords()
   >>> bob_builds.count()
-  11
+  12
 
   >>> bob_failed_builds = bob.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
   >>> bob_failed_builds.count()

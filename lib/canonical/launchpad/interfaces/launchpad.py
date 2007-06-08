@@ -22,7 +22,8 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.launchpad.webapp.interfaces import (
     NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag, IBreadcrumb,
     IBasicLaunchpadRequest, IAfterTraverseEvent, AfterTraverseEvent,
-    IBeforeTraverseEvent, BeforeTraverseEvent, UnexpectedFormData
+    IBeforeTraverseEvent, BeforeTraverseEvent, UnexpectedFormData,
+    UnsafeFormGetSubmissionError,
     )
 
 __all__ = [
@@ -53,6 +54,7 @@ __all__ = [
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
     'IMaloneApplication',
+    'INotificationRecipientSet',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
@@ -68,6 +70,8 @@ __all__ = [
     'NameNotAvailable',
     'NotFoundError',
     'UnexpectedFormData',
+    'UnknownRecipientError',
+    'UnsafeFormGetSubmissionError',
     ]
 
 
@@ -100,7 +104,7 @@ class ILaunchpadCelebrities(Interface):
     team_membership_janitor = Attribute("The Team Membership Janitor.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
-    ubuntu_release_mirror = Attribute("The main release mirror for Ubuntu.")
+    ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
 
 
 class ICrowd(Interface):
@@ -144,7 +148,10 @@ class IMaloneApplication(ILaunchpadApplication):
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
-    statsdate = Attribute("""The date stats were last updated.""")
+    language_count = Attribute(
+        'Number of languages Launchpad can translate into.')
+    statsdate = Attribute('The date stats were last updated.')
+    translation_groups = Attribute('ITranslationGroupSet object.')
 
     def translatable_products():
         """Return a list of the translatable products."""
@@ -152,13 +159,10 @@ class IRosettaApplication(ILaunchpadApplication):
     def featured_products():
         """Return a sample of all the translatable products."""
 
-    def translatable_distroreleases():
-        """Return a list of the distroreleases in launchpad for which
+    def translatable_distroseriess():
+        """Return a list of the distroseriess in launchpad for which
         translations can be done.
         """
-
-    def translation_groups():
-        """Return a list of the translation groups in the system."""
 
     def potemplate_count():
         """Return the number of potemplates in the system."""
@@ -171,9 +175,6 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translator_count():
         """Return the number of people who have given translations."""
-
-    def language_count():
-        """Return the number of languages Rosetta can translate into."""
 
 
 class IRegistryApplication(ILaunchpadApplication):
@@ -286,7 +287,7 @@ class IHasDrivers(Interface):
     """An object that has drivers.
 
     Drivers have permission to approve bugs and features for specific
-    distribution releases and product series.
+    series.
     """
     drivers = Attribute("A list of drivers")
 
@@ -407,3 +408,79 @@ class IAppFrontPageSearchForm(Interface):
                    vocabulary='DistributionOrProductOrProject')
 
 
+class UnknownRecipientError(KeyError):
+    """Error raised when an email or person isn't part of the recipient set.
+    """
+
+
+class INotificationRecipientSet(Interface):
+    """Represents a set of notification recipients and rationales.
+
+    All Launchpad emails should include a footer explaining why the user
+    is receiving the email. An INotificationRecipientSet encapsulates a
+    list of recipients along the rationale for being on the recipients list.
+
+    The pattern for using this are as follows: email addresses in an
+    INotificationRecipientSet are being notified because of a specific
+    event (for instance, because a bug changed). The rationales describe
+    why that email addresses is included in the recipient list,
+    detailing subscription types, membership in teams and/or other
+    possible reasons.
+
+    The set maintains the list of `IPerson` that will be contacted as well
+    as the email address to use to contact them. 
+    """
+    def getEmails():
+        """Return all email addresses registered, sorted alphabetically."""
+
+    def getRecipients():
+        """Return the set of person who will be notified.
+
+        :return: An iterator of `IPerson`, sorted by display name.
+        """
+
+    def __iter__():
+        """Return an iterator of the recipients."""
+
+    def __contains__(person_or_email):
+        """Return true if person or email is in the notification recipients list."""
+
+    def __nonzero__():
+        """Return False when the set is empty, True when it's not."""
+
+    def getReason(person_or_email):
+        """Return a reason tuple containing (text, header) for an address.
+
+        The text is meant to appear in the notification footer. The header
+        should be a short code that will appear in an
+        X-Launchpad-Message-Rationale header for automatic filtering.
+
+        :param person_or_email: An `IPerson` or email adress that is in the
+            recipients list.
+
+        :raises UnknownRecipientError: if the person or email isn't in the
+            recipients list.
+        """
+
+    def add(person, reason, header):
+        """Add a person or sequence of person to the recipients list.
+
+        When the added person is a team without an email address, all its
+        members emails will be added. If the person is already in the
+        recipients list, the reson for contacting him is not changed.
+
+        :param person: The `IPerson` or a sequence of `IPerson`
+            that will be notified.
+        :param reason: The rationale message that should appear in the
+            notification footer.
+        :param header: The code that will appear in the
+            X-Launchpad-Message-Rationale header.
+        """
+
+    def update(recipient_set):
+        """Updates this instance's reasons with reasons from another set.
+
+        The rationale for recipient already in this set will not be updated.
+
+        :param recipient_set: An `INotificationRecipientSet`.
+        """

@@ -14,20 +14,17 @@ from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.database.productseries import (
     DatePublishedSyncError, ProductSeries, NoImportBranchError)
-from canonical.testing import ZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
+from canonical.launchpad.interfaces import IProductSet
+from canonical.lp.dbschema import RevisionControlSystems
 
 
 class ImportdTestCase(TestCase):
 
-    layer = ZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self._setup = LaunchpadZopelessTestSetup(
-            dbuser=config.importd.dbuser)
-        self._setup.setUp()
-
-    def tearDown(self):
-        self._setup.tearDown()
+        LaunchpadZopelessLayer.switchDbUser(config.importd.dbuser)
 
 
 class TestImportUpdated(ImportdTestCase):
@@ -151,6 +148,42 @@ class TestImportUpdated(ImportdTestCase):
         self.assertEqual(
             str(series.datepublishedsync), str(date_previous_sync))
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
+
+
+class SyncIntervalTestCase(LaunchpadZopelessTestCase):
+    """When a VCS import is approved, we set the syncinterval column
+    to indicate how often the import should be updated.  Imports from
+    different revision control systems get different rates by default.
+    """
+
+    def getSampleSeries(self):
+        """Get a sample product series without any source details."""
+        product = getUtility(IProductSet).getByName('gnome-terminal')
+        series = product.getSeries('trunk')
+        self.assert_(series.rcstype is None)
+        return series
+
+    def testSyncIntervalForSvn(self):
+        """Our policy is imports from subversion should be updated
+        every 6 hours by default.
+        """
+        series = self.getSampleSeries()
+        series.rcstype = RevisionControlSystems.SVN
+        series.svnrepository = 'http://svn.example.com/hello/trunk'
+        series.certifyForSync()
+        self.assertEquals(series.syncinterval, datetime.timedelta(hours=6))
+
+    def testSyncIntervalForCvs(self):
+        """Our policy is imports from CVS should be updated
+        every 12 hours by default.
+        """
+        series = self.getSampleSeries()
+        series.rcstype = RevisionControlSystems.CVS
+        series.cvsroot = ':pserver:anonymous@cvs.example.com:/cvsroot'
+        series.cvsmodule = 'hello'
+        series.cvsbranch = 'MAIN'
+        series.certifyForSync()
+        self.assertEquals(series.syncinterval, datetime.timedelta(hours=12))
 
 
 def test_suite():

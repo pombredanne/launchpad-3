@@ -62,6 +62,7 @@ ALL_FTI = [
             ('binpkgnames', B),
             ('binpkgsummaries', C),
             ('binpkgdescriptions', D),
+            ('changelog', D),
             ]),
 
     ('distroreleasepackagecache', [
@@ -88,6 +89,10 @@ ALL_FTI = [
             ('displayname', A),
             ('title', B),
             ('summary', C),
+            ('description', D),
+            ]),
+
+    ('productreleasefile', [
             ('description', D),
             ]),
 

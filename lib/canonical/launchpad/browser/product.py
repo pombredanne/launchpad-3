@@ -17,6 +17,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductTranslationsMenu',
     'ProductView',
+    'ProductDownloadFilesView',
     'ProductAddView',
     'ProductBrandingView',
     'ProductEditView',
@@ -52,10 +53,10 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
-    IProductSet, IProductSeries, IProject, ISourcePackage, ICountry,
+    ICountry, IProductSet, IProductSeries, IProject, ISourcePackage,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
-    IPillarNameSet, IDistribution, IHasIcon, UnexpectedFormData)
+    IPillarNameSet, IDistribution, IHasIcon, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
@@ -142,7 +143,7 @@ class ProductSOP(StructuralObjectPresentation):
 
     def listChildren(self, num):
         # product series, most recent first
-        return list(self.context.serieslist[:num])
+        return list(self.context.serieses[:num])
 
     def listAltChildren(self, num):
         return None
@@ -203,7 +204,7 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'distributions', 'packages', 'branch_add',
+        'mentorship', 'distributions', 'packages', 'files', 'branch_add',
         'series_add', 'launchpad_usage', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
@@ -243,8 +244,12 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
 
+    def files(self):
+        text = 'Download project files'
+        return Link('+download', text, icon='info')
+
     def series_add(self):
-        text = 'Register a release series'
+        text = 'Register a series'
         return Link('+addseries', text, icon='add')
 
     def branch_add(self):
@@ -426,15 +431,16 @@ class ProductSetContextMenu(ContextMenu):
         return Link('/sprints/', 'View meetings')
 
 
-class ProductView:
+class ProductView(LaunchpadView):
 
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        self.context = context
-        self.product = context
-        self.request = request
+        LaunchpadView.__init__(self, context, request)
         self.form = request.form_ng
+
+    def initialize(self):
+        self.product = self.context
         self.status_message = None
 
     def primary_translatable(self):
@@ -458,7 +464,7 @@ class ProductView:
                     'potemplates': sourcepackage.currentpotemplates,
                     'base_url': '/distros/%s/%s/+sources/%s' % (
                         sourcepackage.distribution.name,
-                        sourcepackage.distrorelease.name,
+                        sourcepackage.distroseries.name,
                         sourcepackage.name)
                     }
 
@@ -503,22 +509,22 @@ class ProductView:
         distros = {}
         # first get a list of all relevant packagings
         all_packagings = []
-        for series in self.context.serieslist:
+        for series in self.context.serieses:
             for packaging in series.packagings:
                 all_packagings.append(packaging)
         # we sort it so that the packagings will always be displayed in the
-        # distrorelease version, then productseries name order
-        all_packagings.sort(key=lambda a: (a.distrorelease.version,
+        # distroseries version, then productseries name order
+        all_packagings.sort(key=lambda a: (a.distroseries.version,
             a.productseries.name, a.id))
         for packaging in all_packagings:
-            if distros.has_key(packaging.distrorelease.distribution.name):
-                distro = distros[packaging.distrorelease.distribution.name]
+            if distros.has_key(packaging.distroseries.distribution.name):
+                distro = distros[packaging.distroseries.distribution.name]
             else:
                 distro = {}
-                distro['name'] = packaging.distrorelease.distribution.name
-                distro['title'] = packaging.distrorelease.distribution.title
+                distro['name'] = packaging.distroseries.distribution.name
+                distro['title'] = packaging.distroseries.distribution.title
                 distro['packagings'] = []
-                distros[packaging.distrorelease.distribution.name] = distro
+                distros[packaging.distroseries.distribution.name] = distro
             distro['packagings'].append(packaging)
         # now we sort the resulting set of "distro" objects, and return that
         result = distros.values()
@@ -536,15 +542,15 @@ class ProductView:
     def potemplatenames(self):
         potemplatenames = set([])
 
-        for series in self.context.serieslist:
+        for series in self.context.serieses:
             for potemplate in series.potemplates:
                 potemplatenames.add(potemplate.potemplatename)
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
-    def sorted_serieslist(self):
+    def sorted_serieses(self):
         """Return the series list from the product with the dev focus first."""
-        series_list = list(self.context.serieslist)
+        series_list = list(self.context.serieses)
         series_list.remove(self.context.development_focus)
         # now sort the list by name with newer versions before older
         series_list = sorted_version_numbers(series_list,
@@ -557,6 +563,68 @@ class ProductView:
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
 
+class ProductDownloadFilesView(LaunchpadView):
+
+    __used_for__ = IProduct
+
+    def initialize(self):
+        self.form = self.request.form
+        self.product = self.context
+        del_count = None
+        if 'delete_files' in self.form:
+            if self.request.method == 'POST':
+                del(self.form['delete_files'])
+                del_count = self.delete_files(self.form)
+            else:
+                # If there is a form submission and it is not a POST then
+                # raise an error.  This is to protect against XSS exploits.
+                raise UnsafeFormGetSubmissionError(self.form['delete_files'])
+        if del_count is not None:
+            if del_count <= 0:
+                self.request.response.addNotification(
+                    "No files were deleted.")
+            elif del_count == 1:
+                self.request.response.addNotification(
+                    "1 file has been deleted.")
+            else:
+                self.request.response.addNotification(
+                    "%d files have been deleted." %
+                    del_count)
+
+    def delete_files(self, data):
+        del_keys = [int(v) for k,v in data.items()
+                    if k.startswith('checkbox')]
+        del_count = 0
+        for series in self.product.serieses:
+            for release in series.releases:
+                for f in release.files:
+                    if f.libraryfile.id in del_keys:
+                        release.deleteFileAlias(f.libraryfile)
+                        del_keys.remove(f.libraryfile.id)
+                        del_count += 1
+        return del_count
+
+    def file_url(self, series, release, file_):
+        """Create a download URL for the file."""
+        return "%s/+download/%s" % (canonical_url(release),
+                                    file_.libraryfile.filename)
+
+    @cachedproperty
+    def milestones(self):
+        """Compute a mapping between series and releases that are milestones."""
+        result = dict()
+        for series in self.product.serieses:
+            result[series] = dict()
+            milestone_list = [m.name for m in series.milestones]
+            for release in series.releases:
+                if release.version in milestone_list:
+                    result[series][release] = True
+        return result
+
+    def is_milestone(self, series, release):
+        """Determine whether a release is milestone for the series."""
+        return (series in self.milestones and
+                release in self.milestones[series])
 
 class ProductBrandingView(BrandingChangeView):
 
@@ -618,7 +686,7 @@ class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
 
 
 class ProductAddSeriesView(LaunchpadFormView):
-    """A form to add new product release series"""
+    """A form to add new product series"""
 
     schema = IProductSeries
     field_names = ['name', 'summary', 'user_branch', 'releasefileglob']
@@ -792,7 +860,7 @@ class ProductSetView(LaunchpadView):
             PillarSearchItem(
                 pillar_type=item['type'], name=item['name'],
                 displayname=item['title'], summary=item['description'],
-                icon_id=item['emblem'])
+                icon_id=item['icon'])
             for item in getUtility(IPillarNameSet).search(search_string, limit)
         ]
 
@@ -804,7 +872,7 @@ class ProductAddView(LaunchpadFormView):
 
     schema = IProduct
     field_names = ['name', 'owner', 'displayname', 'title', 'summary',
-                   'description', 'project', 'homepageurl', 
+                   'description', 'project', 'homepageurl',
                    'sourceforgeproject', 'freshmeatproject',
                    'wikiurl', 'screenshotsurl', 'downloadurl',
                    'programminglang', 'reviewed']
@@ -917,7 +985,7 @@ class ProductReassignmentView(ObjectReassignmentView):
 
         """
         import_queue = getUtility(ITranslationImportQueue)
-        for series in product.serieslist:
+        for series in product.serieses:
             for entry in import_queue.getEntryByProductSeries(series):
                 if entry.importer == oldOwner:
                     entry.importer = newOwner
@@ -935,7 +1003,7 @@ class ProductShortLink(DefaultShortLink):
 
 class ProductBranchesView(BranchListingView):
     """View for branch listing for a product."""
-    
+
     extra_columns = ('author',)
 
     def _branches(self):
@@ -958,5 +1026,3 @@ class ProductBranchesView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project.')
         return message % self.context.displayname
-
-

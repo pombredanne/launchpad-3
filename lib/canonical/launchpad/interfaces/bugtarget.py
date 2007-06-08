@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBugTarget',
-    'BugDistroReleaseTargetDetails']
+    'BugDistroSeriesTargetDetails']
 
 from zope.interface import Interface, Attribute
 
@@ -15,7 +15,7 @@ from zope.interface import Interface, Attribute
 class IBugTarget(Interface):
     """An entity on which a bug can be reported.
 
-    Examples include an IDistribution, an IDistroRelease and an
+    Examples include an IDistribution, an IDistroSeries and an
     IProduct.
     """
     # XXX, Brad Bollenbach, 2006-08-02: This attribute name smells. See
@@ -77,20 +77,20 @@ class IBugTarget(Interface):
         """
 
 
-class BugDistroReleaseTargetDetails:
-    """The details of a bug targeted to a specific IDistroRelease.
+class BugDistroSeriesTargetDetails:
+    """The details of a bug targeted to a specific IDistroSeries.
 
     The following attributes are provided:
 
-    :release: The IDistroRelease.
-    :istargeted: Is there a fix targeted to this release?
+    :series: The IDistroSeries.
+    :istargeted: Is there a fix targeted to this series?
     :sourcepackage: The sourcepackage to which the fix would be targeted.
     :assignee: An IPerson, or None if no assignee.
-    :status: A BugTaskStatus dbschema item, or None, if release is not targeted.
+    :status: A BugTaskStatus dbschema item, or None, if series is not targeted.
     """
-    def __init__(self, release, istargeted=False, sourcepackage=None,
+    def __init__(self, series, istargeted=False, sourcepackage=None,
                  assignee=None, status=None):
-        self.release = release
+        self.series = series
         self.istargeted = istargeted
         self.sourcepackage = sourcepackage
         self.assignee = assignee

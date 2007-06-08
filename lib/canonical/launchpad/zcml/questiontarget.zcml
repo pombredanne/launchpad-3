@@ -14,7 +14,6 @@
     layer="canonical.launchpad.layers.AnswersLayer"
     name="+tickets"
     />
-
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionCollection"
     class="canonical.launchpad.browser.SearchQuestionsView"
@@ -27,14 +26,12 @@
     new_name="+questions"
     rootsite="answers"
     />
-
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionCollection"
     class="canonical.launchpad.browser.QuestionCollectionOpenCountView"
     name="+open_questions_count"
     permission="zope.Public"
     />
-
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionCollection"
     class="canonical.launchpad.browser.QuestionCollectionLatestQuestionsView"

@@ -11,7 +11,7 @@ from canonical.archiveuploader.ftests.test_securityuploads import (
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus, DistroReleaseQueueStatus)
+    PackagePublishingPocket, PackagePublishingStatus)
 from canonical.launchpad.ftests import import_public_test_keys
 
 class TestBuilddUploads(TestStagedBinaryUploadBase):
@@ -36,7 +36,7 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
     name = 'foo'
     version = '1.0-1'
     distribution_name = 'ubuntu'
-    distrorelease_name = 'breezy'
+    distroseries_name = 'breezy'
     pocket = PackagePublishingPocket.RELEASE
     policy = 'buildd'
     no_mails = True
@@ -90,8 +90,8 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         """Check if Soyuz copes with delayed binary uploads.
 
         The binaries are build asynchronously, which means we can't
-        predict if all binaries of a given source will be delivered
-        within the same publication cycle.
+        predict if the builds for all architectures of a given source
+        will be delivered within the same publication cycle.
 
         Find more information on bug #89846.
         """

@@ -20,7 +20,7 @@ class QuestionBug(SQLBase):
 
     implements(IQuestionBug)
 
-    _table='QuestionBug'
+    _table = 'QuestionBug'
 
     question = ForeignKey(
         dbName='question', foreignKey='Question', notNull=True)
