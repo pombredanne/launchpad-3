@@ -74,17 +74,28 @@ He can also enters keywords describing the FAQ:
     >>> admin_browser.getControl('Keywords').value = (
     ...     'SVG scalable vector graphic')
 
-And he enters the FAQ content in the text field:
-
-    >>> admin_browser.getControl('Content').value = (
-    ...     'Upgrade your browser to Firefox 2.0.')
-
 There is a 'Message' field that will be used to answer the question.
 It is pre-filled, but he can change its value:
 
     >>> print admin_browser.getControl('Message').value
     Foo Bar suggests this article as an answer to your question:
     >>> admin_browser.getControl('Message').value = 'Read the Fine Answer:'
+
+FAQ must either contain a URL or the FAQ content.
+
+    >>> admin_browser.getControl('Create and Link').click()
+    >>> print admin_browser.url
+    http://answers.launchpad.dev/firefox/+question/2/+createfaq
+
+    >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print message.renderContents()
+    There is 1 error.
+    An FAQ must have either an URL or content.
+
+So he enters the FAQ content in the text field:
+
+    >>> admin_browser.getControl('Content').value = (
+    ...     'Upgrade your browser to Firefox 2.0.')
 
 After clicking the 'Create' button, the FAQ is created and the user is
 returned to the question page.
@@ -100,7 +111,15 @@ The question's status was changed to 'Answered':
     >>> print details_portlet.find('b', text='Status:').next.strip()
     Answered
 
-The a link to the FAQ appears in the question details portlet:
+The answer message was added to the question's discussion:
+
+    >>> print extract_text(find_tags_by_class(
+    ...     admin_browser.contents, 'boardCommentBody')[-1]).encode(
+    ...     'ascii', 'backslashreplace')
+    Read the Fine Answer:
+    FAQ...: \u201cDisplaying SVG in Firefox\u201d.
+
+A link to the FAQ appears in the question details portlet:
 
     >>> print extract_text(
     ...     details_portlet.find('b', text='Related FAQ:').findNext('a'))
@@ -111,13 +130,5 @@ The a link to the FAQ appears in the question details portlet:
     >>> print backslashreplace(admin_browser.title)
     Mozilla Firefox FAQ #...: \u201cDisplaying SVG in Firefox\u201d
 
-The answer message was added to the question's discussion:
 
-    # XXX flacoste 20070607 goBack() doesn't work, bug #98372.
-    >>> admin_browser.open(
-    ...     'http://answers.launchpad.dev/firefox/+question/2')
-    >>> print extract_text(find_tags_by_class(
-    ...     admin_browser.contents, 'boardCommentBody')[-1]).encode(
-    ...     'ascii', 'backslashreplace')
-    Read the Fine Answer:
-    FAQ...: \u201cDisplaying SVG in Firefox\u201d.
+

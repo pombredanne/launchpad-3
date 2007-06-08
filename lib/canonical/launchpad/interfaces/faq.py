@@ -9,6 +9,8 @@ __all__ = [
     ]
 
 from zope.interface import Attribute
+from zope.interface.exceptions import Invalid
+from zope.interface.interface import invariant
 from zope.schema import (
      Choice, Datetime,  Int, Object, Text, TextLine)
 
@@ -76,3 +78,9 @@ class IFAQ(IHasOwner):
 
     related_questions = Attribute(
         _('The set of questions linked to this FAQ.'))
+
+    @invariant
+    def urlOrContent(faq):
+        """A FAQ must have either a URL or content."""
+        if faq.url is None and faq.content is None:
+            raise Invalid("An FAQ must have either an URL or content.")
