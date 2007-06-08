@@ -184,86 +184,6 @@ class TestZopeless(PgTestCase):
         self.failUnlessEqual(4, MoreBeer.byName('Victoria Bitter').rating)
 
 
-class TestZopelessIsolation(unittest.TestCase):
-    layer = ZopelessLayer
-
-    def setUp(self):
-        PgTestSetup().setUp()
-        self.dbname = PgTestSetup().dbname
-
-    def tearDown(self):
-        PgTestSetup().tearDown()
-
-    def _test_isolation(self, isolation, isolation_string):
-        # Test that PostgreSQL reports the isolation level we expect
-        # and that it sticks across transactions.
-        ztm = initZopeless(
-                dbname=self.dbname, dbuser='launchpad',
-                isolation=isolation
-                )
-        try:
-            cur = cursor()
-            cur.execute("SHOW transaction_isolation")
-            self.failUnlessEqual(isolation_string, cur.fetchone()[0])
-            ztm.abort()
-
-            cur = cursor()
-            cur.execute("SHOW transaction_isolation")
-            self.failUnlessEqual(isolation_string, cur.fetchone()[0])
-            ztm.commit()
-
-            cur = cursor()
-            cur.execute("SHOW transaction_isolation")
-            self.failUnlessEqual(isolation_string, cur.fetchone()[0])
-            ztm.abort()
-        finally:
-            ztm.uninstall()
-
-    def test_readCommitted(self):
-        self._test_isolation(READ_COMMITTED_ISOLATION, 'read committed')
-
-    def test_serializable(self):
-        self._test_isolation(SERIALIZABLE_ISOLATION, 'serializable')
-
-    def test_default(self):
-        self._test_isolation(DEFAULT_ISOLATION, 'serializable')
-
-    def test_autocommit(self):
-        # First test normal behavior
-        ztm = initZopeless(dbname=self.dbname, dbuser='launchpad')
-        try:
-            cur = cursor()
-            cur.execute("CREATE TABLE whatever (x integer)")
-            ztm.abort()
-
-            # This will fail, as the table creation has been rolled back
-            cur = cursor()
-            try:
-                cur.execute("INSERT INTO whatever VALUES (1)")
-            except psycopg.Error:
-                pass
-            else:
-                self.fail("Default connection is autocommitting!")
-        finally:
-            ztm.uninstall()
-
-        ztm = initZopeless(
-                dbname=self.dbname, dbuser='launchpad',
-                isolation=AUTOCOMMIT_ISOLATION
-                )
-        try:
-            cur = cursor()
-            cur.execute("CREATE TABLE whatever (x integer)")
-            ztm.abort()
-
-            # This will fail if the table creation has been rolled back
-            cur = cursor()
-            cur.execute("INSERT INTO whatever VALUES (1)")
-            ztm.abort()
-        finally:
-            ztm.uninstall()
-
-
 def test_isZopeless():
     """
     >>> from canonical.lp import isZopeless
@@ -294,7 +214,6 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestZopeless))
     suite.addTest(unittest.makeSuite(TestInitZopeless))
-    suite.addTest(unittest.makeSuite(TestZopelessIsolation))
     doctests = DocTestSuite()
     doctests.layer = LaunchpadLayer
     suite.addTests(doctests)
