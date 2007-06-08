@@ -7,6 +7,7 @@ import unittest
 import xmlrpclib
 
 from twisted.application import strports
+from canonical.authserver.interfaces import WRITABLE
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
@@ -164,7 +165,7 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         branch_id, permissions = self.server.getBranchInformation(
             12, 'name12', 'gnome-terminal', 'pushed')
         self.assertEqual(25, branch_id)
-        self.assertEqual('w', permissions)
+        self.assertEqual(WRITABLE, permissions)
 
 
 class BranchAPITestCase(LaunchpadTestCase):

@@ -17,10 +17,16 @@ __all__ = [
     'IHostedBranchStorage',
     'IUserDetailsStorage',
     'IUserDetailsStorageV2',
+    'READ_ONLY',
+    'WRITABLE'
     ]
 
 
 from zope.interface import Interface
+
+
+READ_ONLY = 'r'
+WRITABLE = 'w'
 
 
 class IUserDetailsStorage(Interface):

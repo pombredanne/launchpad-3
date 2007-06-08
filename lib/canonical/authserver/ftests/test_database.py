@@ -14,7 +14,7 @@ from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2)
+    IUserDetailsStorageV2, READ_ONLY, WRITABLE)
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     DatabaseBranchDetailsStorage)
@@ -238,7 +238,7 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         branch_id, permissions = store._getBranchInformationInteraction(
             12, 'name12', 'gnome-terminal', 'pushed')
         self.assertEqual(25, branch_id)
-        self.assertEqual('w', permissions)
+        self.assertEqual(WRITABLE, permissions)
 
     def test_getBranchInformation_nonexistent(self):
         # When we get the branch information for a non-existent branch, we get
@@ -258,7 +258,7 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         branch_id, permissions = store._getBranchInformationInteraction(
             12, 'sabdfl', 'firefox', 'release-0.8')
         self.assertEqual(13, branch_id)
-        self.assertEqual('r', permissions)
+        self.assertEqual(READ_ONLY, permissions)
 
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):

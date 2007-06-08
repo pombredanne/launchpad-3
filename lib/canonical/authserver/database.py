@@ -26,7 +26,7 @@ from canonical.config import config
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2)
+    IUserDetailsStorageV2, READ_ONLY, WRITABLE)
 
 from twisted.internet.threads import deferToThread
 
@@ -478,9 +478,9 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
                 return '', ''
             requester = getUtility(IPersonSet).get(loginID)
             if requester.inTeam(branch.owner):
-                return branch.id, 'w'
+                return branch.id, WRITABLE
             else:
-                return branch.id, 'r'
+                return branch.id, READ_ONLY
         finally:
             rollback()
 
