@@ -13,19 +13,18 @@ import sys
 
 from zope.component import getUtility
 
-from sourcerer.deb.version import Version
-
+from canonical.archivepublisher.debversion import Version
 from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.config import config
 from canonical.buildmaster.master import (
     BuilddMaster, builddmaster_lockfilename)
 
 from canonical.launchpad.interfaces import IDistroArchSeriesSet
-from canonical.launchpad.scripts.base import (LaunchpadScript,
+from canonical.launchpad.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 
 
-class QueueBuilder(LaunchpadScript):
+class QueueBuilder(LaunchpadCronScript):
 
     def add_my_options(self):
         self.parser.add_option(
@@ -44,7 +43,7 @@ class QueueBuilder(LaunchpadScript):
         if os.path.exists(config.builddmaster.crondaily_lockfile):
             sys.exit(0)
 
-        LaunchpadScript.lock_or_quit(self)
+        LaunchpadCronScript.lock_or_quit(self)
 
     def main(self):
         """Invoke rebuildQueue.

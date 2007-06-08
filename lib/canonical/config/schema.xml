@@ -262,9 +262,16 @@ k            </description>
                 Set to 'all' for open access.
             </description>
         </key>
+        <key name="openid_sreg_trustroots"
+             datatype="canonical.config.commalist" default="">
+            <description>
+                A list of OpenID trust roots for which we will send
+                simple registration information.
+            </description>
+        </key>
         <key name="non_restricted_hostname" datatype="string"
              default="launchpad.net">
-	    <description>
+            <description>
                 If restrict_to_team is set (such as on the beta
                 website), then this indicates the hostname suffix for
                 the non-restricted version of Launchpad.  Replacing
