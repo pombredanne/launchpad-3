@@ -140,7 +140,7 @@ class BuilddMaster:
                              distroarchseries.distroseries.name,
                              distroarchseries.architecturetag))
 
-        # check ARCHRELEASE across available pockets
+        # check ARCHSERIES across available pockets
         for pocket in dbschema.PackagePublishingPocket.items:
             if distroarchseries.getChroot(pocket):
                 # Fill out the contents

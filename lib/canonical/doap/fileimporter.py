@@ -45,7 +45,7 @@ class ProductReleaseImporter:
         # ...and we're done!
 
     def _ensureProductRelease(self, filename):
-        from hct.util.path import split_version, name
+        from cscvs.dircompare.path import split_version, name
         version = split_version(name(filename))[1]
         series = version.split('.')[0]
         existingSeries = ProductSeries.selectOneBy(productID=self.product.id,
@@ -123,7 +123,7 @@ class ProductReleaseImporter:
 
     def getLastManifest(self):
         """Return the last manifest for this product, or None."""
-        from sourcerer.deb.version import deb_cmp
+        from canonical.archivepublisher.debversion import deb_cmp
 
         releases = list(ProductRelease.select(
             'manifest IS NOT NULL AND product = %d' % self.product

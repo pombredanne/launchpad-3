@@ -29,6 +29,7 @@ from openid.server.server import (
 from openid.server.trustroot import TrustRoot
 from openid import oidutil
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
         IEmailAddressSet, ILaunchBag, IOpenIdAuthorizationSet,
         ILaunchpadOpenIdStoreFactory, IPersonSet, NotFoundError,
@@ -116,10 +117,9 @@ class OpenIdView(LaunchpadView):
             self.login = self.getPersonNameByIdentity(
                     self.openid_request.identity)
             if self.isAuthorized():
-                openid_response = self.openid_request.answer(True)
+                openid_response = self.createPositiveResponse()
             else:
-                openid_response = self.openid_request.answer(
-                    False, allvhosts.configs['openid'].rooturl)
+                openid_response = self.createFailedResponse()
 
         # Handle checkid_setup requests.
         elif self.openid_request.mode == 'checkid_setup':
@@ -158,7 +158,7 @@ class OpenIdView(LaunchpadView):
 
             elif self.isAuthorized():
                 # User is logged in and the site is authorized.
-                openid_response = self.openid_request.answer(True)
+                openid_response = self.createPositiveResponse()
 
             else:
                 # We have an interactive id check request (checkid_setup).
@@ -282,6 +282,41 @@ class OpenIdView(LaunchpadView):
         for key in to_delete:
             del session[key]
 
+    def createPositiveResponse(self):
+        """Create a positive assertion OpenIDResponse.
+
+        This method should be called to create the response to
+        successful checkid requests.
+
+        If the trust root for the request is in openid_sreg_trustroots,
+        then additional user information is included with the
+        response.
+        """
+        response = self.openid_request.answer(True)
+        # If this is a trust root we know about and trust, send some
+        # user details.
+        if (self.openid_request.trust_root in
+            config.launchpad.openid_sreg_trustroots):
+            response.addField('sreg', 'email',
+                              self.user.preferredemail.email, signed=True)
+            response.addField('sreg', 'fullname',
+                              self.user.displayname, signed=True)
+            response.addField('sreg', 'nickname',
+                              self.user.name, signed=True)
+            response.addField('sreg', 'timezone',
+                              self.user.timezone, signed=True)
+        return response
+
+    def createFailedResponse(self):
+        """Create a failed assertion OpenIDResponse.
+
+        This method should be called to create the response to
+        unsuccessful checkid requests.
+        """
+        response = self.openid_request.answer(
+            False, allvhosts.configs['openid'].rooturl)
+        return response
+
     def isIdentityOwner(self):
         """Returns True if we are logged in as the owner of the identity."""
         assert self.user is not None, "user should be logged in by now."
@@ -327,7 +362,6 @@ class OpenIdView(LaunchpadView):
             raise Unauthorized(
             "You are no longer logged in as the identity owner.")
 
-
     def trashSessionOpenIdRequest(self):
         """Remove the OpenIdRequest from the session using the nonce in the
         request.
@@ -372,7 +406,7 @@ class OpenIdView(LaunchpadView):
             auth_set.authorize(
                     self.user, self.openid_request.trust_root, expires)
 
-        return self.openid_request.answer(True)
+        return self.createPositiveResponse()
 
     def deny(self):
         """Handle "Deny" choice from the decide page.
@@ -381,7 +415,7 @@ class OpenIdView(LaunchpadView):
         the session immediately.
         """
         try:
-            return self.openid_request.answer(False)
+            return self.createFailedResponse()
         finally:
             self.trashSessionOpenIdRequest()
 

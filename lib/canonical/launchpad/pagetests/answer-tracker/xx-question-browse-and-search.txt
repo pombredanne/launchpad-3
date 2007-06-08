@@ -3,6 +3,7 @@
 This story describes some common use cases about using the browsing and
 searching features of the Answer Tracker.
 
+
 == When Nobody Uses the Answer Tracker ==
 
 Average Joe has recently installed Kubuntu. He has a problem with his
@@ -20,14 +21,14 @@ He discovers that there are no questions on the Kubuntu Answers page:
     >>> from BeautifulSoup import BeautifulSoup
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions for Kubuntu with the requested statuses.
-    
+
 The same is true for Projects that do not have Products.
 
     >>> browser.open('http://launchpad.dev/aaa')
     >>> browser.getLink('Answers').click()
     >>> print browser.title
     Questions for the Test Project
-    
+
     >>> from BeautifulSoup import BeautifulSoup
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions for the Test Project with the requested statuses.
@@ -136,8 +137,8 @@ The Answer Tracker main page permits the user to jump to a question by
 submitting the question's id in the text input field with the 'Find
 Answers' button.
 
-Average Joe learns than he might find the solution to his Firefox 
-problem from someone on IRC. He is told to read question 9 on the 
+Average Joe learns than he might find the solution to his Firefox
+problem from someone on IRC. He is told to read question 9 on the
 Launchpad Answer Tracker. He visits the main page and enters '9'
 to jump to the question.
 
@@ -148,37 +149,37 @@ to jump to the question.
     >>> locators = find_tags_by_class(browser.contents, 'main')
     >>> print backslashreplace(browser.title)
     mozilla-firefox in ubuntu question #9: ...
-    
-While reading the Ubuntu forums for a solution to his problem, 
+
+While reading the Ubuntu forums for a solution to his problem,
 Average Joe finds some unlinked text that refers to how to
 get extensions to work. He copies the text ' #6 ' from the page
 and pastes it into the main page of the Answer Tracker to read
 the answer.
-    
+
     >>> browser.open('http://answers.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = ' #6 '
     >>> browser.getControl('Find Answers').click()
     >>> print backslashreplace(browser.title)
     Mozilla Firefox question #6: ...
-    
+
 The Answer Tracker cannot identify Question ids within text. Average
 Joe finds a reference to question 8 in a blog. He copies 'question 8'
 and pastes it into the text field on the Answer Tracker main page. He
 is shown search results instead of the question.
-    
+
     >>> browser.open('http://answers.launchpad.dev/')
     >>> browser.getControl(name='field.search_text').value = 'question 8'
     >>> browser.getControl('Find Answers').click()
     >>> print browser.title
     Questions matching "question 8"
-    
+
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions matching "question 8" with the requested statuses.
-    
-        
+
+
 == Searching Questions ==
 
-Browsing is fine when the number of questions is small, but searching 
+Browsing is fine when the number of questions is small, but searching
 is more convenient as the number of questions grow larger.
 
 This time, it's Firefox that brings Average Joe to the Ubuntu Answer
@@ -221,6 +222,17 @@ He clicks on the link to read the question description.
     >>> browser.title
     'mozilla-firefox in ubuntu question #3:...Firefox is slow...'
 
+The user must choose at least one status when searching questions. An
+error is displayed when the user forgets to select a status.
+
+    >>> browser.open('http://launchpad.dev/ubuntu/+questions')
+    >>> browser.getControl(name='field.status').value = []
+    >>> browser.getControl('Search').click()
+    >>> messages = find_tags_by_class(browser.contents, 'message')
+    >>> print messages[0].renderContents()
+    You must choose at least one status.
+
+
 == Controlling the Sort Order ==
 
 That question isn't exactly what Average Joe was looking for. Now, he'd
@@ -262,6 +274,7 @@ selects the 'oldest first' sort order.
 == Common Reports ==
 
 In the actions menu, we find links to some common reports.
+
 
 === Open Questions ===
 
@@ -325,6 +338,7 @@ he enters 'Evolution' as a keyword and hits the search button.
 
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no answered questions matching "Evolution" for Ubuntu.
+
 
 === My questions ===
 
@@ -390,6 +404,7 @@ informing him of this fact is displayed.
     ...     sample_person_browser.contents).first('p').renderContents()
     You didn't ask any questions about gnomebaker.
 
+
 === Need attention ===
 
 A user can often forget which questions need his attention. For
@@ -438,6 +453,7 @@ informing him of this fact is displayed.
     >>> print find_main_content(
     ...     sample_person_browser.contents).first('p').renderContents()
     No questions need your attention for gnomebaker.
+
 
 == Person Reports ==
 
@@ -502,6 +518,7 @@ questions to a particular status:
 The actions menu contains links to listing that contain only a specific
 type of involvement.
 
+
 === Assigned ===
 
 The assigned report only lists the questions to which the person is
@@ -526,6 +543,7 @@ answerer.
     ...     print question.first('a').renderContents()
     mailto: problem in webpage
 
+
 === Commented ===
 
 The report available under the 'Commented' link displays all the
@@ -543,6 +561,7 @@ questions commented on by the person.
     Installation of Java Runtime Environment for Mozilla
     Newly installed plug-in doesn't seem to be used
 
+
 === Asked ===
 
 The 'Asked' link displays a listing containing all the questions
@@ -556,6 +575,7 @@ asked by the person.
     ...     print question.first('a').renderContents()
     Slow system
     Firefox loses focus and gets stuck
+
 
 === Need attention ===
 
@@ -571,6 +591,7 @@ the attention of that person.
     Continue playing after shutdown
     Slow system
 
+
 === Subscribed ===
 
 Foo Bar can find all the questions to which he is subscribed by
@@ -583,6 +604,7 @@ visiting the 'Subscribed' link in the 'Answers' facet.
     >>> for question in questions.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     Slow system
+
 
 == Browsing and Searching Questions in a Project ==
 
@@ -641,6 +663,7 @@ The same standard reports than on regular QuestionTarget are available:
     >>> print user_browser.title
     Questions needing your attention for the Mozilla Project
 
+
 == Searching All Questions ==
 
 It is possible from the Answer Tracker front page to search among all
@@ -693,6 +716,7 @@ display all questions asked in Launchpad with the selected statuses.
     Firefox loses focus and gets stuck          Mozilla Firefox
     Problem showing the SVG demo on W3C site    Mozilla Firefox
     Firefox cannot render Bank Site             Mozilla Firefox
+
 
 == Searching in a Selected Project ==
 
@@ -778,6 +802,7 @@ And also with products:
     >>> print anon_browser.title
     Questions matching "plugins" for Mozilla Firefox
 
+
 == Popular searches ==
 
 The action menu provides links to predefined searches; Unsupported is one
@@ -789,7 +814,7 @@ of those searches.
     >>> portlet.find(name='a', text='Unsupported')
     u'Unsupported'
 
-Each product and distro can have questions asked in languages that 
+Each product and distro can have questions asked in languages that
 none of the Answer Contacts speak.
 
     >>> browser.getLink('Unsupported').click()
