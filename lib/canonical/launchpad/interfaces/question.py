@@ -462,9 +462,17 @@ class IQuestionLinkFAQForm(Interface):
 
     faq = Choice(
         title=_('Which is the relevant FAQ?'),
-        description=_('Select the FAQ that is the most relevant for this '
-        'question.'),
+        description=_(
+            'Select the FAQ that is the most relevant for this question.'),
         vocabulary=SimpleVocabulary([
             SimpleTerm(None, 'none', 'No existing FAQs are relevant')]),
         required=True,
         default=None)
+
+    message = Text(
+        title=_('Answer Message'),
+        description=_(
+            'Enter a message that will be added as the question answer. '
+            'The title of the FAQ will be automatically appended to this '
+            'message.'),
+        required=True)

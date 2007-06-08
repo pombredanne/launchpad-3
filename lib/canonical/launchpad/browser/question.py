@@ -28,6 +28,7 @@ import re
 
 from operator import attrgetter
 
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
@@ -866,6 +867,8 @@ class QuestionCreateFAQView(LaunchpadFormView):
 
     field_names = ['title', 'keywords', 'url', 'summary', 'content']
 
+    custom_widget("message", TextAreaWidget, height=5)
+
     @cachedproperty
     def faq_target(self):
         """Return the IFAQTarget that should be use for this question."""
@@ -894,7 +897,9 @@ class QuestionCreateFAQView(LaunchpadFormView):
         Adds a message field to the form.
         """
         super(QuestionCreateFAQView, self).setUpFields()
-        self.form_fields += form.Fields(IQuestionAddMessageForm['message'])
+        self.form_fields += form.Fields(IQuestionLinkFAQForm['message'])
+        self.form_fields['message'].custom_widget = CustomWidgetFactory(
+            TextAreaWidget, height=5)
 
     @action(_('Create and Link'), name='create_and_link')
     def create_and_link_action(self, action, data):
