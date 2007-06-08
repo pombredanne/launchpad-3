@@ -100,7 +100,7 @@ The question's status was changed to 'Answered':
     >>> print details_portlet.find('b', text='Status:').next.strip()
     Answered
 
-The linked FAQ appears in the question details portlet:
+The a link to the FAQ appears in the question details portlet:
 
     >>> print extract_text(
     ...     details_portlet.find('b', text='Related FAQ:').findNext('a'))
@@ -108,8 +108,8 @@ The linked FAQ appears in the question details portlet:
     >>> admin_browser.getLink('Displaying SVG in Firefox').click()
     >>> print admin_browser.url
     http://answers.launchpad.dev/firefox/+faq/...
-    >>> admin_browser.title
-    'Mozilla Firefox FAQ #...: Displaying SVG in Firefox'
+    >>> print backslashreplace(admin_browser.title)
+    Mozilla Firefox FAQ #...: \u201cDisplaying SVG in Firefox\u201d
 
 The answer message was added to the question's discussion:
 
@@ -117,15 +117,7 @@ The answer message was added to the question's discussion:
     >>> admin_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+question/2')
     >>> print extract_text(find_tags_by_class(
-    ...     admin_browser.contents, 'boardCommentBody')[-1])
+    ...     admin_browser.contents, 'boardCommentBody')[-1]).encode(
+    ...     'ascii', 'backslashreplace')
     Read the Fine Answer:
-    FAQ...: "Displaying SVG in Firefox".
-
-The 'FAQ...' text is a also link to the FAQ:
-
-    >>> import re
-    >>> admin_browser.getLink(re.compile('^FAQ \d+$')).click()
-    >>> print admin_browser.url
-    http://answers.launchpad.dev/firefox/+faq/...
-    >>> print admin_browser.title
-    'Mozilla Firefox FAQ #...: Displaying SVG in Firefox'
+    FAQ...: \u201cDisplaying SVG in Firefox\u201d.

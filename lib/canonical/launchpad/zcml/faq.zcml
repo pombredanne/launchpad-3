@@ -9,6 +9,23 @@
     <!-- IQuestion -->
     <allow interface="canonical.launchpad.interfaces.IFAQ" />
   </content>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IFAQ"
+    path_expression="string:+faq/${id}"
+    attribute_to_parent="target"
+    rootsite="answers"
+    />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IFAQ"
+    name="+index"
+    />
+  <browser:page
+    name="+index"
+    for="canonical.launchpad.interfaces.IFAQ"
+    permission="zope.Public"
+    template="../templates/faq-index.pt"
+    />
 </facet>
 
 </configure>

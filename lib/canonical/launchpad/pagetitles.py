@@ -426,6 +426,11 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
+def faq_index(context, view):
+    return (
+        smartquote('%s FAQ #%d: "%s"') %
+        (context.target.displayname, context.id, context.title))
+
 def hasmentoringoffers_mentoring(context, view):
     if IPerson.providedBy(context):
         if context.teamowner is None:

@@ -56,7 +56,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     LaunchpadView, action, LaunchpadFormView, LaunchpadEditFormView,
-    custom_widget, safe_action)
+    custom_widget, safe_action, smartquote)
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
@@ -903,6 +903,10 @@ class QuestionCreateFAQView(LaunchpadFormView):
         faq = self.faq_target.newFAQ(
             self.user, data['title'], data['summary'], url=data['url'],
             content=data['content'])
+
+        # Append FAQ link to message.
+        data['message'] += smartquote(
+            '\nFAQ #%s: "%s".' % (faq.id, faq.title))
         self.context.linkFAQ(self.user, faq, data['message'])
         
         # Redirect to the question.
