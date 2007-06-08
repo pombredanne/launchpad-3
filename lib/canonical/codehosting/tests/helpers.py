@@ -119,9 +119,12 @@ class FakeLaunchpad:
     def __init__(self):
         self._person_set = {
             1: dict(name='testuser', displayname='Test User',
-                    emailaddresses=['test@test.com'], wikiname='TestUser',
+                    emailaddresses=['spiv@test.com'], wikiname='TestUser',
                     teams=[1, 2]),
             2: dict(name='testteam', displayname='Test Team', teams=[]),
+            3: dict(name='name12', displayname='Other User',
+                    emailaddresses=['test@test.com'], wikiname='OtherUser',
+                    teams=[3]),
             }
         self._product_set = {
             1: dict(name='firefox'),
@@ -132,6 +135,7 @@ class FakeLaunchpad:
         self.createBranch(1, 1, 'qux')
         self.createBranch(1, '', 'random')
         self.createBranch(2, 1, 'qux')
+        self.createBranch(3, '', 'junk.dev')
 
     def _lookup(self, item_set, item_id):
         row = dict(item_set[item_id])
