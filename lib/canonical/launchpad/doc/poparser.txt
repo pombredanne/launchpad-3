@@ -5,15 +5,11 @@ external world importing files and exporting them.
 
 Let's import some needed objects...
 
-  >>> from canonical.launchpad.components.poparser import (
+  >>> from canonical.launchpad.components.translationformats.gettext_po_parser import (
   ...     POMessage, POHeader, POParser)
 
 
 == POParser ==
-
-First we get the needed imports.
-
-  >>> from canonical.launchpad.components.poparser import POParser
 
 We should be completely sure that a .po file with an empty header is reported.
 
@@ -22,7 +18,7 @@ We should be completely sure that a .po file with an empty header is reported.
   >>> parser.finish()
   Traceback (most recent call last):
   ...
-  POSyntaxError:...
+  TranslationFormatSyntaxError:...
 
 
 == POHeader ==
@@ -32,9 +28,26 @@ That first message has as the msgid the empty string ("") and as the
 translation of it some metadata.
 
 
-=== getPORevisionDate ===
+=== getTranslationRevisionDate ===
 
-Test that the function does not fails if the date field has unicode chars:
+This function gives you a datetime object representing PO-Revision-Date field.
+
+  >>> header = POHeader(msgstr="""
+  ... Project-Id-Version: foo
+  ... Report-Msgid-Bugs-To: foo@bar.com
+  ... POT-Creation-Date: 2005-01-26 01:01+0100
+  ... PO-Revision-Date: 2004-03-06 20:06+0100
+  ... Last-Translator: Foo translator <footranslator@bar.com>
+  ... MIME-Version: 1.0
+  ... Content-Type: text/plain; charset=UTF-8
+  ... Content-Transfer-Encoding: 8bit
+  ... """)
+  >>> header.updateDict()
+  >>> header.getTranslationRevisionDate()
+  datetime.datetime(2004, 3, 6, 20, 6, tzinfo=tzinfo(60))
+
+Even if the function has unicode chars we detect that as not having the
+revision date:
 
   >>> header = POHeader(msgstr="""
   ... Project-Id-Version: foo
@@ -47,8 +60,10 @@ Test that the function does not fails if the date field has unicode chars:
   ... Content-Transfer-Encoding: 8bit
   ... """)
   >>> header.updateDict()
-  >>> header.getPORevisionDate()
-  (u'\xe1 2004-03-06 20:06+0100', None)
+  >>> header.getTranslationRevisionDate()
+  Traceback (most recent call last):
+  ...
+  UnknownTranslationRevisionDate: Found an invalid date representation...
   >>> header.getPluralFormExpression() == None
   True
 
@@ -105,7 +120,7 @@ errors occur:
   >>> parser.write(chunk2)
   Traceback (most recent call last):
     ...
-  POInvalidInputError: could not decode input from ASCII
+  TranslationFormatInvalidInputError: could not decode input from ASCII
 
 
 == Split Multibyte Sequences ==

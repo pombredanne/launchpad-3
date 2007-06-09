@@ -9,9 +9,6 @@ __all__ = [
     ]
 
 import StringIO
-import pytz
-import datetime
-import os.path
 import logging
 
 # Zope interfaces
@@ -25,8 +22,6 @@ from sqlobject import (
 
 from canonical.config import config
 
-from canonical.cachedproperty import cachedproperty
-
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -35,28 +30,25 @@ from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (
     RosettaImportStatus, TranslationPermission, TranslationValidationStatus)
 
-import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.interfaces import (
-    IPersonSet, IPOFileSet, IPOFile, IPOTemplateExporter,
-    ILibraryFileAliasSet, ILaunchpadCelebrities, IPOFileTranslator,
-    ZeroLengthPOExportError, NotFoundError)
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet, IPOFile,
+    IPOFileSet, IPOTemplateExporter, ITranslationImporter, IPOFileTranslator,
+    NotExportedFromLaunchpad, NotFoundError, OldTranslationImported,
+    TranslationFormatSyntaxError, UnknownTranslationRevisionDate,
+    ZeroLengthPOExportError
+    )
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
-from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.translationformats.translation_import import (
-    OldTranslationImported, NotExportedFromLaunchpad)
-from canonical.launchpad.components.translationformats.gettext_po_parser import (
-    POSyntaxError, POHeader, POInvalidInputError)
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.components.translationformats import POHeader
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 
@@ -586,16 +578,23 @@ class POFile(SQLBase, RosettaStats):
         old_header.updateDict()
 
         # Get the old and new PO-Revision-Date entries as datetime objects.
-        # That's the second element from the tuple that getPORevisionDate
-        # returns.
-        (old_date_string, old_date) = old_header.getPORevisionDate()
-        (new_date_string, new_date) = header.getPORevisionDate()
+        try:
+            old_date = old_header.getPORevisionDate()
+        except UnknownTranslationRevisionDate:
+            # If one of the headers, has a missing or wrong PO-Revision-Date,
+            # then they cannot be compared, so we consider the new header to
+            # be the most recent.
+            return False
+        try:
+            new_date = header.getPORevisionDate()
+        except UnknownTranslationRevisionDate:
+            # If one of the headers, has a missing or wrong PO-Revision-Date,
+            # then they cannot be compared, so we consider the new header to
+            # be the most recent.
+            return False
 
         # Check whether or not the date is older.
-        if old_date is None or new_date is None or old_date <= new_date:
-            # If one of the headers, or both headers, has a missing or wrong
-            # PO-Revision-Date, then they cannot be compared, so we consider
-            # the new header to be the most recent.
+        if old_date <= new_date:
             return False
         elif old_date > new_date:
             return True
@@ -633,21 +632,9 @@ class POFile(SQLBase, RosettaStats):
         #   list of faulty messages.
         import_rejected = False
         try:
-            importer = PoSupport(
-                path=entry_to_import.path,
-                productseries=entry_to_import.productseries,
-                distrorelease=entry_to_import.distrorelease,
-                sourcepackagename=entry_to_import.sourcepackagename,
-                is_published=entry_to_import.is_published,
-                content=import_file.read(),
-                logger=logger)
-            newtranslation = importer.getTranslation(entry_to_import.
-                                                     path,
-                                                     self.language)
-            errors = translation_import(self, newtranslation,
-                                        entry_to_import.importer,
-                                        entry_to_import.is_published)
-        except NotExportedFromRosetta:
+            importer = getUtility(ITranslationImporter)
+            errors = importer.import_file(entry_to_import, logger=logger)
+        except NotExportedFromLaunchpad:
             # We got a file that was not exported from Rosetta as a non
             # published upload. We log it and select the email template.
             if logger:
@@ -655,7 +642,7 @@ class POFile(SQLBase, RosettaStats):
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-not-exported-from-rosetta.txt'
             import_rejected = True
-        except (POSyntaxError, POInvalidInputError):
+        except TranslationFormatSyntaxError:
             # The import failed with a format error. We log it and select the
             # email template.
             if logger:
@@ -663,7 +650,7 @@ class POFile(SQLBase, RosettaStats):
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-syntax-error.txt'
             import_rejected = True
-        except OldPOImported:
+        except OldTranslationImported:
             # The attached file is older than the last imported one, we ignore
             # it. We also log this problem and select the email template.
             if logger:

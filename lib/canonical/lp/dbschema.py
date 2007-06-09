@@ -70,7 +70,6 @@ __all__ = (
 'QuestionSort',
 'QuestionStatus',
 'RevisionControlSystems',
-'RosettaFileFormat',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
 'ShipItArchitecture',
@@ -95,6 +94,7 @@ __all__ = (
 'TeamMembershipRenewalPolicy',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
+'TranslationFileFormat',
 'TranslationPriority',
 'TranslationPermission',
 'TranslationValidationStatus',
@@ -3355,11 +3355,11 @@ class PollAlgorithm(DBSchema):
         """)
 
 
-class RosettaFileFormat(DBSchema):
-    """Rosetta File Format
+class TranslationFileFormat(DBSchema):
+    """Translation File Format
 
-    This is an enumeration of the different sorts of file that Rosetta can
-    export.
+    This is an enumeration of the different sorts of file that Launchpad
+    Translations knows about.
     """
 
     PO = Item(1, """

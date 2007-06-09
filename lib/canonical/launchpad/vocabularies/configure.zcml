@@ -386,6 +386,11 @@
     />
 
   <vocabulary
+    name="TranslationFileFormat"
+    factory="canonical.launchpad.vocabularies.TranslationFileFormatVocabulary"
+    />
+
+  <vocabulary
     name="TranslationGroup"
     factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
     />

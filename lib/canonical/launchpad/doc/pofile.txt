@@ -47,7 +47,7 @@ Get the set of POTMsgSets that are untranslated.
 
 Test that the header is updated.
 
->>> from canonical.launchpad.components.poparser import POHeader
+>>> from canonical.launchpad.components.translationformats import POHeader
 
 This is the comment.
 
@@ -143,8 +143,6 @@ This test is to be sure that the date comparation is working and that two
 headers with the same date will always be set as newer because lazy
 translators forget to update that field from time to time and sometimes we
 were losing translations because we were ignoring those imports too.
-
-    >>> from canonical.launchpad.components.poparser import POHeader
 
     >>> print pofile.header.encode('utf-8')
     Project-Id-Version: es

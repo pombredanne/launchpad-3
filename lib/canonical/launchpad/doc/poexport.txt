@@ -399,7 +399,7 @@ try to get a datetime object of its value.
   >>> parser = POParser()
   >>> parser.write(pofile)
   >>> parser.finish()
-  >>> type(parser.header.getRosettaExportDate())
+  >>> type(parser.header.getLaunchpadExportDate())
   <type 'datetime.datetime'>
 
 We need to test also the feature that exports a po file without any obsolete

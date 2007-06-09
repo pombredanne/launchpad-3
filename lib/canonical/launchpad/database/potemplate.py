@@ -18,7 +18,7 @@ from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLObjectNotFound
 
 from canonical.lp.dbschema import (
-    RosettaImportStatus, RosettaFileFormat)
+    RosettaImportStatus, TranslationFileFormat)
 from canonical.config import config
 
 from canonical.database.sqlbase import (
@@ -28,10 +28,12 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad import helpers
+from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, IPOTemplateSubset, IPOTemplateExporter,
-    ITranslationImporter, ILaunchpadCelebrities, LanguageNotFound,
-    TranslationConstants, NotFoundError)
+    ILaunchpadCelebrities, IPOTemplate, IPOTemplateExporter, IPOTemplateSet,
+    IPOTemplateSubset, ITranslationImporter, LanguageNotFound, NotFoundError,
+    TranslationConstants, TranslationFormatSyntaxError,
+    )
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 
@@ -42,11 +44,6 @@ from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
-
-from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.translationformats import translation_import
-from canonical.launchpad.components.translationformats.gettext_po_parser import (POSyntaxError,
-    POInvalidInputError)
 
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
@@ -87,7 +84,8 @@ class POTemplate(SQLBase, RosettaStats):
     source_file = ForeignKey(foreignKey='LibraryFileAlias',
         dbName='source_file', notNull=False, default=None)
     source_file_format = EnumCol(dbName='source_file_format',
-        schema=RosettaFileFormat, default=RosettaFileFormat.PO, notNull=True)
+        schema=TranslationFileFormat, default=TranslationFileFormat.PO,
+        notNull=True)
     iscurrent = BoolCol(dbName='iscurrent', notNull=True, default=True)
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
@@ -569,7 +567,7 @@ class POTemplate(SQLBase, RosettaStats):
         translation_importer = getUtility(ITranslationImporter)
         try:
             translation_importer.import_file(entry_to_import, logger)
-        except (POSyntaxError, POInvalidInputError):
+        except TranslationFormatSyntaxError:
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
             if logger:

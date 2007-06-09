@@ -42,7 +42,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.lp.dbschema import RosettaFileFormat
+from canonical.lp.dbschema import TranslationFileFormat
 
 
 class POTemplateNavigation(Navigation):
@@ -334,7 +334,7 @@ class POTemplateView(LaunchpadView):
                 distroseries=self.context.distroseries,
                 productseries=self.context.productseries,
                 potemplate=self.context,
-                format=RosettaFileFormat.PO)
+                format=TranslationFileFormat.PO)
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be imported'
@@ -425,7 +425,7 @@ class BaseExportView(LaunchpadView):
 
     def validateFileFormat(self, format_name):
         try:
-            return RosettaFileFormat.items[format_name]
+            return TranslationFileFormat.items[format_name]
         except KeyError:
             self.request.response.addErrorNotification(_(
                 'Please select a valid format for download.'))
@@ -439,15 +439,15 @@ class BaseExportView(LaunchpadView):
                 self.title = title
                 self.value = value
                 self.is_default = False
-                if value == RosettaFileFormat.PO.name:
+                if value == TranslationFileFormat.PO.name:
                     # Right now, PO format is the default format with exports.
                     # Once we add more formats support, the default will
                     # depend on the kind of resource.
                     self.is_default = True
 
         formats = [
-            RosettaFileFormat.PO,
-            RosettaFileFormat.MO,
+            TranslationFileFormat.PO,
+            TranslationFileFormat.MO,
         ]
 
         for format in formats:

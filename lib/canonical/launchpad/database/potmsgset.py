@@ -10,15 +10,14 @@ from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
 from canonical.launchpad.interfaces import (
-    IPOTMsgSet, ILanguageSet, NotFoundError, NameNotAvailable, BrokenTextError
+    IPOTMsgSet, ILanguageSet, BrokenTextError
     )
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.posubmission import POSubmission
-from canonical.launchpad.interfaces import TranslationConstants
-from canonical.lp.dbschema import RosettaFileFormat
+
 
 class POTMsgSet(SQLBase):
     implements(IPOTMsgSet)

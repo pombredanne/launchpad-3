@@ -9,3 +9,8 @@ __metaclass__ = type
 # from canonical.launchpad import components
 # from components.translationformats.translation_import import *
 from canonical.launchpad.components.translationformats.translation_import import *
+
+# XXX CarlosPerelloMarin 20070609: POHeader still needs to be used outside the
+# abstraction layer until we get rid of IPOFile.header which is .po specific.
+from canonical.launchpad.components.translationformats.gettext_po_parser import (
+    POHeader)

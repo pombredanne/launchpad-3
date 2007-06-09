@@ -124,7 +124,7 @@ class IPOTemplate(IRosettaStats):
     source_file_format = Choice(
         title=_("File format for the source file"),
         required=False,
-        vocabulary="RosettaFileFormat")
+        vocabulary="TranslationFileFormat")
 
     priority = Int(
         title=_('Priority'),

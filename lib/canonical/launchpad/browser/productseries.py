@@ -31,7 +31,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
-
+from canonical.launchpad import _
 from canonical.launchpad.helpers import (
     browserLanguages, is_tar_filename, request_languages)
 from canonical.launchpad.interfaces import (
@@ -50,13 +50,9 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu
-
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
-from canonical.launchpad.components.translationformats.translation_import import *
-
-from canonical.launchpad import _
 
 
 def quote(text):
@@ -385,15 +381,9 @@ class ProductSeriesView(LaunchpadView):
 
         if filename.endswith('.pot') or filename.endswith('.po'):
             # Add it to the queue.
-            newimport = PoSupport(path=filename,
-                                  productseries=self.context,
-                                  file=file)
-            entries = newimport.allentries
-            for entry in entries:
-                translation_import_queue_set.addOrUpdateEntry(
-                    entry['path'], content, True, self.user,
-                    productseries=entry['productseries'],
-                    format=entry['format'])
+            translation_import_queue_set.addOrUpdateEntry(
+                filename, content, True, self.user,
+                    productseries=self.context)
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be'

@@ -20,15 +20,12 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
-
-from canonical.lp.dbschema import RosettaImportStatus
-
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, IPOFileSet,
     IPOTemplateSet, ILanguageSet, NotFoundError, IHasTranslationImports)
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import RosettaImportStatus
-from canonical.lp.dbschema import RosettaFileFormat
+from canonical.lp.dbschema import TranslationFileFormat
 
 from canonical.launchpad.database.pillar import pillar_sort_key
 
@@ -59,8 +56,8 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False, default=None)
     potemplate = ForeignKey(foreignKey='POTemplate',
         dbName='potemplate', notNull=False, default=None)
-    format = EnumCol(dbName='format', schema=RosettaFileFormat,
-        default=RosettaFileFormat.PO, notNull=True)
+    format = EnumCol(dbName='format', schema=TranslationFileFormat,
+        default=TranslationFileFormat.PO, notNull=True)
     status = EnumCol(dbName='status', notNull=True,
         schema=RosettaImportStatus, default=RosettaImportStatus.NEEDS_REVIEW)
     date_status_changed = UtcDateTimeCol(dbName='date_status_changed',
@@ -533,7 +530,7 @@ class TranslationImportQueue:
 
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, pofile=None, format=RosettaFileFormat.PO):
+        potemplate=None, pofile=None, format=TranslationFileFormat.PO):
         """See ITranslationImportQueue."""
         if ((sourcepackagename is not None or distroseries is not None) and
             productseries is not None):
