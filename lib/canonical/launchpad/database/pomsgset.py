@@ -29,9 +29,13 @@ class POMsgSetMixIn:
     the methods and properties defined here.
     """
 
-    # Cached active submissions dict, mapping pluralform to POSubmission
+    # Cached submissions dict, mapping pluralform to list of POSubmissions,
+    # ordered from new to old.
+    attached_submissions = None
+
+    # Cached active submissions dict, mapping pluralform to POSubmission.
     active_submissions = None
-    # Cached published submissions dict, mapping pluralform to POSubmission
+    # Cached published submissions dict, mapping pluralform to POSubmission.
     published_submissions = None
 
     @property
@@ -49,96 +53,73 @@ class POMsgSetMixIn:
             entries = 1
         return entries
 
-    def getSuggestions(self):
+    def getRelatedSubmissions(self):
         """See IPOMsgSet."""
 
-        # We don't want submissions coming from this very POMsgSet, or
-        # translations that we already have as active.  (Of course that's only
-        # a concern if we already have an id).
-        skip_same_sql = 'true'
+        match_self_sql = False
         if self.id is not None:
-            skip_same_sql = 'POMsgSet.id <> %s' % quote(self)
-
-            if self.active_submissions is None:
-                self.fetchActiveAndPublishedSubmissions()
-            active_translations = set(
-                submission.potranslation
-                for submission in self.active_submissions.values())
-            if len(active_translations) > 0:
-                skip_same_sql += (" AND potranslation NOT IN (%s)" %
-                    sqlvalues(active_translations))
+            match_self_sql = 'POMsgSet.id=%s' % quote(self)
 
         parameters = sqlvalues(
             language=self.pofile.language,
-            primemsgid=self.potmsgset.primemsgid_ID,
-            skip_same=skip_same_sql)
+            primemsgid=self.potmsgset.primemsgid_ID)
+
+        parameters['match_self'] = match_self_sql
 
         joins = ['POMsgSet', 'POFile', 'POTMsgSet']
         query = """
                 POSubmission.pomsgset = POMsgSet.id AND
                 POMsgSet.pofile = POFile.id AND
                 POMsgSet.potmsgset = POTMsgSet.id AND
-                NOT POMsgSet.isfuzzy AND
+                (%(match_self)s OR NOT POMsgSet.isfuzzy) AND
                 POFile.language = %(language)s AND
-                POTMsgSet.primemsgid = %(primemsgid)s AND
-                %(skip_same)s
+                POTMsgSet.primemsgid = %(primemsgid)s
             """ % parameters
 
         return POSubmission.select(
             query, clauseTables=joins, orderBy='-datecreated', distinct=True)
 
-    # XXX: 2007-06-06 JeroenVermeulen, retire this method in favour of
-    # getSuggestions()!
+    def initializeCaches(self):
+        self.active_submissions = {}
+        self.published_submissions = {}
+        self.suggestions = {}
+        self.attached_submissions = {}
+
+        # Retrieve all related POSubmissions, and use them to populate our
+        # submissions/suggestions caches.
+        for submission in self.getRelatedSubmissions():
+            pluralform = submission.pluralform
+            if submission.pomsgset == self:
+                if self.attached_submissions.get(pluralform) is None:
+                    self.attached_submissions[pluralform] = []
+                self.attached_submissions[pluralform].append(submission)
+                if submission.active:
+                    self.active_submissions[pluralform] = submission
+                if submission.published:
+                    self.published_submissions[pluralform] = submission
+            else:
+                if self.suggestions.get(pluralform) is None:
+                    self.suggestions[pluralform] = []
+                self.suggestions[pluralform].append(submission)
+
+        # Now that we know what our active posubmissions are, filter out any
+        # suggestions that refer to the same potranslations.
+        for pluralform in self.suggestions.keys():
+            active = self.getActiveSubmission(pluralform)
+            if active is not None and active.potranslation is not None:
+                suggestions = self.suggestions.get(pluralform)
+                self.suggestions[pluralform] = [
+                    filtered
+                    for filtered in suggestions
+                    if filtered.potranslation != active.potranslation]
+
     def getWikiSubmissions(self, pluralform):
-        """See IPOMsgSet."""
-        filter_pomsgset_sql = ''
-        if self.id is not None:
-            # Filter out submissions coming from this POMsgSet.
-            filter_pomsgset_sql = 'AND POMsgSet.id <> %s' % sqlvalues(self)
-
-        replacements = sqlvalues(
-            language=self.pofile.language, pluralform=pluralform,
-            primemsgid=self.potmsgset.primemsgid_ID)
-        replacements['filter_pomsgset'] = filter_pomsgset_sql
-        query = """
-            SELECT DISTINCT POSubmission.id
-            FROM POSubmission
-                JOIN POMsgSet ON (POSubmission.pomsgset = POMsgSet.id AND
-                                  POMsgSet.isfuzzy = FALSE
-                                  %(filter_pomsgset)s)
-                JOIN POFile ON (POMsgSet.pofile = POFile.id AND
-                                POFile.language = %(language)s)
-                JOIN POTMsgSet ON (POMsgSet.potmsgset = POTMsgSet.id AND
-                                   POTMsgSet.primemsgid = %(primemsgid)s)
-            WHERE
-                POSubmission.pluralform = %(pluralform)s
-            """ % replacements
-
-        posubmission_ids_list = POMsgSet._connection.queryAll(query)
-        posubmission_ids = [id for [id] in posubmission_ids_list]
-
-        active_submission = self.getActiveSubmission(pluralform)
-
-        if (active_submission is not None):
-            # We look for all the IPOSubmissions with the same translation.
-            same_translation = POSubmission.select(
-                "POSubmission.potranslation = %s" %
-                    sqlvalues(active_submission.potranslation.id))
-
-            # Remove it so we don't show as suggestion something that we
-            # already have as active.
-            for posubmission in same_translation:
-                if posubmission.id in posubmission_ids:
-                    posubmission_ids.remove(posubmission.id)
-
-        if len(posubmission_ids) > 0:
-            ids = [str(id) for id in posubmission_ids]
-            return POSubmission.select(
-                'POSubmission.id IN (%s)' % ', '.join(ids),
-                orderBy='-datecreated')
-        else:
-            # Return an empty SelectResults object.
-            return POSubmission.select("1 = 2")
+        if self.attached_submissions is None:
+            self.initializeCaches()
+        suggestions = self.suggestions.get(pluralform)
+        if suggestions is None:
+            return []
+        return suggestions
 
 
 class DummyPOMsgSet(POMsgSetMixIn):
@@ -167,10 +148,9 @@ class DummyPOMsgSet(POMsgSetMixIn):
         """See IPOMsgSet."""
         return None
 
-    def getSuggestedSubmissions(self, pluralform):
+    def getNewSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        # Return an empty SelectResults object.
-        return POSubmission.select("1 = 2")
+        return []
 
     def getCurrentSubmissions(self, pluralform):
         """See IPOMsgSet."""
@@ -248,6 +228,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def setActiveSubmission(self, pluralform, submission):
         """See IPOMsgSet."""
+        assert submission is None or submission.pomsgset == self
         if submission is not None and submission.active:
             return
 
@@ -263,11 +244,12 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         if submission is not None:
             submission.active = True
 
-        # Update cache
+        # Update cache.
         self.active_submissions[pluralform] = submission
 
     def setPublishedSubmission(self, pluralform, submission):
         """See IPOMsgSet."""
+        assert submission is None or submission.pomsgset == self
         if submission is not None and submission.published:
             return
 
@@ -283,52 +265,46 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         if submission is not None:
             submission.published = True
 
-        # Update cache
+        # Update cache.
         self.published_submissions[pluralform] = submission
 
-    def populateActivePublishedCache(self, sequence):
-        """See IPOMsgSet."""
-        active = {}
-        published = {}
-        for submission in sequence:
-            pluralform = submission.pluralform
-            if submission.active:
-                active[pluralform] = submission
-            if submission.published:
-                published[pluralform] = submission
-        self.active_submissions = active
-        self.published_submissions = published
-
-    def fetchActiveAndPublishedSubmissions(self):
+    def _fetchActiveAndPublishedSubmissions(self):
         """Populate active/published submissions caches from database.
 
         Creates self.active_submissions and self.published_submissions as
         dicts, each mapping pluralform to that pluralform's active or
         published submission, respectively.
         """
-        if not (self.active_submissions is None and
-                self.published_submissions is None):
-            raise AssertionError(
-                "Unnecessary re-fetch of POMsgSet's active/published cache")
-
         iterator = POSubmission.select(
             "pomsgset = %s AND (active OR published)" % quote(self))
-        self.populateActivePublishedCache(iterator)
+
+        active = {}
+        published = {}
+        for submission in iterator:
+            pluralform = submission.pluralform
+            if submission.active:
+                assert not pluralform in active
+                active[pluralform] = submission
+            if submission.published:
+                assert not pluralform in published
+                published[pluralform] = submission
+        self.active_submissions = active
+        self.published_submissions = published
 
     def getActiveSubmission(self, pluralform):
         """See IPOMsgSet."""
-        if self.id is None and self.active_submissions is None:
-            return None
-        if self.active_submissions is None:
-            self.fetchActiveAndPublishedSubmissions()
+        if True or self.active_submissions is None:
+            if self.id is None:
+                return None
+            self._fetchActiveAndPublishedSubmissions()
         return self.active_submissions.get(pluralform)
 
     def getPublishedSubmission(self, pluralform):
         """See IPOMsgSet."""
-        if self.id is None and self.published_submissions is None:
-            return None
-        if self.published_submissions is None:
-            self.fetchActiveAndPublishedSubmissions()
+        if True or self.published_submissions is None:
+            if self.id is None:
+                return None
+            self._fetchActiveAndPublishedSubmissions()
         return self.published_submissions.get(pluralform)
 
     def updateReviewerInfo(self, reviewer):
@@ -758,16 +734,24 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
         flush_database_updates()
 
-    def getSuggestedSubmissions(self, pluralform):
+    def getNewSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        query = '''pomsgset = %s AND
-                   pluralform = %s''' % sqlvalues(self, pluralform)
-        active_submission = self.getActiveSubmission(pluralform)
-        if active_submission is not None:
-            # Don't show suggestions older than the current one.
-            query += ''' AND datecreated > %s
-                    ''' % sqlvalues(active_submission.datecreated)
-        return POSubmission.select(query, orderBy=['-datecreated'])
+        if self.attached_submissions is None:
+            self.initializeCaches()
+
+        applicable_submissions = self.attached_submissions.get(pluralform)
+        if applicable_submissions is None:
+            return []
+        active = self.getActiveSubmission(pluralform)
+        if active is None:
+            return applicable_submissions
+
+        # Return only submissions that are newer than the active one.
+        active_date = active.datecreated
+        return [
+            submission
+            for submission in applicable_submissions
+            if submission.datecreated > active_date]
 
     def getCurrentSubmissions(self, pluralform):
         """See IPOMsgSet."""

@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Object, Datetime
@@ -89,6 +89,14 @@ class IPOMsgSet(Interface):
 
         """
 
+    def initializeCaches():
+        """Initialize internal submission caches.
+
+        These caches are used to find submissions attached to self, as well as
+        specifically active or published submissions, or suggestions, and so
+        on, without querying the database unnecessarily.
+        """
+
     def setActiveSubmission(pluralform, submission):
         """Set given submission as the active one.
 
@@ -111,15 +119,6 @@ class IPOMsgSet(Interface):
         msgset and plural form or None.
         """
 
-    def populateActivePublishedCache(self, sequence):
-        """Populate active/published caches from sequence of submissions.
-
-        This fills the self.active_submissions and self.published_submissions
-        dicts, creating them if necessary.  The dicts map pluralforms found in
-        POSubmissions for this POMsgSet to their current active or published
-        submissions, respectively.
-        """
-
     def getSuggestedTexts(pluralform):
         """Return an iterator over any suggestions Rosetta might have for
         this plural form on the messageset. The suggestions would not
@@ -127,25 +126,10 @@ class IPOMsgSet(Interface):
         represented and accessed differently through this API."""
 
     def getWikiSubmissions(pluralform):
-        """Return an iterator over all the submissions in any PO file for
-        this pluralform in this language, for the same msgid."""
+        """Find suggestions for given pluralform."""
 
-    def getSuggestions():
-        """Return iterator over (non-fuzzy) translation suggestions for self.
-
-        A suggestion is a POSubmission for the same POMsgId as self's, in the
-        same language as self, that is not fuzzy, that is not actually
-        attached to self, and if self has an active submission for the same
-        pluralform, does not point to the same POTranslation as that active
-        submission.
-
-        An iterator is returned.  It yields suggestions in new-to-old order.
-        """
-
-    def getSuggestedSubmissions(pluralfom):
-        """Return an iterator over any submissions that have come in for
-        this pomsgset and pluralform that were sent in since the last active
-        one was submitted."""
+    def getNewSubmissions(pluralfom):
+        """Return any submissions that are more recent than the active one."""
 
     def getCurrentSubmissions(pluralform):
         """Return a list of submissions currently published or active.

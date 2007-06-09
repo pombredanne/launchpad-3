@@ -917,6 +917,10 @@ class POMsgSetView(LaunchpadView):
         assert len(self.msgids) > 0, (
             'Found a POTMsgSet without any POMsgIDSighting')
 
+        # Collect posubmissions etc. that we need from the database in order
+        # to identify useful suggestions.
+        self.context.initializeCaches()
+
         # We store lists of POMsgSetSuggestions objects in a
         # suggestion_blocks dictionary, keyed on plural form index; this
         # allows us later to just iterate over them in the view code
@@ -925,11 +929,12 @@ class POMsgSetView(LaunchpadView):
         self.pluralform_indices = range(self.context.pluralforms)
         for index in self.pluralform_indices:
             non_editor, elsewhere, wiki, alt_lang_suggestions = \
-                self._buildAllSuggestions(index)
+                self._buildAllSuggestions(
+                    index, self.context.getWikiSubmissions(index))
             self.suggestion_blocks[index] = \
                 [non_editor, elsewhere, wiki, alt_lang_suggestions]
 
-        # Let's initialise the translation dictionaries used from the
+        # Initialise the translation dictionaries used from the
         # translation form.
         self.translation_dictionaries = []
 
@@ -975,7 +980,7 @@ class POMsgSetView(LaunchpadView):
 
             self.translation_dictionaries.append(translation_entry)
 
-    def _buildAllSuggestions(self, index):
+    def _buildAllSuggestions(self, index, suggestions_list):
         """Builds all suggestions for a certain plural form index.
 
         This method does the ugly nitty gritty of making sure we don't
@@ -1014,22 +1019,25 @@ class POMsgSetView(LaunchpadView):
             return dict((k, v) for (k, v) in main.iteritems()
                         if k not in pruners_merged)
 
+        if suggestions_list is None:
+            suggestions_list = []
+
         if self.message_must_be_hidden:
-            # We must hide all suggestions because it may have private
-            # info that we don't want to show to anoymous users.
+            # We must hide all suggestions because this message may contain
+            # private information that we don't want to show to anonymous
+            # users, such as email addresses.
             non_editor = self._buildSuggestions(None, [])
             elsewhere = self._buildSuggestions(None, [])
             wiki = self._buildSuggestions(None, [])
             alt_lang_suggestions = self._buildSuggestions(None, [])
             return non_editor, elsewhere, wiki, alt_lang_suggestions
 
-        wiki = self.context.getWikiSubmissions(index)
-        wiki_translations = build_dict(wiki)
+        wiki_translations = build_dict(suggestions_list)
 
         current = self.context.getCurrentSubmissions(index)
         current_translations = build_dict(current)
 
-        non_editor = self.context.getSuggestedSubmissions(index)
+        non_editor = self.context.getNewSubmissions(index)
         non_editor_translations = build_dict(non_editor)
 
         # Use a set for pruning; this is a bit inconsistent with the
