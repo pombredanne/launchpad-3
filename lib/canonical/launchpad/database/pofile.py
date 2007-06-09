@@ -568,7 +568,7 @@ class POFile(SQLBase, RosettaStats):
                 new_header['Plural-Forms'] = 1
         # XXX sabdfl 27/05/05 should we also differentiate between
         # washeaderfuzzy and isheaderfuzzy?
-        self.topcomment = new_header.commentText
+        self.topcomment = new_header.comment
         self.header = new_header.msgstr
         self.fuzzyheader = 'fuzzy' in new_header.flags
 
@@ -579,14 +579,14 @@ class POFile(SQLBase, RosettaStats):
 
         # Get the old and new PO-Revision-Date entries as datetime objects.
         try:
-            old_date = old_header.getPORevisionDate()
+            old_date = old_header.getTranslationRevisionDate()
         except UnknownTranslationRevisionDate:
             # If one of the headers, has a missing or wrong PO-Revision-Date,
             # then they cannot be compared, so we consider the new header to
             # be the most recent.
             return False
         try:
-            new_date = header.getPORevisionDate()
+            new_date = header.getTranslationRevisionDate()
         except UnknownTranslationRevisionDate:
             # If one of the headers, has a missing or wrong PO-Revision-Date,
             # then they cannot be compared, so we consider the new header to

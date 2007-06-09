@@ -68,7 +68,7 @@ This is the new header.
 
 Now, get a POHeader object with that information.
 
->>> new_header = POHeader(commentText=comment, msgstr=msgstr)
+>>> new_header = POHeader(comment=comment, msgstr=msgstr)
 >>> new_header.updateDict()
 
 We check that the plural forms expression is correctly parsed:

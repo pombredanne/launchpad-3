@@ -424,7 +424,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
             if pofile is not None:
                 # Generate the header of the new PO file.
                 header = POHeader(
-                    commentText=row.potopcomment,
+                    comment=row.potopcomment,
                     msgstr=row.poheader)
 
                 if row.pofuzzyheader:

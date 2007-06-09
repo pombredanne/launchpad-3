@@ -265,10 +265,13 @@ class TranslationImporter:
                 # It's not an IPOFile.
                 continue
 
-            translations = message.translations
-            if not translations:
+            if not message.translations:
                 # We don't have anything to import.
                 continue
+
+            translations = {}
+            for index in range(len(message.translations)):
+                translations[index] = message.translations[index]
 
             try:
                 pomsgset.updateTranslationSet(
