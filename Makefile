@@ -196,6 +196,9 @@ launchpad.pot:
 	    -d launchpad -p lib/canonical/launchpad \
 	    -o locales
 
+static:
+	PYTHONPATH=`pwd`/lib $(PYTHON) utilities/make-static.py
+
 TAGS:
 	ctags -e -R lib
 
