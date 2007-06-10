@@ -907,10 +907,6 @@ class POMsgSetView(LaunchpadView):
         # would cut the number of (expensive) queries per-page by an
         # order of 30. -- kiko, 2006-09-27
 
-        # XXX: to avoid the use of python in the view, we'd need objects
-        # to hold the data representing a pomsgset translation for a
-        # plural form. -- kiko, 2006-09-27
-
         # This code is where we hit the database collecting message IDs
         # and suggestions for this POMsgSet.
         self.msgids = helpers.shortlist(self.context.potmsgset.getPOMsgIDs())
@@ -1272,3 +1268,4 @@ class POMsgSetSuggestions:
                 'person': submission.person,
                 'datecreated': submission.datecreated
                 })
+

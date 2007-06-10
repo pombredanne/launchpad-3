@@ -618,7 +618,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             submission.origin == RosettaTranslationOrigin.ROSETTAWEB):
             # We only give karma for adding suggestions to people that send
             # non published strings and aren't editors. Editors will get their
-            # subbmissions automatically approved, and thus, will get karma
+            # submissions automatically approved, and thus, will get karma
             # just when they get their submission autoapproved.
             # The Rosetta Experts team never gets karma.
             person.assignKarma(
