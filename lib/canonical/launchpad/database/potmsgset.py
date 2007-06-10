@@ -10,7 +10,7 @@ from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
 from canonical.launchpad.interfaces import (
-    IPOTMsgSet, ILanguageSet, BrokenTextError
+    IPOTMsgSet, ILanguageSet, BrokenTextError, TranslationConstants
     )
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
@@ -192,14 +192,22 @@ class POTMsgSet(SQLBase):
             pomsgid_=messageID,
             pluralform=pluralForm)
 
-        if existing is None:
-            if current_sighting is not None:
-                current_sighting.inlastrevision = False
-                # We need to flush this change to prevent that the new one
-                # that we are going to create conflicts with this due a race
-                # condition applying the changes to the DB.
-                current_sighting.syncUpdate()
+        if (current_sighting is not None and
+            (existing is None or current_sighting != existing)):
+            assert update, (
+                "There is already a message ID sighting for this "
+                "message set, text, and plural form")
+            current_sighting.inlastrevision = False
+            # We need to flush this change to prevent that the new one
+            # that we are going to create conflicts with this due a race
+            # condition applying the changes to the DB.
+            current_sighting.syncUpdate()
 
+        if pluralForm == TranslationConstants.SINGULAR_FORM:
+            # Update direct link to the singular form.
+            self.primemsgid_ = messageID
+
+        if existing is None:
             return POMsgIDSighting(
                 potmsgset=self,
                 pomsgid_=messageID,
@@ -208,16 +216,6 @@ class POTMsgSet(SQLBase):
                 inlastrevision=True,
                 pluralform=pluralForm)
         else:
-            assert (current_sighting is None or
-                    current_sighting == existing or update), (
-                "There is already a message ID sighting for this "
-                "message set, text, and plural form")
-            if current_sighting is not None and current_sighting != existing:
-                current_sighting.inlastrevision = False
-                # We need to flush this change to prevent that the new one
-                # that we are going to create conflicts with this due a race
-                # condition applying the changes to the DB.
-                current_sighting.syncUpdate()
             existing.datelastseen = UTC_NOW
             existing.inlastrevision = True
             return existing
