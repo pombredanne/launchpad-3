@@ -272,32 +272,32 @@ class POTMsgSet(SQLBase):
     def normalizeNewLines(self, translation_text):
         """See IPOTMsgSet."""
         # There are three different kinds of newlines:
-        windows_style = '\r\n'
-        mac_style = '\r'
-        unix_style = '\n'
+        windows_style = u'\r\n'
+        mac_style = u'\r'
+        unix_style = u'\n'
         # We need the stripped variables because a 'windows' style will be at
         # the same time a 'mac' and 'unix' style.
         stripped_translation_text = translation_text.replace(
-            windows_style, '')
-        stripped_singular_text = self.singular_text.replace(windows_style, '')
+            windows_style, u'')
+        stripped_singular_text = self.singular_text.replace(windows_style, u'')
 
         # Get the style that uses singular_text.
         original_style = None
         if windows_style in self.singular_text:
             original_style = windows_style
 
-        if (mac_style in stripped_singular_text and
-            original_style is not None):
-            raise BrokenTextError(
-                "original text (%r) mixes different newline markers" %
-                    self.singular_text)
+        if mac_style in stripped_singular_text:
+            if original_style is not None:
+                raise BrokenTextError(
+                    "original text (%r) mixes different newline markers" %
+                        self.singular_text)
             original_style = mac_style
 
-        if (unix_style in stripped_singular_text and
-            original_style is not None):
-            raise BrokenTextError(
-                "original text (%r) mixes different newline markers" %
-                    self.singular_text)
+        if unix_style in stripped_singular_text:
+            if original_style is not None:
+                raise BrokenTextError(
+                    "original text (%r) mixes different newline markers" %
+                        self.singular_text)
             original_style = unix_style
 
         # Get the style that uses the given text.
@@ -305,18 +305,18 @@ class POTMsgSet(SQLBase):
         if windows_style in translation_text:
             translation_style = windows_style
 
-        if (mac_style in stripped_translation_text and
-            translation_style is not None):
-            raise BrokenTextError(
-                "translation text (%r) mixes different newline markers" %
-                    translation_text)
+        if mac_style in stripped_translation_text:
+            if translation_style is not None:
+                raise BrokenTextError(
+                    "translation text (%r) mixes different newline markers" %
+                        translation_text)
             translation_style = mac_style
 
-        if (unix_style in stripped_translation_text and
-            translation_style is not None):
-            raise BrokenTextError(
-                "translation text (%r) mixes different newline markers" %
-                    translation_text)
+        if unix_style in stripped_translation_text:
+            if translation_style is not None:
+                raise BrokenTextError(
+                    "translation text (%r) mixes different newline markers" %
+                        translation_text)
             translation_style = unix_style
 
         if original_style is None or translation_style is None:
