@@ -31,7 +31,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
-from canonical.launchpad import _
 from canonical.launchpad.helpers import (
     browserLanguages, is_tar_filename, request_languages)
 from canonical.launchpad.interfaces import (
@@ -50,9 +49,11 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu
+
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
+from canonical.launchpad import _
 
 
 def quote(text):
@@ -383,7 +384,7 @@ class ProductSeriesView(LaunchpadView):
             # Add it to the queue.
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, True, self.user,
-                    productseries=self.context)
+                productseries=self.context)
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be'
@@ -391,6 +392,7 @@ class ProductSeriesView(LaunchpadView):
                 ' You can track its status from the <a href="%s">Translation'
                 ' Import Queue</a>' %
                     canonical_url(translation_import_queue_set))
+
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
             num = translation_import_queue_set.addOrUpdateEntriesFromTarball(
