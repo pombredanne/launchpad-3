@@ -77,9 +77,10 @@ class TranslationImporter:
             "The translation import queue entry cannot be None.")
         assert (translation_import_queue_entry.status ==
                 RosettaImportStatus.APPROVED), (
-            "The entry is not approved!.")
-        assert translation_import_queue_entry.potemplate is not None, (
-            "The entry is not linked with a translation template")
+                "The entry is not approved!.")
+        assert (translation_import_queue_entry.potemplate is not None or
+                translation_import_queue_entry.pofile is not None), (
+                "The entry has not any import target.")
 
         importer_class = self.getImporterByFileFormat(
             translation_import_queue_entry.format)
@@ -89,10 +90,12 @@ class TranslationImporter:
 
         importer = importer_class(translation_import_queue_entry, logger=logger)
 
-        # This var will hold an special IPOFile for 'English' which will have
-        # the English strings to show instead of arbitrary IDs.
-        self.potemplate = translation_import_queue_entry.potemplate
         self.pofile = translation_import_queue_entry.pofile
+        if translation_import_queue_entry.pofile is None:
+            self.potemplate = translation_import_queue_entry.potemplate
+        else:
+            self.potemplate = self.pofile.potemplate
+
         if self.pofile is None:
             # We are importing a translation template.
             self.potemplate.source_file_format = (
@@ -133,7 +136,7 @@ class TranslationImporter:
             self.pofile.updateHeader(importer.header)
             # Get last translator that touched this translation file.
             name, email = importer.getLastTranslator()
-            last_translator = self.getPersonByEmail(name, email)
+            last_translator = self.getPersonByEmail(email, name)
 
             if last_translator is None:
                 # We were not able to guess it from the translation file, so
@@ -188,7 +191,7 @@ class TranslationImporter:
                     # Add the pomsgset to the list of pomsgsets with errors.
                     error = {
                         'pomsgset': pomsgset,
-                        'pomessage': message,
+                        'pomessage': unicode(message),
                         'error-message': (
                             "The msgid_plural field has changed since last"
                             " time this file was\ngenerated, please report"
@@ -281,7 +284,7 @@ class TranslationImporter:
             except TranslationConflict:
                 error = {
                     'pomsgset': pomsgset,
-                    'pomessage': message,
+                    'pomessage': unicode(message),
                     'error-message': (
                         "This message was updated by someone else after you"
                         " got the translation file.\n This translation is now"
@@ -303,8 +306,8 @@ class TranslationImporter:
                 # Add the pomsgset to the list of pomsgsets with errors.
                 error = {
                     'pomsgset': pomsgset,
-                    'pomessage': message,
-                    'error-message': e
+                    'pomessage': unicode(message),
+                    'error-message': unicode(e)
                 }
 
                 errors.append(error)

@@ -198,7 +198,7 @@ class POTMsgSet(SQLBase):
                 # We need to flush this change to prevent that the new one
                 # that we are going to create conflicts with this due a race
                 # condition applying the changes to the DB.
-                current_sighting.updateSync()
+                current_sighting.syncUpdate()
 
             return POMsgIDSighting(
                 potmsgset=self,
@@ -217,7 +217,7 @@ class POTMsgSet(SQLBase):
                 # We need to flush this change to prevent that the new one
                 # that we are going to create conflicts with this due a race
                 # condition applying the changes to the DB.
-                current_sighting.updateSync()
+                current_sighting.syncUpdate()
             existing.datelastseen = UTC_NOW
             existing.inlastrevision = True
             return existing
