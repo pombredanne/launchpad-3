@@ -502,6 +502,7 @@ class BranchSet:
                 FROM Branch
                 WHERE
                     NOT Branch.private
+                    OR Branch.owner = %d
 
                 UNION
 
@@ -513,7 +514,7 @@ class BranchSet:
                 AND BranchSubscription.person = TeamParticipation.team
                 AND TeamParticipation.person = %d)
             '''
-            % (query, visible_by_user.id))
+            % (query, visible_by_user.id, visible_by_user.id))
 
         return clause
 

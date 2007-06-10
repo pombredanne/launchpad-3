@@ -11,6 +11,30 @@ created and imported branches), and on the bug details page for
 bug-branch links.
 
 
+== Additional sample data ==
+
+Adding a private branch that is only visible by No Privileges Person
+(and Launchpad administrators).
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBranchSet, IPersonSet, IProductSet)
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> landscape = getUtility(IProductSet).getByName('landscape')
+    >>> branch = getUtility(IBranchSet).new(
+    ...     name='testing-branch',
+    ...     owner=no_priv,
+    ...     product=landscape,
+    ...     url=None,
+    ...     title='A Private Branch')
+    >>> branch.private = True
+    >>> flush_database_updates()
+    >>> logout()
+
+
 == The code home page ==
 
 The code home page shows lists of recently imported, changed, and
@@ -32,7 +56,7 @@ When there is no logged in user, only public branches should be visible.
     '...Launchpad support for Gnome Terminal...'
 
 Logged in users should only be able to see public branches, and private
-branches that they are subscribed to.
+branches that they are subscribed to or are the owner of.
 
     >>> from zope.testbrowser.testing import Browser
     >>> no_priv_browser = Browser()
@@ -40,11 +64,11 @@ branches that they are subscribed to.
     ...     'Authorization', 'Basic no-priv@canonical.com:test')
 
     >>> print_recently_registered_branches(no_priv_browser)
+    '...A Private Branch...<img src="/@@/locked"...'
     '...~sabdfl/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
     '...~name12/gnome-terminal/mirrored...'
     '...~name12/gnome-terminal/pushed...'
-    '...Launchpad support for Gnome Terminal...'
 
 The private branches in the sample data belong to Landscape, and are
 subscribed to by Landscape developers.  Sample Person is a Landscape
@@ -64,11 +88,11 @@ developer.
 Launchpad administrators are able to see all private branches.
 
     >>> print_recently_registered_branches(admin_browser)
+    '...A Private Branch...<img src="/@@/locked"...'
     '...~name12/landscape/feature-x...<img src="/@@/locked"...'
     '...Landscape trunk...<img src="/@@/locked"...'
     '...~sabdfl/+junk/testdoc...'
     '...~name12/gnome-terminal/scanned...'
-    '...~name12/gnome-terminal/mirrored...'
 
 
 == Product overview pages ==
@@ -89,13 +113,14 @@ branches.
     Latest code portlet not shown
 
     >>> print_landscape_overview_branches(no_priv_browser)
-    Latest code portlet not shown
+    '.../landscape/testing-branch...<img src="/@@/locked"...'
 
     >>> print_landscape_overview_branches(landscape_dev_browser)
     '.../landscape/feature-x...<img src="/@@/locked"...'
     '.../landscape/trunk...<img src="/@@/locked"...'
 
     >>> print_landscape_overview_branches(admin_browser)
+    '.../landscape/testing-branch...<img src="/@@/locked"...'
     '.../landscape/feature-x...<img src="/@@/locked"...'
     '.../landscape/trunk...<img src="/@@/locked"...'
 
@@ -117,9 +142,7 @@ listing tab.
     filtering on "Any Status".
 
     >>> print_landscape_code_listing(no_priv_browser)
-    There may be branches registered for The Landscape Project but none
-    of them match the current filter criteria for this page. Try
-    filtering on "Any Status".
+    testing-branch             60 New
 
     >>> print_landscape_code_listing(landscape_dev_browser)
     feature-x  Sample Person   60 New
@@ -128,6 +151,7 @@ listing tab.
     >>> print_landscape_code_listing(admin_browser)
     feature-x  Sample Person   60 New
     trunk      Sample Person   60 New
+    testing-branch             60 New
 
 
 == Person code listing pages ==
