@@ -97,6 +97,9 @@ class IPOMsgSet(Interface):
         on, without querying the database unnecessarily.
         """
 
+    def hasCaches():
+        """Have this object's internal caches been populated?"""
+
     def setActiveSubmission(pluralform, submission):
         """Set given submission as the active one.
 

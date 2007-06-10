@@ -113,6 +113,9 @@ class POMsgSetMixIn:
                     for filtered in suggestions
                     if filtered.potranslation != active.potranslation]
 
+    def hasCaches(self):
+        return self.attached_submissions is not None
+
     def getWikiSubmissions(self, pluralform):
         if self.attached_submissions is None:
             self.initializeCaches()
@@ -184,20 +187,16 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     @property
     def published_texts(self):
-        pluralforms = self.pluralforms
-        if pluralforms is None:
+        if self.pluralforms is None:
             raise RuntimeError(
                 "Don't know the number of plural forms for this PO file!")
-        results = list(POSubmission.select(
-            "POSubmission.published IS TRUE AND "
-            "POSubmission.pomsgset = %s" % sqlvalues(self),
-            orderBy='pluralform'))
         translations = []
-        for form in range(pluralforms):
-            if results and results[0].pluralform == form:
-                translations.append(results.pop(0).potranslation.translation)
-            else:
+        for form in range(self.pluralforms):
+            published = self.getPublishedSubmission(form)
+            if published is None:
                 translations.append(None)
+            else:
+                translations.append(published.potranslation.translation)
         return translations
 
     @property
@@ -206,17 +205,15 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         if pluralforms is None:
             raise RuntimeError(
                 "Don't know the number of plural forms for this PO file!")
-        results = list(POSubmission.select(
-            """POSubmission.active IS TRUE AND
-               POSubmission.pomsgset = %s""" % sqlvalues(self),
-            orderBy='pluralform'))
         translations = []
-        for form in range(pluralforms):
-            if results and results[0].pluralform == form:
-                translations.append(results.pop(0).potranslation.translation)
-            else:
+        for form in range(self.pluralforms):
+            active = self.getActiveSubmission(form)
+            if active is None:
                 translations.append(None)
+            else:
+                translations.append(active.potranslation.translation)
         return translations
+
 
     def isNewerThan(self, timestamp):
         """See IPOMsgSet."""
@@ -235,6 +232,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         current_active = self.getActiveSubmission(pluralform)
         if current_active is not None:
             current_active.active = False
+            del(self.active_submissions[pluralform])
             # We need this syncUpdate so if the next submission.active change
             # is done we are sure that we will store this change first in the
             # database. This is because we can only have an IPOSubmission with
@@ -244,8 +242,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         if submission is not None:
             submission.active = True
 
-        # Update cache.
-        self.active_submissions[pluralform] = submission
+            # Update cache.
+            self.active_submissions[pluralform] = submission
 
     def setPublishedSubmission(self, pluralform, submission):
         """See IPOMsgSet."""
@@ -256,6 +254,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         current_published = self.getPublishedSubmission(pluralform)
         if current_published is not None:
             current_published.published = False
+            del(self.published_submissions[pluralform])
             # We need this syncUpdate so if the next submission.published change
             # is done we are sure that we will store this change first in the
             # database. This is because we can only have an IPOSubmission with
@@ -265,8 +264,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         if submission is not None:
             submission.published = True
 
-        # Update cache.
-        self.published_submissions[pluralform] = submission
+            # Update cache.
+            self.published_submissions[pluralform] = submission
 
     def _fetchActiveAndPublishedSubmissions(self):
         """Populate active/published submissions caches from database.
@@ -274,6 +273,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         Creates self.active_submissions and self.published_submissions as
         dicts, each mapping pluralform to that pluralform's active or
         published submission, respectively.
+
+        Another way of achieving the same thing (and more) is to initialize
+        the POMsgSet's caches, but that is a much bigger job with lots of
+        other byproducts that may not turn out to be needed.
         """
         iterator = POSubmission.select(
             "pomsgset = %s AND (active OR published)" % quote(self))
@@ -513,6 +516,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         # should be None by this stage
         assert text != u'', 'Empty string received, should be None'
 
+        # We'll be needing our cache for this.
+        if self.attached_submissions is None:
+            self.initializeCaches()
+
         active_submission = self.getActiveSubmission(pluralform)
         published_submission = self.getPublishedSubmission(pluralform)
 
@@ -584,17 +591,26 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         else:
             origin = RosettaTranslationOrigin.ROSETTAWEB
 
-        # Try to get the submission from the suggestions one.
-        submission = POSubmission.selectOneBy(
-            pomsgset=self, pluralform=pluralform, potranslation=translation)
+        # Try to find the submission belonging to translation back in our
+        # cache.  There should be at most one match.
+        submission = None
+        if self.attached_submissions.get(pluralform) is not None:
+            for search in self.attached_submissions[pluralform]:
+                if search.potranslation == translation:
+                    assert submission is None
+                    submission = search
 
         if submission is None:
             # We need to create the submission, it's the first time we see
             # this translation.
             submission = POSubmission(
-                pomsgset=self, pluralform=pluralform, potranslation=translation,
-                origin=origin, person=person,
+                pomsgset=self, pluralform=pluralform,
+                potranslation=translation, origin=origin, person=person,
                 validationstatus=validation_status)
+            # Add the new submission to our cache.
+            if self.attached_submissions.get(pluralform) is None:
+                self.attached_submissions[pluralform] = []
+            self.attached_submissions[pluralform].insert(0, submission)
 
         potemplate = self.pofile.potemplate
         if (not published and not is_editor and
@@ -645,7 +661,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                         distribution=potemplate.distribution,
                         sourcepackagename=potemplate.sourcepackagename)
 
-
             if published:
                 if (self.isfuzzy or active_submission is None or
                     (not is_fuzzy and
@@ -677,19 +692,20 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def updateFlags(self):
         """See IPOMsgSet."""
-        # make sure we are working with the very latest data
+        # Make sure we are working with the very latest data.
         flush_database_updates()
+        if not self.hasCaches():
+            self.initializeCaches()
 
-        # we only want to calculate the number of plural forms expected for
-        # this pomsgset once
+        # Avoid re-evaluation of self.pluralforms.
         pluralforms = self.pluralforms
 
-        # calculate the number of published plural forms
-        published_count = POSubmission.select("""
-            POSubmission.pomsgset = %s AND
-            POSubmission.published IS TRUE AND
-            POSubmission.pluralform < %s
-            """ % sqlvalues(self, pluralforms)).count()
+        # Calculate the number of published plural forms.
+        # XXX: JeroenVermeulen 2007-06-10, why the cap on pluralform?
+        published_count = 0
+        for (plural, published) in self.published_submissions.items():
+            if plural < pluralforms and not published.id is None:
+                published_count += 1
 
         self.publishedcomplete = (published_count == pluralforms)
 
@@ -697,12 +713,12 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             # If we don't have translations, this entry cannot be fuzzy.
             self.publishedfuzzy = False
 
-        # calculate the number of active plural forms
-        active_count = POSubmission.select("""
-            POSubmission.pomsgset = %s AND
-            POSubmission.active IS TRUE AND
-            POSubmission.pluralform < %s
-            """ % sqlvalues(self, pluralforms)).count()
+        # Calculate the number of active plural forms.
+        # XXX: JeroenVermeulen 2007-06-10, why the cap on pluralform?
+        active_count = 0
+        for (plural, active) in self.active_submissions.items():
+            if plural < pluralforms and not active.id is None:
+                active_count += 1
 
         self.iscomplete = (active_count == pluralforms)
 
@@ -736,7 +752,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def getNewSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        if self.attached_submissions is None:
+        if not self.hasCaches():
             self.initializeCaches()
 
         applicable_submissions = self.attached_submissions.get(pluralform)

@@ -919,7 +919,8 @@ class POMsgSetView(LaunchpadView):
 
         # Collect posubmissions etc. that we need from the database in order
         # to identify useful suggestions.
-        self.context.initializeCaches()
+        if not self.context.hasCaches():
+            self.context.initializeCaches()
 
         # We store lists of POMsgSetSuggestions objects in a
         # suggestion_blocks dictionary, keyed on plural form index; this
