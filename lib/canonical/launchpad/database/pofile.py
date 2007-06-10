@@ -37,8 +37,8 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet, IPOFile,
     IPOFileSet, IPOTemplateExporter, ITranslationImporter, IPOFileTranslator,
     NotExportedFromLaunchpad, NotFoundError, OldTranslationImported,
-    TranslationFormatSyntaxError, UnknownTranslationRevisionDate,
-    ZeroLengthPOExportError
+    TranslationFormatSyntaxError, TranslationFormatInvalidInputError,
+    UnknownTranslationRevisionDate, ZeroLengthPOExportError
     )
 
 from canonical.launchpad.database.pomsgid import POMsgID
@@ -642,7 +642,8 @@ class POFile(SQLBase, RosettaStats):
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-not-exported-from-rosetta.txt'
             import_rejected = True
-        except TranslationFormatSyntaxError:
+        except (TranslationFormatSyntaxError,
+                TranslationFormatInvalidInputError):
             # The import failed with a format error. We log it and select the
             # email template.
             if logger:

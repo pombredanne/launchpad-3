@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOTemplate, IPOTemplateExporter, IPOTemplateSet,
     IPOTemplateSubset, ITranslationImporter, LanguageNotFound, NotFoundError,
     TranslationConstants, TranslationFormatSyntaxError,
+    TranslationFormatInvalidInputError
     )
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
@@ -567,7 +568,8 @@ class POTemplate(SQLBase, RosettaStats):
         translation_importer = getUtility(ITranslationImporter)
         try:
             translation_importer.import_file(entry_to_import, logger)
-        except TranslationFormatSyntaxError:
+        except (TranslationFormatSyntaxError,
+                TranslationFormatInvalidInputError):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
             if logger:
