@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'TranslationFormatImporter'
+    'GettextPoImporter'
     ]
 
 from email.Utils import parseaddr
@@ -18,7 +18,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import TranslationFileFormat
 
 
-class TranslationFormatImporter:
+class GettextPoImporter:
     """Support class to import gettext .po files."""
     implements(ITranslationFormatImporter)
 

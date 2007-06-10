@@ -14,7 +14,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.components.translationformats.gettext_po_importer import (
-    TranslationFormatImporter as GettextPoImporter)
+    GettextPoImporter)
 from canonical.launchpad.interfaces import (
         IPersonSet, ITranslationImporter, TranslationConstants,
         TranslationConflict, OldTranslationImported, NotExportedFromLaunchpad)
