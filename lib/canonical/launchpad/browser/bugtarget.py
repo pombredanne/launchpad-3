@@ -354,6 +354,12 @@ class FileBugViewBase(LaunchpadFormView):
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
+    @action("This Is My Bug", name="this_is_my_bug",
+            failure=handleSubmitBugFailure)
+    def this_is_my_bug_action(self, action, data):
+        """"""
+        pass
+
     def showFileBugForm(self):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError

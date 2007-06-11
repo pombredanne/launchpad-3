@@ -24,40 +24,44 @@
 
       <tal:similar-bugs condition="view/similar_bugs">
         <h2 style="clear: both">
-          <label><input type="radio" name="foobar" selected="selected" />
+          <label><input type="radio" name="foobar" checked="checked" />
           Yes, it's one of the following:</label></h2>
 
         <div style="padding-left: 30px">
-        <p>
-        <strong>Your bug may have already been reported.</strong>
-        Please take a few moments to look through the bugs below
-        to see if your bug has already been reported.
-        </p>
-
         <table class="listing" id="similar-bugs" style="clear: both">
           <thead>
-            <tr><th colspan="3">Summary</th></tr>
+            <tr><th colspan="4">Summary</th></tr>
           </thead>
           <tbody>
             <tr tal:repeat="bug view/similar_bugs"
                 tal:attributes="title bug/description/fmt:shorten/500"
                 title="bug description goes here">
               <td><input type="radio" name="this_is_my_bug"
-                         tal:attributes="value string:${bug/id}" /></td>
-              <td tal:content="bug/id" class="amount" width="10%">1</td>
+                         tal:attributes="value string:${bug/id}; id string:this-is-my-bug-${bug/id}" /></td>
+              <td class="amount">
+                <label tal:content="bug/id" style="font-weight: normal"
+                       tal:attributes="for string:this-is-my-bug-${bug/id}">1</label></td>
+              <td width="100%">
+                <label tal:content="bug/title" style="font-weight: normal"
+                       tal:attributes="for string:this-is-my-bug-${bug/id}">
+                  Bug title
+                </label>
+              </td>
               <td>
-                <a href="#"
-                   tal:content="bug/title"
-                   tal:attributes="href bug/fmt:url">
-                   Firefox doesn't work
+                <a href="#" tal:attributes="href bug/fmt:url">
+                   <nobr>View details...</nobr>
                 </a>
               </td>
             </tr>
           </tbody>
         </table>
 
+        <script type="text/javascript">
+        //alert(getFirstParentByTagAndClassName);
+        </script>
+
         <div class="actions">
-          <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
+          <input tal:replace="structure view/actions/field.actions.this_is_my_bug/render" />
         </div>
         </div>
 
@@ -72,11 +76,6 @@
         No, I'd like to report a new bug</label></h2>
 
       <div style="padding-left: 30px">
-      <p tal:condition="view/found_possible_duplicates">
-        If your bug hasn't been reported before, please describe your
-        problem more in detail.
-      </p>
-
       <table class="form">
 
         <metal:basic_filebug_widgets
