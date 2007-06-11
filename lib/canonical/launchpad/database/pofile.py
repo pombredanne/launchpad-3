@@ -192,6 +192,9 @@ class POFile(SQLBase, RosettaStats):
     rosettacount = IntCol(dbName='rosettacount',
                           notNull=True,
                           default=0)
+    unreviewedcount = IntCol(dbName='unreviewedcount',
+                             notNull=True,
+                             default=0)
     lastparsed = UtcDateTimeCol(dbName='lastparsed',
                                 notNull=False,
                                 default=None)
@@ -495,6 +498,14 @@ class POFile(SQLBase, RosettaStats):
         """See IRosettaStats."""
         return self.rosettacount
 
+    def unreviewedCount(self, language=None):
+        """See IRosettaStats."""
+        return self.unreviewedcount
+
+    def unreviewedCount(self, language=None):
+        """See IRosettaStats."""
+        return self.unreviewedcount
+
     @property
     def fuzzy_count(self):
         """See IPOFile."""
@@ -503,10 +514,6 @@ class POFile(SQLBase, RosettaStats):
             isfuzzy IS TRUE AND
             sequence > 0
             """ % sqlvalues(self.id)).count()
-
-    def messagesWithNewSuggestionsCount(self):
-        """See IPOFile."""
-        return self.getPOTMsgSetWithNewSuggestions().count()
 
     def expireAllMessages(self):
         """See IPOFile."""
@@ -574,10 +581,20 @@ class POFile(SQLBase, RosettaStats):
             POTMsgSet.sequence > 0
             ''' % self.id,
             clauseTables=['POTMsgSet']).count()
+
+        unreviewed = POMsgSet.select('''
+            POMsgSet.pofile = %s AND
+            POSubmission.pomsgset = POMsgSet.id AND
+            (POSubmission.datecreated > POMsgSet.date_reviewed OR
+             POMsgSet.date_reviewed IS NULL)
+            ''' % sqlvalues(self.potemplate, self),
+            clauseTables=['POSubmission']).count()
+
         self.currentcount = current
         self.updatescount = updates
         self.rosettacount = rosetta
-        return (current, updates, rosetta)
+        self.unreviewedcount = unreviewed
+        return (current, updates, rosetta, unreviewed)
 
     def createMessageSetFromMessageSet(self, potmsgset):
         """See IPOFile."""
@@ -1055,6 +1072,9 @@ class DummyPOFile(RosettaStats):
     def updatesCount(self):
         return 0
 
+    def unreviewedCount(self):
+        return 0
+
     def nonUpdatesCount(self):
         return 0
 
@@ -1067,9 +1087,6 @@ class DummyPOFile(RosettaStats):
     @property
     def fuzzy_count(self):
         """See IPOFile."""
-        return 0
-
-    def messagesWithNewSuggestionsCount(self):
         return 0
 
     def currentPercentage(self):

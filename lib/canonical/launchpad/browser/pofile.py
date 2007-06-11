@@ -343,7 +343,7 @@ class POFileTranslateView(BaseTranslationView):
         elif self.show == 'need_review':
             self.shown_count = self.context.fuzzy_count
         elif self.show == 'new_suggestions':
-            self.shown_count = self.context.messagesWithNewSuggestionsCount()
+            self.shown_count = self.context.unreviewedCount()
         elif self.show == 'changed_in_launchpad':
             self.shown_count = self.context.updatesCount()
         else:

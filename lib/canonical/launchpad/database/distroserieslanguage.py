@@ -39,6 +39,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
     currentcount = IntCol(notNull=True, default=0)
     updatescount = IntCol(notNull=True, default=0)
     rosettacount = IntCol(notNull=True, default=0)
+    unreviewedcount = IntCol(notNull=True, default=0)
     contributorcount = IntCol(notNull=True, default=0)
     dateupdated = UtcDateTimeCol(dbName='dateupdated', default=DEFAULT)
 
@@ -117,6 +118,9 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
 
     def rosettaCount(self, language=None):
         return self.rosettacount
+
+    def unreviewedCount(self, language=None):
+        return self.unreviewedcount
 
     def updateStatistics(self, ztm):
         current = 0

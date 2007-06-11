@@ -113,11 +113,6 @@ class IPOFile(IRosettaStats):
         Return an iterator over untranslated message sets in this PO file.
         """
 
-    def messagesWithNewSuggestionsCount():
-        """
-        Return the number of messages with new suggestions since last review.
-        """
-
     def __iter__():
         """Return an iterator over Current IPOMessageSets in this PO file."""
 
