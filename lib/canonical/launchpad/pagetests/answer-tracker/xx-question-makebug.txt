@@ -20,21 +20,9 @@ the question's description and the title is empty.
   >>> browser.getControl('Description').value
   "...I'm trying to learn about SVG..."
 
-Cancelling the request brings you back to the question page.
-
-  >>> browser.getControl('Cancel').click()
-  >>> browser.url
-  '.../firefox/+question/2'
-  >>> browser.title
-  '...question #2...'
-  >>> createLink = browser.getLink('Create bug report')
-  >>> createLink is not None
-  True
-
 The user must enter a valid title and description before creating the
 bug.
 
-  >>> createLink.click()
   >>> browser.getControl('Description').value= ''
   >>> browser.getControl('Create').click()
   >>> from BeautifulSoup import BeautifulSoup

@@ -1,5 +1,5 @@
-Because the Redfish project is not public, a special hack was added to
-Malone to *force all bugs filed on Redfish to be private*.
+Because the Redfish project is not public, a special hack was added 
+to *force all bugs filed on Redfish to be private*.
 
 The Redfish product is a celebrity.
 

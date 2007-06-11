@@ -162,7 +162,7 @@
   </tal:block>
 
       <p tal:condition="not:view/has_entries">
-        There are no files waiting to be imported into Rosetta.
+        There are no files waiting to be imported into Launchpad.
       </p>
     </div>
   </body>

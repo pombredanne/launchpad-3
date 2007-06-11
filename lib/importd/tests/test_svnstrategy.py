@@ -8,8 +8,6 @@ import os
 import re
 
 from bzrlib.branch import Branch
-import svn_oo
-from svn_oo.util import pysvnClient
 import cscvs.bzr
 import cscvs.ProgressPrinter
 from cscvs.ProgressPrinter import ProgressPrinterHelper
@@ -84,10 +82,20 @@ class SvnRepositoryHelper:
         """Create a svn repository at self.job_helper.svn_repo_path."""
         svn_repo_path = self.job_helper.svn_repo_path
         logger = testutil.makeSilentLogger()
+
+        # XXX: Scoped import of svn_oo to work around segfault on importing svn
+        # on ia64. -- DavidAllouche 2007-05-07
+        import svn_oo
+
         self.svn_repo = svn_oo.Repository.Create(svn_repo_path, logger)
 
     def _checkoutWholeRepository(self):
         """Check out the root of self.svn_repo at self.svn_tree_path."""
+        # XXX: Scoped import of svn_oo to work around segfault
+        # on importing svn on ia64. -- DavidAllouche 2007-05-07
+        import svn_oo
+        from svn_oo.util import pysvnClient
+
         # XXX: svn_oo does not allow to checkout the whole repository, so we
         # need to use lower-level bindings here. -- David Allouche 2006-11-03
         client = pysvnClient()
@@ -106,6 +114,10 @@ class SvnRepositoryHelper:
 
     def _makeRevisionTwo(self):
         """Make the second revision. It creates the branch we will import."""
+        # XXX: Scoped import of svn_oo to work around segfault
+        # on importing svn on ia64. -- DavidAllouche 2007-05-07
+        from svn_oo.util import pysvnClient
+
         # XXX: svn_oo does not support copy. We need to use lower-level
         # bindings -- David Allouche 2006-11-03
         client = pysvnClient()

@@ -51,7 +51,7 @@
       this for a pillar object using <code>/image:icon</code>. Pillar objects
       should optionally have custom icons, and they should be used in
       detailed listings (not simple listings - for those please use badges).
-      Team "emblems" should be of the icon size, not badge size.
+      Team icons should be of the icon size, not badge size.
     </dd>
     <dt>
       <img alt="" src="/@@/nyet-large" style="float: right;" />
@@ -95,21 +95,24 @@
     </dd>
   </dl>
 
-  <h2 style="clear: right;">System icons</h2>
-
-  <p>
-    These icons are used throughout the system, in all applications.
+  <p style="clear: right;">
+    Below, we list the icons which are used in each of the applications that
+    make up Launchpad.
   </p>
 
   <table class="listing">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Image</th>
-        <th>Notes</th>
-      </tr>
-    </thead>
     <tbody>
+      <tr>
+        <td>
+          <h2>System icons</h2>
+        </td>
+        <td />
+        <td>
+          <strong>
+            These icons are used throughout the system, in all applications.
+          </strong>
+        </td>
+      </tr>
       <tr>
         <td>add</td>
         <td><img alt="" src="/@@/add" /></td>
@@ -381,6 +384,17 @@
         <td><img alt="" src="/@@/meeting-mugshot" /></td>
       </tr>
       <tr>
+        <td>mentoring</td>
+        <td><img alt="" src="/@@/mentoring" /></td>
+        <td rowspan="2">A bug or blueprint for which mentoring has been
+          offered.
+        </td>
+      </tr>
+      <tr>
+        <td>mentoring-large</td>
+        <td><img alt="" src="/@@/mentoring-large" /></td>
+      </tr>
+      <tr>
         <td>milestone</td>
         <td><img alt="" src="/@@/milestone" /></td>
         <td>A "target". This indicates a development milestone to which a
@@ -447,25 +461,17 @@
         <td><img src="/@@/zoom-out" /></td>
         <td>Zoom out.</td>
       </tr>
-      <!-- convenience blank row for copying -->
       <tr>
-        <td></td>
-        <td><img src="/@@/" /></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <h2>Bugs</h2>
-
-  <p>
-    Launchpad lets projects track their bugs, and
-    collaborate with other people using their code on the fixes for those
-    bugs.
-  </p>
-
-  <table class="listing">
-    <tbody>
+        <td>
+          <h2>Bugs</h2>
+        </td>
+        <td />
+        <td>
+          <strong>
+            Launchpad lets projects track their bugs, and collaborate with
+            other people using their code on the fixes for those bugs.
+          </strong>
+        </td>
       <tr>
         <td>bug</td>
         <td><img src="/@@/bug" /></td>
@@ -522,20 +528,20 @@
         Exploits" and refers to an entry in a database that keeps track of
         security problems across multiple vendor's software.</td>
       </tr>
-    </tbody>
-  </table>
-
-  <h2>Translations</h2>
-
-  <p>
-    Launchpad lets projects invite translators to help make
-    their software work in any written language. Translators contribute new
-    translations over the web which are then included in new releases of the
-    software.
-  </p>
-
-  <table class="listing">
-    <tbody>
+      <tr>
+        <td>
+          <h2>Translations</h2>
+        </td>
+        <td />
+        <td>
+          <strong>
+            Launchpad lets projects invite translators to help make their
+            software work in any written language. Translators contribute
+            new translations over the web which are then included in new
+            releases of the software.
+          </strong>
+        </td>
+      </tr>
       <tr>
         <td>blue-bar</td>
         <td><img src="/@@/blue-bar" width="48" height="16" /></td>
@@ -578,19 +584,19 @@
         <td><img src="/@@/translation-template" /></td>
         <td>A set of strings available for translation.</td>
       </tr>
-    </tbody>
-  </table>
-
-  <h2>Blueprint</h2>
-
-  <p>
-    Blueprint is the Launchpad
-    feature tracker. It is used to help projects plan their feature
-    development and coordinate across distributed teams.
-  </p>
-
-  <table class="listing">
-    <tbody>
+      <tr>
+        <td>
+          <h2>Blueprint</h2>
+        </td>
+        <td />
+        <td>
+          <strong>
+            Blueprint is the Launchpad feature tracker. It is used to help
+            projects plan their feature development and coordinate across
+            distributed teams.
+          </strong>
+        </td>
+      </tr>
       <tr>
         <td>blueprint</td>
         <td><img src="/@@/blueprint" /></td>
@@ -624,43 +630,51 @@
       <tr>
         <td>bounty</td>
         <td><img src="/@@/bounty" /></td>
-        <td>A bounty. This image is used in faeture listings to indicate the
-        features which have bounties associated with them, and as bullets for
+        <td>A bounty. This image is used in blueprint listings to indicate
+        those which have bounties associated with them, and as bullets for
         lists of bounties.</td>
       </tr>
-    </tbody>
-  </table>
-
-  <h2>Code</h2>
-
-  <table class="listing">
-    <tbody>
+      <tr>
+        <td>
+          <h2>Code</h2>
+        </td>
+        <td />
+        <td>
+          <strong>
+            Launchpad keeps track of the Bazaar branches for a project, and
+            allows you to organise your work efficiently and easily across
+            the entire community.
+          </strong>
+        </td>
+      </tr>
       <tr>
         <td>branch</td>
         <td><img src="/@@/branch" /></td>
-        <td>A branch, or line of development.</td>
+        <td rowspan="2">A branch, or line of development.</td>
       </tr>
-    </tbody>
-  </table>
-
-  <h2>Soyuz, the distribution package management system</h2>
-
-  <p>
-    Soyuz is the Launchpad subsystem
-    that keeps track of the packages in a distribution. It handles uploads,
-    the checking of permissions and consistency, builds, and the publishing
-    of these packages into an archive.
-  </p>
-
-  <p>
-    Soyuz is mostly not a web application, but it still is responsible for
-    presenting the state of the distribution to the world through the
-    Launchpad site. Also, more and more of the administrative processes like
-    mirror management are being handled in Soyuz.
-  </p>
-
-  <table class="listing">
-    <tbody>
+      <tr>
+        <td>branch-large</td>
+        <td><img src="/@@/branch-large" /></td>
+      </tr>
+      <tr>
+        <td>
+          <h2>Packages</h2>
+        </td>
+        <td />
+        <td>
+          <strong>
+            <p>Soyuz is the Launchpad subsystem that keeps track of the
+            packages in a distribution. It handles uploads, the checking of
+            permissions and consistency, builds, and the publishing of these
+            packages into an archive.</p>
+            <p>Soyuz is mostly not a web application, but it still is
+            responsible for presenting the state of the distribution to the
+            world through the Launchpad site. Also, more and more of the
+            administrative processes like mirror management are being
+            handled in Soyuz.</p>
+          </strong>
+        </td>
+      </tr>
       <tr>
         <td>architecture</td>
         <td><img src="/@@/architecture" /></td>
@@ -721,39 +735,45 @@
         <td><img alt="" src="/@@/retry" /></td>
         <td>Retry.</td>
       </tr>
-    </tbody>
-  </table>
-
-  <h2>Answer Tracker, the question tracking system.</h2>
-
-  <p>
-    The "Answer Tracker" is a system that allows users to request help of
-    one form or another with the software. It forms a lightweight framework
-    for community support.
-  </p>
-
-  <table class="listing">
-    <tbody>
+      <tr>
+        <td>
+          <h2>Answers</h2>
+        </td>
+        <td />
+        <td>
+          <strong>
+            The "Answer Tracker" is a system that allows users to request
+            help of one form or another with the software. It forms a
+            lightweight framework for community support.
+          </strong>
+        </td>
+      </tr>
       <tr>
         <td>question</td>
         <td><img src="/@@/question" /></td>
         <td>A question. This is used as a bullet in lists of questions.</td>
       </tr>
-    </tbody>
-  </table>
-
-  <h2>Special cases</h2>
-
-  <p>
-    These icons are also in the system.
-  </p>
-
-  <table class="listing">
-    <tbody>
+      <tr>
+        <td>
+          <h2>Special cases</h2>
+        </td>
+        <td />
+        <td>
+          <strong>
+            These icons are also in the system.
+          </strong>
+        </td>
+      </tr>
       <tr>
         <td>ubuntu-icon</td>
         <td><img src="/@@/ubuntu-icon" /></td>
         <td>Ubuntu icon</td>
+      </tr>
+      <!-- convenience blank row for copying -->
+      <tr>
+        <td></td>
+        <td><img src="/@@/" /></td>
+        <td></td>
       </tr>
     </tbody>
   </table>

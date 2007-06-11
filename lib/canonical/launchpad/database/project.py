@@ -10,8 +10,7 @@ __all__ = [
 from zope.interface import implements
 
 from sqlobject import (
-        ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
-        SQLMultipleJoin, SQLRelatedJoin)
+    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -27,13 +26,16 @@ from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
     SpecificationFilter, SprintSpecificationStatus)
 
+from canonical.launchpad.database.branchvisibilitypolicy import (
+    BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
-from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
@@ -43,7 +45,7 @@ from canonical.launchpad.database.question import QuestionTargetSearch
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              HasSprintsMixin, KarmaContextMixin):
+              HasSprintsMixin, KarmaContextMixin, BranchVisibilityPolicyMixin):
     """A Project"""
 
     implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
@@ -65,11 +67,11 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
-        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
-    mugshot = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+        dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
-        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
+        dbName='logo', foreignKey='LibraryFileAlias', default=None)
+    mugshot = ForeignKey(
+        dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     sourceforgeproject = StringCol(dbName='sourceforgeproject', notNull=False,
         default=None)
@@ -117,6 +119,29 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 return None
         linker = ProjectBounty(project=self, bounty=bounty)
         return None
+
+    @property
+    def mentoring_offers(self):
+        """See IProject"""
+        via_specs = MentoringOffer.select('''
+            Product.project = %s AND
+            Specification.product = Product.id AND
+            Specification.id = MentoringOffer.specification
+            ''' % sqlvalues(self.id) + """ AND NOT
+            (""" + Specification.completeness_clause +")",
+            clauseTables=['Product', 'Specification'],
+            distinct=True)
+        via_bugs = MentoringOffer.select('''
+            Product.project = %s AND
+            BugTask.product = Product.id AND
+            BugTask.bug = MentoringOffer.bug AND
+            BugTask.bug = Bug.id AND
+            Bug.private IS FALSE
+            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ + BugTask.completeness_clause + ")",
+            clauseTables=['Product', 'BugTask', 'Bug'],
+            distinct=True)
+        return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     def translatables(self):
         """See IProject."""

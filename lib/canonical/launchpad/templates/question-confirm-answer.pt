@@ -28,7 +28,7 @@
                      answerDisplayView nocall:answer/@@+display">
 
       <p class="documentDescription">To confirm that the following answer
-        solved your question, click the 'This Solved my Problem' button. You
+        solved your question, click the 'This Solved My Problem' button. You
         can enter comments along your confirmation.
       </p>
 
@@ -46,7 +46,7 @@
 </div>
 <p metal:fill-slot="help">If the displayed answer is indeed the one that
   helped you solved your problem. Simply click on the
-  <strong>This Solved my Problem</strong> button. Your comments, if any, will
+  <strong>This Solved My Problem</strong> button. Your comments, if any, will
   be added at to the question discussion.
 </p>
 </body>

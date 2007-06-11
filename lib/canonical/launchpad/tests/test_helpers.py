@@ -215,10 +215,37 @@ def test_request_languages():
     >>> tearDown()
     '''
 
+
+class TruncateTextTest(unittest.TestCase):
+
+    def test_leaves_shorter_text_unchanged(self):
+        """When the text is shorter than the length, nothing is truncated."""
+        self.assertEqual('foo', helpers.truncate_text('foo', 10))
+
+    def test_single_very_long_word(self):
+        """When the first word is longer than the truncation then that word is
+        included.
+        """
+        self.assertEqual('foo', helpers.truncate_text('foooo', 3))
+
+    def test_words_arent_split(self):
+        """When the truncation would leave only half of the last word, then the
+        whole word is removed.
+        """
+        self.assertEqual('foo', helpers.truncate_text('foo bar', 5))
+
+    def test_whitespace_is_preserved(self):
+        """The whitespace between words is preserved in the truncated text."""
+        text = 'foo  bar\nbaz'
+        self.assertEqual(text, helpers.truncate_text(text, len(text)))
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite())
     suite.addTest(DocTestSuite(helpers))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(TruncateTextTest))
     return suite
 
 if __name__ == '__main__':

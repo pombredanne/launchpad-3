@@ -1,5 +1,5 @@
 <div class="portlet">
-    <h2 tal:content="context/title">productrelease title</h2>
+    <h2 tal:content="context/title">release series title</h2>
 
     <div class="portletBody">
         <div class="portletContent even">
@@ -12,11 +12,11 @@
               tal:attributes="title context/datecreated/fmt:datetime"
               tal:content="context/datecreated/fmt:approximatedate" /><br />
 
-            <b>Product:</b>
+            <b>Project:</b>
             <a href="#"
                tal:attributes="href context/product/fmt:url"
                tal:content="context/product/displayname"
-               class="link">product displayname</a><br />
+               class="link">project displayname</a><br />
 
             <b>Series:</b>
             <span tal:replace="context/productseries/name" /><br />

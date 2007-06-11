@@ -28,6 +28,7 @@ from canonical.config import config
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     IBranch, IBranchSet, IBugSet, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
@@ -88,7 +89,7 @@ class BranchContextMenu(ContextMenu):
     def subscription(self):
         if self.context.hasSubscription(self.user):
             url = '+edit-subscription'
-            text = 'Edit Subscription'
+            text = 'Edit subscription'
             icon = 'edit'
         else:
             url = '+subscribe'
@@ -100,6 +101,8 @@ class BranchContextMenu(ContextMenu):
 class BranchView(LaunchpadView):
 
     __used_for__ = IBranch
+
+    MAXIMUM_STATUS_MESSAGE_LENGTH = 128
 
     def initialize(self):
         self.notices = []
@@ -171,6 +174,14 @@ class BranchView(LaunchpadView):
         """Whether this is a user-provided hosted branch."""
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         return self.context.url is None and self.context.owner != vcs_imports
+
+    def mirror_status_message(self):
+        """A message from a bad scan or pull, truncated for display."""
+        message = self.context.mirror_status_message
+        if len(message) <= self.MAXIMUM_STATUS_MESSAGE_LENGTH:
+            return message
+        return truncate_text(
+            message, self.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...'
 
 
 class BranchInPersonView(BranchView):

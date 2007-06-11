@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="malone"
 >
   <body>
@@ -14,7 +14,7 @@
         <tal:software replace="context/displayname">Fooix</tal:software>
       </h1>
     </metal:heading>
-  
+
     <style metal:fill-slot="head_epilogue" type="text/css">
       label {font-weight: normal;}
     </style>
@@ -24,9 +24,9 @@
       condition="not: view/shouldShowAdvancedForm">
       <tal:block content="structure context/@@+portlet-bugfilters" />
       <tal:block content="structure context/@@+portlet-bugtags" />
-      <tal:releasebugs
-         tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
-         tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />
+      <tal:releasecriticalbugs
+         tal:condition="view/shouldShowReleaseCriticalPortlet"
+         tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
      </tal:do_not_show_portlets_advanced_form>
      <tal:show_portlets_advanced condition="view/shouldShowAdvancedForm">
        <div tal:replace="structure context/@@+portlet-details" />

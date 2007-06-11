@@ -1,6 +1,6 @@
 = IQuestionTarget Interface =
 
-Launchpad includes a support request tracker. Questions are associated to
+Launchpad includes an answer tracker. Questions are associated to
 objects implementing IQuestionTarget. This file documents that interface
 and can be used to validate implementation of this interface on a
 particular object. (This object is made available through the 'target'
@@ -356,25 +356,25 @@ In this case, it returned the same results than with the search 'new' because
 all other words in the sentence are either common ('question', 'title') or stop
 words ('with', 'a').
 
-== Support contacts ==
+== Answer contacts ==
 
-Target can have support contacts. The list of support contacts for a
+Target can have answer contacts. The list of answer contacts for a
 target is available through the answer_contacts attribute.
 
     >>> list(target.answer_contacts)
     []
 
 There is also a direct_answer_contacts which includes only the
-support contacts registered explicitely on the question target. (In
+answer contacts registered explicitly on the question target. (In
 general, it will be equal to answer_contacts attribute, but some
-IQuestionTarget implementations may inherit support contacts
+IQuestionTarget implementations may inherit answer contacts
 from other context. In these cases, that attribute would only contain
-the support contacts defined in the current IQuestionTarget context.)
+the answer contacts defined in the current IQuestionTarget context.)
 
     >>> list(target.direct_answer_contacts)
     []
 
-You add a support contact by using the addAnswerContact method. This
+You add an answer contact by using the addAnswerContact method. This
 is only available to registered users.
 
     >>> name18 = getUtility(IPersonSet).getByName('name18')
@@ -396,9 +396,9 @@ False when it was already on the list:
     >>> target.addAnswerContact(name18)
     False
 
-Support contacts can be removed by using the removeAnswerContact()
-method. Like its counterpart, it returns True when the support contact
-was removed and False when the person wasn't on the support contact
+Answer contacts can be removed by using the removeAnswerContact()
+method. Like its counterpart, it returns True when the answer contact
+was removed and False when the person wasn't on the answer contact
 list.
 
     >>> target.removeAnswerContact(name18)
@@ -410,7 +410,7 @@ list.
     >>> target.removeAnswerContact(name18)
     False
 
-Only registered users can remove a support contact:
+Only registered users can remove an answer contact:
 
     >>> login(ANONYMOUS)
     >>> target.removeAnswerContact(name18)
@@ -422,13 +422,13 @@ Only registered users can remove a support contact:
 
 The supported languages for a given IQuestionTarget are given by
 getSupportedLanguages(). The supported languages of a question target
-include English plus all languages spoken by at least one of its support
+include English plus all languages spoken by at least one of its answer
 contacts (with the exception of all English variations).
 
     >>> [lang.code for lang in target.getSupportedLanguages()]
     [u'en']
 
-Let's add some support contacts which speak different languages.
+Let's add some answer contacts which speak different languages.
 
     >>> login('daf@canonical.com')
     >>> daf = getUtility(IPersonSet).getByName('daf')

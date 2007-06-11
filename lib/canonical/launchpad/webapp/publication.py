@@ -31,12 +31,13 @@ from zope.security.management import newInteraction
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
     IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent,
-    BeforeTraverseEvent)
+    BeforeTraverseEvent, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.opstats import OpStats
-from canonical.launchpad.webapp.uri import URI
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 __all__ = [
@@ -180,6 +181,7 @@ class LaunchpadBrowserPublication(
 
         request.setPrincipal(p)
         self.maybeRestrictToTeam(request)
+        self.maybeBlockOffsiteFormPost(request)
 
     def maybeRestrictToTeam(self, request):
 
@@ -256,6 +258,37 @@ class LaunchpadBrowserPublication(
             uri = uri.replace(query=query_string)
         return str(uri)
 
+    def maybeBlockOffsiteFormPost(self, request):
+        """Check if an attempt was made to post a form from a remote site.
+
+        The OffsiteFormPostError exception is raised if the following
+        holds true:
+          1. the request method is POST
+          2. the HTTP referer header is not empty
+          3. the host portion of the referrer is not a registered vhost
+        """
+        if request.method != 'POST':
+            return
+        referrer = request.getHeader('referer') # match HTTP spec misspelling
+        if not referrer:
+            return
+        # XXX: 20070426 jamesh
+        # The Zope testing infrastructure sets a default (incorrect)
+        # referrer value of "localhost" or "localhost:9000" if no
+        # referrer is included in the request.  We let it pass through
+        # here for the benefits of the tests.  Web browsers send full
+        # URLs so this does not open us up to extra XSRF attacks.
+        #     https://bugs.launchpad.net/zope3/+bug/98437
+        if referrer in ['localhost', 'localhost:9000']:
+            return
+        # Extract the hostname from the referrer URI
+        try:
+            hostname = URI(referrer).host
+        except InvalidURIError:
+            hostname = None
+        if hostname not in allvhosts.hostnames:
+            raise OffsiteFormPostError(referrer)
+
     def callObject(self, request, ob):
 
         # Don't render any content on a redirect.
@@ -312,6 +345,9 @@ class LaunchpadBrowserPublication(
         # we call does this (bug to be fixed upstream) -- StuartBishop 20060317
         if retry_allowed and isinstance(exc_info[1], Retry):
             raise
+        # Retry the request if we get a database disconnection.
+        if retry_allowed and isinstance(exc_info[1], da.DisconnectionError):
+            raise Retry(exc_info)
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.handleException(self, object, request, exc_info,
                                    retry_allowed)

@@ -19,6 +19,7 @@ from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.webapp.error import SystemErrorView
+from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.interfaces import (
     ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, ShipItConstants)
 from canonical.launchpad.interfaces.validation import valid_password
@@ -56,7 +57,13 @@ class UnauthorizedView(SystemErrorView):
             query_string = self.request.get('QUERY_STRING', '')
             if query_string:
                 query_string = '?' + query_string
-            target = self.request.getURL() + '/+login' + query_string
+            target = self.request.getURL()
+            while True:
+                nextstep = self.request.stepstogo.consume()
+                if nextstep is None:
+                    break
+                target = urlappend(target, nextstep)
+            target = urlappend(target, '+login' + query_string)
             self.request.response.addNoticeNotification(_(
                     'To continue, you must log in to Launchpad.'
                     ))

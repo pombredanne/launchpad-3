@@ -109,8 +109,7 @@ class LoginToken(SQLBase):
         closing = """
 Thanks,
 
-The Launchpad Team
-launchpad@ubuntu.com"""
+The Launchpad Team"""
 
         # Encrypt this part's content if requested.
         if key.can_encrypt:

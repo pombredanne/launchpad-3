@@ -5,7 +5,7 @@
 
   <div class="portletBody portletContent"
        tal:define="bugtask view/currentBugTask">
-    <img alt="" src="/@@/bug" />
+    <tal:icon replace="structure bugtask/image:icon" />
     <a tal:attributes="href bugtask/fmt:url">
        Bug #<span tal:replace="context/id">3252543</span></a><br />
 

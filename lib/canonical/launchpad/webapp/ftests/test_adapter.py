@@ -4,14 +4,17 @@
 __metaclass__ = type
 
 import unittest
-from zope.testing.doctest import DocFileSuite, DocTestSuite
-from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
+from zope.testing.doctest import (
+    DocFileSuite, REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS)
 
-from canonical.functional import FunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer
 
 def test_suite():
-    suite = DocFileSuite('test_adapter.txt',
-                     optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE|ELLIPSIS)
-    suite.layer = FunctionalLayer
+    suite = DocFileSuite(
+        'test_adapter.txt',
+        'reconnecting-adapter.txt',
+        'reconnecting-adapter-zope-transaction.txt',
+        optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE|ELLIPSIS)
+    suite.layer = LaunchpadFunctionalLayer
     return suite
 
