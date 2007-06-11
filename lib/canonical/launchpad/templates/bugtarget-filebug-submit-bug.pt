@@ -2,14 +2,12 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xml:lang="en"
   lang="en"
-  metal:use-macro="context/@@main_template_2col/master"
+  metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad">
 
 <body>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:condition="context/title|nothing"
-      tal:content="context/title">Foo Series: main</h3>
   <h1>Report a new bug</h1>
 </metal:heading>
 

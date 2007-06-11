@@ -9,7 +9,6 @@
 <body>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Ubuntu Linux</h3>
   <h1>Select this Distribution's Mirror Administrator</h1>
 </metal:heading>
 

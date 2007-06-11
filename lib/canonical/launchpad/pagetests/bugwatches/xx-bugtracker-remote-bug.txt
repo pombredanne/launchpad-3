@@ -27,7 +27,7 @@ the list page and redirect the user directly to that bug's page:
 
   >>> browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/2000')
   >>> print browser.url
-  http://launchpad.dev/firefox/+bug/1
+  http://bugs.launchpad.dev/firefox/+bug/1
 
 If there are no bug watches for a particular remote bug, then a Not
 Found page is generated:
@@ -52,11 +52,11 @@ Mark bug 1 as private:
   >>> browser.open('http://launchpad.dev/firefox/+bug/1')
   >>> browser.getLink('Visibility/security').click()
   >>> browser.url
-  'http://launchpad.dev/firefox/+bug/1/+secrecy'
+  'http://bugs.launchpad.dev/firefox/+bug/1/+secrecy'
   >>> browser.getControl('Keep bug confidential').selected = True
   >>> browser.getControl('Change').click()
   >>> browser.url
-  'http://launchpad.dev/firefox/+bug/1'
+  'http://bugs.launchpad.dev/firefox/+bug/1'
 
 
 List Launchpad bugs watching Mozilla bug 42:
@@ -92,21 +92,21 @@ remote bug, we still perform a redirect (which will lead to a page
 telling the user they are unauthorised to view the bug):
 
   >>> anon_browser.handleErrors = True
-  >>> anon_browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/2000')
+  >>> anon_browser.open('http://bugs.launchpad.dev/bugs/bugtrackers/mozilla.org/2000')
   >>> print anon_browser.contents
   <!DOCTYPE...
   ...To continue, you must log in to Launchpad...
   ...<input type="hidden" name="redirection_url"
-  value="http://launchpad.dev/firefox/+bug/1/+index" />...
+  value="http://bugs.launchpad.dev/firefox/+bug/1/+index" />...
   
 
 Set the bug back to public:
 
-  >>> browser.open('http://launchpad.dev/firefox/+bug/1')
+  >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
   >>> browser.getLink('Visibility/security').click()
   >>> browser.url
-  'http://launchpad.dev/firefox/+bug/1/+secrecy'
+  'http://bugs.launchpad.dev/firefox/+bug/1/+secrecy'
   >>> browser.getControl('Keep bug confidential').selected = False
   >>> browser.getControl('Change').click()
   >>> browser.url
-  'http://launchpad.dev/firefox/+bug/1'
+  'http://bugs.launchpad.dev/firefox/+bug/1'

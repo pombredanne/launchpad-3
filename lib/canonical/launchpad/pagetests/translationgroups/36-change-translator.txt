@@ -1,0 +1,78 @@
+= Change a translator in a translation group =
+
+The system allows us to change the translator for a concrete language
+
+  # Let's see the list of languages we have right now:
+  >>> anon_browser.open(
+  ...     'http://translations.launchpad.dev/+groups/polyglot')
+  >>> print anon_browser.url
+  http://translations.launchpad.dev/+groups/polyglot
+  >>> portlet = find_portlet(anon_browser.contents, 'Translation Teams')
+  >>> language_rows = portlet.find('tbody').findAll('tr')
+  >>> for language_row in language_rows:
+  ...     lang_name = language_row.findNext('td')
+  ...     lang_team = lang_name.findNext('td')
+  ...     print '%s: %s' % (lang_name.renderContents(), lang_team.a.string)
+  Abkhazian: Hoary Gnome Team
+  Afrikaans: No Privileges Person
+
+  >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
+  >>> browser.open(
+  ...   'http://translations.launchpad.dev/+groups/polyglot/')
+  >>> print browser.url
+  http://translations.launchpad.dev/+groups/polyglot/
+
+  # We are going to change the Afrikaans (af) translator.
+  >>> browser.getLink(url='af').click()
+  >>> print browser.url
+  http://translations.launchpad.dev/+groups/polyglot/af
+
+Let's change the language it translates to Afrikaans, which already exist.
+
+  # Abkhazian URL exists.
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/+groups/polyglot/ab')
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/+groups/polyglot/ab
+
+  # And we change the one we are editing from Afrikaans to Abkhazian
+  >>> browser.getControl('Language').value = ['ab']
+  >>> browser.getControl('Change').click()
+
+  # We stay in the same page (+edit is the default view for polyglot/af/).
+  >>> print browser.url
+  http://translations.launchpad.dev/+groups/polyglot/af/+edit
+
+the system detects it and notify the user that is not possible.
+
+  >>> for message in find_tags_by_class(browser.contents, 'message'):
+  ...     print message.renderContents()
+  There is 1 error.
+  <a href="http://translations.launchpad.dev/~name21">Hoary Gnome Team</a>
+  is already a translator for this language
+
+However, if the language selected doesn't have yet a translator,
+for instance Welsh (cy), the change will work.
+
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/+groups/polyglot/cy')
+  Traceback (most recent call last):
+  ...
+  NotFound:...
+
+  >>> browser.getControl('Language').value = ['cy']
+  >>> browser.getControl('Change').click()
+
+  # We are back to the translation group summary page.
+  >>> print browser.url
+  http://translations.launchpad.dev/+groups/polyglot
+
+  # And the 'Translation Teams' portlet shows the new information.
+  >>> portlet = find_portlet(browser.contents, 'Translation Teams')
+  >>> language_rows = portlet.find('tbody').findAll('tr')
+  >>> for language_row in language_rows:
+  ...     lang_name = language_row.findNext('td')
+  ...     lang_team = lang_name.findNext('td')
+  ...     print '%s: %s' % (lang_name.renderContents(), lang_team.a.string)
+  Abkhazian: Hoary Gnome Team
+  Welsh: No Privileges Person

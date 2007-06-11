@@ -34,7 +34,7 @@
           </td>
         </tr>
         <tr tal:condition="context/product">
-          <th>Product:</th>
+          <th>Project:</th>
           <td>
 
           <a tal:attributes="href context/product/fmt:url"

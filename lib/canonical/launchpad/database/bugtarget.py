@@ -12,7 +12,7 @@ from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugtask import get_bug_privacy_filter
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
-from canonical.launchpad.interfaces import ILaunchBag, IProduct
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES, BugTaskSearchParams)
 
@@ -57,6 +57,16 @@ class BugTargetBase:
             return []
         return list(
             Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))
+
+    @property
+    def closed_bugtasks(self):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        closed_tasks_query = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            status=any(*RESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
+        return self.searchTasks(closed_tasks_query)
 
     @property
     def open_bugtasks(self):

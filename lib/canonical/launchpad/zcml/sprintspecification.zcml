@@ -27,7 +27,16 @@
     for="canonical.launchpad.interfaces.ISprintSpecification"
     class="canonical.launchpad.browser.SprintSpecificationDecideView"
     permission="launchpad.Driver"
+    facet="specifications"
     template="../templates/sprintspecification-decide.pt">
   </browser:page>
+
+  <browser:page
+    name="+icon-status"
+    for="canonical.launchpad.interfaces.ISprintSpecification"
+    permission="zope.Public"
+    template="../templates/sprintspecification-icon-status.pt"
+    />
+
 
 </configure>

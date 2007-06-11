@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 """Script to export a tarball of translations for a distro release."""
@@ -7,12 +7,12 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.launchpad.scripts.base import (LaunchpadScript,
+from canonical.launchpad.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.scripts.language_pack import export_language_pack
 
 
-class RosettaLangPackExporter(LaunchpadScript):
+class RosettaLangPackExporter(LaunchpadCronScript):
     usage = '%prog [options] distribution release'
     def add_my_options(self):
         self.parser.add_option(

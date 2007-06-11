@@ -15,6 +15,11 @@
             />
     </content>
 
+    <browser:url
+      for="canonical.launchpad.interfaces.IPOTemplateName"
+      path_expression="name"
+      parent_utility="canonical.launchpad.interfaces.IPOTemplateNameSet" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOTemplateName"
         name="+index"
@@ -48,6 +53,12 @@
         provides="canonical.launchpad.interfaces.IPOTemplateNameSet">
         <allow interface="canonical.launchpad.interfaces.IPOTemplateNameSet" />
     </securedutility>
+
+    <browser:url
+      for="canonical.launchpad.interfaces.IPOTemplateNameSet"
+      path_expression="string:potemplatenames"
+      parent_utility="canonical.launchpad.interfaces.IRosettaApplication"
+      />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOTemplateNameSet"

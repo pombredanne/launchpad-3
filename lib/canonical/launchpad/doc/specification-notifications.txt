@@ -285,7 +285,7 @@ about, no notification is sent:
     >>> form = {
     ...     'FORM_SUBMIT': 'Continue', 'field.productseries': '1',
     ...     'field.whiteboard': 'Proposing for milestones...'}
-    >>> edit_view = getView(svg_support, '+setseries', TestRequest(form=form))
+    >>> edit_view = getView(svg_support, '+setproductseries', TestRequest(form=form))
     >>> edit_view.update()
     'Done.'
     >>> transaction.commit()

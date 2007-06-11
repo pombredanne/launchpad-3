@@ -103,7 +103,7 @@ If Sample Person get subscribed to bug #2, he can see it in the list.
     2: Blackhole Trash folder
     8: Printing doesn't work
 
-Only ten bugs are returned by default:
+Only five bugs are returned by default:
 
     >>> from canonical.launchpad.interfaces import CreateBugParams, IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -115,4 +115,5 @@ Only ten bugs are returned by default:
     ...     syncUpdate(bug.bugtasks[0])
 
     >>> len(bugs_view.getMostRecentlyFixedBugs())
-    10
+    5
+

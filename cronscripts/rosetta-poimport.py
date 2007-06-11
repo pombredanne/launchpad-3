@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 import _pythonpath
@@ -6,10 +6,10 @@ import _pythonpath
 from canonical.config import config
 from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.launchpad.scripts.po_import import ImportProcess
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
-class RosettaPOImporter(LaunchpadScript):
+class RosettaPOImporter(LaunchpadCronScript):
     def main(self):
         self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
         process = ImportProcess(self.txn, self.logger)
@@ -21,5 +21,9 @@ class RosettaPOImporter(LaunchpadScript):
 if __name__ == '__main__':
     script = RosettaPOImporter('rosetta-poimport',
         dbuser=config.rosetta.poimport.dbuser)
-    script.lock_and_run()
+    script.lock_or_quit()
+    try:
+        script.run()
+    finally:
+        script.unlock()
 

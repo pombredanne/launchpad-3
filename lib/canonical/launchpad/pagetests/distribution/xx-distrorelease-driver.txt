@@ -1,6 +1,6 @@
-= Appointing a DistroRelease Driver =
+= Appointing a DistroSeries Driver =
 
-Appoint Sample Person as the driver of the Ubuntu Hoary distro release.
+Appoint Sample Person as the driver of the Ubuntu Hoary distro series.
 
   >>> browser.addHeader(
   ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
@@ -28,5 +28,6 @@ message inform him of the driver change.
 Sample Person is listed as the driver of Hoary.
 
   >>> for tag in find_tags_by_class(browser.contents, 'summary'):
-  ...     tag.find(text='Drivers:').findNext('a').string
-  u'Sample Person'
+  ...     'Sample Person' in str(tag.find(text='Drivers:').findNext('td'))
+  True
+

@@ -4,19 +4,21 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionNavigation',
+    'DistributionDynMenu',
     'DistributionSOP',
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
     'DistributionAllPackagesView',
+    'DistributionBrandingView',
     'DistributionEditView',
     'DistributionSetView',
     'DistributionAddView',
     'DistributionBugContactEditView',
     'DistributionArchiveMirrorsView',
     'DistributionCountryArchiveMirrorsView',
-    'DistributionReleaseMirrorsView',
-    'DistributionReleaseMirrorsRSSView',
+    'DistributionSeriesMirrorsView',
+    'DistributionSeriesMirrorsRSSView',
     'DistributionArchiveMirrorsRSSView',
     'DistributionDisabledMirrorsView',
     'DistributionUnofficialMirrorsView',
@@ -27,7 +29,7 @@ __all__ = [
     'DistributionSetSOP',
     ]
 
-from datetime import datetime
+import datetime
 import operator
 
 from zope.component import getUtility
@@ -38,7 +40,8 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
-    ILaunchpadRoot, NotFoundError, IDistributionMirrorSet)
+    IArchiveSet, NotFoundError, IDistributionMirrorSet)
+from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -51,10 +54,13 @@ from canonical.launchpad.webapp import (
     enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
     redirection, Navigation, StandardLaunchpadFacets,
-    stepthrough, stepto, LaunchpadFormView, custom_widget)
+    stepthrough, stepto, LaunchpadFormView)
+from canonical.launchpad.browser.seriesrelease import (
+    SeriesOrReleasesMixinDynMenu)
+from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
+from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import DistributionReleaseStatus, MirrorContent
-from canonical.widgets.image import ImageAddWidget, ImageChangeWidget
+from canonical.lp.dbschema import DistroSeriesStatus, MirrorContent
 
 
 class DistributionNavigation(
@@ -114,7 +120,7 @@ class DistributionSOP(StructuralObjectPresentation):
         return self.context.title
 
     def listChildren(self, num):
-        return self.context.releases[:num]
+        return self.context.serieses[:num]
 
     def listAltChildren(self, num):
         return None
@@ -128,10 +134,9 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
                    'translations']
 
     def specifications(self):
-        target = '+specs'
         text = 'Blueprints'
         summary = 'Feature specifications for %s' % self.context.displayname
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
 
 class DistributionSetSOP(StructuralObjectPresentation):
@@ -165,7 +170,7 @@ class DistributionSetContextMenu(ContextMenu):
         return Link('/distros/', 'View distributions')
 
     def products(self):
-        return Link('/products/', 'View projects')
+        return Link('/projects/', 'View projects')
 
     def people(self):
         return Link('/people/', 'View people')
@@ -178,11 +183,11 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'driver', 'search', 'allpkgs', 'members', 'mirror_admin',
-             'reassign', 'addrelease', 'top_contributors', 'builds',
-             'release_mirrors', 'archive_mirrors', 'disabled_mirrors',
-             'unofficial_mirrors', 'newmirror', 'launchpad_usage',
-             'upload_admin']
+    links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
+             'mirror_admin', 'reassign', 'addseries', 'top_contributors',
+             'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
+             'disabled_mirrors', 'unofficial_mirrors', 'newmirror',
+             'launchpad_usage', 'upload_admin', 'ppas']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -190,9 +195,14 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def driver(self):
         text = 'Appoint driver'
-        summary = 'Someone with permission to set goals for all releases'
+        summary = 'Someone with permission to set goals for all series'
         return Link('+driver', text, summary, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -209,7 +219,11 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'List top contributors'
         return Link('+topcontributors', text, icon='info')
 
-    def release_mirrors(self):
+    def mentorship(self):
+        text = 'Mentoring available'
+        return Link('+mentoring', text, icon='info')
+
+    def cdimage_mirrors(self):
         text = 'Show CD mirrors'
         enabled = self.context.full_functionality
         return Link('+cdmirrors', text, enabled=enabled, icon='info')
@@ -263,13 +277,17 @@ class DistributionOverviewMenu(ApplicationMenu):
         return Link('+search', text, icon='search')
 
     @enabled_with_permission('launchpad.Admin')
-    def addrelease(self):
-        text = 'Add release'
-        return Link('+addrelease', text, icon='add')
+    def addseries(self):
+        text = 'Add series'
+        return Link('+addseries', text, icon='add')
 
     def builds(self):
         text = 'Builds'
         return Link('+builds', text, icon='info')
+
+    def ppas(self):
+        text = 'Personal Package Archives'
+        return Link('+ppas', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def launchpad_usage(self):
@@ -387,12 +405,12 @@ class DistributionView(BuildRecordsView):
 
     @cachedproperty
     def translation_focus(self):
-        """Return the IDistroRelease where the translators should work.
+        """Return the IDistroSeries where the translators should work.
 
-        If ther isn't a defined focus, we return latest release.
+        If ther isn't a defined focus, we return latest series.
         """
         if self.context.translation_focus is None:
-            return self.context.currentrelease
+            return self.context.currentseries
         else:
             return self.context.translation_focus
 
@@ -404,21 +422,25 @@ class DistributionView(BuildRecordsView):
         """
         return self.context.searchSourcePackages(self.text)
 
-    def secondary_translatable_releases(self):
-        """Return a list of IDistroRelease that aren't the translation_focus.
+    def secondary_translatable_serieses(self):
+        """Return a list of IDistroSeries that aren't the translation_focus.
 
         It only includes the ones that are still supported.
         """
-        releases = [
-            release
-            for release in self.context.releases
-            if (release.releasestatus != DistributionReleaseStatus.OBSOLETE
+        serieses = [
+            series
+            for series in self.context.serieses
+            if (series.status != DistroSeriesStatus.OBSOLETE
                 and (self.translation_focus is None or
-                     self.translation_focus.id != release.id))
+                     self.translation_focus.id != series.id))
             ]
 
-        return sorted(releases, key=operator.attrgetter('version'),
+        return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
+
+    def getAllPPAs(self):
+        """Return alls Personal Package Archive available."""
+        return getUtility(IArchiveSet).getAllPPAs()
 
 
 class DistributionAllPackagesView(LaunchpadView):
@@ -434,14 +456,17 @@ class DistributionRedirectingEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
+class DistributionBrandingView(BrandingChangeView):
+
+    schema = IDistribution
+    field_names = ['icon', 'logo', 'mugshot']
+
+
 class DistributionEditView(LaunchpadEditFormView):
 
     schema = IDistribution
     label = "Change distribution details"
-    field_names = ['displayname', 'title', 'summary', 'description',
-                   'gotchi', 'emblem']
-    custom_widget('gotchi', ImageChangeWidget)
-    custom_widget('emblem', ImageChangeWidget)
+    field_names = ['displayname', 'title', 'summary', 'description',]
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -453,7 +478,7 @@ class DistributionLaunchpadUsageEditView(LaunchpadEditFormView):
     """View class for defining Launchpad usage."""
 
     schema = IDistribution
-    field_names = ["official_rosetta", "official_malone"]
+    field_names = ["official_answers", "official_malone", "official_rosetta"]
     label = "Describe Launchpad usage"
 
     @action("Change", name='change')
@@ -480,12 +505,11 @@ class DistributionAddView(LaunchpadFormView):
     schema = IDistribution
     label = "Create a new distribution"
     field_names = ["name", "displayname", "title", "summary", "description",
-                   "gotchi", "emblem", "domainname", "members"]
-    custom_widget('gotchi', ImageAddWidget)
-    custom_widget('emblem', ImageAddWidget)
+                   "domainname", "members"]
 
     @action("Save", name='save')
     def save_action(self, action, data):
+        archive = getUtility(IArchiveSet).new()
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -495,9 +519,8 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
-            gotchi=data['gotchi'],
-            gotchi_heading=None,
-            emblem=data['emblem'])
+            main_archive=archive,
+            )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
 
@@ -554,6 +577,8 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
 
 class DistributionMirrorsView(LaunchpadView):
 
+    show_status = True
+
     def _groupMirrorsByCountry(self, mirrors):
         """Given a list of mirrors, create and return list of dictionaries
         containing the country names and the list of mirrors on that country.
@@ -576,19 +601,20 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
         return self._groupMirrorsByCountry(self.context.archive_mirrors)
 
 
-class DistributionReleaseMirrorsView(DistributionMirrorsView):
+class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
     heading = 'Official CD Mirrors'
+    show_status = False
 
     def getMirrorsGroupedByCountry(self):
-        return self._groupMirrorsByCountry(self.context.release_mirrors)
+        return self._groupMirrorsByCountry(self.context.cdimage_mirrors)
 
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):
     """A base class for RSS feeds of distribution mirrors."""
 
     def initialize(self):
-        self.now = datetime.utcnow()
+        self.now = datetime.datetime.utcnow()
 
     def render(self):
         self.request.response.setHeader(
@@ -607,14 +633,14 @@ class DistributionArchiveMirrorsRSSView(DistributionMirrorsRSSBaseView):
         return self.context.archive_mirrors
 
 
-class DistributionReleaseMirrorsRSSView(DistributionMirrorsRSSBaseView):
-    """The RSS feed for release mirrors."""
+class DistributionSeriesMirrorsRSSView(DistributionMirrorsRSSBaseView):
+    """The RSS feed for series mirrors."""
 
     heading = 'CD Mirrors'
 
     @property
     def mirrors(self):
-        return self.context.release_mirrors
+        return self.context.cdimage_mirrors
 
 
 class DistributionMirrorsAdminView(DistributionMirrorsView):
@@ -646,3 +672,33 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
 
     def getMirrorsGroupedByCountry(self):
         return self._groupMirrorsByCountry(self.context.disabled_mirrors)
+
+
+class DistributionDynMenu(
+    DynMenu, SprintsMixinDynMenu, SeriesOrReleasesMixinDynMenu):
+
+    menus = {
+        '': 'mainMenu',
+        'meetings': 'meetingsMenu',
+        'series': 'seriesesMenu',
+        'milestones': 'milestoneMenu',
+        }
+
+    @neverempty
+    def milestoneMenu(self):
+        """Show milestones more recently than one month ago,
+        or with no due date.
+        """
+        fairly_recent = datetime.datetime.utcnow() - datetime.timedelta(days=30)
+        for milestone in self.context.milestones:
+            if (milestone.dateexpected is None or
+                milestone.dateexpected > fairly_recent):
+                yield self.makeLink(milestone.title, context=milestone)
+        yield self.makeLink('Show all milestones...', page='+milestones')
+
+    @neverempty
+    def mainMenu(self):
+        yield self.makeLink('Series', page='+series', submenu='serieses')
+        yield self.makeLink('Meetings', page='+sprints', submenu='meetings')
+        yield self.makeLink(
+            'Milestones', page='+milestones', submenu='milestones')

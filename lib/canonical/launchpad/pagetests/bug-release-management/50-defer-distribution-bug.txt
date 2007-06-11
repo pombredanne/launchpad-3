@@ -2,16 +2,16 @@ When a bug is targeted to the current development release, the general
 distribution task is no longer editable. Instead the status is tracked
 in the release task.
 
-    >>> user_browser.open('http://launchpad.dev/ubuntu/+bug/2')
+    >>> user_browser.open('http://bugs.launchpad.dev/ubuntu/+bug/2')
     >>> ubuntu_edit_url = (
-    ...     'http://launchpad.dev/ubuntu/+bug/2/+editstatus')
+    ...     'http://bugs.launchpad.dev/ubuntu/+bug/2/+editstatus')
     >>> user_browser.getLink(url=ubuntu_edit_url)
     Traceback (most recent call last):
     ...
     LinkNotFoundError...
 
     >>> ubuntu_hoary_edit_url = (
-    ...     'http://launchpad.dev/ubuntu/hoary/+bug/2/+editstatus')
+    ...     'http://bugs.launchpad.dev/ubuntu/hoary/+bug/2/+editstatus')
     >>> user_browser.getLink(url=ubuntu_hoary_edit_url) is not None
     True
 

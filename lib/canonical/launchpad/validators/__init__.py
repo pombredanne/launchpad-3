@@ -11,6 +11,7 @@ See README.txt for discussion
 __metaclass__ = type
 
 from zope.schema.interfaces import ValidationError
+from zope.app.form.interfaces import IWidgetInputError
 from zope.app.form.browser.interfaces import IWidgetInputErrorView
 from zope.interface import implements, Interface
 from zope.app.form.browser.exception import (
@@ -31,7 +32,7 @@ def _quote(txt):
     return cgi.escape(txt, quote=True)
 
 
-class ILaunchpadValidationError(Interface):
+class ILaunchpadValidationError(IWidgetInputError):
     def snippet():
         """Render as an HTML error message, as per IWidgetInputErrorView"""
 

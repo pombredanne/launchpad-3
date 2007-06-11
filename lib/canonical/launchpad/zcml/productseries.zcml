@@ -38,6 +38,14 @@
         classes="ProductSeriesNavigation"
         />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProductSeriesDynMenu"
+        attribute="__call__"
+        name="+menudata"
+        />
+
     <adapter
         provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -62,8 +70,19 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductSeries"
         layer="canonical.launchpad.layers.BugsLayer"
-        name="+bugs"
+        name="+bugs-index"
         />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+translations"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
+    <adapter
+      for="canonical.launchpad.interfaces.IProductSeries"
+      provides="canonical.launchpad.interfaces.IQuestionTarget"
+      factory="canonical.launchpad.components.question.series_to_questiontarget"
+      />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -74,8 +93,8 @@
             template="../templates/productseries-index.pt"
             />
         <browser:page
-            name="+hctstatus-core"
-            template="../templates/productseries-hctstatus-core.pt" />
+            name="+macros"
+            template="../templates/productseries-macros.pt" />
         <browser:page
             name="+table-releases"
             template="../templates/productseries-table-releases.pt" />
@@ -98,6 +117,9 @@
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt" />
         <browser:page
+            name="+milestones"
+            template="../templates/object-milestones.pt" />
+        <browser:page
             name="+portlet-potemplates"
             template="../templates/object-portlet-potemplates.pt" />
     </browser:pages>
@@ -109,7 +131,7 @@
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/productseries-translations.pt"
+            template="../templates/object-translations.pt"
             />
         <browser:page
             name="+potlist"
@@ -119,6 +141,10 @@
             name="+ubuntupkg"
             facet="overview"
             template="../templates/productseries-ubuntupkg.pt"
+            />
+        <browser:page
+            name="+importstatus"
+            template="../templates/productseries-importstatus.pt"
             />
     </browser:pages>
 
@@ -208,8 +234,8 @@
         class="canonical.launchpad.browser.PackagingAddView"
         schema="canonical.launchpad.interfaces.IPackaging"
         label="Add distribution packaging record"
-        fields="distrorelease sourcepackagename packaging"
-        keyword_arguments="distrorelease sourcepackagename packaging"
+        fields="distroseries sourcepackagename packaging"
+        keyword_arguments="distroseries sourcepackagename packaging"
         facet="overview"
         permission="launchpad.Edit"
         template="../templates/productseries-packaging.pt" >
@@ -226,6 +252,40 @@
             />
     </browser:pages>
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IProductSeries"
+        name="+filebug"
+        class="canonical.launchpad.browser.ProductSeriesFileBugRedirect"
+        permission="zope.Public"
+        />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProductSeries"
+    name="+bugs-index"
+    class="canonical.launchpad.browser.BugTargetBugsView"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/bugtarget-bugs.pt"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProductSeries"
+    class="canonical.launchpad.browser.BugTargetBugListingView"
+    facet="bugs"
+    permission="zope.Public">
+    <browser:page
+      name="+portlet-bugtasklist-seriesbugs"
+      template="../templates/bugtask-portlet-seriesbugs.pt"
+      />
+  </browser:pages>
+
+  <browser:page
+    name="+ask-a-question-button"
+    for="canonical.launchpad.interfaces.IProductSeries"
+    class="canonical.launchpad.browser.AskAQuestionButtonView"
+    permission="zope.Public"
+    />
+
   <!-- ProductSeriesSet -->
   <content class="canonical.launchpad.database.ProductSeriesSet">
     <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
@@ -237,30 +297,35 @@
     <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
   </securedutility>
 
+  <browser:url
+    for="canonical.launchpad.interfaces.IProductSeriesSet"
+    path_expression="string:series"
+    parent_utility="canonical.launchpad.interfaces.IBazaarApplication"
+    />
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.IProductSeriesSet"
-      layer="canonical.launchpad.layers.CodeLayer"
-      name="+bazaar-index" />
+    for="canonical.launchpad.interfaces.IProductSeriesSet"
+    layer="canonical.launchpad.layers.CodeLayer"
+    name="+bazaar-index" />
 
   <!-- XXX need better permissions -->
   <browser:pages
-      for="canonical.launchpad.interfaces.IProductSeriesSet"
-      permission="launchpad.AnyPerson"
-      facet="overview"
-      class="canonical.launchpad.browser.ProductSeriesSourceSetView">
+    for="canonical.launchpad.interfaces.IProductSeriesSet"
+    permission="launchpad.AnyPerson"
+    facet="branches"
+    class="canonical.launchpad.browser.ProductSeriesSourceSetView">
     <browser:page
-        name="+bazaar-index"
-        template="../templates/sources-index.pt"
-        />
+      name="+bazaar-index"
+      template="../templates/sources-index.pt"
+      />
   </browser:pages>
 
-<browser:page
-  for="canonical.launchpad.interfaces.IProductSeries"
-  name="+shortlink"
-  permission="zope.Public"
-  class="canonical.launchpad.browser.ProductSeriesShortLink"
-  attribute="__call__"
-  />
+  <browser:page
+    for="canonical.launchpad.interfaces.IProductSeries"
+    name="+shortlink"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.ProductSeriesShortLink"
+    attribute="__call__"
+    />
 
 </configure>

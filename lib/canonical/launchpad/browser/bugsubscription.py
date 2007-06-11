@@ -13,17 +13,15 @@ class BugSubscriptionAddView(SQLObjectAddView):
     """Browser view class for subscribing someone else to a bug."""
 
     def __init__(self, context, request):
-        # Get the absolute URL of the IBugTask context before magic
-        # IBug adaptation.
         self._next_url = canonical_url(context)
-        self.current_bugtask = context
-        context = IBug(context)
-        self.context = context
-        self.request = request
         SQLObjectAddView.__init__(self, context, request)
 
     def create(self, person):
-        return self.context.subscribe(person)
+        subscription = self.context.bug.subscribe(person)
+        self.request.response.addInfoNotification(
+            '%(name)s has been subscribed to this bug.',
+            name=person.displayname)
+        return subscription
 
     def nextURL(self):
         return self._next_url

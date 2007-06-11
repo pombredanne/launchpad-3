@@ -17,6 +17,20 @@
   </head>
   <body>
     <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="Open" title="Open" src="/@@/question"
+          tal:attributes="alt context/status/title;
+                          title context/status/title;" />
+        Question #<span tal:replace="context/id">4</span>,
+        asked
+        <span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
+        by
+        <a
+          tal:attributes="href context/owner/fmt:url"
+          tal:content="context/owner/browsername">Foo Bar</a>
+      </div>
       <h1 tal:content="context/title">Bar doesn't work</h1>
     </metal:heading>
 
@@ -63,12 +77,19 @@
         view.
       </tal:comment>
       <div class="actions" metal:fill-slot="buttons">
-        <input tal:replace="structure view/comment_action/render" />
-        <input tal:replace="structure view/answer_action/render" />
-        <input tal:replace="structure view/selfanswer_action/render" />
-        <input tal:replace="structure view/requestinfo_action/render" />
-        <input tal:replace="structure view/giveinfo_action/render" />
-        <input tal:replace="structure view/reopen_action/render" />
+        <div>
+          <input tal:replace="structure view/comment_action/render" />
+          <input tal:replace="structure view/answer_action/render" />
+          <input tal:replace="structure view/selfanswer_action/render" />
+          <input tal:replace="structure view/requestinfo_action/render" />
+          <input tal:replace="structure view/giveinfo_action/render" />
+          <input tal:replace="structure view/reopen_action/render" />
+        </div>
+        <p tal:condition="view/selfanswer_action/render">
+          To confirm an answer, use the 
+          <strong>'This Solved My Problem'</strong> button located at the 
+          bottom of the answer.
+        </p>
       </div>
     </div>
   </tal:workflowActions>

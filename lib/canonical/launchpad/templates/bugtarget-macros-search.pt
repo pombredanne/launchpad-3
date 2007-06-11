@@ -51,7 +51,7 @@
   <tal:widget replace="structure view/status_widget/hidden" />
   <tal:widget replace="structure view/importance_widget/hidden" />
   <tal:widget replace="structure view/assignee_widget/hidden" />
-  <tal:widget replace="structure view/owner_widget/hidden" />
+  <tal:widget replace="structure view/bug_reporter_widget/hidden" />
   <tal:widget replace="structure view/milestone_widget/hidden" />
   <tal:widget replace="structure view/omit_dupes_widget/hidden" />
   <tal:widget replace="structure view/has_patch_widget/hidden" />

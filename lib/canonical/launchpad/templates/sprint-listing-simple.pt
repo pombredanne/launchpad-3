@@ -1,10 +1,14 @@
 <tr>
   <td class="icon left">
-    <img alt="" src="/@@/sprint" />
+    <img alt="" src="/@@/meeting" />
   </td>
   <td>
     <div>
-      <span tal:replace="context/time_starts/fmt:date">2005-10-05</span>:
+      <span
+        tal:attributes="title context/time_starts/fmt:datetime"
+        tal:content="context/time_starts/fmt:approximatedate">
+        2005-10-05
+      </span>:
       <a tal:attributes="href context/fmt:url"
       tal:content="context/title">Meeting Title Here</a>
     </div>

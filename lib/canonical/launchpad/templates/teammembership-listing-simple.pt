@@ -1,0 +1,21 @@
+
+<tr>
+  <td><img src="/@@/team"
+           tal:replace="structure context/team/image:icon" /></td>
+  <td>
+    <div>
+      <a
+        tal:attributes="
+          href context/team/fmt:url;
+          title context/team/teamdescription/fmt:shorten/80"
+        tal:content="context/team/browsername"
+      >Team name</a>
+    </div>
+    <div>
+      Joined
+      <span
+        tal:attributes="title context/datejoined/fmt:datetime"
+        tal:content="context/datejoined/fmt:displaydate" />
+    </div>
+  </td>
+</tr>

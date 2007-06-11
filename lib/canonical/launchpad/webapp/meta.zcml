@@ -35,6 +35,13 @@
       handler="canonical.launchpad.webapp.metazcml.favicon"
       />
 
+  <directive
+      namespace="http://namespaces.zope.org/browser"
+      name="tour"
+      schema="canonical.launchpad.webapp.metazcml.ITourPageDirective"
+      handler="canonical.launchpad.webapp.metazcml.tour_page"
+      />
+
   <complexDirective
       namespace="http://namespaces.zope.org/zope"
       name="securedutility"

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 
 # Check the integrity of an archive via it's indices files
 # Copyright (C) 2006  James Troup <james.troup@canonical.com>

@@ -7,7 +7,7 @@
     <metal:heading fill-slot="pageheading">
       <h1>
         PO template names for
-        <tal:thing replace="context/displayname">product or source package</tal:thing>
+        <tal:thing replace="context/displayname">project or source package</tal:thing>
       </h1>
     </metal:heading>
 

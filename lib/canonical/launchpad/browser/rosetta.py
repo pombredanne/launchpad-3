@@ -1,5 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# arch-tag: db407517-732d-47e3-a4c1-c1f8f9dece3a
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -17,12 +16,15 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IRequestPreferredLanguages, ICountry, ILaunchpadCelebrities,
-    IRosettaApplication, ITranslationGroupSet, IProjectSet, IProductSet,
-    ITranslationImportQueue)
+    IRosettaApplication, ILaunchpadRoot, ITranslationGroupSet, IProjectSet,
+    IProductSet, ITranslationImportQueue)
 from canonical.launchpad import helpers
 import canonical.launchpad.layers
-from canonical.launchpad.webapp import Navigation, redirection, stepto
+from canonical.launchpad.webapp import (
+    Navigation, redirection, stepto, canonical_url)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
+from canonical.cachedproperty import cachedproperty
 
 class RosettaApplicationView:
 
@@ -35,19 +37,19 @@ class RosettaApplicationView:
         return helpers.request_languages(self.request)
 
     @property
-    def ubuntu_translationrelease(self):
+    def ubuntu_translationseries(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        release = ubuntu.translation_focus
-        if release is None:
-            return ubuntu.currentrelease
+        series = ubuntu.translation_focus
+        if series is None:
+            return ubuntu.currentseries
         else:
-            return release
+            return series
 
     def ubuntu_languages(self):
         langs = []
-        release = self.ubuntu_translationrelease
+        series = self.ubuntu_translationseries
         for language in self.languages:
-            langs.append(release.getDistroReleaseLanguageOrDummy(language))
+            langs.append(series.getDistroSeriesLanguageOrDummy(language))
         return langs
 
     def requestCountry(self):
@@ -55,6 +57,13 @@ class RosettaApplicationView:
 
     def browserLanguages(self):
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
+
+    @cachedproperty
+    def batchnav(self):
+        """Return a BatchNavigator for the list of translatable products."""
+        products = getUtility(IProductSet)
+        return BatchNavigator(products.getTranslatables(),
+                              self.request)
 
     def rosettaAdminEmail(self):
         return config.rosetta.rosettaadmin.email
@@ -76,14 +85,18 @@ class RosettaApplicationNavigation(Navigation):
 
     usedfor = IRosettaApplication
 
-    newlayer = canonical.launchpad.layers.RosettaLayer
+    newlayer = canonical.launchpad.layers.TranslationsLayer
 
     # DEPRECATED: Support bookmarks to the old rosetta prefs page.
     redirection('prefs', '/+editmylanguages', status=httplib.MOVED_PERMANENTLY)
 
     @stepto('groups')
-    def groups(self):
-        return getUtility(ITranslationGroupSet)
+    def redirect_groups(self):
+        """Redirect /translations/+groups to Translations root site."""
+        target_url= canonical_url(
+            getUtility(ILaunchpadRoot), rootsite='translations')
+        return self.redirectSubTree(
+            target_url + '+groups', status=301)
 
     @stepto('imports')
     def imports(self):
@@ -92,7 +105,7 @@ class RosettaApplicationNavigation(Navigation):
     @stepto('projects')
     def projects(self):
         # DEPRECATED
-        return getUtility(IProjectSet)
+        return getUtility(IProductSet)
 
     @stepto('products')
     def products(self):

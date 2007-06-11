@@ -6,9 +6,7 @@
 
     <tal:per_component repeat="dcu context/uploaders">
       <b tal:content="dcu/component/name">main</b>:
-      <img src="/@@/user" />
-      <a tal:content="dcu/uploader/browsername"
-         tal:attributes="href dcu/uploader/fmt:url" /><br />
+      <a tal:replace="structure dcu/uploader/fmt:link" /><br />
     </tal:per_component>
 
   </div>

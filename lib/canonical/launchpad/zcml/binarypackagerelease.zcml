@@ -9,6 +9,12 @@
     <allow interface="canonical.launchpad.interfaces.IBinaryPackageRelease" />
   </content>
 
+  <browser:url
+    for="canonical.launchpad.interfaces.IBinaryPackageRelease"
+    path_expression="name"
+    attribute_to_parent="build"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.IBinaryPackageRelease"
     name="+index" />

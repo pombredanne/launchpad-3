@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<tour next="blueprints">
+  <title>Bugs</title>
+
+  <screen>
+    <title>Multi-project bugs</title>
+    <summary>Launchpad's bug tracker is unique. It helps you track the status
+      of the same bug as it affects multiple projects and to work with those
+      projects to find a solution.
+    </summary>
+    <screenshot>/+icing/bugs-tour-screenshot1.png</screenshot>
+    <callout>Launchpad knows about four occurrences of this bug and tracks its
+      status in each community. Those communities that use Launchpad's bug
+      tracker share this single bug report, with a common comment history and
+      bug number.
+    </callout>
+    <callout>Launchpad's openoffice.org (Ubuntu) community use Launchpad's bug
+      tracker directly. They have assigned Matthias Klose to take
+      responsibility for solving the bug as it affects them.
+
+      The upstream OpenOffice.org community and Debian's neon26 team
+      use external bug trackers. Launchpad tracks the status of the bug in
+      their trackers but also links to their bug reports, making it easy to
+      follow the detail of their progress.
+    </callout>
+    <callout>If you discover another community affected by this bug, it's easy
+      to include them in the conversation.
+    </callout>
+  </screen>
+
+  <screen>
+    <title>Discussing bugs</title>
+    <summary>Anyone who is interested can participate in the discussion of a
+      bug. Launchpad's bug tracker offers both web and email interfaces,
+      making it ideal for both newer users and experienced
+      developers.
+    </summary>
+    <screenshot>/+icing/bugs-tour-screenshot2.png</screenshot>
+    <callout>You can attach files - such as screen shots and logs - to help
+      bug triagers understand the cause of a bug.
+    </callout>
+    <callout>Subscribing to a bug lets you follow its progress by email.
+      Launchpad users and teams can choose to subscribe to a bug, while a
+      project's bug contact is automatically notified of new bug reports and
+      changes to existing bugs.
+    </callout>
+    <transition>In some projects, bug reports are used to request new
+      features. Let's look at Launchpad's Blueprint Tracker, which helps you
+      track and develop ideas for your software.
+    </transition>
+  </screen>
+</tour>

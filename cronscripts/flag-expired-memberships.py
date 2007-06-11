@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
 import _pythonpath
@@ -13,10 +13,10 @@ from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ITeamMembershipSet)
 from canonical.launchpad.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadCronScript, LaunchpadScriptFailure)
 
 
-class ExpireMemberships(LaunchpadScript):
+class ExpireMemberships(LaunchpadCronScript):
     def flag_expired_memberships_and_send_warnings(self):
         """Flag expired team memberships and send warnings for members whose
         memberships are going to expire in one week (or less) from now.

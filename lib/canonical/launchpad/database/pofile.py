@@ -38,6 +38,7 @@ from canonical.lp.dbschema import (
 import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.interfaces import (
     IPersonSet, IPOFileSet, IPOFile, IPOTemplateExporter,
     ILibraryFileAliasSet, ILaunchpadCelebrities, IPOFileTranslator,
@@ -388,6 +389,35 @@ class POFile(SQLBase, RosettaStats):
 
         return results
 
+    def getPOTMsgSetChangedInLaunchpad(self):
+        """See IPOFile."""
+        # POT set has been changed in Launchpad if it contains active
+        # translation which didn't come from a published package
+        # (iow, it's different from a published translation: this only
+        # lists translations which have actually changed in LP, not
+        # translations which are 'new' and only exist in LP).
+        results = POTMsgSet.select('''POTMsgSet.id IN (
+            SELECT POTMsgSet.id
+            FROM POTMsgSet
+            LEFT OUTER JOIN POMsgSet ON
+                POTMsgSet.id = POMsgSet.potmsgset AND
+                POMsgSet.pofile = %s
+            LEFT OUTER JOIN POSubmission ps1 ON
+                ps1.pomsgset = POMsgSet.id
+            LEFT OUTER JOIN POSubmission ps2 ON
+                ps2.pomsgset = ps1.pomsgset AND
+                ps2.pluralform = ps1.pluralform AND
+                ps2.id != ps1.id
+            WHERE
+                ps1.published IS TRUE AND
+                ps2.active IS TRUE AND
+                POTMsgSet.sequence > 0 AND
+                POTMsgSet.potemplate = %s)
+            ''' % sqlvalues(self, self.potemplate),
+            orderBy='POTmsgSet.sequence')
+
+        return results
+
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""
         results = POTMsgSet.select('''
@@ -698,11 +728,14 @@ class POFile(SQLBase, RosettaStats):
         template = helpers.get_email_template(template_mail)
         message = template % replacements
 
-        fromaddress = ('Rosetta SWAT Team <%s>' %
-                       config.rosetta.rosettaadmin.email)
+        fromaddress = config.rosetta.rosettaadmin.email
+
         toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
-        simple_sendmail(fromaddress, toaddress, subject, message)
+        simple_sendmail(fromaddress,
+            toaddress,
+            subject,
+            MailWrapper().format(message))
 
         if import_rejected:
             # There were no imports at all and the user needs to review that
@@ -846,12 +879,17 @@ class DummyPOFile(RosettaStats):
     implements(IPOFile)
 
     def __init__(self, potemplate, language, variant=None, owner=None):
+        self.id = None
         self.potemplate = potemplate
         self.language = language
         self.variant = variant
-        self.last_touched_pomsgset = None
+        self.description = None
+        self.topcomment = None
+        self.header = None
+        self.fuzzyheader = False
         self.lasttranslator = None
-        self.contributors = []
+        self.license = None
+        self.lastparsed = None
 
         # The default POFile owner is the Rosetta Experts team unless the
         # given owner has rights to write into that file.
@@ -860,6 +898,14 @@ class DummyPOFile(RosettaStats):
         else:
             self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
 
+        self.path = u'unknown'
+        self.exportfile = None
+        self.datecreated = None
+        self.last_touched_pomsgset = None
+        self.contributors = []
+        self.from_sourcepackagename = None
+        self.pomsgsets = None
+
 
     def __getitem__(self, msgid_text):
         pomsgset = self.getPOMsgSet(msgid_text, only_current=True)
@@ -867,6 +913,10 @@ class DummyPOFile(RosettaStats):
             raise NotFoundError(msgid_text)
         else:
             return pomsgset
+
+    def __iter__(self):
+        """See IPOFile."""
+        return iter(self.currentMessageSets())
 
     def messageCount(self):
         return self.potemplate.messageCount()
@@ -924,17 +974,37 @@ class DummyPOFile(RosettaStats):
 
         return DummyPOMsgSet(self, potmsgset)
 
+    def emptySelectResults(self):
+        return POFile.select("1=2")
+
+    def getPOMsgSetsNotInTemplate(self):
+        """See IPOFile."""
+        return self.emptySelectResults()
+
     def getPOTMsgSetTranslated(self, slice=None):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
 
     def getPOTMsgSetFuzzy(self, slice=None):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
 
     def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
         return self.potemplate.getPOTMsgSets(slice)
+
+    def getPOTMsgSetChangedInLaunchpad(self, slice=None):
+        """See IPOFile."""
+        return self.emptySelectResults()
+
+    def getPOTMsgSetWithErrors(self, slice=None):
+        """See IPOFile."""
+        return self.emptySelectResults()
+
+
+    def hasMessageID(self, msgid):
+        """See IPOFile."""
+        raise NotImplementedError
 
     def currentCount(self):
         return 0
@@ -977,6 +1047,70 @@ class DummyPOFile(RosettaStats):
     def untranslatedPercentage(self):
         return 100.0
 
+    def validExportCache(self):
+        """See IPOFile."""
+        return False
+
+    def updateExportCache(self, contents):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def export(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def exportToFileHandle(self, filehandle, included_obsolete=True):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def uncachedExport(self, included_obsolete=True, export_utf8=False):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def invalidateCache(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def createMessageSetFromMessageSet(self, potmsgset):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def createMessageSetFromText(self, text):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def translated(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def untranslated(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def expireAllMessages(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def updateStatistics(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def updateHeader(self, new_header):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def isPORevisionDateOlder(self, header):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def getNextToImport(self):
+        """See IPOFile."""
+        raise NotImplementedError
+
+    def importFromQueue(self, logger=None):
+        """See IPOFile."""
+        raise NotImplementedError
+
 
 class POFileSet:
     implements(IPOFileSet)
@@ -994,17 +1128,17 @@ class POFileSet:
         return DummyPOFile(potemplate, language)
 
     def getPOFileByPathAndOrigin(self, path, productseries=None,
-        distrorelease=None, sourcepackagename=None):
+        distroseries=None, sourcepackagename=None):
         """See IPOFileSet."""
-        assert productseries is not None or distrorelease is not None, (
+        assert productseries is not None or distroseries is not None, (
             'Either productseries or sourcepackagename arguments must be'
             ' not None.')
-        assert productseries is None or distrorelease is None, (
-            'productseries and sourcepackagename/distrorelease cannot be used'
+        assert productseries is None or distroseries is None, (
+            'productseries and sourcepackagename/distroseries cannot be used'
             ' at the same time.')
-        assert ((sourcepackagename is None and distrorelease is None) or
-                (sourcepackagename is not None and distrorelease is not None)
-                ), ('sourcepackagename and distrorelease must be None or not'
+        assert ((sourcepackagename is None and distroseries is None) or
+                (sourcepackagename is not None and distroseries is not None)
+                ), ('sourcepackagename and distroseries must be None or not'
                    ' None at the same time.')
 
         if productseries is not None:
@@ -1023,7 +1157,7 @@ class POFileSet:
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distrorelease = %s AND
                 POFile.from_sourcepackagename = %s''' % sqlvalues(
-                    path, distrorelease.id, sourcepackagename.id),
+                    path, distroseries.id, sourcepackagename.id),
                 clauseTables=['POTemplate'])
 
             if pofile is not None:
@@ -1037,7 +1171,7 @@ class POFileSet:
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distrorelease = %s AND
                 POTemplate.sourcepackagename = %s''' % sqlvalues(
-                    path, distrorelease.id, sourcepackagename.id),
+                    path, distroseries.id, sourcepackagename.id),
                 clauseTables=['POTemplate'])
 
 

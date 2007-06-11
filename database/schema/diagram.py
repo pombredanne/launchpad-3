@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
@@ -181,8 +181,9 @@ def explode(table, two_way=False):
     return rv
 
         
-def main():
+def main(filetypes):
 
+    print filetypes
     # Run postgresql_autodoc, creating autodoc.dot
     cmd = (
             "postgresql_autodoc -f autodoc -t dot -s public "
@@ -205,7 +206,8 @@ def main():
         tartup('autodoc.dot', '+%s.dot' % section, section)
 
         # Render
-        for lang in ['svg', 'ps']:
+        for lang in filetypes:
+            print lang
             cmd = config.get(section, '%s_command' % lang)
 
             print (
@@ -230,7 +232,22 @@ def main():
 
 if __name__ == '__main__':
     os.chdir('diagrams')
-    main()
+    filetypes = ['svg', 'ps', 'png']
+    ft = []
+    while 1:
+        try:
+            if sys.argv[1] in filetypes:
+                ft.append(sys.argv[1])
+                sys.argv = sys.argv[1:]
+            else:
+                break
+        except IndexError:
+            break
+
+    if not ft:
+        ft = filetypes
+
+    main(ft)
 
 # List all foreign key constraints
 # select pg_namespace.nspname as ns,src.relname as src,dst.relname as dst from pg_constraint,pg_namespace,pg_class as src,pg_class as dst where pg_namespace.oid = connamespace and src.oid = conrelid and dst.oid = confrelid;

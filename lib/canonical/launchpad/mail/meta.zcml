@@ -29,4 +29,11 @@
       schema=".meta.ITestMailerDirective"
       handler=".meta.testMailerHandler"
       />
+
+  <meta:directive
+      namespace="http://namespaces.zope.org/mail"
+      name="mboxMailer"
+      schema=".meta.IMboxMailerDirective"
+      handler=".meta.mboxMailerHandler"
+      />
 </configure>

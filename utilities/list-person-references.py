@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 import sys
 from canonical.lp import initZopeless
 from canonical.database import postgresql

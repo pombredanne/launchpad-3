@@ -50,7 +50,7 @@ Now let's post to the form. We should be redirected to the product page.
   ... 
   ... 1
   ... -----------------------------6923855761766169312285474874
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="field.actions.change"
   ... 
   ... Change
   ... -----------------------------6923855761766169312285474874--

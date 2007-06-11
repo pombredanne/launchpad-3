@@ -190,10 +190,8 @@ CREATE OR REPLACE FUNCTION you_are_your_own_member() RETURNS trigger
 LANGUAGE plpgsql AS
 $$
     BEGIN
-        IF NEW.teamowner IS NULL THEN
-            INSERT INTO TeamParticipation (person, team)
-                VALUES (NEW.id, NEW.id);
-        END IF;
+        INSERT INTO TeamParticipation (person, team)
+            VALUES (NEW.id, NEW.id);
         RETURN NULL;
     END;
 $$;
@@ -714,4 +712,24 @@ $$
 $$;
 
 COMMENT ON FUNCTION is_blacklisted_name(text) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
+
+
+CREATE OR REPLACE FUNCTION set_shipit_normalized_address() RETURNS trigger
+LANGUAGE plpgsql AS
+$$
+    BEGIN
+        NEW.normalized_address = 
+            lower(
+                -- Strip off everything that's not alphanumeric
+                -- characters.
+                regexp_replace(
+                    coalesce(NEW.addressline1, '') || ' ' ||
+                    coalesce(NEW.addressline2, '') || ' ' ||
+                    coalesce(NEW.city, ''),
+                    '[^a-zA-Z0-9]+', '', 'g'));
+        RETURN NEW;
+    END;
+$$;
+
+COMMENT ON FUNCTION set_shipit_normalized_address() IS 'Store a normalized concatenation of the request''s address into the normalized_address column.';
 

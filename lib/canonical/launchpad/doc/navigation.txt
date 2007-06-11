@@ -135,7 +135,7 @@ we'll define one here.
     ...         return [(breadcrumb.url, breadcrumb.text)
     ...                 for breadcrumb in old_breadcrumbs]
     ...
-    ...     def getURL(self, idx=None):
+    ...     def getURL(self, idx=None, path_only=False):
     ...         return 'URL %s' % idx
     ...
     ...     def getNearest(self, *some_interfaces):

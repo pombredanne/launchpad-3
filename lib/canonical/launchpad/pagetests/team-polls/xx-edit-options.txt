@@ -24,7 +24,7 @@ either:
     >>> browser.getLink('Show option details').click()
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/never-closes4/+options'
-    >>> browser.getLink('Edit').click()
+    >>> browser.getLink('[Edit]').click()
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/never-closes4/+option/...'
 
@@ -47,7 +47,7 @@ been opened yet, he should be able to edit its options.
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/not-yet-opened/+options'
 
-    >>> browser.getLink('Edit').click()
+    >>> browser.getLink('[Edit]').click()
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+poll/not-yet-opened/+option/...'
 

@@ -6,6 +6,7 @@ __all__ = ['IWeaklyAuthenticatedPrincipal',
            'ISignedMessage',
            'IMailHandler',
            'EmailProcessingError',
+           'BugTargetNotFound',
            'IEmailCommand',
            'IBugEmailCommand',
            'IBugTaskEmailCommand',
@@ -77,6 +78,10 @@ class IMailHandler(Interface):
 
 class EmailProcessingError(Exception):
     """Something went wrong while processing an email command."""
+
+
+class BugTargetNotFound(Exception):
+    """A bug target couldn't be found."""
 
 
 class IEmailCommand(Interface):

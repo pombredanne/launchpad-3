@@ -4,6 +4,14 @@ Bugs and Branches
 Branches can be linked to Bugs, to track work in progress on branches,
 and when fixes are committed.
 
+>>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.interfaces import IBugBranch, IBugBranchSet
+>>> from canonical.launchpad.database import BugBranch, BugBranchSet
+>>> verifyObject(IBugBranch, BugBranch.get(1))
+True
+>>> verifyObject(IBugBranchSet, BugBranchSet())
+True
+
 BugBranch
 ---------
 

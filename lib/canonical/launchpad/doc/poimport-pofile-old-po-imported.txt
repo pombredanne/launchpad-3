@@ -176,18 +176,19 @@ There is one email and it's for the error we produced.
   Hello Mark Shuttleworth,
   <BLANKLINE>
   On ..., you uploaded a file with
-  Welsh (cy) translations for firefox in Mozilla Firefox trunk in Rosetta.
+  Welsh (cy) translations for firefox in Mozilla Firefox trunk in
+  Launchpad.
   <BLANKLINE>
-  We didn't import it because you didn't update its header to note
-  the time stamp when you added your translations.
+  We were unable to import your translations because you did not update
+  the time stamp in its header to state when you added your translations.
   <BLANKLINE>
-  To fix this problem, please upload again this file with the
-  'PO-Revision-Date' field updated.
+  To fix this problem, please upload the file again, but with the 'PO-
+  Revision-Date' field updated.
   <BLANKLINE>
   For your convenience, you can get the file you uploaded at:
   http://localhost:58000/.../firefox-cy.po
   <BLANKLINE>
-  Thanks for using Rosetta.
+  Thank you,
   <BLANKLINE>
-  The Rosetta SWAT Team
+  The Launchpad team
   <BLANKLINE>

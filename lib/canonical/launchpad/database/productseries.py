@@ -59,17 +59,6 @@ class DatePublishedSyncError(Exception):
     """
 
 
-class ProductSeriesSet:
-    implements(IProductSeriesSet)
-
-    def get(self, productseriesid):
-        """See IProductSeriesSet."""
-        try:
-            return ProductSeries.get(productseriesid)
-        except SQLObjectNotFound:
-            raise NotFoundError(productseriesid)
-
-
 class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     """A series of product releases."""
     implements(IProductSeries, IProductSeriesSourceAdmin)
@@ -113,14 +102,37 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     releases = SQLMultipleJoin('ProductRelease', joinColumn='productseries',
                             orderBy=['-datereleased'])
-    milestones = SQLMultipleJoin('Milestone', joinColumn = 'productseries',
-                            orderBy=['dateexpected', 'name'])
     packagings = SQLMultipleJoin('Packaging', joinColumn='productseries',
                             orderBy=['-id'])
 
     @property
+    def release_files(self):
+        """See IProductSeries."""
+        files = set()
+        for release in self.releases:
+            files = files.union(release.files)
+        return files
+
+    @property
     def displayname(self):
         return self.name
+
+    @property
+    def all_milestones(self):
+        """See IProductSeries."""
+        return Milestone.selectBy(
+            productseries=self, orderBy=['dateexpected', 'name'])
+
+    @property
+    def milestones(self):
+        """See IProductSeries."""
+        return Milestone.selectBy(
+            productseries=self, visible=True, orderBy=['dateexpected', 'name'])
+
+    @property
+    def parent(self):
+        """See IProductSeries."""
+        return self.product
 
     @property
     def bugtargetname(self):
@@ -135,6 +147,16 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
         return sorted(drivers, key=lambda x: x.browsername)
+
+    @property
+    def bugcontact(self):
+        """See IProductSeries."""
+        return self.product.bugcontact
+
+    @property
+    def security_contact(self):
+        """See IProductSeries."""
+        return self.product.security_contact
 
     @property
     def series_branch(self):
@@ -179,9 +201,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         from canonical.launchpad.database.sourcepackage import SourcePackage
         ret = Packaging.selectBy(productseries=self)
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
-                             distrorelease=r.distrorelease)
+                             distroseries=r.distroseries)
                     for r in ret]
-        ret.sort(key=lambda a: a.distribution.name + a.distrorelease.version
+        ret.sort(key=lambda a: a.distribution.name + a.distroseries.version
                  + a.sourcepackagename.name)
         return ret
 
@@ -200,14 +222,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications.
-        
+
         The rules for filtering are that there are three areas where you can
         apply a filter:
-        
+
           - acceptance, which defaults to ACCEPTED if nothing is said,
           - completeness, which defaults to showing BOTH if nothing is said
           - informational, which defaults to showing BOTH if nothing is said
-        
+
         """
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -219,7 +241,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # defaults for completeness: in this case we don't actually need to
         # do anything, because the default is ANY
-        
+
         # defaults for acceptance: in this case, if nothing is said about
         # acceptance, we want to show only accepted specs
         acceptance = False
@@ -273,7 +295,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query += ' AND Specification.informational IS TRUE'
-        
+
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         completeness =  Specification.completeness_clause
@@ -349,19 +371,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 return release
         return None
 
-    def getPackage(self, distrorelease):
+    def getPackage(self, distroseries):
         """See IProductSeries."""
         for pkg in self.sourcepackages:
-            if pkg.distrorelease == distrorelease:
+            if pkg.distroseries == distroseries:
                 return pkg
         # XXX sabdfl 23/06/05 this needs to search through the ancestry of
-        # the distrorelease to try to find a relevant packaging record
-        raise NotFoundError(distrorelease)
+        # the distroseries to try to find a relevant packaging record
+        raise NotFoundError(distroseries)
 
-    def setPackaging(self, distrorelease, sourcepackagename, owner):
+    def setPackaging(self, distroseries, sourcepackagename, owner):
         """See IProductSeries."""
         for pkg in self.packagings:
-            if pkg.distrorelease == distrorelease:
+            if pkg.distroseries == distroseries:
                 # we have found a matching Packaging record
                 if pkg.sourcepackagename == sourcepackagename:
                     # and it has the same source package name
@@ -375,7 +397,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # ok, we didn't find a packaging record that matches, let's go ahead
         # and create one
-        pkg = Packaging(distrorelease=distrorelease,
+        pkg = Packaging(distroseries=distroseries,
             sourcepackagename=sourcepackagename, productseries=self,
             packaging=PackagingType.PRIME,
             owner=owner)
@@ -386,14 +408,20 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         """See IProductSeries."""
         history = []
         for pkging in self.packagings:
-            if pkging.distrorelease.distribution == distribution:
+            if pkging.distroseries.distribution == distribution:
                 history.append(pkging)
         return history
 
     def certifyForSync(self):
         """Enable the sync for processing."""
         self.dateprocessapproved = UTC_NOW
-        self.syncinterval = datetime.timedelta(1)
+        if self.rcstype == RevisionControlSystems.CVS:
+            self.syncinterval = datetime.timedelta(hours=12)
+        elif self.rcstype == RevisionControlSystems.SVN:
+            self.syncinterval = datetime.timedelta(hours=6)
+        else:
+            raise AssertionError('Unknown default sync interval for rcs type: %s'
+                                 % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
     def syncCertified(self):
@@ -522,7 +550,7 @@ class ProductSeriesSet:
             if ready is not None:
                 subqueries.append('Project.active IS TRUE')
                 subqueries.append('Project.reviewed IS TRUE')
-            queries.append('(Product.project IS NULL OR (%s))' % 
+            queries.append('(Product.project IS NULL OR (%s))' %
                            " AND ".join(subqueries))
 
             clauseTables.add('Project')
@@ -551,4 +579,3 @@ class ProductSeriesSet:
         if result is None:
             return default
         return result
-

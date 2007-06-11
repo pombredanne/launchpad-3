@@ -19,28 +19,47 @@
   <include package="zope.app.interface" />
   <include package="zope.app.security" />
   <include package="zope.app.event" />
+  <!--
   <include package="zope.app.observable" />
   <include package="zope.app.annotation" />
   <include package="zope.app.dependable" />
 
-  <!-- Not using app content, copy/paste, size
-  <include package="zope.app.content" />
-  <include package="zope.app.copypastemove" />
-  <include package="zope.app.size" />
-  -->
   <include package="zope.app" file="menus.zcml" />
   <include package="zope.app.location" />
+  -->
+  <!--
   <include package="zope.app.container" />
-
+-->
   <include package="zope.app.publisher" />
 
   <include package="zope.app.publication" file="meta.zcml" />
   <!-- We don't need any of the default publications. -->
   <!-- include package="zope.app.publication" / -->
 
-  <include package="zope.app.traversing" />
+  <!-- selected things from zope.app.traversing -->
+<adapter
+    for="*"
+    factory="zope.app.traversing.adapters.Traverser"
+    provides="zope.app.traversing.interfaces.ITraverser" />
+
+<adapter
+    for="*"
+    factory="zope.app.traversing.adapters.DefaultTraversable"
+    provides="zope.app.traversing.interfaces.ITraversable" />
+<view
+    name="view" type="*"
+    provides="zope.app.traversing.interfaces.ITraversable" for="*"
+    factory="zope.app.traversing.namespace.view"
+    />
+
+<view
+    name="resource" type="*"
+    provides="zope.app.traversing.interfaces.ITraversable" for="*"
+    factory="zope.app.traversing.namespace.resource"
+    />
+  <!-- end of selected things from zope.app.traversing -->
+
   <include package="zope.app.pagetemplate" />
-  <include package="zope.app.generations" />
   <include package="zope.app.zapi" />
 
   <!-- Views -->
@@ -53,51 +72,22 @@
        a package given in this directive.
   <i18n:registerTranslations package="zope.app" directory="translation_files" />
   -->
+  <!--
   <include package="zope.app.i18n" />
-
-
-  <!-- Local Component Registration - no longer in Z3.2 -->
-  <!-- <include package="zope.app.registration" /> -->
-
-  <!-- Services -->
-  <!-- <include package="zope.app.errorservice" /> -->
-  <include package="zope.app.pluggableauth" />
-  <!-- No longer in Z3.2 <include package="zope.app.site" /> -->
-  <!-- No longer in Z3.2 <include package="zope.app.adapter" /> -->
-  <!-- No longer in Z3.2 <include package="zope.app.utility" /> -->
-  <!-- not using principalannotation
-  <include package="zope.app.principalannotation" />
-    -->
-  <!-- Utilities -->
-
-  <!-- Misc. Service Manager objects -->
-  <!-- We don't want service managers.
-  <include package="zope.app.module" />
-    -->
-  <!-- Broken-object support -->
-  <!-- We don't want broken object support; that's specific to the zodb.
-  <include package="zope.app.broken" />
-    -->
-
-  <!-- Database boostrapping -->
-  <!--  We don't want to use a normal zope3 zodb.
-  <include package="zope.app.appsetup" />
-    -->
-
-
-
-  <!-- Additional packages -->
-
-  <include package="zope.app.applicationcontrol" />
-  <include package="zope.app.dublincore" />
-  <!-- Don't know what this is
-  <include package="zope.app.introspector" /> -->
-  <include package="zope.app.wsgi" />
-
-  <!-- Content types -->
-  <!--  Not using folders
-  <include package="zope.app.folder" />
   -->
+
+  <!-- Setup charset negotiation -->
+  <adapter factory="zope.publisher.http.HTTPCharsets"
+      for="zope.publisher.interfaces.http.IHTTPRequest"
+      provides="zope.i18n.interfaces.IUserPreferredCharsets"
+      />
+  <adapter factory="zope.app.publisher.browser.ModifiableBrowserLanguages"
+      for="zope.publisher.interfaces.http.IHTTPRequest"
+      provides="zope.i18n.interfaces.IModifiableUserPreferredLanguages"
+      />
+
+
+  <include package="zope.app.wsgi" />
 
   <!-- Default XMLRPC pre-marshalling. -->
   <include package="zope.publisher" />

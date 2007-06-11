@@ -1,6 +1,6 @@
 <tr>
   <td class="icon left">
-    <img alt="" src="/@@/sprint" />
+    <img alt="" src="/@@/meeting" />
   </td>
   <td>
     <div>
@@ -21,9 +21,11 @@
       <div>
         Registered by
         <a
-           tal:attributes="href context/owner/fmt:url"
-           tal:content="context/owner/browsername">Foo Bar</a>
-        on <span tal:replace="context/datecreated/fmt:date">2005-10-05</span>
+          tal:attributes="href context/owner/fmt:url"
+          tal:content="context/owner/browsername">Foo Bar</a>
+        <span
+          tal:attributes="title context/datecreated/fmt:datetime"
+          tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
       </div>
     </div>
   </td>

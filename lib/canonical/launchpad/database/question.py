@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""Question models."""
+
 __metaclass__ = type
 __all__ = [
     'SimilarQuestionsSearch',
@@ -21,10 +23,10 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, InvalidQuestionStateError, ILanguage, ILanguageSet,
-    ILaunchpadCelebrities, IMessage, IPerson, IProduct, IQuestion,
-    IQuestionSet,
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, IDistribution, IDistributionSourcePackage,
+    InvalidQuestionStateError, ILanguage, ILanguageSet, ILaunchpadCelebrities,
+    IMessage, IPerson, IProduct, IQuestion, IQuestionSet, IQuestionTarget,
+    ISourcePackage, QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -45,6 +47,8 @@ from canonical.launchpad.database.questionsubscription import (
     QuestionSubscription)
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.mailnotification import (
+    QuestionNotificationRecipientSet)
 from canonical.launchpad.webapp.enum import Item
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -65,14 +69,15 @@ class notify_question_modified:
     """
 
     def __call__(self, func):
-        """Return the decorator."""
+        """Return the SQLObjectModifiedEvent decorator."""
         def notify_question_modified(self, *args, **kwargs):
+            """Create the SQLObjectModifiedEvent decorator."""
             old_question = Snapshot(self, providing=providedBy(self))
             msg = func(self, *args, **kwargs)
 
             edited_fields = ['messages']
             for field in ['status', 'dateanswered', 'answerer', 'answer',
-                          'datelastquery', 'datelastresponse']:
+                          'datelastquery', 'datelastresponse', 'target']:
                 if getattr(self, field) != getattr(old_question, field):
                     edited_fields.append(field)
 
@@ -88,7 +93,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     implements(IQuestion, IBugLinkTarget)
 
-    _table = 'Ticket'
+    _table = 'Question'
     _defaultOrder = ['-priority', 'datecreated']
 
     # db field names
@@ -100,7 +105,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     status = EnumCol(
         schema=QuestionStatus, notNull=True, default=QuestionStatus.OPEN)
     priority = EnumCol(
-        schema=QuestionPriority, notNull=True, default=QuestionPriority.NORMAL)
+        schema=QuestionPriority, notNull=True,
+        default=QuestionPriority.NORMAL)
     assignee = ForeignKey(
         dbName='assignee', notNull=False, foreignKey='Person', default=None)
     answerer = ForeignKey(
@@ -126,19 +132,18 @@ class Question(SQLBase, BugLinkTargetMixin):
     subscriptions = SQLMultipleJoin('QuestionSubscription',
         joinColumn='question', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
-        joinColumn='ticket', otherColumn='person',
-        intermediateTable='TicketSubscription', orderBy='name')
+        joinColumn='question', otherColumn='person',
+        intermediateTable='QuestionSubscription', orderBy='name')
     bug_links = SQLMultipleJoin('QuestionBug',
         joinColumn='question', orderBy='id')
-    bugs = SQLRelatedJoin('Bug', joinColumn='ticket', otherColumn='bug',
-        intermediateTable='TicketBug', orderBy='id')
+    bugs = SQLRelatedJoin('Bug', joinColumn='question', otherColumn='bug',
+        intermediateTable='QuestionBug', orderBy='id')
     messages = SQLMultipleJoin('QuestionMessage', joinColumn='question',
-        prejoins=['message'], orderBy=['TicketMessage.id'])
+        prejoins=['message'], orderBy=['QuestionMessage.id'])
     reopenings = SQLMultipleJoin('QuestionReopening', orderBy='datecreated',
         joinColumn='question')
 
     # attributes
-    @property
     def target(self):
         """See IQuestion."""
         if self.product:
@@ -148,6 +153,33 @@ class Question(SQLBase, BugLinkTargetMixin):
                 self.sourcepackagename.name)
         else:
             return self.distribution
+
+    def _settarget(self, question_target):
+        """See IQuestion.target."""
+        assert IQuestionTarget.providedBy(question_target), (
+            "The target must be an IQuestionTarget")
+        if IProduct.providedBy(question_target):
+            self.product = question_target
+            self.distribution = None
+            self.sourcepackagename = None
+        # XXX sinzui 2007-04-20 #108240
+        # We test for ISourcePackage because it is a valid QuestionTarget even
+        # though it should not be. SourcePackages are never passed to this
+        # mutator.
+        elif (ISourcePackage.providedBy(question_target) or
+                IDistributionSourcePackage.providedBy(question_target)):
+            self.product = None
+            self.distribution = question_target.distribution
+            self.sourcepackagename = question_target.sourcepackagename
+        elif IDistribution.providedBy(question_target):
+            self.product = None
+            self.distribution = question_target
+            self.sourcepackagename = None
+        else:
+            raise AssertionError("Unknown IQuestionTarget type of %s" %
+                question_target)
+
+    target = property(target, _settarget, doc=target.__doc__)
 
     @property
     def followup_subject(self):
@@ -160,12 +192,14 @@ class Question(SQLBase, BugLinkTargetMixin):
         return 'Re: ' + subject
 
     def isSubscribed(self, person):
-        return bool(QuestionSubscription.selectOneBy(question=self, person=person))
+        """See IQuestion."""
+        return bool(
+            QuestionSubscription.selectOneBy(question=self, person=person))
 
     # Workflow methods
 
     # The lifecycle of a question is documented in
-    # https://help.launchpad.net/SupportRequestLifeCycle, so remember
+    # https://help.launchpad.net/QuestionLifeCycle, so remember
     # to update that document for any pertinent changes.
     @notify_question_modified()
     def setStatus(self, user, new_status, comment, datecreated=None):
@@ -182,8 +216,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
         return self._newMessage(
             user, comment, datecreated=datecreated,
-            action=QuestionAction.SETSTATUS, new_status=new_status,
-            update_question_dates=False)
+            action=QuestionAction.SETSTATUS, new_status=new_status)
 
     @notify_question_modified()
     def addComment(self, user, comment, datecreated=None):
@@ -197,7 +230,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     def can_request_info(self):
         """See IQuestion."""
         return self.status in [
-            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED]
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
+            QuestionStatus.ANSWERED]
 
     @notify_question_modified()
     def requestInfo(self, user, question, datecreated=None):
@@ -233,7 +267,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     def can_give_answer(self):
         """See IQuestion."""
         return self.status in [
-            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO, QuestionStatus.ANSWERED]
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
+            QuestionStatus.ANSWERED]
 
     @notify_question_modified()
     def giveAnswer(self, user, answer, datecreated=None):
@@ -257,7 +292,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.answerer = user
             self.answer = msg
             self.owner.assignKarma(
-                'ticketownersolved', product=self.product,
+                'questionownersolved', product=self.product,
                 distribution=self.distribution,
                 sourcepackagename=self.sourcepackagename)
         return msg
@@ -266,7 +301,9 @@ class Question(SQLBase, BugLinkTargetMixin):
     def can_confirm_answer(self):
         """See IQuestion."""
         if self.status not in [
-            QuestionStatus.OPEN, QuestionStatus.ANSWERED, QuestionStatus.NEEDSINFO]:
+            QuestionStatus.OPEN, QuestionStatus.ANSWERED,
+            QuestionStatus.NEEDSINFO]:
+
             return False
 
         for message in self.messages:
@@ -295,11 +332,11 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.answer = answer
 
             self.owner.assignKarma(
-                'ticketansweraccepted', product=self.product,
+                'questionansweraccepted', product=self.product,
                 distribution=self.distribution,
                 sourcepackagename=self.sourcepackagename)
             self.answerer.assignKarma(
-                'ticketanswered', product=self.product,
+                'questionanswered', product=self.product,
                 distribution=self.distribution,
                 sourcepackagename=self.sourcepackagename)
         return msg
@@ -344,7 +381,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     def can_reopen(self):
         """See IQuestion."""
         return self.status in [
-            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED, QuestionStatus.SOLVED]
+            QuestionStatus.ANSWERED, QuestionStatus.EXPIRED,
+            QuestionStatus.SOLVED]
 
     @notify_question_modified()
     def reopen(self, comment, datecreated=None):
@@ -380,23 +418,27 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getSubscribers(self):
         """See IQuestion."""
-        direct = set(self.getDirectSubscribers())
-        indirect = set(self.getIndirectSubscribers())
-        return sorted(
-            direct.union(indirect), key=operator.attrgetter('displayname'))
+        subscribers = self.getDirectSubscribers()
+        subscribers.update(self.getIndirectSubscribers())
+        return subscribers
 
     def getDirectSubscribers(self):
         """See IQuestion."""
-        return sorted(self.subscribers, key=operator.attrgetter('displayname'))
+        subscribers = QuestionNotificationRecipientSet()
+        reason = ("You received this question notification because you are "
+                  "a direct subscriber of the question.")
+        subscribers.add(self.subscribers, reason, 'Subscriber')
+        return subscribers
 
     def getIndirectSubscribers(self):
         """See IQuestion."""
-        subscribers = set(self.target.answer_contacts)
-
+        subscribers = QuestionNotificationRecipientSet()
+        subscribers.addAnswerContacts(self.target)
         if self.assignee:
-            subscribers.add(self.assignee)
-
-        return sorted(subscribers, key=operator.attrgetter('displayname'))
+            reason = ('You received this question notification because you '
+                      'are the assignee for this question.')
+            subscribers.add(self.assignee, reason, 'Assignee')
+        return subscribers
 
     def _newMessage(self, owner, content, action, new_status, subject=None,
                     datecreated=None, update_question_dates=True):
@@ -431,7 +473,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             msg = Message(
                 owner=owner, rfc822msgid=make_msgid('lpquestions'),
                 subject=subject, datecreated=datecreated)
-            chunk = MessageChunk(message=msg, content=content, sequence=1)
+            MessageChunk(message=msg, content=content, sequence=1)
 
         tktmsg = QuestionMessage(
             question=self, message=msg, action=action, new_status=new_status)
@@ -500,8 +542,8 @@ class QuestionSet:
 
     def getQuestionLanguages(self):
         """See IQuestionSet"""
-        return set(Language.select('Language.id = Ticket.language',
-            clauseTables=['Ticket'], distinct=True))
+        return set(Language.select('Language.id = Question.language',
+            clauseTables=['Question'], distinct=True))
 
     @staticmethod
     def new(title=None, description=None, owner=None,
@@ -538,9 +580,10 @@ class QuestionSearch:
     is used to retrieve the questions matching the search criteria.
     """
 
-    def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
-                 language=None, needs_attention_from=None, sort=None,
-                 product=None, distribution=None, sourcepackagename=None):
+    def __init__(self, search_text=None, needs_attention_from=None, sort=None,
+                 status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
+                 product=None, distribution=None, sourcepackagename=None,
+                 project=None):
         self.search_text = search_text
 
         if zope_isinstance(status, Item):
@@ -562,6 +605,7 @@ class QuestionSearch:
         self.product = product
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
+        self.project = project
 
     def getTargetConstraints(self):
         """Return the constraints related to the IQuestionTarget context."""
@@ -572,20 +616,19 @@ class QuestionSearch:
         constraints = []
 
         if self.product:
-            # We accept either a product or an iterable of products.
-            if IProduct.providedBy(self.product):
-                constraints.append(
-                    'Ticket.product = %s' % sqlvalues(self.product))
-            else:
-                constraints.append('Ticket.product IN (%s)' % ", ".join(
-                    sqlvalues(*self.product)))
+            constraints.append(
+                'Question.product = %s' % sqlvalues(self.product))
         elif self.distribution:
             constraints.append(
-                'Ticket.distribution = %s' % sqlvalues(self.distribution))
+                'Question.distribution = %s' % sqlvalues(self.distribution))
             if self.sourcepackagename:
                 constraints.append(
-                    'Ticket.sourcepackagename = %s' % sqlvalues(
+                    'Question.sourcepackagename = %s' % sqlvalues(
                         self.sourcepackagename))
+        elif self.project:
+            constraints.append("""
+                Question.product = Product.id AND
+                Product.project = %s""" % sqlvalues(self.project))
 
         return constraints
 
@@ -593,17 +636,30 @@ class QuestionSearch:
         """Return the tables that should be joined for the constraints."""
         if self.needs_attention_from:
             return self.getMessageJoins(self.needs_attention_from)
+        elif self.project:
+            return self.getProductJoins()
         else:
             return []
 
     def getMessageJoins(self, person):
         """Create the joins needed to select constraints on the messages by a
         particular person."""
-        return [
-            ('LEFT OUTER JOIN TicketMessage '
-             'ON TicketMessage.ticket = Ticket.id'),
-            ('LEFT OUTER JOIN Message ON TicketMessage.message = Message.id '
-             'AND Message.owner = %s' % sqlvalues(person))]
+        joins = [
+            ("""LEFT OUTER JOIN QuestionMessage
+                ON QuestionMessage.question = Question.id"""),
+            ("""LEFT OUTER JOIN Message
+                ON QuestionMessage.message = Message.id
+                AND Message.owner = %s""" % sqlvalues(person))]
+        if self.project:
+            joins.extend(self.getProductJoins())
+
+        return joins
+
+    def getProductJoins(self):
+        """Create the joins needed to select contrains on progects by a
+        particular project."""
+        return [('JOIN Product '
+                 'ON Question.product = Product.id')]
 
     def getConstraints(self):
         """Return a list of SQL constraints to use for this search."""
@@ -612,18 +668,18 @@ class QuestionSearch:
 
         if self.search_text is not None:
             constraints.append(
-                'Ticket.fti @@ ftq(%s)' % quote(self.search_text))
+                'Question.fti @@ ftq(%s)' % quote(self.search_text))
 
         if self.status:
-            constraints.append('Ticket.status IN %s' % sqlvalues(
+            constraints.append('Question.status IN %s' % sqlvalues(
                 list(self.status)))
 
         if self.needs_attention_from:
             constraints.append('''(
-                (Ticket.owner = %(person)s
-                    AND Ticket.status IN %(owner_status)s)
-                OR (Ticket.owner != %(person)s AND
-                    Ticket.status = %(open_status)s AND
+                (Question.owner = %(person)s
+                    AND Question.status IN %(owner_status)s)
+                OR (Question.owner != %(person)s AND
+                    Question.status = %(open_status)s AND
                     Message.owner = %(person)s)
                 )''' % sqlvalues(
                     person=self.needs_attention_from,
@@ -633,7 +689,7 @@ class QuestionSearch:
 
         if self.language:
             constraints.append(
-                'Ticket.language IN (%s)'
+                'Question.language IN (%s)'
                     % ', '.join(sqlvalues(*self.language)))
 
         return constraints
@@ -643,8 +699,8 @@ class QuestionSearch:
         # The idea is to prejoin all dependant tables, except if the
         # object will be the same in all rows because it is used as a
         # search criteria.
-        if self.product or self.sourcepackagename:
-            # Will always be the same product or sourcepackage.
+        if self.product or self.sourcepackagename or self.project:
+            # Will always be the same product, sourcepackage, or project.
             return ['owner']
         elif self.distribution:
             # Same distribution, sourcepackagename will vary.
@@ -653,8 +709,14 @@ class QuestionSearch:
             # QuestionTarget will vary.
             return ['owner', 'product', 'distribution', 'sourcepackagename']
 
+    def getPrejoinClauseTables(self):
+        """Return a list of tables that are in the contraints"""
+        if self.getConstraints().count('Question.product = Product.id'):
+            return ['product']
+        return []
+
     def getOrderByClause(self):
-        """Return the ORDER BY clause to use to order this search's results."""
+        """Return the ORDER BY clause to use for this search's results."""
         sort = self.sort
         if sort is None:
             if self.search_text:
@@ -662,22 +724,22 @@ class QuestionSearch:
             else:
                 sort = QuestionSort.NEWEST_FIRST
         if sort is QuestionSort.NEWEST_FIRST:
-            return "-Ticket.datecreated"
+            return "-Question.datecreated"
         elif sort is QuestionSort.OLDEST_FIRST:
-            return "Ticket.datecreated"
+            return "Question.datecreated"
         elif sort is QuestionSort.STATUS:
-            return ["Ticket.status", "-Ticket.datecreated"]
+            return ["Question.status", "-Question.datecreated"]
         elif sort is QuestionSort.RELEVANCY:
             if self.search_text:
                 # SQLConstant is a workaround for bug 53455
                 return [SQLConstant(
-                            "-rank(Ticket.fti, ftq(%s))" % quote(
+                            "-rank(Question.fti, ftq(%s))" % quote(
                                 self.search_text)),
-                        "-Ticket.datecreated"]
+                        "-Question.datecreated"]
             else:
-                return "-Ticket.datecreated"
+                return "-Question.datecreated"
         elif sort is QuestionSort.RECENT_OWNER_ACTIVITY:
-            return ['-Ticket.datelastquery']
+            return ['-Question.datelastquery']
         else:
             raise AssertionError, "Unknown QuestionSort value: %s" % sort
 
@@ -687,11 +749,13 @@ class QuestionSearch:
         constraints = self.getConstraints()
         if constraints:
             query += (
-                'Ticket.id IN (SELECT Ticket.id FROM Ticket %s WHERE %s)' % (
-                    '\n'.join(self.getTableJoins()),
-                    ' AND '.join(constraints)))
+                'Question.id IN ('
+                    'SELECT Question.id FROM Question %s WHERE %s)' % (
+                        '\n'.join(self.getTableJoins()),
+                        ' AND '.join(constraints)))
         return Question.select(
             query, prejoins=self.getPrejoins(),
+            prejoinClauseTables=self.getPrejoinClauseTables(),
             orderBy=self.getOrderByClause())
 
 
@@ -701,28 +765,38 @@ class QuestionTargetSearch(QuestionSearch):
     Used to implement IQuestionTarget.searchQuestions().
     """
 
-    def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
+    def __init__(self, search_text=None,
+                 status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
-                 needs_attention_from=None, product=None, distribution=None,
+                 needs_attention_from=None, unsupported_target=None,
+                 project=None, product=None, distribution=None,
                  sourcepackagename=None):
-        assert product is not None or distribution is not None, (
-            "Missing a product or distribution context.")
+        assert (product is not None or distribution is not None or
+            project is not None), ("Missing a product, distribution or "
+                                   "project context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
             needs_attention_from=needs_attention_from, sort=sort,
-            product=product, distribution=distribution,
-            sourcepackagename=sourcepackagename)
+            project=project, product=product,
+            distribution=distribution, sourcepackagename=sourcepackagename)
 
         if owner:
             assert IPerson.providedBy(owner), (
                 "expected IPerson, got %r" % owner)
         self.owner = owner
+        self.unsupported_target = unsupported_target
 
     def getConstraints(self):
         """See QuestionSearch."""
         constraints = QuestionSearch.getConstraints(self)
         if self.owner:
-            constraints.append('Ticket.owner = %s' % self.owner.id)
+            constraints.append('Question.owner = %s' % self.owner.id)
+        if self.unsupported_target is not None:
+            langs = [str(lang.id)
+                     for lang in (
+                        self.unsupported_target.getSupportedLanguages())]
+            constraints.append('Question.language NOT IN (%s)' %
+                               ', '.join(langs))
 
         return constraints
 
@@ -790,9 +864,9 @@ class QuestionPersonSearch(QuestionSearch):
 
         if QuestionParticipation.SUBSCRIBER in self.participation:
             joins.append(
-                'LEFT OUTER JOIN TicketSubscription '
-                'ON TicketSubscription.ticket = Ticket.id'
-                ' AND TicketSubscription.person = %s' % sqlvalues(
+                'LEFT OUTER JOIN QuestionSubscription '
+                'ON QuestionSubscription.question = Question.id'
+                ' AND QuestionSubscription.person = %s' % sqlvalues(
                     self.person))
 
         if QuestionParticipation.COMMENTER in self.participation:
@@ -803,11 +877,11 @@ class QuestionPersonSearch(QuestionSearch):
         return joins
 
     queryByParticipationType = {
-        QuestionParticipation.ANSWERER: "Ticket.answerer = %s",
-        QuestionParticipation.SUBSCRIBER: "TicketSubscription.person = %s",
-        QuestionParticipation.OWNER: "Ticket.owner = %s",
+        QuestionParticipation.ANSWERER: "Question.answerer = %s",
+        QuestionParticipation.SUBSCRIBER: "QuestionSubscription.person = %s",
+        QuestionParticipation.OWNER: "Question.owner = %s",
         QuestionParticipation.COMMENTER: "Message.owner = %s",
-        QuestionParticipation.ASSIGNEE: "Ticket.assignee = %s"}
+        QuestionParticipation.ASSIGNEE: "Question.assignee = %s"}
 
     def getConstraints(self):
         """See QuestionSearch."""

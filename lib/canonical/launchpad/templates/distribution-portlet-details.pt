@@ -59,6 +59,7 @@
       <td tal:condition="not:context/full_functionality">Nothing</td>
       <td tal:condition="context/full_functionality">
         <ul>
+          <li tal:condition="context/official_answers">Answers</li>
           <li tal:condition="context/official_malone">Bug tracking</li>
           <li tal:condition="context/official_rosetta">Translations</li>
         </ul>

@@ -23,7 +23,9 @@ from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
 from canonical.functional import FunctionalTestSetup
 from canonical.config import config
 from canonical.database.revision import confirm_dbrevision
-from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
+from canonical.database.sqlbase import (
+        cursor, SQLBase, ZopelessTransactionManager,
+        )
 from canonical.lp import initZopeless
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
@@ -72,7 +74,7 @@ def _reconnect_sqlos(dbuser=None):
     da = getUtility(IZopeDatabaseAdapter, name)
     if dbuser is None:
         dbuser = config.launchpad.dbuser
-    da.connect(dbuser)
+    da.switchUser(dbuser)
 
     # Confirm that the database adapter *really is* connected.
     assert da.isConnected(), 'Failed to reconnect'
@@ -82,7 +84,7 @@ def _reconnect_sqlos(dbuser=None):
     assert len(connCache.keys()) == 0, 'SQLOS appears to have kept connections'
 
     # Confirm the database has the right patchlevel
-    confirm_dbrevision()
+    confirm_dbrevision(cursor())
 
     # Confirm that SQLOS is again talking to the database (it connects
     # as soon as SQLBase._connection is accessed

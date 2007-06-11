@@ -98,10 +98,13 @@ class LaunchpadCelebrities:
     bug_importer = CelebrityDescriptor(IPersonSet, 'bug-importer')
     landscape = CelebrityDescriptor(IProductSet, 'landscape')
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
+    redfish = CelebrityDescriptor(IProductSet, 'redfish')
     answer_tracker_janitor = CelebrityDescriptor(
-        IPersonSet, 'support-tracker-janitor')
+        IPersonSet, 'answer-tracker-janitor')
     team_membership_janitor = CelebrityDescriptor(
         IPersonSet, 'team-membership-janitor')
+    launchpad_beta_testers = CelebrityDescriptor(
+        IPersonSet, 'launchpad-beta-testers')
 
     @property
     def ubuntu_archive_mirror(self):
@@ -113,10 +116,11 @@ class LaunchpadCelebrities:
         return mirror
 
     @property
-    def ubuntu_release_mirror(self):
+    def ubuntu_cdimage_mirror(self):
         mirror = getUtility(IDistributionMirrorSet).getByHttpUrl(
             'http://releases.ubuntu.com/')
         if mirror is None:
             raise MissingCelebrityError('http://releases.ubuntu.com/')
         assert mirror.isOfficial(), "Main mirror must be an official one."
         return mirror
+

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
 # This script updates the cached stats in the system
@@ -7,12 +7,12 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import IBugTaskSet
 from canonical.config import config
 
 
-class UpdateBugTaskTargetNameCaches(LaunchpadScript):
+class UpdateBugTaskTargetNameCaches(LaunchpadCronScript):
     """Update the targetnamecache for all IBugTasks.
 
     This ensures that the cache values are up-to-date even after, for

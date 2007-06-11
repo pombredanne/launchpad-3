@@ -19,39 +19,6 @@ of the owner and product of the branch.
 >>> gterm_dev_view.supermirror_url()
 u'http://bazaar.launchpad.net/~name12/gnome-terminal/main'
 
-The branch view generates an appropriate notice when a branch is missing a
-title or summary.
-
->>> from canonical.launchpad.interfaces import IProductSet
->>> gterm_product = getUtility(IProductSet).getByName('gnome-terminal')
->>> from canonical.launchpad.interfaces import IPersonSet
->>> ddaa = getUtility(IPersonSet).getByName('ddaa')
-
->>> new = branchset.new('ok', ddaa, gterm_product, None,
-...     title='something', summary='something')
->>> view = getMultiAdapter((new, TestRequest()), name='+index')
->>> view.missing_title_or_summary_text() is None
-True
-
->>> new = branchset.new('no_title', ddaa, gterm_product, None,
-...     title=None, summary='something')
->>> view = getMultiAdapter((new, TestRequest()), name='+index')
->>> view.missing_title_or_summary_text()
-'(this branch has no title)'
-
->>> new = branchset.new('no_summary', ddaa, gterm_product, None,
-...     title='something', summary=None)
->>> view = getMultiAdapter((new, TestRequest()), name='+index')
->>> view.missing_title_or_summary_text()
-'(this branch has no summary)'
-
->>> new = branchset.new('no_title_or_summary', ddaa, gterm_product, None,
-...     title=None, summary=None)
->>> view = getMultiAdapter((new, TestRequest()), name='+index')
->>> view.missing_title_or_summary_text()
-'(this branch has neither title nor summary)'
-
-
 == Contextual branch views ==
 
 BranchInPersonView and BranchInProductView are used to display branch listing
@@ -105,6 +72,10 @@ True
 
 When a branch's URL is null, the user is not allowed to set it.
 
+>>> from canonical.launchpad.interfaces import IProductSet
+>>> gterm_product = getUtility(IProductSet).getByName('gnome-terminal')
+>>> from canonical.launchpad.interfaces import IPersonSet
+>>> ddaa = getUtility(IPersonSet).getByName('ddaa')
 >>> no_url = branchset.new('no_url', ddaa, gterm_product, None)
 >>> no_url.url is None
 True

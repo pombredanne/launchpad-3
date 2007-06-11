@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 """Librarian garbage collector.
@@ -16,10 +16,10 @@ import logging
 from canonical.librarian import librariangc
 from canonical.database.sqlbase import AUTOCOMMIT_ISOLATION
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
-class LibrarianGC(LaunchpadScript):
+class LibrarianGC(LaunchpadCronScript):
     def add_my_options(self):
         self.parser.add_option(
                 '', "--skip-duplicates", action="store_true", default=False,
