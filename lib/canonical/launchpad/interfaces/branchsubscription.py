@@ -34,7 +34,7 @@ class IBranchSubscription(Interface):
             'Attribute notifications are sent when branch details are changed '
             'such as lifecycle status and name.  Revision notifications are '
             'generated when new branch revisions are found due to the branch '
-            'updated through either pushes to the hosted branches or the '
+            'being updated through either pushes to the hosted branches or the '
             'mirrored branches being updated.'))
     max_diff_lines = Choice(
         title=_('Generated Diff Size Limit'), required=True,
