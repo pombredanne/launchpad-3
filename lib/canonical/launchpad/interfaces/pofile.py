@@ -124,6 +124,26 @@ class IPOFile(IRosettaStats):
         :only_current: Whether we should look only on current entries.
         """
 
+    def getMsgSetsForPOTMsgSets(potmsgsets):
+        """Return mapping from each of potmsgsets to matching POMsgSet.
+
+        The result is a dict.  Any POTMsgSets in potmsgsets that have no
+        translation in pofile are omitted.
+        """
+
+    def getRelatedSubmissions(stored_pomsgsets, dummy_pomsgsets):
+        """Find all POSubmissions that the listed POMsgSets may want to cache.
+
+        Result is a dict mapping each of these POMsgSets to a list of all
+        POSubmissions that are relevant to it.  Each of the lists is in
+        newest-to-oldest order.
+
+        :stored_pomsgsets: List of pomsgsets that are already present in the
+        database, and whose in-memory caches are to be populated.
+        :dummy_pomsgsets: List of pomsgsets that have not yet been stored in
+        the database, and whose in-memory caches are to be populated.
+        """
+
     def __getitem__(msgid_text):
         """Return the active IPOMsgSet in this IPOFile identified by msgid_text.
 

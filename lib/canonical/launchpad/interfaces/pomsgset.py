@@ -19,6 +19,8 @@ class TranslationConflict(Exception):
 
 class IPOMsgSet(Interface):
 
+    id = Attribute("This MsgSet's identifier.")
+
     sequence = Attribute("The ordering of this set within its file.")
 
     pofile = Attribute("The PO file this set is associated with.")
@@ -89,12 +91,18 @@ class IPOMsgSet(Interface):
 
         """
 
-    def initializeCaches():
+    def initializeCaches(related_submissions=None):
         """Initialize internal submission caches.
 
         These caches are used to find submissions attached to self, as well as
         specifically active or published submissions, or suggestions, and so
         on, without querying the database unnecessarily.
+
+        :related_submissions: list or iterator of all submissions attached to
+        this object, as well as all that should be presented as suggestions
+        for its translation.  If related_submissions is not given, they will
+        be fetched from the database.  Must yield POSubmissions in
+        newest-to-oldest order.
         """
 
     def invalidateCaches():

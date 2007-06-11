@@ -247,8 +247,29 @@ class POFileTranslateView(BaseTranslationView):
 
     def _initializeMsgSetViews(self):
         """See BaseTranslationView._initializeMsgSetViews."""
-        for potmsgset in self.batchnav.currentBatch():
-            self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
+        self._buildPOMsgSetViews(self.batchnav.currentBatch())
+
+    def _buildPOMsgSetViews(self, for_potmsgsets):
+        """Build POMsgSet views for all POTMsgSets in for_potmsgsets."""
+        for_potmsgsets = list(for_potmsgsets)
+        translations = self.context.getMsgSetsForPOTMsgSets(for_potmsgsets)
+
+        dummies = {}
+        for potmsgset in for_potmsgsets:
+            if not potmsgset in translations:
+                dummy = potmsgset.getDummyPOMsgSet(
+                    self.context.language.code, self.context.variant)
+                dummies[potmsgset] = dummy
+
+        cachable = self.context.getRelatedSubmissions(
+            translations.values(), dummies.values())
+
+        for potmsgset in for_potmsgsets:
+            pomsgset = translations.get(potmsgset, dummies.get(potmsgset))
+            pomsgset.initializeCaches(cachable[pomsgset])
+            view = self._prepareView(
+                POMsgSetView, pomsgset, self.errors.get(potmsgset))
+            self.pomsgset_views.append(view)
 
     def _submitTranslations(self):
         """See BaseTranslationView._submitTranslations."""
@@ -314,16 +335,6 @@ class POFileTranslateView(BaseTranslationView):
     #
     # Specific methods
     #
-
-    def _buildPOMsgSetView(self, potmsgset):
-        """Build a POMsgSetView for a given POTMsgSet."""
-        language = self.context.language
-        variant = self.context.variant
-        pomsgset = potmsgset.getPOMsgSet(language.code, variant)
-        if pomsgset is None:
-            pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
-        return self._prepareView(POMsgSetView, pomsgset,
-                                 self.errors.get(pomsgset.potmsgset))
 
     def _initializeShowOption(self):
         # Get any value given by the user

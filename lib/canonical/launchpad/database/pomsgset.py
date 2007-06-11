@@ -56,7 +56,7 @@ class POMsgSetMixIn:
     def getRelatedSubmissions(self):
         """See IPOMsgSet."""
 
-        match_self_sql = False
+        match_self_sql = 'false'
         if self.id is not None:
             match_self_sql = 'POMsgSet.id=%s' % quote(self)
 
@@ -79,7 +79,7 @@ class POMsgSetMixIn:
         return POSubmission.select(
             query, clauseTables=joins, orderBy='-datecreated', distinct=True)
 
-    def initializeCaches(self):
+    def initializeCaches(self, related_submissions=None):
         """See IPOMsgSet."""
         if self._hasCaches():
             return
@@ -90,7 +90,10 @@ class POMsgSetMixIn:
 
         # Retrieve all related POSubmissions, and use them to populate our
         # submissions/suggestions caches.
-        for submission in self.getRelatedSubmissions():
+        if related_submissions is None:
+            related_submissions = self.getRelatedSubmissions()
+
+        for submission in related_submissions:
             pluralform = submission.pluralform
             if submission.pomsgset == self:
                 if self.attached_submissions.get(pluralform) is None:

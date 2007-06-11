@@ -913,10 +913,6 @@ class POMsgSetView(LaunchpadView):
         assert len(self.msgids) > 0, (
             'Found a POTMsgSet without any POMsgIDSighting')
 
-        # Collect posubmissions etc. that we need from the database in order
-        # to identify useful suggestions.
-        self.context.initializeCaches()
-
         # We store lists of POMsgSetSuggestions objects in a
         # suggestion_blocks dictionary, keyed on plural form index; this
         # allows us later to just iterate over them in the view code
