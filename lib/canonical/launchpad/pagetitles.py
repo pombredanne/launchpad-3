@@ -136,6 +136,11 @@ def branch_index(context, view):
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
 
+branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
+
+def branch_visibility_edit(context, view):
+    return view.pagetitle
+
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
 bug_activity = ContextBugId('Bug #%s - Activity log')

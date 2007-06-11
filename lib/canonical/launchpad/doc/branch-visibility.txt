@@ -150,7 +150,7 @@ branch.
 
 == BranchSet restricted queries ==
 
-Any of the BranchSet queries that are used to populate user viewable
+All of the BranchSet queries that are used to populate user viewable
 branch listings have an optional parameter called `visible_by_user`.
 This parameter is used to restrict the result set to those branches
 that would be visible by that user.  If the parameter is None, then
@@ -211,8 +211,3 @@ but not the private branch owned by No Privileges Person.
     ~name12/landscape/feature-x True
     ~landscape-developers/landscape/trunk True
     ~sabdfl/+junk/testdoc False
-
-
-
-
-

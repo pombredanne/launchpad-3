@@ -150,6 +150,33 @@
     <allow interface="canonical.launchpad.interfaces.IBranchVisibilityPolicyItem" />
   </content>
 
+  <browser:page
+    name="+branchvisibility"
+    for="canonical.launchpad.interfaces.IHasBranchVisibilityPolicy"
+    facet="overview"
+    class="canonical.launchpad.browser.BranchVisibilityPolicyView"
+    permission="launchpad.Admin"
+    template="../templates/branch-visibility.pt"
+    />
+
+  <browser:page
+    name="+addbranchvisibilitypolicy"
+    for="canonical.launchpad.interfaces.IHasBranchVisibilityPolicy"
+    facet="overview"
+    class="canonical.launchpad.browser.AddBranchVisibilityPolicyItemView"
+    permission="launchpad.Admin"
+    template="../templates/branch-visibility-edit.pt"
+    />
+
+  <browser:page
+    name="+removebranchvisibilitypolicy"
+    for="canonical.launchpad.interfaces.IHasBranchVisibilityPolicy"
+    facet="overview"
+    class="canonical.launchpad.browser.RemoveBranchVisibilityPolicyItemView"
+    permission="launchpad.Admin"
+    template="../templates/branch-visibility-edit.pt"
+    />
+
   <!-- BranchDelta -->
   <content class="canonical.launchpad.components.branch.BranchDelta">
     <allow interface="canonical.launchpad.interfaces.IBranchDelta" />
