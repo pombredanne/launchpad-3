@@ -5,7 +5,8 @@ __metaclass__ = type
 __all__ = [
     'RosettaApplicationView',
     'RosettaStatsView',
-    'RosettaApplicationNavigation'
+    'RosettaApplicationNavigation',
+    'TranslationsMixin'
     ]
 
 import httplib
@@ -26,15 +27,20 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.cachedproperty import cachedproperty
 
-class RosettaApplicationView:
+
+class TranslationsMixin:
+    """Translation mixin that provides language handling."""
+    @property
+    def translatable_languages(self):
+        """Return a set of the Person's translatable languages."""
+        return helpers.request_languages(self.request)
+
+
+class RosettaApplicationView(TranslationsMixin):
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-    @property
-    def languages(self):
-        return helpers.request_languages(self.request)
 
     @property
     def ubuntu_translationseries(self):
