@@ -120,19 +120,23 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
         return self.rosettacount
 
     def unreviewedCount(self, language=None):
+        """See IRosettaStats."""
         return self.unreviewedcount
 
     def updateStatistics(self, ztm):
         current = 0
         updates = 0
         rosetta = 0
+        unreviewed = 0
         for pofile in self.pofiles:
             current += pofile.currentCount()
             updates += pofile.updatesCount()
             rosetta += pofile.rosettaCount()
+            unreviewed += pofile.unreviewedCount()
         self.currentcount = current
         self.updatescount = updates
         self.rosettacount = rosetta
+        self.unreviewedcount = unreviewed
 
         personset = getUtility(IPersonSet)
         contributors = personset.getPOFileContributorsByDistroSeries(
