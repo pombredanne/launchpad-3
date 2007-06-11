@@ -247,6 +247,8 @@ to the proper context where the question can be found:
     >>> browser.open('http://answers.launchpad.dev/questions/1')
     >>> print browser.url
     http://answers.launchpad.dev/firefox/+question/1
+    >>> print find_main_content(browser.contents).find('h1').renderContents()
+    Firefox cannot render Bank Site
 
 Asking for a non-existent question or an invalid ID will still
 raise a 404 though:

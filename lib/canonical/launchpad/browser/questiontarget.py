@@ -38,8 +38,8 @@ from canonical.launchpad.interfaces import (
     IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
     NotFoundError)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, stepto, stepthrough, urlappend,
-    ApplicationMenu, LaunchpadFormView, Link, safe_action)
+    action, ApplicationMenu, canonical_url, custom_widget, LaunchpadFormView,
+    Link, safe_action, stepto, stepthrough, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -585,7 +585,8 @@ class QuestionTargetTraversalMixin:
         if question is not None:
             return question
         
-        # Try to find the question in another context.
+        # Try to find the question in another context, since it may have
+        # been retargeted.
         question = getUtility(IQuestionSet).get(question_id)
         if question is None:
             raise NotFoundError(name)
