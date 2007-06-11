@@ -12,7 +12,7 @@ There are two situations where emails are sent out for branches:
 
 All branch notification emails use a standard email template.
 
-The functions that handle the emailing of the branch email messages are 
+The functions that handle the emailing of the branch email messages are
 in the mailnotification module.
 
 The email_branch_modified_notifications function loads the email template
@@ -30,9 +30,16 @@ recipients.
     >>> from canonical.launchpad.mailnotification import (
     ...     email_branch_modified_notifications)
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> from canonical.lp.dbschema import (
+    ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
     >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
+    >>> subscription = branch.subscribe(
+    ...     branch.owner,
+    ...     BranchSubscriptionNotificationLevel.FULL,
+    ...     BranchSubscriptionDiffSize.WHOLEDIFF)
     >>> email_branch_modified_notifications(
-    ...     branch, ['test@canonical.com'], 'foo@canonical.com', 'The contents.')
+    ...     branch, ['test@canonical.com'], 'foo@canonical.com',
+    ...     'The contents.', {'test@canonical.com': subscription})
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -58,6 +65,8 @@ recipients.
     To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=
     /firefox/main/+edit-subscription.
     <BLANKLINE>
+    >>> branch.unsubscribe(branch.owner)
+
 
 == Subscriptions ==
 
@@ -80,51 +89,57 @@ previous one.  The size limit is one of the following:
   * Send the entire diff
 
     >>> from canonical.launchpad.interfaces import IBranch, IPersonSet
-    >>> from canonical.lp.dbschema import (
-    ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
     >>> personset = getUtility(IPersonSet)
 
     >>> branch.subscribe(
     ...     personset.getByEmail('no-priv@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.NOEMAIL,
     ...     BranchSubscriptionDiffSize.NODIFF)
-    <BranchSubscription ...> 
+    <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByEmail('test@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
     ...     BranchSubscriptionDiffSize.NODIFF)
-    <BranchSubscription ...> 
+    <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByEmail('carlos@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.NODIFF)
-    <BranchSubscription ...> 
+    <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByEmail('jeff.waugh@ubuntulinux.com'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.HALFKLINES)
-    <BranchSubscription ...> 
+    <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByEmail('celso.providelo@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.ONEKLINES)
-    <BranchSubscription ...> 
+    <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByEmail('daf@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.FIVEKLINES)
-    <BranchSubscription ...> 
+    <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByEmail('mark@hbd.com'),
     ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.WHOLEDIFF)
-    <BranchSubscription ...> 
+    <BranchSubscription ...
+
+Team are subscribed in the same way.
+
+    >>> branch.subscribe(
+    ...     personset.getByName('launchpad'),
+    ...     BranchSubscriptionNotificationLevel.FULL,
+    ...     BranchSubscriptionDiffSize.WHOLEDIFF)
+    <BranchSubscription ...
 
 And to make sure we have them:
 
@@ -137,26 +152,30 @@ And to make sure we have them:
     cprov
     daf
     sabdfl
+    launchpad
 
 Now make sure that they get returned appropriately for the
 correct notifications.
 
-    >>> addresses = branch.getAttributeNotificationAddresses()
+    >>> addresses, subscription_source = (
+    ...     branch.getAttributeNotificationAddresses())
     >>> for address in addresses:
     ...     print address
+    foo.bar@canonical.com
     mark@hbd.com
     test@canonical.com
 
-    >>> details = branch.getRevisionNotificationDetails()
+    >>> details, subscription_source = branch.getRevisionNotificationDetails()
     >>> for max_diff in sorted(details.keys()):
-    ...     for address in details[max_diff]:
+    ...     for address in sorted(details[max_diff]):
     ...         print address, max_diff.title
     carlos@canonical.com          Don't send diffs
     jeff.waugh@ubuntulinux.com    500 lines
     celso.providelo@canonical.com 1000 lines
     daf@canonical.com             5000 lines
+    foo.bar@canonical.com         Send entire diff
     mark@hbd.com                  Send entire diff
-    
+
 == Limiting the size of diff received by email ==
 
     # A helper function to print out the To header and
@@ -175,14 +194,14 @@ We need to create some sufficiently large diffs to compare against.
     ...     branch, 'no-reply@canonical.com', message, diff)
     >>> notifications = pop_notifications()
     >>> len(notifications)
-    5
+    6
     >>> print_to_and_body(notifications.pop(0))
     To: carlos@canonical.com
     Test message.
     <BLANKLINE>
     <BLANKLINE>
     --...
-    
+
     >>> print_to_and_body(notifications.pop(0))
     To: celso.providelo@canonical.com
     Test message.
@@ -198,6 +217,14 @@ We need to create some sufficiently large diffs to compare against.
     00 lines...
 
     >>> print_to_and_body(notifications.pop(0))
+    To: foo.bar@canonical.com
+    Test message.
+    <BLANKLINE>
+    0 1 ... 5999...
+    To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=
+    /firefox/main/+subscription/launchpad.
+
+    >>> print_to_and_body(notifications.pop(0))
     To: jeff.waugh@ubuntulinux.com
     Test message.
     <BLANKLINE>
@@ -209,6 +236,8 @@ We need to create some sufficiently large diffs to compare against.
     Test message.
     <BLANKLINE>
     0 1 ... 5999...
+    To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=
+    /firefox/main/+edit-subscription.
 
 And just to be sure, lets create one with 800 lines.
 
@@ -217,7 +246,7 @@ And just to be sure, lets create one with 800 lines.
     ...     branch, 'no-reply@canonical.com', message, diff)
     >>> notifications = pop_notifications()
     >>> len(notifications)
-    5
+    6
 
 Still just the log message for carlos:
 
@@ -229,7 +258,7 @@ Still just the log message for carlos:
     --...
 
 Diff for celso:
-    
+
     >>> print_to_and_body(notifications.pop(0))
     To: celso.providelo@canonical.com
     Test message.
@@ -240,6 +269,14 @@ Diff for daf:
 
     >>> print_to_and_body(notifications.pop(0))
     To: daf@canonical.com
+    Test message.
+    <BLANKLINE>
+    0 1 ... 799...
+
+Everything for Foo Bar:
+
+    >>> print_to_and_body(notifications.pop(0))
+    To: foo.bar@canonical.com
     Test message.
     <BLANKLINE>
     0 1 ... 799...
@@ -268,6 +305,7 @@ Unsubscribe everybody.
     >>> len(list(branch.subscriptions))
     0
 
+
 == Group subscriptions ==
 
 If a group is subscribed the emails are sent to the members of that team.
@@ -282,13 +320,13 @@ then that email address is used for the notifications.
     ...     personset.getByEmail('david.allouche@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.HALFKLINES)
-    <BranchSubscription ...> 
+    <BranchSubscription ...
 
     >>> branch.subscribe(
     ...     personset.getByName('vcs-imports'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.FIVEKLINES)
-    <BranchSubscription ...> 
+    <BranchSubscription ...
 
 The ubuntu-team has an email address supplied (support@ubuntu.com), so
 that is used rather than the email addresses of the seven members.
@@ -297,9 +335,9 @@ that is used rather than the email addresses of the seven members.
     ...     personset.getByName('ubuntu-team'),
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
     ...     BranchSubscriptionDiffSize.ONEKLINES)
-    <BranchSubscription ...> 
+    <BranchSubscription ...
 
-    >>> details = branch.getRevisionNotificationDetails()
+    >>> details, subscription_source = branch.getRevisionNotificationDetails()
     >>> for max_diff in sorted(details.keys()):
     ...     for address in details[max_diff]:
     ...         print address, max_diff.title
@@ -307,6 +345,15 @@ that is used rather than the email addresses of the seven members.
     support@ubuntu.com           1000 lines
     foo.bar@canonical.com        5000 lines
     robertc@robertcollins.net    5000 lines
+
+    >>> for email_address, subscription in subscription_source.iteritems():
+    ...     print "%s subscribed through %s" % (
+    ...         email_address, subscription.person.browsername)
+    support@ubuntu.com subscribed through Ubuntu Team
+    david.allouche@canonical.com subscribed through David Allouche
+    foo.bar@canonical.com subscribed through VCS imports
+    robertc@robertcollins.net subscribed through VCS imports
+
 
 == Attribute emails ==
 
@@ -326,7 +373,7 @@ Resubscribe our test user.
     ...     personset.getByEmail('test@canonical.com'),
     ...     BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
     ...     BranchSubscriptionDiffSize.NODIFF)
-    <BranchSubscription ...> 
+    <BranchSubscription ...
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
@@ -362,7 +409,7 @@ names just now, we'll pass them through anyway
     You received this email because you are subscribed to this branch.
     To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=
     /firefox/main/+edit-subscription.
-    
+
 
 The fields that are currently tracked with the delta, and cause
 an email to be sent out are:

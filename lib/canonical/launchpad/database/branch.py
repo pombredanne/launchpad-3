@@ -216,19 +216,35 @@ class Branch(SQLBase):
 
     def getAttributeNotificationAddresses(self):
         """See IBranch."""
-        addresses = set()
+        notification_addresses = set()
+        team_subscription_source = {}
+        individual_subscription_source = {}
         interested_levels = (
             BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
             BranchSubscriptionNotificationLevel.FULL)
         for subscription in self.subscriptions:
             if subscription.notification_level in interested_levels:
-                addresses.update(contactEmailAddresses(subscription.person))
-        return sorted(addresses)
+                addresses = contactEmailAddresses(subscription.person)
+                if subscription.person.isTeam():
+                    subscription_source = team_subscription_source
+                else:
+                    subscription_source = individual_subscription_source
+                for address in addresses:
+                    subscription_source[address] = subscription
+                notification_addresses.update(addresses)
+        # Individual preferences override team preferences.
+        subscription_source = team_subscription_source
+        subscription_source.update(individual_subscription_source)
+        return (sorted(notification_addresses), subscription_source)
 
     def getRevisionNotificationDetails(self):
         """See IBranch."""
         team_email_details = {}
         individual_email_details = {}
+        # Record which subcription is causing the email to be sent.
+        team_subscription_source = {}
+        individual_subscription_source = {}
+
         interested_levels = (
             BranchSubscriptionNotificationLevel.DIFFSONLY,
             BranchSubscriptionNotificationLevel.FULL)
@@ -237,22 +253,28 @@ class Branch(SQLBase):
                 addresses = contactEmailAddresses(subscription.person)
                 if subscription.person.isTeam():
                     email_details = team_email_details
+                    subscription_source = team_subscription_source
                 else:
                     email_details = individual_email_details
+                    subscription_source = individual_subscription_source
                 for address in addresses:
-                    curr = email_details.get(
-                        address, BranchSubscriptionDiffSize.NODIFF)
-                    email_details[address] = max(
-                        curr, subscription.max_diff_lines)
+                    if address in email_details:
+                        current = email_details[address]
+                        more_details = subscription.max_diff_lines > current
+                    if address not in email_details or more_details:
+                        email_details[address] = subscription.max_diff_lines
+                        subscription_source[address] = subscription
         # Individual preferences override team preferences.
         email_details = team_email_details
         email_details.update(individual_email_details)
+        subscription_source = team_subscription_source
+        subscription_source.update(individual_subscription_source)
         # Now that we have determined the maximum size to send
         # to any individual, switch the map around.
         result = {}
         for address, max_diff in email_details.iteritems():
             result.setdefault(max_diff, []).append(address)
-        return result
+        return (result, subscription_source)
 
     def getScannerData(self):
         """See IBranch."""

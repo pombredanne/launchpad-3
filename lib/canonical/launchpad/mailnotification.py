@@ -1747,26 +1747,40 @@ def notify_specification_modified(spec, event):
 
 
 def email_branch_modified_notifications(branch, to_addresses,
-                                        from_address, contents):
+                                        from_address, contents,
+                                        subscription_source):
     """Send notification emails using the branch email template.
 
     Emails are sent one at a time to the listed addresses.
     """
     subject = '[Branch %s] %s' % (branch.unique_name, branch.title)
     headers = {'X-Launchpad-Branch': branch.unique_name}
-    body = get_email_template('branch-modified.txt') % {
+
+    template = get_email_template('branch-modified.txt')
+    params = {
         'contents': contents,
         'branch_title': branch.title,
         'branch_url': canonical_url(branch),
-        'unsubscribe_url': canonical_url(branch) + '/+edit-subscription' }
+         }
     for address in to_addresses:
+        # If the subscription was from a team subscription rather than
+        # an individual subscription, then the unsubscribe_url needs
+        # to be changed.
+        subscription = subscription_source[address]
+        if subscription.person.isTeam():
+            params['unsubscribe_url'] = canonical_url(subscription)
+        else:
+            params['unsubscribe_url'] = (
+                canonical_url(branch) + '/+edit-subscription')
+
+        body = template % params
         simple_sendmail(from_address, address, subject, body, headers)
-        
+
 
 def send_branch_revision_notifications(branch, from_address, message, diff):
     """Notify subscribers that a revision has been added (or removed)."""
     diff_size = diff.count('\n') + 1
-    details = branch.getRevisionNotificationDetails()
+    details, subscription_source = branch.getRevisionNotificationDetails()
     for max_diff in sorted(details.keys()):
         if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
             if max_diff == BranchSubscriptionDiffSize.NODIFF:
@@ -1783,7 +1797,7 @@ def send_branch_revision_notifications(branch, from_address, message, diff):
             contents = "%s\n%s" % (message, diff)
         addresses = details[max_diff]
         email_branch_modified_notifications(
-            branch, addresses, from_address, contents)
+            branch, addresses, from_address, contents, subscription_source)
 
 
 def send_branch_modified_notifications(branch, event):
@@ -1793,7 +1807,8 @@ def send_branch_modified_notifications(branch, event):
     if branch_delta is None:
         return
     # If there is no one interested, then bail out early.
-    to_addresses = branch.getAttributeNotificationAddresses()
+    to_addresses, subscription_source = (
+        branch.getAttributeNotificationAddresses())
     if not to_addresses:
         return
 
@@ -1817,8 +1832,7 @@ def send_branch_modified_notifications(branch, event):
         title = IBranch['lifecycle_status'].title
         info_lines.append("%s%s: %s => %s" % (
             indent, title, old_item.title, new_item.title))
-        
-            
+
     # Fields for which we only have the new value.
     for field_name in ('summary', 'whiteboard'):
         delta = getattr(branch_delta, field_name)
@@ -1837,4 +1851,4 @@ def send_branch_modified_notifications(branch, event):
         event.user.displayname, event.user.preferredemail.email)
     contents = '\n'.join(info_lines)
     email_branch_modified_notifications(
-        branch, to_addresses, from_address, contents)
+        branch, to_addresses, from_address, contents, subscription_source)
