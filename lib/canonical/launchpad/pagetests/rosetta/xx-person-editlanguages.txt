@@ -31,7 +31,7 @@ Welsh. English is checked but it is not a translatable language.
   True
   >>> browser.getControl('Welsh').selected
   False
-  >>> # XXX sinzui 2007-06-11 bug=81369
+  >>> # XXX sinzui 2007-06-11 bug 81369
   >>> # English must be shown for Answers 
   >>> #browser.getControl('English', index=0).selected
   #True
