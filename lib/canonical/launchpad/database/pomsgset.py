@@ -80,6 +80,9 @@ class POMsgSetMixIn:
             query, clauseTables=joins, orderBy='-datecreated', distinct=True)
 
     def initializeCaches(self):
+        """See IPOMsgSet."""
+        if self._hasCaches():
+            return
         self.active_submissions = {}
         self.published_submissions = {}
         self.suggestions = {}
@@ -113,8 +116,19 @@ class POMsgSetMixIn:
                     for filtered in suggestions
                     if filtered.potranslation != active.potranslation]
 
-    def hasCaches(self):
+    def invalidateCaches(self):
+        """See IPOMsgSet."""
+        self.active_submissions = None
+        self.published_submissions = None
+        self.suggestions = None
+        self.attached_submissions = None
+        assert not self._hasCaches(), 'Invalidating caches does not work!'
+
+    def _hasCaches(self):
         return self.attached_submissions is not None
+
+    def invalidateCaches(self):
+        """See IPOMsgSet."""
 
     def getWikiSubmissions(self, pluralform):
         if self.attached_submissions is None:
@@ -694,8 +708,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         """See IPOMsgSet."""
         # Make sure we are working with the very latest data.
         flush_database_updates()
-        if not self.hasCaches():
-            self.initializeCaches()
+        self.initializeCaches()
 
         # Avoid re-evaluation of self.pluralforms.
         pluralforms = self.pluralforms
@@ -752,8 +765,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def getNewSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        if not self.hasCaches():
-            self.initializeCaches()
+        self.initializeCaches()
 
         applicable_submissions = self.attached_submissions.get(pluralform)
         if applicable_submissions is None:
