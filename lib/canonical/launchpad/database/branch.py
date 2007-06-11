@@ -324,7 +324,7 @@ class BranchSet:
 
         # Forbidden trumps privacy.
         if len(ratings[BranchVisibilityPolicy.FORBIDDEN]) > 0:
-            raise BranchCreationForbidden
+            raise BranchCreationForbidden()
         # Private trumps public.
         private_teams = (
             ratings[BranchVisibilityPolicy.PRIVATE] +
@@ -347,7 +347,7 @@ class BranchSet:
         # Need to check the base branch visibility policy.
         base_policy = product.branch_visibility_base_policy
         if base_policy == BranchVisibilityPolicy.FORBIDDEN:
-            raise BranchCreationForbidden
+            raise BranchCreationForbidden()
         elif base_policy == BranchVisibilityPolicy.PUBLIC:
             return (False, None)
         elif owner == creator:
