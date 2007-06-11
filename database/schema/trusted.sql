@@ -763,6 +763,7 @@ $$
         return ''.join(result)
 
     # Generate a random openid_identifier
+    loop_count = 0
     while True:
         # By using 15000000 as the minimum, we reserve all 4 character
         # identifiers.
@@ -775,6 +776,9 @@ $$
             """ % oid, 1)
         if rv[0]['num'] == 0:
             break
+        loop_count += 1
+        if loop_count > 20000:
+            raise Exception("Unable to generate unique openid_identifier")
 
     TD['new']['openid_identifier'] = oid
     return "MODIFY"
