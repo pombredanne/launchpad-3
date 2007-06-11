@@ -672,7 +672,9 @@ class BuilddMaster:
             # isNominatedArchIndep. -- kiko, 2006-08-31
             args['arch_indep'] = (queueItem.archhintlist == 'all' or
                                   queueItem.archseries.isNominatedArchIndep)
-            # XXX cprov 20070523: Ogre should not be modelled here ...
+            # XXX cprov 20070523: Ogre-Model should not be implemented here.
+            # Ideally it should be implemented by the builder itself or
+            # even be modelled properly on Build/BuildQueue content classes.
             if not queueItem.is_trusted:
                 ogre_map = {
                     'main': 'main',

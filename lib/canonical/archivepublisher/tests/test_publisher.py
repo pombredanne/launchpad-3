@@ -351,6 +351,17 @@ class TestPublisher(TestNativePublishingBase):
              ''],
             index_contents)
 
+        # Check if apt_handler.release_files_needed has the right requests.
+        # 'source' & 'binary-i386' Release files should be regenerated
+        # for all breezy-autotest components.
+        self.assertEqual(
+            archive_publisher.apt_handler.release_files_needed,
+            {u'breezy-autotest':
+             {u'restricted': set(['source', u'binary-i386']),
+              u'main': set(['source', u'binary-i386']),
+              u'multiverse': set(['source', u'binary-i386']),
+              u'universe': set(['source', u'binary-i386'])}})
+
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
 
@@ -426,6 +437,19 @@ class TestPublisher(TestNativePublishingBase):
 
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
+
+        # Check if apt_handler.release_files_needed has the right requests.
+        # 'source' and 'binary-i386' Release files should be regenerated
+        # for all breezy-autotest components.
+        # We always regenerate all Releases file for a given suite.
+        self.assertEqual(
+            publisher.apt_handler.release_files_needed,
+            {u'breezy-autotest':
+             {u'restricted': set(['source', u'binary-i386']),
+              u'main': set(['source', u'binary-i386']),
+              u'multiverse': set(['source', u'binary-i386']),
+              u'universe': set(['source', u'binary-i386'])}})
+
         publisher.D_writeReleaseFiles(False)
 
         release_file = os.path.join(

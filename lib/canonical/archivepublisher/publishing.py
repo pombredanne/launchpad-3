@@ -265,9 +265,9 @@ class Publisher(object):
         Write contents using LP info to an extra plain file (Packages.lp
         and Sources.lp .
         """
-        full_name = distroseries.name + pocketsuffix[pocket]
+        suite_name = distroseries.name + pocketsuffix[pocket]
         self.log.debug("Generate Indexes for %s/%s"
-                       % (full_name, component.name))
+                       % (suite_name, component.name))
 
         self.log.debug("Generating Sources")
         temp_index = tempfile.mktemp(prefix='source-index_')
@@ -281,7 +281,7 @@ class Publisher(object):
         source_index.close()
 
         source_index_basepath = os.path.join(
-            self._config.distsroot, full_name, component.name, 'source')
+            self._config.distsroot, suite_name, component.name, 'source')
         if not os.path.exists(source_index_basepath):
             os.makedirs(source_index_basepath)
         source_index_path = os.path.join(source_index_basepath, "Sources.gz")
@@ -309,7 +309,7 @@ class Publisher(object):
             package_index.close()
 
             package_index_basepath = os.path.join(
-                self._config.distsroot, full_name, component.name, arch_path)
+                self._config.distsroot, suite_name, component.name, arch_path)
             if not os.path.exists(package_index_basepath):
                 os.makedirs(package_index_basepath)
             package_index_path = os.path.join(
@@ -322,16 +322,15 @@ class Publisher(object):
             mode = stat.S_IMODE(os.stat(package_index_path).st_mode)
             os.chmod(package_index_path, mode | stat.S_IWGRP)
 
-        # Inject static requests for Release files into
-        # 'self.apt_handler.release_files_needed' in a way we can easily
-        # obtain them for NoMoreAptFtpArchive w/o chaging much the rest
-        # of the code a lot.
-        dr_special = self.apt_handler.release_files_needed.setdefault(
-            full_name, {})
-        dr_component_special = dr_special.setdefault(component.name, set())
-        dr_component_special.add('source')
+        # Inject static requests for Release files into self.apt_handler
+        # in a way we can easily obtain them for NoMoreAptFtpArchive w/o
+        # chaging much the rest of the code, specially D_writeReleaseFiles
+        self.apt_handler.requestReleaseFile(
+            suite_name, component.name, 'source')
         for arch in distroseries.architectures:
-            dr_component_special.add("binary-" + arch.architecturetag)
+            arch_name = "binary-" + arch.architecturetag
+            self.apt_handler.requestReleaseFile(
+                suite_name, component.name, arch_name)
 
     def isAllowed(self, distroseries, pocket):
         """Whether or not the given suite should be considered.
