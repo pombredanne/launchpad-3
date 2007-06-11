@@ -16,6 +16,8 @@ __all__ = [
     'BugTaskListingView',
     'BugListingPortletView',
     'BugTaskSearchListingView',
+    'BugNominationsView',
+    'NominationsReviewTableBatchNavigatorView',
     'BugTaskTableRowView',
     'BugTargetView',
     'BugTasksAndNominationsView',
@@ -43,7 +45,8 @@ from zope.app.form.utility import (
     applyWidgetsChanges)
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
-from zope.interface import providedBy
+from zope.formlib.form import Widgets
+from zope.interface import alsoProvides, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IList
 from zope.schema.vocabulary import (
@@ -55,8 +58,8 @@ from canonical.lp import dbschema, decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    canonical_url, GetitemNavigation, Navigation, stepthrough,
-    redirection, LaunchpadView)
+    action, canonical_url, GetitemNavigation, Navigation, stepthrough,
+    redirection, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.interfaces import (
     IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
@@ -67,7 +70,7 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
     valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
-    IProductSeries)
+    IProductSeries, INominationsReviewTableBatchNavigator)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -80,11 +83,13 @@ from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
+from canonical.launchpad.webapp.enum import DBSchema, Item
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
+from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
@@ -92,7 +97,7 @@ from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget,
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
-    NewLineToSpacesWidget)
+    NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.project import ProjectScopeWidget
 
@@ -1221,11 +1226,11 @@ class BugTaskListingItem:
     def __init__(self, bugtask, bugbranches):
         self.bugtask = bugtask
         self.bugbranches = bugbranches
-        
+
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
-    
+
     def __init__(self, tasks, request, columns_to_show, size):
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
@@ -1238,11 +1243,66 @@ class BugListingBatchNavigator(TableBatchNavigator):
             self.bug_id_mapping.setdefault(
                 bugbranch.bug.id, []).append(bugbranch)
 
+    def _getListingItem(self, bugtask):
+        return BugTaskListingItem(
+            bugtask, self.bug_id_mapping.get(bugtask.bug.id, None))
+
     def getBugListingItems(self):
         """Return a decorated list of visible bug tasks."""
-        return [BugTaskListingItem(bugtask,
-                                   self.bug_id_mapping.get(bugtask.bug.id, None))
-                for bugtask in self.batch]
+        return [self._getListingItem(bugtask) for bugtask in self.batch]
+
+
+class NominatedBugReviewAction(DBSchema):
+    """"""
+
+    ACCEPT = Item(10, """
+        Accept
+
+        Accept the bug nomination.
+        """)
+
+    DECLINE = Item(20, """
+        Decline
+
+        Decline the bug nomination.
+        """)
+
+    NO_CHANGE = Item(30, """
+        No change
+
+        Do not change the status of the bug nomination.
+        """)
+
+
+class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
+    """
+    """
+    def __init__(self, tasks, request, columns_to_show, size, nomination_target):
+        BugListingBatchNavigator.__init__(self, tasks, request, columns_to_show, size)
+        self.nomination_target = nomination_target
+
+    def _getListingItem(self, bugtask):
+        bugtask_listing_item = BugListingBatchNavigator._getListingItem(self, bugtask)
+
+        review_action_vocab = vocab_factory(NominatedBugReviewAction)
+        bug_nomination = bugtask_listing_item.bug.getNominationFor(self.nomination_target)
+        review_action_field = Choice(
+            __name__='review_action_%d' % (bug_nomination.id,),
+            vocabulary=review_action_vocab(None),
+            title=u'Review action', required=True)
+
+        # This is so setUpWidget expects a view, and so
+        # view.request. We're not passing a view but we still want it
+        # to work.
+        bugtask_listing_item.request = self.request
+
+        bugtask_listing_item.review_action_widget = CustomWidgetFactory(
+            NominationReviewActionWidget)
+        setUpWidget(
+            bugtask_listing_item, 'review_action', review_action_field, IInputWidget,
+            value=NominatedBugReviewAction.NO_CHANGE, context=bug_nomination)
+
+        return bugtask_listing_item
 
 
 class BugTaskSearchListingView(LaunchpadView):
@@ -1425,6 +1485,11 @@ class BugTaskSearchListingView(LaunchpadView):
             setattr(search_params, name, value)
         return search_params
 
+    def _getBatchNavigator(self, tasks):
+        return BugListingBatchNavigator(
+            tasks, self.request, columns_to_show=self.columns_to_show,
+            size=config.malone.buglist_batch_size)
+
     def search(self, searchtext=None, context=None, extra_params=None):
         """Return an ITableBatchNavigator for the GET search criteria.
 
@@ -1442,9 +1507,7 @@ class BugTaskSearchListingView(LaunchpadView):
         search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
         tasks = context.searchTasks(search_params)
-        return BugListingBatchNavigator(
-            tasks, self.request, columns_to_show=self.columns_to_show,
-            size=config.malone.buglist_batch_size)
+        return self._getBatchNavigator(tasks)
 
     def getWidgetValues(self, vocabulary_name, default_values=()):
         """Return data used to render a field's widget."""
@@ -1716,6 +1779,75 @@ class BugTaskSearchListingView(LaunchpadView):
         search_url = (
             "%s/+bugs?field.has_cve=on" % canonical_url(self.context))
         return dict(count=open_cve_bugs.count(), url=search_url)
+
+
+class BugNominationsView(BugTaskSearchListingView):
+    """View for accepting/declining bug nominations."""
+
+    def _getBatchNavigator(self, tasks):
+        batch_navigator = NominatedBugListingBatchNavigator(
+            tasks, self.request, columns_to_show=self.columns_to_show,
+            size=config.malone.buglist_batch_size, nomination_target=self.context)
+        # Add marker interface to display custom bug listings.
+        alsoProvides(batch_navigator, INominationsReviewTableBatchNavigator)
+        return batch_navigator
+
+    def search(self):
+        """Return all the nominated tasks for this series."""
+        return BugTaskSearchListingView.search(
+            self, context=self.context.distribution,
+            extra_params=dict(nominated_for=self.context))
+
+
+class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
+    """
+    """
+    def setUpFields(self):
+        """
+        """
+        self.form_fields = []
+
+    def setUpWidgets(self):
+        """
+        """
+        self.widgets = Widgets(
+            [(True, bug_listing_item.review_action_widget)
+             for bug_listing_item in self.context.getBugListingItems()],
+            len(self.prefix)+1)
+
+    @action('Save changes', name='submit')
+    def submit_action(self, action, data):
+        """
+        """
+        accepted = declined = 0
+
+        for name, review_action in data.items():
+            if review_action == NominatedBugReviewAction.NO_CHANGE:
+                continue
+            field = self.widgets[name].context
+            bug_nomination = field.context
+            if review_action == NominatedBugReviewAction.ACCEPT:
+                bug_nomination.approve(self.user)
+                accepted += 1
+            elif review_action == NominatedBugReviewAction.DECLINE:
+                bug_nomination.decline(self.user)
+                declined += 1
+            else:
+                raise AssertionError(
+                    'Unknown NominatedBugReviewAction: %r' % (
+                        review_action,))
+
+        if accepted > 0:
+            self.request.response.addInfoNotification(
+                '%d nomination(s) accepted' % accepted)
+        if declined > 0:
+            self.request.response.addInfoNotification(
+                '%d nomination(s) declined' % declined)
+
+        self.next_url = self.request.getURL()
+        query_string = self.request.get('QUERY_STRING')
+        if query_string:
+            self.next_url += '?%s' % query_string
 
 
 class BugTargetView(LaunchpadView):

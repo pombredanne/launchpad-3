@@ -24,17 +24,14 @@ this architecture:
 
   >>> print find_tag_by_id(browser.contents, 'publishings')
   <div id="publishings">
-  <b>
-  warty
-  i386
-  Release</b>:
-  Published
-  version 0.9
-  in component main
-  and section base
-  <BLANKLINE>
-  ...on 2005-06-18...
-  <hr />
+    <b> warty i386 Release</b>:
+      Published version 1.0 in component main and section base
+        ...on 2006-04-11...
+    <hr />
+    <b> warty i386 Release</b>:
+      Published version 0.9 in component main and section base
+        ...on 2005-06-18...
+    <hr />
   </div>
 
 
