@@ -502,6 +502,7 @@ class BranchSet:
                 FROM Branch
                 WHERE
                     NOT Branch.private
+                    OR Branch.owner = %d
 
                 UNION
 
@@ -513,7 +514,7 @@ class BranchSet:
                 AND BranchSubscription.person = TeamParticipation.team
                 AND TeamParticipation.person = %d)
             '''
-            % (query, visible_by_user.id))
+            % (query, visible_by_user.id, visible_by_user.id))
 
         return clause
 
@@ -592,6 +593,7 @@ class BranchSet:
     def getBranchesForProduct(self, product, lifecycle_statuses=None,
                               visible_by_user=None):
         """See IBranchSet."""
+        assert product is not None, "Must have a valid product."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
         query = 'Branch.product = %s %s' % (product.id, lifecycle_clause)
@@ -602,7 +604,7 @@ class BranchSet:
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):
         """See IBranchSet."""
-        assert(product is not None)
+        assert product is not None, "Must have a valid product."
         query = "Branch.product = %d" % product.id
         return Branch.select(
             self._generateBranchClause(query, visible_by_user),

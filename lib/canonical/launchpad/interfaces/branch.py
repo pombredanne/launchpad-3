@@ -380,6 +380,9 @@ class IBranchSet(Interface):
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
         only visible by the author, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
     def getRecentlyImportedBranches(branch_count, visible_by_user=None):
@@ -391,6 +394,9 @@ class IBranchSet(Interface):
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
         only visible by the author, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
     def getRecentlyRegisteredBranches(branch_count, visible_by_user=None):
@@ -401,6 +407,9 @@ class IBranchSet(Interface):
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
         only visible by the author, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
     def getLastCommitForBranches(branches):
@@ -436,6 +445,9 @@ class IBranchSet(Interface):
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
         only visible by the author, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
     def getBranchesAuthoredByPerson(
@@ -453,6 +465,9 @@ class IBranchSet(Interface):
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
         only visible by the author, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
     def getBranchesRegisteredByPerson(
@@ -471,6 +486,9 @@ class IBranchSet(Interface):
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
         only visible by the author, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
     def getBranchesSubscribedByPerson(
@@ -489,6 +507,9 @@ class IBranchSet(Interface):
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
         only visible by the author, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
     def getBranchesForProduct(
@@ -504,6 +525,9 @@ class IBranchSet(Interface):
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
         only visible by the author, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
     def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
@@ -514,6 +538,9 @@ class IBranchSet(Interface):
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
         only visible by the author, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
 
