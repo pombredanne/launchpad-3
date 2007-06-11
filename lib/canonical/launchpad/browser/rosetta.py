@@ -17,8 +17,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IRequestPreferredLanguages, ICountry, ILaunchpadCelebrities,
-    IRosettaApplication, ILaunchpadRoot, ITranslationGroupSet, IProjectSet,
-    IProductSet, ITranslationImportQueue)
+    IRosettaApplication, ILanguageSet, ILaunchpadRoot, ITranslationGroupSet,
+    IProjectSet, IProductSet, ITranslationImportQueue)
 from canonical.launchpad import helpers
 import canonical.launchpad.layers
 from canonical.launchpad.webapp import (
@@ -33,7 +33,11 @@ class TranslationsMixin:
     @property
     def translatable_languages(self):
         """Return a set of the Person's translatable languages."""
-        return helpers.request_languages(self.request)
+        english = getUtility(ILanguageSet)['en']
+        languages = helpers.request_languages(self.request)
+        if english in languages:
+            languages.remove(english)
+        return languages
 
 
 class RosettaApplicationView(TranslationsMixin):
