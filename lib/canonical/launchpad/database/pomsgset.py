@@ -53,8 +53,12 @@ class POMsgSetMixIn:
             entries = 1
         return entries
 
-    def getRelatedSubmissions(self):
-        """See IPOMsgSet."""
+    def _getRelatedSubmissions(self):
+        """Fetch all POSubmissions needed to populate self's caches.
+
+        This retrieves all POSubmissions that form useful suggestions for self
+        from the database, as well as any POSubmissions that are already
+        attached to self, all in new-to-old order of datecreated."""
 
         match_self_sql = False
         if self.id is not None:
@@ -90,7 +94,7 @@ class POMsgSetMixIn:
 
         # Retrieve all related POSubmissions, and use them to populate our
         # submissions/suggestions caches.
-        for submission in self.getRelatedSubmissions():
+        for submission in self._getRelatedSubmissions():
             pluralform = submission.pluralform
             if submission.pomsgset == self:
                 if self.attached_submissions.get(pluralform) is None:
