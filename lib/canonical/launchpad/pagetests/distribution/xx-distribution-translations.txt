@@ -12,12 +12,6 @@ Check that there aren't disabled languages shown here:
   >>> 'Italian (Italy)' not in browser.contents
   True
 
-English is a special case in that it is not a translatable language
-even though it is visible
-
-  >>> 'English' not in browser.contents
-  True
-
 But we show the other languages
 
   >>> 'Spanish' in browser.contents

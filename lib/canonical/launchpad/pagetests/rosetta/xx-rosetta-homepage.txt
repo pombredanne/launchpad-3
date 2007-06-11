@@ -26,21 +26,22 @@ ALSA is listed in the page among featured projects:
   >>> projects.find(text='ALSA utilities')
   u'ALSA utilities'
 
-The homepage also includes a list of the user's translatable languages.
+Homepage also includes a list of languages.
 
-  >>> preferred_languages_col = find_tags_by_class(
+
+  >>> preferred_languages_column = find_tags_by_class(
   ...     browser.contents, 'three column right')[0]
-  >>> print extract_text(preferred_languages_col.findAll('h2')[0])
-  Preferred languages
-
-  >>> for language in preferred_languages_col.findAll('li'):
-  ...     print extract_text(language)
-  Afrikaans
-  Sotho, Southern
-  Xhosa
-  Zulu
-
-  >>> preferred_languages_col.findAll('a')[-1]
+  >>> print preferred_languages_column
+  <...
+  ...Preferred languages...
+  <a href="/+languages/af">Afrikaans</a>
+  ...
+  <a href="/+languages/st">Sotho, Southern</a>
+  ...
+  <a href="/+languages/xh">Xhosa</a>
+  ...
+  <a href="/+languages/zu">Zulu</a>
+  ...
   <a href="/+editmylanguages">
   ...Change your preferred language...
 
