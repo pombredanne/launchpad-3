@@ -7,14 +7,14 @@ import _pythonpath
 
 from zope.component import getUtility
 from canonical.lp import READ_COMMITTED_ISOLATION
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILaunchpadStatisticSet, IPersonSet
     )
 from canonical.config import config
 
 
-class StatUpdater(LaunchpadScript):
+class StatUpdater(LaunchpadCronScript):
     def main(self):
         self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
 
