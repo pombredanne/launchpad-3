@@ -101,7 +101,7 @@ will be sent.
     >>> libstdcplusplus_sourcepackage = ubuntu.getSourcePackage('libstdc++')
     >>> ubuntu_question.target = libstdcplusplus_sourcepackage
     >>> notify(SQLObjectModifiedEvent(
-    ...     ubuntu_question, unmodified_question, 
+    ...     ubuntu_question, unmodified_question,
     ...     ['title', 'description', 'target']))
 
 Three copies of the notification got sent, one to Sample Person, one to
@@ -856,8 +856,7 @@ sent to the support list about that question:
     ...     charset = message.get_content_charset()
     ...     content = unicode(message.get_payload(decode=True), charset)
     ...     return content.encode('us-ascii', 'backslashreplace')
-    
-    >>> #notification_body = notifications[0].get_payload(decode=True)
+
     >>> notification_body = escape_utf8_payload(notifications[0])
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     A question was asked in a language (French) spoken by
