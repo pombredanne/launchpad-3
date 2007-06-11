@@ -29,7 +29,12 @@
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
     <style tal:condition="not: site_message" type="text/css"
     >#help_panel {top: 28px !important;}</style>
-    <!-- Launchpad JS code -->
+    <style type="text/css">
+      #portlets .portletBody {display: none;}
+    </style>
+    <noscript>
+      <style type="text/css">#portlets .portletBody {display: block}</style>
+    </noscript>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
