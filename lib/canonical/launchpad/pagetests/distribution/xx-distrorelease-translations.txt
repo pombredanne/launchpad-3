@@ -37,6 +37,13 @@ The system is not showing non visible languages:
   ...
   LinkNotFoundError
 
+The system will not show English because it is not translatable:
+
+  >>> anon_browser.getLink('English')
+  Traceback (most recent call last):
+  ...
+  LinkNotFoundError
+
 But it shows the ones not hidden:
 
   >>> print anon_browser.getLink('Spanish').url
