@@ -8,17 +8,11 @@
           <div style="text-align: right">No change</div>
         </th>
         <th colspan="2">Summary</th>
-        <th tal:condition="context/show_column/targetname|nothing">
-          In
-        </th>
         <th tal:condition="context/show_column/packagename|nothing">
           Package
         </th>
-        <th tal:condition="context/show_column/productname|nothing">
-          Project
-        </th>
-        <th tal:condition="context/show_column/importance|nothing">Importance</th>
-        <th tal:condition="context/show_column/status|nothing">Status</th>
+        <th>Importance</th>
+        <th>Status</th>
       </tr>
     </thead>
     <tbody>
@@ -31,30 +25,20 @@
         <td
           class="amount"
           tal:content="bugtask/bug/id"
-          tal:condition="context/show_column/id|nothing"
         >42</td>
         <td>
           <a href="#"
              tal:content="bugtask/bug/title"
-             tal:attributes="href bugtask/fmt:url"
-             tal:condition="context/show_column/summary|nothing">
+             tal:attributes="href bugtask/fmt:url">
             drop-down list in search bar disappears when using blah blah blah
           </a>
           <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
         </td>
-        <td tal:content="bugtask/targetname"
-            tal:condition="context/show_column/targetname|nothing"
-        >mozilla-firefox (Ubuntu)</td>
         <td tal:content="structure bugtask/sourcepackagename/name|string:&mdash;"
             tal:condition="context/show_column/packagename|nothing"
         >mozilla-firefox (Ubuntu)</td>
-        <td tal:content="structure bugtask/product/name|string:&mdash;"
-            tal:condition="context/show_column/productname|nothing"
-        >firefox</td>
-        <td tal:content="bugtask/importance/title"
-            tal:condition="context/show_column/importance|nothing">Critical</td>
-        <td tal:content="bugtask/status/title"
-            tal:condition="context/show_column/status|nothing">Confirmed</td>
+        <td tal:content="bugtask/importance/title">Critical</td>
+        <td tal:content="bugtask/status/title">Confirmed</td>
       </tr>
     </tbody>
   </table>
