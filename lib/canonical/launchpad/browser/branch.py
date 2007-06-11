@@ -272,6 +272,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """Handle a request to create a new branch for this product."""
         self.branch = getUtility(IBranchSet).new(
             name=data['name'],
+            creator=self.user,
             owner=self.user,
             author=self.getAuthor(data),
             product=self.getProduct(data),

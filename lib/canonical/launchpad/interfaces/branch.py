@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchCreationForbidden',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
@@ -19,8 +20,8 @@ from zope.component import getUtility
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
-from canonical.lp.dbschema import (BranchLifecycleStatus,
-                                   BranchLifecycleStatusFilter)
+from canonical.lp.dbschema import (
+    BranchLifecycleStatus, BranchLifecycleStatusFilter)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
@@ -35,6 +36,14 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.EXPERIMENTAL,
     BranchLifecycleStatus.DEVELOPMENT,
     BranchLifecycleStatus.MATURE)
+
+
+class BranchCreationForbidden(Exception):
+    """Raised when a user is not allowed to create a branch.
+
+    The exception is raised if the policy for the product does not allow
+    the creator of the branch to create a branch for that product.
+    """
 
 
 class BranchURIField(URIField):
@@ -76,7 +85,7 @@ class BranchURIField(URIField):
 
 class IBranchBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate branch listings."""
-    
+
 
 class IBranch(IHasOwner):
     """A Bazaar branch."""
@@ -334,10 +343,14 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
-    def new(name, owner, product, url, title,
+    def new(name, creator, owner, product, url, title,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, date_created=None):
-        """Create a new branch."""
+        """Create a new branch.
+
+        Raises BranchCreationForbidden if the creator is not allowed
+        to create a branch for the specified product.
+        """
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.

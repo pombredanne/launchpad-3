@@ -21,14 +21,14 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.interfaces import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
-    ILaunchpadCelebrities, NotFoundError)
+    BranchCreationForbidden, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchSet, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.lp.dbschema import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    BranchRelationships, BranchLifecycleStatus)
+    BranchRelationships, BranchLifecycleStatus, BranchVisibilityPolicy)
 
 
 class Branch(SQLBase):
@@ -312,7 +312,50 @@ class BranchSet:
         except SQLObjectNotFound:
             return default
 
-    def new(self, name, owner, product, url, title=None,
+    def _checkVisibilityPolicy(self, creator, owner, product):
+        """Return a tuple of private and team to subscribe."""
+        policy_items = product.branch_visibility_policy_items
+
+        ratings = dict([(item, []) for item in BranchVisibilityPolicy.items])
+
+        for item in policy_items:
+            if item.team is not None and creator.inTeam(item.team):
+                ratings[item.policy].append(item.team)
+
+        # Forbidden trumps privacy.
+        if len(ratings[BranchVisibilityPolicy.FORBIDDEN]) > 0:
+            raise BranchCreationForbidden
+        # Private trumps public.
+        private_teams = (
+            ratings[BranchVisibilityPolicy.PRIVATE] +
+            ratings[BranchVisibilityPolicy.PRIVATE_ONLY])
+        if len(private_teams) == 1:
+            return (True, private_teams[0])
+        elif len(private_teams) > 1:
+            # If the creator is a member of multiple teams that have private
+            # branches enabled for them, then the branch is private, and only
+            # visible to the creator.
+            if owner == creator:
+                # If the logged in user is the owner of the branch then they
+                # can see the branch, so no implicit subscription is needed.
+                return (True, None)
+            else:
+                return (True, creator)
+        elif len(ratings[BranchVisibilityPolicy.PUBLIC]) > 0:
+            return (False, None)
+
+        # Need to check the base branch visibility policy.
+        base_policy = product.branch_visibility_base_policy
+        if base_policy == BranchVisibilityPolicy.FORBIDDEN:
+            raise BranchCreationForbidden
+        elif base_policy == BranchVisibilityPolicy.PUBLIC:
+            return (False, None)
+        elif owner == creator:
+            return (True, None)
+        else:
+            return (True, creator)
+
+    def new(self, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):
         """See IBranchSet."""
@@ -320,11 +363,31 @@ class BranchSet:
             home_page = None
         if date_created is None:
             date_created = UTC_NOW
-        return Branch(
+        # Check the policy for the person creating the branch.
+        # If the product is None, then the branch is +junk, and hence
+        # public.
+        private = False
+        implicit_subscription = None
+        if product is not None:
+            private, implicit_subscription = self._checkVisibilityPolicy(
+                creator, owner, product)
+
+        branch = Branch(
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page, whiteboard=whiteboard,
+            home_page=home_page, whiteboard=whiteboard, private=private,
             date_created=date_created)
+
+        # Implicit subscriptions are to enable teams to see private branches
+        # as soon as they are created.  The subscriptions can be edited at
+        # a later date if desired.
+        if implicit_subscription is not None:
+            branch.subscribe(
+                implicit_subscription,
+                BranchSubscriptionNotificationLevel.NOEMAIL,
+                BranchSubscriptionDiffSize.NODIFF)
+
+        return branch
 
     def getByUrl(self, url, default=None):
         """See IBranchSet."""

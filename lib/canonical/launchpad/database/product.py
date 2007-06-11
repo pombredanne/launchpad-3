@@ -612,10 +612,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def newBranch(self, name, title, url, home_page, lifecycle_status,
                   summary, whiteboard):
         """See IProduct."""
-        # XXX thumper-angry - FIX THIS!!!!
-        # use BranchSet
-        from canonical.launchpad.database import Branch
-        return Branch(
+        return BranchSet().new(
             product=self, name=name, title=title, url=url, home_page=home_page,
             lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard)

@@ -218,3 +218,80 @@ even be the same as the default policy.
     >>> print_policy_items(thunderbird)
     *everyone*: Public
 
+
+== Policy checks during branch creation ==
+
+The branch visibility policy is checked during branch creation through
+the IBranchSet utility.  The private method on BranchSet _checkVisibilityPolicy.
+
+    >>> from canonical.launchpad.database.branch import BranchSet
+    >>> branch_set = BranchSet()
+    >>> print_policy_items(evolution)
+    *everyone*: Public
+    Launchpad Developers: Private
+    Ubuntu Gnome Team: Private
+
+    >>> foo_bar = person_set.getByEmail("foo.bar@canonical.com")
+    >>> stevea = person_set.getByName("stevea")
+
+Foo Bar is a member of both Launchpad Developers and Ubuntu Gnome Team.
+
+    >>> foo_bar.inTeam(launchpad_team)
+    True
+    >>> foo_bar.inTeam(ubuntu_gnome_team)
+    True
+
+If Foo Bar is creating a branch for evolution, the branch would be created
+as a private branch, but since there are two teams that specify privacy,
+the branch is created so only Foo Bar can see it.  It is up to Foo Bar to
+subscribe the appropriate team at a later date.
+
+    >>> create_private, implicit_subscription_team = (
+    ...     branch_set._checkVisibilityPolicy(
+    ...         creator=foo_bar, owner=foo_bar, product=evolution))
+    >>> create_private
+    True
+    >>> print implicit_subscription_team
+    None
+
+If Foo Bar is creating a branch for evolution, but is setting the owner
+to be a team, then Foo Bar is subscribed to that branch.
+
+    >>> create_private, implicit_subscription_team = (
+    ...     branch_set._checkVisibilityPolicy(
+    ...         creator=foo_bar, owner=launchpad_team, product=evolution))
+    >>> create_private
+    True
+    >>> implicit_subscription_team == foo_bar
+    True
+
+Steve is a member of the Ubuntu Gnome Team, but not the Launchpad
+Developers team, so branches that are created by Steve are private
+and are subscribed to by the Ubuntu Gnome Team.
+
+    >>> stevea.inTeam(launchpad_team)
+    False
+    >>> stevea.inTeam(ubuntu_gnome_team)
+    True
+
+    >>> create_private, implicit_subscription_team = (
+    ...     branch_set._checkVisibilityPolicy(
+    ...         creator=stevea, owner=stevea, product=evolution))
+    >>> create_private
+    True
+    >>> implicit_subscription_team == ubuntu_gnome_team
+    True
+
+Others that create branches for evolution get public branches.
+
+    >>> ddaa = person_set.getByEmail("david@canonical.com")
+    >>> create_private, implicit_subscription_team = (
+    ...     branch_set._checkVisibilityPolicy(
+    ...         creator=ddaa, owner=ddaa, product=evolution))
+    >>> create_private
+    False
+    >>> print implicit_subscription_team
+    None
+
+
+Private some, public some, forbidden default
