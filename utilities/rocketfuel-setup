@@ -293,6 +293,14 @@ if [ $? -ne 0 ]; then
   echo "WARNING: /usr/local/bin/rocketfuel-setup should be deleted so I can
          recreate it."
 fi
+if [ ! -e rocketfuel-status ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-status
+fi
+ls -l rocketfuel-status | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-status should be deleted so I can
+         recreate it."
+fi
 
 
 # Make sure we have all the right code in place for source dependencies
