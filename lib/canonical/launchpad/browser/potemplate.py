@@ -38,7 +38,8 @@ from canonical.launchpad.browser.sourcepackage import (
     SourcePackageSOP, SourcePackageFacets)
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOExportRequestSet,
-    IPOTemplateSubset, ITranslationImportQueue, IProductSeries, ISourcePackage)
+    IPOTemplateSubset, ITranslationImportQueue, IProductSeries, 
+    ISourcePackage)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
@@ -260,7 +261,8 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
 
     @property
     def has_pofiles(self):
-        languages = set(self.context.languages()).union(self.translatable_languages)
+        languages = set(
+            self.context.languages()).union(self.translatable_languages)
         return len(languages) > 0
 
     def _sortLanguages(self, languages):
