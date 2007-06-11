@@ -13,10 +13,13 @@
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
-  <h2>Subscription for 
-    <a tal:content="view/person/displayname"
-       tal:attributes="href view/person/fmt:url">Person</a>
-  </h2>
+  <h1>
+        Edit subscription to branch
+        &ldquo;<a tal:attributes="href context/fmt:url"
+        tal:content="context/branch/displayname">branch name</a>&rdquo;
+        for <a tal:content="context/person/displayname"
+       tal:attributes="href context/person/fmt:url">Person</a>
+  </h1>
   <div metal:use-macro="context/@@launchpad_form/form" >
     <metal:extra fill-slot="extra_info">
       <p class="documentDescription">

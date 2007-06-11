@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchSubscriptionSOP',
     'BranchSubscriptionAddView',
     'BranchSubscriptionEditView',
     'BranchSubscriptionEditOwnView',
@@ -11,10 +12,20 @@ __all__ = [
 
 from canonical.lp.dbschema import BranchSubscriptionNotificationLevel
 
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.interfaces import IBranchSubscription
 from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView,
     action, canonical_url)
+
+
+class BranchSubscriptionSOP(StructuralObjectPresentation):
+    """Provides the structural heading for IBranchSubscription."""
+
+    def getMainHeading(self):
+        """See IStructuralHeaderPresentation."""
+        subscription = self.context
+        return _('Subscription to %s' % subscription.branch.displayname)
 
 
 class _BranchSubscriptionView(LaunchpadFormView):
@@ -73,10 +84,6 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
             'You have subscribed to this branch with: ',
             notification_level, max_diff_lines)
 
-    @action("Cancel")
-    def cancel_edit(self, action, data):
-        "Cancel the request, and take user back to branch page."
-
 
 class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
 
@@ -108,10 +115,6 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
             'Subscription updated to: ',
             subscription.notification_level,
             subscription.max_diff_lines)
-
-    @action("Cancel")
-    def cancel_edit(self, action, data):
-        "Cancel the request, and take user back to branch page."
 
 
 class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
@@ -149,10 +152,6 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
                 % (person.displayname, word),
                 subscription.notification_level, subscription.max_diff_lines)
 
-    @action("Cancel")
-    def cancel_edit(self, action, data):
-        "Cancel the request, and take user back to branch page."
-
 
 class BranchSubscriptionEditView(LaunchpadEditFormView):
 
@@ -167,17 +166,17 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
     @action("Unsubscribe")
     def unsubscribe(self, action, data):
         self.branch.unsubscribe(self.person)
+        if self.person.isTeam():
+            word = 'have'
+        else:
+            word = 'has'
         self.request.response.addNotification(
-            "%s has been unsubscribed from this branch."
-            % self.person.displayname)
+            "%s %s been unsubscribed from this branch."
+            % (self.person.displayname, word))
 
     @action("Change")
     def change_details(self, action, data):
         self.updateContextFromData(data)
-
-    @action("Cancel")
-    def cancel_edit(self, action, data):
-        "Cancel the request, and take user back to branch page."
 
     @property
     def next_url(self):

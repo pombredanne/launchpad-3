@@ -426,7 +426,7 @@ class BranchSubscriptionsView(LaunchpadView):
         """A subscription is editable by members of the subscribed team."""
         # We don't want to say editable if the logged in user
         # is the same as the person of the subscription.
-        if self.user == subscription.person:
+        if self.user is None or self.user == subscription.person:
             return False
         return self.user.inTeam(subscription.person)
 

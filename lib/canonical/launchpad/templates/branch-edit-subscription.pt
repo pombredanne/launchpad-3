@@ -7,8 +7,10 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Edit subscription to branch 
-      &ldquo;<tal:branch replace="context/displayname" />&rdquo;
+      <h1>
+        Edit subscription to branch
+        &ldquo;<a tal:attributes="href context/fmt:url"
+        tal:content="context/displayname">branch name</a>&rdquo;
       </h1>
     </metal:heading>
 

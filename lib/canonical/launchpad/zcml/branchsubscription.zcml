@@ -17,6 +17,12 @@
         for="canonical.launchpad.interfaces.IBranchSubscription"
         name="+index" />
 
+  <adapter
+    for="canonical.launchpad.interfaces.IBranchSubscription"
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    factory="canonical.launchpad.browser.BranchSubscriptionSOP"
+    />
+
   <browser:page
     name="+index"
     for="canonical.launchpad.interfaces.IBranchSubscription"
@@ -25,11 +31,9 @@
     permission="launchpad.Edit"
     template="../templates/branchsubscription-edit.pt" />
 
-
   <browser:url
       for="canonical.launchpad.interfaces.IBranchSubscription"
       path_expression="string:+subscription/${person/name}"
       attribute_to_parent="branch"
         rootsite="code" />
-
 </configure>

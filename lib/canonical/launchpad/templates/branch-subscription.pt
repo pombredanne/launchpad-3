@@ -8,7 +8,9 @@
   <body>
     <metal:heading fill-slot="pageheading">
       <h1>
-        Subscribe to &ldquo;<tal:branch replace="context/displayname" />&rdquo;
+        Subscribe to branch
+        &ldquo;<a tal:attributes="href context/fmt:url"
+        tal:content="context/displayname">branch name</a>&rdquo;
       </h1>
     </metal:heading>
 
@@ -35,7 +37,7 @@
 <tal:subscribed condition="view/user_is_subscribed">
 
   <tal:comment condition="nothing">
-    This occurs if the user is hacking the URLs, 
+    This occurs if the user is hacking the URLs,
     and should never be linked to from a valid page.
 
     It could occur from a stale page as well if the user
