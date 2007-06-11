@@ -415,6 +415,8 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     archive = Attribute(
         "The Archive owned by this person, his PPA.")
 
+    entitlements = Attribute("List of Entitlements for this person or team.")
+
     @invariant
     def personCannotHaveIcon(person):
         if person.icon is not None and not person.isTeam():
@@ -691,7 +693,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     def getDirectAdministrators():
         """Return this team's administrators.
-         
+
          This includes all direct members with admin rights and also
          the team owner. Note that some other persons/teams might have admin
          privilege by virtue of being a member of a team with admin rights.
@@ -1070,4 +1072,3 @@ class ITeamCreation(ITeam):
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
-

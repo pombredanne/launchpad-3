@@ -1,0 +1,34 @@
+= Entitlements =
+
+Entitlements are a means of recording features and privileges
+Launchpad users have been assigned.  The business model for these
+assignments is not important, but it could be through a commercial
+arrangement or through a grant that applies to everyone.
+
+    >>> from zope.component import getUtility
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.database.sqlbase import flush_database_updates
+
+Be a superuser:
+
+    >>> login("foo.bar@canonical.com")
+
+Find a team with an entitlement.
+
+    >>> personset = getUtility(IPersonSet)
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> print ubuntu_team.name
+    ubuntu-team
+
+    >>> entitlements = ubuntu_team.entitlements
+    >>> entitlements.count() == 2
+    True
+
+    >>> entitlement = entitlements[0]
+    >>> entitlement.quota = 100
+    >>> entitlement.amount_used = 0
+    >>> entitlement.exceededQuota
+    False
+

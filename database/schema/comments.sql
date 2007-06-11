@@ -1458,3 +1458,12 @@ COMMENT ON COLUMN RevisionProperty.revision IS 'The revision which has propertie
 COMMENT ON COLUMN RevisionProperty.name IS 'The name of the property.';
 COMMENT ON COLUMN RevisionProperty.value IS 'The value of the property.';
 
+-- Entitlement
+COMMENT ON TABLE Entitlement IS 'Entitlements and usage of privileged features.';
+COMMENT ON COLUMN Entitlement.team IS 'The team to which the entitlements apply.';
+COMMENT ON COLUMN Entitlement.date_created IS 'Creation date of entitlement.';
+COMMENT ON COLUMN Entitlement.date_starts IS 'When this entitlement becomes active.';
+COMMENT ON COLUMN Entitlement.date_expires IS 'When this entitlement expires.';
+COMMENT ON COLUMN Entitlement.entitlement_type IS 'The type of this entitlement (e.g. private bug).';
+COMMENT ON COLUMN Entitlement.quota IS 'Number of this entitlement allowed.';
+COMMENT ON COLUMN Entitlement.amount_used IS 'Quantity of this entitlement allocation that is used.';

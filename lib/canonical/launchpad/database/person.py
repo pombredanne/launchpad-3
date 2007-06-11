@@ -46,9 +46,9 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
-    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
-    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILanguageSet,
+    IEmailAddress, IEmailAddressSet, IEntitlement, IGPGKeySet, IHasIcon,
+    IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
+    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet, ILanguageSet,
     ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
     IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
     ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
@@ -184,6 +184,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
 
+    entitlements = SQLMultipleJoin('Entitlement', joinColumn='team')
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -698,7 +699,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             "is not a participant in any direct member of %(team)s"
             % dict(person=self.name, team=team.name))
         return member
-            
+
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
@@ -1070,7 +1071,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                 "be added as a member of '%s'"
                 % (self.name, person.name, person.name, self.name))
             # By default, teams can only be invited as members, meaning that
-            # one of the team's admins will have to accept the invitation 
+            # one of the team's admins will have to accept the invitation
             # before the team is made a member. If force_team_add is True,
             # though, then we'll add a team as if it was a person.
             if not force_team_add:
@@ -1099,7 +1100,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     # the zcml but that's far from optimal given the size of IPerson.
     def acceptInvitationToBeMemberOf(self, team, comment):
         """Accept an invitation to become a member of the given team.
-        
+
         There must be a TeamMembership for this person and the given team with
         the INVITED status. The status of this TeamMembership will be changed
         to APPROVED.
@@ -1113,7 +1114,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def declineInvitationToBeMemberOf(self, team, comment):
         """Decline an invitation to become a member of the given team.
-        
+
         There must be a TeamMembership for this person and the given team with
         the INVITED status. The status of this TeamMembership will be changed
         to INVITATION_DECLINED.
@@ -2547,4 +2548,3 @@ class IrcIDSet:
 
     def new(self, person, network, nickname):
         return IrcID(person=person, network=network, nickname=nickname)
-

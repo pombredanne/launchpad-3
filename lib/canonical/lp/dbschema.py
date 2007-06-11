@@ -45,6 +45,7 @@ __all__ = (
 'CveStatus',
 'DistroSeriesStatus',
 'EmailAddressStatus',
+'EntitlementType',
 'GPGKeyAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
@@ -3680,4 +3681,25 @@ class PersonCreationRationale(DBSchema):
 
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
+        """)
+
+class EntitlementType(DBSchema):
+    """Special values for use as sentinels in the Entitlement table."""
+
+    PRIVATE_BRANCHES = Item(1, """
+        Private Branches
+
+        The ability to create branches which are only visible to the team.
+        """)
+
+    PRIVATE_BUGS = Item(2, """
+        Private Bugs
+
+        The ability to create private bugs which are only visible to the team.
+        """)
+    PRIVATE_TEAMS = Item(3, """
+        Private Teams
+
+        The ability to create private teams which are only visible to parent
+        teams.
         """)
