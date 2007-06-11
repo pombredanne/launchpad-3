@@ -1,5 +1,4 @@
-StrippedTextLine Widget
-=======================
+= StrippedTextLine Widget =
 
 This custom widget is used to strip leading and trailing whitespaces.
 
