@@ -1,10 +1,11 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
   <content class="canonical.launchpad.database.Entitlement">
-    <allow interface="canonical.launchpad.interfaces.IEntitlement"/>
-    <require 
-      permission="launchpad.AnyPerson"
-      set_schema="canonical.launchpad.interfaces.IBounty" />
+    <allow interface="canonical.launchpad.interfaces.IEntitlement" />
+    <require
+       permission="launchpad.Admin"
+       set_attributes="quota amount_used"
+    />
   </content>
 
 </configure>
