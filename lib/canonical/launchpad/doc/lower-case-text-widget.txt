@@ -1,0 +1,54 @@
+LowerCaseTextWidget
+===================
+
+This custom widget is used to convert strings to lower case.
+
+  >>> from canonical.launchpad.interfaces import IBug
+  >>> from canonical.widgets.textwidgets import LowerCaseTextWidget
+  >>> from zope.publisher.browser import TestRequest
+
+We pass a string with upper case characters to the widget.
+
+  >>> field = IBug['description']
+  >>> request = TestRequest(form={'field.description':'FooBar'})
+  >>> widget = LowerCaseTextWidget(field, request)
+
+And we check that the upper case characters were correctly converted to lower
+case.
+
+  >>> widget.getInputValue()
+  u'foobar'
+
+Next, we pass a string with no upper case characters to the widget.
+
+  >>> field = IBug['description']
+  >>> request = TestRequest(form={'field.description':'wibble'})
+  >>> widget = LowerCaseTextWidget(field, request)
+
+And we check that the string remains unchanged.
+
+  >>> widget.getInputValue()
+  u'wibble'
+
+We pass a non-alphabetic string to the widget.
+
+  >>> field = IBug['description']
+  >>> request = TestRequest(form={'field.description':'123'})
+  >>> widget = LowerCaseTextWidget(field, request)
+
+And we check that the string remains unchanged.
+
+  >>> widget.getInputValue()
+  u'123'
+
+There is a special style defined in "lib/canonical/launchpad/icing/style.css"
+that causes text to be rendered with lower case characters. This style, when
+applied to a form input field, presents the user with the illusion that all
+alphabetic characters appear as lower case, regardless of which casing is used
+as the text is entered.
+
+It's important that the widget renders itself with this style. We check this by
+reading the widget's css class property:
+
+  >>> widget.cssClass
+  'lowerCaseText'

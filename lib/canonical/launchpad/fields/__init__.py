@@ -15,7 +15,7 @@ from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import valid_name, name_validator
 
 
 # Marker object to tell BaseImageUpload to keep the existing image.
@@ -274,22 +274,30 @@ class UniqueField(TextLine):
         """
         raise NotImplementedError
 
+    def _isValueTaken(self, value):
+        """Returns true if and only if the specified value is already taken."""
+        return self._getByAttribute(value) is not None
+
     def _validate(self, input):
         """Raise a LaunchpadValidationError if the attribute is not available.
 
-        A attribute is not available if it's already in use by another object 
+        A attribute is not available if it's already in use by another object
         of this same context. The 'input' should be valid as per TextLine.
         """
         TextLine._validate(self, input)
         assert self._content_iface is not None
         _marker = object()
-        if (self._content_iface.providedBy(self.context) and 
+
+        # If we are editing an existing object and the attribute is unchanged...
+        if (self._content_iface.providedBy(self.context) and
             input == getattr(self.context, self.attribute, _marker)):
-            # The attribute wasn't changed.
+            # ...then do nothing: we already know the value is unique.
             return
 
-        contentobj = self._getByAttribute(input)
-        if contentobj is not None:
+        # Now we know we are dealing with either a new object, or an object
+        # whose attribute is going to be updated. We need to ensure the new
+        # value is unique.
+        if self._isValueTaken(input):
             raise LaunchpadValidationError(self.errormessage % input)
 
 
@@ -301,6 +309,11 @@ class ContentNameField(UniqueField):
     def _getByAttribute(self, name):
         """Return the content object with the given name."""
         return self._getByName(name)
+
+    def _validate(self, name):
+        """Check that the given name is valid (and by delegation, unique)."""
+        UniqueField._validate(self, name)
+        name_validator(name)
 
 
 class BlacklistableContentNameField(ContentNameField):
