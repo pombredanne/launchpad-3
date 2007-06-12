@@ -741,8 +741,7 @@ class NascentUpload:
         """
         if self.is_rejected:
             self.reject("Alas, someone called do_accept when we're rejected")
-            if notify:
-                self.do_reject()
+            self.do_reject(notify)
             return False
         try:
             maintainerfrom = None
@@ -775,13 +774,16 @@ class NascentUpload:
             # Let's log tracebacks for uncaught exceptions ...
             self.logger.error(
                 'Exception while accepting:\n %s' % e, exc_info=True)
-            if notify:
-                self.do_reject()
+            self.do_reject(notify)
             return False
 
-    def do_reject(self):
+    def do_reject(self, notify=True):
         """Reject the current upload given the reason provided."""
         assert self.is_rejected, "The upload is not rejected."
+
+        # Bail out immediately if no email is really required.
+        if not notify:
+            return
 
         # We need to check that the queue_root object has been fully
         # initialised first, because policy checks or even a code exception

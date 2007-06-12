@@ -391,3 +391,10 @@ No emails generated:
   >>> len(msgs)
   0
 
+Rejections with notify=False will also not generate any emails.
+
+  >>> result = netapplet_src.do_reject(notify=False)
+  >>> msgs = pop_notifications()
+  >>> len(msgs)
+  0
+
