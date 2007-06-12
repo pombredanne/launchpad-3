@@ -6,19 +6,22 @@ __metaclass__ = type
 import threading
 import xmlrpclib
 
-from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
-from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
+import zope.publisher.publish
+from zope.app.form.browser.widget import SimpleInputWidget
+from zope.app.form.browser.itemswidgets import  MultiDataHelper
 from zope.app.session.interfaces import ISession
-from zope.interface import implements
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import IRequestPublicationFactory
-from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
-from zope.server.http.commonaccesslogger import CommonAccessLogger
-import zope.publisher.publish
+from zope.interface import implements
+from zope.publisher.browser import (
+    BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import IRequest
+from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.security.proxy import isinstance as zope_isinstance
+from zope.server.http.commonaccesslogger import CommonAccessLogger
+from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
 
@@ -379,27 +382,50 @@ class BrowserFormNG:
         return value
 
 
-def _getFormInput_single(self):
-    """Return the submitted form value.
+class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
+    """Make Zope3 widgets use IBrowserFormNG.
 
-    Monkey patched into zope.app.form.browser.widget.SimpleInputWidget.
-
-    :raises UnexpectedFormData: If more than one value is submitted.
+    Replace the SimpleInputWidget._getFormInput method with one using
+    `IBrowserFormNG`.
     """
-    return self.request.form_ng.getOne(self.name)
 
-def _getFormInput_multi(self):
-    """Return the submitted form values.
+    installed = False
+    
+    @classmethod
+    def install(cls):
+        """Install the monkey patch."""
+        assert not cls.installed, "Monkey patch is already installed."
+        def _getFormInput_single(self):
+            """Return the submitted form value.
 
-    Monkey patched into zope.app.form.browser.itemswidgets.MultiDataHelper.
-    """
-    return self.request.form_ng.getAll(self.name)
+            :raises UnexpectedFormData: If more than one value is submitted.
+            """
+            return self.request.form_ng.getOne(self.name)
 
-from zope.app.form.browser.widget import SimpleInputWidget
-SimpleInputWidget._getFormInput = _getFormInput_single
+        def _getFormInput_multi(self):
+            """Return the submitted form values.
+            """
+            return self.request.form_ng.getAll(self.name)
 
-from zope.app.form.browser.itemswidgets import MultiDataHelper
-MultiDataHelper._getFormInput = _getFormInput_multi
+        # Save the original method and replace it with fixed ones.
+        cls.SimpleInputWidget__getFormInput = (
+            SimpleInputWidget._getFormInput )
+        SimpleInputWidget._getFormInput = _getFormInput_single
+        MultiDataHelper._getFormInput = _getFormInput_multi
+        cls.installed = True
+        
+    @classmethod
+    def uninstall(cls):
+        """Uninstall the monkey patch."""
+        assert cls.installed, "Monkey patch is not installed."
+
+        # Restore saved methods.
+        SimpleInputWidget._getFormInput = cls.SimpleInputWidget__getFormInput
+        del MultiDataHelper._getFormInput
+        cls.installed = False
+
+
+Zope3WidgetsUseIBrowserFormNGMonkeyPatch.install()
 
 
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):

@@ -6,16 +6,47 @@ a non-expected number of values.
 
 Launchpad monkey patch the base Zope widgets so that they use
 the IBrowserFormNG interface (see webapp-publication.txt) to obtain
-the form value. Instead of failing with a low-level exception, the
-widget will raise an UnexpectedFormData when the request contains more
-than one argument.
+the form value.
+
+The monkey patch is installe by default:
+
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     Zope3WidgetsUseIBrowserFormNGMonkeyPatch)
+    >>> Zope3WidgetsUseIBrowserFormNGMonkeyPatch.installed
+    True
+
+Without the patch, the regular Zope3 widgets fail with a low-level
+exception:
 
     >>> import zope.schema as schema
-    >>> from zope.app.form.browser import TextWidget
+    >>> from zope.app.form.browser import IntWidget, TextWidget
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
+    >>> Zope3WidgetsUseIBrowserFormNGMonkeyPatch.uninstall()
+
+    >>> int_field = schema.Int(__name__='int')
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.int': [1, 2]})
+    >>> int_widget = IntWidget(int_field, request)
+    >>> int_widget.getInputValue()
+    Traceback (most recent call last):
+      ...
+    TypeError: ...
+
+With the monkey patch in place, instead of failing with a low-level
+exception, the widget will raise an UnexpectedFormData when the request
+contains more than one argument.
+
+    >>> Zope3WidgetsUseIBrowserFormNGMonkeyPatch.install()
+
+    >>> int_widget.getInputValue()
+    Traceback (most recent call last):
+      ...
+    UnexpectedFormData: ...
+
     >>> text_field = schema.TextLine(__name__='text')
-    >>> request = LaunchpadTestRequest(form={'field.text': ['1', '2']})
+    >>> request = LaunchpadTestRequest(
+    ...     form={'field.text': ['two', 'strings']})
     >>> text_widget = TextWidget(text_field, request)
     >>> text_widget.getInputValue()
     Traceback (most recent call last):
