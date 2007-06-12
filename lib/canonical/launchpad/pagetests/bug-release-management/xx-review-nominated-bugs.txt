@@ -52,3 +52,21 @@ nominations.
     ...     has_input_controls = approve_td.renderContents().strip() != ''
     ...     print "%s: %s" % (extract_text(bug_id), has_input_controls)
     1: True
+
+After approving the nominated bugs, the listing is empty.
+
+    >>> from canonical.launchpad.database import BugSet, DistributionSet
+    >>> ubuntu = DistributionSet().getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> bug_one = BugSet().get(1)
+    >>> hoary_nomination = bug_one.getNominationFor(hoary)
+    >>> nomination_control = admin_browser.getControl(
+    ...     name='field.review_action_%s' % hoary_nomination.id)
+    >>> nomination_control.getControl(value='Accept').click()
+    >>> admin_browser.getControl('Save changes').click()
+    >>> for message in get_feedback_messages(admin_browser):
+    ...     print message
+    1 nomination(s) accepted
+
+    >>> print find_tag_by_id(admin_browser.contents, 'buglisting')
+    None
