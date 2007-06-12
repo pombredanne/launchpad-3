@@ -35,6 +35,13 @@ user don't have permissions to do it.
     ...     print "%s: %s" % (extract_text(bug_id), has_input_controls)
     1: False
 
+No button for submitting the form is shown:
+
+    >>> user_browser.getControl('Save changes')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Save changes'
+
 Someone with enough permissions sees controls for approving/declining
 nominations.
 
@@ -70,3 +77,7 @@ After approving the nominated bugs, the listing is empty.
 
     >>> print find_tag_by_id(admin_browser.contents, 'buglisting')
     None
+    >>> user_browser.getControl('Save changes')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Save changes'
