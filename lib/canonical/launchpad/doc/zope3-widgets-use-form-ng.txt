@@ -8,7 +8,7 @@ Launchpad monkey patch the base Zope widgets so that they use
 the IBrowserFormNG interface (see webapp-publication.txt) to obtain
 the form value.
 
-The monkey patch is installe by default:
+The monkey patch is installed by default:
 
     >>> from canonical.launchpad.webapp.servers import (
     ...     Zope3WidgetsUseIBrowserFormNGMonkeyPatch)

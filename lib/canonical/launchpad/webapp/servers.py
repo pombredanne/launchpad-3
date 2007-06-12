@@ -6,7 +6,6 @@ __metaclass__ = type
 import threading
 import xmlrpclib
 
-import zope.publisher.publish
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser.itemswidgets import  MultiDataHelper
 from zope.app.session.interfaces import ISession
@@ -17,7 +16,6 @@ from zope.app.wsgi import WSGIPublisherApplication
 from zope.interface import implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
-from zope.publisher.interfaces import IRequest
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.server.http.commonaccesslogger import CommonAccessLogger
@@ -216,7 +214,6 @@ class LaunchpadRequestPublicationFactory:
 
     def canHandle(self, environment):
         """Only configured domains are handled."""
-        from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
         if 'HTTP_HOST' not in environment:
             self._thread_local.host = self.USE_DEFAULTS
             return True
