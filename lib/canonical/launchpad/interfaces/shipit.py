@@ -52,7 +52,7 @@ class ShipItConstants:
     kubuntu_url = 'https://shipit.kubuntu.com'
     edubuntu_url = 'https://shipit.edubuntu.com'
     current_distroseries = ShipItDistroSeries.FEISTY
-    max_size_for_auto_approval = 39
+    max_size_for_auto_approval = 16
 
 
 class IEmptyDefaultChoice(IChoice):

@@ -1,34 +1,36 @@
+= Sourcepackage translations =
 
 This page shows a list of PO templates contained a specific source package
 in a particular distibution release. In this case, we're asking for the
 translation overview for Evolution in Hoary.
 
-  >>> anon_browser.open(
-  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution')
-  >>> print anon_browser.url
-  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution
+    >>> anon_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/'
+    ...     '+source/evolution')
+    >>> print anon_browser.title
+    Translation templates for evolution in Ubuntu Hoary
 
-  >>> content = find_main_content(anon_browser.contents)
-  >>> print extract_text(content.findAll('h1')[0])
-  Translation templates for evolution in Ubuntu Hoary
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print extract_text(content.findAll('h1')[0])
+    Translation templates for evolution in Ubuntu Hoary
 
 There are two templates for evolution in Ubuntu Hoary
 
-  >>> template_names = content.findAll('h2')
-  >>> for name in template_names:
-  ...     print extract_text(name)
-  Template "evolution-2.2" in Ubuntu Hoary package "evolution"
-  Template "man" in Ubuntu Hoary package "evolution"
+    >>> template_names = content.findAll('h2')
+    >>> for name in template_names:
+    ...     print extract_text(name)
+    Template "evolution-2.2" in Ubuntu Hoary package "evolution"
+    Template "man" in Ubuntu Hoary package "evolution"
 
 Each template lists it's language translation statuses that are
 comprised of the translated languages plus the languages of the user,
 (except for English which is not translatable).
 
-  >>> table = content.findAll('table')[0]
-  >>> for row in table.findAll('tr'):
-  ...     print extract_text(row).replace('\n', ' ')
-  Language        Untranslated Status Last    Edited By
-  Afrikaans       22           100.00 &mdash; &mdash;
-  Sotho, Southern 22           100.00 &mdash; &mdash;
-  Xhosa           22           100.00 &mdash; &mdash;
-  Zulu            22           100.00 &mdash; &mdash;
+    >>> table = content.findAll('table')[0]
+    >>> for row in table.findAll('tr'):
+    ...     print extract_text(row).replace('\n', ' ')
+    Language        Untranslated Status Last    Edited By
+    Afrikaans       22           100.00 &mdash; &mdash;
+    Sotho, Southern 22           100.00 &mdash; &mdash;
+    Xhosa           22           100.00 &mdash; &mdash;
+    Zulu            22           100.00 &mdash; &mdash;
