@@ -571,7 +571,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         """Receives a completed task and logs it in launchpad log format.
 
         task IP address
-        HTTP_X_FORWARDED_FOR
+        X_FORWARDED_FOR
         HOST
         datetime task started
         request string  (1st line of request)
@@ -586,7 +586,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         request_headers = task.request_data.headers
         cgi_env = task.getCGIEnvironment()
 
-        x_forwarded_for = request_headers.get('HTTP_X_FORWARDED_FOR', '')
+        x_forwarded_for = request_headers.get('X_FORWARDED_FOR', '')
         host = request_headers.get('HOST', '')
         start_time = self.log_date_string(task.start_time)
         first_line = task.request_data.first_line

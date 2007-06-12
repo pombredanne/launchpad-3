@@ -21,6 +21,7 @@
         <img alt="Open" title="Open" src="/@@/question"
           tal:attributes="alt context/status/title;
                           title context/status/title;" />
+        <span tal:replace="context/status/title">Open</span>
         Question #<span tal:replace="context/id">4</span>,
         asked
         <span

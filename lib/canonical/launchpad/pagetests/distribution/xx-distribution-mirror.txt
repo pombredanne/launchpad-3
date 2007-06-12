@@ -5,6 +5,7 @@ First of all we'll create a new mirror for the Ubuntu distribution...
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
     >>> http_url = 'http://my.mirror.com/pub'
+    >>> browser.getControl('Description').value = 'My own mirror'
     >>> browser.getControl('Link Speed').value = ['1 Mbps']
     >>> browser.getControl('Location').value =  ['9']
     >>> browser.getControl('Content').value = ['Archive']

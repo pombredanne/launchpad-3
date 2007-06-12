@@ -426,14 +426,22 @@ We need to flush cached values.
 DistroSeries Translations migration
 ------------------------------------
 
-We have several ways to copy translations between distro seriess.
+We have several ways to copy translations between distro series.  We bring a
+transaction manager (in this case a fake one) to make these work.
+
+   >>> class FakeTransactionManager:
+   ...     def begin(self):
+   ...         pass
+   ...     def commit(self):
+   ...         pass
+   >>> transaction_stub = FakeTransactionManager()
 
 The main one is to clone what we have in its parent distribution.  This will
 only work if we keep the new distroseries's translations hidden from the
 public:
 
    >>> humpy.hide_all_translations = False
-   >>> humpy.copyMissingTranslationsFromParent()
+   >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
    Traceback (most recent call last):
    ...
    AssertionError:
@@ -446,7 +454,7 @@ templates or translations are accepted from the translation import queue:
    # We need to set this fiel to true so the other check is executed.
    >>> humpy.hide_all_translations = True
    >>> humpy.defer_translation_imports = False
-   >>> humpy.copyMissingTranslationsFromParent()
+   >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
    Traceback (most recent call last):
    ...
    AssertionError:
@@ -459,7 +467,7 @@ When both fields are set, the script doesn't complain.
    True
    >>> humpy.defer_translation_imports = True
 
-   >>> humpy.copyMissingTranslationsFromParent()
+   >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
 Only current PO templates are copied from the distribution parent:
 
@@ -627,7 +635,7 @@ We can see now that the changes are detected.
 
 Let's migrate the updates.
 
-    >>> humpy.copyMissingTranslationsFromParent()
+    >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
 Now, we should have only the update from Humpy as a difference
 
@@ -657,7 +665,7 @@ changed in Hoary?
 
 We copy missing translations...
 
-    >>> humpy.copyMissingTranslationsFromParent()
+    >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
 And we can see that the change is not migrated to Humpy because we already got
 a change directly there that we should not overwrite.
