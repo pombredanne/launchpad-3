@@ -1800,8 +1800,6 @@ class BugNominationsView(BugTaskSearchListingView):
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size,
             nomination_target=self.context, user=self.user)
-        # Add marker interface to display custom bug listings.
-        alsoProvides(batch_navigator, INominationsReviewTableBatchNavigator)
         return batch_navigator
 
     def search(self):
