@@ -198,7 +198,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         date_updated = self.date_reviewed
         for pluralform in range(self.pluralforms):
             submission = self.getActiveSubmission(pluralform)
-            if submission and submission.datecreated > date_updated:
+            if submission and (not date_updated or
+                               submission.datecreated > date_updated):
                 date_updated = submission.datecreated
 
         if (date_updated is not None and date_updated > timestamp):

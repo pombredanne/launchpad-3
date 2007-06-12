@@ -481,21 +481,79 @@ invalidates the cache.
   >>> import datetime
   >>> import pytz
   >>> UTC = pytz.timezone('UTC')
-  >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, fuzzy=False,
-  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+
+If we update it with the same untranslated message, the cache is not
+invalidated.
+
+  >>> msgset.updateTranslationSet(person, {0: ''}, fuzzy=False,
+  ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
   >>> print msgset.active_texts
-  [u'Blah.']
+  [None]
+  >>> print msgset.date_reviewed
+  None
+
+  # We need to sync the changed objects for the same reason as before.
+  >>> msgset.sync()
+  >>> pofile.validExportCache()
+  True
+
+When we actually update untranslated pomsgset with a new translation,
+cache is invalidated, but for published submissions, date_reviewed is
+not updated.
+
+  >>> msgset.updateTranslationSet(person, {0: 'Foo.'}, fuzzy=False,
+  ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
+  >>> print msgset.active_texts
+  [u'Foo.']
+  >>> print msgset.date_reviewed
+  None
   >>> txt = msgset.active_texts[0]
 
   # We need to sync the changed objects for the same reason as before.
   >>> msgset.sync()
-
   >>> pofile.validExportCache()
   False
+  >>> pofile.last_touched_pomsgset==msgset
+  True
+
+Exporting a pofile regenerates the cache.
+
+  >>> export = pofile.export()
+  >>> export is not None
+  True
+
+  # And we can see that it's applied in the exported file.
+  >>> print export.decode('UTF-8')
+  #...
+  #: addressbook/addressbook-errors.xml.h:6
+  msgid "Failed to authenticate with LDAP server."
+  msgstr "Foo."
+  ...
+  >>> pofile.validExportCache()
+  True
+
+Setting a new translation directly through Launchpad (not-published)
+updates the date_reviewed value and invalidates the cache.
+
+  >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> print msgset.active_texts
+  [u'Blah.']
+
+  # We need to sync the changed objects for the same reason as before.
+  >>> msgset.sync()
+  >>> msgset.date_reviewed is None
+  False
+  >>> pofile.last_touched_pomsgset==msgset
+  True
 
 Another export run generates a new cached file that contains that new
 translation.
 
+  # First we invalidate the cache manually, because everything is inside
+  # one transaction and we will get the same value with now() being used
+  # in both pofile.exporttime and msgset.date_reviewed.
+  >>> pofile.exportfile = None
   >>> export = pofile.export()
   >>> export is not None
   True
