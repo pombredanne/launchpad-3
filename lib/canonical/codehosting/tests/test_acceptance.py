@@ -104,8 +104,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
-        self.assertEqual(self.local_branch.last_revision(),
-                         remote_revision)
+        self.assertEqual(self.local_branch.last_revision(), remote_revision)
 
     @deferToThread
     def test_bzr_push_again(self):
@@ -147,7 +146,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         testuser = database.Person.byName('testuser')
         branch = database.Branch.selectOneBy(
             ownerID=testuser.id, name='test-branch')
-        self.branch_id = branch.id
+        branch_id = branch.id
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
 
@@ -158,7 +157,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         # Assign to a different product in the database. This is
         # effectively a Rename as far as bzr is concerned: the URL changes.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.get(self.branch_id)
+        branch = database.Branch.get(branch_id)
         branch.product = database.Product.byName('firefox')
         LaunchpadZopelessTestSetup().txn.commit()
 
@@ -176,7 +175,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         # Rename person in the database. Again, the URL changes (and so
         # does the username we have to connect as!).
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.get(self.branch_id)
+        branch = database.Branch.get(branch_id)
         branch.owner.name = 'renamed-user'
         LaunchpadZopelessTestSetup().txn.commit()
 
