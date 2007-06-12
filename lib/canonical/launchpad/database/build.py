@@ -227,19 +227,19 @@ class Build(SQLBase):
             'X-Launchpad-Build-State': self.buildstate.name,
             }
 
+        # XXX cprov 20061027: temporary extra debug info about the
+        # SPR.creator in context, to be used during the service quarantine,
+        # notify_owner will be disabled to avoid *spamming* Debian people.
+        creator = self.sourcepackagerelease.creator
+        extra_headers['X-Creator-Recipient'] = ",".join(
+            contactEmailAddresses(creator))
+
         # Currently there are 7038 SPR published in edgy which the creators
         # have no preferredemail. They are the autosync ones (creator = katie,
         # 3583 packages) and the untouched sources since we have migrated from
         # DAK (the rest). We should not spam Debian maintainers.
-        creator = self.sourcepackagerelease.creator
         if config.builddmaster.notify_owner:
             recipients = recipients.union(contactEmailAddresses(creator))
-
-        # XXX cprov 20061027: temporary extra debug info about the
-        # SPR.creator in context, to be used during the service quarantine,
-        # notify_owner will be disabled to avoid *spamming* Debian people.
-        extra_headers['X-Creator-Recipient'] = ",".join(
-            contactEmailAddresses(creator))
 
         # Modify notification contents according the targeted archive.
         # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
