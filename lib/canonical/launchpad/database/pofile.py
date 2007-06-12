@@ -487,7 +487,7 @@ class POFile(SQLBase, RosettaStats):
 
     def unreviewedCount(self, language=None):
         """See `IRosettaStats`."""
-        return self.unreviewedcount
+        return self.unreviewed_count
 
     @property
     def fuzzy_count(self):
