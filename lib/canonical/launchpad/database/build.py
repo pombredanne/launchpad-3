@@ -8,7 +8,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    StringCol, ForeignKey, IntervalCol)
+    StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.config import config
@@ -122,6 +122,16 @@ class Build(SQLBase):
         """See IBuild."""
         bpklist = BinaryPackageRelease.selectBy(build=self, orderBy=['id'])
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
+
+    @property
+    def distroarchseriesbinarypackages(self):
+        """See IBuild."""
+        # Avoid circular import by importing locally.
+        from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
+            import (DistroArchSeriesBinaryPackageRelease)
+        return [DistroArchSeriesBinaryPackageRelease(
+            self.distroarchseries, bp) 
+            for bp in self.binarypackages]
 
     @property
     def can_be_retried(self):
@@ -315,7 +325,10 @@ class BuildSet:
 
     def getByBuildID(self, id):
         """See IBuildSet."""
-        return Build.get(id)
+        try:
+            return Build.get(id)
+        except SQLObjectNotFound, e:
+            raise NotFoundError(str(e))
 
     def getPendingBuildsForArchSet(self, archserieses):
         """See IBuildSet."""
