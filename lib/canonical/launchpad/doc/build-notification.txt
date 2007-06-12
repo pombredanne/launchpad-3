@@ -14,7 +14,6 @@ All build states are supported by the current implementation, however
 only failures should be reported this time.
 
   >>> from canonical.launchpad.interfaces import IBuildSet
-  >>> from canonical.launchpad.mail import stub
   >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
   >>> buildset = getUtility(IBuildSet)
 
@@ -186,11 +185,6 @@ Check how many email the system have sent:
   >>> notifications = pop_notifications()
   >>> len(notifications)
   3
-
-We need to sort the list of emails by the second element, the recipient:
-
-  >>> from operator import itemgetter
-  >>> stub.test_emails.sort(key=itemgetter(1), reverse=True)
 
 The members of launchpad-buildd-admins are notified:
 
