@@ -1280,15 +1280,16 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
     def __init__(self, tasks, request, columns_to_show, size, nomination_target):
         BugListingBatchNavigator.__init__(self, tasks, request, columns_to_show, size)
         self.nomination_target = nomination_target
+        self._review_action_vocab = vocab_factory(NominatedBugReviewAction)
 
     def _getListingItem(self, bugtask):
         bugtask_listing_item = BugListingBatchNavigator._getListingItem(self, bugtask)
 
-        review_action_vocab = vocab_factory(NominatedBugReviewAction)
-        bug_nomination = bugtask_listing_item.bug.getNominationFor(self.nomination_target)
+        bug_nomination = bugtask_listing_item.bug.getNominationFor(
+            self.nomination_target)
         review_action_field = Choice(
             __name__='review_action_%d' % (bug_nomination.id,),
-            vocabulary=review_action_vocab(None),
+            vocabulary=self._review_action_vocab(None),
             title=u'Review action', required=True)
 
         # This is so setUpWidget expects a view, and so
