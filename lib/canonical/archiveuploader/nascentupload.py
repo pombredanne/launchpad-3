@@ -172,7 +172,13 @@ class NascentUpload:
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
             # actually comes from overrides for packages that are not NEW.
-            self.find_and_apply_overrides()
+            # XXX cprov 20070611: temporally disabling 'auto-overrides' for
+            # PPAs, because users can't perform post-publications overrides
+            # by themselves yet. It's better to assume that they will get
+            # the attributes right when packaging the source then to block
+            # them on immutable state.
+            if not self.is_ppa:
+                self.find_and_apply_overrides()
 
         if not self.is_new:
             signer_components = self.getAutoAcceptedComponents()
