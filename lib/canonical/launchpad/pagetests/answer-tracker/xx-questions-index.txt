@@ -1,8 +1,5 @@
 = Answer Tracker Introduction Page =
 
-The Answer Tracker main page present a short introduction to the
-application.
-
     >>> anon_browser.open('http://answers.launchpad.dev/')
     >>> print anon_browser.title
     Launchpad Answers
@@ -39,3 +36,46 @@ The application footer also contains a sample of stats for the application:
     ...     anon_browser.contents, 'application-footer')))
     X questions answered and X questions solved out of
     X questions asked across X projects
+
+The page also contains the projects actively using the Answer tracker.
+(Since sample data contains no projects with a question asked in the
+last 60 days, this list is empty):
+
+    >>> print extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'most-active-projects'))
+    Active projects
+
+    # Add some recent questions so that this listing contains something.
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet, IProductSet)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login('no-priv@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    >>> question = ubuntu.newQuestion(
+    ...     no_priv, 'Ubuntu question 1', 'Ubuntu question 1')
+    >>> question = ubuntu.newQuestion(
+    ...     no_priv, 'Ubuntu question 2', 'Ubuntu question 2')
+    >>> question = firefox.newQuestion(
+    ...     no_priv, 'Firefox question 1', 'Firefox question 1')
+    >>> flush_database_updates()
+    >>> logout()
+
+    >>> anon_browser.open('http://answers.launchpad.dev/')
+    >>> print extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'most-active-projects'))
+    Active projects
+    Ubuntu
+    Mozilla Firefox
+
+Clicking on these project links will bring the user to the project
+Answers front page:
+
+    >>> anon_browser.getLink('Ubuntu').click()
+    >>> print anon_browser.url
+    http://answers.launchpad.dev/ubuntu
+    >>> print anon_browser.title
+    Questions for Ubuntu

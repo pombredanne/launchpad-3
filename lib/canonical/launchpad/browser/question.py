@@ -144,6 +144,11 @@ class QuestionSetView(LaunchpadFormView):
         return self.context.searchQuestions(
             status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:10]
 
+    @property
+    def most_active_projects(self):
+        """Return the 5 most active projects."""
+        return self.context.getMostActiveProjects(limit=5)
+
 
 class QuestionSubscriptionView(LaunchpadView):
     """View for subscribing and unsubscribing from a question."""
