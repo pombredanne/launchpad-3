@@ -392,35 +392,22 @@ class POFile(SQLBase, RosettaStats):
 
         return results
 
-    def getPOTMsgSetWithNewSuggestions(self, slice=None):
-        """See IPOFile."""
+    def getPOTMsgSetWithNewSuggestions(self):
+        """See `IPOFile`."""
         # A POT set has "new" suggestions if there is a POMsgSet with
         # submissions after active translation was reviewed
-        # XXX 20070514 DaniloSegan: this logic will break with the following
-        # scenario:
-        #   1. message is translated in package (active == published),
-        #      or it's untranslated
-        #   2. unapproved suggestions are submitted
-        #   3. message is translated in package differently, thus
-        #      setting the new review date
-        # This will 'shadow' suggestions submitted in 2.  We can fix this by
-        # having 'is_reviewed' on each POSubmission and using that to filter
-        # messages here.
-        # However, messages like these would be rare and few, so there's still
-        # a lot of value in having the filter like this.
         results = POTMsgSet.select('''
             POTMsgSet.potemplate = %s AND
             POTMsgSet.sequence > 0 AND
             POMsgSet.potmsgset = POTMsgSet.id AND
             POMsgSet.pofile = %s AND
             POSubmission.pomsgset = POMsgSet.id AND
-            POSubmission.datecreated > POMsgSet.date_reviewed
+            (POSubmission.datecreated > POMsgSet.date_reviewed OR
+             (POMsgSet.date_reviewed IS NULL AND
+              POSubmission.active IS NOT TRUE))
             ''' % sqlvalues(self.potemplate.id, self.id),
             clauseTables=['POMsgSet', 'POSubmission'],
             orderBy='POTmsgSet.sequence')
-
-        if slice is not None:
-            results = results[slice]
 
         return results
 
@@ -499,11 +486,7 @@ class POFile(SQLBase, RosettaStats):
         return self.rosettacount
 
     def unreviewedCount(self, language=None):
-        """See IRosettaStats."""
-        return self.unreviewedcount
-
-    def unreviewedCount(self, language=None):
-        """See IRosettaStats."""
+        """See `IRosettaStats`."""
         return self.unreviewedcount
 
     @property
@@ -1074,6 +1057,7 @@ class DummyPOFile(RosettaStats):
         return 0
 
     def unreviewedCount(self):
+        """See `IPOFile`."""
         return 0
 
     def nonUpdatesCount(self):

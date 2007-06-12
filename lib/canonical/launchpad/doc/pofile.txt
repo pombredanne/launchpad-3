@@ -5,7 +5,8 @@ Get evolution template for Ubuntu Hoary
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
 >>> from canonical.launchpad.interfaces import (
-... IPOTemplateSet, ISourcePackageNameSet, IDistributionSet, IPOFile)
+... IPOTemplateSet, ISourcePackageNameSet, IDistributionSet,
+... IPOFile, IPersonSet)
 >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
 >>> sourcepackagename = sourcepackagenameset['evolution']
 >>> distributionset = getUtility(IDistributionSet)
@@ -37,6 +38,8 @@ except for untranslated messages.
 >>> dummy_pofile.getPOTMsgSetFuzzy().count()
 0
 >>> dummy_pofile.getPOTMsgSetChangedInLaunchpad().count()
+0
+>>> dummy_pofile.getPOTMsgSetWithNewSuggestions().count()
 0
 >>> dummy_pofile.getPOTMsgSetWithErrors().count()
 0
@@ -745,6 +748,93 @@ Lets check that the updatesCount() is also properly updated.
   (7, 2, 1, 1)
   >>> pofile_changed.updatesCount()
   2
+
+== getPOTMsgSetWithNewSuggestions ==
+
+This method returns only those POTMsgSet's which contain suggestions
+submitted after the last review date, or, in other words, those
+suggestions which need to be reviewed.
+
+Lets get Evolution Spanish translation in distribution Hoary.
+
+  >>> person_set = getUtility(IPersonSet)
+  >>> potemplateset = getUtility(IPOTemplateSet)
+  >>> product = getUtility(IProductSet).getByName('evolution')
+  >>> productseries = product.getSeries('trunk')
+  >>> potemplatesubset = potemplateset.getSubset(productseries=productseries)
+  >>> potemplate = potemplatesubset['evolution-2.2']
+  >>> pofile = potemplate.getPOFileByLang('es')
+
+  >>> noneditor = person_set.getByName('no-priv')
+  >>> editor = person_set.getByName('carlos')
+
+  # Make sure the translation permission mode is closed
+  >>> from canonical.lp.dbschema import TranslationPermission
+  >>> product.translationpermission = TranslationPermission.CLOSED
+
+Non-editor can only submit a new suggestion on untranslated message.
+
+  >>> pofile.getPOTMsgSetWithNewSuggestions().count()
+  2
+  >>> pofile.updateStatistics()
+  (8, 0, 1, 2)
+
+  >>> pomsgset = pofile.getPOMsgSet(u'evolution minicard')
+
+  # Make sure this entry is unreviewed and untranslated
+  >>> print pomsgset.date_reviewed
+  None
+  >>> pomsgset.active_texts
+  [None]
+
+  >>> pomsgset.updateTranslationSet(noneditor, {0: 'translation'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [None]
+  >>> pofile.getPOTMsgSetWithNewSuggestions().count()
+  3
+  >>> pofile.updateStatistics()
+  (8, 0, 1, 3)
+
+A privileged translator can approve this same suggestion by submitting
+it himself.
+
+  >>> pomsgset.updateTranslationSet(editor, {0: 'translation'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [u'translation']
+  >>> pofile.getPOTMsgSetWithNewSuggestions().count()
+  2
+  >>> pofile.updateStatistics()
+  (8, 0, 2, 2)
+
+Or, they can update it with entirely different translation, which won't be
+picked up as a new suggestion, but will be directly set as the translation.
+
+  >>> pomsgset.updateTranslationSet(editor, {0: 'boohoo'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [u'boohoo']
+  >>> pofile.getPOTMsgSetWithNewSuggestions().count()
+  2
+  >>> pofile.updateStatistics()
+  (8, 0, 2, 2)
+
+Non-editors can still provide suggestions on messages with approved
+translations, and this will again list this message among those with
+new suggestions.
+
+  >>> pomsgset = pofile.getPOMsgSet(u'have ')
+  >>> print pomsgset.active_texts
+  [u'tiene ']
+  >>> pomsgset.updateTranslationSet(noneditor, {0: 'blahblah'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [u'tiene ']
+  >>> pofile.getPOTMsgSetWithNewSuggestions().count()
+  3
+  >>> pofile.updateStatistics()
+  (8, 0, 2, 3)
 
 = POFile Security tests =
 

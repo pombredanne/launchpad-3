@@ -17,6 +17,9 @@ with the ids between 130 and 151 and, by default, the batch are of 10 items.
   ...         print "%s: '%s'" % (
   ...             msgset_id, translation.renderContents().strip())
 
+
+== Untranslated filter ==
+
 Let's see the list of untranslated messsages that the pofile has with the
 first batch of entries:
 
@@ -49,17 +52,22 @@ The set of messages that are untranslated in the second batch:
   150: '(no translation yet)'
   151: '(no translation yet)'
 
+
+== Filter for messages with new suggestions ==
+
 Now, we are going to select messages with new suggestions submitted after
 they were last reviewed.
 
-  >>> user_browser.open(
-  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/'
-  ...     'evolution-2.2/es/+translate?show=new_suggestions')
+  >>> user_browser.getControl('Show:').displayValue = ['with new suggestions']
+  >>> user_browser.getControl('Filter').click()
   >>> user_browser.url
-  'http://.../evolution-2.2/es/+translate?show=new_suggestions'
+  'http://.../evolution-2.2/es/+translate?batch=10&show=new_suggestions'
 
   >>> print_shown_messages(user_browser)
   134: '<samp> </samp>caratas'
+
+
+== Filter for messages marked as needing review ==
 
 Now, we are going to select the amount of entries that need to be reviewed.
 
@@ -72,6 +80,9 @@ Now, we are going to select the amount of entries that need to be reviewed.
   >>> print_shown_messages(user_browser)
   132: 'tiene<samp> </samp>'
   146: '<code>%d</code> foo'
+
+
+== Filter for messages changed in Launchpad ==
 
 Next, lets see entries which have changed in Launchpad.
 
@@ -89,6 +100,9 @@ to be sure that we don't redirect to a broken URL but to the first batch.
   >>> user_browser.getControl('Save & Continue').click()
   >>> user_browser.url
   'http://...evolution-2.2/es/+translate?show=changed_in_launchpad&start=10'
+
+
+== Batch parameters when changing filters ==
 
 Another thing that filtering should do is to move to the start of the set of
 messages when the filtering rule changes but preserving batch size.
