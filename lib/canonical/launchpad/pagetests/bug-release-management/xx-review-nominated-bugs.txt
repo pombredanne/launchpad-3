@@ -16,3 +16,39 @@ All the basic bug details are displayed.
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     1  Firefox does not support SVG  mozilla-firefox  Medium  Unconfirmed
+
+There are no controls for approving/declining the nominations if the
+user don't have permissions to do it.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
+    >>> user_browser.getLink('Review nominations').click()
+    >>> print anon_browser.title
+    Bugs nominated for Hoary
+
+    >>> print_bugtasks(user_browser.contents)
+    1  Firefox does not support SVG  mozilla-firefox  Medium  Unconfirmed
+
+    >>> bug_listing = find_tag_by_id(user_browser.contents, 'buglisting')
+    >>> for tr in bug_listing.tbody('tr'):
+    ...     approve_td, bug_id = tr('td')[:2]
+    ...     has_input_controls = approve_td.renderContents().strip() != ''
+    ...     print "%s: %s" % (extract_text(bug_id), has_input_controls)
+    1: False
+
+Someone with enough permissions sees controls for approving/declining
+nominations.
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/ubuntu/hoary')
+    >>> admin_browser.getLink('Review nominations').click()
+    >>> print anon_browser.title
+    Bugs nominated for Hoary
+
+    >>> print_bugtasks(admin_browser.contents)
+    1  Firefox does not support SVG  mozilla-firefox  Medium  Unconfirmed
+
+    >>> bug_listing = find_tag_by_id(admin_browser.contents, 'buglisting')
+    >>> for tr in bug_listing.tbody('tr'):
+    ...     approve_td, bug_id = tr('td')[:2]
+    ...     has_input_controls = approve_td.renderContents().strip() != ''
+    ...     print "%s: %s" % (extract_text(bug_id), has_input_controls)
+    1: True

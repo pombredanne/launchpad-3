@@ -1226,6 +1226,7 @@ class BugTaskListingItem:
     def __init__(self, bugtask, bugbranches):
         self.bugtask = bugtask
         self.bugbranches = bugbranches
+        self.review_action_widget = None
 
 
 class BugListingBatchNavigator(TableBatchNavigator):
@@ -1277,16 +1278,21 @@ class NominatedBugReviewAction(DBSchema):
 class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
     """
     """
-    def __init__(self, tasks, request, columns_to_show, size, nomination_target):
+    def __init__(self, tasks, request, columns_to_show, size,
+                 nomination_target, user):
         BugListingBatchNavigator.__init__(self, tasks, request, columns_to_show, size)
         self.nomination_target = nomination_target
+        self.user = user
         self._review_action_vocab = vocab_factory(NominatedBugReviewAction)
 
     def _getListingItem(self, bugtask):
-        bugtask_listing_item = BugListingBatchNavigator._getListingItem(self, bugtask)
-
+        bugtask_listing_item = BugListingBatchNavigator._getListingItem(
+            self, bugtask)
         bug_nomination = bugtask_listing_item.bug.getNominationFor(
             self.nomination_target)
+        if self.user is None or not bug_nomination.canApprove(self.user):
+            return bugtask_listing_item
+
         review_action_field = Choice(
             __name__='review_action_%d' % (bug_nomination.id,),
             vocabulary=self._review_action_vocab(None),
@@ -1788,7 +1794,8 @@ class BugNominationsView(BugTaskSearchListingView):
     def _getBatchNavigator(self, tasks):
         batch_navigator = NominatedBugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
-            size=config.malone.buglist_batch_size, nomination_target=self.context)
+            size=config.malone.buglist_batch_size,
+            nomination_target=self.context, user=self.user)
         # Add marker interface to display custom bug listings.
         alsoProvides(batch_navigator, INominationsReviewTableBatchNavigator)
         return batch_navigator
@@ -1811,10 +1818,11 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
     def setUpWidgets(self):
         """
         """
-        self.widgets = Widgets(
-            [(True, bug_listing_item.review_action_widget)
-             for bug_listing_item in self.context.getBugListingItems()],
-            len(self.prefix)+1)
+        widgets_list = [
+            (True, bug_listing_item.review_action_widget)
+            for bug_listing_item in self.context.getBugListingItems()
+            if bug_listing_item.review_action_widget is not None]
+        self.widgets = Widgets(widgets_list, len(self.prefix)+1)
 
     @action('Save changes', name='submit')
     def submit_action(self, action, data):
