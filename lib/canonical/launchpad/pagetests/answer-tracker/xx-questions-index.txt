@@ -30,3 +30,12 @@ As well as the 5 latest questions solved:
     >>> for row in latest_questions_solved.fetch('tr', 'noted'):
     ...     row.first('a').renderContents()
     'mailto: problem in webpage'
+
+The application footer also contains a sample of stats for the application:
+
+    # Replace numbers with X in output.
+    >>> import re
+    >>> print re.sub('\d+', 'X', extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'application-footer')))
+    X questions answered and X questions solved out of
+    X questions asked across X projects
