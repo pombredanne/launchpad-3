@@ -184,7 +184,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
 
-    entitlements = SQLMultipleJoin('Entitlement', joinColumn='team')
+    entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""

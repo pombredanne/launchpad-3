@@ -16,7 +16,7 @@ class IEntitlement(Interface):
     """An entitlement."""
 
     id = Int(title=_("Entitlement id"), required=True, readonly=True)
-    team = Int(title=_("Team"), required=True, readonly=True)
+    person = Int(title=_("Person"), required=True, readonly=True)
     date_created = Datetime(
         title=_("Date Created"),
         description=_("The date on which this entitlement was created."),

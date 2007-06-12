@@ -13,14 +13,14 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import EntitlementStatus, IEntitlement
 
 class Entitlement(SQLBase):
-    """A table recording the entitlements for a team."""
+    """A table recording the entitlements for a person or team."""
 
     implements(IEntitlement)
 
     _table = 'Entitlement'
 
     # db field names
-    team = ForeignKey(dbName='team', foreignKey='Person', default=None, notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person', default=None, notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_starts = UtcDateTimeCol(notNull=True, default=None)
     date_expires = UtcDateTimeCol(notNull=True, default=None)
