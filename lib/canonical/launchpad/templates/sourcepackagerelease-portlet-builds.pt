@@ -8,10 +8,10 @@
     <ul tal:condition="context/builds">
     <li tal:repeat="build context/builds">
       <a tal:attributes="href build/fmt:url">
-        <span tal:replace="build/distroarchrelease/distrorelease/name">
+        <span tal:replace="build/distroarchseries/distroseries/name">
           hoary
         </span>
-        <span tal:content="build/distroarchrelease/architecturetag">i386</span>
+        <span tal:content="build/distroarchseries/architecturetag">i386</span>
       </a>
       <span tal:replace="build/buildstate/title">Failure</span>
     </li>

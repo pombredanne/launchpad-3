@@ -7,12 +7,12 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.checkwatches import update_bug_tracker
 from canonical.launchpad.interfaces import (
     IBugTrackerSet, ILaunchpadCelebrities)
 
-class CheckWatches(LaunchpadScript):
+class CheckWatches(LaunchpadCronScript):
     def main(self):
         ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
 

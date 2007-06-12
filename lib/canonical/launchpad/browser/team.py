@@ -9,7 +9,6 @@ __all__ = [
     'TeamEditView',
     'TeamEmailView',
     'TeamMemberAddView',
-    'TeamMembersView',
     ]
 
 from zope.event import notify
@@ -27,7 +26,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet,
-    ITeam, ITeamMember, ITeamMembershipSet)
+    ITeam, ITeamMember)
 
 
 class TeamEditView(LaunchpadEditFormView):
@@ -187,23 +186,6 @@ class TeamAddView(AddView):
         return team
 
 
-class TeamMembersView:
-
-    def allMembersCount(self):
-        return getUtility(ITeamMembershipSet).getTeamMembersCount(self.context)
-
-    def activeMemberships(self):
-        return getUtility(ITeamMembershipSet).getActiveMemberships(self.context)
-
-    def proposedMemberships(self):
-        return getUtility(ITeamMembershipSet).getProposedMemberships(
-            self.context)
-
-    def inactiveMemberships(self):
-        return getUtility(ITeamMembershipSet).getInactiveMemberships(
-            self.context)
-
-
 class ProposedTeamMembersEditView:
 
     def __init__(self, context, request):
@@ -278,6 +260,11 @@ class TeamMemberAddView(LaunchpadFormView):
 
         self.context.addMember(newmember, reviewer=self.user,
                                status=TeamMembershipStatus.APPROVED)
-        self.request.response.addInfoNotification(
-            "%s (%s) was added as a member of %s." % (
-            newmember.browsername, newmember.name, self.context.browsername))
+        if newmember.isTeam():
+            msg = "%s has been invited to join this team." % (
+                  newmember.unique_displayname)
+        else:
+            msg = "%s has been added as a member of this team." % (
+                  newmember.unique_displayname)
+        self.request.response.addInfoNotification(msg)
+

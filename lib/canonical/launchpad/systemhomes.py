@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from canonical.launchpad.interfaces import (
     IRegistryApplication, IMaloneApplication, IBazaarApplication,
-    IShipItApplication, IRosettaApplication, IProductSet, IDistroReleaseSet,
+    IShipItApplication, IRosettaApplication, IProductSet, IDistroSeriesSet,
     ITranslationGroupSet, ILaunchpadStatisticSet,
     IBugSet, IBugWatchSet, IBugExternalRefSet,
     IBugTaskSet, IBugTrackerSet, ILaunchBag, BugTaskSearchParams,
@@ -124,10 +124,10 @@ class RosettaApplication:
         products = getUtility(IProductSet)
         return products.featuredTranslatables()
 
-    def translatable_distroreleases(self):
+    def translatable_distroseriess(self):
         """See IRosettaApplication."""
-        distroreleases = getUtility(IDistroReleaseSet)
-        return distroreleases.translatables()
+        distroseriess = getUtility(IDistroSeriesSet)
+        return distroseriess.translatables()
 
     def potemplate_count(self):
         """See IRosettaApplication."""

@@ -1,0 +1,6 @@
+Hello,
+
+Your membership in the %(team_name)s team has expired.
+
+Regards,
+The Launchpad team

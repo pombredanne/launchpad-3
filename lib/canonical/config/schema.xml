@@ -236,6 +236,19 @@ k            </description>
         <key name="http_proxy" datatype="string" default="http://squid.internal:3128/">
             <description>
                 Proxy to be used when issuing HTTP requests.
+
+                XXX: This should be in the canonical section, not the
+                Launchpad section? At the moment, there are only scripts
+                using this. -- StuartBishop 20070609
+            </description>
+        </key>
+        <key name="is_demo" datatype="boolean" default="false">
+            <description>
+                If true, the main template will be styled so that it is
+                obvious to the end user that they are using a demo system
+                and that any changes they make will be lost at some point.
+                This should not be true for any systems talking to the
+                production database.
             </description>
         </key>
         <key name="site_message" datatype="string" default="">
@@ -262,9 +275,16 @@ k            </description>
                 Set to 'all' for open access.
             </description>
         </key>
+        <key name="openid_sreg_trustroots"
+             datatype="canonical.config.commalist" default="">
+            <description>
+                A list of OpenID trust roots for which we will send
+                simple registration information.
+            </description>
+        </key>
         <key name="non_restricted_hostname" datatype="string"
              default="launchpad.net">
-	    <description>
+            <description>
                 If restrict_to_team is set (such as on the beta
                 website), then this indicates the hostname suffix for
                 the non-restricted version of Launchpad.  Replacing
@@ -632,7 +652,7 @@ k            </description>
                 mirrors.
             </description>
         </key>
-        <key name="releases_file_list_url" datatype="string"
+        <key name="cdimage_file_list_url" datatype="string"
              default="http://releases.ubuntu.com/.manifest">
             <description>
                 The URL to the file containing the list of ISO images that a
@@ -923,6 +943,20 @@ k            </description>
             attribute="autotest_errorreports" required="no" />
     </sectiontype>
 
+    <sectiontype name="personalpackagearchive">
+        <key name="root" datatype="string" required="yes">
+            <description>
+                Directory to be created to store PPAs.
+            </description>
+        </key>
+        <key name="base_url" datatype="string" required="no"
+             default="http://ppa.launchpad.dev">
+            <description>
+                External base URL for PPAs.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="mailman-build"
                  prefix="canonical.launchpad.mailman.config">
         <key name="build"           datatype="boolean"      default="false" />
@@ -990,6 +1024,8 @@ k            </description>
         <section name="*" type="codehosting" attribute="codehosting" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
+        <section name="*" type="personalpackagearchive"
+            attribute="personalpackagearchive" />
         <section name="*" type="mailman" attribute="mailman" />
     </sectiontype>
 

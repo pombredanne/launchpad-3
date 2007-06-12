@@ -32,7 +32,7 @@
         <require
             permission="launchpad.View"
             attributes="product productseries sourcepackagename distribution
-                        distrorelease milestone status statusexplanation
+                        distroseries milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
                         title related_tasks other_affected_pillars
                         asEmailHeaderValue getDelta
@@ -51,7 +51,7 @@
         <require
             permission="launchpad.Edit"
             set_attributes="product productseries sourcepackagename distribution
-                            distrorelease milestone statusexplanation
+                            distroseries milestone statusexplanation
                             importance bugwatch datecreated
                             age owner targetname title related_tasks
                             statusdisplayhtml statuselsewhere
@@ -204,7 +204,7 @@
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugNominationView"
         permission="launchpad.View"
-        template="../templates/bug-nominate-for-release.pt" />
+        template="../templates/bug-nominate-for-series.pt" />
 
     <browser:generalform
         name="+addbranch"
@@ -386,12 +386,12 @@
     </browser:generalform>
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        for="canonical.launchpad.interfaces.IDistroSeriesBugTask"
         name="+index" />
 
     <browser:generalform
         name="+editstatus-page"
-        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        for="canonical.launchpad.interfaces.IDistroSeriesBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename milestone status importance assignee
@@ -410,7 +410,7 @@
 
     <browser:generalform
         name="+edit-form"
-        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        for="canonical.launchpad.interfaces.IDistroSeriesBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename milestone status importance assignee

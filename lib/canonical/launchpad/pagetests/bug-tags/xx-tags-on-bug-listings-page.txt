@@ -7,11 +7,14 @@ have been used for bugs in this context.
     'http://launchpad.dev/ubuntu/+bugs'
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> tags_portlet = soup.find('div', {'id': "bug-tags"})
-    >>> for li_tag in tags_portlet('li'):
-    ...     print li_tag
-    <li...> <a ...>crash</a> (2) </li>
-    <li...> <a ...>dataloss</a> (1) </li>
-    <li...> <a ...>pebcak</a> (1) </li>
+    >>> for td_tag in tags_portlet('td'):
+    ...     print td_tag.renderContents()
+    <a ...>crash</a>
+    2
+    <a ...>dataloss</a>
+    1
+    <a ...>pebcak</a>
+    1
 
 If we click on a tag, only bugs with that tag are displayed:
 

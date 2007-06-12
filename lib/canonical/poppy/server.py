@@ -97,6 +97,18 @@ class Channel(FTPServerChannel):
         self.syncConnectData(cdc)
         self.reply('OPEN_CONN', (self.type_map[self.transfer_mode], path))
 
+    def cmd_cwd(self, args):
+        """Permissive 'cwd', creates any target directories requested.
+
+        It relies on the filesystem layer to create directories recursivelly.
+        """
+        path = self._generatePath(args)
+        if not self._getFileSystem().type(path) == 'd':
+            self._getFileSystem().mkdir(path)
+        self.cwd = path
+        self.reply('SUCCESS_250', 'CWD')
+
+
 class STORChannel(OriginalSTORChannel):
 
     def received (self, data):
@@ -158,7 +170,7 @@ def main():
     if len(args) != 1:
         print "usage: server.py port"
         return 1
-    port = args
+    port = int(args[0])
     host = "127.0.0.1"
     ident = "lucille upload server"
     numthreads = 4

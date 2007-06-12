@@ -15,12 +15,6 @@
                         </ul>
                         <form class="central" action="" method="get"
                               tal:attributes="action request/URL">
-                          <input
-                            id="field.languages.1"
-                            type="hidden"
-                            name="field.languages"
-                            value="Preferred"
-                          />
                           <table>
                             <tbody>
                               <tr>
@@ -130,6 +124,9 @@
     <p>To post a new question, navigate to the project
       you are having a problem with and use the <emph>Ask a Question</emph>
       button.
+    </p>
+    <p>You can enter a question id in the search text field to quickly
+      navigate to the question.
     </p>
     <p><a href="https://help.launchpad.net/AnswerTrackerDocumentation">Extensive
         documention</a> for the Answer Tracker application is available in the

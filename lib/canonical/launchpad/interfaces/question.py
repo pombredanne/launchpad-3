@@ -323,8 +323,8 @@ class IQuestion(IHasOwner):
         """
 
     can_reopen = Attribute(
-        'Whether the question state is a state where the question owner could '
-        'reopen it.')
+        'Whether the question state is a state where the question owner '
+        'could reopen it.')
 
     def reopen(comment, datecreated=None):
         """Reopen a question that was ANSWERED, EXPIRED or SOLVED.
@@ -373,23 +373,36 @@ class IQuestion(IHasOwner):
         """Remove the person's subscription to this question."""
 
     def getSubscribers():
-        """Return a list of Person that should be notified of changes to this
-        question. That is the union of getDirectSubscribers() and
+        """Return the set of person to notify about changes in this question.
+
+        That is the union of getDirectSubscribers() and
         getIndirectSubscribers().
+
+        :return: An `INotificationRecipientSet` containing the persons to
+            notify along the rationale for doing so.
         """
 
     def getDirectSubscribers():
-        """Return the set of persons who are subscribed to this question."""
+        """Return the set of persons who are subscribed to this question.
+        
+        :return: An `INotificationRecipientSet` containing the persons to
+            notify along the rationale for doing so.
+        """
 
     def getIndirectSubscribers():
         """Return the set of persons who are implicitely subscribed to this
-        question. That will be include the answer contacts for the question's
-        target as well as the question's assignee.
+        question.
+
+        That includes  the answer contacts for the question's target as well
+        as the question's assignee.
+        
+        :return: An `INotificationRecipientSet` containing the persons to
+            notify along the rationale for doing so.
         """
+
 
 # These schemas are only used by browser/question.py and should really live
 # there. See Bug #66950.
-
 class IQuestionAddMessageForm(Interface):
     """Form schema for adding a message to a question.
 

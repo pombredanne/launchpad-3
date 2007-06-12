@@ -5,7 +5,7 @@
   <div class="portletBody portletContent">
 
     <ul>
-      <li tal:repeat="binpkg context/distroarchreleasebinarypackages">
+      <li tal:repeat="binpkg context/distroarchseriesbinarypackages">
         <a tal:attributes="href binpkg/fmt:url"
            tal:content="string:${binpkg/name} ${binpkg/version}">
            foopkg 1.2-3
