@@ -1245,6 +1245,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
                 bugbranch.bug.id, []).append(bugbranch)
 
     def _getListingItem(self, bugtask):
+        """Return a decorated bugtask for the bug listing.""""
         return BugTaskListingItem(
             bugtask, self.bug_id_mapping.get(bugtask.bug.id, None))
 
@@ -1288,6 +1289,7 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
         self._review_action_vocab = vocab_factory(NominatedBugReviewAction)
 
     def _getListingItem(self, bugtask):
+        """See BugListingBatchNavigator."""
         bugtask_listing_item = BugListingBatchNavigator._getListingItem(
             self, bugtask)
         bug_nomination = bugtask_listing_item.bug.getNominationFor(
