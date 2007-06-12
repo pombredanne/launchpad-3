@@ -6,12 +6,14 @@ __metaclass__ = type
 import unittest
 import transaction
 from zope.component import getUtility
+from zope.interface.verify import verifyObject
 
 from canonical.launchpad.components.translationformats.gettext_po_importer import (
     GettextPoImporter
     )
 from canonical.launchpad.interfaces import (
-    ITranslationImportQueue, IPersonSet, IProductSet
+    IPersonSet, IProductSet, ITranslationFormatImporter,
+    ITranslationImportQueue
     )
 from canonical.lp.dbschema import TranslationFileFormat
 from canonical.testing import LaunchpadZopelessLayer
@@ -66,6 +68,12 @@ class GettextPoImporterTestCase(unittest.TestCase):
         transaction.commit()
         self.template_importer = GettextPoImporter(template_entry)
         self.translation_importer = GettextPoImporter(translation_entry)
+
+    def testInterface(self):
+        """Check whether the object follows the interface."""
+        self.failUnless(
+            verifyObject(ITranslationFormatImporter, self.template_importer),
+            "GettextPoImporter doesn't follow the interface")
 
     def testFormat(self):
         self.failUnless(
