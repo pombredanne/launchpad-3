@@ -1,0 +1,51 @@
+= Zope Widgets use IBrowserFormNG =
+
+Regular Zope widgets have the problem of failing with low-level
+exceptions (TypeError, AttributeError, ...) when the request contains
+a non-expected number of values.
+
+Launchpad monkey patch the base Zope widgets so that they use
+the IBrowserFormNG interface (see webapp-publication.txt) to obtain
+the form value. Instead of failing with a low-level exception, the
+widget will raise an UnexpectedFormData when the request contains more
+than one argument.
+
+    >>> import zope.schema as schema
+    >>> from zope.app.form.browser import TextWidget
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> text_field = schema.TextLine(__name__='text')
+    >>> request = LaunchpadTestRequest(form={'field.text': ['1', '2']})
+    >>> text_widget = TextWidget(text_field, request)
+    >>> text_widget.getInputValue()
+    Traceback (most recent call last):
+      ...
+    UnexpectedFormData: ...
+
+Since the SimpleInputWidget._getFormValue is overriden, it also works
+with the Launchpad widgets extending it:
+
+    >>> from canonical.widgets.textwidgets import StrippedTextWidget
+
+    >>> stripped_text_widget = StrippedTextWidget(text_field, request)
+    >>> stripped_text_widget.getInputValue()
+    Traceback (most recent call last):
+      ...
+    UnexpectedFormData: ...
+
+Widgets expecting a variable number of values continue to work
+with this monkey patch:
+
+    >>> from zope.schema import Choice, List
+    >>> from zope.app.form.browser import MultiSelectWidget
+
+    >>> request = LaunchpadTestRequest(form={'field.list': ['1', '2']})
+    >>> list_field = List(
+    ...     __name__='list', value_type=Choice(values=[1, 2, 3]))
+
+    # MultiSelectWidget needs a bounded field.
+    >>> list_field = list_field.bind(object())
+    >>> list_widget = MultiSelectWidget(
+    ...     list_field, list_field.value_type.vocabulary, request)
+    >>> list_widget.getInputValue()
+    [1, 2]

@@ -379,6 +379,29 @@ class BrowserFormNG:
         return value
 
 
+def _getFormInput_single(self):
+    """Return the submitted form value.
+
+    Monkey patched into zope.app.form.browser.widget.SimpleInputWidget.
+
+    :raises UnexpectedFormData: If more than one value is submitted.
+    """
+    return self.request.form_ng.getOne(self.name)
+
+def _getFormInput_multi(self):
+    """Return the submitted form values.
+
+    Monkey patched into zope.app.form.browser.itemswidgets.MultiDataHelper.
+    """
+    return self.request.form_ng.getAll(self.name)
+
+from zope.app.form.browser.widget import SimpleInputWidget
+SimpleInputWidget._getFormInput = _getFormInput_single
+
+from zope.app.form.browser.itemswidgets import MultiDataHelper
+MultiDataHelper._getFormInput = _getFormInput_multi
+
+
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
 
     # Note that NotificationResponse defines a 'redirect' method which
