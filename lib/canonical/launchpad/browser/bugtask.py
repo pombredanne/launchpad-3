@@ -46,7 +46,7 @@ from zope.app.form.utility import (
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope.formlib.form import Widgets
-from zope.interface import alsoProvides, providedBy
+from zope.interface import implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IList
 from zope.schema.vocabulary import (
@@ -1254,7 +1254,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
 
 
 class NominatedBugReviewAction(DBSchema):
-    """"""
+    """Enumeration for nomination review actions"""
 
     ACCEPT = Item(10, """
         Accept
@@ -1276,8 +1276,10 @@ class NominatedBugReviewAction(DBSchema):
 
 
 class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
-    """
-    """
+    """Batch navigator for nominated bugtasks. """
+
+    implements(INominationsReviewTableBatchNavigator)
+
     def __init__(self, tasks, request, columns_to_show, size,
                  nomination_target, user):
         BugListingBatchNavigator.__init__(self, tasks, request, columns_to_show, size)
@@ -1493,6 +1495,7 @@ class BugTaskSearchListingView(LaunchpadView):
         return search_params
 
     def _getBatchNavigator(self, tasks):
+        """Return the batch navigator to be used to batch the bugtasks."""
         return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
@@ -1792,6 +1795,7 @@ class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
 
     def _getBatchNavigator(self, tasks):
+        """See BugTaskSearchListingView."""
         batch_navigator = NominatedBugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size,

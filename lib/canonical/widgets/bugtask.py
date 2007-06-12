@@ -489,7 +489,9 @@ class NewLineToSpacesWidget(StrippedTextWidget):
 
 
 class NominationReviewActionWidget(LaunchpadRadioWidget):
-    """
+    """Widget for choosing a nomination review action.
+
+    It renders a radio box with no label for each option.
     """
     orientation = "horizontal"
 

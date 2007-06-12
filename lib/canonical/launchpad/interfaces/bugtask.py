@@ -634,5 +634,4 @@ class IAddBugTaskForm(Interface):
 
 
 class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
-    """Marker interface to choose custom template for the bug
-    nominations review view."""
+    """Marker interface to render custom template for the bug nominations."""
