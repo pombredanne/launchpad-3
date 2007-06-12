@@ -625,7 +625,7 @@ Launchpad.
   >>> len(potmsgsets)
   1
   >>> pofile_changed.updateStatistics()
-  (7, 1, 0)
+  (7, 1, 0, 1)
 
 We make sure that submissions on untranslated strings are not considered
 'changed in Launchpad', since this method is mainly designed to help
@@ -655,7 +655,7 @@ And make sure that the count of changed in Launchpad hasn't changed.
   >>> len(potmsgsets)
   1
   >>> pofile_changed.updateStatistics()
-  (7, 1, 1)
+  (7, 1, 1, 1)
 
 Now, lets change translation for a message which already has a published
 translation.  First we need to find a message with active, published
@@ -684,7 +684,7 @@ And make sure that the count of messages changed in Launchpad _has_ changed:
 Lets check that the updatesCount() is also properly updated.
 
   >>> pofile_changed.updateStatistics()
-  (7, 2, 1)
+  (7, 2, 1, 1)
   >>> pofile_changed.updatesCount()
   2
 

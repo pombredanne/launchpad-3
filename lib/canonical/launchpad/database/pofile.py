@@ -586,8 +586,9 @@ class POFile(SQLBase, RosettaStats):
             POMsgSet.pofile = %s AND
             POSubmission.pomsgset = POMsgSet.id AND
             (POSubmission.datecreated > POMsgSet.date_reviewed OR
-             POMsgSet.date_reviewed IS NULL)
-            ''' % sqlvalues(self.potemplate, self),
+             (POMsgSet.date_reviewed IS NULL AND
+              POSubmission.active IS NOT TRUE))
+            ''' % sqlvalues(self),
             clauseTables=['POSubmission']).count()
 
         self.currentcount = current
