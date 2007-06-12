@@ -29,15 +29,18 @@ user don't have permissions to do it.
     1  Firefox does not support SVG  mozilla-firefox  Medium  Unconfirmed
 
     >>> bug_listing = find_tag_by_id(user_browser.contents, 'buglisting')
-    >>> for tr in bug_listing.tbody('tr'):
-    ...     approve_td, bug_id = tr('td')[:2]
-    ...     if approve_td.renderContents().isdigit():
-    ...         # No widget column is rendered at all.
-    ...         has_input_controls = False
-    ...         bug_id = approve_td
-    ...     else:
-    ...         has_input_controls = approve_td.renderContents().strip() != ''
-    ...     print "%s: %s" % (extract_text(bug_id), has_input_controls)
+    >>> def print_which_items_have_widgets(bug_listing):
+    ...     for tr in bug_listing.tbody('tr'):
+    ...         approve_td, bug_id = tr('td')[:2]
+    ...         if approve_td.renderContents().isdigit():
+    ...             # No widget column is rendered at all.
+    ...             has_input_controls = False
+    ...             bug_id = approve_td
+    ...         else:
+    ...             has_input_controls = (
+    ...                 approve_td.renderContents().strip() != '')
+    ...         print "%s: %s" % (extract_text(bug_id), has_input_controls)
+    >>> print_which_items_have_widgets(bug_listing)
     1: False
 
 No button for submitting the form is shown, nor is the approve/decline
@@ -67,10 +70,7 @@ nominations.
     1  Firefox does not support SVG  mozilla-firefox  Medium  Unconfirmed
 
     >>> bug_listing = find_tag_by_id(admin_browser.contents, 'buglisting')
-    >>> for tr in bug_listing.tbody('tr'):
-    ...     approve_td, bug_id = tr('td')[:2]
-    ...     has_input_controls = approve_td.renderContents().strip() != ''
-    ...     print "%s: %s" % (extract_text(bug_id), has_input_controls)
+    >>> print_which_items_have_widgets(bug_listing)
     1: True
 
     >>> for th in bug_listing.thead('th'):
