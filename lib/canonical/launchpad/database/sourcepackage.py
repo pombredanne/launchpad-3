@@ -103,29 +103,23 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     def getAnswerContactsForLanguage(self, language):
         """See IQuestionTarget."""
         # Sourcepackages are supported by their distribtions too.
-        persons = set(QuestionTargetMixin.getAnswerContactsForLanguage(
+        persons = self.distribution.getAnswerContactsForLanguage(language)
+        persons.update(QuestionTargetMixin.getAnswerContactsForLanguage(
             self, language))
-        persons.update(
-            self.distribution.getAnswerContactsForLanguage(language))
         return sorted(
             [person for person in persons], key=attrgetter('displayname'))
-    
+
     def getAnswerContactRecipients(self, language):
         """See IQuestionTarget."""
         # We need to special case the source package case because some are
         # contacts for the distro while others are only registered for the
         # package. And we also want the name of the package in context in
         # the header.
-        recipients = NotificationRecipientSet()
-        self._addRecipients(recipients, self.direct_answer_contacts)
-        distribution = self.distribution
-        if language is None:
-            contacts = distribution.answer_contacts
-        else:
-            contacts = distribution.getAnswerContactsForLanguage(language)
-        self._addRecipients(recipients, contacts)
+        recipients = self.distribution.getAnswerContactRecipients(language)
+        recipients.update(QuestionTargetMixin.getAnswerContactRecipients(
+            self, language))
         return recipients
-        
+
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
         answer_contact = AnswerContact.selectOneBy(

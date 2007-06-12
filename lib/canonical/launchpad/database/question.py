@@ -935,7 +935,7 @@ class QuestionTargetMixin:
         return sorted(
             [answer_contact.person for answer_contact in answer_contacts],
             key=operator.attrgetter('displayname'))
-            
+
     def getAnswerContactsForLanguage(self, language):
         """See IQuestionTarget."""
         constraints = []
@@ -947,7 +947,7 @@ class QuestionTargetMixin:
                 constraint = "AnswerContact." + column + " = %s" % sqlvalues(
                     target)
             constraints.append(constraint)
-        
+
         constraints.append("""
             AnswerContact.person = PersonLanguage.person AND
             PersonLanguage.language = %s""" % sqlvalues(language))
@@ -956,17 +956,12 @@ class QuestionTargetMixin:
 
     def getAnswerContactRecipients(self, language):
         """See IQuestionTarget."""
-        recipients = NotificationRecipientSet()
         if language is None:
             contacts = self.answer_contacts
         else:
             contacts = self.getAnswerContactsForLanguage(language)
-        self._addRecipients(recipients, contacts)
-        return recipients
-        
-    def _addRecipients(self, recipients, answer_contacts):
-        """Take care of adding the contacts with the correct rationale."""
-        for person in answer_contacts:
+        recipients = NotificationRecipientSet()
+        for person in contacts:
             reason_start = (
                 "You received this question notification because you are ")
             if person.isTeam():
@@ -977,9 +972,10 @@ class QuestionTargetMixin:
             else:
                 reason = reason_start + (
                     'an answer contact for %s.' % self.displayname)
-                header = 'Answer Contact (%s)' % self.name
+                header = 'Answer Contact (%s)' % self.displayname
             recipients.add(person, reason, header)
-        
+        return recipients
+
     def getSupportedLanguages(self):
         """See IQuestionTarget.getSupportedLanguages()."""
         languages = set()

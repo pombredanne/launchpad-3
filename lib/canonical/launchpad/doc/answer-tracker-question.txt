@@ -228,7 +228,7 @@ question target are part of the indirect subscribers list.
     >>> indirect_subscribers.getReason(no_priv)
     (u'You received this question notification because you are an answer
       contact for Mozilla Firefox.',
-     u'Answer Contact (firefox)')
+     u'Answer Contact (Mozilla Firefox)')
 
 There is a special case for when the question's is associated to a
 source package. The answer contacts for both the distribution and the
