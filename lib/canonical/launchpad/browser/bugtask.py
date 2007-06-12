@@ -1808,16 +1808,15 @@ class BugNominationsView(BugTaskSearchListingView):
 
 
 class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
-    """
-    """
+    """View for displaying a list of nominated bugs."""
+
     def setUpFields(self):
-        """
-        """
+        """See LaunchpadFormView."""
+        # We set up the widgets ourselves.
         self.form_fields = []
 
     def setUpWidgets(self):
-        """
-        """
+        """See LaunchpadFormView."""
         widgets_list = [
             (True, bug_listing_item.review_action_widget)
             for bug_listing_item in self.context.getBugListingItems()
@@ -1826,8 +1825,7 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
 
     @action('Save changes', name='submit')
     def submit_action(self, action, data):
-        """
-        """
+        """Accept/Decline bug nominations."""
         accepted = declined = 0
 
         for name, review_action in data.items():
