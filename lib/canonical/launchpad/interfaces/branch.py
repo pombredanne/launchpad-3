@@ -54,6 +54,12 @@ class BranchURIField(URIField):
         from canonical.launchpad.webapp.uri import URI
 
         super(BranchURIField, self)._validate(value)
+
+        # XXX thumper 2007-06-12
+        # Move this validation code into IBranchSet so it can be
+        # reused in the XMLRPC code, and the Authserver.
+        # This also means we could get rid of the imports above.
+
         # URIField has already established that we have a valid URI
         uri = URI(value)
         supermirror_root = URI(config.launchpad.supermirror_root)
