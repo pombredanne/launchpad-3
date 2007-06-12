@@ -322,11 +322,9 @@ class BuildSet:
     def getByBuildID(self, id):
         """See IBuildSet."""
         try:
-            build = Build.get(id)
+            return Build.get(id)
         except SQLObjectNotFound, e:
             raise NotFoundError(str(e))
-        else:
-            return build
 
     def getPendingBuildsForArchSet(self, archreleases):
         """See IBuildSet."""
