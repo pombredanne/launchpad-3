@@ -197,7 +197,7 @@ launchpad.pot:
 	    -o locales
 
 static:
-	$(PYTHON) utilities/make-static.py
+	$(PYTHON) scripts/make-static.py
 
 TAGS:
 	ctags -e -R lib
