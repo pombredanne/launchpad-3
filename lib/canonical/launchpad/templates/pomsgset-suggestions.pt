@@ -1,11 +1,10 @@
 <tal:block condition="context/submissions">
   <tr class="discreet secondary translation">
-    <th colspan="3" style="border: inherit;">
-      <label tal:content="string:${context/title}:" />
+    <th colspan="3" style="border: inherit">
     </th>
   </tr>
   <tal:submission repeat="submission context/submissions">
-  <tr class="discreet secondary">
+  <tr class="suggestion secondary">
     <td colspan="3" />
     <td class="icon left right">
       <tal:logged-in condition="request/lp:person">
@@ -59,12 +58,24 @@
       </label>
     </td>
   </tr>
-  <tr class="suggestion secondary">
-    <th colspan="3">
-      Coming from:
-    </th>
-    <td class="icon left right" />
-    <td style="overflow: auto;">
+  <tr class="discreet suggestion secondary">
+    <td colspan="4" class="icon left right" />
+    <td style="overflow: auto;"
+        tal:condition="python:context.pomsgset.pofile==
+                         submission['pomsgset'].pofile">
+      Suggested by
+      <a tal:content="submission/person/browsername"
+         tal:attributes="href submission/person/fmt:url">Foo Bar</a>
+      <span
+        tal:attributes="title submission/datecreated/fmt:datetime"
+        tal:content="submission/datecreated/fmt:displaydate">
+        2006-08-05
+      </span>
+    </td>
+    <td style="overflow: auto;"
+        tal:condition="python:context.pomsgset.pofile!=
+                         submission['pomsgset'].pofile">
+      <tal:source content="string:${context/title}" />
       <a tal:content="submission/pomsgset/pofile/potemplate/displayname"
          tal:attributes="href string:${submission/pomsgset/fmt:url}/+translate">
         Spanish translation for evolution
