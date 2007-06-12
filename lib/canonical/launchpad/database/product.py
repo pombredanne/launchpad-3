@@ -73,7 +73,7 @@ from canonical.launchpad.interfaces import (
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
-              KarmaContextMixin, BranchVisibilityPolicyMixin, 
+              KarmaContextMixin, BranchVisibilityPolicyMixin,
               QuestionTargetMixin):
     """A Product."""
 
@@ -338,7 +338,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             unsupported_target = self
         else:
             unsupported_target = None
-            
+
         return QuestionTargetSearch(
             product=self,
             search_text=search_text, status=status,
@@ -354,7 +354,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def _getTargetTypes(self):
         """See QuestionTargetMixin."""
         return {'product': self}
-                
+
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
         if person not in self.answer_contacts:

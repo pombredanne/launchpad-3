@@ -68,7 +68,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :person: An IPerson.
 
         Returns True if the person was added, False if the person already was
-        an answer contact. A person must have at least one preferred 
+        an answer contact. A person must have at least one preferred
         language to be an answer contact.
         """
 
@@ -80,18 +80,18 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         Returns True if the person was removed, False if the person wasn't an
         answer contact.
         """
-        
+
     def getAnswerContactsForLanguage(language):
         """Return the list of Persons that provide support for a language.
-        
+
         An answer contact support squestions in his preferred languages.
         """
 
     def getAnswerContactRecipients(language):
         """Return an `INotificationRecipientSet` of answer contacts.
-        
+
         :language: an ILanguage or None.
-        
+
         Return the answer contacts for a specific language and the reason
         they are recipients of an email.
         """

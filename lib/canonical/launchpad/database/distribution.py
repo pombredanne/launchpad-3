@@ -532,7 +532,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             unsupported_target = self
         else:
             unsupported_target = None
-            
+
         return QuestionTargetSearch(
             distribution=self,
             search_text=search_text, status=status,
@@ -547,9 +547,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def _getTargetTypes(self):
         """See QuestionTargetMixin."""
-        return {'distribution': self, 
+        return {'distribution': self,
                 'sourcepackagename': None}
-                
+
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
         if person not in self.answer_contacts:

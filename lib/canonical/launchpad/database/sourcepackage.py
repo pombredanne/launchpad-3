@@ -97,7 +97,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     def _getTargetTypes(self):
         """See QuestionTargetMixin."""
-        return {'distribution': self.distribution, 
+        return {'distribution': self.distribution,
                 'sourcepackagename': self.sourcepackagename}
 
     def getAnswerContactsForLanguage(self, language):

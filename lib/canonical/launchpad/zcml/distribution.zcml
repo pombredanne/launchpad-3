@@ -20,7 +20,7 @@
       />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
-      answer_contacts direct_answer_contacts getSupportedLanguages 
+      answer_contacts direct_answer_contacts getSupportedLanguages
       getQuestionLanguages getAnswerContactsForLanguage
       getAnswerContactRecipients"
       />

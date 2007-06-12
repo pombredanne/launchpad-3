@@ -844,7 +844,7 @@ sent to the support list about that question:
     >>> notify(SQLObjectCreatedEvent(french_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
-    ['guilherme.salgado@canonical.com', 'support@ubuntu.com', 
+    ['guilherme.salgado@canonical.com', 'support@ubuntu.com',
      'test@canonical.com']
 
     >>> notifications[0]['Subject']
@@ -928,7 +928,7 @@ members is unimportant.
 
 For example, the rosetta admins team becomes an Answer contact for
 English questions. Carlos speaks Spanish, and he is an answer contact
-for Ubuntu. The team wont receive emails because of his membership 
+for Ubuntu. The team wont receive emails because of his membership
 when they become answer contacts too.
 
     >>> rosetta_admins = getUtility(IPersonSet).getByName('rosetta-admins')
@@ -954,7 +954,7 @@ when they become answer contacts too.
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['carlos@canonical.com', 'test@canonical.com']
-    
+
     >>> ubuntu.removeAnswerContact(carlos)
     True
 

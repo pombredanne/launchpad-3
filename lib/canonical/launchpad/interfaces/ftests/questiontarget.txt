@@ -396,8 +396,8 @@ False when it was already on the list:
     >>> target.addAnswerContact(name18)
     False
 
-An answer contact must have at least one language among his 
-preferred languages. 
+An answer contact must have at least one language among his
+preferred languages.
 
     >>> sample_person = getUtility(IPersonSet).getByName('name12')
     >>> sample_person.languages.count()
@@ -406,7 +406,7 @@ preferred languages.
     Traceback (most recent call last):
       ...
     AssertionError: An Answer Contact must speak a language...
-    
+
 Answer contacts can be removed by using the removeAnswerContact()
 method. Like its counterpart, it returns True when the answer contact
 was removed and False when the person wasn't on the answer contact

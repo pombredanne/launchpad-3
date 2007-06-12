@@ -906,10 +906,10 @@ class QuestionTargetMixin:
 
     def _getTargetTypes(self):
         """Return a Dict of QuestionTargets representing this object.
-        
-        :Return: a Dict with product, distribution, and soucepackagename 
-                 as possible keys. Each value is a valid QuestionTarget 
-                 or None. 
+
+        :Return: a Dict with product, distribution, and soucepackagename
+                 as possible keys. Each value is a valid QuestionTarget
+                 or None.
         """
         return {}
 
