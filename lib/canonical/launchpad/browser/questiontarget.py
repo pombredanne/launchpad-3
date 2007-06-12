@@ -34,12 +34,12 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
-    IDistribution, ILanguageSet, IProject, IQuestionCollection,
+    IDistribution, ILanguageSet, IProject, IQuestionCollection, IQuestionSet,
     IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
     NotFoundError)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, stepto, stepthrough, urlappend,
-    ApplicationMenu, LaunchpadFormView, Link, safe_action)
+    action, ApplicationMenu, canonical_url, custom_widget, LaunchpadFormView,
+    Link, safe_action, stepto, stepthrough, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -584,7 +584,16 @@ class QuestionTargetTraversalMixin:
             question_id = int(name)
         except ValueError:
             raise NotFoundError(name)
-        return self.context.getQuestion(question_id)
+        question = self.context.getQuestion(question_id)
+        if question is not None:
+            return question
+        
+        # Try to find the question in another context, since it may have
+        # been retargeted.
+        question = getUtility(IQuestionSet).get(question_id)
+        if question is None:
+            raise NotFoundError(name)
+        return self.redirectSubTree(canonical_url(question))
 
 
     @stepto('+ticket')

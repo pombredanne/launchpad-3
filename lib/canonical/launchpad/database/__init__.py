@@ -73,6 +73,7 @@ from canonical.launchpad.database.manifestancestry import *
 from canonical.launchpad.database.branch import *
 from canonical.launchpad.database.branchrevision import *
 from canonical.launchpad.database.branchsubscription import *
+from canonical.launchpad.database.branchvisibilitypolicy import *
 from canonical.launchpad.database.build import *
 from canonical.launchpad.database.builder import *
 from canonical.launchpad.database.buildqueue import *
