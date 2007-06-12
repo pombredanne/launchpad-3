@@ -454,7 +454,7 @@ class PackageUpload(SQLBase):
             "DISTRO": self.distroseries.distribution.title,
             "DISTROSERIES": self.distroseries.name,
             "ANNOUNCE": announce_list,
-            "SUBJECT": "Accepted",
+            "STATUS": "Accepted",
             "SOURCE": self.displayname,
             "VERSION": self.displayversion,
             "ARCH": self.displayarchs,
@@ -482,7 +482,7 @@ class PackageUpload(SQLBase):
 
         if self.isPPA():
             # PPA uploads receive an acceptance message.
-            interpolations["SUBJECT"] = "[%s-PPA] Accepted" % (
+            interpolations["STATUS"] = "[PPA %s] Accepted" % (
                 self.archive.owner.name)
             self._sendMail(accepted_template % interpolations)
             return
@@ -509,7 +509,7 @@ class PackageUpload(SQLBase):
             # Only send an acceptance message.
             interpolations["SUMMARY"] += (
                 "\nThis upload awaits approval by a distro manager\n")
-            interpolations["SUBJECT"] = "Waiting approval"
+            interpolations["STATUS"] = "Waiting for approval:"
             self._sendMail(accepted_template % interpolations)
             return
 

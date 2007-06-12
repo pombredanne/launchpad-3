@@ -237,8 +237,8 @@ UNAPPROVED message was also skipped for an upload targeted to
   0
 
 
-UNAPPROVED binary upload via insecure will send one email saying that
-the upload is waiting approval:
+An UNAPPROVED binary upload via insecure will send one email saying that
+the upload is waiting for approval:
 
   >>> netapplet_src = NascentUpload(
   ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
@@ -254,7 +254,7 @@ the upload is waiting approval:
   >>> notification['To']
   'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
   >>> notification['Subject']
-  'Waiting approval bar 1.0-2 (source)'
+  'Waiting for approval: bar 1.0-2 (source)'
 
 
 AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
