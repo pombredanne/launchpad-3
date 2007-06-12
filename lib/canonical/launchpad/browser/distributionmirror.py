@@ -5,7 +5,8 @@ __metaclass__ = type
 __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
            'DistributionMirrorOverviewMenu', 'DistributionMirrorAddView',
            'DistributionMirrorView', 'DistributionMirrorOfficialApproveView',
-           'DistributionMirrorReassignmentView']
+           'DistributionMirrorReassignmentView',
+           'DistributionMirrorDeleteView']
 
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.event import notify
@@ -33,7 +34,7 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionMirror
     facet = 'overview'
-    links = ['proberlogs', 'edit', 'admin', 'reassign']
+    links = ['proberlogs', 'edit', 'admin', 'reassign', 'delete']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -44,6 +45,14 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
     def proberlogs(self):
         text = 'Prober logs'
         return Link('+prober-logs', text, icon='info')
+
+    @enabled_with_permission('launchpad.Admin')
+    def delete(self):
+        enabled = False
+        if self.context.last_probe_record is None:
+            enabled = True
+        text = 'Delete this mirror'
+        return Link('+delete', text, icon='remove', enabled=enabled)
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
@@ -102,6 +111,29 @@ class DistributionMirrorView(LaunchpadView):
         flavours_by_serieses = serieses.values()
         return sorted(flavours_by_serieses, reverse=True,
                       key=lambda item: Version(item.distroseries.version))
+
+
+class DistributionMirrorDeleteView(LaunchpadFormView):
+
+    schema = IDistributionMirror
+    field_names = []
+    label = "Delete this distribution mirror"
+
+    @action(_("Delete Mirror"), name="delete")
+    def delete_action(self, action, data):
+        if self.context.last_probe_record is not None:
+            self.request.response.addInfoNotification(
+                "This mirror has been probed and thus can't be deleted.")
+            self.next_url = canonical_url(self.context)
+        else:
+            self.next_url = canonical_url(self.context.distribution)
+            self.request.response.addInfoNotification(
+                "Mirror %s has been deleted." % self.context.title)
+            self.context.destroySelf()
+
+    @action(_("Cancel"), name="cancel")
+    def cancel_action(self, action, data):
+        self.next_url = canonical_url(self.context)
 
 
 class DistributionMirrorAddView(LaunchpadFormView):

@@ -677,3 +677,36 @@ the case here.  Otherwise, their status is unknown.
     >>> cdimage_mirror.getOverallStatus().title
     'Up to date'
 
+
+== Deleting mirrors ==
+
+Mirrors are sometimes created by spammers hoping that we'll publicize
+whatever links they put there. Although we only publicize mirrors that
+have been approved by an admin, it's annoying to the admins to have these
+bogus mirrors on their list of unapproved mirrors, so we allow admins
+(and only them) to delete these mirrors.
+
+Also, only mirrors which have never been probed can be deleted this way.
+
+    >>> login(cdimage_mirror.owner.preferredemail.email)
+    >>> cdimage_mirror.destroySelf()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+    >>> login('karl@canonical.com')
+    >>> cdimage_mirror.last_probe_record is not None
+    True
+    >>> cdimage_mirror.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: ...
+
+    >>> invalid_mirror = mirrorset.getByName('invalid-mirror')
+    >>> invalid_mirror.last_probe_record is None
+    True
+    >>> invalid_mirror.destroySelf()
+
+    >>> mirrorset.getByName('invalid-mirror') is None
+    True
+
