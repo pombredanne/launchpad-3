@@ -583,19 +583,19 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         if not self.redirectIfInvalidOrConsumedToken():
             return LaunchpadFormView.render(self)
 
-    @property
-    def next_url(self):
-        if self.context.redirection_url:
-            return self.context.redirection_url
-        elif self.user is not None:
-            # User is logged in, redirect to his home page.
-            return canonical_url(self.user)
-        elif self.created_person is not None:
-            # User is not logged in, redirect to the created person's home
-            # page.
-            return canonical_url(self.created_person)
-        else:
-            return None
+#     @property
+#     def next_url(self):
+#         if self.context.redirection_url:
+#             return self.context.redirection_url
+#         elif self.user is not None:
+#             # User is logged in, redirect to his home page.
+#             return canonical_url(self.user)
+#         elif self.created_person is not None:
+#             # User is not logged in, redirect to the created person's home
+#             # page.
+#             return canonical_url(self.created_person)
+#         else:
+#             return None
 
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""

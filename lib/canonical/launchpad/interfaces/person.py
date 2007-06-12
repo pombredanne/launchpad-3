@@ -89,7 +89,7 @@ class INewPerson(Interface):
     emailaddress = StrippedTextLine(
         title=_('Email address'), required=True,
         constraint=validate_new_person_email)
-    displayname = StrippedTextLine(title=_('Display name'), required=True)
+    displayname = StrippedTextLine(title=_('Name'), required=True)
     creation_comment = Text(
         title=_('Creation reason'), required=True,
         description=_("The reason why you're creating this profile."))
@@ -103,7 +103,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             title=_('ID'), required=True, readonly=True,
             )
     name = PersonNameField(
-            title=_('Name'), required=True, readonly=False,
+            title=_('Launchpad ID'), required=True, readonly=False,
             constraint=name_validator,
             description=_(
                 "A short unique name, beginning with a lower-case "
@@ -111,7 +111,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
                 "numbers, dots, hyphens, or plus signs.")
             )
     displayname = StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
+            title=_('Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
             "throughout Launchpad. Most people use their full name "
             "here.")
@@ -823,7 +823,7 @@ class ITeam(IPerson, IHasIcon):
             "on the team page in Launchpad. It "
             "should be no bigger than 100kb in size. "))
     displayname = StrippedTextLine(
-            title=_('Display Name'), required=True, readonly=False,
+            title=_('Name'), required=True, readonly=False,
             description=_(
                 "This team's name as you would like it displayed throughout "
                 "Launchpad."))

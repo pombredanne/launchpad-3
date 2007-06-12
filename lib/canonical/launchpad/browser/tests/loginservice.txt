@@ -1,0 +1,138 @@
+= The Launchpad login service =
+
+Launchpad's login service can be used as a standalone login form for
+Launchpad as well as an OpenID provider. When acting as an OpenID provider,
+it'll redirect the user back to the relying party that directed the user to
+Launchpad, and when acting as a standalone login form it'll redirect the
+user back to the page where (s)he was when asked to login. This form also
+allows users to create new accounts and reset the password of an existing
+account.
+
+    >>> from zope.component import getView
+    >>> from zope.interface import implements
+    >>> from canonical.launchpad.browser.openidserver import LoginServiceView
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.webapp.publisher import rootObject
+    >>> from canonical.launchpad.layers import OpenIdLayer
+
+    >>> class LoginServiceRequest(LaunchpadTestRequest):
+    ...     implements(OpenIdLayer)
+
+A valid email address is required for any operation available on this form.
+
+    >>> request = LoginServiceRequest(
+    ...     form=dict(loginservice_email='foo@', loginservice_action='login'))
+    >>> request.method = 'POST'
+    >>> login_view = getView(rootObject, '+openid-new', request)
+    >>> login_view.initialize()
+    >>> html = login_view.render()
+    >>> print login_view.error_message
+    The email address you provided isn't valid... 
+
+    >>> request.form.update({'loginservice_action': 'recoverpassword'})
+    >>> login_view = getView(rootObject, '+openid-new', request)
+    >>> login_view.initialize()
+    >>> html = login_view.render()
+    >>> print login_view.error_message
+    The email address you provided isn't valid... 
+
+    >>> request.form.update({'loginservice_action': 'createaccount'})
+    >>> login_view = getView(rootObject, '+openid-new', request)
+    >>> login_view.initialize()
+    >>> html = login_view.render()
+    >>> print login_view.error_message
+    The email address you provided isn't valid... 
+
+If the user doesn't enter the password or enters the wrong one, it'll also
+fail.
+
+    >>> request.form.update(
+    ...     dict(loginservice_email='test@canonical.com',
+    ...          loginservice_action='login'))
+    >>> login_view = getView(rootObject, '+openid-new', request)
+    >>> login_view.initialize()
+    >>> html = login_view.render()
+    >>> print login_view.error_message
+    Please enter your passphrase.
+
+    >>> request.form.update(
+    ...     dict(loginservice_email='test@canonical.com',
+    ...          loginservice_passphrase=u't', loginservice_action='login'))
+    >>> login_view = getView(rootObject, '+openid-new', request)
+    >>> login_view.initialize()
+    >>> html = login_view.render()
+    >>> print login_view.error_message
+    The email address and passphrase do not match.
+
+Trying to create a new account with an email address that is registered and
+associated with a valid Launchpad account is not allowed.
+
+    >>> request.form.update(
+    ...     dict(loginservice_email='test@canonical.com',
+    ...          loginservice_action='createaccount'))
+    >>> login_view = getView(rootObject, '+openid-new', request)
+    >>> login_view.initialize()
+    >>> html = login_view.render()
+    >>> print login_view.error_message
+    Sorry, someone has already registered the test@canonical.com email ...
+
+If the email address is associated with an invalid Launchpad account (aka
+placeholder profile), though, we let the user continue the registration as if
+we've never heard about that email address.
+
+    >>> from canonical.launchpad.database import EmailAddress
+    >>> EmailAddress.selectOneBy(
+    ...     email='andrelop@debian.org').person.is_valid_person
+    False
+    >>> request.form.update(
+    ...     dict(loginservice_email='andrelop@debian.org',
+    ...          loginservice_action='createaccount'))
+    >>> login_view = getView(rootObject, '+openid-new', request)
+    >>> login_view.initialize()
+    >>> html = login_view.render()
+    >>> print login_view.error_message
+    None
+
+To recover the password of an existing account we obviously require a
+registered email address which doesn't belong to a team.
+
+    >>> request.form.update(
+    ...     dict(loginservice_email='andrelop22@debian.org',
+    ...          loginservice_action='recoverpassword'))
+    >>> login_view = getView(rootObject, '+openid-new', request)
+    >>> login_view.initialize()
+    >>> html = login_view.render()
+    >>> print login_view.error_message
+    Your account details have not been found...
+
+    >>> request.form.update(
+    ...     dict(loginservice_email='support@ubuntu.com', 
+    ...          loginservice_action='recoverpassword'))
+    >>> login_view = getView(rootObject, '+openid-new', request)
+    >>> login_view.initialize()
+    >>> html = login_view.render()
+    >>> print login_view.error_message
+    The email address ... belongs to a team, and teams cannot log in.
+
+    >>> request.form.update(
+    ...     dict(loginservice_email='andrelop@debian.org', 
+    ...          loginservice_action='recoverpassword'))
+    >>> login_view = getView(rootObject, '+openid-new', request)
+    >>> login_view.initialize()
+    >>> html = login_view.render()
+    >>> print login_view.error_message
+    None
+
+In order to preserve query arguments passed through the URL we have the
+preserve_query() method which scans the request's form for parameters not
+included in the HTML form and generates hidden inputs for them.
+
+    >>> request.form.update(dict(foo='bar', bar='baz'))
+    >>> login_view = getView(rootObject, '+openid-new', request)
+    >>> login_view.initialize()
+    >>> html = login_view.render()
+    >>> print login_view.preserve_query()
+    <input type="hidden" name="bar" value="baz" />
+    <input type="hidden" name="foo" value="bar" />
+

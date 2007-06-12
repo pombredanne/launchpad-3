@@ -1,0 +1,49 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+  <body>
+
+    <div metal:fill-slot="main">
+      <h1>Launchpad Login Service</h1>
+
+      <h3>Sign in as <span tal:replace="view/user/displayname" /></h3>
+
+      <form method="post" action="">
+        <input type="hidden" name="nonce" tal:attributes="value view/nonce" />
+        <input type="hidden" name="allow_duration"
+               tal:attributes="value string:forever" />
+
+        <div>
+          <input type="submit"
+            tal:attributes="name view/submit_logout;
+              value string:No, I'm not ${view/user/displayname}" />
+        </div>
+
+        <br />
+        <div>
+          <h4>These details will be sent to 
+            <span tal:replace="view/openid_relyingparty_name" /></h4>
+          <ul>
+            <li tal:content="view/user/displayname">
+              My name
+            </li>
+            <li tal:content="view/user/preferredemail/email">
+              My email
+            </li>
+          </ul>
+        </div>
+
+        <br />
+        <div>
+          <input type="submit" value="Sign In"
+                 tal:attributes="name view/submit_allow" />
+        </div>
+
+      </form>
+
+    </div>
+  </body>
+</html>
+
