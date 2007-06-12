@@ -232,6 +232,11 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         description=_('The timezone of where you live.'),
         vocabulary='TimezoneName')
 
+    openid_identifier = TextLine(
+            title=_("Key used to generate opaque OpenID identities."),
+            readonly=True, required=False,
+            )
+
     # Properties of the Person object.
     karma_category_caches = Attribute(
         'The caches of karma scores, by karma category.')
@@ -713,7 +718,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     def getDirectAdministrators():
         """Return this team's administrators.
-         
+
          This includes all direct members with admin rights and also
          the team owner. Note that some other persons/teams might have admin
          privilege by virtue of being a member of a team with admin rights.
@@ -912,6 +917,9 @@ class IPersonSet(Interface):
 
         Return None if there is no person with the given name.
         """
+
+    def getByOpenIdIdentifier(openid_identity):
+        """Return the person with the given OpenID identifier, or None."""
 
     def getAllTeams(orderBy=None):
         """Return all Teams.

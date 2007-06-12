@@ -134,17 +134,74 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         return FakeBinaryFilePublishing(sourcename, component, leafname,
                                         alias, section, dr, archtag)
 
+    def _setUpFTPArchiveHandler(self):
+        from canonical.archivepublisher.ftparchive import FTPArchiveHandler
+        fa = FTPArchiveHandler(
+            self._logger, self._config, self._dp, self._distribution, set())
+        return fa
+
     def testInstantiate(self):
         """canonical.archivepublisher.FTPArchive should be instantiatable"""
         from canonical.archivepublisher.ftparchive import FTPArchiveHandler
         FTPArchiveHandler(self._logger, self._config, self._dp,
                    self._distribution, set())
+                  
+    def testGetSourcesForOverrides(self):
+        """Ensure Publisher.getSourcesForOverrides works.
+        
+        FTPArchiveHandler.getSourcesForOverride should be returning 
+        SourcePackagePublishingHistory rows that match the distrorelease,
+        its main_archive, the supplied pocket and have a status of PUBLISHED.
+        """
+        fa = self._setUpFTPArchiveHandler()
+        ubuntuwarty = getUtility(IDistributionSet)['ubuntu']['hoary']
+        spphs = fa.getSourcesForOverrides(
+            ubuntuwarty, PackagePublishingPocket.RELEASE)
+
+        # For the above query, we are depending on the sample data to 
+        # contain seven rows of SourcePackagePublishghistory data.
+        expectedSources = [
+            ('evolution', '1.0'),
+            ('netapplet', '1.0-1'),
+            ('pmount', '0.1-2'),
+            ('alsa-utils', '1.0.9a-4ubuntu1'),
+            ('cnews', 'cr.g7-37'),
+            ('libstdc++', 'b8p'),
+            ('linux-source-2.6.15', '2.6.15.3')
+            ]
+        actualSources = [
+            (spph.sourcepackagerelease.name, spph.sourcepackagerelease.version)
+            for spph in spphs]
+
+        self.assertEqual(expectedSources, actualSources)
+
+    def testGetBinariesForOverrides(self):
+        """Ensure Publisher.getBinariesForOverrides works.
+        
+        FTPArchiveHandler.getBinariesForOverride should be returning
+        BinaryPackagePublishingHistory rows that match the distrorelease,
+        its main_archive, the supplied pocket and have a status of PUBLISHED.
+        """
+        fa = self._setUpFTPArchiveHandler()
+        ubuntuwarty = getUtility(IDistributionSet)['ubuntu']['hoary']
+        bpphs = fa.getBinariesForOverrides(
+            ubuntuwarty, PackagePublishingPocket.RELEASE)
+
+        # The above query depends on the sample data containing two rows
+        # of BinaryPackagePublishingHistory with these IDs:
+        expectedBinaries = [
+            ('pmount', '0.1-1'),
+            ('pmount', '2:1.9-1'),
+            ]
+        actualBinaries = [
+            (bpph.binarypackagerelease.name, bpph.binarypackagerelease.version)
+            for bpph in bpphs]
+
+        self.assertEqual(expectedBinaries, actualBinaries)
 
     def testPublishOverrides(self):
         """canonical.archivepublisher.Publisher.publishOverrides should work"""
-        from canonical.archivepublisher.ftparchive import FTPArchiveHandler
-        fa = FTPArchiveHandler(self._logger, self._config, self._dp,
-                        self._distribution, set())
+        fa = self._setUpFTPArchiveHandler()
         src = [self._getFakePubSource(
             "foo", "main", "foo.dsc", "misc", "hoary-test")]
         bin = [self._getFakePubBinary(
@@ -160,9 +217,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
 
     def testPublishFileLists(self):
         """canonical.archivepublisher.Publisher.publishFileLists should work"""
-        from canonical.archivepublisher.ftparchive import FTPArchiveHandler
-        fa = FTPArchiveHandler(self._logger, self._config, self._dp,
-                        self._distribution, set())
+        fa = self._setUpFTPArchiveHandler()
         src = [self._getFakePubSourceFile(
             "foo", "main", "foo.dsc", "misc", "hoary-test")]
         bin = [self._getFakePubBinaryFile(

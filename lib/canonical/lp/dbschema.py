@@ -30,6 +30,7 @@ __all__ = (
 'BranchReviewStatus',
 'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
+'BranchVisibilityPolicy',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -2615,6 +2616,35 @@ class BranchSubscriptionNotificationLevel(DBSchema):
 
         Send notifications for both branch attribute updates
         and new revisions added to the branch.
+        """)
+
+
+class BranchVisibilityPolicy(DBSchema):
+    """Branch Visibility Policy"""
+
+    PUBLIC = Item(1, """
+        Public
+
+        Branches are public by default.
+        """)
+
+    PRIVATE = Item(2, """
+        Private
+
+        Branches are private by default.
+        """)
+
+    PRIVATE_ONLY = Item (3, """
+        Private only
+
+        Branches are private by default. Branch owners are not able
+        to change the visibility of the branches to public.
+        """)
+
+    FORBIDDEN = Item(4, """
+        Forbidden
+
+        Users are not able to create branches in the context.
         """)
 
 

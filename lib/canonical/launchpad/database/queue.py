@@ -333,19 +333,25 @@ class PackageUpload(SQLBase):
 
     def addSource(self, spr):
         """See IPackageUpload."""
-        return PackageUploadSource(packageupload=self,
-                            sourcepackagerelease=spr.id)
+        return PackageUploadSource(
+            packageupload=self,
+            sourcepackagerelease=spr.id
+            )
 
     def addBuild(self, build):
         """See IPackageUpload."""
-        return PackageUploadBuild(packageupload=self,
-                           build=build.id)
+        return PackageUploadBuild(
+            packageupload=self,
+            build=build.id
+            )
 
     def addCustom(self, library_file, custom_type):
         """See IPackageUpload."""
-        return PackageUploadCustom(packageupload=self,
-                            libraryfilealias=library_file.id,
-                            customformat=custom_type)
+        return PackageUploadCustom(
+            packageupload=self,
+            libraryfilealias=library_file.id,
+            customformat=custom_type
+            )
 
     def isPPA(self):
         """See IPackageUpload."""
@@ -366,7 +372,7 @@ class PackageUpload(SQLBase):
 
     def _buildUploadedFilesList(self):
         """Return a list of tuples of (filename, component, section).
-        
+
         Component and section are only set where the file is a source upload.
         """
         files = []
@@ -387,15 +393,14 @@ class PackageUpload(SQLBase):
         # Component and section don't get set for builds and custom, since
         # this information is only used in the summary string for source
         # uploads.
-        if self.containsBuild:
-            [build] = self.builds
-            bprs = build.build.binarypackages
-            for bpr in bprs:
+        for build in self.builds:
+            for bpr in build.build.binarypackages:
                 files.extend(
                     [(bpf.libraryfile.filename,'','') for bpf in bpr.files])
+
         if self.customfiles:
             files.extend(
-                [(file.libraryfilealias.filename,'','') 
+                [(file.libraryfilealias.filename,'','')
                 for file in self.customfiles])
 
         return files
@@ -413,8 +418,8 @@ class PackageUpload(SQLBase):
                         component, section))
         return summary
 
-    def _sendRejectionNotification(self, recipients, changes_lines, 
-            summary_text):
+    def _sendRejectionNotification(self, recipients, changes_lines,
+                                   summary_text):
         """Send a rejection email."""
 
         default_recipient = "%s <%s>" % (

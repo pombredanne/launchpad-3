@@ -28,9 +28,6 @@ from canonical.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile)
 from canonical.archiveuploader.template_messages import (
     rejection_template, new_template, accepted_template, announce_template)
-from canonical.config import config
-from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.mail import format_address
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     NotFoundError, IDistributionSet)
@@ -174,7 +171,7 @@ class NascentUpload:
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
 
-        signer_components = self.processSignerAcl()
+        signer_components = self.getAutoAcceptedComponents()
         if not self.is_new:
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
@@ -333,26 +330,20 @@ class NascentUpload:
         Check if the declared number of architectures corresponds to the
         upload contents.
         """
-        # Currently the only check we make is that if the upload is binaryful
-        # we don't allow more than one build.
-        # XXX: dsilvers: 20051014: We'll want to refactor to remove this limit
-        # but it's not too much of a hassle for now.
-        # bug 3158
         considered_archs = [arch_name for arch_name in self.changes.architectures
                             if not arch_name.endswith("_translations")]
         max = 1
         if self.sourceful:
             # When sourceful, the tools add 'source' to the architecture
-            # list in the upload. Thusly a sourceful upload with one build
-            # has two architectures listed.
-            max = 2
+            # list in the upload.
+            max = self.policy.distroseries.architecturecount + 1
         if 'all' in considered_archs:
             # Sometimes we get 'i386 all' which would count as two archs
             # so if 'all' is present, we bump the permitted number up
             # by one.
             max += 1
         if len(considered_archs) > max:
-            self.reject("Policy permits only one build per upload.")
+            self.reject("Upload has more architetures than it is supported.")
 
     #
     # Helpers for warnings and rejections
@@ -456,7 +447,7 @@ class NascentUpload:
         self.logger.debug("Decision: %s" % in_keyring)
         return in_keyring
 
-    def processSignerAcl(self):
+    def getAutoAcceptedComponents(self):
         """Check rights of the current upload submmiter.
 
         Work out what components the signer is permitted to upload to and
@@ -766,8 +757,10 @@ class NascentUpload:
             # very small, and at some point the script infrastructure will
             # only send emails when the script exits successfully.
             changes_file_object = open(self.changes.filepath, "r")
-            self.queue_root.notify(announce_list=self.policy.announcelist, 
-                changes_file_object=changes_file_object, logger=self.logger)
+            self.queue_root.notify(
+                announce_list=self.policy.announcelist,
+                changes_file_object=changes_file_object,
+                logger=self.logger)
             changes_file_object.close()
             return True
 
@@ -779,7 +772,8 @@ class NascentUpload:
             # reject message rather than being swallowed up.
             self.reject("%s" % e)
             # Let's log tracebacks for uncaught exceptions ...
-            self.logger.error('Exception while accepting:\n', exc_info=True)
+            self.logger.error(
+                'Exception while accepting:\n %s' % e, exc_info=True)
             self.do_reject()
             return False
 
@@ -875,17 +869,15 @@ class NascentUpload:
                 binary_package_file.storeInDatabase(build)
                 processed_builds.append(build)
 
-            # Perform some checks on processed build(s) if there were any.
-            # Ensure that only binaries for a single build were processed
-            # Then add a respective PackageUploadBuild entry for it
-            if len(processed_builds) > 0:
-                unique_builds = set([b.id for b in processed_builds])
-                assert len(unique_builds) == 1, (
-                    "Upload contains binaries from different builds. "
-                    "(%s)" % unique_builds)
-                # Use any (the first) IBuild stored as reference.
-                # They are all the same according the previous assertion.
-                considered_build = processed_builds[0]
+            # Store the related builds after verifying they were built
+            # from the same source.
+            for considered_build in processed_builds:
+                attached_builds = [build.build.id
+                                   for build in self.queue_root.builds]
+                if considered_build.id in attached_builds:
+                    continue
+                assert (considered_build.sourcepackagerelease.id == spr.id), (
+                    "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
 
         # PPA uploads are Auto-Accepted by default
