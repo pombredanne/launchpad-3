@@ -92,3 +92,12 @@ class IQuestionSet(IQuestionCollection):
         the last <days_before_expiration> days.
         """
 
+    def getMostActiveProjects(limit=5):
+        """Return the projects that asked the most questions in the last
+        60 days.
+
+        It should only return projects that officially uses the Answer
+        Tracker.
+        
+        :param limit: The number of projects to return.
+        """

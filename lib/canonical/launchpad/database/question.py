@@ -10,7 +10,6 @@ __all__ = [
     'QuestionPersonSearch',
     'QuestionSet']
 
-import operator
 from email.Utils import make_msgid
 
 from zope.component import getUtility
@@ -23,12 +22,13 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IDistribution, IDistributionSourcePackage,
-    InvalidQuestionStateError, ILanguage, ILanguageSet, ILaunchpadCelebrities,
-    IMessage, IPerson, IProduct, IQuestion, IQuestionSet, IQuestionTarget,
-    ISourcePackage, QUESTION_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, IDistribution, IDistributionSet,
+    IDistributionSourcePackage, InvalidQuestionStateError, ILanguage,
+    ILanguageSet, ILaunchpadCelebrities, IMessage, IPerson, IProduct,
+    IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
@@ -544,6 +544,37 @@ class QuestionSet:
         """See IQuestionSet"""
         return set(Language.select('Language.id = Question.language',
             clauseTables=['Question'], distinct=True))
+
+    def getMostActiveProjects(self, limit=5):
+        """See `IQuestionSet`."""
+        cur = cursor()
+        cur.execute('''
+            SELECT product, distribution, count(*) AS "question_count"
+            FROM Question
+                 LEFT OUTER JOIN Product ON (Question.product = Product.id)
+                 LEFT OUTER JOIN Distribution ON (
+                    Question.distribution = Distribution.id)
+            WHERE (Product.official_answers is True
+                   OR Distribution.official_answers is TRUE)
+                    AND Question.datecreated > (
+                        current_timestamp -interval '60 days')
+            GROUP BY product, distribution
+            ORDER BY question_count DESC
+            LIMIT %s
+            ''' % sqlvalues(limit))
+
+        projects = []
+        product_set = getUtility(IProductSet)
+        distribution_set = getUtility(IDistributionSet)
+        for product_id, distribution_id, count in cur.fetchall():
+            if product_id:
+                projects.append(product_set.get(product_id))
+            elif distribution_id:
+                projects.append(distribution_set.get(distribution_id))
+            else:
+                raise AssertionError(
+                    'product_id and distribution_id are NULL')
+        return projects
 
     @staticmethod
     def new(title=None, description=None, owner=None,
