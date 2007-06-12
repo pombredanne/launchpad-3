@@ -63,7 +63,7 @@ class GettextPoImporter:
         """See ITranslationImporter."""
         if self.header is None:
             # The file does not have a header field.
-            return (None, None)
+            return None, None
 
         try:
             last_translator = self.header['Last-Translator']
@@ -71,7 +71,7 @@ class GettextPoImporter:
             # Usually we should only get a KeyError exception but if we get
             # any other exception we should do the same, use the importer name
             # as the person who owns the imported po file.
-            return (None, None)
+            return None, None
 
         name, email = parseaddr(last_translator)
 
@@ -80,6 +80,6 @@ class GettextPoImporter:
             # EMAIL@ADDRESS unless we know the real address, thus, we know this
             # isn't a real account and we use the person that imported the file
             # as the owner.
-            return None
+            return None, None
         else:
-            return (name, email)
+            return name, email
