@@ -691,7 +691,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     def getDirectAdministrators():
         """Return this team's administrators.
-         
+
          This includes all direct members with admin rights and also
          the team owner. Note that some other persons/teams might have admin
          privilege by virtue of being a member of a team with admin rights.

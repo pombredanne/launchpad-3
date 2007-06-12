@@ -1126,7 +1126,7 @@ class POMsgSetView(LaunchpadView):
         """Return the position number of this potmsgset in the pofile."""
         return self.context.potmsgset.sequence
 
-    @cachedproperty
+    @property
     def singular_text(self):
         """Return the singular form prepared to render in a web page."""
         return text_to_html(

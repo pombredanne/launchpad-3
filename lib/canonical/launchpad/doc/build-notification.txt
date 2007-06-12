@@ -103,7 +103,7 @@ This same basic content applies to all types of notification.
   <BLANKLINE>
   --
   i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
-  http://launchpad.dev/+builds/+build/17
+  http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/17
   <BLANKLINE>
 
 
@@ -178,7 +178,7 @@ Check the notification content:
   <BLANKLINE>
   --
   i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
-  http://launchpad.dev/+builds/+build/11
+  http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4ubuntu1/+build/11
   <BLANKLINE>
 
 
@@ -254,7 +254,7 @@ Check the notification content:
   <BLANKLINE>
   --
   i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
-  http://launchpad.dev/+builds/+build/8
+  http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/8
   <BLANKLINE>
 
 
@@ -329,7 +329,7 @@ Check the notification content:
   <BLANKLINE>
   --
   i386 build of at 0.00 in ubuntu warty RELEASE
-  http://launchpad.dev/+builds/+build/15
+  http://launchpad.dev/ubuntu/+source/at/0.00/+build/15
   <BLANKLINE>
 
 

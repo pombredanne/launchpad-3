@@ -54,7 +54,7 @@
   <content class="canonical.launchpad.database.QuestionMessage">
     <allow interface="canonical.launchpad.interfaces.IQuestionMessage"/>
   </content>
-             
+
   <class class="canonical.launchpad.mailnotification.QuestionNotificationRecipientSet">
     <allow interface="canonical.launchpad.interfaces.INotificationRecipientSet" />
   </class>

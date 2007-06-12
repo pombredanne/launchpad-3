@@ -10,15 +10,14 @@ from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
 from canonical.launchpad.interfaces import (
-    IPOTMsgSet, ILanguageSet, NotFoundError, NameNotAvailable, BrokenTextError
+    IPOTMsgSet, ILanguageSet, BrokenTextError, TranslationConstants
     )
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.posubmission import POSubmission
-from canonical.launchpad.interfaces import TranslationConstants
-from canonical.lp.dbschema import RosettaFileFormat
+
 
 class POTMsgSet(SQLBase):
     implements(IPOTMsgSet)
@@ -203,14 +202,22 @@ class POTMsgSet(SQLBase):
             pomsgid_=messageID,
             pluralform=pluralForm)
 
-        if existing is None:
-            if current_sighting is not None:
-                current_sighting.inlastrevision = False
-                # We need to flush this change to prevent that the new one
-                # that we are going to create conflicts with this due a race
-                # condition applying the changes to the DB.
-                current_sighting.updateSync()
+        if (current_sighting is not None and
+            (existing is None or current_sighting != existing)):
+            assert update, (
+                "There is already a message ID sighting for this "
+                "message set, text, and plural form")
+            current_sighting.inlastrevision = False
+            # We need to flush this change to prevent that the new one
+            # that we are going to create conflicts with this due a race
+            # condition applying the changes to the DB.
+            current_sighting.syncUpdate()
 
+        if pluralForm == TranslationConstants.SINGULAR_FORM:
+            # Update direct link to the singular form.
+            self.primemsgid_ = messageID
+
+        if existing is None:
             return POMsgIDSighting(
                 potmsgset=self,
                 pomsgid_=messageID,
@@ -219,16 +226,6 @@ class POTMsgSet(SQLBase):
                 inlastrevision=True,
                 pluralform=pluralForm)
         else:
-            assert (current_sighting is None or
-                    current_sighting == existing or update), (
-                "There is already a message ID sighting for this "
-                "message set, text, and plural form")
-            if current_sighting is not None and current_sighting != existing:
-                current_sighting.inlastrevision = False
-                # We need to flush this change to prevent that the new one
-                # that we are going to create conflicts with this due a race
-                # condition applying the changes to the DB.
-                current_sighting.updateSync()
             existing.datelastseen = UTC_NOW
             existing.inlastrevision = True
             return existing
@@ -285,32 +282,32 @@ class POTMsgSet(SQLBase):
     def normalizeNewLines(self, translation_text):
         """See IPOTMsgSet."""
         # There are three different kinds of newlines:
-        windows_style = '\r\n'
-        mac_style = '\r'
-        unix_style = '\n'
+        windows_style = u'\r\n'
+        mac_style = u'\r'
+        unix_style = u'\n'
         # We need the stripped variables because a 'windows' style will be at
         # the same time a 'mac' and 'unix' style.
         stripped_translation_text = translation_text.replace(
-            windows_style, '')
-        stripped_singular_text = self.singular_text.replace(windows_style, '')
+            windows_style, u'')
+        stripped_singular_text = self.singular_text.replace(windows_style, u'')
 
         # Get the style that uses singular_text.
         original_style = None
         if windows_style in self.singular_text:
             original_style = windows_style
 
-        if (mac_style in stripped_singular_text and
-            original_style is not None):
-            raise BrokenTextError(
-                "original text (%r) mixes different newline markers" %
-                    self.singular_text)
+        if mac_style in stripped_singular_text:
+            if original_style is not None:
+                raise BrokenTextError(
+                    "original text (%r) mixes different newline markers" %
+                        self.singular_text)
             original_style = mac_style
 
-        if (unix_style in stripped_singular_text and
-            original_style is not None):
-            raise BrokenTextError(
-                "original text (%r) mixes different newline markers" %
-                    self.singular_text)
+        if unix_style in stripped_singular_text:
+            if original_style is not None:
+                raise BrokenTextError(
+                    "original text (%r) mixes different newline markers" %
+                        self.singular_text)
             original_style = unix_style
 
         # Get the style that uses the given text.
@@ -318,18 +315,18 @@ class POTMsgSet(SQLBase):
         if windows_style in translation_text:
             translation_style = windows_style
 
-        if (mac_style in stripped_translation_text and
-            translation_style is not None):
-            raise BrokenTextError(
-                "translation text (%r) mixes different newline markers" %
-                    translation_text)
+        if mac_style in stripped_translation_text:
+            if translation_style is not None:
+                raise BrokenTextError(
+                    "translation text (%r) mixes different newline markers" %
+                        translation_text)
             translation_style = mac_style
 
-        if (unix_style in stripped_translation_text and
-            translation_style is not None):
-            raise BrokenTextError(
-                "translation text (%r) mixes different newline markers" %
-                    translation_text)
+        if unix_style in stripped_translation_text:
+            if translation_style is not None:
+                raise BrokenTextError(
+                    "translation text (%r) mixes different newline markers" %
+                        translation_text)
             translation_style = unix_style
 
         if original_style is None or translation_style is None:

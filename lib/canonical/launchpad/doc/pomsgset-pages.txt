@@ -4,6 +4,7 @@ POMsgSet View
 On this section, we are going to test the view class for an IPOMsgSet object.
 
     >>> from zope.component import getView
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.database import POMsgSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.webapp import canonical_url
@@ -90,9 +91,9 @@ item.
     >>> subview.context.potmsgset.sequence == 1
     True
 
-It does not have a plural msgid.
+It does not have a plural message
 
-    >>> subview.msgid_plural is None
+    >>> subview.plural_text is None
     True
 
 And thus, it only has one translation.
@@ -129,74 +130,79 @@ Web presentation
 Some characters are presented specially in the Web interface, and there are
 functions to determine whether to advise translators about their presence.
 
-First, msg_id_has_tab() determines whether a message set contains any tabs.
+First, text_has_tab() determines whether a message set contains any tabs.
 
-    >>> subview.msgid_has_tab
+    >>> subview.text_has_tab
     False
 
 When we change the set to include a tab character, the function detects it.
 
-    >>> subview.context.potmsgset.makeMessageIDSighting(
+    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
     ...     u'Foo\tBar', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> subview.msgid_has_tab
+    >>> flush_database_updates()
+    >>> subview.text_has_tab
     True
 
-Similarly, msgid_has_newline() determines whether a message contains newlines.
+Similarly, text_has_newline() determines whether a message contains newlines.
 
-    >>> subview.context.potmsgset.makeMessageIDSighting(
+    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
     ...     u'Foo Bar', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> subview.msgid_has_newline
+    >>> flush_database_updates()
+    >>> subview.text_has_newline
     False
 
-    >>> subview.context.potmsgset.makeMessageIDSighting(
+    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
     ...     u'Foo\nBar', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> subview.msgid_has_newline
+    >>> flush_database_updates()
+    >>> subview.text_has_newline
     True
 
-And msgid_has_leading_or_trailing_space() determines ... well, you can guess.
+And text_has_leading_or_trailing_space() determines ... well, you can guess.
 
-    >>> subview.context.potmsgset.makeMessageIDSighting(
+    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
     ...     u'Foo Bar', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> flush_database_updates()
+    >>> subview.text_has_leading_or_trailing_space
     False
 
-    >>> subview.context.potmsgset.makeMessageIDSighting(
+    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
     ...     u' Leading space', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.makeMessageIDSighting(
+    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
     ...     u'  Leading space', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.makeMessageIDSighting(
+    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
     ...     u'Trailing space ', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.makeMessageIDSighting(
+    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
     ...     u'Trailing space  ', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.makeMessageIDSighting(
+    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
     ...     u'Leading\n Space  ', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.makeMessageIDSighting(
+    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
     ...     u'Trailing \nSpace  ', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.makeMessageIDSighting(
+    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
     ...     u'Trailing \r\nspace', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> subview.text_has_leading_or_trailing_space
     True
 
     >>> import transaction
     >>> transaction.commit()
+    >>> flush_database_updates()
 
 
 Submitting translations
@@ -255,7 +261,6 @@ We do a new submit, but this time including a lock_timestamp field.
     >>> request.method = 'POST'
     >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
     >>> pomsgset_page_view.initialize()
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> transaction.commit()
     >>> flush_database_updates()
 

@@ -3,7 +3,10 @@
 import unittest
 import doctest
 import textwrap
+
 from canonical.launchpad.components.translationformats import gettext_po_parser as pofile
+from canonical.launchpad.interfaces import (
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 
 DEFAULT_HEADER = '''
 msgid ""
@@ -38,7 +41,7 @@ class POBasicTestCase(unittest.TestCase):
 
         try:
             self.parser.finish()
-        except pofile.POSyntaxError:
+        except TranslationFormatSyntaxError:
             pass
         else:
             self.fail("uncaught syntax error (missing quote)")
@@ -48,7 +51,7 @@ class POBasicTestCase(unittest.TestCase):
             self.parser.write(
                 '''%smsgid "foo\n"\nmsgstr "bar"\n''' % DEFAULT_HEADER)
             self.parser.finish()
-        except pofile.POSyntaxError:
+        except TranslationFormatSyntaxError:
             pass
         else:
             self.fail("uncaught syntax error (misplaced newline)")
@@ -58,7 +61,7 @@ class POBasicTestCase(unittest.TestCase):
             self.parser.write(
                 '''%smsgid "foo\\"\nmsgstr "bar"\n''' % DEFAULT_HEADER)
             self.parser.finish()
-        except pofile.POSyntaxError:
+        except TranslationFormatSyntaxError:
             pass
         else:
             self.fail("uncaught syntax error (misplaced backslash)")
@@ -68,7 +71,7 @@ class POBasicTestCase(unittest.TestCase):
 
         try:
             self.parser.finish()
-        except pofile.POSyntaxError:
+        except TranslationFormatSyntaxError:
             pass
         else:
             self.fail("uncaught syntax error (missing msgstr)")
@@ -77,7 +80,7 @@ class POBasicTestCase(unittest.TestCase):
         try:
             self.parser.write('''%smsgid_plural "foos"\n''' % DEFAULT_HEADER)
             self.parser.finish()
-        except pofile.POSyntaxError:
+        except TranslationFormatSyntaxError:
             pass
         else:
             self.fail("uncaught syntax error (missing msgid before "
@@ -88,7 +91,7 @@ class POBasicTestCase(unittest.TestCase):
 
         try:
             self.parser.finish()
-        except pofile.POSyntaxError:
+        except TranslationFormatSyntaxError:
             pass
         else:
             self.fail("uncaught syntax error (missing msgid after comment)")
@@ -109,9 +112,9 @@ class POBasicTestCase(unittest.TestCase):
             msgstr "b"\n""" % DEFAULT_HEADER))
         self.parser.finish()
         messages = self.parser.messages
-        self.assertEqual(messages[0].sourceComment, "foo/bar.baz\n",
+        self.assertEqual(messages[0].source_comment, "foo/bar.baz\n",
                 "incorrect source comment")
-        self.assertEqual(messages[0].commentText, " cake not drugs\n",
+        self.assertEqual(messages[0].comment, " cake not drugs\n",
                 "incorrect comment text")
         assert 'fuzzy' not in messages[0].flags, "incorrect fuzziness"
 
@@ -129,7 +132,7 @@ class POBasicTestCase(unittest.TestCase):
     #
     #     try:
     #         self.parser.finish()
-    #     except pofile.POSyntaxError:
+    #     except TranslationFormatSyntaxError:
     #         pass
     #     else:
     #         self.fail("no exception on bad escape sequence")
@@ -147,14 +150,14 @@ class POBasicTestCase(unittest.TestCase):
         messages = self.parser.messages
         self.assertEqual(messages[0].msgid, "foo", "incorrect msgid")
         assert not messages[0].msgstr, "msgstr should be absent"
-        self.assertEqual(messages[0].msgidPlural, "foos",
+        self.assertEqual(messages[0].msgid_plural, "foos",
             "incorrect msgid_plural")
-        assert messages[0].msgstrPlurals, "missing msgstr_plurals"
-        self.assertEqual(len(messages[0].msgstrPlurals), 2,
+        assert messages[0].msgstr_plurals, "missing msgstr_plurals"
+        self.assertEqual(len(messages[0].msgstr_plurals), 2,
             "incorrect number of msgstr_plurals")
-        self.assertEqual(messages[0].msgstrPlurals[0], "bar",
+        self.assertEqual(messages[0].msgstr_plurals[0], "bar",
             "incorrect msgstr_plural")
-        self.assertEqual(messages[0].msgstrPlurals[1], "bars",
+        self.assertEqual(messages[0].msgstr_plurals[1], "bars",
             "incorrect msgstr_plural")
         assert 'fuzzy' not in messages[0].flags, "incorrect fuzziness"
 
@@ -186,7 +189,7 @@ class POBasicTestCase(unittest.TestCase):
                 msgid "foo"
                 msgstr "bar2"''' % DEFAULT_HEADER))
             self.parser.finish()
-        except pofile.POInvalidInputError:
+        except TranslationFormatInvalidInputError:
             pass
         else:
             self.fail("no error when duplicate msgid encountered")

@@ -98,7 +98,7 @@ Note that the generated notification contain the 'extra_info' content:
   <BLANKLINE>
   --
   i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
-  http://launchpad.dev/+builds/+build/22
+  http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/22
   <BLANKLINE>
 
 
