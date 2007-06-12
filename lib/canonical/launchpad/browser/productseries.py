@@ -383,11 +383,17 @@ class ProductSeriesView(LaunchpadView):
 
         translation_import_queue_set = getUtility(ITranslationImportQueue)
 
-        if filename.endswith('.pot') or filename.endswith('.po'):
+        if (filename.endswith('.pot') or filename.endswith('.po') or
+            filename=='en-US.xpi'):
             # Add it to the queue.
-            newimport = PoSupport(path=filename,
-                                  productseries=self.context,
-                                  file=file)
+            if filename == 'en-US.xpi':
+                newimport = MozillaSupport(path=filename,
+                                           productseries=self.context,
+                                           file=file)
+            else:
+                newimport = PoSupport(path=filename,
+                                      productseries=self.context,
+                                      file=file)
             entries = newimport.allentries
             for entry in entries:
                 translation_import_queue_set.addOrUpdateEntry(

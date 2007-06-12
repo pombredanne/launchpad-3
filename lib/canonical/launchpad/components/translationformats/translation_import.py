@@ -91,6 +91,7 @@ class TranslationImporter:
 
         # This var will hold an special IPOFile for 'English' which will have
         # the English strings to show instead of arbitrary IDs.
+        english_pofile = None
         self.potemplate = translation_import_queue_entry.potemplate
         self.pofile = translation_import_queue_entry.pofile
         if self.pofile is None:
@@ -101,6 +102,12 @@ class TranslationImporter:
             messages = parsed_template['messages']
             self.potemplate.source_file_format = (
                 translation_import_queue_entry.format)
+            # XXX: This should be done in a generic way so we handle this
+            # automatically without knowing the exact formats that need it.
+            if translation_import_queue_entry.format == RosettaFileFormat.XPI:
+                english_pofile = self.potemplate.getPOFileByLang('en')
+                if english_pofile is None:
+                    english_pofile = self.potemplate.newPOFile('en')
             # Expire old messages
             self.potemplate.expireAllMessages()
             if header is not None:
@@ -246,6 +253,19 @@ class TranslationImporter:
                 # import.
                 self.potemplate.invalidateCache()
 
+                if english_pofile is not None:
+                    # The English strings for this template are stored inside
+                    # an IPOFile.
+                    pomsgset = potmsgset.getPOMsgSet(
+                        english_pofile.language.code)
+                    if pomsgset is None:
+                        # There is no such pomsgset, we need to create it.
+                        pomsgset = (
+                            english_pofile.createMessageSetFromMessageSet(
+                                potmsgset))
+
+                    pomsgset.sequence = count
+
                 # By default translation template uploads are done only by
                 # editors.
                 is_editor = True
@@ -277,8 +297,9 @@ class TranslationImporter:
                 is_editor = self.pofile.canEditTranslations(importer)
 
             # Store translations
-            if self.pofile is None:
-                # It's not an IPOFile.
+            if self.pofile is None and english_pofile is None:
+                # It's neither an IPOFile nor an IPOTemplate that needs to
+                # store English strings in an IPOFile.
                 continue
 
             translations = pomsg['msgstr']
