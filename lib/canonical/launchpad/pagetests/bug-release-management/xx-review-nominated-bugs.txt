@@ -31,16 +31,29 @@ user don't have permissions to do it.
     >>> bug_listing = find_tag_by_id(user_browser.contents, 'buglisting')
     >>> for tr in bug_listing.tbody('tr'):
     ...     approve_td, bug_id = tr('td')[:2]
-    ...     has_input_controls = approve_td.renderContents().strip() != ''
+    ...     if approve_td.renderContents().isdigit():
+    ...         # No widget column is rendered at all.
+    ...         has_input_controls = False
+    ...         bug_id = approve_td
+    ...     else:
+    ...         has_input_controls = approve_td.renderContents().strip() != ''
     ...     print "%s: %s" % (extract_text(bug_id), has_input_controls)
     1: False
 
-No button for submitting the form is shown:
+No button for submitting the form is shown, nor is the approve/decline
+header:
 
     >>> user_browser.getControl('Save changes')
     Traceback (most recent call last):
     ...
     LookupError: label 'Save changes'
+
+    >>> for th in bug_listing.thead('th'):
+    ...     print "'%s'" % extract_text(th).strip()
+    'Summary'
+    'Package'
+    'Importance'
+    'Status'
 
 Someone with enough permissions sees controls for approving/declining
 nominations.
@@ -59,6 +72,14 @@ nominations.
     ...     has_input_controls = approve_td.renderContents().strip() != ''
     ...     print "%s: %s" % (extract_text(bug_id), has_input_controls)
     1: True
+
+    >>> for th in bug_listing.thead('th'):
+    ...     print "'%s'" % extract_text(th).strip()
+    'Accept Decline No change'
+    'Summary'
+    'Package'
+    'Importance'
+    'Status'
 
 After approving the nominated bugs, the listing is empty.
 
