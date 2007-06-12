@@ -389,6 +389,35 @@ class POFile(SQLBase, RosettaStats):
 
         return results
 
+    def getPOTMsgSetChangedInLaunchpad(self):
+        """See IPOFile."""
+        # POT set has been changed in Launchpad if it contains active
+        # translation which didn't come from a published package
+        # (iow, it's different from a published translation: this only
+        # lists translations which have actually changed in LP, not
+        # translations which are 'new' and only exist in LP).
+        results = POTMsgSet.select('''POTMsgSet.id IN (
+            SELECT POTMsgSet.id
+            FROM POTMsgSet
+            LEFT OUTER JOIN POMsgSet ON
+                POTMsgSet.id = POMsgSet.potmsgset AND
+                POMsgSet.pofile = %s
+            LEFT OUTER JOIN POSubmission ps1 ON
+                ps1.pomsgset = POMsgSet.id
+            LEFT OUTER JOIN POSubmission ps2 ON
+                ps2.pomsgset = ps1.pomsgset AND
+                ps2.pluralform = ps1.pluralform AND
+                ps2.id != ps1.id
+            WHERE
+                ps1.published IS TRUE AND
+                ps2.active IS TRUE AND
+                POTMsgSet.sequence > 0 AND
+                POTMsgSet.potemplate = %s)
+            ''' % sqlvalues(self, self.potemplate),
+            orderBy='POTmsgSet.sequence')
+
+        return results
+
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""
         results = POTMsgSet.select('''
@@ -945,25 +974,33 @@ class DummyPOFile(RosettaStats):
 
         return DummyPOMsgSet(self, potmsgset)
 
+    def emptySelectResults(self):
+        return POFile.select("1=2")
+
     def getPOMsgSetsNotInTemplate(self):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
 
     def getPOTMsgSetTranslated(self, slice=None):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
 
     def getPOTMsgSetFuzzy(self, slice=None):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
 
     def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
         return self.potemplate.getPOTMsgSets(slice)
 
+    def getPOTMsgSetChangedInLaunchpad(self, slice=None):
+        """See IPOFile."""
+        return self.emptySelectResults()
+
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
+
 
     def hasMessageID(self, msgid):
         """See IPOFile."""
