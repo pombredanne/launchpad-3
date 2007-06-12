@@ -19,6 +19,11 @@ changing the status, the target, and the new status.
     >>> bug = firefox.createBug(bug_params)
     >>> bug_id = bug.id
 
+    # Set a milestone to ensure that the current db user has enough
+    # privileges to access it.
+    >>> [firefox_task] = bug.bugtasks
+    >>> firefox_task.milestone = firefox.getMilestone('1.0')
+
     >>> from canonical.database.sqlbase import commit
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
@@ -129,7 +134,14 @@ for product tasks.
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+
+    # Set a milestone to ensure that the current db user has enough
+    # privileges to access it.
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
+    >>> feature_freeze = ubuntu_hoary.newMilestone('feature-freeze')
     >>> bug = ubuntu.createBug(bug_params)
+    >>> [ubuntu_bugtask] = bug.bugtasks
+    >>> ubuntu_bugtask.milestone = feature_freeze
     >>> bug_id = bug.id
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
