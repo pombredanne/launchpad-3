@@ -168,6 +168,13 @@ class IPOFile(IRosettaStats):
         Return the message sets using 'slice' or all of them if slice is None.
         """
 
+    def getPOTMsgSetChangedInLaunchpad():
+        """Get pot message sets changed through Launchpad in this PO file.
+
+        'Changed in Launchpad' are only those which were translated when
+        initially imported, but then got overridden in Launchpad.
+        """
+
     def getPOTMsgSetWithErrors(slice=None):
         """Get pot message sets that have translations published with errors.
 

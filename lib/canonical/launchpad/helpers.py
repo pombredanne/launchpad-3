@@ -290,7 +290,8 @@ def validate_translation(original, translation, flags):
 
 class ShortListTimeoutError(Exception):
     """This error is raised when the shortlist hardlimit is reached"""
-    
+
+
 def shortlist(sequence, longest_expected=15, hardlimit=None):
     """Return a listified version of sequence.
 
