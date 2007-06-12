@@ -138,7 +138,7 @@ Foo Bar, and one to Ubuntu Team:
 
 XXX flacoste 2006/09/19 Add checks for notification of change to
 assignee, status whiteboard, priority. For example, if a question is
-transfered to another QuestionTarget and priority is changed,
+transferred to another QuestionTarget and priority is changed,
 the notification does not include priority.
 
     >>> unmodified_question = Snapshot(

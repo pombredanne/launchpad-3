@@ -140,10 +140,10 @@ will be selected:
 
 === language ===
 
-By default, questions in all languages are included in the results. It is
-possible to filter questions by the language they were writtenin . One or
-a list of ILanguage object should be passed in the language parameter to
-specify the language filter.
+By default, questions in all languages are included in the results.
+It is possible to filter questions by the language they were written
+in . One or a list of ILanguage object should be passed in the
+language parameter to specify the language filter.
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> spanish = getUtility(ILanguageSet)['es']
@@ -309,7 +309,7 @@ answer contact.
 
 == getTeamAnswerQuestionTargets() ==
 
-IPerson defines getTeamAnswerQuestionTargets that retreives a list of
+IPerson defines getTeamAnswerQuestionTargets that retrieves a list of
 IQuestionTargets that the person is subscribed to indirectly as an
 answer contact through his team membership.
 
@@ -354,5 +354,3 @@ Person's supported IQuestionTargets:
     >>> sorted([target.name
     ...         for target in no_priv.getTeamAnswerQuestionTargets()])
     [u'evolution', u'ubuntu']
-
-

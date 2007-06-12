@@ -24,7 +24,7 @@ Distributions and DistributionSourcePackages.
     >>> verifyObject(IQuestionTarget, evolution_in_ubuntu)
     True
 
-Altough Distribution series do not implement the IQuestionTarget
+Although Distribution series do not implement the IQuestionTarget
 interface, it is possible to adapt one to it. (The adapter is actually
 the distroseries's distribution.)
 
@@ -187,7 +187,7 @@ method.
     [u'Sample Person']
 
 The persons who are on the subscription list are said to be directly
-subscribed to the question. They explicitely choose to get notifications
+subscribed to the question. They explicitly choose to get notifications
 about that particular question. This list of persons is available through
 the getDirectSubscribers() method.
 
@@ -206,7 +206,7 @@ subscribers along the rationale for contacting them:
       subscriber of the question.', 'Subscriber')
 
 There is also a list of 'indirect' subscribers to the question. These
-are persons that didn't explicitely subscribed to the question, but that
+are persons that didn't explicitly subscribed to the question, but that
 will receive notifications for other reason. Answer contacts for the
 question target are part of the indirect subscribers list.
 

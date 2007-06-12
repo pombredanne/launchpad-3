@@ -97,7 +97,7 @@ form.
     ...              if action.available()]
     ...     return sorted(names)
 
-Unlogged users cannot post any comments on the question:
+Unlogged-in users cannot post any comments on the question:
 
     >>> login(ANONYMOUS)
     >>> workflow_harness.submit('', {})
@@ -903,7 +903,7 @@ can only remove his own registration.
     You have been removed as an answer contact for Ubuntu.
 
 It can also be used to remove a team registration when the user is a team
-administror:
+administrator:
 
     >>> login('jeff.waugh@ubuntulinux.com')
     >>> request = LaunchpadTestRequest(
