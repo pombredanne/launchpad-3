@@ -482,6 +482,62 @@ ITeamMembership.sendExpirationWarningEmail to do its job.
     Thanks for using Launchpad!
     <BLANKLINE>
 
+If the team's renewal policy is ONDEMAND, though, the member is invited to
+renew his own membership.
+
+    >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
+    >>> ubuntu_team.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> flush_database_updates()
+    >>> sabdfl_on_ubuntu_team.sendExpirationWarningEmail()
+    >>> transaction.commit()
+    >>> [notification] = pop_notifications()
+    >>> notification['To']
+    'Mark Shuttleworth <mark@hbd.com>'
+    >>> notification['Subject']
+    'Launchpad: ubuntu-team team membership about to expire'
+    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hi Mark Shuttleworth
+    <BLANKLINE>
+    On 2050-03-03, ... from now, your membership of the
+    Ubuntu Team (ubuntu-team) Launchpad team is due to expire.
+    <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    If you want, you can renew this membership at
+    <http://launchpad.dev/~sabdfl/+expiringmembership/ubuntu-team>
+    <BLANKLINE>
+    If your membership does expire, we'll send you one more message to let
+    you know it's happened.
+    <BLANKLINE>
+    Thanks for using Launchpad!
+    <BLANKLINE>
+
+    >>> guadamen.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> flush_database_updates()
+    >>> ubuntu_team_on_guadamen = membershipset.getByPersonAndTeam(
+    ...     ubuntu_team, guadamen)
+    >>> ubuntu_team_on_guadamen.sendExpirationWarningEmail()
+    >>> transaction.commit()
+    >>> [notification] = pop_notifications()
+    >>> notification['To']
+    'mark@hbd.com'
+    >>> notification['Subject']
+    'Launchpad: guadamen team membership about to expire'
+    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hi,
+    <BLANKLINE>
+    On 2049-02-03, ... from now, the membership of
+    Ubuntu Team (ubuntu-team) (which you are the owner of) in the
+    GuadaMen (guadamen) Launchpad team is due to expire.
+    <http://launchpad.dev/~guadamen>
+    <BLANKLINE>
+    If you want, you can renew this membership at
+    <http://launchpad.dev/~ubuntu-team/+expiringmembership/guadamen>
+    <BLANKLINE>
+    If the membership does expire, we'll send you one more message to let
+    you know it's happened.
+    <BLANKLINE>
+    Thanks for using Launchpad!
+    <BLANKLINE>
 
 == Membership expiration notification ==
 
@@ -499,7 +555,7 @@ is automatically renewed.
     >>> utc_now = datetime.now(pytz.timezone('UTC'))
     >>> lp_admins = personset.getByName('admins')
     >>> lp_admins.renewal_policy
-    <Item NONE ... TeamMembershipRenewalPolicy...
+    <Item NONE ...TeamMembershipRenewalPolicy...
 
     >>> sabdfl_on_admins = membershipset.getByPersonAndTeam(sabdfl, lp_admins)
     >>> sabdfl_on_admins.dateexpires = utc_now
@@ -526,21 +582,32 @@ The expiration/auto-renewal notifications are sent to each person
 individually rather than sending a single email to everybody, so we'll
 just show the recipients and the different messages we may send.
 
-    >>> distinct_messages = {}
-    >>> for message in pop_notifications():
-    ...     recipients = set(
-    ...         recipient.strip() for recipient in message['To'].split(','))
-    ...     body = message.get_payload()
-    ...     if body not in distinct_messages:
-    ...         distinct_messages[body] = recipients
-    ...     else:
-    ...         existing_recipients = distinct_messages[body]
-    ...         distinct_messages[body] = existing_recipients.union(recipients)
+    >>> def print_distinct_messages_and_recipients():
+    ...     """Pop all messages from stub.test_emails and print them with
+    ...      their recipients.
+    ...     
+    ...     Since the same message may be sent more than once (for different
+    ...     recipients), we print each distinct message only once and group
+    ...     all recipients of that message together.
+    ...     """
+    ...     distinct_messages = {}
+    ...     for message in pop_notifications():
+    ...         recipients = set(
+    ...             recipient.strip()
+    ...             for recipient in message['To'].split(','))
+    ...         body = message.get_payload()
+    ...         if body not in distinct_messages:
+    ...             distinct_messages[body] = recipients
+    ...         else:
+    ...             existing_recipients = distinct_messages[body]
+    ...             distinct_messages[body] = existing_recipients.union(
+    ...                 recipients)
+    ...     for message in sorted(distinct_messages):
+    ...         print 'To:', sorted(distinct_messages[message])
+    ...         print message #doctest: -NORMALIZE_WHITESPACE
+    ...         print "-"*40
 
-    >>> for message in sorted(distinct_messages):
-    ...     print 'To:', sorted(distinct_messages[message])
-    ...     print message #doctest: -NORMALIZE_WHITESPACE
-    ...     print "-"*40
+    >>> print_distinct_messages_and_recipients()
     To: ['colin.watson@ubuntulinux.com', 'foo.bar@canonical.com', 'mark@hbd.com']
     Hello,
     <BLANKLINE>
@@ -598,7 +665,6 @@ sent to all team admins.
 
     >>> login(mirror_admins.teamowner.preferredemail.email)
     >>> karl_on_mirroradmins.dateexpires = tomorrow
-    >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
     >>> ondemand = TeamMembershipRenewalPolicy.ONDEMAND
     >>> karl_on_mirroradmins.team.renewal_policy = ondemand
     >>> mirror_admins.defaultrenewalperiod = 365
@@ -610,27 +676,7 @@ sent to all team admins.
     >>> len(stub.test_emails)
     1
 
-    # XXX: Dear reviewer,
-    # Please remind me to create a function with the code below as it's
-    # already used a few lines above and I just copied it here to avoid
-    # conflicts with my first part of the fix for this bug, which is in
-    # another branch.
-    # -- Guilherme Salgado
-    >>> distinct_messages = {}
-    >>> for message in pop_notifications():
-    ...     recipients = set(
-    ...         recipient.strip() for recipient in message['To'].split(','))
-    ...     body = message.get_payload()
-    ...     if body not in distinct_messages:
-    ...         distinct_messages[body] = recipients
-    ...     else:
-    ...         existing_recipients = distinct_messages[body]
-    ...         distinct_messages[body] = existing_recipients.union(recipients)
-
-    >>> for message in sorted(distinct_messages):
-    ...     print 'To:', sorted(distinct_messages[message])
-    ...     print message #doctest: -NORMALIZE_WHITESPACE
-    ...     print "-"*40
+    >>> print_distinct_messages_and_recipients()
     To: ['mark@hbd.com']
     Hello,
     <BLANKLINE>

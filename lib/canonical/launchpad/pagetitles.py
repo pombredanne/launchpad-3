@@ -692,7 +692,7 @@ person_packagebugs_overview = person_packagebugs
 
 person_packagebugs_search = person_packagebugs
 
-person_participation = ContextTitle("Team partipation by %s")
+person_participation = ContextTitle("Team participation by %s")
 
 person_review = ContextDisplayName("Review %s")
 
@@ -1127,7 +1127,7 @@ def teammembership_invitation(context, view):
         context.person.browsername, context.team.browsername)
 
 def teammembership_self_renewal(context, view):
-    return "Renew membership of %s on %s" % (
+    return "Renew membership of %s in %s" % (
         context.person.browsername, context.team.browsername)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')

@@ -62,11 +62,11 @@ class TeamMembership(SQLBase):
     def canBeRenewedByMember(self):
         """See ITeamMembership"""
         ondemand = TeamMembershipRenewalPolicy.ONDEMAND
-        admin, approved = [TeamMembershipStatus.APPROVED,
-                           TeamMembershipStatus.ADMIN]
+        admin = TeamMembershipStatus.APPROVED
+        approved = TeamMembershipStatus.ADMIN
         date_limit = datetime.now(pytz.timezone('UTC')) + timedelta(
             days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
-        return (self.status in [admin, approved]
+        return (self.status in (admin, approved)
                 and self.team.renewal_policy == ondemand
                 and self.dateexpires is not None
                 and self.dateexpires < date_limit)
@@ -141,25 +141,31 @@ class TeamMembership(SQLBase):
         team = self.team
         subject = 'Launchpad: %s team membership about to expire' % team.name
 
-        admins_names = []
-        admins = team.getDirectAdministrators()
-        assert admins.count() >= 1
-        if admins.count() == 1:
-            admin = admins[0]
-            contact_admins_text = (
-                "To prevent this membership from expiring, you should "
-                "contact\nthe team's administrator, %s.\n<%s>"
-                % (admin.unique_displayname, canonical_url(admin)))
+        if team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND:
+            how_to_renew = (
+                "If you want, you can renew this membership at\n"
+                "<%s/+expiringmembership/%s>"
+                % (canonical_url(member), team.name))
         else:
-            for admin in admins:
-                admins_names.append(
-                    "%s <%s>"
+            admins_names = []
+            admins = team.getDirectAdministrators()
+            assert admins.count() >= 1
+            if admins.count() == 1:
+                admin = admins[0]
+                how_to_renew = (
+                    "To prevent this membership from expiring, you should "
+                    "contact\nthe team's administrator, %s.\n<%s>"
                     % (admin.unique_displayname, canonical_url(admin)))
+            else:
+                for admin in admins:
+                    admins_names.append(
+                        "%s <%s>"
+                        % (admin.unique_displayname, canonical_url(admin)))
 
-            contact_admins_text = (
-                "To prevent this membership from expiring, you should get "
-                "in touch\nwith one of the team's administrators:\n")
-            contact_admins_text += "\n".join(admins_names)
+                how_to_renew = (
+                    "To prevent this membership from expiring, you should get "
+                    "in touch\nwith one of the team's administrators:\n")
+                how_to_renew += "\n".join(admins_names)
 
         formatter = DurationFormatterAPI(
             self.dateexpires - datetime.now(pytz.timezone('UTC')))
@@ -167,9 +173,8 @@ class TeamMembership(SQLBase):
             'member_name': member.unique_displayname,
             'member_displayname': member.displayname,
             'team_url': canonical_url(team),
-            'contact_admins_text': contact_admins_text,
+            'how_to_renew': how_to_renew,
             'team_name': team.unique_displayname,
-            'team_admins': '\n'.join(admins_names),
             'expiration_date': self.dateexpires.strftime('%Y-%m-%d'),
             'approximate_duration': formatter.approximateduration()}
 
@@ -350,12 +355,9 @@ class TeamMembershipSet:
             else:
                 membership.setStatus(TeamMembershipStatus.EXPIRED, reviewer)
 
-    def getByPersonAndTeam(self, person, team, default=None):
+    def getByPersonAndTeam(self, person, team):
         """See ITeamMembershipSet"""
-        result = TeamMembership.selectOneBy(person=person, team=team)
-        if result is None:
-            return default
-        return result
+        return TeamMembership.selectOneBy(person=person, team=team)
 
     def getMembershipsToExpire(self, when=None):
         """See ITeamMembershipSet"""

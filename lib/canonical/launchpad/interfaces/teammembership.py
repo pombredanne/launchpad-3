@@ -111,11 +111,11 @@ class ITeamMembershipSet(Interface):
         filling the TeamParticipation table.
         """
 
-    def getByPersonAndTeam(person, team, default=None):
+    def getByPersonAndTeam(person, team):
         """Return the TeamMembership object for the given person and team.
 
-        If there's no TeamMembership for this person in this team, return the
-        default value.
+        If the given person or team is None, there will obviously be no
+        TeamMembership and I'll return None.
         """
 
 

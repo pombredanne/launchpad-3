@@ -285,14 +285,14 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
         return self, ()
 
     def getReasonForDeniedRenewal(self):
-        """Return a text describing why the membership can't be renewed."""
+        """Return text describing why the membership can't be renewed."""
         context = self.context
         ondemand = TeamMembershipRenewalPolicy.ONDEMAND
-        admin, approved = [TeamMembershipStatus.APPROVED,
-                           TeamMembershipStatus.ADMIN]
+        admin = TeamMembershipStatus.ADMIN
+        approved = TeamMembershipStatus.APPROVED
         date_limit = datetime.now(pytz.timezone('UTC')) - timedelta(
             days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
-        if context.status not in [admin, approved]:
+        if context.status not in (admin, approved):
             text = "it is not active."
         elif context.team.renewal_policy != ondemand:
             text = ('<a href="%s">%s</a> is not a team which accepts its '
@@ -300,11 +300,16 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
                     % (canonical_url(context.team),
                        context.team.unique_displayname))
         elif context.dateexpires is None or context.dateexpires > date_limit:
-            text = ('it is not flagged to expire in %d days or less. '
-                    '<a href="%s/+members">Maybe it has been renewed by '
-                    'somebody else already?</a>'
+            if context.person.isTeam():
+                link_text = "Somebody else has already renewed it."
+            else:
+                link_text = (
+                    "You or one of the team administrators has already "
+                    "renewed it.")
+            text = ('it is not set to expire in %d days or less. '
+                    '<a href="%s/+members">%s</a>'
                     % (DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
-                       canonical_url(context.team)))
+                       canonical_url(context.team), link_text))
         else:
             raise AssertionError('This membership can be renewed!')
         return text

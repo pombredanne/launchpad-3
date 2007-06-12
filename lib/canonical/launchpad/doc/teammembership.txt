@@ -479,7 +479,7 @@ while the one that was inactive hasn't changed.
 
 == Renewing team memberships ==
 
-A tem membership can be renewed before it has been expired by either
+A team membership can be renewed before it has been expired by either
 changing its dateexpires (which can be done only by admins of the
 membership's team) or by using IPerson.renewTeamMembership, which is
 accessible only to the membership's member a few days before it expires.
@@ -514,7 +514,7 @@ Only a team admin can.
 
 If the team's renewal policy is ONDEMAND, the membership can be renewed
 by the member himself. (That is only true because this membership is
-active and flagged to expire tomorrow).
+active and set to expire tomorrow).
 
     >>> print karl_on_mirroradmins.team.renewal_policy.name
     NONE
