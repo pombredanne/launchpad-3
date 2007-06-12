@@ -192,9 +192,9 @@ class POFile(SQLBase, RosettaStats):
     rosettacount = IntCol(dbName='rosettacount',
                           notNull=True,
                           default=0)
-    unreviewedcount = IntCol(dbName='unreviewedcount',
-                             notNull=True,
-                             default=0)
+    unreviewed_count = IntCol(dbName='unreviewed_count',
+                              notNull=True,
+                              default=0)
     lastparsed = UtcDateTimeCol(dbName='lastparsed',
                                 notNull=False,
                                 default=None)
@@ -577,7 +577,7 @@ class POFile(SQLBase, RosettaStats):
         self.currentcount = current
         self.updatescount = updates
         self.rosettacount = rosetta
-        self.unreviewedcount = unreviewed
+        self.unreviewed_count = unreviewed
         return (current, updates, rosetta, unreviewed)
 
     def createMessageSetFromMessageSet(self, potmsgset):
