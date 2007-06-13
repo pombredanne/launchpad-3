@@ -56,12 +56,6 @@ class IOpenIdView(Interface):
 class OpenIdView(LaunchpadView):
     implements(IOpenIdView)
 
-    def publishTraverse(self, request, name):
-        # XXX: Argh! Navigation doesn't seem to be hooked into view traversal
-        # -- StuartBishop 20070428
-        nav = OpenIdViewNavigation(self, request)
-        return nav.publishTraverse(request, name)
-
     openid_request = None
 
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")
