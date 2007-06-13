@@ -550,14 +550,19 @@ class QuestionSet:
         cur = cursor()
         cur.execute('''
             SELECT product, distribution, count(*) AS "question_count"
-            FROM Question
-                 LEFT OUTER JOIN Product ON (Question.product = Product.id)
-                 LEFT OUTER JOIN Distribution ON (
-                    Question.distribution = Distribution.id)
-            WHERE (Product.official_answers is True
-                   OR Distribution.official_answers is TRUE)
+            FROM (
+                SELECT product, distribution
+                FROM Question
+                    LEFT OUTER JOIN Product ON (Question.product = Product.id)
+                    LEFT OUTER JOIN Distribution ON (
+                        Question.distribution = Distribution.id)
+                WHERE
+                    (Product.official_answers is True
+                    OR Distribution.official_answers is TRUE)
                     AND Question.datecreated > (
                         current_timestamp -interval '60 days')
+                LIMIT 5000
+            ) AS "RecentQuestions"
             GROUP BY product, distribution
             ORDER BY question_count DESC
             LIMIT %s
