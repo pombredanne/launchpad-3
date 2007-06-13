@@ -220,7 +220,7 @@ and re-initialize the pomsgset's in-memory caches.
     >>> noneditor_submission.datecreated += datetime.timedelta(0,2,0)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> pomsgset.invalidateCaches()
+    >>> pomsgset.removeSecurityProxy()._invalidateSubmissionsCaches()
 
 Let's make sure:
 

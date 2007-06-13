@@ -89,16 +89,23 @@ class IPOMsgSet(Interface):
 
         """
 
-    def initializeCaches():
+    def initializeSubmissionsCaches():
         """Initialize internal submission caches.
 
         These caches are used to find submissions attached to self, as well as
         specifically active or published submissions, or suggestions, and so
         on, without querying the database unnecessarily.
-        """
 
-    def invalidateCaches():
-        """Drop any POSubmissions info this IPOMsgSet may have cached."""
+        The getter and setter methods for the Active Submissions and Published
+        Submissions work on a subset of this cache; the active/published
+        submissions caches can be populated separately to avoid the cost of
+        fetching the full data set for the submissions cache.  When doing work
+        on a POMsgSet that will require findind both the active/published
+        submissions information and other information about submissions or
+        suggestions, call initializeSubmissionsCaches first.  That will
+        populate the full submissions caches without duplication of the effort
+        to fetch the active/published submissions information.
+        """
 
     def setActiveSubmission(pluralform, submission):
         """Set given submission as the active one.
@@ -129,10 +136,19 @@ class IPOMsgSet(Interface):
         represented and accessed differently through this API."""
 
     def getWikiSubmissions(pluralform):
-        """Find suggestions for given pluralform."""
+        """List of suggestions for given pluralform.
+
+        A suggestion is a POSubmission for another POMsgSet in the same
+        language, whose potmsgset shares the same primemsgid as self's.  In
+        less formal terms, a suggestion is an existing translation that is
+        likely to be a useful translation for self as well.
+        """
 
     def getNewSubmissions(pluralfom):
-        """Return any submissions that are more recent than the active one."""
+        """Submissions for self that are more recent than active one, if any.
+
+        Returns a list of POSubmissions, ordered from newest to oldest.
+        """
 
     def getCurrentSubmissions(pluralform):
         """Return a list of submissions currently published or active.

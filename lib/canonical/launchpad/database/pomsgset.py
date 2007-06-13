@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['POMsgSet', 'DummyPOMsgSet']
@@ -9,7 +9,6 @@ from zope.interface import implements
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
                        SQLMultipleJoin, SQLObjectNotFound)
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (flush_database_updates, quote,
@@ -54,13 +53,15 @@ class POMsgSetMixIn:
         return entries
 
     def _getRelatedSubmissions(self):
-        """Fetch all POSubmissions needed to populate self's caches.
+        """Fetch all POSubmissions for self's submissions caches.
 
         This retrieves all POSubmissions that form useful suggestions for self
         from the database, as well as any POSubmissions that are already
         attached to self, all in new-to-old order of datecreated."""
 
-        match_self_sql = False
+        # An SQL clause matching a POMsgSet to our own identity.  It goes into
+        # an OR expression, so default is false.
+        match_self_sql = 'false'
         if self.id is not None:
             match_self_sql = 'POMsgSet.id=%s' % quote(self)
 
@@ -83,9 +84,9 @@ class POMsgSetMixIn:
         return POSubmission.select(
             query, clauseTables=joins, orderBy='-datecreated', distinct=True)
 
-    def initializeCaches(self):
+    def initializeSubmissionsCaches(self):
         """See IPOMsgSet."""
-        if self._hasCaches():
+        if self._hasSubmissionsCaches():
             return
         self.active_submissions = {}
         self.published_submissions = {}
@@ -93,20 +94,18 @@ class POMsgSetMixIn:
         self.attached_submissions = {}
 
         # Retrieve all related POSubmissions, and use them to populate our
-        # submissions/suggestions caches.
+        # submissions caches.
         for submission in self._getRelatedSubmissions():
             pluralform = submission.pluralform
             if submission.pomsgset == self:
-                if self.attached_submissions.get(pluralform) is None:
-                    self.attached_submissions[pluralform] = []
+                self.attached_submissions.setdefault(pluralform, [])
                 self.attached_submissions[pluralform].append(submission)
                 if submission.active:
                     self.active_submissions[pluralform] = submission
                 if submission.published:
                     self.published_submissions[pluralform] = submission
             else:
-                if self.suggestions.get(pluralform) is None:
-                    self.suggestions[pluralform] = []
+                self.suggestions.setdefault(pluralform, [])
                 self.suggestions[pluralform].append(submission)
 
         # Now that we know what our active posubmissions are, filter out any
@@ -114,29 +113,25 @@ class POMsgSetMixIn:
         for pluralform in self.suggestions.keys():
             active = self.getActiveSubmission(pluralform)
             if active is not None and active.potranslation is not None:
-                suggestions = self.suggestions.get(pluralform)
                 self.suggestions[pluralform] = [
-                    filtered
-                    for filtered in suggestions
-                    if filtered.potranslation != active.potranslation]
+                    submission
+                    for submission in self.suggestions.get(pluralform)
+                    if submission.potranslation != active.potranslation]
 
-    def invalidateCaches(self):
+    def _invalidateSubmissionsCaches(self):
         """See IPOMsgSet."""
         self.active_submissions = None
         self.published_submissions = None
         self.suggestions = None
         self.attached_submissions = None
-        assert not self._hasCaches(), 'Invalidating caches does not work!'
+        assert not self._hasSubmissionsCaches(), (
+            'Invalidating caches does not work!')
 
-    def _hasCaches(self):
+    def _hasSubmissionsCaches(self):
         return self.attached_submissions is not None
 
-    def invalidateCaches(self):
-        """See IPOMsgSet."""
-
     def getWikiSubmissions(self, pluralform):
-        if self.attached_submissions is None:
-            self.initializeCaches()
+        self.initializeSubmissionsCaches()
         suggestions = self.suggestions.get(pluralform)
         if suggestions is None:
             return []
@@ -205,6 +200,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     @property
     def published_texts(self):
+        """See IPOMsgSet."""
         if self.pluralforms is None:
             raise RuntimeError(
                 "Don't know the number of plural forms for this PO file!")
@@ -219,6 +215,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     @property
     def active_texts(self):
+        """See IPOMsgSet."""
         pluralforms = self.pluralforms
         if pluralforms is None:
             raise RuntimeError(
@@ -243,8 +240,9 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def setActiveSubmission(self, pluralform, submission):
         """See IPOMsgSet."""
-        assert submission is None or submission.pomsgset == self
-        if submission is not None and submission.active:
+        assert submission is None or submission.pomsgset == self, (
+            'Submission made "active" in the wrong POMsgSet')
+        if not submission is None and submission.active:
             return
 
         current_active = self.getActiveSubmission(pluralform)
@@ -265,8 +263,9 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def setPublishedSubmission(self, pluralform, submission):
         """See IPOMsgSet."""
-        assert submission is None or submission.pomsgset == self
-        if submission is not None and submission.published:
+        assert submission is None or submission.pomsgset == self, (
+            "Submission set as published in wrong POMsgSet")
+        if not submission is None and submission.published:
             return
 
         current_published = self.getPublishedSubmission(pluralform)
@@ -292,29 +291,33 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         dicts, each mapping pluralform to that pluralform's active or
         published submission, respectively.
 
-        Another way of achieving the same thing (and more) is to initialize
-        the POMsgSet's caches, but that is a much bigger job with lots of
-        other byproducts that may not turn out to be needed.
+        This cache is a subset of the submissions cache; populating those will
+        also populate these.  So another way of achieving the same thing (and
+        more) is to initialize the POMsgSet's caches, but that is a much
+        bigger job with lots of other byproducts that may not turn out to be
+        needed.
         """
-        iterator = POSubmission.select(
-            "pomsgset = %s AND (active OR published)" % quote(self))
-
         active = {}
         published = {}
-        for submission in iterator:
+        query = "pomsgset = %s AND (active OR published)" % quote(self)
+        for submission in POSubmission.select(query):
             pluralform = submission.pluralform
             if submission.active:
-                assert not pluralform in active
+                assert not pluralform in active, (
+                    "Multiple active submissions for pluralform %d"
+                    % pluralform)
                 active[pluralform] = submission
             if submission.published:
-                assert not pluralform in published
+                assert not pluralform in published, (
+                    "Multiple published submissions for pluralform %d"
+                    %pluralform)
                 published[pluralform] = submission
         self.active_submissions = active
         self.published_submissions = published
 
     def getActiveSubmission(self, pluralform):
         """See IPOMsgSet."""
-        if True or self.active_submissions is None:
+        if self.active_submissions is None:
             if self.id is None:
                 return None
             self._fetchActiveAndPublishedSubmissions()
@@ -322,7 +325,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def getPublishedSubmission(self, pluralform):
         """See IPOMsgSet."""
-        if True or self.published_submissions is None:
+        if self.published_submissions is None:
             if self.id is None:
                 return None
             self._fetchActiveAndPublishedSubmissions()
@@ -534,9 +537,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         # should be None by this stage
         assert text != u'', 'Empty string received, should be None'
 
-        # We'll be needing our cache for this.
-        if self.attached_submissions is None:
-            self.initializeCaches()
+        # We'll be needing our full submissions cache for this.
+        self.initializeSubmissionsCaches()
 
         active_submission = self.getActiveSubmission(pluralform)
         published_submission = self.getPublishedSubmission(pluralform)
@@ -610,12 +612,13 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             origin = RosettaTranslationOrigin.ROSETTAWEB
 
         # Try to find the submission belonging to translation back in our
-        # cache.  There should be at most one match.
+        # submissions cache.  There should be at most one match.
         submission = None
         if self.attached_submissions.get(pluralform) is not None:
             for search in self.attached_submissions[pluralform]:
                 if search.potranslation == translation:
-                    assert submission is None
+                    assert submission is None, (
+                        "Duplicate translations in POMsgSet")
                     submission = search
 
         if submission is None:
@@ -626,8 +629,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 potranslation=translation, origin=origin, person=person,
                 validationstatus=validation_status)
             # Add the new submission to our cache.
-            if self.attached_submissions.get(pluralform) is None:
-                self.attached_submissions[pluralform] = []
+            self.attached_submissions.setdefault(pluralform, [])
             self.attached_submissions[pluralform].insert(0, submission)
 
         potemplate = self.pofile.potemplate
@@ -712,7 +714,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         """See IPOMsgSet."""
         # Make sure we are working with the very latest data.
         flush_database_updates()
-        self.initializeCaches()
+        self.initializeSubmissionsCaches()
 
         # Avoid re-evaluation of self.pluralforms.
         pluralforms = self.pluralforms
@@ -769,7 +771,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def getNewSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        self.initializeCaches()
+        self.initializeSubmissionsCaches()
 
         applicable_submissions = self.attached_submissions.get(pluralform)
         if applicable_submissions is None:
