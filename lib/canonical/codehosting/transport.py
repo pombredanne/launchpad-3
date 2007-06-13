@@ -36,6 +36,8 @@ def split_with_padding(a_string, splitter, num_fields, padding=None):
     return tokens
 
 
+# XXX: JonathanLange 2007-06-13, This should probably be part of bzrlib.
+# See https://launchpad.net/bugs/120135.
 def makedirs(base_transport, path, mode=None):
     """Create 'path' on 'base_transport', even if parents of 'path' don't exist
     yet.
@@ -115,9 +117,6 @@ class LaunchpadServer(Server):
         if len(path_segments) != 3:
             raise NoSuchFile(virtual_path)
         branch_id = self._make_branch(*path_segments)
-
-        # XXX: JonathanLange 2007-05-29, This should be
-        # self.backing_transport.makedirs instead.
         makedirs(self.backing_transport, branch_id_to_path(branch_id))
 
     def _make_branch(self, user, product, branch):
