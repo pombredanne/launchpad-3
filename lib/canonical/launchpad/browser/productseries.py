@@ -596,7 +596,7 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
 
     def isAdmin(self, action=None):
         # The optional action parameter is so this method can be
-        # supplied as the condition argment to an @action.  We treat
+        # supplied as the condition argument to an @action.  We treat
         # all such actions the same though, so we ignore it.
         return check_permission('launchpad.Admin', self.context)
 
