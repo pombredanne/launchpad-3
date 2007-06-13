@@ -16,7 +16,8 @@
         </p>
 
         <div>
-          <label>What is your email address?</label>
+          <label tal:attributes="for view/widgets/email/name"
+            >What is your email address?</label>
         </div>
         <div>
           <tal:widget replace="structure view/widgets/email" />
@@ -27,6 +28,8 @@
           <label>Do you have a Launchpad passphrase?</label>
         </div>
         <div>
+          <label tal:attributes="for view/widgets/password/name"
+            >Passphrase:</label>
           <tal:widget replace="structure view/widgets/password" />
         </div>
         <!--

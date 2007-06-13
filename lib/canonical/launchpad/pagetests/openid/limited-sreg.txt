@@ -28,9 +28,7 @@ First acquire an association handle:
     >>> import re
     >>> [assoc_handle] = re.findall('assoc_handle:(.*)', anon_browser.contents)
 
-Now log in and allow authentication.  Note that we temporarily turn on
-error handling so that the Unauthorized error causes the redirection
-to the login page:
+Now perform an OpenID authentication request:
 
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_setup',
@@ -40,16 +38,9 @@ to the login page:
     ...     'openid.trust_root': 'http://launchpad.dev/+openid-consumer',
     ...     })
 
-    >>> sabdfl_browser = setupBrowser('mark@hbd.com:test')
-    >>> sabdfl_browser.handleErrors = True
+    >>> sabdfl_browser = setupBrowser('Basic mark@hbd.com:test')
     >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
-    >>> sabdfl_browser.handleErrors = False
-    >>> sabdfl_browser.getControl('E-mail address',
-    ...                           index=0).value = 'mark@hbd.com'
-    >>> sabdfl_browser.getControl('Password').value = 'test'
-    >>> sabdfl_browser.getControl('Log In').click()
-
-    >>> sabdfl_browser.getControl('Allow').click()
+    >>> sabdfl_browser.getControl('Sign In').click()
     >>> print sabdfl_browser.url
     http://launchpad.dev/+openid-consumer?...
     >>> print sabdfl_browser.contents
@@ -75,7 +66,7 @@ We now see the user's full name, nickname, email address and time zone.
     >>> config.launchpad.openid_sreg_trustroots.append(
     ...     'http://launchpad.dev/+openid-consumer')
     >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
-    >>> sabdfl_browser.getControl('Allow').click()
+    >>> sabdfl_browser.getControl('Sign In').click()
     >>> print sabdfl_browser.url
     http://launchpad.dev/+openid-consumer?...
     >>> print sabdfl_browser.contents

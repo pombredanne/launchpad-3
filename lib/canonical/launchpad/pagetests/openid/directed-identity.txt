@@ -8,7 +8,11 @@ lack of a better name.
 
 
 To do this, the consumer simply needs to specify the identity as
-'http://specs.openid.net/auth/2.0/identifier_select'. If authorization is
+'http://specs.openid.net/auth/2.0/identifier_select'.  Starting with a
+new browser context, we are presented with a login screen.  After
+authenticating, to Launchpad, we return to the consumer:
+
+If authorization is
 successful, the consumer can determine the actual identity from the
 response and do further validation as normal.
 
@@ -22,26 +26,15 @@ response and do further validation as normal.
     ...     })
     >>> sabdfl_browser = setupBrowser()
     >>> setup_url = 'http://openid.launchpad.dev/+openid?%s' % args
-    >>> sabdfl_browser.handleErrors = True
     >>> sabdfl_browser.open(setup_url)
-    >>> sabdfl_browser.handleErrors = False
-    >>> sabdfl_browser.getControl('E-mail address',
-    ...                           index=0).value = 'mark@hbd.com'
-    >>> sabdfl_browser.getControl('Password', index=0).value = 'test'
-    >>> sabdfl_browser.getControl('Log In', index=0).click()
+    >>> print sabdfl_browser.title
+    Launchpad Login Service
+    >>> sabdfl_browser.getControl('email address?').value = 'mark@hbd.com'
+    >>> sabdfl_browser.getControl('Passphrase:').value = 'test'
+    >>> sabdfl_browser.getControl('Continue').click()
 
-
-Now we are logged in, we can see that the identity URL has been calculated
-for us.
-
-    >>> print find_main_content(sabdfl_browser.contents)
-    <...
-    <em>http://launchpad.dev/+openid-consumer</em>
-    has asked us for confirmation that you are
-    <em>Mark Shuttleworth</em>.
-    ...
-
-    >>> sabdfl_browser.getControl('Allow').click()
+    >>> print sabdfl_browser.url
+    http://launchpad.dev/+openid-consumer?...
     >>> print sabdfl_browser.contents
     Consumer received GET
     ...
@@ -49,6 +42,28 @@ for us.
     openid.mode:id_res
     openid.return_to:http://launchpad.dev/+openid-consumer
     ...
+
+
+If we happened to be logged into Launchpad previously, we would be
+presented with an authorization screen instead:
+
+    >>> sabdfl_browser.open(setup_url)
+    >>> print sabdfl_browser.title
+    Authenticate to XXX
+    >>> sabdfl_browser.getControl('Sign In').click()
+
+    >>> print sabdfl_browser.url
+    http://launchpad.dev/+openid-consumer?...
+    >>> print sabdfl_browser.contents
+    Consumer received GET
+    ...
+    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
+    openid.mode:id_res
+    openid.return_to:http://launchpad.dev/+openid-consumer
+    ...
+
+
+== Cleanup ==
 
     >>> from canonical.launchpad.ftests.openid import uninstall_consumer
     >>> uninstall_consumer()

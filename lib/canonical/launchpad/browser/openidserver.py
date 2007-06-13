@@ -73,11 +73,11 @@ class OpenIDMixinView:
         store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
         self.openid_server = Server(store_factory())
         self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
+        self.identity_url_prefix = allvhosts.configs['openid'].rooturl + '+id/'
 
     @property
     def user_identity_url(self):
-        return '%s+id/%s' % (allvhosts.configs['openid'].rooturl,
-                             self.user.openid_identifier)
+        return self.identity_url_prefix + self.user.openid_identifier
 
     def getSession(self):
         return ISession(self.request)[SESSION_PKG_KEY]
@@ -235,6 +235,8 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
     implements(IOpenIdView)
 
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")
+    invalid_identity_template = ViewPageTemplateFile(
+        "../templates/openid-invalid-identity.pt")
 
     def render(self):
         """Handle all OpenId requests and form submissions
@@ -256,8 +258,6 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
 
         # Handle checkid_immediate requests.
         if self.openid_request.mode == 'checkid_immediate':
-            self.login = self.getPersonNameByIdentity(
-                    self.openid_request.identity)
             if self.isAuthorized():
                 openid_response = self.createPositiveResponse()
             else:
@@ -265,10 +265,15 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
 
         # Handle checkid_setup requests.
         elif self.openid_request.mode == 'checkid_setup':
+            # If we can not possibly handle this identity URL, show an
+            # error page telling the user.
+            if not (self.openid_request.identity == IDENTIFIER_SELECT_URI or
+                    self.openid_request.identity.startswith(
+                        self.identity_url_prefix)):
+                return self.invalid_identity_template()
 
             if self.user is None:
                 return self.showLoginPage()
-
             if not self.isIdentityOwner():
                 openid_response = self.createFailedResponse()
             elif self.isAuthorized():
