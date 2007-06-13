@@ -558,8 +558,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
              sourcepackagename FROM Packaging WHERE distrorelease = %s) AND
             POTemplate.sourcepackagename = SourcePackageName.id AND
             POTemplate.distrorelease = %s""" % sqlvalues(self.id, self.id)
-        unlinked = SourcePackageName.select(query, clauseTables=['POTemplate'],
-              orderBy=['name'])
+        unlinked = SourcePackageName.select(
+            query, clauseTables=['POTemplate'], orderBy=['name'])
         query = """
             Packaging.sourcepackagename = SourcePackageName.id AND
             Packaging.productseries = NULL AND
@@ -856,7 +856,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                     log.debug("Committing")
                     ztm.commit()
 
-
     def updatePackageCache(self, binarypackagename, log):
         """See IDistroSeries."""
 
@@ -945,7 +944,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         AND packageuploadsource.packageupload=packageupload.id
         AND packageupload.status=%s
         AND packageupload.distrorelease=%s
-        """ % sqlvalues(PackageUploadStatus.DONE, self)
+        AND packageupload.archive=%s
+        """ % sqlvalues(PackageUploadStatus.DONE, self, self.main_archive)
 
         last_uploads = SourcePackageRelease.select(
             query, limit=5, prejoins=['sourcepackagename'],

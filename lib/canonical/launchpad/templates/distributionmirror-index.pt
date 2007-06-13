@@ -24,7 +24,8 @@
 <div metal:fill-slot="main">
 
     <tal:is-owner-or-admin condition="context/required:launchpad.Edit">
-      <div condition="context/whiteboard" class="highlighted" id="whiteboard">
+      <div tal:condition="context/whiteboard" class="highlighted"
+           id="whiteboard">
         <p tal:content="context/whiteboard">Whiteboard goes here.</p>
       </div>
     </tal:is-owner-or-admin>

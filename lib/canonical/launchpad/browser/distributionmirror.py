@@ -10,8 +10,7 @@ __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.event import notify
 
-from sourcerer.deb.version import Version
-
+from canonical.archivepublisher.debversion import Version
 from canonical.launchpad import _
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -107,9 +106,9 @@ class DistributionMirrorView(LaunchpadView):
 class DistributionMirrorAddView(LaunchpadFormView):
 
     schema = IDistributionMirror
-    field_names = ["displayname", "http_base_url", "ftp_base_url",
-                   "rsync_base_url", "speed", "country", "content",
-                   "official_candidate"]
+    field_names = ["displayname", "description", "http_base_url",
+                   "ftp_base_url", "rsync_base_url", "speed", "country",
+                   "content", "official_candidate"]
     label = "Create a new distribution mirror"
 
     @action(_("Create Mirror"), name="create")
@@ -117,6 +116,7 @@ class DistributionMirrorAddView(LaunchpadFormView):
         mirror = self.context.newMirror(
             owner=self.user, speed=data['speed'], country=data['country'],
             content=data['content'], displayname=data['displayname'],
+            description=data['description'],
             http_base_url=data['http_base_url'],
             ftp_base_url=data['ftp_base_url'],
             rsync_base_url=data['rsync_base_url'],

@@ -28,9 +28,6 @@ from canonical.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile)
 from canonical.archiveuploader.template_messages import (
     rejection_template, new_template, accepted_template, announce_template)
-from canonical.config import config
-from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.mail import format_address
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     NotFoundError, IDistributionSet)
@@ -174,7 +171,7 @@ class NascentUpload:
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
 
-        signer_components = self.processSignerAcl()
+        signer_components = self.getAutoAcceptedComponents()
         if not self.is_new:
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
@@ -450,7 +447,7 @@ class NascentUpload:
         self.logger.debug("Decision: %s" % in_keyring)
         return in_keyring
 
-    def processSignerAcl(self):
+    def getAutoAcceptedComponents(self):
         """Check rights of the current upload submmiter.
 
         Work out what components the signer is permitted to upload to and
