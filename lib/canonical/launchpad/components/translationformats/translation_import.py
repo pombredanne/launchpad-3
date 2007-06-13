@@ -13,8 +13,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.components import translationformats
-from translationformats.gettext_po_importer import GettextPoImporter
+from canonical.launchpad.components.translationformats.gettext_po_importer \
+    import GettextPoImporter
 from canonical.launchpad.interfaces import (
         IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
         OldTranslationImported, TranslationConflict, TranslationConstants)

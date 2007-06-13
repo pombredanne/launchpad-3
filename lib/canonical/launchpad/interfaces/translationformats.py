@@ -182,7 +182,7 @@ class ITranslationMessage(Interface):
         "The flags of the message (a Set of strings).")
 
     obsolete = Attribute(
-        "True if message is obsolete (#~ msgid "foo"\\n#~ msgstr "bar").")
+        'True if message is obsolete (#~ msgid "foo"\\n#~ msgstr "bar").')
 
     nplurals = Attribute(
         """The number of plural forms for this language, as used in this file.
