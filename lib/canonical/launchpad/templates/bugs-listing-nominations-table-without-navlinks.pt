@@ -39,9 +39,12 @@
           </a>
           <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
         </td>
-        <td tal:content="structure bugtask/sourcepackagename/name|string:&mdash;"
-            tal:condition="context/show_column/packagename|nothing"
-        >mozilla-firefox (Ubuntu)</td>
+        <tal:sourcepackage tal:condition="context/show_column/packagename|nothing">
+          <td tal:condition="bugtask/sourcepackagename"
+              tal:content="structure bugtask/sourcepackagename/name"
+              >mozilla-firefox (Ubuntu)</td>
+          <td tal:condition="not: bugtask/sourcepackagename">&mdash;</td>
+        </tal:sourcepackage>
         <td tal:content="bugtask/importance/title">Critical</td>
         <td tal:content="bugtask/status/title">Confirmed</td>
       </tr>
