@@ -27,7 +27,7 @@ class QueueItemsView(LaunchpadView):
 
     It retrieves the UI queue_state selector action and sets up a proper
     batched list with the requested results. See further UI details in
-    template/distrorelease-queue.pt and callsite details in DistroRelease
+    template/distroseries-queue.pt and callsite details in DistroSeries
     view classes.
     """
     __used_for__ = IHasQueueItems

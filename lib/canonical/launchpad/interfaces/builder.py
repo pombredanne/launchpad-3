@@ -126,7 +126,7 @@ class IBuilderSet(Interface):
         """Return all configured builders."""
 
     def getBuildersByArch(arch):
-        """Return all configured builders for a given DistroArchRelease."""
+        """Return all configured builders for a given DistroArchSeries."""
 
     def pollBuilders(logger, txn):
         """Poll all the builders and take any immediately available actions.

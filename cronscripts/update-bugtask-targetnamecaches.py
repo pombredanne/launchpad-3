@@ -7,12 +7,12 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import IBugTaskSet
 from canonical.config import config
 
 
-class UpdateBugTaskTargetNameCaches(LaunchpadScript):
+class UpdateBugTaskTargetNameCaches(LaunchpadCronScript):
     """Update the targetnamecache for all IBugTasks.
 
     This ensures that the cache values are up-to-date even after, for

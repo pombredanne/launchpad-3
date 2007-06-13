@@ -9,6 +9,12 @@
       <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.ISourcePackageRelease"
+        path_expression="string:${version}"
+        attribute_to_parent="sourcepackage"
+        />
+
     <browser:pages
       for="canonical.launchpad.interfaces.ISourcePackageRelease"
       permission="zope.Public">
@@ -25,8 +31,8 @@
         template="../templates/sourcepackagerelease-portlet-details.pt"
         />
       <browser:page
-        name="+portlet-distroreleases"
-        template="../templates/sourcepackagerelease-portlet-distroreleases.pt"
+        name="+portlet-distroseries"
+        template="../templates/sourcepackagerelease-portlet-distroseries.pt"
         />
       <browser:page
         name="+portlet-details-content"

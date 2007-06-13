@@ -16,7 +16,7 @@ import os
 import re
 import urlparse
 
-from hct.util import log
+from canonical.launchpad.scripts.productreleasefinder import log
 
 
 class Filter:

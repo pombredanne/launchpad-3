@@ -3,6 +3,7 @@
   <h2>Depends on</h2>
 
   <div class="portletBody portletContent"
+       id="depends"
        tal:define="relationships view/depends">
 
      <tal:has_dep condition="relationships/has_items">

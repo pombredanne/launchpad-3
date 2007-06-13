@@ -48,7 +48,8 @@ from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
 from canonical.lp.dbschema import (
-    TeamSubscriptionPolicy, TeamMembershipStatus, PersonCreationRationale)
+    PersonCreationRationale, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy)
 
 
 class PersonNameField(BlacklistableContentNameField):
@@ -231,6 +232,11 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         description=_('The timezone of where you live.'),
         vocabulary='TimezoneName')
 
+    openid_identifier = TextLine(
+            title=_("Key used to generate opaque OpenID identities."),
+            readonly=True, required=False,
+            )
+
     # Properties of the Person object.
     karma_category_caches = Attribute(
         'The caches of karma scores, by karma category.')
@@ -352,7 +358,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     defaultmembershipperiod = Int(
         title=_('Subscription period'), required=False,
         description=_(
-            "The number of days a new subscription lasts before expiring. "
+            "Number of days a new subscription lasts before expiring. "
             "You can customize the length of an individual subscription when "
             "approving it. Leave this empty or set to 0 for subscriptions to "
             "never expire."))
@@ -361,9 +367,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         title=_('Renewal period'),
         required=False,
         description=_(
-            "The number of days a subscription lasts after being renewed. "
-            "You can customize the lengths of individual renewals. Leave "
-            "this empty or set to 0 for subscriptions to never expire."))
+            "Number of days a subscription lasts after being renewed. "
+            "You can customize the lengths of individual renewals, but this "
+            "is what's used for auto-renewed and user-renewed memberships."))
 
     defaultexpirationdate = Attribute(
         "The date, according to team's default values, in which a newly "
@@ -381,6 +387,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "'Moderated' means all subscriptions must be approved. 'Open' "
             "means any user can join without approval. 'Restricted' means "
             "new members can be added only by a team administrator."))
+
+    renewal_policy = Choice(
+        title=_("When someone's membership is about to expire, Launchpad "
+                "should notify them and"),
+        required=True, vocabulary='TeamMembershipRenewalPolicy',
+        default=TeamMembershipRenewalPolicy.NONE)
 
     merged = Int(
         title=_('Merged Into'), required=False, readonly=True,
@@ -412,8 +424,28 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     @invariant
     def personCannotHaveIcon(person):
+        # XXX: This invariant is busted! The person parameter provided to this
+        # method will always be an instance of zope.formlib.form.FormData
+        # containing only the values of the fields included in the POSTed
+        # form. IOW, person.inTeam() will raise a NoInputData just like
+        # person.teamowner would as it's not present in most of the
+        # person-related forms.
+        # -- Guilherme Salgado, 2007-05-28
         if person.icon is not None and not person.isTeam():
             raise Invalid('Only teams can have an icon.')
+
+    @invariant
+    def defaultRenewalPeriodIsRequiredForSomeTeams(person):
+        """Teams for which memberships can be renewed automatically or by
+        the members themselves must specify a default renewal period.
+        """
+        automatic, ondemand = [TeamMembershipRenewalPolicy.AUTOMATIC,
+                               TeamMembershipRenewalPolicy.ONDEMAND]
+        if (person.teamowner is not None
+                and person.renewal_policy in [automatic, ondemand]
+                and person.defaultrenewalperiod <= 0):
+            raise Invalid(
+                'You must specify a default renewal period greater than 0.')
 
     def getActiveMemberships():
         """Return all active TeamMembership objects of this team.
@@ -540,12 +572,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         changed.
         """
 
-    def shippedShipItRequestsOfCurrentRelease():
+    def shippedShipItRequestsOfCurrentSeries():
         """Return all requests made by this person that were sent to the
         shipping company already.
 
         This only includes requests for CDs of
-        ShipItConstants.current_distrorelease.
+        ShipItConstants.current_distroseries.
         """
 
     def currentShipItRequest():
@@ -570,7 +602,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         """Return SourcePackageReleases maintained by this person.
 
         This method will only include the latest source package release
-        for each source package name, distribution release combination.
+        for each source package name, distribution series combination.
         """
 
     def latestUploadedButNotMaintainedPackages():
@@ -578,8 +610,16 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         not maintained by him.
 
         This method will only include the latest source package release
-        for each source package name, distribution release combination.
+        for each source package name, distribution series combination.
         """
+
+    def isUploader(distribution):
+        """Return whether this person is an uploader for distribution.
+
+        Returns True if this person is an uploader for distribution, or
+        False otherwise.
+        """
+
 
     def validateAndEnsurePreferredEmail(email):
         """Ensure this person has a preferred email.
@@ -678,7 +718,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     def getDirectAdministrators():
         """Return this team's administrators.
-         
+
          This includes all direct members with admin rights and also
          the team owner. Note that some other persons/teams might have admin
          privilege by virtue of being a member of a team with admin rights.
@@ -878,6 +918,9 @@ class IPersonSet(Interface):
         Return None if there is no person with the given name.
         """
 
+    def getByOpenIdIdentifier(openid_identity):
+        """Return the person with the given OpenID identifier, or None."""
+
     def getAllTeams(orderBy=None):
         """Return all Teams.
 
@@ -890,8 +933,8 @@ class IPersonSet(Interface):
     def getPOFileContributors(pofile):
         """Return people that have contributed to the specified POFile."""
 
-    def getPOFileContributorsByDistroRelease(self, distrorelease, language):
-        """Return people who translated strings in distroRelease to language.
+    def getPOFileContributorsByDistroSeries(self, distroseries, language):
+        """Return people who translated strings in distroseries to language.
 
         The people that translated only IPOTemplate objects that are not
         current will not appear in the returned list.

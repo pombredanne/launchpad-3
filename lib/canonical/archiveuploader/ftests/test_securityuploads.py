@@ -25,7 +25,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
     name = 'baz'
     version = '1.0-1'
     distribution_name = None
-    distrorelease_name = None
+    distroseries_name = None
     pocket = None
     policy = 'buildd'
     no_mails = True
@@ -35,8 +35,8 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         return getUtility(IDistributionSet)[self.distribution_name]
 
     @property
-    def distrorelease(self):
-        return self.distribution[self.distrorelease_name]
+    def distroseries(self):
+        return self.distribution[self.distroseries_name]
 
     @property
     def package_name(self):
@@ -132,8 +132,8 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         """Create a build record attached to the base source."""
         spr = self.source_queue.sources[0].sourcepackagerelease
         build = spr.createBuild(
-            distroarchrelease=self.distrorelease[archtag],
-            pocket=self.pocket, archive=self.distrorelease.main_archive)
+            distroarchseries=self.distroseries[archtag],
+            pocket=self.pocket, archive=self.distroseries.main_archive)
         self.layer.txn.commit()
         return build
 
@@ -158,19 +158,19 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
     name = 'baz'
     version = '1.0-1'
     distribution_name = 'ubuntu'
-    distrorelease_name = 'warty'
+    distroseries_name = 'warty'
     pocket = PackagePublishingPocket.SECURITY
     policy = 'security'
     no_mails = True
 
     def setUp(self):
-        """Setup base class and create the required new distroarchrelease."""
+        """Setup base class and create the required new distroarchseries."""
         TestStagedBinaryUploadBase.setUp(self)
         distribution = getUtility(IDistributionSet).getByName(
             self.distribution_name)
-        distrorelease = distribution[self.distrorelease.name]
+        distroseries = distribution[self.distroseries.name]
         proc_family = ProcessorFamily.selectOneBy(name='amd64')
-        distrorelease.newArch(
+        distroseries.newArch(
             'amd64', proc_family, True, distribution.owner)
 
     def testBuildCreation(self):
@@ -262,8 +262,8 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
         self.assertRaises(AssertionError, self._uploadBinary, 'i386')
 
         self.assertLogContains(
-            "Attempt to upload binaries specifying build 23, "
-            "where they don't fit.")
+            "UploadError: Attempt to upload binaries specifying build %d, "
+            "where they don't fit.\n" % (build_candidate.id,))
 
 
 def test_suite():
