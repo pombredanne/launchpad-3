@@ -38,7 +38,6 @@ class ILaunchpadApplication(Interface):
     application objects will provide an interface that extends this
     interface.
     """
-    name = Attribute('Name')
     title = Attribute('Title')
 
 
