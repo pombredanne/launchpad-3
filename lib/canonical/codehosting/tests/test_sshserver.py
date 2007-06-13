@@ -20,7 +20,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.codehosting import sshserver
-from canonical.codehosting.tests.test_acceptance import AuthserverWithKeys
+from canonical.codehosting.tests.servers import AuthserverWithKeys
 from canonical.config import config
 from canonical.testing.layers import TwistedLayer
 
