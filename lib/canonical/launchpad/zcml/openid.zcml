@@ -1,6 +1,7 @@
 <configure xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
+    <!-- OpenId virtual host root -->
     <securedutility
         class="canonical.launchpad.systemhomes.OpenIdApplication"
         provides="canonical.launchpad.interfaces.IOpenIdApplication">
@@ -13,24 +14,32 @@
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
-    <browser:page
-        for="*"
-        permission="zope.Public"
-        name="main_template"
-        template="../templates/loginservice-main-template.pt"
-        layer="canonical.launchpad.layers.OpenIdLayer" />
+    <browser:navigation
+        module="canonical.launchpad.browser.openidserver"
+        classes="OpenIdApplicationNavigation"
+        />
 
+    <!-- Root document -->
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
         for="canonical.launchpad.interfaces.IOpenIdApplication"
         permission="zope.Public"
         name="+index"
-        class="canonical.launchpad.browser.openidserver.OpenIdView"
+        template="../templates/openid-index.pt"
         />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IOpenIdApplication"
         name="+index"
+        />
+
+    <!-- OpenID Provider -->
+    <browser:page
+        layer="canonical.launchpad.layers.OpenIdLayer"
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+openid"
+        class="canonical.launchpad.browser.openidserver.OpenIdView"
         />
 
     <browser:page
@@ -54,11 +63,6 @@
         class="canonical.launchpad.browser.openidserver.LoginServiceNewAccountView"
         permission="zope.Public"
         template="../templates/loginservice-newaccount.pt"
-        />
-
-    <browser:navigation
-        module="canonical.launchpad.browser.openidserver"
-        classes="OpenIdApplicationNavigation"
         />
 
     <content class="canonical.launchpad.database.OpenIdAuthorization">
@@ -87,11 +91,13 @@
         class="canonical.launchpad.browser.openidserver.ProtocolErrorView"
         />
 
+    <!-- http://openid.launchpad.dev/$Person.name identity URLs
+       XXX: May be dropped - in discussion. StuartBishop 20070613 
+    -->
     <content
         class="canonical.launchpad.browser.openidserver.OpenIdIdentityView">
       <allow attributes="browserDefault __call__" />
     </content>
-
 
 </configure>
 

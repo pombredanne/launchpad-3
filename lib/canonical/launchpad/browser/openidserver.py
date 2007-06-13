@@ -68,10 +68,11 @@ class OpenIDMixinView:
 
     openid_request = None
 
-    @cachedproperty
-    def openid_server(self):
+    def __init__(self, context, request):
+        super(OpenIDMixinView, self).__init__(context, request)
         store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
-        return Server(store_factory())
+        self.openid_server = Server(store_factory())
+        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
 
     @property
     def user_identity_url(self):
@@ -179,7 +180,7 @@ class OpenIDMixinView:
         return response
 
 
-class LoginServiceNewAccountView(NewAccountView, OpenIDMixinView):
+class LoginServiceNewAccountView(OpenIDMixinView, NewAccountView):
     """A wrapper around NewAccountView which doesn't expect a
     hide_email_addresses from the form and sends an OpenID response in case
     there is an OpenID request in the user's session.
@@ -209,7 +210,7 @@ class LoginServiceNewAccountView(NewAccountView, OpenIDMixinView):
                 self.user, self.openid_request.trust_root, expires=None)
 
 
-class LoginServiceResetPasswordView(ResetPasswordView, OpenIDMixinView):
+class LoginServiceResetPasswordView(OpenIDMixinView, ResetPasswordView):
     """A wrapper around ResetPasswordView which sends an OpenID response in
     case there is an OpenID request in the user's session.
     """
@@ -231,7 +232,7 @@ class LoginServiceResetPasswordView(ResetPasswordView, OpenIDMixinView):
                 self.user, self.openid_request.trust_root, expires=None)
 
 
-class OpenIdView(LaunchpadView, OpenIDMixinView):
+class OpenIdView(OpenIDMixinView, LaunchpadView):
     implements(IOpenIdView)
 
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")
@@ -335,7 +336,7 @@ class OpenIdView(LaunchpadView, OpenIDMixinView):
                 self.user, self.openid_request.trust_root, client_id)
 
 
-class LoginServiceBaseView(LaunchpadFormView, OpenIDMixinView):
+class LoginServiceBaseView(OpenIDMixinView, LaunchpadFormView):
 
     def __init__(self, context, request, nonce=None):
         super(LoginServiceBaseView, self).__init__(context, request)
@@ -736,7 +737,7 @@ class OpenIdIdentityView:
 
     def __call__(self):
         # Setup variables to pass to the template
-        self.server_url = allvhosts.configs['openid'].rooturl
+        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
         self.identity_url = '%s+id/%s' % (
                 self.server_url, self.context.openid_identifier)
         self.person_url = canonical_url(self.context, rootsite='mainsite')
