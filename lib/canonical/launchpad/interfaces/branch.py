@@ -398,7 +398,7 @@ class IBranchSet(Interface):
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
-        only visible by the author, and subscribers.
+        only visible by the owner, and subscribers.
 
         If None is passed in for the visible_by_user parameter
         only public branches are returned.
@@ -412,7 +412,7 @@ class IBranchSet(Interface):
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
-        only visible by the author, and subscribers.
+        only visible by the owner, and subscribers.
 
         If None is passed in for the visible_by_user parameter
         only public branches are returned.
@@ -425,7 +425,7 @@ class IBranchSet(Interface):
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
-        only visible by the author, and subscribers.
+        only visible by the owner, and subscribers.
 
         If None is passed in for the visible_by_user parameter
         only public branches are returned.
@@ -463,7 +463,7 @@ class IBranchSet(Interface):
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
-        only visible by the author, and subscribers.
+        only visible by the owner, and subscribers.
 
         If None is passed in for the visible_by_user parameter
         only public branches are returned.
@@ -483,7 +483,7 @@ class IBranchSet(Interface):
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
-        only visible by the author, and subscribers.
+        only visible by the owner, and subscribers.
 
         If None is passed in for the visible_by_user parameter
         only public branches are returned.
@@ -504,7 +504,7 @@ class IBranchSet(Interface):
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
-        only visible by the author, and subscribers.
+        only visible by the owner, and subscribers.
 
         If None is passed in for the visible_by_user parameter
         only public branches are returned.
@@ -525,7 +525,7 @@ class IBranchSet(Interface):
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
-        only visible by the author, and subscribers.
+        only visible by the owner, and subscribers.
 
         If None is passed in for the visible_by_user parameter
         only public branches are returned.
@@ -543,7 +543,7 @@ class IBranchSet(Interface):
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
-        only visible by the author, and subscribers.
+        only visible by the owner, and subscribers.
 
         If None is passed in for the visible_by_user parameter
         only public branches are returned.
@@ -556,7 +556,7 @@ class IBranchSet(Interface):
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
-        only visible by the author, and subscribers.
+        only visible by the owner, and subscribers.
 
         If None is passed in for the visible_by_user parameter
         only public branches are returned.
