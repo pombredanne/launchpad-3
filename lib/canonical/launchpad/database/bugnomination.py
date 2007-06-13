@@ -112,15 +112,15 @@ class BugNomination(SQLBase):
             if person.inTeam(driver):
                 return True
 
-        if self.distrorelease is not None:
+        if self.distroseries is not None:
             # For distributions anyone that can upload to the
             # distribution may approve nominations.
             bug_components = set()
-            distribution = self.distrorelease.distribution
+            distribution = self.distroseries.distribution
             for bugtask in self.bug.bugtasks:
                 if (bugtask.distribution == distribution
                     and bugtask.sourcepackagename is not None):
-                    source_package = self.distrorelease.getSourcePackage(
+                    source_package = self.distroseries.getSourcePackage(
                         bugtask.sourcepackagename)
                     bug_components.add(
                         source_package.latest_published_component)

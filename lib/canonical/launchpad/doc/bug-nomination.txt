@@ -359,7 +359,7 @@ approve the nomination.
     >>> from canonical.launchpad.interfaces import CreateBugParams
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_hoary = ubuntu.getRelease('hoary')
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
     >>> hoary_evolution = ubuntu_hoary.getSourcePackage('evolution')
     >>> hoary_evolution.latest_published_component.name
     u'main'
@@ -439,7 +439,13 @@ approve a nomination.
     >>> hoary_nomination = bug.addNomination(no_priv, ubuntu_hoary)
     >>> hoary_nomination.canApprove(no_priv)
     False
+
+    # Flush database updates to ensure that no_priv's membership status
+    # isn't APPROVED.
+    >>> flush_database_updates()
     >>> no_priv.join(universe_uploaders)
+    >>> no_priv.inTeam(universe_uploaders)
+    True
     >>> hoary_nomination.canApprove(no_priv)
     True
 
