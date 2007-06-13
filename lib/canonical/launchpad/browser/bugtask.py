@@ -1245,7 +1245,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
                 bugbranch.bug.id, []).append(bugbranch)
 
     def _getListingItem(self, bugtask):
-        """Return a decorated bugtask for the bug listing.""""
+        """Return a decorated bugtask for the bug listing."""
         return BugTaskListingItem(
             bugtask, self.bug_id_mapping.get(bugtask.bug.id, None))
 

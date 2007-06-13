@@ -8,7 +8,7 @@
           <div style="text-align: center">Decline</div>
           <div style="text-align: right">No change</div>
         </th>
-        <th colspan="2">Summary</th>
+        <th colspan="3">Summary</th>
         <th tal:condition="context/show_column/packagename|nothing">
           Package
         </th>
@@ -23,6 +23,9 @@
           <input type="radio" value="accept" />
           <input type="radio" value="decline" />
           <input type="radio" value="no-change" />
+        </td>
+        <td class="icon right">
+          <img src="/@@/bug" tal:replace="structure bugtask/image:icon" />
         </td>
         <td
           class="amount"
