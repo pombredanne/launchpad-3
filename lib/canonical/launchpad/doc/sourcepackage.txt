@@ -51,7 +51,7 @@ the package was last published.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_warty = ubuntu.getRelease('warty')
+    >>> ubuntu_warty = ubuntu.getSeries('warty')
     >>> firefox_warty = ubuntu_warty.getSourcePackage('mozilla-firefox')
     >>> firefox_warty.latest_published_component.name
     u'main'
