@@ -16,7 +16,11 @@ from canonical.testing import BzrlibLayer
 
 
 class FakeLaunchpad:
-    """Stub RPC interface to Launchpad."""
+    """Stub RPC interface to Launchpad.
+
+    Implements a subset of IHostedBranchStorage and IUserDetailsStorage using
+    simple, in-memory Python data structures.
+    """
 
     def __init__(self):
         self._person_set = {
@@ -115,20 +119,38 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.assertEqual(self.authserver, self.server.authserver)
 
     def test_base_path_translation(self):
-        # ~person/product/branch maps to the branch ID converted to a four byte
-        # hexadecimal number and then split into four path segments.
+        # Branches are stored on the filesystem by branch ID. This allows users
+        # to rename and re-assign branches without causing unnecessary disk
+        # churn. The ID is converted to four-byte hexadecimal and split into
+        # four path segments, to make sure that the directory tree doesn't get
+        # too wide and cause ext3 to have conniptions.
+        #
+        # However, branches are _accessed_ using their
+        # ~person/product/branch-name. The server knows how to map this unique
+        # name to the branch's path on the filesystem.
+
+        # We can map a branch owned by the user to its path.
         self.assertEqual(
             '00/00/00/01/',
             self.server.translate_virtual_path('/~foo/bar/baz'))
+
+        # We can map a branch owned by a team that the user is in to its path.
         self.assertEqual(
             '00/00/00/04/',
             self.server.translate_virtual_path('/~team1/bar/qux'))
+
+        # The '+junk' product doesn't actually exist. It is used for branches
+        # which don't have a product assigned to them.
         self.assertEqual(
             '00/00/00/03/',
             self.server.translate_virtual_path('/~foo/+junk/random'))
 
     def test_extend_path_translation(self):
-        # Trailing path segments are preserved.
+        # More than just the branch name needs to be translated: transports
+        # will ask for files beneath the branch. The server translates the
+        # unique name of the branch (i.e. the ~user/product/branch-name part)
+        # to the four-byte hexadecimal split ID described in
+        # test_extend_path_translation and appends the remainder of the path.
         self.assertEqual(
             '00/00/00/01/.bzr',
             self.server.translate_virtual_path('/~foo/bar/baz/.bzr'))
@@ -198,7 +220,12 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
             self.backing_transport.get_bytes('00/00/00/01/goodbye.txt'))
 
     def test_cloning_updates_base(self):
-        # Cloning a LaunchpadTransport maintains the base path.
+        # A transport can be constructed using a path relative to another
+        # transport by using 'clone'. When this happens, it's necessary for the
+        # newly constructed transport to preserve the non-relative path
+        # information from the transport being cloned. It's necessary because
+        # the transport needs to have the '~user/product/branch-name' in order
+        # to translate paths.
         transport = get_transport(self.server.get_url())
         self.assertEqual(self.server.get_url(), transport.base)
         transport = transport.clone('~foo')
@@ -245,8 +272,8 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
             transport.get, '~foo/bar/new-branch/.bzr/branch-format')
 
     def test_rename(self):
-        # rename needs to translate the target path as well as the source path,
-        # so we need a separate test for it.
+        # We can use the transport to rename files where both the source and
+        # target are virtual paths.
         transport = get_transport(self.server.get_url())
         transport.rename('~foo/bar/baz/hello.txt', '~foo/bar/baz/goodbye.txt')
         self.assertEqual(['goodbye.txt'], transport.list_dir('~foo/bar/baz'))
@@ -255,8 +282,8 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
 
     def test_iter_files_recursive(self):
         # iter_files_recursive doesn't take a relative path but still needs to
-        # do a path-based operation on the backing transport. Thus, we need a
-        # separate test for it.
+        # do a path-based operation on the backing transport, so the
+        # implementation can't just be a shim to the backing transport.
         transport = get_transport(self.server.get_url())
         files = list(transport.clone('~foo/bar/baz').iter_files_recursive())
         backing_transport = self.backing_transport.clone('00/00/00/01')
@@ -291,9 +318,10 @@ class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
         self.assertRaises(errors.NoSuchFile, self.transport.mkdir, '~apple')
 
     def test_make_existing_user_directory(self):
-        # Making a user directory raises an error. We don't really care what
-        # the error is, but it should be one of FileExists,
-        # TransportNotPossible or NoSuchFile
+        # Making a user directory raises a NoSuchFile error.
+
+        # XXX: JonathanLange 2007-06-13, Really, this error should be
+        # TransportNotPossible or FileExists.
         self.assertRaises(errors.NoSuchFile, self.transport.mkdir, '~foo')
 
     def test_make_product_directory_for_nonexistent_product(self):
@@ -312,7 +340,7 @@ class TestLaunchpadTransportMakeDirectory(TestCaseWithMemoryTransport):
         self.assertRaises(errors.NoSuchFile, self.transport.mkdir, '~foo/bar')
 
     def test_make_branch_directory(self):
-        # We allow users to create new branches by pushing them beneath an
+        # One way users can create new branches is by pushing them beneath an
         # existing product directory.
         self.transport.mkdir('~foo/bar/banana')
         # This implicitly tests that the branch has been created in the
