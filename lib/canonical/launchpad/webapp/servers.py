@@ -16,8 +16,6 @@ from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.server.http.commonaccesslogger import CommonAccessLogger
-import zope.publisher.publish
-from zope.publisher.interfaces import IRequest
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.cachedproperty import cachedproperty
@@ -213,7 +211,6 @@ class LaunchpadRequestPublicationFactory:
 
     def canHandle(self, environment):
         """Only configured domains are handled."""
-        from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
         if 'HTTP_HOST' not in environment:
             self._thread_local.host = self.USE_DEFAULTS
             return True
@@ -435,8 +432,11 @@ class LaunchpadTestRequest(TestRequest):
     >>> isinstance(request, TestRequest)
     True
 
-    It adds a mock INotificationRequest implementation
+    It provides LaunchpadLayer and adds a mock INotificationRequest
+    implementation.
 
+    >>> canonical.launchpad.layers.LaunchpadLayer.providedBy(request)
+    True
     >>> INotificationRequest.providedBy(request)
     True
     >>> request.uuid == request.response.uuid
@@ -451,7 +451,7 @@ class LaunchpadTestRequest(TestRequest):
     >>> verifyObject(IBrowserFormNG, request.form_ng)
     True
     """
-    implements(INotificationRequest)
+    implements(INotificationRequest, canonical.launchpad.layers.LaunchpadLayer)
 
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET', **kw):

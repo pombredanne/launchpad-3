@@ -97,7 +97,7 @@ form.
     ...              if action.available()]
     ...     return sorted(names)
 
-Unlogged users cannot post any comments on the question:
+Unlogged-in users cannot post any comments on the question:
 
     >>> login(ANONYMOUS)
     >>> workflow_harness.submit('', {})
@@ -438,7 +438,7 @@ This View send the event appropriate to send out a notification:
     Description changed to:
     A better description.
     <BLANKLINE>
-    -- 
+    --
     You received this question notification because you are a direct
     subscriber of the question.
 
@@ -508,7 +508,7 @@ interesting languages based on GeoIP information and the request's
 languages.
 
 For example, if the user doesn't log in and his browser is configured
-to accept brazilian Portuguese, the vocabulary will contain 'English'
+to accept Brazilian Portuguese, the vocabulary will contain 'English'
 plus the languages spoken in South Africa (because the 127.0.0.1 IP
 address is mapped to South Africa in the tests).
 .
@@ -913,7 +913,7 @@ can only remove his own registration.
     You have been removed as an answer contact for Ubuntu.
 
 It can also be used to remove a team registration when the user is a team
-administror:
+administrator:
 
     >>> login('jeff.waugh@ubuntulinux.com')
     >>> request = LaunchpadTestRequest(
