@@ -7,9 +7,10 @@ import unittest
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.components import translationformats
-from translationformats import TranslationImporter
-from translationformats.gettext_po_importer import GettextPoImporter
+from canonical.launchpad.components.translationformats import (
+    TranslationImporter)
+from canonical.launchpad.components.translationformats.gettext_po_importer \
+    import GettextPoImporter
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateSet, ITranslationImporter)
 from canonical.lp.dbschema import TranslationFileFormat

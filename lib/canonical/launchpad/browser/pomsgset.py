@@ -1150,14 +1150,14 @@ class POMsgSetView(LaunchpadView):
         """Whether the text to translate contain tab chars."""
         return ('\t' in self.context.potmsgset.singular_text or
             (self.context.potmsgset.plural_text is not None and
-             '\t' in self.context.potmsgset.plural_text)):
+             '\t' in self.context.potmsgset.plural_text))
 
     @property
     def text_has_newline(self):
         """Whether the text to translate contain newline chars."""
         return ('\n' in self.context.potmsgset.singular_text or
             (self.context.potmsgset.plural_text is not None and
-             '\n' in self.context.potmsgset.plural_text)):
+             '\n' in self.context.potmsgset.plural_text))
 
     @property
     def text_has_leading_or_trailing_space(self):
