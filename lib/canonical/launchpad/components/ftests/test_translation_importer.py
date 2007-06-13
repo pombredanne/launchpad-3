@@ -7,15 +7,11 @@ import unittest
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.components.translationformats import (
-    TranslationImporter
-    )
-from canonical.launchpad.components.translationformats.gettext_po_importer import (
-    GettextPoImporter
-    )
+from canonical.launchpad.components import translationformats
+from translationformats import TranslationImporter
+from translationformats.gettext_po_importer import GettextPoImporter
 from canonical.launchpad.interfaces import (
-    IPersonSet, IProductSet, IPOTemplateSet, ITranslationImporter
-    )
+    IPersonSet, IProductSet, IPOTemplateSet, ITranslationImporter)
 from canonical.lp.dbschema import TranslationFileFormat
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -47,32 +43,33 @@ class GettextPoImporterTestCase(unittest.TestCase):
             "TranslationImporter doesn't follow the interface")
 
     def testGetPersonByEmail(self):
-        """When importing a POFile, it may be necessary to create new Person
-        entries, to represent the last translators of that POFile. This is
-        done by the getPersonByEmail() function.
+        """Check whether we create new persons with the correct explanation.
+
+        When importing a POFile, it may be necessary to create new Person
+        entries, to represent the last translators of that POFile.
         """
+        test_email = 'danilo@canonical.com'
         personset = getUtility(IPersonSet)
 
         # The account we are going to use is not yet in Launchpad.
         self.failUnless(
-            personset.getByEmail('danilo@canonical.com') is None,
-            'There is already an account for danilo@canonical.com')
+            personset.getByEmail(test_email) is None,
+            'There is already an account for %s' % test_email)
 
-        person = self.translation_importer.getPersonByEmail(
-            'danilo@canonical.com')
-        self.failUnless(
-            person.creation_rationale.name == 'POFILEIMPORT',
-            'danilo@canonical.com was not created due to a POFile import')
-        self.failUnless(
-            person.creation_comment == (
-                'when importing the %s translation of %s' % (
-                    self.translation_importer.pofile.language.displayname,
-                    self.translation_importer.potemplate.displayname)),
-            "Creation comment is not matching POFile that is being imported." )
+        person = self.translation_importer._getPersonByEmail(test_email)
+
+        self.assertEqual(
+            person.creation_rationale.name, 'POFILEIMPORT',
+            '%s was not created due to a POFile import' % test_email)
+        self.assertEqual(
+            person.creation_comment,
+            'when importing the %s translation of %s' % (
+                self.translation_importer.pofile.language.displayname,
+                self.translation_importer.potemplate.displayname))
 
     def testGetImporterByFileFormat(self):
-        """PO file format is handled by GettextPoImporter."""
-        format_importer = self.translation_importer.getImporterByFileFormat(
+        """Check whether we get the right importer from the file format."""
+        format_importer = self.translation_importer._getImporterByFileFormat(
             TranslationFileFormat.PO)
 
         self.failUnless(isinstance(GettextPoImporter, format_importer))

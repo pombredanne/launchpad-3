@@ -22,11 +22,11 @@ __all__ = [
 
 
 class OldTranslationImported(Exception):
-    """Raised when we have a newer file already imported."""
+    """A newer file has already been imported."""
 
 
 class NotExportedFromLaunchpad(Exception):
-    """Raised when a file imported lacks the export time from Launchpad."""
+    """An imported file lacks the Launchpad export time."""
 
 
 class TranslationFormatBaseError(Exception):
@@ -47,7 +47,7 @@ class TranslationFormatBaseError(Exception):
 
 
 class TranslationFormatSyntaxError(TranslationFormatBaseError):
-    """Raised when there is a syntax error while parsing a file."""
+    """A syntax error occurred while parsing a translation file."""
 
     def __str__(self):
         if self.message is not None:
@@ -60,7 +60,7 @@ class TranslationFormatSyntaxError(TranslationFormatBaseError):
 
 
 class TranslationFormatInvalidInputError(TranslationFormatBaseError):
-    """Raised when there is bad content is some fields of the parsed file."""
+    """Some fields in the parsed file contain bad content."""
 
     def __str__(self):
         if self.message is not None:
@@ -73,20 +73,20 @@ class TranslationFormatInvalidInputError(TranslationFormatBaseError):
 
 
 class UnknownTranslationRevisionDate(Exception):
-    """Raised when don't know the revision date for a translation resource."""
+    """Unknown revision date for translation resource."""
 
 
 class ITranslationImporter(Interface):
-    """Interface to implement a component that handles translation imports."""
+    """Importer of translation files."""
 
     def import_file(translation_import_queue_entry, logger=None):
-        """Convert a translation resource into DB objects.
+        """Convert a translation resource into database objects.
 
         :arg translation_import_queue_entry: An ITranslationImportQueueEntry
             entry.
         :arg logger: A logger object or None.
 
-        If the entry is older than previous imported file,
+        If the entry is older than the previously imported file,
         OldTranslationImported exception is raised.
 
         If the entry imported is not published and doesn't have the tag added
@@ -94,7 +94,7 @@ class ITranslationImporter(Interface):
         raised.
 
         Return a list of dictionaries with three keys:
-            - 'pomsgset': The DB pomsgset with an error.
+            - 'pomsgset': The database pomsgset with an error.
             - 'pomessage': The original POMessage object.
             - 'error-message': The error message as gettext names it.
         """
@@ -107,7 +107,9 @@ class ITranslationFormatImporter(Interface):
         title=u'The file format of the import.',
         values=TranslationFileFormat.items,
         required=True)
+
     header = Attribute("An ITranslationHeader for the parsed file.")
+
     messages = Attribute(
         "The list of ITranslationMessage included in the parsed file.")
 
@@ -127,21 +129,24 @@ class ITranslationFormatImporter(Interface):
 class ITranslationHeader(IMapping):
     """Translation header interface."""
 
-    messages = Attribute(
-        "A reference to the sequence of ITranslationMessage this header"
-        " refers to")
+    messages = Attribute('''
+        A reference to the sequence of ITranslationMessage this header
+        refers to
+        ''')
 
     def getTranslationRevisionDate():
-        """Return datetime object when was last touched translation resource.
+        """Return when the translation resource was last revised.
+
+        The returned object is a datetime object.
 
         Raises UnknownTranslationRevisionDate exception if the information is
-        not valid or available.
+        unavailable  or invalid.
         """
 
     def getLaunchpadExportDate():
-        """Return datetime object when this file was exported from Launchpad.
+        """Return when this file was last exported from Launchpad or None.
 
-        If it was not exported from Launchpad, return None.
+        The returned object is a datetime object.
         """
 
     def getPluralFormExpression():
@@ -156,30 +161,39 @@ class ITranslationMessage(Interface):
 
     msgid = Attribute(
         "The msgid of the message (as unicode).")
+
     msgid_plural = Attribute(
-        "The plural msgid of the message (as unicode), if present.")
-    msgstr = Attribute(
-        "The msgstr of the message (as unicode).")
-    msgstrPlurals = Attribute(
-        "The msgstr's of the message, if more than one (as a list of unicodes).")
+        "The plural msgid of the message (as unicode) or None.")
+
+    translations = Attribute(
+        "The translations of the message (as a list of unicodes).")
+
     comment = Attribute(
         "The human-written comments ('# foo') of the message (as unicode).")
+
     source_comment = Attribute(
-        "The parser-generated comments ('#. foo') of the message (as unicode).")
+        "The parser-generated comments ('#. foo') of the message (as unicode)."
+        )
+
     file_references = Attribute(
         "The references ('#: foo') of the message (as unicode).")
+
     flags = Attribute(
         "The flags of the message (a Set of strings).")
+
     obsolete = Attribute(
-        """True if message is obsolete (#~ msgid "foo"\\n#~ msgstr "bar").""")
+        "True if message is obsolete (#~ msgid "foo"\\n#~ msgstr "bar").")
+
     nplurals = Attribute(
         """The number of plural forms for this language, as used in this file.
         None means the header does not have a Plural-Forms entry.""")
+
     pluralExpr = Attribute(
-        """The expression used to get a plural form from a number.""")
+        "The expression used to get a plural form from a number.")
 
     def flagsText(flags=None):
-        """The flags of the message, as unicode; or, if a sequence
-        or set is passed in, pretend these are the messages flags and
-        return a unicode representing them"""
+        """The flags of the message.
 
+        if a sequence or set is passed in, pretend these are the messages
+        flags and return a unicode representing them.
+        """

@@ -55,7 +55,7 @@ Now, is time to create the new potemplate
   ...     path='po/firefox.pot',
   ...     owner=person)
 
-Let's import a .pot file that misses its header. That's a 
+Let's import a .pot file that is missing its header. That's a 
 TranslationFormatSyntaxError
 
   >>> potemplate_contents = r'''

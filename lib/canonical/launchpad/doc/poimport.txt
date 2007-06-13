@@ -468,7 +468,7 @@ Now, is time to check the notification email.
     <BLANKLINE>
     ...
     5.  [msg 0]
-    "The msgid_plural field has changed since last time this file was
+    "The msgid_plural field has changed since the last time this file was
     generated, please report this error to ...
     <BLANKLINE>
     #, c-format

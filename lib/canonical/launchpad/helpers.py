@@ -18,7 +18,6 @@ import warnings
 from StringIO import StringIO
 from difflib import unified_diff
 import sha
-from twisted.internet.error import TimeoutError
 
 from zope.component import getUtility
 

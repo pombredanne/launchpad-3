@@ -13,14 +13,14 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.components.translationformats.gettext_po_importer import (
-    GettextPoImporter)
+from canonical.launchpad.components import translationformats
+from translationformats.gettext_po_importer import GettextPoImporter
 from canonical.launchpad.interfaces import (
-        IPersonSet, ITranslationImporter, TranslationConstants,
-        TranslationConflict, OldTranslationImported, NotExportedFromLaunchpad)
+        IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
+        OldTranslationImported, TranslationConflict, TranslationConstants)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    TranslationFileFormat, RosettaImportStatus, PersonCreationRationale)
+    PersonCreationRationale, RosettaImportStatus, TranslationFileFormat)
 
 # Registered importers.
 importers = {
@@ -35,19 +35,18 @@ class TranslationImporter:
         self.pofile = None
         self.potemplate = None
 
-    def getPersonByEmail(self, email, name=None):
+    def _getPersonByEmail(self, email, name=None):
         """Return the person for given email.
 
         :arg email: text that contains the email address.
         :arg name: name of the owner of the give email address.
 
-        If the person is unknown in launchpad, the account will be created.
+        If email is None, return None.
+        If the person is unknown in Launchpad, the account will be created.
         """
-        assert self.pofile is not None
+        assert self.pofile is not None, 'self.pofile cannot be None'
 
-        if not email or email == 'EMAIL@ADDRESS' or not '@' in email:
-            # EMAIL@ADDRESS is a well known default value for email address so
-            # we ignore it.
+        if email is None:
             return None
 
         personset = getUtility(IPersonSet)
@@ -64,7 +63,7 @@ class TranslationImporter:
 
         return person
 
-    def getImporterByFileFormat(self, file_format):
+    def _getImporterByFileFormat(self, file_format):
         """Return an ITranslationFormatImporter that handles given file format.
 
         Return None if there is no importer to handle it.
@@ -82,13 +81,14 @@ class TranslationImporter:
                 translation_import_queue_entry.pofile is not None), (
                 "The entry has not any import target.")
 
-        importer_class = self.getImporterByFileFormat(
+        importer_class = self._getImporterByFileFormat(
             translation_import_queue_entry.format)
         assert importer_class is not None, (
             'There is no importer available for %s files' % (
                 translation_import_queue_entry.format.name))
 
-        importer = importer_class(translation_import_queue_entry, logger=logger)
+        importer = importer_class(
+            translation_import_queue_entry, logger=logger)
 
         # This var will hold an special IPOFile for 'English' which will have
         # the English strings to show instead of arbitrary IDs.
@@ -145,7 +145,7 @@ class TranslationImporter:
             self.pofile.updateHeader(importer.header)
             # Get last translator that touched this translation file.
             name, email = importer.getLastTranslator()
-            last_translator = self.getPersonByEmail(email, name)
+            last_translator = self._getPersonByEmail(email, name)
 
             if last_translator is None:
                 # We were not able to guess it from the translation file, so
@@ -202,11 +202,11 @@ class TranslationImporter:
                         'pomsgset': pomsgset,
                         'pomessage': unicode(message),
                         'error-message': (
-                            "The msgid_plural field has changed since last"
-                            " time this file was\ngenerated, please report"
-                            " this error to %s" % (
+                            "The msgid_plural field has changed since the"
+                            " last time this file was generated, please"
+                            " report this error to %s" % (
                                 config.rosetta.rosettaadmin.email))
-                    }
+                        }
 
                     errors.append(error)
                     continue
@@ -302,17 +302,17 @@ class TranslationImporter:
             try:
                 pomsgset.updateTranslationSet(
                     last_translator, translations, fuzzy,
-                    translation_import_queue_entry.is_published, lock_timestamp,
-                    force_edition_rights=is_editor)
+                    translation_import_queue_entry.is_published,
+                    lock_timestamp, force_edition_rights=is_editor)
             except TranslationConflict:
                 error = {
                     'pomsgset': pomsgset,
                     'pomessage': unicode(message),
                     'error-message': (
                         "This message was updated by someone else after you"
-                        " got the translation file.\n This translation is now"
-                        " stored as a suggestion, if you want to set it\n as"
-                        " the used one, go to\n %s/+translate\n and approve"
+                        " got the translation file. This translation is now"
+                        " stored as a suggestion, if you want to set it as"
+                        " the used one, go to %s/+translate and approve"
                         " it." % canonical_url(pomsgset))
                 }
 
@@ -323,8 +323,9 @@ class TranslationImporter:
                 # errors.
                 pomsgset.updateTranslationSet(
                     last_translator, translations, fuzzy,
-                    translation_import_queue_entry.is_published, lock_timestamp,
-                    ignore_errors=True, force_edition_rights=is_editor)
+                    translation_import_queue_entry.is_published,
+                    lock_timestamp, ignore_errors=True,
+                    force_edition_rights=is_editor)
 
                 # Add the pomsgset to the list of pomsgsets with errors.
                 error = {

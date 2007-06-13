@@ -130,6 +130,13 @@ Web presentation
 Some characters are presented specially in the Web interface, and there are
 functions to determine whether to advise translators about their presence.
 
+We will use this helper function to simplify the test:
+
+    >>> def changeMsgID(new_msgid):
+    ...     subview.context.potmsgset.makeMessageIDSighting(
+    ...         new_msgid, TranslationConstants.SINGULAR_FORM , update=True)
+    ...     flush_database_updates()
+
 First, text_has_tab() determines whether a message set contains any tabs.
 
     >>> subview.text_has_tab
@@ -137,66 +144,51 @@ First, text_has_tab() determines whether a message set contains any tabs.
 
 When we change the set to include a tab character, the function detects it.
 
-    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
-    ...     u'Foo\tBar', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> flush_database_updates()
+    >>> changeMsgID(u'Foo\tBar')
     >>> subview.text_has_tab
     True
 
 Similarly, text_has_newline() determines whether a message contains newlines.
 
-    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
-    ...     u'Foo Bar', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> flush_database_updates()
+    >>> changeMsgID(u'Foo Bar')
     >>> subview.text_has_newline
     False
 
-    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
-    ...     u'Foo\nBar', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> flush_database_updates()
+    >>> changeMsgID(u'Foo\nBar')
     >>> subview.text_has_newline
     True
 
 And text_has_leading_or_trailing_space() determines ... well, you can guess.
 
-    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
-    ...     u'Foo Bar', TranslationConstants.SINGULAR_FORM , update=True)
-    >>> flush_database_updates()
+    >>> changeMsgID(u'Foo Bar')
     >>> subview.text_has_leading_or_trailing_space
     False
 
-    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
-    ...     u' Leading space', TranslationConstants.SINGULAR_FORM , update=True)
+    >>> changeMsgID(u' Leading space')
     >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
-    ...     u'  Leading space', TranslationConstants.SINGULAR_FORM , update=True)
+    >>> changeMsgID(u'  Leading space')
     >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
-    ...     u'Trailing space ', TranslationConstants.SINGULAR_FORM , update=True)
+    >>> changeMsgID(u'Trailing space ')
     >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
-    ...     u'Trailing space  ', TranslationConstants.SINGULAR_FORM , update=True)
+    >>> changeMsgID(u'Trailing space  ')
     >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
-    ...     u'Leading\n Space  ', TranslationConstants.SINGULAR_FORM , update=True)
+    >>> changeMsgID(u'Leading\n Space  ')
     >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
-    ...     u'Trailing \nSpace  ', TranslationConstants.SINGULAR_FORM , update=True)
+    >>> changeMsgID(u'Trailing \nSpace  ')
     >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> pomsgidsighting = subview.context.potmsgset.makeMessageIDSighting(
-    ...     u'Trailing \r\nspace', TranslationConstants.SINGULAR_FORM , update=True)
+    >>> changeMsgID(u'Trailing \r\nspace')
     >>> subview.text_has_leading_or_trailing_space
     True
 

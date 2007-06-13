@@ -1,6 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.schema import TextLine, Text, Field, Int, Choice
+from zope.schema import TextLine, Text, Field, Choice
 from zope.interface import Interface, Attribute
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 

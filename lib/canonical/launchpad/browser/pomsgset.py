@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -1148,22 +1148,16 @@ class POMsgSetView(LaunchpadView):
     @property
     def text_has_tab(self):
         """Whether the text to translate contain tab chars."""
-        if ('\t' in self.context.potmsgset.singular_text or
+        return ('\t' in self.context.potmsgset.singular_text or
             (self.context.potmsgset.plural_text is not None and
              '\t' in self.context.potmsgset.plural_text)):
-            return True
-        else:
-            return False
 
     @property
     def text_has_newline(self):
         """Whether the text to translate contain newline chars."""
-        if ('\n' in self.context.potmsgset.singular_text or
+        return ('\n' in self.context.potmsgset.singular_text or
             (self.context.potmsgset.plural_text is not None and
              '\n' in self.context.potmsgset.plural_text)):
-            return True
-        else:
-            return False
 
     @property
     def text_has_leading_or_trailing_space(self):
