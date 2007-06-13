@@ -8,7 +8,8 @@
 <body>
 
 <metal:heading fill-slot="pageheading">
-  <h1>Has your bug already been reported?</h1>
+  <h1 tal:condition="not: view/similar_bugs">Report a new bug</h1>
+  <h1 tal:condition="view/similar_bugs">Has your bug already been reported?</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
@@ -24,17 +25,27 @@
 
     <metal:widgets metal:fill-slot="widgets">
 
-      <table width="100%">
+      <div id="bug_reporting_form" tal:condition="not: view/similar_bugs">
+        <table class="form">
+          <metal:basic_filebug_widgets
+              metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+        </table>
+        <div class="actions">
+          <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
+        </div>
+      </div>
+
+      <table width="100%" tal:condition="view/similar_bugs">
         <tbody>
 
-          <tal:similar-bugs condition="view/similar_bugs">
+          <tal:similar-bugs>
             <tr>
               <td>
-                <input type="radio" name="is_bug_reported"
-                       id="is_bug_reported_yes" checked="checked" />
+                <input type="radio" id="bug-already-reported-yes" checked="checked"
+                       name="field.bug_already_reported" value="on" />
               </td>
               <td>
-                <label for="is_bug_reported_yes">
+                <label for="bug-already-reported-yes">
                   Yes, it's one of the following:
                 </label>
               </td>
@@ -42,7 +53,7 @@
             <tr>
               <td></td>
               <td>
-                <!--table class="listing" id="similar-bugs" style="clear: both">
+                <table tal:replace="nothing" class="listing" id="similar-bugs" style="clear: both">
                   <thead>
                     <tr><th colspan="4">Summary</th></tr>
                   </thead>
@@ -50,8 +61,11 @@
                     <tr tal:repeat="bug view/similar_bugs"
                         tal:attributes="title bug/description/fmt:shorten/500"
                         title="bug description goes here">
-                      <td><input type="radio" name="this_is_my_bug"
-                      tal:attributes="value string:${bug/id}; id string:this-is-my-bug-${bug/id}" /></td>
+                      <td>
+                        <input type="radio" name="field.bug_already_reported_as"
+                               tal:attributes="value string:${bug/id};
+                                               id string:this-is-my-bug-${bug/id}" />
+                      </td>
                       <td class="amount">
                         <label tal:content="bug/id" style="font-weight: normal"
                                tal:attributes="for string:this-is-my-bug-${bug/id}">1</label></td>
@@ -68,21 +82,19 @@
                         </td>
                     </tr>
                   </tbody>
-                </table-->
+                </table>
 
                 <ul id="similar-bugs" style="list-style: none">
                   <li tal:repeat="bug view/similar_bugs"
                       tal:attributes="title bug/description/fmt:shorten/500"
                       title="bug description goes here">
-                    <input type="radio" name="this_is_my_bug"
-                           tal:attributes="value string:${bug/id};
-                                           id string:this-is-my-bug-${bug/id}" />
-                    <label style="font-weight: normal"
-                           tal:attributes="for string:this-is-my-bug-${bug/id}">
-                      <span tal:content="string:#${bug/id}">#1</span>:
-                      <span tal:content="bug/title">Firefox does not support SVG</span>
+                    <label style="font-weight: normal">
+                      <input type="radio" name="field.bug_already_reported_as"
+                             tal:attributes="value string:${bug/id};" />
+                      <span tal:replace="string:#${bug/id}">#1</span>:
+                      <span tal:replace="bug/title">Firefox does not support SVG</span>
                     </label>
-                    -
+                    &mdash;
                     <a href="#" tal:attributes="href bug/fmt:url">view details...</a>
                   </li>
                 </ul>
@@ -94,34 +106,38 @@
             </tr>
           </tal:similar-bugs>
 
-          <tr>
-            <td>
-              <input type="radio" name="is_bug_reported" id="is_bug_reported_no" />
-            </td>
-            <td>
-              <label for="is_bug_reported_no">
-                No, I'd like to report a new bug.
-              </label>
-            </td>
-          </tr>
-          <tr>
-            <td></td>
-            <td>
-              <div id="bug_reporting_form">
-                <table class="form">
-                  <metal:basic_filebug_widgets
-                      metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
-                </table>
-                <div class="actions">
-                  <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
+          <tal:submit-new-bug>
+            <tr>
+              <td>
+                <input type="radio" id="bug-already-reported-no"
+                       name="field.bug_already_reported" value="off" />
+              </td>
+              <td>
+                <label for="bug-already-reported-no">
+                  No, I'd like to report a new bug.
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <td></td>
+              <td>
+                <div id="bug_reporting_form">
+                  <table class="form">
+                    <metal:basic_filebug_widgets
+                        metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+                  </table>
+                  <div class="actions">
+                    <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
+                  </div>
                 </div>
-              </div>
-            </td>
-          </tr>
+              </td>
+            </tr>
+          </tal:submit-new-bug>
+
         </tbody>
       </table>
 
-      <script type="text/javascript">
+      <script type="text/javascript" tal:condition="view/similar_bugs">
         var similar_bugs_form_elements = concat(
           getElementsByTagAndClassName('input', null, 'similar-bugs'));
         var submit_bug_form_elements = concat(
@@ -134,7 +150,7 @@
          * refreshed so we must always work from the data, not just from
          * events.
          */
-        connect(window, 'onload', $('is_bug_reported_no'),
+        connect(window, 'onload', $('bug-already-reported-no'),
           function(e) {
             var func = this.checked ? showElement : hideElement;
             func('bug_reporting_form');
@@ -143,7 +159,7 @@
         /*
          * When the 'No' radio is selected, deselect all the 'Yes' options.
          */
-        connect('is_bug_reported_no', 'onchange',
+        connect('bug-already-reported-no', 'onchange',
           function(e) {
             if (this.checked) {
               showElement('bug_reporting_form');
@@ -153,7 +169,7 @@
             }
           });
         // Safari doesn't trigger onchange for radio buttons it seems.
-        connect('is_bug_reported_no', 'onclick', function(e) {
+        connect('bug-already-reported-no', 'onclick', function(e) {
             signal(this, 'onchange');
           });
 
@@ -161,7 +177,7 @@
          * If a similar bug is selected, also select the 'Yes' radio button.
          */
         forEach(similar_bugs_form_elements, function(element) {
-            var target = $('is_bug_reported_yes');
+            var target = $('bug-already-reported-yes');
             var handler = function(e) {
                 target.checked = true;
               };
@@ -175,7 +191,7 @@
          * 'Yes' radio button and signal the 'No' onchange handler.
          */
         forEach(submit_bug_form_elements, function(element) {
-            var target = $('is_bug_reported_no');
+            var target = $('bug-already-reported-no');
             var handler = function(e) {
                 target.checked = true;
                 signal(target, 'onchange');

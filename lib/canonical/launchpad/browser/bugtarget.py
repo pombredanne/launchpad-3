@@ -22,7 +22,7 @@ from cStringIO import StringIO
 import email
 import urllib
 
-from zope.app.form.browser import TextWidget
+from zope.app.form.browser import BooleanRadioWidget, TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
@@ -112,6 +112,8 @@ class FileBugViewBase(LaunchpadFormView):
 
     implements(IBrowserPublisher)
 
+    custom_widget('bug_already_reported', BooleanRadioWidget)
+
     extra_data_token = None
     advanced_form = False
 
@@ -140,7 +142,8 @@ class FileBugViewBase(LaunchpadFormView):
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        field_names = ['title', 'comment', 'tags', 'security_related']
+        field_names = ['title', 'comment', 'tags', 'security_related',
+                       'bug_already_reported', 'bug_already_reported_as']
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -358,7 +361,14 @@ class FileBugViewBase(LaunchpadFormView):
             failure=handleSubmitBugFailure)
     def this_is_my_bug_action(self, action, data):
         """"""
-        pass
+        bug_already_reported = data.get('bug_already_reported')
+        bug_already_reported_as = data.get('bug_already_reported_as')
+
+        import pdb; pdb.set_trace()
+
+        if bug_already_reported_as:
+            self.request.response.redirect(
+                canonical_url(bug_already_reported_as.bugtasks[0]))
 
     def showFileBugForm(self):
         """Override this method in base classes to show the filebug form."""

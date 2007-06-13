@@ -431,6 +431,12 @@ class IBugAddForm(IBug):
         title=_('Further information, steps to reproduce,'
                 ' version information, etc.'),
         required=True)
+    bug_already_reported = Bool(
+        title=_("This bug has already been reported"),
+        required=True, default=True)
+    bug_already_reported_as = Choice(
+        title=_("This bug has already been reported as ..."), required=False,
+        vocabulary="Bug")
 
 
 class IProjectBugAddForm(IBugAddForm):
