@@ -5,7 +5,7 @@ Get evolution template for Ubuntu Hoary
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
 >>> from canonical.launchpad.interfaces import (
-... IPOTemplateSet, ISourcePackageNameSet, IDistributionSet, IPOFile)
+...     IDistributionSet, IPOTemplateSet, IPOFile, ISourcePackageNameSet)
 >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
 >>> sourcepackagename = sourcepackagenameset['evolution']
 >>> distributionset = getUtility(IDistributionSet)
