@@ -1,17 +1,34 @@
 <configure xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
+    <securedutility
+        class="canonical.launchpad.systemhomes.OpenIdApplication"
+        provides="canonical.launchpad.interfaces.IOpenIdApplication">
+        <allow interface="canonical.launchpad.interfaces.IOpenIdApplication" />
+    </securedutility>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        path_expression="string:+openid"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
         permission="zope.Public"
-        name="+openid"
+        name="+index"
         class="canonical.launchpad.browser.openidserver.OpenIdView"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        name="+index"
         />
 
     <browser:navigation
         module="canonical.launchpad.browser.openidserver"
-        classes="OpenIdViewNavigation"
+        classes="OpenIdApplicationNavigation"
         />
 
     <content class="canonical.launchpad.database.OpenIdAuthorization">
