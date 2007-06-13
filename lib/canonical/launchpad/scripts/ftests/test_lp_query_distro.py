@@ -39,7 +39,7 @@ class TestLpQueryDistroScript(unittest.TestCase):
         Check that:
          * return code is ZERO,
          * standard error is empty
-         * standard output contains only the 'current distrorelease' name
+         * standard output contains only the 'current distroseries' name
         """
         returncode, out, err = self.runLpQueryDistro(
             extra_args=['current'])
@@ -124,7 +124,7 @@ class TestLpQueryDistro(LaunchpadZopelessTestCase):
         """Check if the 'current' action is executed sucessfully."""
         helper = self.getLpQueryDistro(test_args=['current'])
         helper.runAction(presenter=self.presenter)
-        # 'warty' is the CURRENT 'ubuntu' distrorelease.
+        # 'warty' is the CURRENT 'ubuntu' distroseries.
         self.assertEqual(helper.location.distribution.name, u'ubuntu')
         self.assertEqual(self.test_output, u'warty')
 
@@ -156,7 +156,7 @@ class TestLpQueryDistro(LaunchpadZopelessTestCase):
         helper._buildLocation()
 
         self.assertEqual(helper.location.distribution.name, u'ubuntu')
-        self.assertEqual(helper.location.distrorelease.name, u'hoary')
+        self.assertEqual(helper.location.distroseries.name, u'hoary')
         self.assertEqual(helper.location.pocket.name, 'RELEASE')
 
     def testLocationFailures(self):
@@ -164,7 +164,7 @@ class TestLpQueryDistro(LaunchpadZopelessTestCase):
         # Unknown distribution.
         helper = self.getLpQueryDistro(test_args=['-d', 'foobar'])
         self.assertRaises(LaunchpadScriptFailure, helper._buildLocation)
-        # Unknown distrorelease.
+        # Unknown distroseries.
         helper = self.getLpQueryDistro(test_args=['-s', 'biscuit'])
         self.assertRaises(LaunchpadScriptFailure, helper._buildLocation)
         # Unknown pocket.
@@ -175,7 +175,7 @@ class TestLpQueryDistro(LaunchpadZopelessTestCase):
         """Only 'current' and 'development' work with undefined suite.
 
         The other actions ('archs', 'official_arch', 'nominated_arch_indep')
-        will assume the CURRENT distrorelease in context.
+        will assume the CURRENT distroseries in context.
         """
         helper = self.getLpQueryDistro(test_args=[])
         helper._buildLocation()

@@ -130,6 +130,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             productseries=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
+    def parent(self):
+        """See IProductSeries."""
+        return self.product
+
+    @property
     def bugtargetname(self):
         """See IBugTarget."""
         return "%s %s (upstream)" % (self.product.name, self.name)
@@ -142,6 +147,16 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
         return sorted(drivers, key=lambda x: x.browsername)
+
+    @property
+    def bugcontact(self):
+        """See IProductSeries."""
+        return self.product.bugcontact
+
+    @property
+    def security_contact(self):
+        """See IProductSeries."""
+        return self.product.security_contact
 
     @property
     def series_branch(self):
@@ -186,9 +201,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         from canonical.launchpad.database.sourcepackage import SourcePackage
         ret = Packaging.selectBy(productseries=self)
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
-                             distrorelease=r.distrorelease)
+                             distroseries=r.distroseries)
                     for r in ret]
-        ret.sort(key=lambda a: a.distribution.name + a.distrorelease.version
+        ret.sort(key=lambda a: a.distribution.name + a.distroseries.version
                  + a.sourcepackagename.name)
         return ret
 
@@ -356,19 +371,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 return release
         return None
 
-    def getPackage(self, distrorelease):
+    def getPackage(self, distroseries):
         """See IProductSeries."""
         for pkg in self.sourcepackages:
-            if pkg.distrorelease == distrorelease:
+            if pkg.distroseries == distroseries:
                 return pkg
         # XXX sabdfl 23/06/05 this needs to search through the ancestry of
-        # the distrorelease to try to find a relevant packaging record
-        raise NotFoundError(distrorelease)
+        # the distroseries to try to find a relevant packaging record
+        raise NotFoundError(distroseries)
 
-    def setPackaging(self, distrorelease, sourcepackagename, owner):
+    def setPackaging(self, distroseries, sourcepackagename, owner):
         """See IProductSeries."""
         for pkg in self.packagings:
-            if pkg.distrorelease == distrorelease:
+            if pkg.distroseries == distroseries:
                 # we have found a matching Packaging record
                 if pkg.sourcepackagename == sourcepackagename:
                     # and it has the same source package name
@@ -382,7 +397,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # ok, we didn't find a packaging record that matches, let's go ahead
         # and create one
-        pkg = Packaging(distrorelease=distrorelease,
+        pkg = Packaging(distroseries=distroseries,
             sourcepackagename=sourcepackagename, productseries=self,
             packaging=PackagingType.PRIME,
             owner=owner)
@@ -393,7 +408,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         """See IProductSeries."""
         history = []
         for pkging in self.packagings:
-            if pkging.distrorelease.distribution == distribution:
+            if pkging.distroseries.distribution == distribution:
                 history.append(pkging)
         return history
 

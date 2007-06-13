@@ -69,7 +69,7 @@ class ServersToStart(unittest.TestCase):
         self.configs = [config.librarian.server,
                         config.buildsequencer,
                         config.authserver,
-                        config.supermirrorsftp]
+                        config.codehosting]
         self.old_launch_values = [conf.launch for conf in self.configs]
         new_launch_values = [True, False, False, False]
         for conf, launch_value in zip(self.configs, new_launch_values):

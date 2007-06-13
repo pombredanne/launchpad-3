@@ -90,7 +90,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
-        path_expression="string:+translation-groups"
+        path_expression="string:+groups"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 

@@ -331,7 +331,7 @@ class POTemplateView(LaunchpadView):
             translation_import_queue.addOrUpdateEntry(
                 path, content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
-                distrorelease=self.context.distrorelease,
+                distroseries=self.context.distroseries,
                 productseries=self.context.productseries,
                 potemplate=self.context)
 
@@ -346,7 +346,7 @@ class POTemplateView(LaunchpadView):
             num = translation_import_queue.addOrUpdateEntriesFromTarball(
                 content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
-                distrorelease=self.context.distrorelease,
+                distroseries=self.context.distroseries,
                 productseries=self.context.productseries,
                 potemplate=self.context)
 
@@ -538,7 +538,7 @@ class POTemplateSubsetURL:
     @property
     def path(self):
         potemplatesubset = self.context
-        if potemplatesubset.distrorelease is not None:
+        if potemplatesubset.distroseries is not None:
             assert potemplatesubset.productseries is None
             assert potemplatesubset.sourcepackagename is not None
             return '+source/%s/+pots' % (
@@ -550,9 +550,9 @@ class POTemplateSubsetURL:
     @property
     def inside(self):
         potemplatesubset = self.context
-        if potemplatesubset.distrorelease is not None:
+        if potemplatesubset.distroseries is not None:
             assert potemplatesubset.productseries is None
-            return potemplatesubset.distrorelease
+            return potemplatesubset.distroseries
         else:
             assert potemplatesubset.productseries is not None
             return potemplatesubset.productseries
@@ -567,10 +567,10 @@ class POTemplateURL:
         self.context = context
         potemplate = self.context
         potemplateset = getUtility(IPOTemplateSet)
-        if potemplate.distrorelease is not None:
+        if potemplate.distroseries is not None:
             assert potemplate.productseries is None
             self.potemplatesubset = potemplateset.getSubset(
-                distrorelease=potemplate.distrorelease,
+                distroseries=potemplate.distroseries,
                 sourcepackagename=potemplate.sourcepackagename)
         else:
             assert potemplate.productseries is not None

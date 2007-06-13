@@ -43,7 +43,7 @@ The policies require certain values to be present in the options at times...
 
   >>> class MockAbstractOptions:
   ...     distro = 'ubuntu'
-  ...     distrorelease = None
+  ...     distroseries = None
   >>> class MockOptions(MockAbstractOptions):
   ...     buildid = 1
 
@@ -65,10 +65,10 @@ The policies require certain values to be present in the options at times...
   >>> buildd_policy.distro.name
   u'ubuntu'
 
-Policies can think about distroreleases...
+Policies can think about distroseriess...
 
-  >>> buildd_policy.setDistroReleaseAndPocket("hoary")
-  >>> buildd_policy.distrorelease.name
+  >>> buildd_policy.setDistroSeriesAndPocket("hoary")
+  >>> buildd_policy.distroseries.name
   u'hoary'
   >>> buildd_policy.announcelist
 
@@ -78,18 +78,18 @@ instead of UNAPPROVED)
 
 Uploads to the RELEASE pocket are approved by the insecure policy
 
-  >>> insecure_policy.setDistroReleaseAndPocket('hoary')
+  >>> insecure_policy.setDistroSeriesAndPocket('hoary')
   >>> insecure_policy.autoApprove(None)
   True
 
 Reset the policy so that we can try again...
 
   >>> insecure_policy.policy = None
-  >>> insecure_policy.distrorelease = None
+  >>> insecure_policy.distroseries = None
 
 Uploads to the UPDATES pocket are not auto-approved by the insecure policy
 
-  >>> insecure_policy.setDistroReleaseAndPocket('hoary-updates')
+  >>> insecure_policy.setDistroSeriesAndPocket('hoary-updates')
   >>> insecure_policy.autoApprove(None)
   False
 

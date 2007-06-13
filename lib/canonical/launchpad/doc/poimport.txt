@@ -13,7 +13,8 @@ Here are some imports we need to get this test running.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
-    >>> from canonical.launchpad.database import POTemplateSubset
+    >>> from canonical.launchpad.database import (POTemplateSubset,
+    ...     SourcePackageName)
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
@@ -152,7 +153,15 @@ to make sure it's stored properly.
 
     >>> transaction.commit()
 
-We must approve the entry to be able to import it.
+We go through an import run.  But since we haven't approved our entry yet,
+nothing happens.
+
+    >>> original_import_status = entry.status
+    >>> potemplate.importFromQueue(FakeLogger())
+    >>> entry.status == original_import_status
+    True
+
+Now the entry gets approved, so it'll be imported next time
 
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
@@ -596,7 +605,7 @@ Attach the first version of the file.
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, first_pofile_content, False, rosetta_experts,
     ...     sourcepackagename=pofile.potemplate.sourcepackagename,
-    ...     distrorelease=pofile.potemplate.distrorelease,
+    ...     distroseries=pofile.potemplate.distroseries,
     ...     productseries=pofile.potemplate.productseries)
     >>> transaction.commit()
 
@@ -614,7 +623,7 @@ Attach the second version of the file.
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, second_pofile_content, False, jordi,
     ...     sourcepackagename=pofile.potemplate.sourcepackagename,
-    ...     distrorelease=pofile.potemplate.distrorelease,
+    ...     distroseries=pofile.potemplate.distroseries,
     ...     productseries=pofile.potemplate.productseries)
     >>> transaction.commit()
 
@@ -658,4 +667,65 @@ And there are no more entries to import
 
     >>> translation_import_queue.getFirstEntryToImport() is None
     True
+
+The next run of the auto-approval script will clean up what's left of the
+queue.
+
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-approve-imports.py',
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> transaction.commit()
+
+
+Imports so far have been associated with a product series.  We can also submit
+translations for a distroseries.
+
+    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
+    >>> warty = getUtility(IDistroSeriesSet).get(1)
+    >>> print warty.name
+    warty
+    >>> firefox_name = SourcePackageName.byName('mozilla-firefox')
+    >>> subset = POTemplateSubset(sourcepackagename=firefox_name,
+    ...     distroseries=warty)
+    >>> ptn = getUtility(IPOTemplateNameSet).new('firefox-warty', 'ForWarty')
+    >>> potemplate = subset.new(
+    ...     potemplatename=ptn,
+    ...     path='po/firefox.pot',
+    ...     owner=person)
+
+
+As it happens, the administrator has blocked imports to warty:
+
+    >>> warty.defer_translation_imports = True
+    >>> flush_database_updates()
+
+Nevertheless, we submit an import request for warty, and it is approved:
+
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     potemplate.path, potemplate_contents, True, potemplate.owner,
+    ...     sourcepackagename=firefox_name, distroseries=warty,
+    ...     potemplate=potemplate)
+    >>> transaction.commit()
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> flush_database_updates()
+
+If we try to import now, nothing happens.
+
+    >>> pofile.importFromQueue(FakeLogger())
+
+    >>> entry.status == RosettaImportStatus.IMPORTED
+    False
+
+Once imports are allowed again, the import is done after all.
+
+    >>> warty.defer_translation_imports = False
+    >>> flush_database_updates()
+    >>> potemplate.importFromQueue(FakeLogger())
+
+    >>> entry.status == RosettaImportStatus.IMPORTED
+    True
+
 

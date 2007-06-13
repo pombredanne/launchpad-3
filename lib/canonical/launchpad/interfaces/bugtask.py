@@ -16,7 +16,7 @@ __all__ = [
     'IBugTaskDelta',
     'IUpstreamBugTask',
     'IDistroBugTask',
-    'IDistroReleaseBugTask',
+    'IDistroSeriesBugTask',
     'IProductSeriesBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
@@ -67,15 +67,15 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     bug = Int(title=_("Bug #"))
     product = Choice(title=_('Project'), required=False, vocabulary='Product')
     productseries = Choice(
-        title=_('Release Series'), required=False, vocabulary='ProductSeries')
+        title=_('Series'), required=False, vocabulary='ProductSeries')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
-    distrorelease = Choice(
-        title=_("Distribution Release"), required=False,
-        vocabulary='DistroRelease')
+    distroseries = Choice(
+        title=_("Series"), required=False,
+        vocabulary='DistroSeries')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone')
     # XXX: the status and importance's vocabularies do not
@@ -151,7 +151,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         "indirectly."), readonly=True)
 
     conjoined_master = Attribute(
-        "The series- or release-specific bugtask in a conjoined relationship")
+        "The series-specific bugtask in a conjoined relationship")
     conjoined_slave = Attribute(
         "The generic bugtask in a conjoined relationship")
 
@@ -395,20 +395,20 @@ class IDistroBugTask(IBugTask):
         title=_("Distribution"), required=True, vocabulary='Distribution')
 
 
-class IDistroReleaseBugTask(IBugTask):
+class IDistroSeriesBugTask(IBugTask):
     """A bug needing fixing in a distrorealease, possibly a specific package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,
         vocabulary='SourcePackageName')
-    distrorelease = Choice(
-        title=_("Distribution Release"), required=True,
-        vocabulary='DistroRelease')
+    distroseries = Choice(
+        title=_("Series"), required=True,
+        vocabulary='DistroSeries')
 
 
 class IProductSeriesBugTask(IBugTask):
     """A bug needing fixing a productseries."""
     productseries = Choice(
-        title=_("Release Series"), required=True,
+        title=_("Series"), required=True,
         vocabulary='ProductSeries')
 
 
@@ -432,7 +432,7 @@ class BugTaskSearchParams:
       example, privacy-aware results.) If user is None, the search
       will be filtered to only consider public bugs.
 
-      product, distribution and distrorelease (IBugTargets) should /not/
+      product, distribution and distroseries (IBugTargets) should /not/
       be supplied to BugTaskSearchParams; instead, IBugTarget's
       searchTasks() method should be invoked with a single search_params
       argument.
@@ -463,7 +463,7 @@ class BugTaskSearchParams:
     product = None
     project = None
     distribution = None
-    distrorelease = None
+    distroseries = None
     productseries = None
     def __init__(self, user, bug=None, searchtext=None, status=None,
                  importance=None, milestone=None,
@@ -508,9 +508,9 @@ class BugTaskSearchParams:
         """Set the distribution context on which to filter the search."""
         self.distribution = distribution
 
-    def setDistributionRelease(self, distrorelease):
-        """Set the distrorelease context on which to filter the search."""
-        self.distrorelease = distrorelease
+    def setDistroSeries(self, distroseries):
+        """Set the distroseries context on which to filter the search."""
+        self.distroseries = distroseries
 
     def setProductSeries(self, productseries):
         """Set the productseries context on which to filter the search."""
@@ -519,8 +519,8 @@ class BugTaskSearchParams:
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
         if ISourcePackage.providedBy(sourcepackage):
-            # This is a sourcepackage in a distro release.
-            self.distrorelease = sourcepackage.distrorelease
+            # This is a sourcepackage in a distro series.
+            self.distroseries = sourcepackage.distroseries
         else:
             # This is a sourcepackage in a distribution.
             self.distribution = sourcepackage.distribution
@@ -565,17 +565,17 @@ class IBugTaskSet(Interface):
         """
 
     def createTask(bug, product=None, productseries=None, distribution=None,
-                   distrorelease=None, sourcepackagename=None, status=None,
+                   distroseries=None, sourcepackagename=None, status=None,
                    importance=None, assignee=None, owner=None, milestone=None):
         """Create a bug task on a bug and return it.
 
         If the bug is public, bug contacts will be automatically
         subscribed.
 
-        If the bug has any accepted release nominations for a supplied
-        distribution, release tasks will be created for them.
+        If the bug has any accepted series nominations for a supplied
+        distribution, series tasks will be created for them.
 
-        Exactly one of product, distribution or distrorelease must be provided.
+        Exactly one of product, distribution or distroseries must be provided.
         """
 
     def maintainedBugTasks(person, minimportance=None,

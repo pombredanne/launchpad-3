@@ -454,7 +454,7 @@ approved nomination will have created a task anyway.
     bugtask, Unconfirmed, mozilla-firefox (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
 
-Let's nominate the bug for upstream and an Ubuntu release and see how
+Let's nominate the bug for upstream and an Ubuntu series and see how
 the list changes.
 
 (Login as an unprivileged user to be able to nominate.)
@@ -462,7 +462,7 @@ the list changes.
     >>> login("no-priv@canonical.com")
 
     >>> current_user = getUtility(ILaunchBag).user
-    >>> ubuntu_warty = ubuntu.getRelease("warty")
+    >>> ubuntu_warty = ubuntu.getSeries("warty")
     >>> firefox_trunk = firefox.getSeries("trunk")
 
     >>> bug_one.addNomination(current_user, target=ubuntu_warty)
@@ -520,7 +520,7 @@ approve/decline nominations.)
     >>> login("foo.bar@canonical.com")
     >>> current_user = getUtility(ILaunchBag).user
 
-    >>> ubuntu_hoary = ubuntu.getRelease("hoary")
+    >>> ubuntu_hoary = ubuntu.getSeries("hoary")
     >>> hoary_nomination = bug_one.getNominationFor(ubuntu_hoary)
     >>> warty_nomination = bug_one.getNominationFor(ubuntu_warty)
 
