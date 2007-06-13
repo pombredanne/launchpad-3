@@ -894,7 +894,7 @@ This aggregation of processes are intended to increase the building
 throughput, because the will allow the sources to be published on disk
 and built within the same publishing cycle. (previously Soyuz requires
 two publishing cycles, one for publish the source on disk and another
-to build it)
+to build it).
 
 Let's start a new series of ed (0.2-20) and publish it:
 
@@ -960,8 +960,8 @@ record in 'DONE' state:
   'DONE'
 
 This is unfortunate, but we have to manually remove the file dumped
-from librarian from our tree, otherwise the test won't correctly next
-time.
+from librarian into our tree, otherwise it will remain in disk causing
+problems to the next test run.
 
   >>> import os
   >>> os.remove(datadir('ed-0.2-21/ed_0.2.orig.tar.gz'))
