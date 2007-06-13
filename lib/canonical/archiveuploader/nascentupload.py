@@ -790,7 +790,13 @@ class NascentUpload:
 
         if not self.queue_root:
             self.queue_root = self._createQueueEntry()
+
+        try:
             self.queue_root.setRejected()
+        except QueueInconsistentStateError:
+            # These exceptions are ignored, we want to force the rejected
+            # state.
+            pass
 
         changes_file_object = open(self.changes.filepath, "r")
         self.queue_root.notify(summary_text=self.rejection_message,
