@@ -266,7 +266,7 @@ class POFileTranslateView(BaseTranslationView):
 
         for potmsgset in for_potmsgsets:
             pomsgset = translations.get(potmsgset, dummies.get(potmsgset))
-            pomsgset.initializeCaches(cachable[pomsgset])
+            pomsgset.initializeSubmissionsCaches(cachable[pomsgset])
             view = self._prepareView(
                 POMsgSetView, pomsgset, self.errors.get(potmsgset))
             self.pomsgset_views.append(view)

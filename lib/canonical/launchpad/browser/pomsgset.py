@@ -921,8 +921,7 @@ class POMsgSetView(LaunchpadView):
         self.pluralform_indices = range(self.context.pluralforms)
         for index in self.pluralform_indices:
             non_editor, elsewhere, wiki, alt_lang_suggestions = \
-                self._buildAllSuggestions(
-                    index, self.context.getWikiSubmissions(index))
+                self._buildAllSuggestions(index)
             self.suggestion_blocks[index] = \
                 [non_editor, elsewhere, wiki, alt_lang_suggestions]
 
@@ -972,7 +971,7 @@ class POMsgSetView(LaunchpadView):
 
             self.translation_dictionaries.append(translation_entry)
 
-    def _buildAllSuggestions(self, index, suggestions_list):
+    def _buildAllSuggestions(self, index):
         """Builds all suggestions for a certain plural form index.
 
         This method does the ugly nitty gritty of making sure we don't
@@ -1011,8 +1010,7 @@ class POMsgSetView(LaunchpadView):
             return dict((k, v) for (k, v) in main.iteritems()
                         if k not in pruners_merged)
 
-        if suggestions_list is None:
-            suggestions_list = []
+        suggestions_list = self.context.getWikiSubmissions(index)
 
         if self.message_must_be_hidden:
             # We must hide all suggestions because this message may contain
