@@ -160,7 +160,7 @@ Since we are printing out general private branch details, we log
 in a member of the Launchpad admin team so there are no permission
 errors.
 
-    >>> login('mark@hbd.com')
+    >>> login('foo.bar@canonical.com')
 
 The syncUpdate call is necessary to make sure the database has
 the private flag set correctly for the branch.
@@ -190,9 +190,9 @@ No Privileges Person sees his new private junk branch and other public branches.
 
     >>> for branch in branch_set.getRecentlyRegisteredBranches(3, no_priv_person):
     ...     print branch.unique_name, branch.private
+    ~no-priv/+junk/test-branch True
     ~sabdfl/+junk/testdoc False
     ~name12/gnome-terminal/scanned False
-    ~name12/gnome-terminal/mirrored False
 
 Mark as a Launchpad admin can see all the private branches.
 

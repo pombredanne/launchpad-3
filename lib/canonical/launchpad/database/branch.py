@@ -494,7 +494,8 @@ class BranchSet:
         if visible_by_user is None:
             return '%sNOT Branch.private' % query
 
-        # Logged in people can see public branches (first part of the union)
+        # Logged in people can see public branches and branches they
+        # are the owner of (first part of the union)
         # and all branches they are subscribed to (second part).
         clause = ('''
             %sBranch.id IN (
