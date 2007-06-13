@@ -354,13 +354,22 @@ class TestPublisher(TestNativePublishingBase):
         # Check if apt_handler.release_files_needed has the right requests.
         # 'source' & 'binary-i386' Release files should be regenerated
         # for all breezy-autotest components.
-        self.assertEqual(
-            archive_publisher.apt_handler.release_files_needed,
-            {u'breezy-autotest':
-             {u'restricted': set(['source', u'binary-i386']),
-              u'main': set(['source', u'binary-i386']),
-              u'multiverse': set(['source', u'binary-i386']),
-              u'universe': set(['source', u'binary-i386'])}})
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'main', 'source')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'main', 'binary-i386')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'restricted', 'source')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'restricted', 'binary-i386')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'universe', 'source')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'universe', 'binary-i386')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'multiverse', 'source')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'multiverse', 'binary-i386')
 
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
@@ -422,6 +431,19 @@ class TestPublisher(TestNativePublishingBase):
         self.assertEqual(
             pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
 
+    def assertReleaseFileRequested(self, publisher, suite_name,
+                                   component_name, arch_name):
+        suite = publisher.apt_handler.release_files_needed.get(suite_name)
+        self.assertTrue(
+            suite is not None, 'Suite %s not requested' % suite_name)
+        self.assertTrue(
+            component_name in suite,
+            'Component %s/%s not requested' % (suite_name, component_name))
+        self.assertTrue(
+            arch_name in suite[component_name],
+            'Arch %s/%s/%s not requested' % (
+            suite_name, component_name, arch_name))
+
     def testReleaseFile(self):
         """Test release file writing.
 
@@ -442,13 +464,22 @@ class TestPublisher(TestNativePublishingBase):
         # 'source' and 'binary-i386' Release files should be regenerated
         # for all breezy-autotest components.
         # We always regenerate all Releases file for a given suite.
-        self.assertEqual(
-            publisher.apt_handler.release_files_needed,
-            {u'breezy-autotest':
-             {u'restricted': set(['source', u'binary-i386']),
-              u'main': set(['source', u'binary-i386']),
-              u'multiverse': set(['source', u'binary-i386']),
-              u'universe': set(['source', u'binary-i386'])}})
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'main', 'source')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'main', 'binary-i386')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'restricted', 'source')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'restricted', 'binary-i386')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'universe', 'source')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'universe', 'binary-i386')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'multiverse', 'source')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'multiverse', 'binary-i386')
 
         publisher.D_writeReleaseFiles(False)
 

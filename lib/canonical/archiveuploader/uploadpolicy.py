@@ -225,6 +225,11 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         'ubuntero' and if it is member of 'launchpad-beta-tests'.
         """
         if upload.is_ppa:
+            # XXX cprov 20070613: checks for PPA uploads are not yet
+            # established. We may decide for only one of the checks.
+            # Either in a specific team or having a ubuntero (or similar
+            # flag). This code will be revisited before releasing PPA
+            # publicly.
             self.checksignerIsUbuntero(upload)
             self.checksignerIsBetaTester(upload)
         else:
