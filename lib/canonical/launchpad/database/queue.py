@@ -163,21 +163,8 @@ class PackageUpload(SQLBase):
                 'Queue item already accepted')
 
         for source in self.sources:
-            # If two queue items have the same (name, version) pair,
-            # then there is an inconsistency.  Check the accepted & done
-            # queue items for each distro series for such duplicates
-            # and raise an exception if any are found.
-            # See bug #31038 & #62976 for details.
-            for distroseries in self.distroseries.distribution:
-                if distroseries.getQueueItems(
-                    status=[PackageUploadStatus.ACCEPTED,
-                            PackageUploadStatus.DONE],
-                    name=source.sourcepackagerelease.name,
-                    version=source.sourcepackagerelease.version,
-                    archive=self.archive, exact_match=True).count() > 0:
-                    raise QueueInconsistentStateError(
-                        'This sourcepackagerelease is already accepted in %s.'
-                        % distroseries.name)
+            # Perform overall checks on accepted source.
+            source.verifyAccepted()
 
             # if something goes wrong we will raise an exception
             # (QueueSourceAcceptError) before setting any value.
@@ -725,6 +712,48 @@ class PackageUploadSource(SQLBase):
         dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease'
         )
+
+    def verifyAccepted(self):
+        """See IPackageUploadSource."""
+        distribution = self.packageupload.distroseries.distribution
+
+        # Check for duplicated source version accross all distroseries.
+        for distroseries in distribution:
+            if distroseries.getQueueItems(
+                status=[PackageUploadStatus.ACCEPTED,
+                        PackageUploadStatus.DONE],
+                name=self.sourcepackagerelease.name,
+                version=self.sourcepackagerelease.version,
+                archive=self.packageupload.archive,
+                exact_match=True).count() > 0:
+                raise QueueInconsistentStateError(
+                    'This sourcepackagerelease is already accepted in %s.'
+                    % self.packageupload.distroseries.name)
+
+        # Check for duplicates filenames currently present in the archive.
+        for source_file in self.sourcepackagerelease.files:
+            try:
+                published_file = distribution.getFileByName(
+                    source_file.libraryfile.filename, binary=False)
+            except NotFoundError:
+                continue
+
+            filename = source_file.libraryfile.filename
+            proposed_sha1 = source_file.libraryfile.content.sha1
+            published_sha1 = published_file.content.sha1
+
+            # Multiple ORIGs with the same content are fine.
+            if source_file.filetype == SourcePackageFileType.ORIG:
+                if proposed_sha1 == published_sha1:
+                    continue
+
+            # Multiple DIFFs, DSCs, TARGZs and ORIGs with different contents
+            # are a very big problem.
+            raise QueueInconsistentStateError(
+                '%s is already published in archive for %s with a different'
+                'content (%s != %s)' % (
+                filename, self.packageupload.distroseries.name,
+                proposed_sha1, published_sha1))
 
     def checkComponentAndSection(self):
         """See IPackageUploadSource."""
