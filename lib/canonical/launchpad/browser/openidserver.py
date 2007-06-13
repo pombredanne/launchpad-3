@@ -175,8 +175,7 @@ class OpenIDMixinView:
         unsuccessful checkid requests.
         """
         assert self.openid_request is not None
-        response = self.openid_request.answer(
-            False, allvhosts.configs['openid'].rooturl)
+        response = self.openid_request.answer(False, self.server_url)
         return response
 
 
