@@ -595,6 +595,8 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                 self.addError('Import has already been approved.')
 
     def isAdmin(self, action=None):
+        # The optional action parameter is so this method can be
+        # supplied as the condition argment to an @action.
         return check_permission('launchpad.Admin', self.context)
 
     @action(_('Update RCS Details'), name='update')
@@ -651,7 +653,8 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
     @action(_('Delete Import'), name='delete',
             condition=isAdmin)
     def delete_action(self, action, data):
-        self.updateContextFromData(data)
+        # No need to update the details from the submitted data when
+        # we're about to clear them all anyway.
         self.context.deleteImport()
         self.request.response.addInfoNotification(
             'Source import deleted.')
