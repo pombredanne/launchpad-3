@@ -8,73 +8,46 @@ user back to the page where (s)he was when asked to login. This form also
 allows users to create new accounts and reset the password of an existing
 account.
 
-    >>> from zope.component import getView
-    >>> from zope.interface import implements
-    >>> from canonical.launchpad.browser.openidserver import LoginServiceView
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.ftests import OpenIDLaunchpadFormHarness
+    >>> from canonical.launchpad.browser.openidserver import (
+    ...     LoginServiceLoginView, LoginServiceAuthorizeView)
     >>> from canonical.launchpad.webapp.publisher import rootObject
-    >>> from canonical.launchpad.layers import OpenIdLayer
-
-    >>> class LoginServiceRequest(LaunchpadTestRequest):
-    ...     implements(OpenIdLayer)
 
 A valid email address is required for any operation available on this form.
 
-    >>> request = LoginServiceRequest(
-    ...     form=dict(loginservice_email='foo@', loginservice_action='login'))
-    >>> request.method = 'POST'
-    >>> login_view = getView(rootObject, '+openid-new', request)
-    >>> login_view.initialize()
-    >>> html = login_view.render()
-    >>> print login_view.error_message
-    The email address you provided isn't valid... 
+    >>> harness = OpenIDLaunchpadFormHarness(
+    ...     rootObject, LoginServiceLoginView)
 
-    >>> request.form.update({'loginservice_action': 'recoverpassword'})
-    >>> login_view = getView(rootObject, '+openid-new', request)
-    >>> login_view.initialize()
-    >>> html = login_view.render()
-    >>> print login_view.error_message
-    The email address you provided isn't valid... 
+    >>> harness.submit('continue', {'field.email': 'foo@'})
+    >>> for message in harness.getFormErrors():
+    ...     print message
+    Please enter a valid email address
 
-    >>> request.form.update({'loginservice_action': 'createaccount'})
-    >>> login_view = getView(rootObject, '+openid-new', request)
-    >>> login_view.initialize()
-    >>> html = login_view.render()
-    >>> print login_view.error_message
-    The email address you provided isn't valid... 
+If the user doesn't enter the password or enters the wrong one when
+attempting to login, it'll also fail.
 
-If the user doesn't enter the password or enters the wrong one, it'll also
-fail.
-
-    >>> request.form.update(
-    ...     dict(loginservice_email='test@canonical.com',
-    ...          loginservice_action='login'))
-    >>> login_view = getView(rootObject, '+openid-new', request)
-    >>> login_view.initialize()
-    >>> html = login_view.render()
-    >>> print login_view.error_message
+    >>> harness.submit(
+    ...     'continue',
+    ...     {'field.email': 'mark@hbd.com', 'field.action': 'login'})
+    >>> for message in harness.getFormErrors():
+    ...     print message
     Please enter your passphrase.
 
-    >>> request.form.update(
-    ...     dict(loginservice_email='test@canonical.com',
-    ...          loginservice_passphrase=u't', loginservice_action='login'))
-    >>> login_view = getView(rootObject, '+openid-new', request)
-    >>> login_view.initialize()
-    >>> html = login_view.render()
-    >>> print login_view.error_message
+    >>> harness.submit(
+    ...     'continue',
+    ...     {'field.email': 'mark@hbd.com', 'field.action': 'login',
+    ...      'field.password': 'foo'})
+    >>> for message in harness.getFormErrors():
+    ...     print message
     The email address and passphrase do not match.
 
 Trying to create a new account with an email address that is registered and
 associated with a valid Launchpad account is not allowed.
 
-    >>> request.form.update(
-    ...     dict(loginservice_email='test@canonical.com',
-    ...          loginservice_action='createaccount'))
-    >>> login_view = getView(rootObject, '+openid-new', request)
-    >>> login_view.initialize()
-    >>> html = login_view.render()
-    >>> print login_view.error_message
+    >>> harness.submit('continue', {'field.email': 'test@canonical.com',
+    ...                             'field.action': 'createaccount'})
+    >>> for message in harness.getFormErrors():
+    ...     print message
     Sorry, someone has already registered the test@canonical.com email ...
 
 If the email address is associated with an invalid Launchpad account (aka
@@ -85,54 +58,28 @@ we've never heard about that email address.
     >>> EmailAddress.selectOneBy(
     ...     email='andrelop@debian.org').person.is_valid_person
     False
-    >>> request.form.update(
-    ...     dict(loginservice_email='andrelop@debian.org',
-    ...          loginservice_action='createaccount'))
-    >>> login_view = getView(rootObject, '+openid-new', request)
-    >>> login_view.initialize()
-    >>> html = login_view.render()
-    >>> print login_view.error_message
-    None
+    >>> harness.submit('continue', {'field.email': 'andrelop@debian.org',
+    ...                             'field.action': 'createaccount'})
+    >>> print harness.getFormErrors()
+    []
 
 To recover the password of an existing account we obviously require a
 registered email address which doesn't belong to a team.
 
-    >>> request.form.update(
-    ...     dict(loginservice_email='andrelop22@debian.org',
-    ...          loginservice_action='recoverpassword'))
-    >>> login_view = getView(rootObject, '+openid-new', request)
-    >>> login_view.initialize()
-    >>> html = login_view.render()
-    >>> print login_view.error_message
+    >>> harness.submit('continue', {'field.email': 'nobody@debian.org',
+    ...                             'field.action': 'resetpassword'})
+    >>> for message in harness.getFormErrors():
+    ...     print message
     Your account details have not been found...
 
-    >>> request.form.update(
-    ...     dict(loginservice_email='support@ubuntu.com', 
-    ...          loginservice_action='recoverpassword'))
-    >>> login_view = getView(rootObject, '+openid-new', request)
-    >>> login_view.initialize()
-    >>> html = login_view.render()
-    >>> print login_view.error_message
+    >>> harness.submit('continue', {'field.email': 'support@ubuntu.com',
+    ...                             'field.action': 'resetpassword'})
+    >>> for message in harness.getFormErrors():
+    ...     print message
     The email address ... belongs to a team, and teams cannot log in.
 
-    >>> request.form.update(
-    ...     dict(loginservice_email='andrelop@debian.org', 
-    ...          loginservice_action='recoverpassword'))
-    >>> login_view = getView(rootObject, '+openid-new', request)
-    >>> login_view.initialize()
-    >>> html = login_view.render()
-    >>> print login_view.error_message
-    None
-
-In order to preserve query arguments passed through the URL we have the
-preserve_query() method which scans the request's form for parameters not
-included in the HTML form and generates hidden inputs for them.
-
-    >>> request.form.update(dict(foo='bar', bar='baz'))
-    >>> login_view = getView(rootObject, '+openid-new', request)
-    >>> login_view.initialize()
-    >>> html = login_view.render()
-    >>> print login_view.preserve_query()
-    <input type="hidden" name="bar" value="baz" />
-    <input type="hidden" name="foo" value="bar" />
+    >>> harness.submit('continue', {'field.email': 'andrelop@debian.org',
+    ...                             'field.action': 'resetpassword'})
+    >>> print harness.getFormErrors()
+    []
 

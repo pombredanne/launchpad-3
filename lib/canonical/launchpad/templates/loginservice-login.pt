@@ -27,34 +27,9 @@
           <label>Do you have a Launchpad passphrase?</label>
         </div>
         <div>
+          <tal:widget replace="structure view/widgets/action" />
           <tal:widget replace="structure view/widgets/password" />
         </div>
-        <!--
-        <div>
-          <label>
-            <input type="radio" value="createaccount"
-                   tal:attributes="name view/input_action">
-            No, I want to create an account now
-          </label>
-        </div>
-        <div>
-          <label>
-            <input type="radio" value="login" checked="true"
-                   tal:attributes="name view/input_action">
-            Yes, my passphrase is:
-          </label>
-        </div>
-        <div>
-          <input type="password" tal:attributes="name view/input_passphrase" />
-        </div>
-        <div>
-          <label>
-            <input type="radio" value="recoverpassword"
-                   tal:attributes="name view/input_action">
-            I've forgotten my passphrase
-          </label>
-        </div>
-        -->
 
         <br />
         <div>

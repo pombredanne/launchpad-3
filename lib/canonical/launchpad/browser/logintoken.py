@@ -199,10 +199,6 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
                 "The email address you provided didn't match the address "
                 "you provided when requesting the password reset."))
 
-    @property
-    def next_url(self):
-        return canonical_url(self.context.requester)
-
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         """Reset the user's password. When password is successfully changed,
@@ -235,6 +231,7 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         if self.request.form.get('logmein'):
             self.logInPersonByEmail(self.context.email)
 
+        self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(
             _('Your password has been reset successfully'))
 
@@ -583,19 +580,20 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         if not self.redirectIfInvalidOrConsumedToken():
             return LaunchpadFormView.render(self)
 
-#     @property
-#     def next_url(self):
-#         if self.context.redirection_url:
-#             return self.context.redirection_url
-#         elif self.user is not None:
-#             # User is logged in, redirect to his home page.
-#             return canonical_url(self.user)
-#         elif self.created_person is not None:
-#             # User is not logged in, redirect to the created person's home
-#             # page.
-#             return canonical_url(self.created_person)
-#         else:
-#             return None
+    # Use a method to set self.next_url rather than a property because we
+    # want to override self.next_url in a subclass of this.
+    def setNextUrl(self):
+        if self.context.redirection_url:
+            self.next_url = self.context.redirection_url
+        elif self.user is not None:
+            # User is logged in, redirect to his home page.
+            self.next_url = canonical_url(self.user)
+        elif self.created_person is not None:
+            # User is not logged in, redirect to the created person's home
+            # page.
+            self.next_url = canonical_url(self.created_person)
+        else:
+            self.next_url = None
 
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""
@@ -649,6 +647,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         self.logInPersonByEmail(email.email)
         self.request.response.addInfoNotification(_(
             "Registration completed successfully"))
+        self.setNextUrl()
 
     def _getCreationRationale(self):
         """Return the creation rationale that should be used for this person.

@@ -33,13 +33,13 @@ from canonical.launchpad.browser.logintoken import (
     NewAccountView, ResetPasswordView)
 from canonical.launchpad.interfaces import (
         IEmailAddressSet, ILaunchBag, ILaunchpadOpenIdStoreFactory,
-        ILoginServiceAuthorizeForm, ILoginServiceLoginForm,
+        ILoginServiceAuthorizeForm, ILoginServiceLoginForm, ILoginTokenSet,
         IOpenIdApplication, IOpenIdAuthorizationSet, IPersonSet,
         NotFoundError, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView, LaunchpadView)
+    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp.login import logInPerson
@@ -47,6 +47,7 @@ from canonical.launchpad.webapp.publisher import (
         stepthrough, Navigation, RedirectionView)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
 
 SESSION_PKG_KEY = 'OpenID'
@@ -93,19 +94,18 @@ class OpenIDMixinView:
             del session[key]
 
     def restoreRequestFromSession(self, key):
-        """Get the OpenIDRequest from our session using the nonce in the
-        request.
-        """
+        """Get the OpenIDRequest from our session using the given key."""
         session = self.getSession()
         try:
             timestamp, self.openid_request = session[key]
         except LookupError:
             raise UnexpectedFormData("Invalid or expired nonce")
 
-        assert zisinstance(self.openid_request, CheckIDRequest), \
-                'Invalid OpenIDRequest in session'
+        assert zisinstance(self.openid_request, CheckIDRequest), (
+            'Invalid OpenIDRequest in session')
 
     def saveRequestInSession(self, key):
+        """Save the OpenIDRequest in our session using the given key."""
         session = self.getSession()
         # We also store the time with the openid_request so we can clear
         # out old requests after some time, say 1 hour.
@@ -116,9 +116,7 @@ class OpenIDMixinView:
         session[key] = (now, self.openid_request)
 
     def trashRequestInSession(self, key):
-        """Remove the OpenIdRequest from the session using the nonce in the
-        request.
-        """
+        """Remove the OpenIdRequest from the session using the given key."""
         session = self.getSession()
         try:
             del session[key]
@@ -196,18 +194,9 @@ class LoginServiceNewAccountView(OpenIDMixinView, NewAccountView):
         data['hide_email_addresses'] = True
         super(LoginServiceNewAccountView, self).continue_action.success(data)
 
-        session = self.getSession()
-        self.openid_request = session.get('token' + self.context.token)
-        if self.openid_request is not None:
-            # XXX: Can't override self.next_url. Probably because it's a
-            # property on NewAccountView. What can I do?
-            #self.next_url = None
-            response = self.createPositiveResponse()
-            self.render = lambda : self.renderOpenIdResponse(response)
-
-            auth_set = getUtility(IOpenIdAuthorizationSet)
-            auth_set.authorize(
-                self.user, self.openid_request.trust_root, expires=None)
+        self.restoreRequestFromSession('token' + self.context.token)
+        self.next_url = None
+        return self.renderOpenIdResponse(self.createPositiveResponse())
 
 
 class LoginServiceResetPasswordView(OpenIDMixinView, ResetPasswordView):
@@ -220,16 +209,9 @@ class LoginServiceResetPasswordView(OpenIDMixinView, ResetPasswordView):
         super(LoginServiceResetPasswordView, self).continue_action.success(
             data)
 
-        session = self.getSession()
-        self.openid_request = session.get('token' + self.context.token)
-        if self.openid_request is not None:
-            self.next_url = None
-            response = self.createPositiveResponse()
-            self.render = lambda : self.renderOpenIdResponse(response)
-
-            auth_set = getUtility(IOpenIdAuthorizationSet)
-            auth_set.authorize(
-                self.user, self.openid_request.trust_root, expires=None)
+        self.restoreRequestFromSession('token' + self.context.token)
+        self.next_url = None
+        return self.renderOpenIdResponse(self.createPositiveResponse())
 
 
 class OpenIdView(OpenIDMixinView, LaunchpadView):
@@ -346,6 +328,7 @@ class LoginServiceBaseView(OpenIDMixinView, LaunchpadFormView):
     def initial_values(self):
         return {'nonce': self.nonce}
 
+    # XXX: This needs a better name!
     def _getRequest(self, data, trash=True):
         if 'nonce' not in data:
             raise UnexpectedFormData('No nonce found')
@@ -356,6 +339,7 @@ class LoginServiceBaseView(OpenIDMixinView, LaunchpadFormView):
 
 
 class LoginServiceAuthorizeView(LoginServiceBaseView):
+
     schema = ILoginServiceAuthorizeForm
     template = ViewPageTemplateFile(
         "../templates/loginservice-allow-relying-party.pt")
@@ -370,29 +354,74 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         self._getRequest(data)
         return self.renderOpenIdResponse(self.createFailedResponse())
 
+    def logout(self):
+        # Log the user out and render the login page again.
+        session = ISession(self.request)
+        authdata = session['launchpad.authenticateduser']
+        previous_login = authdata.get('personid')
+        assert previous_login is not None, "User is not logged in."
+        authdata['personid'] = None
+        authdata['logintime'] = datetime.utcnow()
+        notify(LoggedOutEvent(self.request))
+        return self.login_template()
+
 
 class LoginServiceLoginView(LoginServiceBaseView):
+
     schema = ILoginServiceLoginForm
-    template = ViewPageTemplateFile(
-        "../templates/loginservice-login.pt")
+    template = ViewPageTemplateFile("../templates/loginservice-login.pt")
+    custom_widget('action', LaunchpadRadioWidget)
+
+    @property
+    def initial_values(self):
+        values = super(LoginServiceLoginView, self).initial_values
+        values.update(dict(action='login'))
+        return values
 
     def validate(self, data):
         email = data.get('email')
+        action = data.get('action')
         password = data.get('password')
+        person = getUtility(IPersonSet).getByEmail(email)
         if not (email is not None and valid_email(email)):
             self.addError('Please enter a valid email address')
             return
-        # XXX: 2007-06-13 jamesh
-        # This should be dependent on whether we are actually logging
-        # in rather than creating an account or resetting the password.
-        if password is not None:
-            if valid_password(password):
-                self.validateEmailAndPassword(email, password)
+
+        if action == 'login':
+            if password is not None:
+                if valid_password(password):
+                    self.validateEmailAndPassword(email, password)
+                else:
+                    self.addError(_("The passphrase provided contains "
+                                    "non-ASCII characters."))
             else:
+                self.addError(_("Please enter your passphrase."))
+        elif action == 'resetpassword':
+            if person is None:
                 self.addError(_(
-                    "The passphrase provided contains non-ASCII characters."))
+                    "Your account details have not been found. Please "
+                    "check your subscription email address and try again."))
+            elif person.isTeam():
+                # XXX: This doesn't make any sense to non-Launchpad users. What
+                # can we do about it? -- Guilherme Salgado, 2007-06-13
+                self.addError(_(
+                    "The email address <strong>%s</strong> belongs to a team, "
+                    "and teams cannot log in." % email))
+        elif action == 'createaccount':
+            if person is not None and person.is_valid_person:
+                self.addError(_(
+                    "Sorry, someone has already registered the %s email "
+                    "address.  If this is you and you've forgotten your "
+                    "passphrase, just choose the 'I've forgotten my "
+                    "passphrase' option below and we'll allow you to "
+                    "change it." % cgi.escape(email)))
+            else:
+                # This is either an email address we've never seen or it's 
+                # associated with an unvalidated profile, so we just move
+                # on with the registration process as if we had never seen it.
+                pass
         else:
-            self.addError(_("Please enter your passphrase."))
+            raise UnexpectedFormData("Unknown action.")
 
     def validateEmailAndPassword(self, email, password):
         """Check that the email address and password are valid for login."""
@@ -425,266 +454,40 @@ class LoginServiceLoginView(LoginServiceBaseView):
     @action('Continue', name='continue')
     def continue_action(self, action, data):
         email = data['email']
-        password = data['password']
-        loginsource = getUtility(IPlacelessLoginSource)
-        principal = loginsource.getPrincipalByLogin(email)
-        logInPerson(self.request, principal, email)
-
+        action = data['action']
         self._getRequest(data)
-        return self.renderOpenIdResponse(self.createPositiveResponse())
-
-
-# XXX: 2007-06-13 jamesh
-# The remaining useful stuff here should be subsumed into
-# LoginServiceLoginView above.
-
-class LoginServiceView(OpenIdView):
-
-    # Names used in the template's HTML form.
-    form_prefix = 'loginservice_'
-    submit_continue = form_prefix + 'submit_continue'
-    submit_allow = form_prefix + 'submit_allow'
-    submit_logout = form_prefix + 'submit_logout'
-    input_action = form_prefix + 'action'
-    input_email = form_prefix + 'email'
-    input_passphrase = form_prefix + 'passphrase'
-
-    decide_template = ViewPageTemplateFile(
-        "../templates/loginservice-allow-relying-party.pt")
-    login_template = ViewPageTemplateFile(
-        "../templates/loginservice-login.pt")
-
-    token = None
-    openid_relyingparty_name = 'foo' # XXX: Fixme
-    error_message = None
-    notification_message = None
-    redirection_url = None
-
-    # XXX: Evil hack warning!
-    def getPersonNameByIdentity(self, identity):
-        return getattr(self.user, 'name', None)
-
-    def render(self):
-        """Handle all OpenId requests and form submissions
-
-        Returns the page contents after setting all relevant headers in
-        self.request.response
-        """
-        # Extract the OpenIDRequest from the request, converting our Unicode
-        # arguments Z3 gives us back to ASCII so the error messages the OpenID
-        # library gives us are nicer (it relies on repr()).
-        args = {}
-        for key, value in self.request.form.items():
-            if key.startswith('openid.'):
-                args[key.encode('US-ASCII')] = value.encode('US-ASCII')
-        # NB: Will be None if there are no parameters in the request.
-        self.openid_request = self.openid_server.decodeRequest(args)
-
-        if 'nonce' in self.request.form:
-            self.restoreSessionOpenIdRequest()
-
-        if self.user is not None:
-            # User is already authenticated
-            if self.openid_request is None:
-                # XXX: No OpenID involved, so just display a page saying the user
-                # is already logged in.
-                # XXX: Or maybe just redirect the user back to the HTTP
-                # referrer?
-                return
-            elif self.isAuthorized():
-                return self.renderOpenIdResponse(self.createPositiveResponse())
-            elif self.submit_allow in self.request.form:
-                return self.renderOpenIdResponse(self.allow())
-            elif self.submit_logout in self.request.form:
-                # Log the user out and render the login page again.
-                session = ISession(self.request)
-                authdata = session['launchpad.authenticateduser']
-                previous_login = authdata.get('personid')
-                assert previous_login is not None, "User is not logged in."
-                authdata['personid'] = None
-                authdata['logintime'] = datetime.utcnow()
-                notify(LoggedOutEvent(self.request))
-                return self.login_template()
-            else:
-                return self.showDecidePage()
-
-        else:
-            # User not yet authenticated.
-            if self.request.method != "POST":
-                self.storeOpenIdRequestInSession()
-                return self.login_template()
-
-            return self.process_main_form()
-
-    def isAuthorized(self):
-        """Check if the identity is authorized for the trust_root"""
-        assert self.user is not None
-
-        client_id = getUtility(IClientIdManager).getClientId(self.request)
-        auth_set = getUtility(IOpenIdAuthorizationSet)
-        return auth_set.isAuthorized(
-            self.user, self.openid_request.trust_root, client_id)
-
-    def process_main_form(self):
-        request = self.request
-        email = request.form.get(self.input_email, "").strip()
-        if not email:
-            self.error_message = _(
-                "You need to provide an email address to procede.")
-            return self.login_template()
-        elif not valid_email(email):
-            self.error_message = _(
-                "The email address you provided isn't valid. "
-                "Please verify it and try again.")
-            return self.login_template()
-        else:
-            # Given email address is valid; procede
-            pass
-
-        action = request.form.get(self.input_action)
         if action == 'login':
-            return self.process_login(email)
+            password = data['password']
+            loginsource = getUtility(IPlacelessLoginSource)
+            principal = loginsource.getPrincipalByLogin(email)
+            logInPerson(self.request, principal, email)
+            return self.renderOpenIdResponse(self.createPositiveResponse())
+        elif action == 'resetpassword':
+            return self.process_password_recovery(email)
         elif action == 'createaccount':
             return self.process_registration(email)
-        elif action == 'recoverpassword':
-            return self.process_password_recovery(email)
         else:
-            raise UnexpectedFormData("Unknown action")
-
-    def process_login(self, email):
-        password = self.request.form.get(self.input_passphrase)
-        if not password:
-            self.error_message = _("Please enter your passphrase.")
-            return
-        elif not valid_password(password):
-            self.error_message = _(
-                "The passphrase provided contains non-ASCII characters.")
-            return self.login_template()
-        else:
-            # Password is valid, procede.
-            pass
-
-        loginsource = getUtility(IPlacelessLoginSource)
-        principal = loginsource.getPrincipalByLogin(email)
-        if principal is not None and principal.validate(password):
-            person = getUtility(IPersonSet).getByEmail(email)
-            if person.preferredemail is None:
-                self.error_message = _(
-                    "The email address '%s' has not yet been confirmed. We "
-                    "sent an email to that address with instructions on how "
-                    "to confirm that it belongs to you." % email)
-                self.token = getUtility(ILoginTokenSet).new(
-                    person, email, email, LoginTokenType.VALIDATEEMAIL)
-                self.token.sendEmailValidationRequest(
-                    self.request.getApplicationURL())
-                # XXX: Need to use the token to store the openid request in
-                # the session here as well.
-                return self.login_template()
-
-            if person.is_valid_person:
-                logInPerson(self.request, principal, email)
-                if self.openid_request is not None:
-                    return self.renderOpenIdResponse(
-                        self.createPositiveResponse())
-                else:
-                    # XXX: Redirect to launchpad.net for now.
-                    # -- Guilherme Salgado, 2007-06-12
-                    self.request.response.redirect('https://launchpad.net')
-                    return
-            else:
-                # Normally invalid accounts will have a NULL password
-                # so this will be rarely seen, if ever. An account with no
-                # valid email addresses might end up in this situation,
-                # such as having them flagged as OLD by a email bounce
-                # processor or manual changes by the DBA.
-                self.error_message = _("This account cannot be used.")
-                return self.login_template()
-        else:
-            self.error_message = _(
-                "The email address and passphrase do not match.")
-            return self.login_template()
+            raise UnexpectedFormData("Unknown action.")
 
     def process_registration(self, email):
-        person = getUtility(IPersonSet).getByEmail(email)
-        if person is not None:
-            if person.is_valid_person:
-                self.error_message = _(
-                    "Sorry, someone has already registered the %s email "
-                    "address.  If this is you and you've forgotten your "
-                    "passphrase, just choose the 'I've forgotten my "
-                    "passphrase' option below and we'll allow you to change "
-                    "it." % cgi.escape(email))
-                return self.login_template()
-            else:
-                # This is an unvalidated profile; let's move on with the
-                # registration process as if we had never seen it.
-                pass
-
         logintokenset = getUtility(ILoginTokenSet)
         self.token = logintokenset.new(
             requester=None, requesteremail=None, email=email,
-            tokentype=LoginTokenType.NEWACCOUNT,
-            redirection_url=self.redirection_url)
+            tokentype=LoginTokenType.NEWACCOUNT)
         self.token.sendNewUserEmail()
-        self.restoreSessionOpenIdRequest()
-        self.getSession()['token' + self.token.token] = self.openid_request
+        self.saveRequestInSession('token' + self.token.token)
         # XXX: Fixme
         return u"Check your email"
 
     def process_password_recovery(self, email):
-        request = self.request
         person = getUtility(IPersonSet).getByEmail(email)
-        if person is None:
-            self.error_message = _(
-                "Your account details have not been found. Please check your "
-                "subscription email address and try again.")
-            return self.login_template()
-
-        # XXX: This doesn't make any sense to non-Launchpad users. What can
-        # we do about it?
-        if person.isTeam():
-            self.error_message = _(
-                "The email address <strong>%s</strong> belongs to a team, "
-                "and teams cannot log in." % email)
-            return self.login_template()
-
         logintokenset = getUtility(ILoginTokenSet)
         self.token = logintokenset.new(
             person, email, email, LoginTokenType.PASSWORDRECOVERY)
         self.token.sendPasswordResetEmail()
-        self.restoreSessionOpenIdRequest()
-        self.getSession()['token' + self.token.token] = self.openid_request
+        self.saveRequestInSession('token' + self.token.token)
         # XXX: Fixme
         return u"Check your email"
-
-    def iter_form_items(self):
-        """Iterate over keys and single values, excluding stuff we don't
-        want such as '-C' and things starting with self.form_prefix.
-        """
-        for name, value in self.request.form.items():
-            # XXX: Exclude '-C' because this is left in from sys.argv in Zope3
-            #      using python's cgi.FieldStorage to process requests.
-            # -- SteveAlexander, 2005-04-11
-            if name == '-C' or name == 'loggingout':
-                continue
-            if name.startswith(self.form_prefix):
-                continue
-            if isinstance(value, list):
-                value_list = value
-            else:
-                value_list = [value]
-            for value_list_item in value_list:
-                yield (name, value_list_item)
-
-    def preserve_query(self):
-        """Returns zero or more hidden inputs that preserve the URL's query."""
-        L = []
-        for name, value in self.iter_form_items():
-            L.append('<input type="hidden" name="%s" value="%s" />' % (
-                name, cgi.escape(value, quote=True)
-                ))
-
-        return '\n'.join(L)
 
 
 class OpenIdApplicationNavigation(Navigation):
@@ -699,6 +502,12 @@ class OpenIdApplicationNavigation(Navigation):
             return None
     
     def traverse(self, name):
+        # We need to traverse the 'token' namespace in order to allow people
+        # to create new accounts and reset their passwords. This can't clash
+        # with a person's name because it's a blacklisted name.
+        if name == 'token':
+            return getUtility(ILoginTokenSet)
+
         # Provide a permanent OpenID identity for use by the Ubuntu shop
         # or other services that cannot cope with name changes.
         person = getUtility(IPersonSet).getByName(name)
