@@ -4003,7 +4003,6 @@ INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (64, 52, 1, 693, '2005-08-29 16:16:58.010285');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (65, 56, 31, 702, '2007-01-05 13:04:20.092506');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (66, 66, 30, 701, '2006-12-13 21:19:06.369142');
-INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (67, 13, 33, 708, '2007-04-07 11:09:37.437343');
 
 
 ALTER TABLE pofiletranslator ENABLE TRIGGER ALL;
@@ -6052,8 +6051,6 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (705, 752, 0, 659, 2, '2007-01-24 19:15:32.620698', 13, 1, false, false);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (706, 752, 0, 662, 2, '2007-01-24 19:15:47.546879', 13, 1, false, false);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (707, 753, 0, 663, 2, '2007-04-07 10:14:36.267119', 13, 1, true, false);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (708, 755, 0, 664, 2, '2007-04-07 10:14:36.267119', 13, 1, true, false);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (709, 755, 0, 665, 2, '2007-04-07 11:08:56.339275', 13, 1, false, false);
 
 
 ALTER TABLE posubmission ENABLE TRIGGER ALL;
