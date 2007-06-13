@@ -957,6 +957,7 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .boardCommentContent { line-height: 1.5em;}
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
+.fold {color: #324c7f; cursor: hand; cursor: pointer;}
 
 /* --- Overview --- */
 

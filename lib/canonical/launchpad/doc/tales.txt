@@ -175,17 +175,16 @@ to hide them:
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
     <p>Somebody said sometime ago:<br />
-    <span><span class="fold">[...]</span><span class="foldable"...>
+    <span class="fold">[...]</span><span class="foldable"...><br />
     &gt; 1. Remove the letters  c, j, q, x, w<br />
     &gt;    from the English Language.<br />
     &gt; 2. Remove the penny from US currency.
-    </span></span></p>
-    <div><span class="fold">[...]</span><div class="foldable"...>
-    <p>--<br />
+    </span></p>
+    <p><span class="fold">[...]</span><span class="foldable"...><br />--<br />
     __C U R T I S  C.  H O V E Y_______<br />
     sinzui.<wbr></wbr>is@somewhere.<wbr></wbr>org<br />
-    Guilty of stealing everything I am.</p>
-    </div></div>
+    Guilty of stealing everything I am.
+    </span></p>
 
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([text, signature]))
@@ -193,12 +192,11 @@ to hide them:
     The words of the leading text should be displayed<br />
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
-    <div><span class="fold">[...]</span><div class="foldable"...>
-    <p>--<br />
+    <p><span class="fold">[...]</span><span class="foldable"...><br />--<br />
     __C U R T I S  C.  H O V E Y_______<br />
     sinzui.<wbr></wbr>is@somewhere.<wbr></wbr>org<br />
-    Guilty of stealing everything I am.</p>
-    </div></div>
+    Guilty of stealing everything I am.
+    </span></p>
 
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([text, quoted_text]))
@@ -207,11 +205,11 @@ to hide them:
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
     <p>Somebody said sometime ago:<br />
-    <span><span class="fold">[...]</span><span class="foldable"...>
+    <span class="fold">[...]</span><span class="foldable"...><br />
     &gt; 1. Remove the letters  c, j, q, x, w<br />
     &gt;    from the English Language.<br />
     &gt; 2. Remove the penny from US currency.
-    </span></span></p>
+    </span></p>
 
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo=text)

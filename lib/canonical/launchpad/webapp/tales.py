@@ -1378,25 +1378,23 @@ class FormattersAPI:
 
     def email_to_html(self):
         """text_to_html and hide signatures and full-quoted emails."""
+        start_fold_markup = ('<span class="fold">[...]</span>'
+                             '<span class="foldable" style="display: none;">'
+                             '<br />')
+        end_fold_markup = '%s\n</span></p>'
         output = []
-        fold_markup = ('<%(tag)s><span class="fold">[...]</span>'
-                       '<%(tag)s  class="foldable" style="display: none;">')
-        signature = False
-        quoted = False
+        in_fold = False
         for line in self.text_to_html().split('\n'):
-            if not signature and line.startswith('<p>--<br />'):
-                signature = True
-                output.append(fold_markup % {'tag' : 'div'})
-            if not quoted and self._re_quoted.match(line) is not None:
-                quoted = True
-                output.append(fold_markup % {'tag' : 'span'})
-            if quoted and line.endswith('</p>'):
-                quoted = False
-                line = '%s\n</span></span></p>' % line[0:-4]
+            if not in_fold and line.startswith('<p>--<br />'):
+                in_fold = True
+                line = '<p>%s%s' % (start_fold_markup, line[3:])
+            elif not in_fold and self._re_quoted.match(line) is not None:
+                in_fold = True
+                output.append(start_fold_markup)
+            elif in_fold and line.endswith('</p>'):
+                in_fold = False
+                line = end_fold_markup % line[0:-4]
             output.append(line)
-            if signature and line.endswith('</p>'):
-                signature = False
-                output.append('</div></div>')
         return '\n'.join(output)
 
     _re_email = re.compile(r'\b[\w.-]+\@'
