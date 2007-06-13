@@ -75,7 +75,6 @@ the clear text instructions contain the expected URLs pointing to more help.
   Thanks,
   <BLANKLINE>
   The Launchpad Team
-  launchpad@ubuntu.com
 
   >>> from canonical.launchpad.webapp.interaction import setupInteraction
   >>> setupInteraction(None)

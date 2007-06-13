@@ -8,7 +8,8 @@
         rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
         icingroot string:${rooturl}+icing/rev${icingrev};
         site_message modules/canonical.config/config/launchpad/site_message;
-        devmode modules/canonical.config/config/devmode">
+        devmode modules/canonical.config/config/devmode;
+        is_demo modules/canonical.config/config/launchpad/is_demo">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->
@@ -22,13 +23,13 @@
       media="screen, print"
       tal:condition="devmode"
       tal:content="string:@import url(${icingroot}/style.css);"/>
-    <style
-      tal:define="dbname modules/canonical.config/config/dbname"
-      tal:condition="python: False and dbname!='launchpad_prod'"
-      type="text/css"
+    <style tal:condition="is_demo" type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
     <style tal:condition="not: site_message" type="text/css"
     >#help_panel {top: 28px !important;}</style>
+    <!--[if IE 7]>
+      <style type="text/css">#portlets {left: 20px;}</style>
+    <![endif]-->
 
     <tal:comment condition="nothing">
       This CSS collapses portlets and the contents of collapsible fieldsets,
@@ -192,11 +193,18 @@
                           </tal:facet>
                         </ul>
                       </tal:applicationtabs>
-                      <br class="clear" />
+                      <!-- this br is conditional so that it does not show
+                           on applicationhomes, where it causes a large
+                           white space at the top of the page content area
+                           -->
+                      <br class="clear"
+                          tal:condition="view/macro:pagehas/pageheading"/>
                       <div id="container">
                         <div id="maincontent">
-                          <div class="pageheading"><!-- XXX obsolete -->
+                           <div class="pageheading"
+                                tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
+                              <!-- XXX obsolete -->
                             </metal:block>
                           </div>
                           <tal:notifications
@@ -266,13 +274,16 @@
           <a href="/faq">FAQ</a>
         </div>
         <div id="copyright">
-          Copyright&nbsp;2004-2007&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
-          <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
+            Copyright&nbsp;2004-2007&nbsp;<a
+                href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+          <tal:block
+              define="revno modules/canonical.launchpad.versioninfo/revno">
               | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
           </tal:block>
           <tal:devmode condition="devmode">| DEVMODE</tal:devmode>
+          <tal:demo condition="is_demo">| DEMO</tal:demo>
         </div>
         <ul style="clear: both; margin-top:20px;" tal:condition="nothing">
             <li>Facet name:

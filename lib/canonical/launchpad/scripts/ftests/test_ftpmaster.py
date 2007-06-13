@@ -85,7 +85,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             component_name='main', section_name='base', priority_name='extra')
         changer.initialize()
         self.assertEqual(self.ubuntu, changer.distro)
-        self.assertEqual(self.hoary, changer.distrorelease)
+        self.assertEqual(self.hoary, changer.distroseries)
         self.assertEqual(PackagePublishingPocket.RELEASE, changer.pocket)
         self.assertEqual(self.component_main, changer.component)
         self.assertEqual(self.section_base, changer.section)
@@ -166,7 +166,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
     def test_initialize_full_suite(self):
         """ArchiveOverrider accepts full suite name.
 
-        It split suite name into 'distrorelease' and 'pocket' attributes after
+        It split suite name into 'distroseries' and 'pocket' attributes after
         initialize().
         """
         # XXX cprov 20060424: change-override API doesn't handle pockets
@@ -222,7 +222,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         """Check processSourceChange method call.
 
         It simply wraps changeOverride method on
-        IDistroreleaseSourcePackageRelease, which is already tested in place.
+        IDistroSeriesSourcePackageRelease, which is already tested in place.
         Inspect the log to verify if the correct source was picked and correct
         arguments was passed.
         """
@@ -259,7 +259,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         """Check processBinaryChange() method call.
 
         It simply wraps changeOverride method on
-        IDistroArchReleaseBinaryPackage, which is already tested in place.
+        IDistroArchSeriesBinaryPackage, which is already tested in place.
         Inspect the log messages, check if the correct binary was picked
         and correct argument was passed.
         """
@@ -307,16 +307,16 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base',
-            priority_name='important')
+            priority_name='extra')
         changer.initialize()
         changer.processChildrenChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'IMPORTANT'\n"
+            "INFO: Override Priority to: 'EXTRA'\n"
             "ERROR: 'mozilla-firefox' binary isn't published in warty/hppa\n"
-            "INFO: 'mozilla-firefox/main/base/EXTRA' "
+            "INFO: 'mozilla-firefox/main/base/IMPORTANT' "
                 "binary overridden in warty/i386")
 
     def test_processChildrenChange_error(self):
@@ -370,7 +370,7 @@ class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
             archive_path=self.archive_path)
         checker.initialize()
         self.assertEqual(self.ubuntutest, checker.distro)
-        self.assertEqual(self.breezy_autotest, checker.distrorelease)
+        self.assertEqual(self.breezy_autotest, checker.distroseries)
         self.assertEqual(PackagePublishingPocket.RELEASE, checker.pocket)
         self.assertEqual(0, len(checker.nbs_to_remove))
         self.assertEqual(0, len(checker.real_nbs))

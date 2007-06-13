@@ -347,7 +347,7 @@ class ObjectFormatterAPI:
 
 class ObjectImageDisplayAPI:
     """Base class for producing the HTML that presents objects
-    as an icon, a logo or a mugshot.
+    as an icon, a logo, a mugshot or a set of badges.
     """
 
     def __init__(self, context):
@@ -452,6 +452,10 @@ class ObjectImageDisplayAPI:
             </div>"""
         return mugshot % url
 
+    def badges(self):
+        raise NotImplementedError(
+            "Badge display not implemented for this item")
+
 
 class PillarSearchItemAPI(ObjectImageDisplayAPI):
     """Provides image:icon for a PillarSearchItem."""
@@ -471,11 +475,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     Used for image:icon.
     """
 
+    icon_template = (
+        '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
+
     def icon(self):
         # The icon displayed is dependent on the IBugTask.importance.
-        image_template = (
-            '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
-
         if self._context.importance:
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
@@ -490,12 +494,28 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
             title = ""
             src = "/@@/bug"
 
-        icon = image_template % (alt, title, src)
+        return self.icon_template % (alt, title, src)
 
+
+    def badges(self):
+
+        badges = ''
         if self._context.bug.private:
-            icon += image_template % ("", "Private", "/@@/locked")
+            badges += self.icon_template % ("private", "Private", "/@@/locked")
 
-        return icon
+        if self._context.bug.mentoring_offers.count() > 0:
+            badges += self.icon_template % (
+                "mentoring", "Mentoring offered", "/@@/mentoring")
+
+        if self._context.bug.bug_branches.count() > 0:
+            badges += self.icon_template % (
+                "branch", "Branch exists", "/@@/branch")
+
+        if self._context.bug.specifications.count() > 0:
+            badges += self.icon_template % (
+                "blueprint", "Related to a blueprint", "/@@/blueprint")
+
+        return badges
 
 
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
@@ -506,12 +526,11 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     Used for image:icon.
     """
 
+    icon_template = """
+        <img height="14" width="14" alt="%s" title="%s" src="%s" />"""
+
     def icon(self):
         # The icon displayed is dependent on the IBugTask.importance.
-        image_template = """
-            <img height="14" width="14" alt="%s" title="%s" src="%s" />
-            """
-
         if self._context.priority:
             priority = self._context.priority.title.lower()
             alt = "(%s)" % priority
@@ -528,9 +547,26 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
             title = ""
             src = "/@@/blueprint"
 
-        icon = image_template % (alt, title, src)
+        return self.icon_template % (alt, title, src)
 
-        return icon
+
+    def badges(self):
+
+        badges = ''
+        if self._context.mentoring_offers.count() > 0:
+            badges += self.icon_template % (
+                "mentoring", "Mentoring offered", "/@@/mentoring")
+
+        if self._context.branch_links.count() > 0:
+            badges += self.icon_template % (
+                "branch", "Branch is available", "/@@/branch")
+
+        if self._context.informational:
+            badges += self.icon_template % (
+                "informational", "Blueprint is purely informational",
+                "/@@/info")
+
+        return badges
 
 
 class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
@@ -567,12 +603,12 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
+    icon_template = """
+        <img width="14" height="14" alt="%s" title="%s" src="%s" />
+        """
+
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
-        image_template = """
-            <img width="14" height="14" alt="%s" title="%s" src="%s" />
-            """
-
         icon_map = {
             dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
             dbschema.BuildStatus.FULLYBUILT: "/@@/build-success",
@@ -581,13 +617,14 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             dbschema.BuildStatus.SUPERSEDED: "/@@/build-superseded",
             dbschema.BuildStatus.BUILDING: "/@@/build-building",
+            dbschema.BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
             }
 
         alt = '[%s]' % self._context.buildstate.name
         title = self._context.buildstate.title
         source = icon_map[self._context.buildstate]
 
-        return image_template % (alt, title, source)
+        return self.icon_template % (alt, title, source)
 
 
 class PersonFormatterAPI(ObjectFormatterAPI):
@@ -1207,6 +1244,14 @@ class FormattersAPI:
     # Some allowed URI punctuation characters will be trimmed if they
     # appear at the end of the URI since they may be incidental in the
     # flow of the text.
+    #
+    # apport has at one time produced query strings containing sqaure
+    # braces (that are not percent-encoded). In RFC 2986 they seem to be
+    # allowed by section 2.2 "Reserved Characters", yet section 3.4
+    # "Query" appears to provide a strict definition of the query string
+    # that would forbid square braces. Either way, links with
+    # non-percent-encoded square braces are being used on Launchpad so
+    # it's probably best to accomodate them.
 
     # Match urls or bugs or oopses.
     _re_linkify = re.compile(r'''
@@ -1244,7 +1289,7 @@ class FormattersAPI:
         )
         (?: # query
           \?
-          [%(unreserved)s:@/\?]*
+          [%(unreserved)s:@/\?\[\]]*
         )?
         (?: # fragment
           \#
@@ -1388,6 +1433,7 @@ class PageMacroDispatcher:
         view/macro:pagehas/applicationbuttons
         view/macro:pagehas/globalsearch
         view/macro:pagehas/heading
+        view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
         view/macro:pagehas/structuralheaderobject
 
@@ -1450,6 +1496,7 @@ class PageMacroDispatcher:
             applicationbuttons=False,
             globalsearch=False,
             heading=False,
+            pageheading=True,
             portlets=False,
             structuralheaderobject=False,
             pagetypewasset=True
@@ -1462,8 +1509,8 @@ class PageMacroDispatcher:
     _pagetypes = {
         'unset':
             LayoutElements(
-                applicationtabs=True,
                 applicationborder=True,
+                applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
                 structuralheaderobject=True,
@@ -1479,6 +1526,7 @@ class PageMacroDispatcher:
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                pageheading=False,
                 globalsearch=False,
                 heading=True),
         'pillarindex':
@@ -1487,6 +1535,7 @@ class PageMacroDispatcher:
                 applicationbuttons=True,
                 globalsearch=False,
                 heading=True,
+                pageheading=False,
                 portlets=True),
         'freeform':
             LayoutElements(),

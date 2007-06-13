@@ -48,14 +48,15 @@
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/FeatureHighlights/">
-                Read the new Feature Highlight Guide for Launchpad 1.0 (web
-                and PDF)
+              <a href="https://help.launchpad.net/MentoringManagement">
+                NEW! Mentoring management to help new contributors to your
+                project
               </a>
             </li>
             <li>
-              <a href="http://www.ubuntu.com/news/LaunchpadRelease">
-                Announcement of Launchpad 1.0 Public Beta
+              <a href="https://help.launchpad.net/FeatureHighlights/">
+                Feature Highlight Guide for Launchpad 1.0 (web
+                and PDF)
               </a>
             </li>
             <li>

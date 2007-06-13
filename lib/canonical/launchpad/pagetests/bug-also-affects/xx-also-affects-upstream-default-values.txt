@@ -20,7 +20,7 @@ then the product widget will have no initial value.
     'http://bugs.launchpad.dev/ubuntu/+source/thunderbird/+bug/8'
 
     >>> user_browser.getLink('Upstream').click()
-    >>> user_browser.getControl('Product').value
+    >>> user_browser.getControl('Project').value
     ''
 
 A notification will is shown, prompting the user to add packaging

@@ -55,12 +55,13 @@ We can also search for distribution bugs:
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
-    ...     sample_person, "Thunderbird chrashes when displaying SVG",
+    ...     sample_person, "Thunderbird crashes when displaying SVG",
     ...     distribution=ubuntu)
     >>> for bugtask in similar_bugs:
     ...     print bugtask.bug.title
-    Firefox does not support SVG
     Thunderbird crashes
+    Firefox does not support SVG
+    Blackhole Trash folder
 
 
 As well as limiting it to a specific source package:
@@ -98,6 +99,7 @@ allowed to view it, only the Thunderbird bug will be returned this time.
     >>> for bugtask in similar_bugs:
     ...     print bugtask.bug.title
     Thunderbird crashes
+    Blackhole Trash folder
 
     >>> login('test@canonical.com')
     >>> firefox_svg_bug.private = False
@@ -122,6 +124,8 @@ summary or description that match the phrase will be displayed first.
     ...     print bugtask.bug.title
     another test bug
     Thunderbird crashes
+    Firefox does not support SVG
+    Blackhole Trash folder
 
     >>> similar_bugs = getUtility(IBugTaskSet).findSimilar(
     ...     sample_person, "Another Thunderbird crash",

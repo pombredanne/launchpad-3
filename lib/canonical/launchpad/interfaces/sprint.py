@@ -167,6 +167,8 @@ class ISprintSet(Interface):
 
     title = Attribute('Title')
 
+    all = Attribute('All sprints, in reverse order of starting')
+
     def __iter__():
         """Iterate over all Sprints, in reverse time_start order."""
 

@@ -122,12 +122,12 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IProject"
-    class="canonical.launchpad.browser.SpecificationTargetView"
+    class="canonical.launchpad.browser.HasSpecificationsView"
     facet="specifications"
     permission="zope.Public">
     <browser:page
       name="+specs"
-      template="../templates/project-specs.pt" />
+      template="../templates/hasspecifications-specs.pt" />
     <browser:page
       name="+assignments"
       template="../templates/specificationtarget-assignments.pt" />
@@ -151,13 +151,12 @@
     </browser:pages>
 
     <browser:page
-        name="+new"
-        for="canonical.launchpad.interfaces.IProjectSet"
-        class="canonical.launchpad.browser.ProjectAddView"
-        facet="overview"
-        permission="launchpad.Admin"
-        template="../templates/project-add.pt"
-        />
+      name="+addspec"
+      for="canonical.launchpad.interfaces.IProject"
+      class="canonical.launchpad.browser.SpecificationNewView"
+      permission="launchpad.AnyPerson"
+      template="../templates/specification-add.pt"
+      />
 
     <browser:page
         name="+edit"
@@ -311,6 +310,15 @@
             template="../templates/projects-index.pt"
             />
     </browser:pages>
+
+    <browser:page
+      name="+new"
+      for="canonical.launchpad.interfaces.IProjectSet"
+      class="canonical.launchpad.browser.ProjectAddView"
+      facet="overview"
+      permission="launchpad.Admin"
+      template="../templates/project-add.pt"
+      />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"

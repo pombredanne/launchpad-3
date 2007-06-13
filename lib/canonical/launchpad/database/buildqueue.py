@@ -41,9 +41,9 @@ class BuildQueue(SQLBase):
         self.manual = True
 
     @property
-    def archrelease(self):
+    def archseries(self):
         """See IBuildQueue."""
-        return self.build.distroarchrelease
+        return self.build.distroarchseries
 
     @property
     def urgency(self):
@@ -94,6 +94,11 @@ class BuildQueue(SQLBase):
             return now - self.buildstart
         return None
 
+    @property
+    def is_trusted(self):
+        """See IBuildQueue"""
+        return self.build.is_trusted
+
 
 class BuildQueueSet(object):
     """See IBuildQueueSet"""
@@ -138,15 +143,15 @@ class BuildQueueSet(object):
             "buildqueue.build IN %s" % ','.join(sqlvalues(build_ids)),
             prejoins=['builder'])
 
-    def calculateCandidates(self, archreleases, state):
+    def calculateCandidates(self, archserieses, state):
         """See IBuildQueueSet."""
-        if not archreleases:
+        if not archserieses:
             # return an empty SQLResult instance to make the callsites happy.
             return BuildQueue.select("1=2")
 
-        if not isinstance(archreleases, list):
-            archrelease = [archreleases]
-        arch_ids = [d.id for d in archreleases]
+        if not isinstance(archserieses, list):
+            archseries = [archserieses]
+        arch_ids = [d.id for d in archserieses]
 
         candidates = BuildQueue.select("""
         build.distroarchrelease IN %s AND

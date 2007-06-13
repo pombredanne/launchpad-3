@@ -15,7 +15,7 @@
 
 <tal:block tal:condition="context/user_branch">
   <p>The following branch has been registered as the mainline branch
-  for this product series:</p>
+  for this release series:</p>
 
   <ul class="branch"
       tal:content="structure context/user_branch/@@+product-summary-listing" />
@@ -23,13 +23,8 @@
 
 <tal:block tal:condition="context/rcstype">
 
-  <table class="listing">
-    <thead class="lesser">
-      <tr>
-        <th colspan="2">Revision Control</th>
-      </tr>
-    </thead>
-    <tbody class="lesser">
+  <table>
+    <tbody>
         <tal:block condition="context/rcstype/enumvalue:CVS">
           <tr>
             <th>CVS</th>

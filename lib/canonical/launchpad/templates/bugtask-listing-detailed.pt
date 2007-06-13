@@ -6,6 +6,7 @@
       <a tal:attributes="href context/fmt:url"
          tal:content="context/bug/title">Bug Title Here
       </a>
+      <tal:badges replace="structure context/image:badges" />
     </div>
     <div class="lesser">
       <tal:affected_pillars define="also_in context/other_affected_pillars"

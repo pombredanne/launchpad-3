@@ -125,13 +125,13 @@ class IBranch(IHasOwner):
 
     # Product attributes
     product = Choice(
-        title=_('Product'), required=False, vocabulary='Product',
-        description=_("The product this branch belongs to."))
-    product_name = Attribute("The name of the product, or '+junk'.")
+        title=_('Project'), required=False, vocabulary='Product',
+        description=_("The project this branch belongs to."))
+    product_name = Attribute("The name of the project, or '+junk'.")
 
     # Display attributes
     unique_name = Attribute(
-        "Unique name of the branch, including the owner and product names.")
+        "Unique name of the branch, including the owner and project names.")
     displayname = Attribute(
         "The branch title if provided, or the unique_name.")
     sort_key = Attribute(

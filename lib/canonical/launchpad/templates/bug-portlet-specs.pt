@@ -2,14 +2,12 @@
 
   <h2>Related specifications</h2>
 
-  <div class="portletBody portletContent">
+  <div class="portletBody">
 
-    <ul tal:condition="context/specifications">
-      <li class="spec" tal:repeat="spec context/specifications">
-        <a tal:attributes="href spec/fmt:url"
-           tal:content="spec/title">spec title here</a>
-      </li>
-    </ul>
+    <table>
+      <tr tal:repeat="spec context/specifications"
+          tal:replace="structure spec/@@+listing-compact" />
+    </table>
 
   </div>
 

@@ -99,7 +99,9 @@ relative_part_re = r"(?P<relativepart>//%s%s|%s|%s|%s)" % (
     authority_re, path_abempty_re, path_absolute_re, path_noscheme_re,
     path_empty_re)
 
-query_re = r"(?P<query>(?:[-a-z0-9._~!$&\'()*+,;=:@/?]|%[0-9a-f]{2})*)"
+# Additionally we also permit square braces in the query portion to
+# accomodate real-world URIs.
+query_re = r"(?P<query>(?:[-a-z0-9._~!$&\'()*+,;=:@/?\[\]]|%[0-9a-f]{2})*)"
 fragment_re = r"(?P<fragment>(?:[-a-z0-9._~!$&\'()*+,;=:@/?]|%[0-9a-f]{2})*)"
 
 uri_re = r"%s:%s(?:\?%s)?(?:#%s)?$" % (
@@ -493,6 +495,14 @@ class URI:
 # Some allowed URI punctuation characters will be trimmed if they
 # appear at the end of the URI since they may be incidental in the
 # flow of the text.
+#
+# apport has at one time produced query strings containing sqaure
+# braces (that are not percent-encoded). In RFC 2986 they seem to be
+# allowed by section 2.2 "Reserved Characters", yet section 3.4
+# "Query" appears to provide a strict definition of the query string
+# that would forbid square braces. Either way, links with
+# non-percent-encoded square braces are being used on Launchpad so
+# it's probably best to accomodate them.
 
 possible_uri_re = r'''
 \b
@@ -528,7 +538,7 @@ possible_uri_re = r'''
 )
 (?: # query
   \?
-  [%(unreserved)s:@/\?]*
+  [%(unreserved)s:@/\?\[\]]*
 )?
 (?: # fragment
   \#

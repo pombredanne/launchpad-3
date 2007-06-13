@@ -30,10 +30,10 @@ specific source package in a distribution:
 
     affects $distribution_name/$sourcepackage_name
 
-You can also file bugs on specific distribution releases:
+You can also file bugs on specific distribution serieses:
 
-    affects $distribution_name/$release_name
-    affects $distribution_name/$release_name/$sourcepackage_name
+    affects $distribution_name/$series_name
+    affects $distribution_name/$series_name/$sourcepackage_name
 
 But if you want you can use any of the available commands as well.
 
@@ -132,7 +132,8 @@ A notification was added:
 
 We define a helper to pretty-print the notification recipients:
 
-    >>> from canonical.launchpad.interfaces.bugnotification import BugNotificationRecipients
+    >>> from canonical.launchpad.mailnotification import (
+    ...     BugNotificationRecipients)
     >>> def getSubscribers(bug):
     ...     recipients = bug.getBugNotificationRecipients()
     ...     return recipients.getEmails()
@@ -753,6 +754,93 @@ one subscriber:
 
     >>> submit_commands(bug_four, 'subscribe test@canonical.com')
 
+duplicate $bug_id
+^^^^^^^^^^^^^^^^^
+
+The 'duplicate' command marks a bug as a duplicate of another bug.
+
+    >>> bug_four.duplicateof is None
+    True
+    >>> submit_commands(bug_four, 'duplicate 1')
+    >>> bug_four.duplicateof.id
+    1
+
+It's possible to unmark a bug as a duplicate by specifying 'no' as the
+bug id.
+
+    >>> submit_commands(bug_four, 'duplicate no')
+    >>> bug_four.duplicateof is None
+    True
+
+The bug id can also be the bug's name.
+
+    >>> submit_commands(bug_four, 'duplicate blackhole')
+    >>> bug_four.duplicateof.name
+    u'blackhole'
+
+An error message is sent if a nonexistent bug id is given.
+
+    >>> submit_commands(bug_four, 'duplicate nonexistent')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        duplicate nonexistent
+    ...
+    There is no such bug in Launchpad: nonexistent
+    ...
+
+
+If the specified bug already is a duplicate, an error message is sent,
+telling you that you what bug it's a duplicate of.
+
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> bug_two.duplicateof is None
+    True
+    >>> submit_commands(bug_two, 'duplicate 4')
+    >>> bug_two.duplicateof is None
+    True
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        duplicate 4
+    ...
+    Bug 4 is already a duplicate of bug 2. You can only duplicate to
+    bugs that are not duplicates themselves.
+    ...
+
+If the specified bug has other bugs marked as a duplicate of it, an
+error message is sent telling you this.
+
+    >>> bug_four = getUtility(IBugSet).get(4)
+    >>> bug_four.duplicateof.id
+    2
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(bug_four)
+    >>> submit_commands(bug_four.duplicateof, 'duplicate 1')
+    >>> bug_four.duplicateof.id
+    2
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        duplicate 1
+    ...
+    There are other bugs already marked as duplicates of Bug 2.
+    These bugs should be changed to be duplicates of another bug
+    if you are certain you would like to perform this change.
+    ...
+
 cve $cve
 ^^^^^^^^
 
@@ -808,8 +896,8 @@ the following form:
     $productname/$series
     $distroname
     $distroname/$sourcepackagename
-    $distroname/$release
-    $distroname/$release/$sourcepackagename
+    $distroname/$series
+    $distroname/$series/$sourcepackagename
 
 If there is no task with the specified $path target, a new task is
 created:
@@ -885,7 +973,7 @@ task will be created:
     >>> print evolution_task.sourcepackagename.name
     evolution
 
-It's also possible to add tasks for specific distribution releases as
+It's also possible to add tasks for specific distribution serieses as
 well.
 
     >>> bug = new_firefox_bug()
@@ -910,7 +998,7 @@ target a bug directly, instead a nomination was created.
     ...     print nomination.target.bugtargetname
     Ubuntu Hoary
 
-The same happens if we try to target another release.
+The same happens if we try to target another series.
 
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
@@ -939,7 +1027,7 @@ Targeting an existing nomination won't create another nomination.
     Ubuntu Warty
 
 If Sample Person would be the Ubuntu driver, he'll be able to target
-bugs directly to releases.
+bugs directly to serieses.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> login('foo.bar@canonical.com')
@@ -947,7 +1035,7 @@ bugs directly to releases.
     >>> ubuntu.driver = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> login('test@canonical.com')
 
-Now a new bugtask for the release will be create directly.
+Now a new bugtask for the series will be create directly.
 
     >>> submit_commands(bug, 'affects ubuntu/grumpy')
 
@@ -969,7 +1057,7 @@ He can also approve existing nominations.
     Ubuntu Grumpy
 
 It works the same when specifying a source package while targeting a
-specific distrorelease.
+specific distroseries.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
@@ -979,7 +1067,7 @@ specific distrorelease.
     >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
 
 Now we can see that two tasks were created; both the general Ubuntu
-task, and the release specific task.
+task, and the series specific task.
 
     >>> for bugtask in bug.bugtasks:
     ...     print bugtask.targetname
@@ -988,7 +1076,7 @@ task, and the release specific task.
     mozilla-firefox (Ubuntu Hoary)
 
 As with the example with no source package above; if the user isn't a
-driver of the release, only a nomination will be created.
+driver of the series, only a nomination will be created.
 
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -1011,7 +1099,7 @@ driver of the release, only a nomination will be created.
     ...     print nomination.target.bugtargetname
     Ubuntu Hoary
 
-Nominating product series work the same way as for distro releases.
+Nominating product series work the same way as for distro serieses.
 Sample person is a driver for the Firefox trunk series, so the
 nomination is automatically approved.
 

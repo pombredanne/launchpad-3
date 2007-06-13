@@ -3,7 +3,7 @@
     <table class="summary">
       <tbody>
         <tr>
-          <th>Project status:</th>
+          <th>Project group status:</th>
           <td>
             <tal:block condition="context/active">Active</tal:block>
             <tal:block condition="not: context/active">Disabled</tal:block>

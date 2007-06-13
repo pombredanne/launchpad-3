@@ -13,7 +13,8 @@ Here are some imports we need to get this test running.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from canonical.launchpad.interfaces import IPOTemplateNameSet
-    >>> from canonical.launchpad.database import POTemplateSubset
+    >>> from canonical.launchpad.database import (POTemplateSubset,
+    ...     SourcePackageName)
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
@@ -152,7 +153,15 @@ to make sure it's stored properly.
 
     >>> transaction.commit()
 
-We must approve the entry to be able to import it.
+We go through an import run.  But since we haven't approved our entry yet,
+nothing happens.
+
+    >>> original_import_status = entry.status
+    >>> potemplate.importFromQueue(FakeLogger())
+    >>> entry.status == original_import_status
+    True
+
+Now the entry gets approved, so it'll be imported next time
 
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
@@ -364,7 +373,7 @@ Now, is time to check the notification email.
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ..., you uploaded 5
-    Welsh (cy) translations for firefox in Mozilla Firefox trunk in Rosetta.
+    Welsh (cy) translations for firefox in Mozilla Firefox trunk in Launchpad.
     <BLANKLINE>
     There were problems with 1 of these translations.
     <BLANKLINE>
@@ -534,8 +543,26 @@ And run the cronscript.
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
-    INFO    Removed 2 entries from the queue.
     <BLANKLINE>
+
+Now the auto-approval script runs.  This can happen anytime, since it's
+asynchronous to the po-import script.  The script tries to approve any entries
+that have not been approved, but look like they could be, without human
+intervention.  This involves a bit of guesswork about what the imported file
+is and where it belongs.  It similarly blocks entries that it thinks should be
+blocked, and also purges deleted or complted entries from the queue.  Running
+at this point, all it does is purge the two hand-approved Welsh translations
+that have just been imported.
+
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-approve-imports.py',
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO    creating lockfile
+    INFO    Removed 2 entries from the queue.
 
 It's time to test the import queue.
 
@@ -578,7 +605,7 @@ Attach the first version of the file.
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, first_pofile_content, False, rosetta_experts,
     ...     sourcepackagename=pofile.potemplate.sourcepackagename,
-    ...     distrorelease=pofile.potemplate.distrorelease,
+    ...     distroseries=pofile.potemplate.distroseries,
     ...     productseries=pofile.potemplate.productseries)
     >>> transaction.commit()
 
@@ -596,7 +623,7 @@ Attach the second version of the file.
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, second_pofile_content, False, jordi,
     ...     sourcepackagename=pofile.potemplate.sourcepackagename,
-    ...     distrorelease=pofile.potemplate.distrorelease,
+    ...     distroseries=pofile.potemplate.distroseries,
     ...     productseries=pofile.potemplate.productseries)
     >>> transaction.commit()
 
@@ -605,10 +632,12 @@ It's in the queue now.
     >>> translation_import_queue.entryCount()
     2
 
-Do the final import.
+The auto-approval script runs again.  This time it sees the two submitted
+translations and approves them for import based on some heuristic
+intelligence.
 
     >>> process = subprocess.Popen([
-    ...     sys.executable, 'cronscripts/rosetta-poimport.py',
+    ...     sys.executable, 'cronscripts/rosetta-approve-imports.py',
     ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.STDOUT
     ...     )
@@ -616,10 +645,10 @@ Do the final import.
     >>> print output
     INFO    creating lockfile
     INFO    The automatic approval system approved some entries.
-    <BLANKLINE>
     >>> transaction.commit()
 
-We need to run again the script to get those approved entries imported.
+Now that these submissions have been approved, the next run of the import
+script picks them up and processes them.
 
     >>> process = subprocess.Popen([
     ...     sys.executable, 'cronscripts/rosetta-poimport.py',
@@ -638,4 +667,65 @@ And there are no more entries to import
 
     >>> translation_import_queue.getFirstEntryToImport() is None
     True
+
+The next run of the auto-approval script will clean up what's left of the
+queue.
+
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-approve-imports.py',
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> transaction.commit()
+
+
+Imports so far have been associated with a product series.  We can also submit
+translations for a distroseries.
+
+    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
+    >>> warty = getUtility(IDistroSeriesSet).get(1)
+    >>> print warty.name
+    warty
+    >>> firefox_name = SourcePackageName.byName('mozilla-firefox')
+    >>> subset = POTemplateSubset(sourcepackagename=firefox_name,
+    ...     distroseries=warty)
+    >>> ptn = getUtility(IPOTemplateNameSet).new('firefox-warty', 'ForWarty')
+    >>> potemplate = subset.new(
+    ...     potemplatename=ptn,
+    ...     path='po/firefox.pot',
+    ...     owner=person)
+
+
+As it happens, the administrator has blocked imports to warty:
+
+    >>> warty.defer_translation_imports = True
+    >>> flush_database_updates()
+
+Nevertheless, we submit an import request for warty, and it is approved:
+
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     potemplate.path, potemplate_contents, True, potemplate.owner,
+    ...     sourcepackagename=firefox_name, distroseries=warty,
+    ...     potemplate=potemplate)
+    >>> transaction.commit()
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> flush_database_updates()
+
+If we try to import now, nothing happens.
+
+    >>> pofile.importFromQueue(FakeLogger())
+
+    >>> entry.status == RosettaImportStatus.IMPORTED
+    False
+
+Once imports are allowed again, the import is done after all.
+
+    >>> warty.defer_translation_imports = False
+    >>> flush_database_updates()
+    >>> potemplate.importFromQueue(FakeLogger())
+
+    >>> entry.status == RosettaImportStatus.IMPORTED
+    True
+
 

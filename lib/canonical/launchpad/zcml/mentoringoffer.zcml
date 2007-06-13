@@ -1,0 +1,91 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:lp="http://launchpad.canonical.com"
+  i18n_domain="launchpad">
+
+<facet facet="overview">
+
+  <!-- MentoringOffer -->
+  <content class="canonical.launchpad.database.MentoringOffer">
+    <allow interface="canonical.launchpad.interfaces.IMentoringOffer" />
+  </content>
+
+
+  <!-- IHasMentoringOffers -->
+  <browser:pages
+    for="canonical.launchpad.interfaces.IHasMentoringOffers"
+    class="canonical.launchpad.browser.HasMentoringOffersView"
+    permission="zope.Public">
+    <browser:page
+      name="+mentoring"
+      template="../templates/hasmentoringoffers-mentoring.pt" />
+  </browser:pages>
+
+  <!-- ICanBeMentored -->
+  <browser:page
+    name="+retractmentoring"
+    for="canonical.launchpad.interfaces.ICanBeMentored"
+    class="canonical.launchpad.browser.MentoringOfferRetractView"
+    permission="launchpad.AnyPerson"
+    template="../templates/canbementored-retractmentoring.pt" />
+
+  <browser:generalform
+    name="+mentor"
+    for="canonical.launchpad.interfaces.ICanBeMentored"
+    schema="canonical.launchpad.interfaces.IMentoringOffer"
+    class="canonical.launchpad.browser.MentoringOfferAddView"
+    fields="team"
+    arguments="team"
+    permission="launchpad.AnyPerson"
+    template="../templates/canbementored-mentoringoffer.pt">
+  </browser:generalform>
+
+  <!-- MentoringOfferSet -->
+  <securedutility
+    class="canonical.launchpad.database.MentoringOfferSet"
+    provides="canonical.launchpad.interfaces.IMentoringOfferSet">
+    <allow interface="canonical.launchpad.interfaces.IMentoringOfferSet" />
+  </securedutility>
+
+  <adapter
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    for="canonical.launchpad.interfaces.IMentoringOfferSet"
+    factory="canonical.launchpad.browser.MentoringOfferSetSOP"
+    permission="zope.Public"
+    />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IMentoringOfferSet"
+    path_expression="string:+mentoring"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:menus
+    module="canonical.launchpad.browser.mentoringoffer"
+    classes="MentoringOfferSetFacets MentoringOfferSetOverviewMenu"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IMentoringOfferSet"
+    name="+mentoring"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IMentoringOfferSet"
+    class="canonical.launchpad.browser.MentoringOfferSetView"
+    permission="launchpad.Admin">
+    <!-- this is repeated here from IHasMentoringOffers because it has a
+         different (and stricter) permission. We want only admins to see the
+         overall mentoring picture. -->
+    <browser:page
+      name="+mentoring"
+      template="../templates/hasmentoringoffers-mentoring.pt" />
+    <browser:page
+      name="+success"
+      template="../templates/mentoringofferset-success.pt" />
+  </browser:pages>
+
+</facet>
+</configure>

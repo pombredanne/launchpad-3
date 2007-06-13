@@ -8,8 +8,8 @@ an upload to a distro/whatever within the launchpad.
 import os
 import _pythonpath
 
-from canonical.archivepublisher.uploadpolicy import policy_options
-from canonical.archivepublisher.uploadprocessor import UploadProcessor
+from canonical.archiveuploader.uploadpolicy import policy_options
+from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.launchpad.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)

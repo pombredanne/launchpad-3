@@ -99,7 +99,7 @@ field.onchange = submit_filter;
           <a tal:condition="branch/product"
              tal:attributes="href branch/product/fmt:url"
              tal:content="branch/product/name">
-               Product
+               Project
           </a>
         </td>
         <td tal:condition="context/show_column/role|nothing">

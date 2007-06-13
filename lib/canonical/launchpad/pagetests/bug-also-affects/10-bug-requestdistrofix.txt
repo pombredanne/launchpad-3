@@ -8,7 +8,7 @@ distribution.
     'http://bugs.launchpad.dev/firefox/+bug/6/+distrotask'
 
 On this page we can add distribution task. We start by adding an Ubuntu
-task. Since Ubuntu uses Malone as its bug tracker, the task gets added
+task. Since Ubuntu uses Launchpad as its bug tracker, the task gets added
 and we return to the newly created task's page.
 
     >>> browser.getControl('Distribution').value = ['ubuntu']
@@ -78,7 +78,7 @@ Ubuntu evolution, because there already is an evolution task open.
     ...This bug has already been reported on evolution (ubuntu)...
     ...
 
-Now let's add a Debian task to bug 1. Since Debian doesn't use Malone,
+Now let's add a Debian task to bug 1. Since Debian doesn't use Launchpad,
 we add a bug watch as well.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
@@ -96,7 +96,7 @@ we add a bug watch as well.
     'http://bugs.launchpad.dev/debian/+source/alsa-utils/+bug/1'
 
 If we try to add an Ubuntu task together with a bug watch we get an
-error, because Ubuntu uses Malone as its bug tracker
+error, because Ubuntu uses Launchpad as its bug tracker
 
     >>> browser.getLink(url='+distrotask').click()
     >>> browser.getControl('Distribution').value = ['ubuntu']
@@ -154,7 +154,7 @@ we really want to do this.
     'http://bugs.launchpad.dev/ubuntu/+source/pmount/+bug/1/+distrotask'
     >>> print browser.contents
     <...
-    ...Debian doesn't use Malone as its bug tracker...
+    ...Debian doesn't use Launchpad as its bug tracker...
 
 The form is shown as well, so it's possible to easily change the
 field values, in order to add a bug watch.
@@ -170,7 +170,7 @@ notification will still be displayed.
     'http://bugs.launchpad.dev/ubuntu/+source/pmount/+bug/1/+distrotask'
     >>> print browser.contents
     <...
-    ...Debian doesn't use Malone as its bug tracker...
+    ...Debian doesn't use Launchpad as its bug tracker...
 
 If we confirm that we indeed want to add an unlinked task, we get
 redirected to the bug page.

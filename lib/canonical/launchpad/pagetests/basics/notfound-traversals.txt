@@ -4,10 +4,6 @@ zope.interfaces.NotFound. This means they generate a System Error page
 instead of a correct 404 page. So we test them to ensure the correct HTTP
 status is returned.
 
-XXX: This test may be better done using a tweaked LinkChecker or other
-spider -- StuartBishop 20050822
-
-
 >>> def check_url(valid_url, auth=False, host='launchpad.dev'):
 ...     get_cmd = """
 ... GET %s HTTP/1.1
@@ -72,6 +68,22 @@ spider -- StuartBishop 20050822
 >>> check_not_found("/+languages/es/foos", host='translations.launchpad.dev')
 >>> check_not_found("/+languages/foos", host='translations.launchpad.dev')
 
+>>> check("/+groups", host='translations.launchpad.dev')
+>>> check("/+groups/+new", auth=True,
+...       host='translations.launchpad.dev')
+>>> check("/+groups/testing-translation-team",
+...       host='translations.launchpad.dev')
+>>> check("/+groups/testing-translation-team/+edit",
+...       auth=True, host='translations.launchpad.dev')
+>>> check("/+groups/testing-translation-team/+appoint",
+...       auth=True, host='translations.launchpad.dev')
+>>> check("/+groups/testing-translation-team/es",
+...       auth=True, host='translations.launchpad.dev')
+>>> check_not_found("/+groups/testing-translation-team/pt_br",
+...                 host='translations.launchpad.dev')
+>>> check_not_found("/+groups/foos",
+...                 host='translations.launchpad.dev')
+
 >>> check("robots.txt", host="shipit.ubuntu.dev")
 
 >>> check("/bounties")
@@ -103,6 +115,11 @@ spider -- StuartBishop 20050822
 >>> check("/firefox/1.0/+specs")
 >>> check("/firefox/1.0/+addrelease", auth=True)
 >>> check("/firefox/1.0/+translations")
+>>> check("/firefox/1.0/1.0.0")
+>>> check("/firefox/1.0/1.0.0/+edit", auth=True)
+>>> check("/firefox/1.0/1.0.0/+adddownloadfile", auth=True)
+>>> check("/firefox/1.0/1.0.0/+review", auth=True)
+>>> check("/firefox/1.0/1.0.0/+rdf")
 >>> check("/firefox/+rdf")
 >>> check("/firefox/1.0/+rdf")
 >>> check("/firefox/+bugs")
@@ -281,19 +298,19 @@ not yet been reported.
 >>> check_not_found("/ubuntu/+source/thunderbird/+bug/1/+viewstatus")
 >>> check_not_found("/ubuntu/+source/thunderbird/+bug/1/+editstatus")
 
-Viewing the bug in the context of a distro release source package in
+Viewing the bug in the context of a distro series source package in
 which the bug has already been reported.
 
 >>> check("/ubuntu/warty/+source/mozilla-firefox/+bug/5")
 
-Viewing the bug in the context of a distro release source package in
+Viewing the bug in the context of a distro series source package in
 which the bug has not yet been reported.
 
 >>> check("/ubuntu/warty/+source/mozilla-firefox/+bug/1")
 >>> check_not_found("/ubuntu/warty/+source/mozilla-firefox/+bug/1/+viewstatus")
 >>> check_not_found("/ubuntu/warty/+source/mozilla-firefox/+bug/1/+editstatus")
 
-Viewing a bug in a distribution that doesn't use Malone officially, where the
+Viewing a bug in a distribution that doesn't use Bugs officially, where the
 bugtask is also assigned to a milestone (a corner case, but one that was causing
 OOPS's all the same!):
 
@@ -310,8 +327,8 @@ The bug filing pages.
 >>> check("/ubuntu/+source/mozilla-firefox/+filebug-advanced", auth=True)
 
 Note that you should not be able to directly file a bug on a
-distrorelease or sourcepackage; an IBugTask reported against a
-distrorelease or sourcepackage is *targeted* to be fixed in that
+distroseries or sourcepackage; an IBugTask reported against a
+distroseries or sourcepackage is *targeted* to be fixed in that
 specific release. Instead, you get redirected to the appropriate distro
 or distrosourcepackage filebug page.
 
@@ -361,6 +378,8 @@ And this is for a person:
 >>> check_redirect("/~name12/+branch/gnome-terminal/pushed/", status=301)
 >>> check_redirect("/~name12/+branch/gnome-terminal/pushed/+edit", auth=True, status=301)
 >>> check("/~name12/gnome-terminal/pushed/")
+>>> check_not_found("/~name12/+branch/gnome-terminal/fubared/")
+>>> check_not_found("/~name12/gnome-terminal/fubared/")
 >>> check("/~name12/gnome-terminal/pushed/+edit", auth=True)
 >>> check_not_found("/~name16/+bugs/1")
 >>> check("/~name16/+reportedbugs")
@@ -406,7 +425,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("//@@")
 >>> check("/translations/@@")
 >>> check("//translations/@@")
->>> check_not_found("/translations/groups/testing-translation-team/pt_br")
+>>> check_redirect("/translations/groups/", status=301)
 
 >>> check_not_found("/@@/launchpad_brokenlink.png")
 >>> check_not_found("//@@/launchpad_brokenlink.png")
@@ -421,4 +440,9 @@ Check legacy URL redirects
 >>> check_redirect("/distros/ubuntu", status=301)
 >>> check_redirect("/products/ubuntu-product", status=301)
 >>> check_redirect("/people/stub", status=301)
+
+
+Check redirects of Unicode URLs works
+
+>>> check_not_found("/ubuntu/foo%C3%A9")
 

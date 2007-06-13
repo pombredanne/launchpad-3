@@ -24,17 +24,22 @@ The language can be changed on the regular 'Edit Question' screen.
     >>> browser.addHeader('Authorization', 'Basic daf@canonical.com:daf')
     >>> browser.open('http://launchpad.dev/ubuntu/+question/5')
     >>> browser.getLink('Edit question').click()
+    >>> print browser.url
+    http://answers.launchpad.dev/ubuntu/+question/5/+edit
 
 That screen contains a selection field to allow changing the question
 language. The list of available languages is determined by the user's
 preferred language. There is a link to allow changing this list:
 
-    >>> browser.getLink('Change your preferred languages').url
-    '.../people/+editlanguages'
+    >>> browser.getLink('Change your preferred languages').click()
+    >>> print browser.title
+    Dafydd Harries's preferred languages
 
 If he choose a language that is not spoken by any of the registered
 answer contacts, a warning is displayed:
 
+    # We should use goBack() here but can't because of bug #98372
+    >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/5/+edit')
     >>> browser.getControl('Welsh').selected = True
     >>> browser.getControl('Summary').value = 'Gofyn cymorth'
     >>> browser.getControl('Continue').click()

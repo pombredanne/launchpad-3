@@ -9,12 +9,12 @@ On the Bugs front page there is a link to file a bug.
 
 Here we can select a product to file a bug on.
 
-    >>> user_browser.getControl('Product') is not None
+    >>> user_browser.getControl('Project') is not None
     True
 
 If we enter an non-existant product, we get an error message.
 
-    >>> user_browser.getControl('Product').selected = True
+    >>> user_browser.getControl('Project').selected = True
     >>> user_browser.getControl(
     ...     name='field.bugtarget.product').value = 'non-existant'
     >>> user_browser.getControl('Summary').value = (
@@ -58,7 +58,7 @@ filebug page and file a bug directly.
     >>> user_browser.title
     'Report a bug'
 
-    >>> user_browser.getControl('Product').selected = True
+    >>> user_browser.getControl('Project').selected = True
     >>> user_browser.getControl(
     ...     name='field.bugtarget.product').value = 'evolution'
     >>> user_browser.getControl('Summary').value = 'Evolution crashes'
