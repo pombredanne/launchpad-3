@@ -16,7 +16,7 @@ First import a few things for the test:
     >>> from canonical.ftests.pgsql import PgTestSetup
     >>> from canonical.launchpad.webapp.adapter import (
     ...     ReconnectingDatabaseAdapter, ReconnectingConnection,
-    ...     ReconnectingCursor, DisconnectedConnectionError)
+    ...     ReconnectingCursor, DisconnectionError)
 
 
 Set up a port forwarder to the main Postgres database, so that we can
@@ -70,39 +70,25 @@ stopping the port forwarding proxy:
 
 
 If we now try to issue commands to the database, we get the
-disconnection error from the database wrapped in a Zope Retry
-exception:
+disconnection error from the database:
 
-    >>> import sys
-    >>> import traceback
-    >>> from zope.publisher.interfaces import Retry
-    >>> try:
-    ...     cursor.execute('SELECT 1')
-    ... except Retry, exc:
-    ...     print 'Retry:'
-    ...     traceback.print_exception(file=sys.stdout,
-    ...                               *exc.getOriginalException())
-    Retry:
+    >>> cursor.execute('SELECT 1')
     Traceback (most recent call last):
       ...
-    OperationalError: no connection to the server
+    DisconnectionError: no connection to the server
 
 
 While it is possible to reconnect to the database again, we continue
-to get Retry errors until a rollback() is issued:
+to get DisconnectionError errors until a rollback() is issued:
 
-    >>> try:
-    ...     cursor.fetchone()
-    ... except Retry, exc:
-    ...     print 'Retry:'
-    ...     traceback.print_exception(file=sys.stdout,
-    ...                               *exc.getOriginalException())
-    Retry:
-    DisconnectedConnectionError: Already disconnected
+    >>> cursor.fetchone()
+    Traceback (most recent call last):
+      ...
+    DisconnectionError: Already disconnected
     >>> db.commit()
     Traceback (most recent call last):
       ...
-    Retry: ...
+    DisconnectionError: Already disconnected
     >>> db.rollback()
 
 
@@ -121,23 +107,17 @@ such as committing the exception:
     [(1,)]
     >>> portforward.tearDown()
     >>> portforward.setUp()
-    >>> try:
-    ...     db.commit()
-    ... except Retry, exc:
-    ...     print 'Retry:'
-    ...     traceback.print_exception(file=sys.stdout,
-    ...                               *exc.getOriginalException())
-    Retry:
+    >>> db.commit()
     Traceback (most recent call last):
       ...
-    DatabaseError: {<cursor ...>: 'server closed the connection unexpectedly...'}
+    DisconnectionError: {<cursor ...>: 'server closed the connection unexpectedly...'}
     >>> db.rollback()
 
 XXX: 20070424 jamesh
-We should test that a Retry exception gets issued if we disconnect
-while reading a result set, but it is hard to trigger with simple
-queries since the first results have already been received by the time
-execute() completes.
+We should test that a DisconnectionError exception gets issued if we
+disconnect while reading a result set, but it is hard to trigger with
+simple queries since the first results have already been received by
+the time execute() completes.
 
 
 == ReconnectingDatabaseAdapter ==
@@ -182,22 +162,36 @@ And it handles disconnections too:
     [1]
     >>> portforward.tearDown()
     >>> portforward.setUp()
-    >>> try:
-    ...     cursor.execute('SELECT 1')
-    ... except Retry, exc:
-    ...     print 'Retry:'
-    ...     traceback.print_exception(file=sys.stdout,
-    ...                               *exc.getOriginalException())
-    Retry:
+    >>> cursor.execute('SELECT 1')
     Traceback (most recent call last):
       ...
-    ProgrammingError: server closed the connection unexpectedly
+    DisconnectionError: server closed the connection unexpectedly
       This probably means the server terminated abnormally
       before or while processing the request.
     <BLANKLINE>
     SELECT 1
 
 
-Cleanup:
+== Retrying of Database Disconnections ==
+
+When a database disconnection occurs, it gets converted to a Retry
+exception by the publication machinery:
+
+    >>> import sys
+    >>> from canonical.launchpad.webapp.publication import (
+    ...     LaunchpadBrowserPublication)
+
+    >>> publication = LaunchpadBrowserPublication(None)
+    >>> try:
+    ...     cursor.execute('SELECT 1')
+    ... except DisconnectionError:
+    ...     publication.handleException(None, None, sys.exc_info(),
+    ...                                 retry_allowed=True)
+    Traceback (most recent call last):
+      ...
+    Retry: ...
+
+
+== Cleanup ==
 
     >>> portforward.tearDown()
