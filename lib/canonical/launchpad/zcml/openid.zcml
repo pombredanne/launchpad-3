@@ -1,6 +1,7 @@
 <configure xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
+    <!-- OpenId virtual host root -->
     <securedutility
         class="canonical.launchpad.systemhomes.OpenIdApplication"
         provides="canonical.launchpad.interfaces.IOpenIdApplication">
@@ -13,12 +14,19 @@
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
+    <!-- Root navigation -->
+    <browser:navigation
+        module="canonical.launchpad.browser.openidserver"
+        classes="OpenIdApplicationNavigation"
+        />
+
+    <!-- Root document -->
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
         for="canonical.launchpad.interfaces.IOpenIdApplication"
         permission="zope.Public"
         name="+index"
-        class="canonical.launchpad.browser.openidserver.OpenIdView"
+        template="../templates/openid-index.pt"
         />
 
     <browser:defaultView
@@ -26,9 +34,13 @@
         name="+index"
         />
 
-    <browser:navigation
-        module="canonical.launchpad.browser.openidserver"
-        classes="OpenIdApplicationNavigation"
+    <!-- OpenID Provider -->
+    <browser:page
+        layer="canonical.launchpad.layers.OpenIdLayer"
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+openid"
+        class="canonical.launchpad.browser.openidserver.OpenIdView"
         />
 
     <content class="canonical.launchpad.database.OpenIdAuthorization">
@@ -57,11 +69,13 @@
         class="canonical.launchpad.browser.openidserver.ProtocolErrorView"
         />
 
+    <!-- http://openid.launchpad.dev/$Person.name identity URLs
+       XXX: May be dropped - in discussion. StuartBishop 20070613 
+    -->
     <content
         class="canonical.launchpad.browser.openidserver.OpenIdIdentityView">
       <allow attributes="browserDefault __call__" />
     </content>
-
 
 </configure>
 

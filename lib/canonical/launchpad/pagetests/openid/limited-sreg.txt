@@ -24,7 +24,7 @@ First acquire an association handle:
     ...     'openid.mode': 'associate',
     ...     'openid.assoc_type': 'HMAC-SHA1',
     ...     })
-    >>> anon_browser.open('http://openid.launchpad.dev/', data=args)
+    >>> anon_browser.open('http://openid.launchpad.dev/+openid', data=args)
     >>> import re
     >>> [assoc_handle] = re.findall('assoc_handle:(.*)', anon_browser.contents)
 
@@ -42,7 +42,7 @@ to the login page:
 
     >>> sabdfl_browser = setupBrowser('mark@hbd.com:test')
     >>> sabdfl_browser.handleErrors = True
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> sabdfl_browser.handleErrors = False
     >>> sabdfl_browser.getControl('E-mail address',
     ...                           index=0).value = 'mark@hbd.com'
@@ -74,7 +74,7 @@ We now see the user's full name, nickname, email address and time zone.
     >>> from canonical.config import config
     >>> config.launchpad.openid_sreg_trustroots.append(
     ...     'http://launchpad.dev/+openid-consumer')
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> sabdfl_browser.getControl('Allow').click()
     >>> print sabdfl_browser.url
     http://launchpad.dev/+openid-consumer?...

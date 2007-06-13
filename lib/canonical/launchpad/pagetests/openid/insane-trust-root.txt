@@ -12,7 +12,7 @@ hostile trust_root, a warning message is displayed to the user.
     ...     'openid.trust_root': 'http://*.dev',
     ...     })
     >>> sabdfl_browser = setupBrowser(auth="Basic mark@hbd.com:test")
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print '\n' + sabdfl_browser.contents
     <BLANKLINE>
     ...
@@ -34,7 +34,7 @@ If the trust_root looks fine, no warning is displayed.
     ...     'openid.return_to': 'http://example.com/whatever',
     ...     'openid.trust_root': 'http://example.com',
     ...     })
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> 'warning' not in sabdfl_browser.contents
     True
 

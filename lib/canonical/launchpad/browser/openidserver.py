@@ -68,6 +68,7 @@ class OpenIdView(LaunchpadView):
         LaunchpadView.__init__(self, context, request)
         store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
         self.openid_server = Server(store_factory())
+        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
 
     def render(self):
         """Handle all OpenId requests and form submissions
@@ -305,8 +306,7 @@ class OpenIdView(LaunchpadView):
         This method should be called to create the response to
         unsuccessful checkid requests.
         """
-        response = self.openid_request.answer(
-            False, allvhosts.configs['openid'].rooturl)
+        response = self.openid_request.answer(False, self.server_url)
         return response
 
     def isIdentityOwner(self):
@@ -465,7 +465,7 @@ class OpenIdIdentityView:
 
     def __call__(self):
         # Setup variables to pass to the template
-        self.server_url = allvhosts.configs['openid'].rooturl
+        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
         self.identity_url = '%s+id/%s' % (
                 self.server_url, self.context.openid_identifier)
         self.person_url = canonical_url(self.context, rootsite='mainsite')
