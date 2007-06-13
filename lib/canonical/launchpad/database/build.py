@@ -267,7 +267,7 @@ class Build(SQLBase):
         else:
             recipients = recipients.union(
                 contactEmailAddresses(self.archive.owner))
-            # For PPAs we run on risk to have no available contact_address,
+            # For PPAs we run the risk of having no available contact_address,
             # for instance, when both, SPR.creator and Archive.owner have
             # not enabled it.
             if len(recipients) == 0:
