@@ -1374,6 +1374,40 @@ class FormattersAPI:
                     % cgi.escape(self._stringtoformat)
                     )
 
+    _re_quoted = re.compile('^([:|]|&gt;)')
+
+    def email_to_html(self):
+        """text_to_html and hide signatures and full-quoted emails."""
+        output = []
+        fold_markup = ('<%(tag)s><span class="fold">[...]</span>'
+                       '<%(tag)s  class="foldable" style="display: none;">')
+        signature = False
+        quoted = False
+        for line in self.text_to_html().split('\n'):
+            if not signature and line.startswith('<p>--<br />'):
+                signature = True
+                output.append(fold_markup % {'tag' : 'div'})
+            if not quoted and self._re_quoted.match(line) is not None:
+                quoted = True
+                output.append(fold_markup % {'tag' : 'span'})
+            if quoted and line.endswith('</p>'):
+                quoted = False
+                line = '%s\n</span></span></p>' % line[0:-4]
+            output.append(line)
+            if signature and line.endswith('</p>'):
+                signature = False
+                output.append('</div></div>')
+        return '\n'.join(output)
+
+    _re_email = re.compile(r'\b[\w.-]+\@'
+                           r'\w+((\.|-)\w+)*\.[A-Za-z]{2,12}\b')
+
+    def obfuscate_email(self):
+        """Obfusacte an email address as person@domain.dom."""
+        text = self._re_email.sub(
+            r'person@domain.dom', self._stringtoformat)
+        return text
+
     def shorten(self, maxlength):
         """Use like tal:content="context/foo/fmt:shorten/60"."""
         if len(self._stringtoformat) > maxlength:
@@ -1390,6 +1424,10 @@ class FormattersAPI:
             return self.text_to_html()
         elif name == 'nice_pre':
             return self.nice_pre()
+        elif name == 'email-to-html':
+            return self.email_to_html()
+        elif name == 'obfuscate-email':
+            return self.obfuscate_email()
         elif name == 'shorten':
             if len(furtherPath) == 0:
                 raise TraversalError(

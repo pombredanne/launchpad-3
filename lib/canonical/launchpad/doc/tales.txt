@@ -1,5 +1,4 @@
-TALES expressions
-=================
+= TALES expressions =
 
 There are several kinds of TALES expressions we've implemented in
 Launchpad, to help make it easier to create page templates, without
@@ -127,13 +126,144 @@ To "<pre>" format a string, use fmt:nice_pre:
     ['<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-',
      'wrap: break-word;">hello &amp; goodbye</pre>']
 
-Add manual word breaks to long words in a string
+Add manual word breaks to long words in a string:
 
     >>> test_tales('foo/fmt:break-long-words', foo='short words')
     'short words'
     >>> test_tales('foo/fmt:break-long-words',
     ...     foo='<http://launchpad.net/products/launchpad>')
     '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
+
+Signatures and full-quoted parts of a message can be wrapped in markup
+to hide them:
+
+    >>> text = '\n'.join(['Top quoting is simply bad netiquette.',
+    ...                   'The words of the leading text should be displayed',
+    ...                   'normally--no markup to hide it from view.',
+    ...                   'Raise your hand if you can read this.',
+    ...                   ''])
+    >>> quoted_text = '\n'.join(['Somebody said sometime ago:',
+    ...                          '> 1. Remove the letters  c, j, q, x, w',
+    ...                          '>    from the English Language.',
+    ...                          '> 2. Remove the penny from US currency.',
+    ...                          ''])
+    >>> signature = '\n'.join(['-- ',
+    ...             '__C U R T I S  C.  H O V E Y_______',
+    ...             'sinzui.is@somewhere.org',
+    ...             'Guilty of stealing everything I am.'])
+    >>> # Print this without processing to check that we have a good start
+    >>> print '\n'.join([text, quoted_text, signature])
+    Top quoting is simply bad netiquette.
+    The words of the leading text should be displayed
+    normally--no markup to hide it from view.
+    Raise your hand if you can read this.
+    <BLANKLINE>
+    Somebody said sometime ago:
+    > 1. Remove the letters  c, j, q, x, w
+    >    from the English Language.
+    > 2. Remove the penny from US currency.
+    <BLANKLINE>
+    --
+    __C U R T I S  C.  H O V E Y_______
+    sinzui.is@somewhere.org
+    Guilty of stealing everything I am.
+    
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([text, quoted_text, signature]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>Somebody said sometime ago:<br />
+    <span><span class="fold">[...]</span><span class="foldable"...>
+    &gt; 1. Remove the letters  c, j, q, x, w<br />
+    &gt;    from the English Language.<br />
+    &gt; 2. Remove the penny from US currency.
+    </span></span></p>
+    <div><span class="fold">[...]</span><div class="foldable"...>
+    <p>--<br />
+    __C U R T I S  C.  H O V E Y_______<br />
+    sinzui.<wbr></wbr>is@somewhere.<wbr></wbr>org<br />
+    Guilty of stealing everything I am.</p>
+    </div></div>
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([text, signature]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <div><span class="fold">[...]</span><div class="foldable"...>
+    <p>--<br />
+    __C U R T I S  C.  H O V E Y_______<br />
+    sinzui.<wbr></wbr>is@somewhere.<wbr></wbr>org<br />
+    Guilty of stealing everything I am.</p>
+    </div></div>
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([text, quoted_text]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>Somebody said sometime ago:<br />
+    <span><span class="fold">[...]</span><span class="foldable"...>
+    &gt; 1. Remove the letters  c, j, q, x, w<br />
+    &gt;    from the English Language.<br />
+    &gt; 2. Remove the penny from US currency.
+    </span></span></p>
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo=text)
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+
+Email addresses can be obfuscated:
+
+    >>> test_tales('foo/fmt:obfuscate-email', foo='name.surname@company.com')
+    'person@domain.dom'
+    >>> test_tales('foo/fmt:obfuscate-email', foo='name@organization.org.cc')
+    'person@domain.dom'
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='long_name@host.network.org.cc')
+    'person@domain.dom'
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='long-name@building.museum')
+    'person@domain.dom'
+
+    >>> # obfuscation must run before the address is changed by text-to-html
+    >>> print test_tales('foo/fmt:obfuscate-email/fmt:text-to-html',
+    ...     foo=signature)
+    <p>--<br />
+    __C U R T I S  C.  H O V E Y_______<br />
+    person@domain.dom<br />
+    Guilty of stealing everything I am.</p>
+
+    >>> # Email addresses and credentials in a URL match.
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='mailto:long-name@very.long.dom.cc')
+    'mailto:person@domain.dom'
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='http://person:password@site.net')
+    'http://person:person@domain.dom'
+
+    >>> # An Invalid email address does not match.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='name @ host.school.edu')
+    'name @ host.school.edu'
+    >>> # SSH is not an email address.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='person@host')
+    'person@host'
+    >>> # Perl/shell arrays are not an email address.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='(head, tail)=@array')
+    '(head, tail)=@array'
+    >>> # Python decorators and Java annotations are not email addresses.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='@staticmethod')
+    '@staticmethod'
+    >>> # XPath expressions are not email addresses.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='element/@attribute')
+    'element/@attribute'
 
 
 == Test the 'fmt:' namespace where the context is a dict. ==
@@ -238,6 +368,7 @@ do with 'None/fmt:foo'.
     ''
     >>> test_tales('foo/image:icon', foo=None)
     ''
+
 
 == The lp: namespace for presenting DBSchema items ==
 

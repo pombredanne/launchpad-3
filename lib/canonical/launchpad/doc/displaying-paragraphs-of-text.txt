@@ -1,5 +1,4 @@
-Displaying Paragraphs of Text with ZPT
-======================================
+= Displaying Paragraphs of Text with ZPT =
 
 To display paragraphs of text in HTML, use fmt:text-to-html. For details,
 see <https://launchpad.canonical.com/DisplayingParagraphsOfText>.
@@ -345,8 +344,8 @@ Testing a bunch of URL links.
     <p>I have a Jabber account (<a rel="nofollow" href="jabber:foo@jabber.example.com">jabber:<wbr></wbr>foo@jabber.<wbr></wbr>example.<wbr></wbr>com</a>)<br />
     Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:<wbr></wbr>foo.bar@<wbr></wbr>example.<wbr></wbr>net</a>&gt;</p>
 
-regex helper functions
-----------------------
+
+== regex helper functions ==
 
 The _substitute_matchgroup_for_spaces() static method is part of the
 fmt:text-to-html code.  It is a helper for writing regular expressions where
