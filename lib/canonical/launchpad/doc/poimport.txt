@@ -8,7 +8,7 @@ Rosetta.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces import ITranslationImportQueue
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
@@ -164,7 +164,7 @@ nothing happens.
 Now the entry gets approved, so it'll be imported next time
 
     >>> entry.status = RosettaImportStatus.APPROVED
-    >>> flush_database_updates()
+    >>> syncUpdate(entry)
 
 Store current date
 
@@ -178,10 +178,10 @@ Now, we tell the PO template to import from the file data it has.
 
     >>> potemplate.importFromQueue(FakeLogger())
 
-The status is now IMPORTED:
+Our request has now been serviced.
 
-    >>> entry.status == RosettaImportStatus.IMPORTED
-    True
+    >>> print entry.status.name
+    IMPORTED
 
 The last update date is the one we got.
 
@@ -282,7 +282,7 @@ Set it as the place where the entry should be imported.
 We must approve the entry to be able to import it.
 
     >>> entry.status = RosettaImportStatus.APPROVED
-    >>> flush_database_updates()
+    >>> syncUpdate(entry)
 
 And we do the import.
 
@@ -290,8 +290,8 @@ And we do the import.
 
 The status is now IMPORTED:
 
-    >>> entry.status == RosettaImportStatus.IMPORTED
-    True
+    >>> print entry.status.name
+    IMPORTED
 
 And the statistics reflect it.
 
@@ -422,7 +422,7 @@ Set it as the place where the entry should be imported.
 We must approve the entry to be able to import it.
 
     >>> entry.status = RosettaImportStatus.APPROVED
-    >>> flush_database_updates()
+    >>> syncUpdate(entry)
 
 We do the import.
 
@@ -430,8 +430,8 @@ We do the import.
 
 The status is now IMPORTED:
 
-    >>> entry.status == RosettaImportStatus.IMPORTED
-    True
+    >>> print entry.status.name
+    IMPORTED
 
 And the statistics reflect it.
 
@@ -482,10 +482,10 @@ the msgid
     >>> transaction.commit()
     >>> entry.pofile = entry.getGuessedPOFile()
     >>> entry.status = RosettaImportStatus.APPROVED
-    >>> flush_database_updates()
+    >>> syncUpdate(entry)
     >>> pofile.importFromQueue(FakeLogger())
-    >>> entry.status == RosettaImportStatus.IMPORTED
-    True
+    >>> print entry.status.name
+    IMPORTED
 
 Now, is time to check the notification email.
 
@@ -525,7 +525,7 @@ We don't touch entries that were in the queue previously.
     ...         entry.status == RosettaImportStatus.FAILED) and (
     ...         entry.productseries == series):
     ...         entry.status = RosettaImportStatus.APPROVED
-    >>> flush_database_updates()
+    ...     syncUpdate(entry)
     >>> transaction.commit()
 
 And run the cronscript.
@@ -683,8 +683,9 @@ queue.
 Imports so far have been associated with a product series.  We can also submit
 translations for a distroseries.
 
-    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
-    >>> warty = getUtility(IDistroSeriesSet).get(1)
+    >>> from canonical.launchpad.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> warty = ubuntu.getSeries('warty')
     >>> print warty.name
     warty
     >>> firefox_name = SourcePackageName.byName('mozilla-firefox')
@@ -702,7 +703,7 @@ in-database update of its translations has been scheduled and we don't want
 interference from queued imports while that happens.
 
     >>> warty.defer_translation_imports = True
-    >>> flush_database_updates()
+    >>> syncUpdate(warty)
 
 Nevertheless, we submit an import request for warty, and it is approved:
 
@@ -712,7 +713,7 @@ Nevertheless, we submit an import request for warty, and it is approved:
     ...     potemplate=potemplate)
     >>> transaction.commit()
     >>> entry.status = RosettaImportStatus.APPROVED
-    >>> flush_database_updates()
+    >>> syncUpdate(entry)
 
 Since imports for warty are suspended, and the only entry we happen to have
 waiting right now is for warty, the queue has no importable entries for us.
@@ -720,20 +721,21 @@ waiting right now is for warty, the queue has no importable entries for us.
     >>> translation_import_queue.getFirstEntryToImport() is None
     True
 
-So if we try to import now, nothing happens.
+So if we try to import now, nothing happens.  Our request remains on the queue,
+but doesn't become a candidate for processing until warty imports are resumed.
 
     >>> pofile.importFromQueue(FakeLogger())
 
-    >>> entry.status == RosettaImportStatus.IMPORTED
-    False
+    >>> print entry.status.name
+    APPROVED
 
 Once imports are allowed again, the import is done after all.
 
     >>> warty.defer_translation_imports = False
-    >>> flush_database_updates()
+    >>> syncUpdate(warty)
     >>> potemplate.importFromQueue(FakeLogger())
 
-    >>> entry.status == RosettaImportStatus.IMPORTED
-    True
+    >>> print entry.status.name
+    IMPORTED
 
 
