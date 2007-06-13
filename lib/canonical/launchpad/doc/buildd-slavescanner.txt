@@ -126,7 +126,7 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
   ...                                    LostBuildingSlave())
 
   >>> buildergroup.rescueBuilderIfLost(lostbuilding_builder)
-  WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000: The object Build by the ID 1000 does not exist'
+  WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000: 'The object Build by the ID 1000 does not exist''
 
 Then a lost slave in status 'WAITING':
 
@@ -140,7 +140,7 @@ Then a lost slave in status 'WAITING':
   ...                                    LostWaitingSlave())
 
   >>> buildergroup.rescueBuilderIfLost(lostwaiting_builder)
-  WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000: The object Build by the ID 1000 does not exist'
+  WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000: 'The object Build by the ID 1000 does not exist''
 
 Both got rescued, as expected.
 
