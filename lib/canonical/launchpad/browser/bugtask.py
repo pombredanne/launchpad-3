@@ -58,8 +58,8 @@ from canonical.lp import dbschema, decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, Navigation, stepthrough,
-    redirection, LaunchpadFormView, LaunchpadView)
+    action, canonical_url, GetitemNavigation, LaunchpadFormView,
+    LaunchpadView, Navigation, redirection, stepthrough)
 from canonical.launchpad.interfaces import (
     IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
