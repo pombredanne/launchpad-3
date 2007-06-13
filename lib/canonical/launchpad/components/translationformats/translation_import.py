@@ -42,7 +42,8 @@ class TranslationImporter:
         :arg name: name of the owner of the give email address.
 
         If email is None, return None.
-        If the person is unknown in Launchpad, the account will be created.
+        If the person is unknown in Launchpad, the account will be created but
+        it will not have password and thus, will be disabled.
         """
         assert self.pofile is not None, 'self.pofile cannot be None'
 
