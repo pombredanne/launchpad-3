@@ -58,6 +58,15 @@ class cmd_launchpad_server(Command):
     takes_args = ['user_id']
 
     def get_transport(self, authserver, user_id, url):
+        """Create a transport that connects to a Launchpad smart server.
+
+        :param authserver: An `xmlrpclib.ServerProxy` (or equivalent) for the
+            Launchpad authserver.
+        :param user_id: The database ID of the user whose branches are being
+            served.
+        :param url: The base URL where the branches actually live.
+        :return: A `LaunchpadTransport`.
+        """
         # XXX: JonathanLange 2007-05-29, The 'chroot' lines lack unit tests.
         chroot_server = chroot.ChrootServer(get_transport(url))
         chroot_server.setUp()
@@ -70,6 +79,7 @@ class cmd_launchpad_server(Command):
         return get_transport(lp_server.get_url())
 
     def get_smart_server(self, transport, port, inet):
+        """Construct a smart server."""
         if inet:
             smart_server = medium.SmartServerPipeStreamMedium(
                 sys.stdin, sys.stdout, transport)
@@ -88,6 +98,7 @@ class cmd_launchpad_server(Command):
         return smart_server
 
     def run_server(self, smart_server):
+        """Run the given smart server."""
         # for the duration of this server, no UI output is permitted.
         # note that this may cause problems with blackbox tests. This should
         # be changed with care though, as we dont want to use bandwidth sending
