@@ -237,6 +237,26 @@ UNAPPROVED message was also skipped for an upload targeted to
   0
 
 
+An UNAPPROVED binary upload via insecure will send one email saying that
+the upload is waiting for approval:
+
+  >>> netapplet_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
+  ...     insecure_policy, mock_logger_quiet)
+  >>> netapplet_src.process()
+
+  >>> netapplet_src.logger = mock_logger
+  >>> result = netapplet_src.do_accept()
+  DEBUG: Creating queue entry
+  ...
+
+  >>> [notification] = pop_notifications()
+  >>> notification['To']
+  'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
+  >>> notification['Subject']
+  'Waiting for approval: bar 1.0-2 (source)'
+
+
 AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
 
   >>> modified_sync_policy = getPolicy(
@@ -276,6 +296,8 @@ There is one email generated:
   >>> [notification] = pop_notifications()
   >>> notification['To']
   'Celso Providelo <celso.providelo@canonical.com>'
+  >>> notification['Subject']
+  'Accepted bar 1.0-4 (source)'
 
 Remove orig.tar.gz pumped from librarian to disk during the upload
 checks:
@@ -323,6 +345,8 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
 
   >>> [message['To'] for message in msgs]
   ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
+  >>> msgs[0]['Subject']
+  'Accepted bar 1.0-2 (source)'
 
 Let's publish security bar sources in order to allow its binaries to
 come:
@@ -369,6 +393,8 @@ One email generated:
   >>> [notification] = pop_notifications()
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
+  >>> notification['Subject']
+  'Accepted bar 1.0-2 (i386)'
 
 
 Dry run uploads should not generate any emails.  Call do_accept with
