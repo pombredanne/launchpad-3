@@ -97,7 +97,9 @@ class POMsgSetMixIn:
         if related_submissions is None:
             related_submissions = self._getRelatedSubmissions()
 
+        previous = None
         for submission in related_submissions:
+            assert previous is None or submission.datecreated <= previous
             pluralform = submission.pluralform
             if submission.pomsgset == self:
                 if self.attached_submissions.get(pluralform) is None:
@@ -111,6 +113,7 @@ class POMsgSetMixIn:
                 if self.suggestions.get(pluralform) is None:
                     self.suggestions[pluralform] = []
                 self.suggestions[pluralform].append(submission)
+            previous = submission.datecreated
 
         # Now that we know what our active posubmissions are, filter out any
         # suggestions that refer to the same potranslations.
@@ -747,7 +750,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         flush_database_updates()
 
         # Let's see if we got updates from Rosetta
-        # XXX: JeroenVermeulen 2007-06-13, try using our caches for this!
+        # XXX: JeroenVermeulen 2007-06-13, does this really work?
         updated_pomsgset = POMsgSet.select("""
             POMsgSet.id = %s AND
             POMsgSet.isfuzzy = FALSE AND
