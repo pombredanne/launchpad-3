@@ -20,7 +20,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.interfaces import (
     BuildDaemonError, IBuildQueueSet, BuildJobMismatch, IBuildSet, IBuilderSet,
-    ProtocolVersionMismatch, pocketsuffix
+    NotFoundError, ProtocolVersionMismatch, pocketsuffix
     )
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
@@ -57,7 +57,7 @@ class BuilderGroup:
             # currently undocumented reason - RBC 20070523.
             if builder.builderok:
                 self.updateBuilderStatus(builder, arch)
-        
+
         # commit the updates made to the builders.
         self.commit()
         self.updateOkSlaves()
@@ -112,7 +112,8 @@ class BuilderGroup:
             return
 
         # extract information from the identifier
-        build_id, queue_item_id = status_sentence[ident_position[status]].split('-')
+        build_id, queue_item_id = status_sentence[
+            ident_position[status]].split('-')
 
         # check if build_id and queue_item_id exist
         try:
@@ -122,7 +123,7 @@ class BuilderGroup:
             if queue_item.build.id != build.id:
                 raise BuildJobMismatch('Job build entry mismatch')
 
-        except (SQLObjectNotFound, BuildJobMismatch), reason:
+        except (SQLObjectNotFound, NotFoundError, BuildJobMismatch), reason:
             if status == 'BuilderStatus.WAITING':
                 builder.cleanSlave()
             else:
