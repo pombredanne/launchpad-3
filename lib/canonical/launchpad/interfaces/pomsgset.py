@@ -100,7 +100,7 @@ class IPOMsgSet(Interface):
         Submissions work on a subset of this cache; the active/published
         submissions caches can be populated separately to avoid the cost of
         fetching the full data set for the submissions cache.  When doing work
-        on a POMsgSet that will require findind both the active/published
+        on a POMsgSet that will require finding both the active/published
         submissions information and other information about submissions or
         suggestions, call initializeSubmissionsCaches first.  That will
         populate the full submissions caches without duplication of the effort
