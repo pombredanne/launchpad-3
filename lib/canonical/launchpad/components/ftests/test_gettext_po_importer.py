@@ -8,13 +8,11 @@ import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.components.translationformats.gettext_po_importer import (
-    GettextPoImporter
-    )
+from canonical.launchpad.components import translationformats
+from translationformats.gettext_po_importer import GettextPoImporter
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, ITranslationFormatImporter,
-    ITranslationImportQueue
-    )
+    ITranslationImportQueue)
 from canonical.lp.dbschema import TranslationFileFormat
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -73,28 +71,30 @@ class GettextPoImporterTestCase(unittest.TestCase):
         """Check whether the object follows the interface."""
         self.failUnless(
             verifyObject(ITranslationFormatImporter, self.template_importer),
-            "GettextPoImporter doesn't follow the interface")
+            "GettextPoImporter doesn't conform to ITranslationFormatImporter"
+                "interface.")
 
     def testFormat(self):
+        """Check whether GettextPoImporter say that handles PO file format."""
         self.failUnless(
             self.template_importer.format == TranslationFileFormat.PO,
-            'GettextPoImporter format is not PO but %s' % (
-                self.template_importer.format.name)
-            )
+            'GettextPoImporter format expected PO but got %s' % (
+                self.template_importer.format.name))
 
     def testCanHandleFileExtension(self):
+        """Check whether GettextPoImporter handles .po and .pot extensions."""
         # Gettext's file extesions are .po and .pot
         self.failUnless(
             self.template_importer.canHandleFileExtension('.po'),
-            'GettextPoImporter is not handling .po files!')
+            'GettextPoImporter should handle .po files!')
         self.failUnless(
             self.template_importer.canHandleFileExtension('.pot'),
-            'GettextPoImporter is not handling .pot files!')
+            'GettextPoImporter should handle .pot files!')
 
     def testGetLastTranslator(self):
-        """Tests whether we extract las translator information correctly."""
-        # When it's the default one in Gettext (FULL NAME <EMAIL@ADDRESS>)
-        # like it uses to be for templates, we get None values.
+        """Tests whether we extract last translator information correctly."""
+        # When it's the default one in Gettext (FULL NAME <EMAIL@ADDRESS>),
+        # used in templates, we get a tuple with None values.
         name, email = self.template_importer.getLastTranslator()
         self.failUnless(name is None,
             "Didn't detect default Last Translator name")
@@ -104,10 +104,8 @@ class GettextPoImporterTestCase(unittest.TestCase):
         # Let's try with the translation file, it has valid Last Translator
         # information.
         name, email = self.translation_importer.getLastTranslator()
-        self.failUnless(name == 'Carlos Perello Marin',
-            "Didn't get the name from Last Translator field")
-        self.failUnless(email == 'carlos@canonical.com',
-            "Didn't get the email from Last Translator field")
+        self.assertEqual(name, 'Carlos Perello Marin')
+        self.assertEqual(email, 'carlos@canonical.com')
 
 
 def test_suite():

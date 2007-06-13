@@ -27,8 +27,7 @@ from zope.app import datetimeutils
 from canonical.launchpad.interfaces import (
     ITranslationMessage, ITranslationHeader, IPOParser, EXPORT_DATE_HEADER,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError,
-    UnknownTranslationRevisionDate
-    )
+    UnknownTranslationRevisionDate)
 
 
 class POSyntaxWarning(Warning):
@@ -46,13 +45,11 @@ class POSyntaxWarning(Warning):
             return 'Po file: syntax warning on entry at line %d' % self.lno
 
 
-# classes
-
 class POMessage(object):
     implements(ITranslationMessage)
 
     def __init__(self, **kw):
-        self.check(**kw)
+        self._check(**kw)
         self.msgid = kw.get('msgid', '')
         self.msgid_plural = kw.get('msgid_plural', '')
         self.msgstr = kw.get('msgstr', '')
@@ -76,7 +73,7 @@ class POMessage(object):
             # There are no translations.
             return []
 
-    def check(self, **kw):
+    def _check(self, **kw):
         if kw.get('msgstr_plurals'):
             if 'header' not in kw or type(kw['header'].nplurals) is not int:
                 logging.warning(POSyntaxWarning(
@@ -405,6 +402,7 @@ class POMessage(object):
                 wrapped_lines.append(u'"%s"' % (local_escape(line)))
         return wrapped_lines
 
+
 class POHeader(dict, POMessage):
     implements(ITranslationHeader, ITranslationMessage)
 
@@ -421,7 +419,7 @@ class POHeader(dict, POMessage):
         if self.charset == 'CHARSET':
             self.charset = 'US-ASCII'
 
-        for attr in ['msgid', 'msgstr', 'comment', 'source_comment']:
+        for attr in ('msgid', 'msgstr', 'comment', 'source_comment'):
             if attr in kw:
                 if isinstance(kw[attr], str):
                     kw[attr] = unicode(kw[attr], self.charset, 'replace')
@@ -482,7 +480,8 @@ class POHeader(dict, POMessage):
                 ))
             v = unicode(v, self.charset, 'replace')
         except LookupError:
-            raise TranslationFormatInvalidInputError(message='Unknown charset %r' % self.charset)
+            raise TranslationFormatInvalidInputError(
+                message='Unknown charset %r' % self.charset)
 
         return v
 
@@ -503,6 +502,8 @@ class POHeader(dict, POMessage):
         return v
 
     def __getitem__(self, item):
+        # XXX CarlosPerelloMarin 20070613: Instead of an empty list we should
+        # raise NotFoundException.
         return self.get(item, [])
 
     def has_key(self, item):
@@ -659,14 +660,12 @@ class POHeader(dict, POMessage):
 
         date_string = self.get('PO-Revision-Date')
         if date_string is None:
-            # We don't have any revision date.
             raise UnknownTranslationRevisionDate, (
                 'There is no revision date information available.')
 
         try:
             return datetimeutils.parseDatetimetz(date_string)
         except datetimeutils.DateTimeError:
-            # invalid date format
             raise UnknownTranslationRevisionDate, (
                 'Found an invalid date representation: %r' % date_string)
 
@@ -827,7 +826,8 @@ class POParser(object):
             try:
                 transl = self.translation_factory(header=self.header,
                                                   **self._partial_transl)
-            except (TranslationFormatSyntaxError, TranslationFormatInvalidInputError), e:
+            except (TranslationFormatSyntaxError,
+                    TranslationFormatInvalidInputError), e:
                 if e.line_number is None:
                     e.line_number = self._partial_transl['_lineno']
                 raise
@@ -1176,7 +1176,8 @@ class POParser(object):
                 self._make_header()
 
         if not self.header:
-            raise TranslationFormatSyntaxError(message='No header found in this pofile')
+            raise TranslationFormatSyntaxError(
+                message='No header found in this pofile')
 
 
 # convenience function to parse "assignment" expressions like

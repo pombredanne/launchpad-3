@@ -40,7 +40,7 @@ class GettextPoImporter:
     def _doParsing(self):
         """Parse self.content content.
 
-        Once the parse is done self.header and self.messages contained
+        Once the parse is done self.header and self.messages contain the
         elements parsed.
         """
         parser = POParser()
@@ -52,34 +52,31 @@ class GettextPoImporter:
 
     @cachedproperty
     def format(self):
-        """See ITranslationImporter."""
+        """See ITranslationFormatImporter."""
         return TranslationFileFormat.PO
 
     def canHandleFileExtension(self, extension):
-        """See ITranslationImporter."""
-        return extension in ['.po', '.pot']
+        """See ITranslationFormatImporter."""
+        return extension in ('.po', '.pot')
 
     def getLastTranslator(self):
-        """See ITranslationImporter."""
+        """See ITranslationFormatImporter."""
         if self.header is None:
             # The file does not have a header field.
             return None, None
 
-        try:
-            last_translator = self.header['Last-Translator']
-        except KeyError:
-            # Usually we should only get a KeyError exception but if we get
-            # any other exception we should do the same, use the importer name
-            # as the person who owns the imported po file.
-            return None, None
+        # Get last translator information. If it's not found, we use the
+        # default value from Gettext.
+        last_translator = self.header.get(
+            'Last-Translator', 'FULL NAME <EMAIL@ADDRESS>')
 
         name, email = parseaddr(last_translator)
 
-        if email == 'EMAIL@ADDRESS' or not '@' in email:
-            # Gettext (and Rosetta) sets by default the email address to
-            # EMAIL@ADDRESS unless we know the real address, thus, we know this
-            # isn't a real account and we use the person that imported the file
-            # as the owner.
+        if email == 'EMAIL@ADDRESS' or '@' not in email:
+            # Gettext (and Launchpad) sets by default the email address to
+            # EMAIL@ADDRESS unless it knows the real address, thus,
+            # we know this isn't a real account so we don't accept it as a
+            # valid one.
             return None, None
         else:
             return name, email
