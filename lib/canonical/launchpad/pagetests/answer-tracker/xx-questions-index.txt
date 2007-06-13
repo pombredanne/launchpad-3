@@ -43,7 +43,7 @@ last 60 days, this list is empty):
 
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'most-active-projects'))
-    Active projects
+    Most active projects
 
     # Add some recent questions so that this listing contains something.
     >>> from zope.component import getUtility
@@ -67,7 +67,7 @@ last 60 days, this list is empty):
     >>> anon_browser.open('http://answers.launchpad.dev/')
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'most-active-projects'))
-    Active projects
+    Most active projects
     Ubuntu
     Mozilla Firefox
 

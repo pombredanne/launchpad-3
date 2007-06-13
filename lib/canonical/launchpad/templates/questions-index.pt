@@ -69,7 +69,7 @@
 
       <div class="columns">
         <div id="most-active-projects" class="three column left">
-          <h2 i18n:translate="">Active projects</h2>
+          <h2 i18n:translate="">Most active projects</h2>
 
           <ul tal:define="projects view/most_active_projects"
               tal:condition="projects"
