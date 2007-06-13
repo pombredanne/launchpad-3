@@ -4,12 +4,18 @@
 
 __metaclass__ = type
 __all__ = [
-        'IOpenIdAuthorization', 'IOpenIdAuthorizationSet',
+        'IOpenIdAuthorization',
+        'IOpenIdAuthorizationSet',
         'ILaunchpadOpenIdStoreFactory',
+        'ILoginServiceAuthorizeForm',
+        'ILoginServiceLoginForm',
         ]
 
 from zope.schema import Int, TextLine, Datetime
 from zope.interface import Interface, Attribute
+
+from canonical.launchpad.fields import PasswordField
+
 
 class IOpenIdAuthorization(Interface):
     id = Int(title=u'ID', required=True)
@@ -46,6 +52,7 @@ class IOpenIdAuthorizationSet(Interface):
         This method overrides any existing authorization for the given
         (person, trust_root, client_id).
         """
+
  
 class ILaunchpadOpenIdStoreFactory(Interface):
     """Factory to create LaunchpadOpenIdStore instances."""
@@ -53,3 +60,23 @@ class ILaunchpadOpenIdStoreFactory(Interface):
     def __call__():
         """Create a LaunchpadOpenIdStore instance."""
 
+
+class ILoginServiceAuthorizeForm(Interface):
+    """A schema used for the authorisation form showed to
+    authenticated users."""
+
+    nonce = TextLine(title=u'Nonce', required=False,
+                     description=u'Unique value')
+
+
+class ILoginServiceLoginForm(ILoginServiceAuthorizeForm):
+    """A schema used for the login/register form showed to
+    unauthenticated users."""
+
+    email = TextLine(title=u'What is your e-mail address?', required=True)
+    password = PasswordField(
+            title=u'password', required=True,
+            description=u"The password you use to log into Launchpad.")
+
+    #password
+    #action - register/login/reset-password
