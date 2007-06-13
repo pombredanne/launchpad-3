@@ -23,7 +23,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.cachedproperty import cachedproperty
 
 import canonical.launchpad.layers
-from canonical.launchpad.interfaces import IShipItApplication
+from canonical.launchpad.interfaces import (
+        IShipItApplication, IOpenIdApplication)
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
@@ -696,6 +697,9 @@ class LaunchpadXMLRPCResponse(XMLRPCResponse):
 
 class OpenIdPublication(LaunchpadBrowserPublication):
     """The publication used for OpenId requests."""
+
+    root_object_interface = IOpenIdApplication
+
 
 class OpenIdBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.OpenIdLayer)
