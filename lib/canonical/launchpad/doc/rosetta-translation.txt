@@ -220,7 +220,8 @@ and re-initialize the pomsgset's in-memory caches.
     >>> noneditor_submission.datecreated += datetime.timedelta(0,2,0)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
-    >>> pomsgset.removeSecurityProxy()._invalidateSubmissionsCaches()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(pomsgset)._invalidateSubmissionsCaches()
 
 Let's make sure:
 
