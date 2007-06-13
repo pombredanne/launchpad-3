@@ -42,7 +42,11 @@
             <tr>
               <td>
                 <input type="radio" id="bug-already-reported-yes" checked="checked"
-                       name="field.bug_already_reported" value="on" />
+                       name="field.bug_already_reported" value="on"
+                       tal:condition="not:request/htmlform:field.bug_already_reported/selected/off" />
+                <input type="radio" id="bug-already-reported-yes"
+                       name="field.bug_already_reported" value="on"
+                       tal:condition="request/htmlform:field.bug_already_reported/selected/off" />
               </td>
               <td>
                 <label for="bug-already-reported-yes">
@@ -109,8 +113,12 @@
           <tal:submit-new-bug>
             <tr>
               <td>
+                <input type="radio" id="bug-already-reported-no" checked="checked"
+                       name="field.bug_already_reported" value="off"
+                       tal:condition="request/htmlform:field.bug_already_reported/selected/off" />
                 <input type="radio" id="bug-already-reported-no"
-                       name="field.bug_already_reported" value="off" />
+                       name="field.bug_already_reported" value="off"
+                       tal:condition="not:request/htmlform:field.bug_already_reported/selected/off" />
               </td>
               <td>
                 <label for="bug-already-reported-no">

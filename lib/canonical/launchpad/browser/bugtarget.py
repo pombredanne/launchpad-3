@@ -176,6 +176,14 @@ class FileBugViewBase(LaunchpadFormView):
 
     def validate(self, data):
         """Make sure the package name, if provided, exists in the distro."""
+        # If the user has chosen to select an existing bug and has
+        # been presented with a list of bugs to choose from then check
+        # that he's actually chosen one of the bugs.
+        if (data.get('bug_already_reported') and
+            not data.get('bug_already_reported_as')):
+            self.setFieldError('bug_already_reported_as', "Please choose a bug")
+            return
+
         # We have to poke at the packagename value directly in the
         # request, because if validation failed while getting the
         # widget's data, it won't appear in the data dict.
@@ -361,12 +369,11 @@ class FileBugViewBase(LaunchpadFormView):
             failure=handleSubmitBugFailure)
     def this_is_my_bug_action(self, action, data):
         """"""
-        bug_already_reported = data.get('bug_already_reported')
         bug_already_reported_as = data.get('bug_already_reported_as')
 
-        import pdb; pdb.set_trace()
-
         if bug_already_reported_as:
+            if bug_already_reported == 'off':
+                data['bug_already_reported'] = 'on'
             self.request.response.redirect(
                 canonical_url(bug_already_reported_as.bugtasks[0]))
 
