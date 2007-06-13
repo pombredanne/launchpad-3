@@ -3703,3 +3703,24 @@ class EntitlementType(DBSchema):
         The ability to create private teams which are only visible to parent
         teams.
         """)
+
+class EntitlementState(DBSchema):
+    """States for an entitlement."""
+
+    REQUESTED = Item(0, """
+        Entitlement has been requested.
+
+        The entitlement is inactive in this state.
+        """)
+
+    ACTIVE = Item(1, """
+        The entitlement is active.
+
+        The entitlement is approved in Launchpad or was imported in the
+        active state.
+        """)
+    INACTIVE = Item(2, """
+        The entitlement is inactive.
+
+        The entitlement has be deactivated.
+        """)

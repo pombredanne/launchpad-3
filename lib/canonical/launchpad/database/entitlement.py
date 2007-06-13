@@ -5,7 +5,7 @@ __all__ = ['Entitlement']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol
+from sqlobject import ForeignKey, IntCol, StringCol
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -28,6 +28,10 @@ class Entitlement(SQLBase):
     entitlement_type = IntCol(notNull=True)
     quota = IntCol(notNull=True)
     amount_used = IntCol(notNull=True, default=0)
+    registrant = ForeignKey(dbName='registrant', foreignKey='Person', default=None, notNull=False)
+    approved_by = ForeignKey(dbName='approved_by', foreignKey='Person', default=None, notNull=False)
+    status = IntCol(notNull=True, default=0)
+    whiteboard = StringCol(notNull=False, default=None)
 
     @property
     def exceededQuota(self):

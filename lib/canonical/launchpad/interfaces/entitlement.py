@@ -11,6 +11,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Int
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import Whiteboard
 
 class IEntitlement(Interface):
     """An entitlement."""
@@ -32,6 +33,11 @@ class IEntitlement(Interface):
     entitlement_type = Int(title=_("Type of entitlement."))
     quota = Int(title=_("Allocated quota."), required=True)
     amount_used = Int(title=_("Amount used."))
+    registrant = Int(title=_("Registrant"))
+    approved_by = Int(title=_("Approved by"))
+    status = Int(title=_("Status"), required=True)
+    whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
+        description=_('Notes on the current status of the entitlement.'))
 
     def exceededQuota():
         """Is the quota exceeded?"""
