@@ -168,7 +168,7 @@ class NotificationRecipientSet:
             return self._personToRationale[person]
         except KeyError:
             raise UnknownRecipientError(person)
-            
+
     def add(self, persons, reason, header):
         """See `INotificationRecipientSet`."""
 
@@ -1074,7 +1074,7 @@ def notify_invitation_to_join_team(event):
         'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
         'member': '%s (%s)' % (member.browsername, member.name),
         'team': '%s (%s)' % (team.browsername, team.name),
-        'membership_invitations_url': 
+        'membership_invitations_url':
             "%s/+invitation/%s" % (canonical_url(member), team.name)}
     msg = MailWrapper().format(msg)
     simple_sendmail(from_addr, admin_addrs, subject, msg)
@@ -1426,7 +1426,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             info_fields.append(
                 indent + 'Project: %s => %s' % (
                 old_question.target.displayname, question.target.displayname))
-                
+
         old_bugs = set(old_question.bugs)
         bugs = set(question.bugs)
         for linked_bug in bugs.difference(old_bugs):
