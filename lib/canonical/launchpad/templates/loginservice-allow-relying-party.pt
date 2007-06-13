@@ -13,17 +13,13 @@
       <form method="post" accept-charset="UTF-8" action="/+decide">
         <tal:widget replace="structure view/widgets/nonce/hidden" />
 
-        <!--
         <div>
-          <input type="submit"
-            tal:attributes="name view/submit_logout;
-              value string:No, I'm not ${view/user/displayname}" />
+          <tal:submit replace="structure view/logout_action/render" />
         </div>
 
         <br />
         <div>
-          <h4>These details will be sent to 
-            <span tal:replace="view/openid_relyingparty_name" /></h4>
+          <h4>These details will be sent to the Ubuntu shop</h4>
           <ul>
             <li tal:content="view/user/displayname">
               My name
@@ -33,7 +29,6 @@
             </li>
           </ul>
         </div>
-        -->
 
         <br />
         <div>

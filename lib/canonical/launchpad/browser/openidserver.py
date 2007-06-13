@@ -123,6 +123,23 @@ class OpenIDMixinView:
         except LookupError:
             pass
 
+    def showLoginPage(self):
+        self.storeOpenIdRequestInSession()
+        return LoginServiceLoginView(
+            self.context, self.request, self.nonce)()
+
+    def storeOpenIdRequestInSession(self):
+        # To ensure that the user has seen this page and it was actually the
+        # user that clicks the 'Accept' button, we generate a nonce and
+        # use it to store the openid_request in the session. The nonce
+        # is passed through by the form, but it is only meaningful if
+        # it was used to store information in the actual users session,
+        # rather than the session of a malicious connection attempting a
+        # man-in-the-middle attack.
+        nonce = generate_uuid()
+        self.saveRequestInSession('nonce' + nonce)
+        self.nonce = nonce
+
     def renderOpenIdResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
 
@@ -285,23 +302,6 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
         return LoginServiceAuthorizeView(
             self.context, self.request, self.nonce)()
 
-    def showLoginPage(self):
-        self.storeOpenIdRequestInSession()
-        return LoginServiceLoginView(
-            self.context, self.request, self.nonce)()
-
-    def storeOpenIdRequestInSession(self):
-        # To ensure that the user has seen this page and it was actually the
-        # user that clicks the 'Accept' button, we generate a nonce and
-        # use it to store the openid_request in the session. The nonce
-        # is passed through by the form, but it is only meaningful if
-        # it was used to store information in the actual users session,
-        # rather than the session of a malicious connection attempting a
-        # man-in-the-middle attack.
-        nonce = generate_uuid()
-        self.saveRequestInSession('nonce' + nonce)
-        self.nonce = nonce
-
     def isIdentityOwner(self):
         """Returns True if we are logged in as the owner of the identity."""
         assert self.user is not None, "user should be logged in by now."
@@ -358,7 +358,8 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         self._getRequest(data)
         return self.renderOpenIdResponse(self.createFailedResponse())
 
-    def logout(self):
+    @action("No, I'm not this person", name='logout')
+    def logout_action(self, action, data):
         # Log the user out and render the login page again.
         session = ISession(self.request)
         authdata = session['launchpad.authenticateduser']
@@ -367,7 +368,7 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         authdata['personid'] = None
         authdata['logintime'] = datetime.utcnow()
         notify(LoggedOutEvent(self.request))
-        return self.login_template()
+        return self.showLoginPage()
 
 
 class LoginServiceLoginView(LoginServiceBaseView):
