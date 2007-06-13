@@ -584,7 +584,7 @@ class QuestionTargetTraversalMixin:
         question = self.context.getQuestion(question_id)
         if question is not None:
             return question
-        
+
         # Try to find the question in another context, since it may have
         # been retargeted.
         question = getUtility(IQuestionSet).get(question_id)
