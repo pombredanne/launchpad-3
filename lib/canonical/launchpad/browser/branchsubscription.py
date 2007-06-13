@@ -123,9 +123,11 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     for_input=True
 
     # Since we are subscribing other people, the current user
-    # is never concidered subscribed.
+    # is never considered subscribed.
     user_is_subscribed = False
     subscribing_self = False
+    # Override the inherited property for next_url
+    next_url = None
 
     @action("Subscribe")
     def subscribe(self, action, data):
@@ -133,23 +135,27 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         max_diff_lines = self.optional_max_diff_lines(
             notification_level, data['max_diff_lines'])
         person = data['person']
-
         subscription = self.context.getSubscription(person)
+        self.next_url = canonical_url(self.context)
         if subscription is None:
+            if person.isTeam() and not self.user.inTeam(person):
+                # A person can only subscribe a team if they are members
+                # of that team.
+                self.setFieldError(
+                    'person',
+                    "You can only subscribe teams that you are a member of.")
+                self.next_url = None
+                return
+
             self.context.subscribe(person, notification_level, max_diff_lines)
 
             self.add_notification_message(
                 '%s has been subscribed to this branch with: '
-                % (person.displayname),
-                notification_level, max_diff_lines)
+                % person.displayname, notification_level, max_diff_lines)
         else:
-            if person.isTeam():
-                word = 'were'
-            else:
-                word = 'was'
             self.add_notification_message(
-                '%s %s already subscribed to this branch with: '
-                % (person.displayname, word),
+                '%s was already subscribed to this branch with: '
+                % person.displayname,
                 subscription.notification_level, subscription.max_diff_lines)
 
 
@@ -166,13 +172,9 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
     @action("Unsubscribe")
     def unsubscribe(self, action, data):
         self.branch.unsubscribe(self.person)
-        if self.person.isTeam():
-            word = 'have'
-        else:
-            word = 'has'
         self.request.response.addNotification(
-            "%s %s been unsubscribed from this branch."
-            % (self.person.displayname, word))
+            "%s has been unsubscribed from this branch."
+            % self.person.displayname)
 
     @action("Change")
     def change_details(self, action, data):

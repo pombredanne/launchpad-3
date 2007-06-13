@@ -70,6 +70,9 @@ class LaunchpadFormView(LaunchpadView):
     render_context = False
 
     form_result = None
+    # The for_input is passed through to create the fields.  If this value
+    # is set to true in derived classes, then fields that are marked
+    # read only will have editable widgets created for them.
     for_input=None
 
     def __init__(self, context, request):

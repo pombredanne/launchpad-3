@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
+from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.lp.dbschema import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     BranchRelationships, BranchLifecycleStatus)
@@ -214,67 +215,13 @@ class Branch(SQLBase):
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
 
-    def getAttributeNotificationAddresses(self):
+    def getNotificationRecipients(self):
         """See IBranch."""
-        notification_addresses = set()
-        team_subscription_source = {}
-        individual_subscription_source = {}
-        interested_levels = (
-            BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
-            BranchSubscriptionNotificationLevel.FULL)
+        recipients = NotificationRecipientSet()
         for subscription in self.subscriptions:
-            if subscription.notification_level in interested_levels:
-                addresses = contactEmailAddresses(subscription.person)
-                if subscription.person.isTeam():
-                    subscription_source = team_subscription_source
-                else:
-                    subscription_source = individual_subscription_source
-                for address in addresses:
-                    subscription_source[address] = subscription
-                notification_addresses.update(addresses)
-        # Individual preferences override team preferences.
-        subscription_source = team_subscription_source
-        subscription_source.update(individual_subscription_source)
-        return (sorted(notification_addresses), subscription_source)
-
-    def getRevisionNotificationDetails(self):
-        """See IBranch."""
-        team_email_details = {}
-        individual_email_details = {}
-        # Record which subcription is causing the email to be sent.
-        team_subscription_source = {}
-        individual_subscription_source = {}
-
-        interested_levels = (
-            BranchSubscriptionNotificationLevel.DIFFSONLY,
-            BranchSubscriptionNotificationLevel.FULL)
-        for subscription in self.subscriptions:
-            if subscription.notification_level in interested_levels:
-                addresses = contactEmailAddresses(subscription.person)
-                if subscription.person.isTeam():
-                    email_details = team_email_details
-                    subscription_source = team_subscription_source
-                else:
-                    email_details = individual_email_details
-                    subscription_source = individual_subscription_source
-                for address in addresses:
-                    if address in email_details:
-                        current = email_details[address]
-                        more_details = subscription.max_diff_lines > current
-                    if address not in email_details or more_details:
-                        email_details[address] = subscription.max_diff_lines
-                        subscription_source[address] = subscription
-        # Individual preferences override team preferences.
-        email_details = team_email_details
-        email_details.update(individual_email_details)
-        subscription_source = team_subscription_source
-        subscription_source.update(individual_subscription_source)
-        # Now that we have determined the maximum size to send
-        # to any individual, switch the map around.
-        result = {}
-        for address, max_diff in email_details.iteritems():
-            result.setdefault(max_diff, []).append(address)
-        return (result, subscription_source)
+            # Not using the header, but there is no default value.
+            recipients.add(subscription.person, subscription, None)
+        return recipients
 
     def getScannerData(self):
         """See IBranch."""

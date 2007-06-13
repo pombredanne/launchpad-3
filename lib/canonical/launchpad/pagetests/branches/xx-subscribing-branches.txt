@@ -20,7 +20,8 @@ Another to print the informational message.
 
 In order to subscribe to a branch, the user must be logged in.
 
-    >>> anon_browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> anon_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> anon_browser.getLink('Subscribe')
     Traceback (most recent call last):
     ...
@@ -108,7 +109,8 @@ can be used to subscribe individuals or teams.
 
 You need to be logged in to see the link.
 
-    >>> anon_browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> anon_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> anon_browser.getLink('Subscribe someone else')
     Traceback (most recent call last):
     ...
@@ -155,11 +157,38 @@ Subscribing a team is as simple as putting in the team name.
     >>> diff_control.value = ['1000 lines']
     >>> browser.getControl('Person').value = 'launchpad'
     >>> browser.getControl('Subscribe').click()
-    >>> print_informational_message(browser.contents)
+
+The user can only subscribe teams that they are members of.
+
+    >>> errors = find_tags_by_class(browser.contents, 'error')
+    >>> for error in errors:
+    ...     print error.renderContents()
+    There is 1 error.
+    ...field.person...You can only subscribe teams that you are a member of...
+
+Foo Bar is a member of Launchpad developers.
+
+    >>> from zope.testbrowser.testing import Browser
+    >>> foo_browser = Browser()
+    >>> foo_browser.addHeader(
+    ...     'Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> foo_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> foo_browser.getLink('Subscribe someone else').click()
+    >>> level_control = foo_browser.getControl(name='field.notification_level')
+    >>> level_control.value = ['Branch attribute and revision notifications']
+    >>> diff_control = foo_browser.getControl(name='field.max_diff_lines')
+    >>> diff_control.value = ['1000 lines']
+    >>> foo_browser.getControl('Person').value = 'launchpad'
+    >>> foo_browser.getControl('Subscribe').click()
+    >>> print_informational_message(foo_browser.contents)
     Launchpad Developers has been subscribed to this branch with:
     Send notifications for both branch attribute updates
     and new revisions added to the branch.
     Limit the generated diff to 1000 lines.
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> print_subscribers(browser.contents)
     Launchpad Developers
     Mark Shuttleworth
@@ -177,15 +206,13 @@ There should be a central user subscriptions page.  This could then
 be used to traverse to the branch subscriptions instead of through
 the branch itself.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> foo_browser = Browser()
-    >>> foo_browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-    >>> foo_browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main')
+    >>> foo_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> print_subscribers(foo_browser.contents)
-    Launchpad Developers  (edit subscription)
+    Launchpad Developers  <img src="/@@/edit" alt="Edit subscription" />
     Mark Shuttleworth
 
-    >>> foo_browser.getLink('(edit subscription)').click()
+    >>> foo_browser.getLink(url='+subscription/launchpad').click()
     >>> main_content = find_main_content(foo_browser.contents)
     >>> print extract_text(main_content.h1)
     Edit subscription to branch
@@ -196,7 +223,7 @@ From this page the branch subscription can be altered or unsubscribed from.
 
     >>> foo_browser.getControl('Unsubscribe').click()
     >>> print_informational_message(foo_browser.contents)
-    Launchpad Developers have been unsubscribed from this branch.
+    Launchpad Developers has been unsubscribed from this branch.
     >>> print_subscribers(foo_browser.contents)
     Mark Shuttleworth
 

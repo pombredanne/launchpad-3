@@ -8,7 +8,7 @@
            tal:attributes="href subscription/person/fmt:url">Dafydd Harries</a>
         <a tal:attributes="href subscription/fmt:url"
            tal:condition="subscription/editable">
-          (edit subscription)</a>
+          <img src="/@@/edit" alt="Edit subscription"/></a>
       </li>
     </ul>
     <p tal:condition="not:view/subscriptions">No subscribers.</p>

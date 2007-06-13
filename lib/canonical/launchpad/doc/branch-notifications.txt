@@ -39,7 +39,7 @@ recipients.
     ...     BranchSubscriptionDiffSize.WHOLEDIFF)
     >>> email_branch_modified_notifications(
     ...     branch, ['test@canonical.com'], 'foo@canonical.com',
-    ...     'The contents.', {'test@canonical.com': subscription})
+    ...     'The contents.', branch.getNotificationRecipients())
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -154,27 +154,21 @@ And to make sure we have them:
     sabdfl
     launchpad
 
-Now make sure that they get returned appropriately for the
-correct notifications.
-
-    >>> addresses, subscription_source = (
-    ...     branch.getAttributeNotificationAddresses())
-    >>> for address in addresses:
-    ...     print address
-    foo.bar@canonical.com
-    mark@hbd.com
-    test@canonical.com
-
-    >>> details, subscription_source = branch.getRevisionNotificationDetails()
-    >>> for max_diff in sorted(details.keys()):
-    ...     for address in sorted(details[max_diff]):
-    ...         print address, max_diff.title
+    >>> recipients = branch.getNotificationRecipients()
+    >>> interested_levels = (
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
+    ...     BranchSubscriptionNotificationLevel.FULL)
+    >>> for email in recipients.getEmails():
+    ...     subscription, ignored = recipients.getReason(email)
+    ...     if subscription.notification_level in interested_levels:
+    ...         print email, subscription.max_diff_lines.title
     carlos@canonical.com          Don't send diffs
-    jeff.waugh@ubuntulinux.com    500 lines
     celso.providelo@canonical.com 1000 lines
     daf@canonical.com             5000 lines
     foo.bar@canonical.com         Send entire diff
+    jeff.waugh@ubuntulinux.com    500 lines
     mark@hbd.com                  Send entire diff
+
 
 == Limiting the size of diff received by email ==
 
@@ -190,6 +184,9 @@ We need to create some sufficiently large diffs to compare against.
 
     >>> from canonical.launchpad.mailnotification import (
     ...     send_branch_revision_notifications)
+
+Send the revision notifications.
+
     >>> send_branch_revision_notifications(
     ...     branch, 'no-reply@canonical.com', message, diff)
     >>> notifications = pop_notifications()
@@ -216,6 +213,9 @@ We need to create some sufficiently large diffs to compare against.
     The size of the diff (6000 lines) is larger than your specified limit of 50=
     00 lines...
 
+Foo Bar is getting the email due to his membership in the Launchpad developers
+team, and as such the unsubscription link is to the team subscription.
+
     >>> print_to_and_body(notifications.pop(0))
     To: foo.bar@canonical.com
     Test message.
@@ -230,6 +230,8 @@ We need to create some sufficiently large diffs to compare against.
     <BLANKLINE>
     The size of the diff (6000 lines) is larger than your specified limit of 50=
     0 lines...
+
+Mark's unsubscription link is to his personal branch subscription.
 
     >>> print_to_and_body(notifications.pop(0))
     To: mark@hbd.com
@@ -337,22 +339,17 @@ that is used rather than the email addresses of the seven members.
     ...     BranchSubscriptionDiffSize.ONEKLINES)
     <BranchSubscription ...
 
-    >>> details, subscription_source = branch.getRevisionNotificationDetails()
-    >>> for max_diff in sorted(details.keys()):
-    ...     for address in details[max_diff]:
-    ...         print address, max_diff.title
-    david.allouche@canonical.com  500 lines
-    support@ubuntu.com           1000 lines
-    foo.bar@canonical.com        5000 lines
-    robertc@robertcollins.net    5000 lines
-
-    >>> for email_address, subscription in subscription_source.iteritems():
-    ...     print "%s subscribed through %s" % (
-    ...         email_address, subscription.person.browsername)
-    support@ubuntu.com subscribed through Ubuntu Team
-    david.allouche@canonical.com subscribed through David Allouche
-    foo.bar@canonical.com subscribed through VCS imports
-    robertc@robertcollins.net subscribed through VCS imports
+    >>> recipients = branch.getNotificationRecipients()
+    >>> for email in recipients.getEmails():
+    ...     subscription, ignored = recipients.getReason(email)
+    ...     if subscription.notification_level in interested_levels:
+    ...         print "%s %s subscribed through %s" % (
+    ...             email, subscription.max_diff_lines.title,
+    ...             subscription.person.browsername)
+    david.allouche@canonical.com  500 lines subscribed through David Allouche
+    foo.bar@canonical.com        5000 lines subscribed through VCS imports
+    robertc@robertcollins.net    5000 lines subscribed through VCS imports
+    support@ubuntu.com           1000 lines subscribed through Ubuntu Team
 
 
 == Attribute emails ==
