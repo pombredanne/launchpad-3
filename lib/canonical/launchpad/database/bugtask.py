@@ -44,6 +44,7 @@ from canonical.launchpad.interfaces import (
     IDistroSeriesBugTask,
     ILaunchpadCelebrities,
     INullBugTask,
+    IProductSeries,
     IProductSeriesBugTask,
     ISourcePackage,
     IUpstreamBugTask,
@@ -1162,13 +1163,21 @@ class BugTaskSet:
             extra_clauses.append(bug_reporter_clause)
 
         if params.nominated_for:
-            assert IDistroSeries.providedBy(params.nominated_for)
+            mappings = sqlvalues(
+                target=params.nominated_for,
+                nomination_status=BugNominationStatus.PROPOSED)
+            if IDistroSeries.providedBy(params.nominated_for):
+                mappings['target_column'] = 'distrorelease'
+            elif IProductSeries.providedBy(params.nominated_for):
+                mappings['target_column'] = 'productseries'
+            else:
+                raise AssertionError(
+                    'Unknown nomination target: %r' % params.nominated_for)
             nominated_for_clause = """
                 BugNomination.bug = BugTask.bug AND
-                BugNomination.distrorelease = %s AND
-                BugNomination.status = %s
-                """ % sqlvalues(
-                    params.nominated_for, BugNominationStatus.PROPOSED)
+                BugNomination.%(target_column)s = %(target)s AND
+                BugNomination.status = %(nomination_status)s
+                """ % mappings
             extra_clauses.append(nominated_for_clause)
             clauseTables.append('BugNomination')
 
