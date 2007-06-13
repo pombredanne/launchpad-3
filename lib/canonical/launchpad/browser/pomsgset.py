@@ -1117,16 +1117,9 @@ class POMsgSetView(LaunchpadView):
     def message_must_be_hidden(self):
         """Whether the message must be hidden.
 
-        Messages are always shown to logged-in users.
-
-        Messages that are likely to contain email addresses
-        are shown only to logged-in users, and not to anonymous users.
+        Messages are hidden if they are automatically handled by Launchpad.
         """
-        if self.user is not None:
-            # Always show messages to logged-in users.
-            return False
-        # For anonymous users, check the msgid.
-        return self.context.potmsgset.hide_translations_from_anonymous
+        return self.context.potmsgset.hide_message
 
     @cachedproperty
     def sequence(self):
