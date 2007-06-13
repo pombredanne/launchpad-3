@@ -698,7 +698,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             "is not a participant in any direct member of %(team)s"
             % dict(person=self.name, team=team.name))
         return member
-            
+
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
@@ -896,6 +896,17 @@ class Person(SQLBase, HasSpecificationsMixin):
 
         return False
 
+    @property
+    def openid_identifier(self):
+        # XXX: This should be a value stored in the database. Calculating
+        # using a hash for now so we can test during database freeze.
+        # Bug #118200
+        # -- StuartBishop 20070528
+        if self.isTeam():
+            return None
+        else:
+            return 'temp%d' % self.id
+
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
         """See IPerson."""
@@ -1059,7 +1070,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                 "be added as a member of '%s'"
                 % (self.name, person.name, person.name, self.name))
             # By default, teams can only be invited as members, meaning that
-            # one of the team's admins will have to accept the invitation 
+            # one of the team's admins will have to accept the invitation
             # before the team is made a member. If force_team_add is True,
             # though, then we'll add a team as if it was a person.
             if not force_team_add:
@@ -1082,13 +1093,13 @@ class Person(SQLBase, HasSpecificationsMixin):
                 reviewercomment=comment)
             notify(event(person, self))
 
-    # The two methods below are not in the IPerson interface because we want
+    # The three methods below are not in the IPerson interface because we want
     # to protect them with a launchpad.Edit permission. We could do that by
     # defining explicit permissions for all IPerson methods/attributes in
     # the zcml but that's far from optimal given the size of IPerson.
     def acceptInvitationToBeMemberOf(self, team, comment):
         """Accept an invitation to become a member of the given team.
-        
+
         There must be a TeamMembership for this person and the given team with
         the INVITED status. The status of this TeamMembership will be changed
         to APPROVED.
@@ -1102,7 +1113,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def declineInvitationToBeMemberOf(self, team, comment):
         """Decline an invitation to become a member of the given team.
-        
+
         There must be a TeamMembership for this person and the given team with
         the INVITED status. The status of this TeamMembership will be changed
         to INVITATION_DECLINED.
@@ -1113,6 +1124,26 @@ class Person(SQLBase, HasSpecificationsMixin):
         tm.setStatus(
             TeamMembershipStatus.INVITATION_DECLINED,
             getUtility(ILaunchBag).user, reviewercomment=comment)
+
+    def renewTeamMembership(self, team):
+        """Renew the TeamMembership for this person on the given team.
+
+        The given team's renewal policy must be ONDEMAND and the membership
+        must be active (APPROVED or ADMIN) and set to expire in less than
+        DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        """
+        tm = TeamMembership.selectOneBy(person=self, team=team)
+        assert tm.canBeRenewedByMember(), (
+            "This membership can't be renewed by the member himself.")
+
+        assert (team.defaultrenewalperiod is not None
+                and team.defaultrenewalperiod > 0), (
+            'Teams with a renewal policy of ONDEMAND must specify '
+            'a default renewal period greater than 0.')
+        # Keep the same status, change the expiration date and send a
+        # notification explaining the membership has been renewed.
+        tm.dateexpires += timedelta(days=team.defaultrenewalperiod)
+        tm.sendSelfRenewalNotification()
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
@@ -1588,6 +1619,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         return Archive.selectOneBy(owner=self)
 
+
 class PersonSet:
     """The set of persons."""
     implements(IPersonSet)
@@ -1689,6 +1721,20 @@ class PersonSet:
         if ignore_merged:
             query = AND(query, Person.q.mergedID==None)
         return Person.selectOne(query)
+
+    def getByOpenIdIdentifier(self, openid_identifier):
+        """Returns a Person with the given openid_identifier, or None."""
+        # XXX: This should be a value stored in the database. Calculating
+        # using a hash for now so we can test during database freeze.
+        # Bug #118200
+        # -- StuartBishop 20070528
+        if openid_identifier.startswith('temp'):
+            try:
+                id = int(openid_identifier[4:])
+            except ValueError:
+                return None
+            return self.get(id)
+        return None
 
     def updateStatistics(self, ztm):
         """See IPersonSet."""

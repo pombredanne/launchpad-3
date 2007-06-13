@@ -7,9 +7,9 @@ __metaclass__ = type
 __all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces import (
-    IDistributionSet, IComponentSet, ILaunchpadCelebrities)
 
+from canonical.launchpad.interfaces import (
+    IDistributionSet, ILaunchpadCelebrities)
 from canonical.lp.dbschema import (
     PackagePublishingPocket, DistroSeriesStatus)
 
@@ -121,7 +121,7 @@ class AbstractUploadPolicy:
         else:
             # XXX julian 2005-05-29
             # This is a greasy hack until bug #117557 is fixed.
-            if (self.distroseries and 
+            if (self.distroseries and
                 not self.distroseries.canUploadToPocket(self.pocket)):
                 upload.reject(
                     "Not permitted to upload to the %s pocket in a "
@@ -328,7 +328,7 @@ class SecurityUploadPolicy(AbstractUploadPolicy):
         self.name = "security"
         self.unsigned_dsc_ok = True
         self.unsigned_changes_ok = True
-        self.can_upload_mixed = False
+        self.can_upload_mixed = True
         self.can_upload_binaries = True
 
     def policySpecificChecks(self, upload):

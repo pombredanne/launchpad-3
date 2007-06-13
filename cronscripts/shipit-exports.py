@@ -9,14 +9,14 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.lp import READ_COMMITTED_ISOLATION
-from canonical.launchpad.scripts.base import (LaunchpadScript,
+from canonical.launchpad.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
     IShippingRequestSet, ShipItConstants, ShippingRequestPriority)
 from canonical.lp.dbschema import ShipItDistroSeries
 
 
-class ShipitExports(LaunchpadScript):
+class ShipitExports(LaunchpadCronScript):
     usage = '%prog --priority=normal|high'
     def add_my_options(self):
         self.parser.add_option(
