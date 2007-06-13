@@ -37,6 +37,7 @@ def split_with_padding(a_string, splitter, num_fields, padding=None):
 
 
 # XXX: JonathanLange 2007-06-13, This should probably be part of bzrlib.
+# See https://launchpad.net/bugs/120135.
 def makedirs(base_transport, path, mode=None):
     """Create 'path' on 'base_transport', even if parents of 'path' don't exist
     yet.
