@@ -168,14 +168,15 @@ class FakeLaunchpad:
     def getBranchInformation(self, login_id, user_name, product_name,
                              branch_name):
         for branch_id, branch in self._branch_set.iteritems():
-            owner = self._person_set[branch['user_id']]
+            owner = self._lookup(self._person_set, branch['user_id'])
             if branch['product_id'] == '':
                 product = '+junk'
             else:
                 product = self._product_set[branch['product_id']]['name']
             if ((owner['name'], product, branch['name'])
                 == (user_name, product_name, branch_name)):
-                if login_id in owner['teams']:
+                logged_in_user = self._lookup(self._person_set, login_id)
+                if owner['id'] in logged_in_user['teams']:
                     return branch_id, 'w'
                 else:
                     return branch_id, 'r'

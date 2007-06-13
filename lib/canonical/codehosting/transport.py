@@ -182,7 +182,7 @@ class LaunchpadServer(Server):
             self.user_id, user, product, branch)
         if branch_id == '':
             raise UntranslatablePath(path=virtual_path, user=self.user_name)
-        return '/'.join([branch_id_to_path(branch_id), path])
+        return '/'.join([branch_id_to_path(branch_id), path]), permissions
 
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
@@ -250,7 +250,9 @@ class LaunchpadTransport(Transport):
         :return: A valid path on the backing transport.
         """
         try:
-            return self.server.translate_virtual_path(self._abspath(relpath))
+            path, permissions = self.server.translate_virtual_path(
+                self._abspath(relpath))
+            return path
         except (UntranslatablePath, TransportNotPossible):
             raise NoSuchFile(relpath)
 

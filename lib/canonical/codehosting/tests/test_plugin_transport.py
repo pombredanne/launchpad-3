@@ -11,6 +11,7 @@ from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryTransport
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
+from canonical.authserver.interfaces import READ_ONLY, WRITABLE
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import LaunchpadServer
 from canonical.testing import BzrlibLayer
@@ -38,19 +39,19 @@ class TestLaunchpadServer(TestCaseInTempDir):
         # ~person/product/branch maps to the branch ID converted to a four byte
         # hexadecimal number and then split into four path segments.
         self.assertEqual(
-            '00/00/00/01/',
+            ('00/00/00/01/', WRITABLE),
             self.server.translate_virtual_path('/~testuser/firefox/baz'))
         self.assertEqual(
-            '00/00/00/04/',
-            self.server.translate_virtual_path('/~testteam/firefox/qux'))
-        self.assertEqual(
-            '00/00/00/03/',
+            ('00/00/00/03/', WRITABLE),
             self.server.translate_virtual_path('/~testuser/+junk/random'))
+        self.assertEqual(
+            ('00/00/00/04/', WRITABLE),
+            self.server.translate_virtual_path('/~testteam/firefox/qux'))
 
     def test_extend_path_translation(self):
         # Trailing path segments are preserved.
         self.assertEqual(
-            '00/00/00/01/.bzr',
+            ('00/00/00/01/.bzr', WRITABLE),
             self.server.translate_virtual_path('/~testuser/firefox/baz/.bzr'))
 
     def test_setUp(self):
