@@ -22,15 +22,6 @@
 
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
-        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-        permission="zope.Public"
-        template="../templates/loginservice-login.pt"
-        name="+openid-new"
-        class="canonical.launchpad.browser.openidserver.LoginServiceView"
-        />
-
-    <browser:page
-        layer="canonical.launchpad.layers.OpenIdLayer"
         for="canonical.launchpad.interfaces.IOpenIdApplication"
         permission="zope.Public"
         name="+index"
@@ -40,6 +31,20 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IOpenIdApplication"
         name="+index"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+decide"
+        class="canonical.launchpad.browser.openidserver.LoginServiceAuthorizeView"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+login-foo"
+        class="canonical.launchpad.browser.openidserver.LoginServiceLoginView"
         />
 
     <browser:page

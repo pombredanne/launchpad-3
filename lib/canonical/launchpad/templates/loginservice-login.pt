@@ -6,22 +6,30 @@
     <div metal:fill-slot="main">
       <h1>Launchpad Login Service</h1>
 
-      <h2 tal:condition="view/error_message" tal:content="view/error_message"
-        />
-      <form method="post" action="">
-        <input type="hidden" name="nonce" tal:attributes="value view/nonce" />
+      <form method="post" accept-charset="UTF-8" action="/+login-foo">
+        <tal:widget replace="structure view/widgets/nonce/hidden" />
+
+        <p class="error message"
+          tal:repeat="form_wide_error view/form_wide_errors"
+          tal:content="structure form_wide_error">
+          Schema validation errors.
+        </p>
 
         <div>
           <label>What is your email address?</label>
         </div>
         <div>
-          <input type="text" tal:attributes="name view/input_email" />
+          <tal:widget replace="structure view/widgets/email" />
         </div>
 
         <br />
         <div>
           <label>Do you have a Launchpad passphrase?</label>
         </div>
+        <div>
+          <tal:widget replace="structure view/widgets/password" />
+        </div>
+        <!--
         <div>
           <label>
             <input type="radio" value="createaccount"
@@ -46,11 +54,11 @@
             I've forgotten my passphrase
           </label>
         </div>
+        -->
 
         <br />
         <div>
-          <input type="submit" value="Continue"
-                 tal:attributes="name view/submit_continue" />
+          <tal:submit replace="structure view/continue_action/render" />
         </div>
 
       </form>

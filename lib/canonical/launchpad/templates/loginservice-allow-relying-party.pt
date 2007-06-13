@@ -10,11 +10,10 @@
 
       <h3>Sign in as <span tal:replace="view/user/displayname" /></h3>
 
-      <form method="post" action="">
-        <input type="hidden" name="nonce" tal:attributes="value view/nonce" />
-        <input type="hidden" name="allow_duration"
-               tal:attributes="value string:forever" />
+      <form method="post" accept-charset="UTF-8" action="/+decide">
+        <tal:widget replace="structure view/widgets/nonce/hidden" />
 
+        <!--
         <div>
           <input type="submit"
             tal:attributes="name view/submit_logout;
@@ -34,11 +33,12 @@
             </li>
           </ul>
         </div>
+        -->
 
         <br />
         <div>
-          <input type="submit" value="Sign In"
-                 tal:attributes="name view/submit_allow" />
+          <tal:submit replace="structure view/auth_action/render" />
+          <tal:submit replace="structure view/deny_action/render" />
         </div>
 
       </form>
@@ -46,4 +46,3 @@
     </div>
   </body>
 </html>
-
