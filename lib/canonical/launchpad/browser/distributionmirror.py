@@ -121,15 +121,19 @@ class DistributionMirrorDeleteView(LaunchpadFormView):
 
     @action(_("Delete Mirror"), name="delete")
     def delete_action(self, action, data):
+        # Although users will never be able to see/submit this form for a
+        # mirror which has been probed already, they may have a stale page
+        # and so we do this check here.
         if self.context.last_probe_record is not None:
             self.request.response.addInfoNotification(
                 "This mirror has been probed and thus can't be deleted.")
             self.next_url = canonical_url(self.context)
-        else:
-            self.next_url = canonical_url(self.context.distribution)
-            self.request.response.addInfoNotification(
-                "Mirror %s has been deleted." % self.context.title)
-            self.context.destroySelf()
+            return
+
+        self.next_url = canonical_url(self.context.distribution)
+        self.request.response.addInfoNotification(
+            "Mirror %s has been deleted." % self.context.title)
+        self.context.destroySelf()
 
     @action(_("Cancel"), name="cancel")
     def cancel_action(self, action, data):

@@ -686,7 +686,7 @@ have been approved by an admin, it's annoying to the admins to have these
 bogus mirrors on their list of unapproved mirrors, so we allow admins
 (and only them) to delete these mirrors.
 
-Also, only mirrors which have never been probed can be deleted this way.
+Only mirrors which have never been probed can be deleted this way.
 
     >>> login(cdimage_mirror.owner.preferredemail.email)
     >>> cdimage_mirror.destroySelf()
