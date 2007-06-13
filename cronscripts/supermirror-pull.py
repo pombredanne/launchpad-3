@@ -24,6 +24,9 @@ def force_bzr_to_use_urllib():
     #    number of mirror branchs from updating, and
     # 2) the script sometimes hangs inside pycurl, preventing all mirrors from
     #    being updated until the script is restarted.
+    # There is no test for this (it would involve a great number of moving
+    # parts) but it has been verified to work on production.  Also see
+    # https://bugs.launchpad.net/bzr/+bug/82086
     from bzrlib.transport import register_lazy_transport
     register_lazy_transport('http://', 'bzrlib.transport.http._urllib',
                             'HttpTransport_urllib')
