@@ -3,6 +3,9 @@
 Create static files such as +style-slimmer.css
 """
 
-from canonical.launchpad.scripts.runlaunchpad import make_css_slimmer, make_abspath
+import _pythonpath
+from canonical.launchpad.scripts.runlaunchpad import make_css_slimmer
 
-make_css_slimmer()
+if __name__=="__main__":
+    make_css_slimmer()
+    
