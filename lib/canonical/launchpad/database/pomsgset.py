@@ -122,6 +122,7 @@ class POMsgSetMixIn:
                     filtered
                     for filtered in suggestions
                     if filtered.potranslation != active.potranslation]
+        assert self._hasCaches()
 
     def invalidateCaches(self):
         """See IPOMsgSet."""
@@ -132,10 +133,7 @@ class POMsgSetMixIn:
         assert not self._hasCaches(), 'Invalidating caches does not work!'
 
     def _hasCaches(self):
-        return self.attached_submissions is not None
-
-    def invalidateCaches(self):
-        """See IPOMsgSet."""
+        return not self.attached_submissions is None
 
     def getWikiSubmissions(self, pluralform):
         if self.attached_submissions is None:
@@ -749,6 +747,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         flush_database_updates()
 
         # Let's see if we got updates from Rosetta
+        # XXX: JeroenVermeulen 2007-06-13, try using our caches for this!
         updated_pomsgset = POMsgSet.select("""
             POMsgSet.id = %s AND
             POMsgSet.isfuzzy = FALSE AND
