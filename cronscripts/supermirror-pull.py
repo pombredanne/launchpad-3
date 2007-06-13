@@ -18,6 +18,12 @@ def shut_up_deprecation_warning():
     bzrlib.repository._deprecation_warning_done = True
 
 def force_bzr_to_use_urllib():
+    # These lines prevent bzr from using pycurl to connect to http: urls.  We
+    # want this for two reasons:
+    # 1) pycurl rejects self signed certificates, which prevents a significant
+    #    number of mirror branchs from updating, and
+    # 2) the script sometimes hangs inside pycurl, preventing all mirrors from
+    #    being updated until the script is restarted.
     from bzrlib.transport import register_lazy_transport
     register_lazy_transport('http://', 'bzrlib.transport.http._urllib',
                             'HttpTransport_urllib')
