@@ -20,7 +20,6 @@ from bzrlib.tests import TestCaseInTempDir
 from bzrlib.transport import get_transport, remote
 
 from twisted.enterprise.adbapi import ConnectionPool
-from twisted.internet import defer
 from canonical.tests.test_twisted import TwistedTestCase
 
 from canonical.codehosting import plugins
