@@ -93,8 +93,8 @@ class IQuestionSet(IQuestionCollection):
         """
 
     def getMostActiveProjects(limit=5):
-        """Return the projects that asked the most questions in the last
-        60 days.
+        """Return the list of projects that asked the most questions in
+        the last 60 days.
 
         It should only return projects that officially uses the Answer
         Tracker.

@@ -141,10 +141,11 @@ questions are written in Launchpad.
 
 == getActiveProjects() ==
 
-This method can be used to retrieve the projects that actively 
-used the Answer Tracker in the last 60 days. By active, we mean that
-the project is registered as officially using Answers and had some
-questions asked in the period.
+This method can be used to retrieve the projects that are the most
+actively using the Answer Tracker in the last 60 days. By active, we
+mean that the project is registered as officially using Answers and
+had some questions asked in the period. The projects are ordered
+by the number of questions asked during the period.
 
 Sample data should not contain any questions more recent than
 two months, so no projects are initially returned:
@@ -152,7 +153,7 @@ two months, so no projects are initially returned:
     >>> for project in question_set.getMostActiveProjects():
     ...     print project.displayname
 
-    #Create recent questions on a number of projects.
+    # Create recent questions on a number of projects.
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, ILaunchBag, IProductSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -177,9 +178,9 @@ two months, so no projects are initially returned:
     ...     datecreated=datetime.now(UTC) - timedelta(days=61))
     >>> login(ANONYMOUS)
 
-The method returns only project which officially use the Answer Tracker.
-The order of the returned projects is based on the number of questions
-asked during the period.
+The method returns only projects which officially use the Answer
+Tracker. The order of the returned projects is based on the number of
+questions asked during the period.
 
     >>> ubuntu.official_answers
     True    
