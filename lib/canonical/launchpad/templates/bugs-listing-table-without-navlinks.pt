@@ -45,8 +45,10 @@
             tal:condition="context/show_column/productname|nothing"
         >firefox</td>
         <td tal:content="bugtask/importance/title"
+            tal:attributes="class string:importance${bugtask/importance/name}"
             tal:condition="context/show_column/importance|nothing">Critical</td>
         <td tal:content="bugtask/status/title"
+            tal:attributes="class string:status${bugtask/status/name}"
             tal:condition="context/show_column/status|nothing">Confirmed</td>
       </tr>
     </tbody>

@@ -1,5 +1,4 @@
-Bug Nomination Pages
-====================
+= Bug Nomination Pages =
 
 Series targeting is done on the +nominate page of a bug. From here,
 normal users can propose that the bug be fixed in specific distribution
@@ -24,8 +23,8 @@ the bug to series for which they are drivers.
     ...     bug_one_in_ubuntu_firefox, "+nominate", request)
     >>> launchbag = getUtility(IOpenLaunchBag)
 
-Submitting Nominations
-----------------------
+
+== Submitting Nominations ==
 
 BugNominationView is a LaunchpadFormView. It expects a "submit" action
 to process nominations.
@@ -111,8 +110,8 @@ Here's an example of nominating a bug for a productseries.
     >>> print request.response.notifications[0].message
     Added nominations for: firefox trunk (upstream)
 
-Approving and Declining Nominations
------------------------------------
+
+== Approving and Declining Nominations ==
 
 Nominations are listed in the same table on the bug page that shows
 bugtasks, rendered in a way that makes them look obviously different
@@ -149,8 +148,8 @@ approval.
     >>> hoary_nomination_edit_form.shouldShowDeclineButton()
     False
 
-Series Targeting For Release Managers
---------------------------------------
+
+== Series Targeting For Release Managers ==
 
 When a release manager "nominates" a bug, the nomination is immediately
 approved. The nomination is created only to communicate when and by whom
