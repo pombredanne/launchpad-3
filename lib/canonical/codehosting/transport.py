@@ -150,6 +150,7 @@ class LaunchpadServer(Server):
                 # 'PermissionDenied', not 'NoSuchFile'. However bzrlib doesn't
                 # translate PermissionDenied errors. See _translate_error in
                 # bzrlib/transport/remote.py.
+                # See Launchpad bug 118736.
                 raise NoSuchFile(
                     "+junk is only allowed under user directories, not team "
                     "directories.")

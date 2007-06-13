@@ -50,7 +50,12 @@ def make_bzr_ssh_server():
     return SSHCodeHostingServer('bzr+ssh', authserver, branches_root)
 
 
-class ParamikoVendor(ssh.ParamikoVendor):
+class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
+    """Wrapper for ParamikoVendor that tracks connections.
+
+    Used by the test suite to make sure that all connections are closed in a
+    timely fashion.
+    """
 
     def __init__(self):
         ssh.ParamikoVendor.__init__(self)
@@ -206,7 +211,8 @@ class SSHCodeHostingServer(CodeHostingServer):
 
     def forceParamiko(self):
         _old_vendor_manager = ssh._ssh_vendor_manager._cached_ssh_vendor
-        ssh._ssh_vendor_manager._cached_ssh_vendor = ParamikoVendor()
+        vendor = ConnectionTrackingParamikoVendor()
+        ssh._ssh_vendor_manager._cached_ssh_vendor = vendor
         return _old_vendor_manager
 
     def getTransport(self, path=None):
@@ -263,7 +269,7 @@ class _TestSSHService(SSHService):
 
     This class, _TestLaunchpadAvatar and _TestBazaarFileTransferServer work
     together to provide a threading event which is set when the first
-    connecting XXX client closes its connection to the SSH server.
+    connecting SSH client closes its connection to the SSH server.
     """
 
     _connection_lost_event = None

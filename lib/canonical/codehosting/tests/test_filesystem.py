@@ -23,7 +23,9 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     layer = TwistedBzrlibLayer
 
     def _cleanUp(self, result):
-        print "Overriding Twisted's cleanup because it causes errors."
+        # XXX: JonathanLange 2007-06-13, Override Twisted's post-test cleanup.
+        # The tests fail badly if this is removed, for unknown reasons.
+        # See Launchpad bug 120156.
         from twisted.internet import defer
         return defer.succeed(None)
 
@@ -238,6 +240,8 @@ class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
 
 
 def test_suite():
+    # Parametrize the tests so they run against the SFTP server and a Bazaar
+    # smart server. This ensures that both services provide the same behaviour.
     servers = [make_sftp_server(), make_launchpad_server()]
     adapter = CodeHostingTestProviderAdapter(servers)
     loader = unittest.TestLoader()
