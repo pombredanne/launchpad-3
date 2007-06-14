@@ -168,7 +168,7 @@ class NotificationRecipientSet:
             return self._personToRationale[person]
         except KeyError:
             raise UnknownRecipientError(person)
-            
+
     def add(self, persons, reason, header):
         """See `INotificationRecipientSet`."""
 
@@ -1074,7 +1074,7 @@ def notify_invitation_to_join_team(event):
         'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
         'member': '%s (%s)' % (member.browsername, member.name),
         'team': '%s (%s)' % (team.browsername, team.name),
-        'membership_invitations_url': 
+        'membership_invitations_url':
             "%s/+invitation/%s" % (canonical_url(member), team.name)}
     msg = MailWrapper().format(msg)
     simple_sendmail(from_addr, admin_addrs, subject, msg)
@@ -1426,7 +1426,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             info_fields.append(
                 indent + 'Project: %s => %s' % (
                 old_question.target.displayname, question.target.displayname))
-                
+
         old_bugs = set(old_question.bugs)
         bugs = set(question.bugs)
         for linked_bug in bugs.difference(old_bugs):
@@ -1761,7 +1761,7 @@ def email_branch_modified_notifications(branch, to_addresses,
         'unsubscribe_url': canonical_url(branch) + '/+edit-subscription' }
     for address in to_addresses:
         simple_sendmail(from_address, address, subject, body, headers)
-        
+
 
 def send_branch_revision_notifications(branch, from_address, message, diff):
     """Notify subscribers that a revision has been added (or removed)."""
@@ -1817,8 +1817,8 @@ def send_branch_modified_notifications(branch, event):
         title = IBranch['lifecycle_status'].title
         info_lines.append("%s%s: %s => %s" % (
             indent, title, old_item.title, new_item.title))
-        
-            
+
+
     # Fields for which we only have the new value.
     for field_name in ('summary', 'whiteboard'):
         delta = getattr(branch_delta, field_name)
