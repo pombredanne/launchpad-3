@@ -729,33 +729,20 @@ $$
     if TD['new']['openid_identifier'] is not None:
         return None
 
-    import string
-    from random import randint
-    # Helper from canonical.base to compress a random number to a short
-    # sequence of characters.
-    def base(number, radix):
-        result = []
-        addon = result.append
-        if number < 0:
-            number = -number
-            addon('-')
-        elif number == 0:
-            addon('0')
+    from random import choice
 
-        abc = string.digits + string.ascii_letters
-        while number:
-            number, rdigit = divmod(number, radix)
-            addon(abc[rdigit])
+    # Non display confusing characters
+    chars = '234678bcdefhkmnprstwxyzABCDEFGHJKLMNPQRTWXYZ'
 
-        result.reverse()
-        return ''.join(result)
+    # character length of tokens. Can be increased, decreased or even made
+    # random - Launchpad does not care. 7 means it takes 40 bytes to store
+    # a null-terminated Launchpad identity URL on the current domain name.
+    length=7
 
-    # Generate a random openid_identifier
     loop_count = 0
-    while True:
-        # By using 15000000 as the minimum, we reserve all 4 character
-        # identifiers.
-        oid = base(randint(15000000,999999999999999), 62)
+    while loop_count < 20000:
+        # Generate a random openid_identifier
+        oid = ''.join(choice(chars) for count in range(length))
 
         # Check if the oid is already in the db, although this is pretty
         # unlikely
@@ -763,13 +750,16 @@ $$
             SELECT COUNT(*) AS num FROM Person WHERE openid_identifier = '%s'
             """ % oid, 1)
         if rv[0]['num'] == 0:
-            break
+            TD['new']['openid_identifier'] = oid
+            return "MODIFY"
         loop_count += 1
-        if loop_count > 20000:
-            raise Exception("Unable to generate unique openid_identifier")
-
-    TD['new']['openid_identifier'] = oid
-    return "MODIFY"
+        if loop_count == 1:
+            plpy.warning(
+                'Clash generating unique openid_identifier. '
+                'Increase length if you see this warning too much.')
+    plpy.error(
+        "Unable to generate unique openid_identifier. "
+        "Need to increase length of tokens.")
 $$;
 
 
