@@ -61,4 +61,4 @@
         <input tal:replace="structure view/actions/field.actions.save/render" />
       </div>
 
-    </div>
+</div>

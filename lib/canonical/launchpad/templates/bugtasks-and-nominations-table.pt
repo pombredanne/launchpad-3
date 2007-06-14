@@ -4,7 +4,7 @@
     edit_icon = document.getElementById(row_id + "-edit")
     if (row.style.display=="none") {
       row.style.display = "table-row";
-      
+
       /* edit_icon.setAttribute("src","/@@/treeExpanded") */
     } else {
       row.style.display = "none";

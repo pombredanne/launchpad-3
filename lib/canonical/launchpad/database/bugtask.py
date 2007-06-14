@@ -148,9 +148,12 @@ class BugTaskMixin:
     @property
     def title(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        title = 'Bug #%s in %s: "%s"' % (
-            self.bug.id, self.bugtargetdisplayname, self.bug.title)
-        return title
+        if INullBugTask.providedBy(self):
+            return 'Bug #%s is not in %s: "%s"' % (
+                self.bug.id, self.bugtargetdisplayname, self.bug.title)
+        else:
+            return 'Bug #%s in %s: "%s"' % (
+                self.bug.id, self.bugtargetdisplayname, self.bug.title)
 
     @property
     def bugtargetdisplayname(self):
