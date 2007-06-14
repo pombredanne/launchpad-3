@@ -31,14 +31,12 @@ from openid import oidutil
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-        IEmailAddressSet, ILaunchBag, IOpenIdAuthorizationSet,
-        ILaunchpadOpenIdStoreFactory, IPersonSet, NotFoundError,
-        UnexpectedFormData,
-        )
+        IEmailAddressSet, ILaunchBag, ILaunchpadOpenIdStoreFactory,
+        IOpenIdApplication, IOpenIdAuthorizationSet, IPersonSet,
+        NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import LaunchpadView, canonical_url
 from canonical.launchpad.webapp.publisher import (
-        stepthrough, Navigation, RedirectionView,
-        )
+        stepthrough, Navigation, RedirectionView)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 
@@ -58,12 +56,6 @@ class IOpenIdView(Interface):
 class OpenIdView(LaunchpadView):
     implements(IOpenIdView)
 
-    def publishTraverse(self, request, name):
-        # XXX: Argh! Navigation doesn't seem to be hooked into view traversal
-        # -- StuartBishop 20070428
-        nav = OpenIdViewNavigation(self, request)
-        return nav.publishTraverse(request, name)
-
     openid_request = None
 
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")
@@ -76,6 +68,7 @@ class OpenIdView(LaunchpadView):
         LaunchpadView.__init__(self, context, request)
         store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
         self.openid_server = Server(store_factory())
+        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
 
     def render(self):
         """Handle all OpenId requests and form submissions
@@ -135,7 +128,7 @@ class OpenIdView(LaunchpadView):
                     'http://specs.openid.net/auth/2.0/identifier_select'):
                 # Magic identity indicating that we need to determine it.
                 self.login = self.user.name
-                self.openid_request.identity = '%s+openid/+id/%s' % (
+                self.openid_request.identity = '%s+id/%s' % (
                         allvhosts.configs['openid'].rooturl,
                         self.user.openid_identifier)
 
@@ -191,20 +184,20 @@ class OpenIdView(LaunchpadView):
 
         >>> view = OpenIdView(None, None)
         >>> view.getPersonByIdentity(
-        ...     'http://openid.launchpad.dev/+openid/+id/temp1').name
+        ...     'http://openid.launchpad.dev/+id/temp1').name
         u'sabdfl'
         >>> view.getPersonByIdentity(
-        ...     'http://openid.launchpad.dev/+openid/+id/temp1/').name
+        ...     'http://openid.launchpad.dev/+id/temp1/').name
         u'sabdfl'
         >>> view.getPersonByIdentity('foo')
-        >>> view.getPersonByIdentity('http://example.com/+openid/+id/temp1')
+        >>> view.getPersonByIdentity('http://example.com/+id/temp1')
         """
         assert allvhosts.configs['openid'].rooturl.endswith('/'), \
                 'rooturl does not end with trailing slash.'
 
         url_match_string = re.escape(
                 allvhosts.configs['openid'].rooturl
-                + '+openid/+id/'
+                + '+id/'
                 )
 
         match = re.search(r'^\s*%s(\w+)/?\s*$' % url_match_string, identity)
@@ -228,7 +221,7 @@ class OpenIdView(LaunchpadView):
         >>> view = OpenIdView(None, None)
         >>> view.getPersonNameByIdentity('foo')
         >>> view.getPersonNameByIdentity(
-        ...     'http://openid.launchpad.dev/+openid/+id/temp1')
+        ...     'http://openid.launchpad.dev/+id/temp1')
         u'sabdfl'
         """
         person = self.getPersonByIdentity(identity)
@@ -313,8 +306,7 @@ class OpenIdView(LaunchpadView):
         This method should be called to create the response to
         unsuccessful checkid requests.
         """
-        response = self.openid_request.answer(
-            False, allvhosts.configs['openid'].rooturl)
+        response = self.openid_request.answer(False, self.server_url)
         return response
 
     def isIdentityOwner(self):
@@ -423,25 +415,8 @@ class OpenIdView(LaunchpadView):
         return ISession(self.request)[SESSION_PKG_KEY]
 
 
-class OpenIdViewNavigation(Navigation):
-    usedfor = IOpenIdView
-
-    # XXX: Bug #118215 -- email traversal should go -- StuartBishop 20070601
-    @stepthrough('+email')
-    def traverse_email(self, name):
-        # Allow traversal to email addresses, redirecting to the
-        # user's permanent OpenID URL.
-        email = getUtility(IEmailAddressSet).getByEmail(name)
-        if email is not None:
-            person = getUtility(IPersonSet).get(email.personID)
-            if not person.is_openid_enabled:
-                return None
-            target = '%s+openid/+id/%s' % (
-                    allvhosts.configs['openid'].rooturl,
-                    person.openid_identifier)
-            return RedirectionView(target, self.request, 303)
-        else:
-            return None
+class OpenIdApplicationNavigation(Navigation):
+    usedfor = IOpenIdApplication
 
     @stepthrough('+id')
     def traverse_id(self, name):
@@ -456,7 +431,7 @@ class OpenIdViewNavigation(Navigation):
         # or other services that cannot cope with name changes.
         person = getUtility(IPersonSet).getByName(name)
         if person is not None and person.is_openid_enabled:
-            target = '%s+openid/+id/%s' % (
+            target = '%s+id/%s' % (
                     allvhosts.configs['openid'].rooturl,
                     person.openid_identifier)
             return RedirectionView(target, self.request, 303)
@@ -490,8 +465,8 @@ class OpenIdIdentityView:
 
     def __call__(self):
         # Setup variables to pass to the template
-        self.server_url = allvhosts.configs['openid'].rooturl
-        self.identity_url = '%s+openid/+id/%s' % (
+        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
+        self.identity_url = '%s+id/%s' % (
                 self.server_url, self.context.openid_identifier)
         self.person_url = canonical_url(self.context, rootsite='mainsite')
         self.meta_refresh_content = "1; URL=%s" % self.person_url

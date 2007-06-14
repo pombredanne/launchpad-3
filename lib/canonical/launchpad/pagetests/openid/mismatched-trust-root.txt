@@ -36,7 +36,7 @@ UntrustedReturnURL error gets converted to an OpenID response.
     ...     'openid.trust_root': 'https://shop.ubuntu.com/',
     ...     })
     >>> anon_browser.handleErrors = True
-    >>> anon_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> anon_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> anon_browser.handleErrors = False
     >>> print anon_browser.url
     http://launchpad.dev/+openid-consumer?...

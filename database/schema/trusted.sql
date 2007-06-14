@@ -721,3 +721,55 @@ $$;
 
 COMMENT ON FUNCTION set_shipit_normalized_address() IS 'Store a normalized concatenation of the request''s address into the normalized_address column.';
 
+
+CREATE OR REPLACE FUNCTION set_openid_identifier() RETURNS trigger
+LANGUAGE plpythonu AS
+$$
+    # If someone is trying to explicitly set the openid_identifier, let them
+    if TD['new']['openid_identifier'] is not None:
+        return None
+
+    import string
+    from random import randint
+    # Helper from canonical.base to compress a random number to a short
+    # sequence of characters.
+    def base(number, radix):
+        result = []
+        addon = result.append
+        if number < 0:
+            number = -number
+            addon('-')
+        elif number == 0:
+            addon('0')
+
+        abc = string.digits + string.ascii_letters
+        while number:
+            number, rdigit = divmod(number, radix)
+            addon(abc[rdigit])
+
+        result.reverse()
+        return ''.join(result)
+
+    # Generate a random openid_identifier
+    loop_count = 0
+    while True:
+        # By using 15000000 as the minimum, we reserve all 4 character
+        # identifiers.
+        oid = base(randint(15000000,999999999999999), 62)
+
+        # Check if the oid is already in the db, although this is pretty
+        # unlikely
+        rv = plpy.execute("""
+            SELECT COUNT(*) AS num FROM Person WHERE openid_identifier = '%s'
+            """ % oid, 1)
+        if rv[0]['num'] == 0:
+            break
+        loop_count += 1
+        if loop_count > 20000:
+            raise Exception("Unable to generate unique openid_identifier")
+
+    TD['new']['openid_identifier'] = oid
+    return "MODIFY"
+$$;
+
+
