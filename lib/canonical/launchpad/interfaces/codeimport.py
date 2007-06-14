@@ -26,18 +26,18 @@ class ICodeImport(Interface):
     id = Int(readonly=True, required=True)
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
-    name = TextLine(
-        title=_("Name"), required=True,
-        description=_("Unique name of the import, used in URLs."),
-        constraint=name_validator)
+    branch = Choice(
+        title=_('Branch'), required=True, readonly=True, vocabulary='Branch',
+        description=_("The Bazaar branch produced by the import system."))
+    registrant = Choice(
+        title=_('Registrant'), required=True, readonly=True,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The Person who requested this import."))
+
     product = Choice(
-        title=_("Project"), required=True, vocabulary='Product',
+        title=_("Project"), required=True,
+        readonly=True, vocabulary='Product',
         description=_("The project this code import belongs to."))
-    series = Choice(
-        title=_("Release Series"), required=False, vocabulary='ProductSeries',
-        description=_("The release series whose branch will be set to the "
-        "imported branch when it is first published."))
-    branch = Attribute("The Bazaar branch produced by the import system.")
 
     review_status = Choice(
         title=_("Review Status"), vocabulary='CodeImportReviewStatus',
@@ -73,12 +73,15 @@ class ICodeImport(Interface):
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(name, product, series, rcs_type, svn_branch_url=None,
+    def new(registrant, branch, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
         """Create a new CodeImport."""
 
     def getAll():
         """Return an iterable of all CodeImport objects."""
 
-    def getByName(name):
-        """Get a CodeImport by its unique name."""
+    def get(id):
+        """Get a CodeImport by its id."""
+
+    def getByBranch(branch):
+        """Get the CodeImport, if any, associated to a Branch."""

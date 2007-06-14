@@ -28,13 +28,15 @@ class CodeImport(SQLBase):
     implements(ICodeImport)
     _table = 'CodeImport'
 
-    name = StringCol(notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    product = ForeignKey(dbName='product', foreignKey='Product',
-        notNull=True)
-    series = ForeignKey(dbName='series', foreignKey='ProductSeries')
     branch = ForeignKey(dbName='branch', foreignKey='Branch',
-        default=None)
+                        notNull=True)
+    registrant = ForeignKey(dbName='registrant', foreignKey='Person',
+                            notNull=True)
+
+    @property
+    def product(self):
+        return self.branch.product
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)
@@ -51,7 +53,7 @@ class CodeImportSet:
 
     implements(ICodeImportSet)
 
-    def new(self, name, product, series, rcs_type, svn_branch_url=None,
+    def new(self, branch, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
         """See ICodeImportSet."""
         return CodeImport(name=name, product=product, series=series,
