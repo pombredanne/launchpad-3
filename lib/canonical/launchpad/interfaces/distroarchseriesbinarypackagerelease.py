@@ -58,6 +58,9 @@ class IDistroArchSeriesBinaryPackageRelease(IBinaryPackageRelease):
         """Copy a DistroArchSeriesBinaryPackageRelease to another location.
 
         Return the publishing record in the targeted location.
+
+        NotFoundError will be raised if the distroseries is not found or not
+        published.
         """
 
 

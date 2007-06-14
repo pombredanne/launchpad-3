@@ -1319,7 +1319,8 @@ class PackageCopier(LaunchpadScript):
     def _findBinaries(self, from_source, from_location):
         """Build a set of DistroArchSeriesBinaryPackageRelease for the source.
 
-        Result is returned.
+        Returns a list of published DistroArchSeriesBinaryPackageRelease for
+        all architectures for the from_source.
         """
         target_binaries = []
 
