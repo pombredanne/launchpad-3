@@ -426,14 +426,22 @@ We need to flush cached values.
 DistroSeries Translations migration
 ------------------------------------
 
-We have several ways to copy translations between distro seriess.
+We have several ways to copy translations between distro series.  We bring a
+transaction manager (in this case a fake one) to make these work.
+
+   >>> class FakeTransactionManager:
+   ...     def begin(self):
+   ...         pass
+   ...     def commit(self):
+   ...         pass
+   >>> transaction_stub = FakeTransactionManager()
 
 The main one is to clone what we have in its parent distribution.  This will
 only work if we keep the new distroseries's translations hidden from the
 public:
 
    >>> humpy.hide_all_translations = False
-   >>> humpy.copyMissingTranslationsFromParent()
+   >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
    Traceback (most recent call last):
    ...
    AssertionError:
@@ -446,7 +454,7 @@ templates or translations are accepted from the translation import queue:
    # We need to set this fiel to true so the other check is executed.
    >>> humpy.hide_all_translations = True
    >>> humpy.defer_translation_imports = False
-   >>> humpy.copyMissingTranslationsFromParent()
+   >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
    Traceback (most recent call last):
    ...
    AssertionError:
@@ -459,7 +467,7 @@ When both fields are set, the script doesn't complain.
    True
    >>> humpy.defer_translation_imports = True
 
-   >>> humpy.copyMissingTranslationsFromParent()
+   >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
 Only current PO templates are copied from the distribution parent:
 
@@ -574,12 +582,14 @@ Update a string in the children release.
     ...     carlos, { 0: u'humpy updated string' }, fuzzy=False,
     ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
 
-Let's update the statistics.
+Let's update the statistics, and print out the values for the number
+of translated, changed in Launchpad, newly translated in Launchpad,
+and with unreviewed suggestions.
 
     >>> pofile_es_hoary.updateStatistics()
-    (7, 2, 1)
+    (7, 2, 1, 1)
     >>> pofile_es_humpy.updateStatistics()
-    (7, 2, 0)
+    (7, 2, 0, 0)
 
 We can also see that the statistics show differences between each distribution
 release for the rosetta count of translations:
@@ -627,7 +637,7 @@ We can see now that the changes are detected.
 
 Let's migrate the updates.
 
-    >>> humpy.copyMissingTranslationsFromParent()
+    >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
 Now, we should have only the update from Humpy as a difference
 
@@ -657,7 +667,7 @@ changed in Hoary?
 
 We copy missing translations...
 
-    >>> humpy.copyMissingTranslationsFromParent()
+    >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
 And we can see that the change is not migrated to Humpy because we already got
 a change directly there that we should not overwrite.
@@ -774,7 +784,7 @@ publication in question:
    ...     PackagePublishingStatus.PUBLISHED,
    ...     PackagePublishingPocket.RELEASE)
 
-   >>> warty_pub_source = warty_pub_sources[3]
+   >>> warty_pub_source = warty_pub_sources[4]
    >>> warty_pub_source.sourcepackagerelease.name
    u'mozilla-firefox'
    >>> warty_pub_source.sourcepackagerelease.version
@@ -809,7 +819,7 @@ BinaryPackagePublishingHistory objects for the DistroSeries:
     >>> warty = ubuntu['warty']
     >>> bpphs = warty.getBinaryPackagePublishing()
     >>> bpphs.count()
-    6
+    7
     >>> 'mozilla-firefox' in set(
     ...     pkgpub.binarypackagerelease.binarypackagename.name
     ...     for pkgpub in bpphs)
@@ -835,7 +845,7 @@ We can restrict the results by component:
 
     >>> warty.getBinaryPackagePublishing(
     ...     component=component_main).count()
-    6
+    7
     >>> warty.getBinaryPackagePublishing(
     ...     component=component_multiverse).count()
     0
@@ -844,7 +854,7 @@ By pocket:
 
     >>> warty.getBinaryPackagePublishing(
     ...     pocket=PackagePublishingPocket.RELEASE).count()
-    6
+    7
     >>> warty.getBinaryPackagePublishing(
     ...     pocket=PackagePublishingPocket.BACKPORTS).count()
     0
@@ -859,7 +869,7 @@ Or any combination of them:
     >>> warty.getBinaryPackagePublishing(
     ...     name="mozilla-firefox", archtag='i386',
     ...     component=component_main).count()
-    1
+    2
 
 As getSourcePackagePublishing, getBinaryPublishing accepts 'archive'
 parameter for result restriction:
