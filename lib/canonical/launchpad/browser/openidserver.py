@@ -431,8 +431,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
                 if valid_password(password):
                     self.validateEmailAndPassword(email, password)
                 else:
-                    self.addError(_("The passphrase provided contains "
-                                    "non-ASCII characters."))
+                    self.addError(_("Invalid passphrase."))
             else:
                 self.addError(_("Please enter your passphrase."))
         elif action == 'resetpassword':

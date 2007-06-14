@@ -64,21 +64,7 @@ The user would then check their email, and find a message:
     >>> print to_addrs
     ['new-user@example.com']
     >>> print msg.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello!
-    <BLANKLINE>
-    Thank you for registering at Launchpad. To complete your registration,
-    please follow the instructions here:
-    <BLANKLINE>
-       http://openid.launchpad.dev/token/...
-    <BLANKLINE>
-    Launchpad is a suite of applications for open source developers,
-    including easy Web-based translation and bug management. We'll be
-    adding new features based on your suggestions, so feel free to
-    contact us on #launchpad on irc.freenode.net with your ideas.
-    <BLANKLINE>
-    Thanks
-    The Launchpad team
-    <BLANKLINE>
+    Need input from Matthew to fix this email; we're currently using :
 
 Let's extract the URL from the email and follow the link:
 

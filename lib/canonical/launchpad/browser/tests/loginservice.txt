@@ -12,11 +12,23 @@ account.
     >>> from canonical.launchpad.browser.openidserver import (
     ...     LoginServiceLoginView, LoginServiceAuthorizeView)
     >>> from canonical.launchpad.webapp.publisher import rootObject
+    >>> from canonical.launchpad.webapp import LaunchpadFormView
+
+    # Create a fake LoginServiceLoginView which stubs out OpenID-related bits
+    # from its parent class.
+    >>> class OpenIDLessLoginServiceLoginView(LoginServiceLoginView):
+    ...     def setUpWidgets(self):
+    ...         self.nonce = 'foo'
+    ...         LaunchpadFormView.setUpWidgets(self)
+    ...     def createPositiveResponse(self):
+    ...         return True
+    ...     def renderOpenIdResponse(self, response):
+    ...         pass
 
 A valid email address is required for any operation available on this form.
 
     >>> harness = OpenIDLaunchpadFormHarness(
-    ...     rootObject, LoginServiceLoginView)
+    ...     rootObject, OpenIDLessLoginServiceLoginView)
 
     >>> harness.submit('continue', {'field.email': 'foo@'})
     >>> for message in harness.getFormErrors():
@@ -33,13 +45,21 @@ attempting to login, it'll also fail.
     ...     print message
     Please enter your passphrase.
 
-    >>> harness.submit(
-    ...     'continue',
-    ...     {'field.email': 'mark@hbd.com', 'field.action': 'login',
-    ...      'field.password': 'foo'})
+    >>> harness.submit('continue', {'field.email': 'mark@hbd.com',
+    ...                             'field.action': 'login',
+    ...                             'field.password': 'foo'})
     >>> for message in harness.getFormErrors():
     ...     print message
     The email address and passphrase do not match.
+
+A password with invalid characters is not allowed either.
+
+    >> harness.submit('continue', {'field.email': 'mark@hbd.com',
+    ..                             'field.action': 'login',
+    ..                             'field.password': u'\xa0blah'})
+    >> for message in harness.getFormErrors():
+    ..     print message
+    Incorrect passphrase given.
 
 Trying to create a new account with an email address that is registered and
 associated with a valid Launchpad account is not allowed.
