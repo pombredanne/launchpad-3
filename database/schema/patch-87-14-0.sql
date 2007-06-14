@@ -14,5 +14,5 @@ ALTER TABLE Person
     END
     );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 19, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 14, 0);
 
