@@ -63,7 +63,7 @@
           <h2>Timeline</h2>
 
           <div class="project series"
-               tal:repeat="series view/sorted_serieslist">
+               tal:repeat="series view/sorted_serieses">
 
             <div tal:define="
                    is_focus python:context.development_focus == series"

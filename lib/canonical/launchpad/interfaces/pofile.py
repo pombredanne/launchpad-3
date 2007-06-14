@@ -160,6 +160,17 @@ class IPOFile(IRosettaStats):
         Return the message sets using 'slice' or all of them if slice is None.
         """
 
+    def getPOTMsgSetWithNewSuggestions():
+        """Get pot message sets with suggestions submitted after last review.
+        """
+
+    def getPOTMsgSetChangedInLaunchpad():
+        """Get pot message sets changed through Launchpad in this PO file.
+
+        'Changed in Launchpad' are only those which were translated when
+        initially imported, but then got overridden in Launchpad.
+        """
+
     def getPOTMsgSetWithErrors(slice=None):
         """Get pot message sets that have translations published with errors.
 
@@ -278,11 +289,11 @@ class IPOFileSet(Interface):
         """Return a dummy pofile for the given po template and language."""
 
     def getPOFileByPathAndOrigin(path, productseries=None,
-        distrorelease=None, sourcepackagename=None):
+        distroseries=None, sourcepackagename=None):
         """Return an IPOFile that is stored at 'path' in source code.
 
         We filter the IPOFiles to check only the ones related to the given
-        arguments 'productseries', 'distrorelease' and 'sourcepackagename'
+        arguments 'productseries', 'distroseries' and 'sourcepackagename'
 
         Return None if there is not such IPOFile.
         """
