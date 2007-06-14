@@ -93,7 +93,7 @@ automatically approved.
 
   >>> max_cds = ShipItConstants.max_size_for_auto_approval
   >>> max_cds
-  39
+  16
 
   >>> from canonical.launchpad.database import Person
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
@@ -174,7 +174,7 @@ before approving.
 
 Now, let's pretend this request was approved and shipped, so that we can see
 how shipit would behave if this guy (name16) comes back asking for more CDs
-of this same distrorelease.
+of this same distroseries.
 
   >>> login(ANONYMOUS)
   >>> shipit_request = Person.byName('name16').currentShipItRequest()

@@ -12,7 +12,7 @@ from zope.schema import ValidationError
 
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
-        IProduct, IDistribution, IDistroRelease, IPersonSet,
+        IProduct, IDistribution, IDistroSeries, IPersonSet,
         IBug, IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
@@ -439,8 +439,8 @@ class AffectsEmailCommand(EmailCommand):
             $product/$product_series
             $distribution
             $distribution/$source_package
-            $distribution/$distro_release
-            $distribution/$distro_release/$source_package
+            $distribution/$distro_series
+            $distribution/$distro_series/$source_package
         """
         path = cls._normalizePath(path)
         name, rest = cls._splitPath(path)
@@ -475,23 +475,23 @@ class AffectsEmailCommand(EmailCommand):
                 return product_series
         else:
             assert IDistribution.providedBy(pillar)
-            # The next step can be either a distro release or a source
+            # The next step can be either a distro series or a source
             # package.
-            release_name, rest = cls._splitPath(rest)
+            series_name, rest = cls._splitPath(rest)
             try:
-                release = pillar.getRelease(release_name)
+                series = pillar.getSeries(series_name)
             except NotFoundError:
-                package_name = release_name
+                package_name = series_name
             else:
                 if not rest:
-                    return release
+                    return series
                 else:
-                    pillar = release
+                    pillar = series
                     package_name, rest = cls._splitPath(rest)
             package = pillar.getSourcePackage(package_name)
             if package is None:
                 raise BugTargetNotFound(
-                    "%s doesn't have a release or source package named '%s'."
+                    "%s doesn't have a series or source package named '%s'."
                     % (pillar.displayname, package_name))
             elif not rest:
                 return package
@@ -531,51 +531,51 @@ class AffectsEmailCommand(EmailCommand):
 
         return bugtask, event
 
-    def _targetBug(self, user, bug, release, sourcepackagename=None):
-        """Try to target the bug the the given distrorelease.
+    def _targetBug(self, user, bug, series, sourcepackagename=None):
+        """Try to target the bug the the given distroseries.
 
         If the user doesn't have permission to target the bug directly,
         only a nomination will be created.
         """
         product = None
         distribution = None
-        if IDistroRelease.providedBy(release):
-            distribution = release.distribution
+        if IDistroSeries.providedBy(series):
+            distribution = series.distribution
             if sourcepackagename:
                 general_target = distribution.getSourcePackage(
                     sourcepackagename)
             else:
                 general_target = distribution
         else:
-            assert IProductSeries.providedBy(release), (
-                "Unknown release target: %r" % release)
+            assert IProductSeries.providedBy(series), (
+                "Unknown series target: %r" % series)
             assert sourcepackagename is None, (
                 "A product series can't have a source package.")
-            product = release.product
+            product = series.product
             general_target = product
         general_task = bug.getBugTask(general_target)
         if general_task is None:
-            # A release task has to have a corresponding
+            # A series task has to have a corresponding
             # distribution/product task.
             general_task = getUtility(IBugTaskSet).createTask(
                 bug, user, distribution=distribution,
                 product=product, sourcepackagename=sourcepackagename)
-        if not bug.canBeNominatedFor(release):
+        if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
-            nomination = bug.getNominationFor(release)
-            # Automatically approve an existing nomination if a release
+            nomination = bug.getNominationFor(series)
+            # Automatically approve an existing nomination if a series
             # manager targets it.
             if not nomination.isApproved() and nomination.canApprove(user):
                 nomination.approve(user)
         else:
-            nomination = bug.addNomination(target=release, owner=user)
+            nomination = bug.addNomination(target=series, owner=user)
 
         if nomination.isApproved():
             if sourcepackagename:
                 return bug.getBugTask(
-                    release.getSourcePackage(sourcepackagename))
+                    series.getSourcePackage(sourcepackagename))
             else:
-                return bug.getBugTask(release)
+                return bug.getBugTask(series)
         else:
             # We can't return a nomination, so return the
             # distribution/product bugtask instead.
@@ -593,11 +593,11 @@ class AffectsEmailCommand(EmailCommand):
             return self._targetBug(user, bug, bug_target)
         elif IDistribution.providedBy(bug_target):
             return bugtaskset.createTask(bug, user, distribution=bug_target)
-        elif IDistroRelease.providedBy(bug_target):
+        elif IDistroSeries.providedBy(bug_target):
             return self._targetBug(user, bug, bug_target)
         elif ISourcePackage.providedBy(bug_target):
             return self._targetBug(
-                user, bug, bug_target.distrorelease,
+                user, bug, bug_target.distroseries,
                 bug_target.sourcepackagename)
         elif IDistributionSourcePackage.providedBy(bug_target):
             return bugtaskset.createTask(

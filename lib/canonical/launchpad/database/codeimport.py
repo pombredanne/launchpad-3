@@ -28,13 +28,15 @@ class CodeImport(SQLBase):
     implements(ICodeImport)
     _table = 'CodeImport'
 
-    name = StringCol(notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    product = ForeignKey(dbName='product', foreignKey='Product',
-        notNull=True)
-    series = ForeignKey(dbName='series', foreignKey='ProductSeries')
     branch = ForeignKey(dbName='branch', foreignKey='Branch',
-        default=None)
+                        notNull=True)
+    registrant = ForeignKey(dbName='registrant', foreignKey='Person',
+                            notNull=True)
+
+    @property
+    def product(self):
+        return self.branch.product
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)
@@ -51,10 +53,10 @@ class CodeImportSet:
 
     implements(ICodeImportSet)
 
-    def new(self, name, product, series, rcs_type, svn_branch_url=None,
+    def new(self, registrant, branch, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
         """See ICodeImportSet."""
-        return CodeImport(name=name, product=product, series=series,
+        return CodeImport(registrant=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
 
@@ -62,6 +64,10 @@ class CodeImportSet:
         """See ICodeImportSet."""
         return CodeImport.select()
 
-    def getByName(self, name):
+    def get(self, id):
         """See ICodeImportSet."""
-        return CodeImport.selectOneBy(name=name)
+        return CodeImport.get(id)
+
+    def getByBranch(self, branch):
+        """See ICodeImportSet."""
+        return CodeImport.selectOneBy(branch=branch)

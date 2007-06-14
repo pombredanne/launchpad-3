@@ -46,7 +46,7 @@
         <td>
           <tal:comment condition="nothing">
               XXX CarlosPerelloMarin 20070212: This code is exactly the same
-              as in distroreleaselanguage-index.pt
+              as in distroserieslanguage-index.pt
           </tal:comment>
           <tal:block condition="pf/last_touched_pomsgset">
             <a tal:attributes="href pf/last_touched_pomsgset/reviewer/fmt:url"

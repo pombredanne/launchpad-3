@@ -1,93 +1,111 @@
 = Code Imports =
 
-CodeImport objects model the process surrounding the code import service of
-Launchpad. A CodeImport object is created by a user requesting an import, the
-import source is then reviewed by privileged users. Then importd, the code
-import daemon, performs the initial import that creates the import branch, and
-updates it regularly.
+CodeImport objects model the process surrounding the code import service
+of Launchpad. A CodeImport object is created by a user requesting an
+import, the import source is then reviewed by privileged users. Then
+importd, the code import daemon, performs the initial import that
+populates the import branch, and updates it regularly.
 
 We can import code from CVS or Subversion.
 
 CodeImports are hidden from regular users currently.  David Allouce is
 a member of the vcs-imports team and can access the objects freely.
 
-  >>> login('david.allouche@canonical.com')
+    >>> login('david.allouche@canonical.com')
 
 == Code import set utility ==
 
-CodeImports are created and found using the ICodeImport interface, which is
-registered as a utility.
+CodeImports are created and found using the ICodeImportSet interface,
+which is registered as a utility.
 
-  >>> from canonical.launchpad.interfaces import ICodeImport, ICodeImportSet
-  >>> from zope.interface.verify import verifyObject
-  >>> from zope.component import getUtility
-  >>> from zope.security.proxy import removeSecurityProxy
-  >>> code_import_set = getUtility(ICodeImportSet)
-  >>> verifyObject(ICodeImportSet, removeSecurityProxy(code_import_set))
-  True
+    >>> from canonical.launchpad.interfaces import ICodeImport, ICodeImportSet
+    >>> from zope.interface.verify import verifyObject
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> code_import_set = getUtility(ICodeImportSet)
+    >>> verifyObject(ICodeImportSet, removeSecurityProxy(code_import_set))
+    True
 
-We still need to have a ProductSeries around that the imports will be
-associated to:
+CodeImports record who created them, and as we're also going to create
+new Products to create CodeImports for, so we log in as No Privileges
+Person.
 
-  >>> from canonical.launchpad.interfaces import IProductSeriesSet
-  >>> series = getUtility(IProductSeriesSet).get(1)
-  >>> product = series.product
+    >>> login("no-priv@canonical.com")
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> user = getUtility(ILaunchBag).user
+
+CodeImports are associated with a Branch when they are created; this is
+how they are linked to a Product.  A helper function makes the tests
+below much easier to read.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBranchSet, ILaunchpadCelebrities, IProductSet)
+    >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    >>> def import_branch_for_new_product(name):
+    ...     product = getUtility(IProductSet).createProduct(
+    ...         user, name, name, name, name, name)
+    ...     return getUtility(IBranchSet).new(
+    ...         'trunk', vcs_imports, product, None, 'Import branch')
+
 
 == Supported source systems ==
 
 The rcs_type field, which indicates whether the import is from CVS or
 Subversion, takes values from the 'RevisionControlSystems' vocabulary.
 
-  >>> from canonical.lp.dbschema import RevisionControlSystems
+    >>> from canonical.lp.dbschema import RevisionControlSystems
+
 
 === Import from CVS ===
 
-Code imports from CVS specify the CVSROOT value, and the path to import in the
-repository, known as the "module".
+Code imports from CVS specify the CVSROOT value, and the path to import
+in the repository, known as the "module".
 
-  >>> cvs = RevisionControlSystems.CVS
-  >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
-  >>> cvs_module = 'hello'
-
-  >>> cvs_import = code_import_set.new(name='cvs-test',
-  ...     product=product, series=series,
-  ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
-
-  >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
-  True
+    >>> cvs = RevisionControlSystems.CVS
+    >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
+    >>> cvs_module = 'hello'
+    >>> cvs_branch = import_branch_for_new_product("cvs-using-product")
+    >>> cvs_import = code_import_set.new(
+    ...     registrant=user, branch=cvs_branch,
+    ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
+    >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
+    True
 
 === Import from Subversion ===
 
 Code imports from Subversion specify the URL used with "svn checkout" to
 retrieve the tree to import.
 
-  >>> svn = RevisionControlSystems.SVN
-  >>> svn_url = 'svn://svn.example.com/trunk'
+    >>> svn = RevisionControlSystems.SVN
+    >>> svn_url = 'svn://svn.example.com/trunk'
+    >>> svn_branch = import_branch_for_new_product("svn-using-project")
+    >>> svn_import = code_import_set.new(
+    ...     registrant=user, branch=svn_branch,
+    ...     rcs_type=svn, svn_branch_url=svn_url)
+    >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
+    True
 
-  >>> svn_import = code_import_set.new(name='svn-test',
-  ...     product=product, series=series,
-  ...     rcs_type=svn, svn_branch_url=svn_url)
+Write the new code imports to the database, so we can use it to test
+ICodeImportSet.get() and friends.
 
-  >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
-  True
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
-Write the new code import to the database, so we can use it to test
-CodeImportSet.getByName.
+== Retreiving CodeImports ==
 
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> flush_database_updates()
+You can retrieve all imports with the `getAll` method of ICodeImport.
 
-== Retrieving by name ==
+    >>> svn_import in code_import_set.getAll()
+    True
 
-To retrieve a CodeImport by its unique name, as needed to implement navigation,
-use CodeImportSet.getByName.
+You can also retrive an import by id, which will be used to present the
+object view for an import and also by branch, which will be used to
+present the import's details on the page of the branch.
 
-  >>> found_svn = code_import_set.getByName('svn-test')
-  >>> verifyObject(ICodeImport, removeSecurityProxy(found_svn))
-  True
-  >>> found_svn.svn_branch_url
-  u'svn://svn.example.com/trunk'
-
+    >>> code_import_set.get(svn_import.id).svn_branch_url
+    u'svn://svn.example.com/trunk'
+    >>> code_import_set.getByBranch(cvs_branch).cvs_root
+    u':pserver:anonymous@cvs.example.com:/cvsroot'
 
 == Canonical URLs ==
 
