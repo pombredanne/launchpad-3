@@ -1,5 +1,5 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
-"""Browser code for PO files."""
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""Browser code for Translation files."""
 
 __metaclass__ = type
 
@@ -139,7 +139,7 @@ class POFileUploadView(POFileView):
         self.process_form()
 
     def process_form(self):
-        """Handle a form submission to request a .po file upload."""
+        """Handle a form submission to request a translation file upload."""
         if self.request.method != 'POST' or self.user is None:
             # The form was not submitted or the user is not logged in.
             return

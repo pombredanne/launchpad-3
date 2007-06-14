@@ -428,15 +428,10 @@ class BaseExportView(LaunchpadView):
         """Return a list of formats available for translation exports."""
 
         class BrowserFormat:
-            def __init__(self, title, value):
+            def __init__(self, title, value, is_default=False):
                 self.title = title
                 self.value = value
-                self.is_default = False
-                if value == TranslationFileFormat.PO.name:
-                    # Right now, PO format is the default format with exports.
-                    # Once we add more formats support, the default will
-                    # depend on the kind of resource.
-                    self.is_default = True
+                self.is_default = is_default
 
         formats = [
             TranslationFileFormat.PO,
@@ -444,7 +439,8 @@ class BaseExportView(LaunchpadView):
         ]
 
         for format in formats:
-            yield BrowserFormat(format.title, format.name)
+            is_default = (self.context.format == format)
+            yield BrowserFormat(format.title, format.name, is_default)
 
 
 class POTemplateExportView(BaseExportView):
