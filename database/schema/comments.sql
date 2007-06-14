@@ -261,6 +261,8 @@ COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in t
 COMMENT ON COLUMN Product.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a product.';
 COMMENT ON COLUMN Product.mugshot IS 'The library file alias of a mugshot image to display as the branding of a product, on its home page.';
 COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
+COMMENT ON COLUMN Product.private_bugs IS 'Indicates whether bugs filed in this product are automatically marked as private.';
+COMMENT ON COLUMN Product.private_specs IS 'Indicates whether specs filed in this product are automatically marked as private.';
 
 -- ProductRelease
 
@@ -1406,8 +1408,11 @@ COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given t
 
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
-COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it is the case.';
+COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it has one.';
 COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
+COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
+COMMENT ON COLUMN Archive.authorized_size IS 'Size in bytes allowed for this PPA.';
+COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
