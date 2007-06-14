@@ -1753,25 +1753,28 @@ def email_branch_modified_notifications(branch, to_addresses,
 
     Emails are sent one at a time to the listed addresses.
     """
-    subject = '[Branch %s] %s' % (branch.unique_name, branch.title)
+    branch_title = branch.title
+    if branch_title is None:
+        branch_title = '(no title)'
+    subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
     headers = {'X-Launchpad-Branch': branch.unique_name}
 
     template = get_email_template('branch-modified.txt')
     params = {
         'contents': contents,
-        'branch_title': branch.title,
+        'branch_title': branch_title,
         'branch_url': canonical_url(branch),
          }
     for address in to_addresses:
-        # If the subscription was from a team subscription rather than
-        # an individual subscription, then the unsubscribe_url needs
-        # to be changed.
         subscription, ignored = recipients.getReason(address)
         if subscription.person.isTeam():
+            rationale = 'Subscriber @%s' % subscription.person.name
             params['unsubscribe_url'] = canonical_url(subscription)
         else:
+            rationale = 'Subscriber'
             params['unsubscribe_url'] = (
                 canonical_url(branch) + '/+edit-subscription')
+        headers['X-Launchpad-Message-Rationale'] = rationale
 
         body = template % params
         simple_sendmail(from_address, address, subject, body, headers)

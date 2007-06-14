@@ -10,10 +10,14 @@ __all__ = [
     'BranchSubscriptionAddOtherView',
     ]
 
+from zope.component import getUtility
+
 from canonical.lp.dbschema import BranchSubscriptionNotificationLevel
 
+from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.interfaces import IBranchSubscription
+from canonical.launchpad.interfaces import (
+    IBranchSubscription, ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView,
     action, canonical_url)
@@ -118,6 +122,7 @@ class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
 
 
 class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
+    """View used to subscribe someone other than the current user."""
 
     field_names = ['person', 'notification_level', 'max_diff_lines']
     for_input=True
@@ -129,8 +134,14 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     # Override the inherited property for next_url
     next_url = None
 
-    @action("Subscribe")
-    def subscribe(self, action, data):
+    @action("Subscribe", name="subscribe_action")
+    def subscribe_action(self, action, data):
+        """Subscribe the specified user to the branch.
+
+        The user must be a member of a team in order to subscribe
+        that team to the branch.  Again Launchpad Admins are special
+        and they can subscribe any team.
+        """
         notification_level = data['notification_level']
         max_diff_lines = self.optional_max_diff_lines(
             notification_level, data['max_diff_lines'])
@@ -138,9 +149,14 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         subscription = self.context.getSubscription(person)
         self.next_url = canonical_url(self.context)
         if subscription is None:
-            if person.isTeam() and not self.user.inTeam(person):
+            # XXX thumper 2007-06-14
+            # Restrictive policy is being enforced in the view
+            # rather than the model.  See lpbug #117980.
+            admins = getUtility(ILaunchpadCelebrities).admin
+            if (person.isTeam() and not self.user.inTeam(person)
+                and not self.user.inTeam(admins)):
                 # A person can only subscribe a team if they are members
-                # of that team.
+                # of that team (or a Launchpad Admin).
                 self.setFieldError(
                     'person',
                     "You can only subscribe teams that you are a member of.")
@@ -160,7 +176,12 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
 
 
 class BranchSubscriptionEditView(LaunchpadEditFormView):
+    """View is used to edit branch subscriptions.
 
+    Used when traversed to the branch subscription itself rather than
+    through the branch action item to edit the user's own subscription.
+    This is the only current way to edit a team branch subscription.
+    """
     schema = IBranchSubscription
     field_names = ['notification_level', 'max_diff_lines']
 
@@ -169,15 +190,17 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
         self.person = self.context.person
         LaunchpadEditFormView.initialize(self)
 
-    @action("Unsubscribe")
-    def unsubscribe(self, action, data):
+    @action("Unsubscribe", name="unsubscribe_action")
+    def unsubscribe_action(self, action, data):
+        """Unsubscribe the team from the branch."""
         self.branch.unsubscribe(self.person)
         self.request.response.addNotification(
             "%s has been unsubscribed from this branch."
             % self.person.displayname)
 
-    @action("Change")
-    def change_details(self, action, data):
+    @action("Change", name="change_action")
+    def change_action(self, action, data):
+        """Update the branch subscription."""
         self.updateContextFromData(data)
 
     @property

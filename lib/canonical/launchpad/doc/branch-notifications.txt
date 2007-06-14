@@ -53,6 +53,8 @@ recipients.
     [Branch ~name12/firefox/main] Mozilla Firefox Mainline
     >>> print branch_notification['X-Launchpad-Branch']
     ~name12/firefox/main
+    >>> print branch_notification['X-Launchpad-Message-Rationale']
+    Subscriber
     >>> notification_body = branch_notification.get_payload()
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     The contents.
@@ -61,9 +63,9 @@ recipients.
     Mozilla Firefox Mainline
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
-    You received this email because you are subscribed to this branch.
-    To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=
-    /firefox/main/+edit-subscription.
+    You are receiving this branch notification because you are subscribed to it.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/main/+edit-subscription.
     <BLANKLINE>
     >>> branch.unsubscribe(branch.owner)
 
@@ -154,6 +156,15 @@ And to make sure we have them:
     sabdfl
     launchpad
 
+The getNotificationRecipients method returns an instance of
+NotificationRecipientSet (see doc/notification_recipient_set.txt).  The
+NotificationRecipientSet is used to remember why the email recipients
+are getting the emails.  The branch object adds all the branch
+subscriptions to the NotificationRecipientSet and sets the reason to be
+the subscription itself.  This allows the code that handles the email to
+appropriately set the unsubscribe link to the subscription that is the
+reason that the user is getting the email.
+
     >>> recipients = branch.getNotificationRecipients()
     >>> interested_levels = (
     ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
@@ -213,16 +224,17 @@ Send the revision notifications.
     The size of the diff (6000 lines) is larger than your specified limit of 50=
     00 lines...
 
-Foo Bar is getting the email due to his membership in the Launchpad developers
-team, and as such the unsubscription link is to the team subscription.
+Foo Bar is getting the email due to his membership in the Launchpad
+developers team, and as such the unsubscription link is to the team
+subscription.
 
     >>> print_to_and_body(notifications.pop(0))
     To: foo.bar@canonical.com
     Test message.
     <BLANKLINE>
     0 1 ... 5999...
-    To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=
-    /firefox/main/+subscription/launchpad.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/main/+subscription/launchpad.
 
     >>> print_to_and_body(notifications.pop(0))
     To: jeff.waugh@ubuntulinux.com
@@ -238,8 +250,8 @@ Mark's unsubscription link is to his personal branch subscription.
     Test message.
     <BLANKLINE>
     0 1 ... 5999...
-    To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=
-    /firefox/main/+edit-subscription.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/main/+edit-subscription.
 
 And just to be sure, lets create one with 800 lines.
 
@@ -403,9 +415,9 @@ names just now, we'll pass them through anyway
     Mozilla Firefox Mainline
     http://code.launchpad.dev/~name12/firefox/main
     <BLANKLINE>
-    You received this email because you are subscribed to this branch.
-    To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=
-    /firefox/main/+edit-subscription.
+    You are receiving this branch notification because you are subscribed to it.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/main/+edit-subscription.
 
 
 The fields that are currently tracked with the delta, and cause
@@ -465,6 +477,6 @@ something like this:
     New title
     http://code.launchpad.dev/~name12/firefox/new-name
     <BLANKLINE>
-    You received this email because you are subscribed to this branch.
-    To unsubscribe from this branch use go to http://code.launchpad.dev/~name12=
-    /firefox/new-name/+edit-subscription.
+    You are receiving this branch notification because you are subscribed to it.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/new-name/+edit-subscription.

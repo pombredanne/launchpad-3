@@ -408,11 +408,8 @@ class BranchReassignmentView(ObjectReassignmentView):
             return False
 
 
-def subscription_sort_key(subscription):
-    return subscription.person.browsername
-
-
 class DecoratedSubscription:
+    """Adds the editable attribute to a BranchSubscription."""
     decorates(IBranchSubscription, 'subscription')
 
     def __init__(self, subscription, editable):
@@ -421,18 +418,31 @@ class DecoratedSubscription:
 
 
 class BranchSubscriptionsView(LaunchpadView):
+    """The view is used for the branch subscriptions portlet.
+
+    The view is used to provide a decorated list of branch subscriptions
+    in order to provide links to be able to edit the subscriptions
+    based on whether or not the user is able to edit the subscription.
+    """
 
     def isEditable(self, subscription):
-        """A subscription is editable by members of the subscribed team."""
+        """A subscription is editable by members of the subscribed team.
+
+        Launchpad Admins are special, and can edit anyones subscription.
+        """
         # We don't want to say editable if the logged in user
         # is the same as the person of the subscription.
         if self.user is None or self.user == subscription.person:
             return False
-        return self.user.inTeam(subscription.person)
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (self.user.inTeam(subscription.person) or
+                self.user.inTeam(admins))
 
     def subscriptions(self):
+        """Return a decorated list of branch subscriptions."""
         sorted_subscriptions = sorted(
-            self.context.subscriptions, key=subscription_sort_key)
+            self.context.subscriptions,
+            key=lambda subscription: subscription.person.browsername)
         return [DecoratedSubscription(
                     subscription, self.isEditable(subscription))
                 for subscription in sorted_subscriptions]

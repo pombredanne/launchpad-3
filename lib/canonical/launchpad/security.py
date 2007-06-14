@@ -927,5 +927,10 @@ class BranchSubscriptionEdit(AuthorizationBase):
     usedfor = IBranchSubscription
 
     def checkAuthenticated(self, user):
-        """If the user is a member of the team that is subscribed, they can edit."""
-        return user.inTeam(self.obj.person)
+        """Is the user able to edit a branch subscription.
+
+        If the user is a member of the team that is subscribed, they can edit.
+        Launchpad Admins can also edit any branch subscription.
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.person) or user.inTeam(admins)

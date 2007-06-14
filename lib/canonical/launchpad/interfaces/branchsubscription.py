@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = ['IBranchSubscription']
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 from zope.schema import Choice, Int
 from canonical.launchpad import _
 

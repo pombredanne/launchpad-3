@@ -12,14 +12,20 @@
   <div tal:replace="structure view/branch/@@+portlet-subscribers" />
 </metal:leftportlets>
 
-<div metal:fill-slot="main">
+<metal:heading fill-slot="pageheading">
+  <div>
+    <img alt="branch icon" src="/@@/branch" />
+    <a tal:attributes="href context/branch/fmt:url"
+       tal:content="context/branch/displayname" />
+  </div>
   <h1>
-        Edit subscription to branch
-        &ldquo;<a tal:attributes="href context/fmt:url"
-        tal:content="context/branch/displayname">branch name</a>&rdquo;
-        for <a tal:content="context/person/displayname"
-       tal:attributes="href context/person/fmt:url">Person</a>
+    Edit subscription to branch for
+    <tal:person replace="context/person/displayname">Person</tal:person>
   </h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+
   <div metal:use-macro="context/@@launchpad_form/form" >
     <metal:extra fill-slot="extra_info">
       <p class="documentDescription">

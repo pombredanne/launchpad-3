@@ -405,6 +405,8 @@ True
 0
 >>> from canonical.launchpad.webapp import canonical_url
 >>> print canonical_url(subscription)
+http://code.launchpad.dev/~ddaa/gnome-terminal/dev/+subscription/sabdfl
+
 
 == Branches related to a person ==
 

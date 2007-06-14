@@ -19,7 +19,6 @@ from canonical.database.sqlbase import (
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
@@ -28,7 +27,6 @@ from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.lp.dbschema import (
-    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     BranchRelationships, BranchLifecycleStatus)
 
 
