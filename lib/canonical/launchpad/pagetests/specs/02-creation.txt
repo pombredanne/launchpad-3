@@ -91,7 +91,7 @@ this happened due to the right reason.
   >>> 'is already in use by another specification' in browser.contents
   True
 
-We test the validator using a invalid name.
+We test the validator using an invalid name.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
