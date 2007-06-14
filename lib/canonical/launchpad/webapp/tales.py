@@ -1378,9 +1378,7 @@ class FormattersAPI:
 
     def email_to_html(self):
         """text_to_html and hide signatures and full-quoted emails."""
-        start_fold_markup = ('<span class="fold">[...]</span>'
-                             '<span class="foldable" style="display: none;">'
-                             '<br />')
+        start_fold_markup = ('<span class="foldable">')
         end_fold_markup = '%s\n</span></p>'
         output = []
         in_fold = False
