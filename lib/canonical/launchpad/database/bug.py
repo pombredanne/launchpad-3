@@ -869,9 +869,8 @@ class BugSet:
         assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both")
         if params.product and params.product.private_bugs:
-            # These bugs are always private, because details of the
-            # project, like bug reports, are not yet meant to be
-            # publically disclosed.
+            # If the private_bugs flag is set on a product, then
+            # force the new bug report to be private.
             params.private = True
 
         # Store binary package name in the description, because
@@ -908,15 +907,6 @@ class BugSet:
         if params.tags:
             bug.tags = params.tags
 
-        if params.product and params.product.private_bugs:
-            # Subscribe the bugcontact to all bugs,
-            # because all their bugs are private by default
-            # otherwise only subscribe the bug reporter by default.
-            if params.product.bugcontact:
-                bug.subscribe(params.product.bugcontact)
-            else:
-                bug.subscribe(params.product.owner)
-
         if params.security_related:
             assert params.private, (
                 "A security related bug should always be private by default")
@@ -929,6 +919,15 @@ class BugSet:
                 bug.subscribe(context.security_contact)
             else:
                 bug.subscribe(context.owner)
+        elif params.product and params.product.private_bugs:
+            # Subscribe the bugcontact to all bugs,
+            # because all their bugs are private by default
+            # otherwise only subscribe the bug reporter by default.
+            if params.product.bugcontact:
+                bug.subscribe(params.product.bugcontact)
+            else:
+                bug.subscribe(params.product.owner)
+
 
         # Subscribe other users.
         for subscriber in params.subscribers:

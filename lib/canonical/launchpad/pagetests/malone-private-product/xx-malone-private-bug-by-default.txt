@@ -11,18 +11,12 @@ dupes.)
     >>> admin_browser.getControl(name="field.private_bugs").value = True
     >>> admin_browser.getControl("Change").click()
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.handleErrors = False
+    >>> user_browser.open("http://launchpad.dev/redfish/+filebug-advanced")
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
-    >>> browser.open(
-    ...     "http://launchpad.dev/redfish/+filebug-advanced")
-
-    >>> browser.getControl(name="field.title").value = "a test summary"
-    >>> browser.getControl(name="field.comment").value = (
+    >>> user_browser.getControl(name="field.title").value = "a test summary"
+    >>> user_browser.getControl(name="field.comment").value = (
     ...     "a test description")
-    >>> browser.getControl("Submit Bug Report").click()
+    >>> user_browser.getControl("Submit Bug Report").click()
 
     >>> login("foo.bar@canonical.com")
 
@@ -36,13 +30,5 @@ But not forced to be security-related, of course.
 
     >>> redfish_bugtask.bug.security_related
     False
-
-Additionally, the owner is subscribed.
-
-    >>> redfish.owner.name
-    u'name12'
-
-    >>> sorted(sub.name for sub in redfish_bugtask.bug.getDirectSubscribers())
-    [u'name12', u'name16']
 
     >>> logout()
