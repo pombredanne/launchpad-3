@@ -21,7 +21,7 @@ An unprivileged user can confirm the bug:
     >>> print user_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
 
-But he should not be able to change the status to Won't Fix or to Triaged:
+But he cannot change the status to Won't Fix or to Triaged:
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/ubuntu/+source/'

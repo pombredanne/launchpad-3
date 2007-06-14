@@ -53,8 +53,7 @@ from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import (
-    BugAttachmentType, DistroSeriesStatus, BugTaskStatus)
+from canonical.lp.dbschema import BugAttachmentType, DistroSeriesStatus
 
 _bug_tag_query_template = """
         SELECT %(columns)s FROM %(tables)s WHERE

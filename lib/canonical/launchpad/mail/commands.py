@@ -12,18 +12,17 @@ from zope.schema import ValidationError
 
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
-        IProduct, IDistribution, IDistroSeries, IPersonSet,
-        IBug, IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
-        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag, IBugTaskSet,
-        BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
-        IDistributionSourcePackage, EmailProcessingError, NotFoundError,
-        CreateBugParams, IPillarNameSet, BugTargetNotFound, IProject,
-        ISourcePackage, IProductSeries, BUG_CONTACT_BUGTASK_STATUSES)
+        IProduct, IDistribution, IDistroSeries, IBug,
+        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
+        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
+        IBugTaskSet, IMessageSet, IDistroBugTask,
+        IDistributionSourcePackage, EmailProcessingError,
+        NotFoundError, CreateBugParams, IPillarNameSet,
+        BugTargetNotFound, IProject, ISourcePackage, IProductSeries)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
-from canonical.launchpad.searchbuilder import NULL
 
 from canonical.launchpad.webapp.snapshot import Snapshot
 

@@ -15,8 +15,7 @@
     ...     nopriv_user, 'Test bug', 'Something')
     >>> firefox_bug = firefox.createBug(bug_params)
 
-Bug Contacts should be able to assign status Won't Fix and Triaged to
-a bug.
+Bug Contacts can assign status Won't Fix and Triaged to a bug.
 
     >>> [firefox_bugtask] = firefox_bug.bugtasks
     >>> firefox_bugtask.transitionToStatus(
@@ -29,8 +28,7 @@ a bug.
     >>> print firefox_bugtask.status.title
     Triaged
 
-The product registrant should be able to assign Won't Fix and Triaged
-too.
+The product registrant can assign Won't Fix and Triaged too.
 
     >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, nopriv_user)
@@ -50,10 +48,9 @@ too.
     >>> print firefox_bugtask.status.title
     Triaged
 
-Non Bug Contacts should not be permitted to change the status to Won't
-Fix or Triaged. The option should not be offered in the UI, and we
-check here (raising an AssertionError on failure) to ensure that all
-call sites adhere to this.
+Users who are not bug contacts or product registrants cannot change
+the status to Won't Fix or Triaged. The option is not exposed in the
+UI, and this test proves the rule is enforced for all call sites.
 
     >>> login('foo.bar@canonical.com')
     >>> firefox.bugcontact = None
