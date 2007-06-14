@@ -383,7 +383,7 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
 
     schema = ILoginServiceAuthorizeForm
     template = ViewPageTemplateFile(
-        "../templates/loginservice-allow-relying-party.pt")
+        "../templates/loginservice-authorize.pt")
 
     @action('Sign In', name='auth')
     def auth_action(self, action, data):
@@ -419,7 +419,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
     @property
     def initial_values(self):
         values = super(LoginServiceLoginView, self).initial_values
-        values.update(dict(action='login'))
+        values['action'] = 'login'
         return values
 
     def validate(self, data):
@@ -465,7 +465,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
                 # on with the registration process as if we had never seen it.
                 pass
         else:
-            raise UnexpectedFormData("Unknown action.")
+            raise UnexpectedFormData("Unknown action: %s, %s." % (self.widgets['action'].error(), self.request.form.keys()))
 
     def validateEmailAndPassword(self, email, password):
         """Check that the email address and password are valid for login."""

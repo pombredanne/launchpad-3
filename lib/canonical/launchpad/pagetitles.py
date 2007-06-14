@@ -510,7 +510,7 @@ launchpad_librarianfailure = "Sorry, you can't do this right now"
 launchpadstatisticset_index = 'Launchpad statistics'
 
 # XXX: Fixme!!!
-def loginservice_allow_relying_party(context, view):
+def loginservice_authorize(context, view):
     return 'Authenticate to %s' % view.relying_party_title
 
 loginservice_login = 'Launchpad Login Service'

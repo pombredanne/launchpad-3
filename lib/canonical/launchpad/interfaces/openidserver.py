@@ -56,7 +56,7 @@ class IOpenIdAuthorizationSet(Interface):
         (person, trust_root, client_id).
         """
 
- 
+
 class ILaunchpadOpenIdStoreFactory(Interface):
     """Factory to create LaunchpadOpenIdStore instances."""
 
