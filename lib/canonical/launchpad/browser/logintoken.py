@@ -190,7 +190,7 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
 
     def validate(self, form_values):
         """Validate the email address."""
-        email = form_values.get("email").strip()
+        email = form_values.get("email", "").strip()
         # All operations with email addresses must be case-insensitive. We
         # enforce that in EmailAddressSet, but here we only do a comparison,
         # so we have to .lower() them first.

@@ -92,6 +92,6 @@ class ILoginServiceLoginForm(ILoginServiceAuthorizeForm):
     unauthenticated users."""
 
     email = TextLine(title=u'What is your e-mail address?', required=True)
-    password = PasswordField(title=u'passphrase', required=True)
+    password = PasswordField(title=u'passphrase', required=False)
     action = Choice(title=_('Action'), required=True,
                     source=LoginServiceActionsVocabularyFactory())
