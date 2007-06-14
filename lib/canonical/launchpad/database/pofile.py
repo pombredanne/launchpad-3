@@ -405,7 +405,7 @@ class POFile(SQLBase, RosettaStats):
             (POSubmission.datecreated > POMsgSet.date_reviewed OR
              (POMsgSet.date_reviewed IS NULL AND
               POSubmission.active IS NOT TRUE))
-            ''' % sqlvalues(self.potemplate.id, self.id),
+            ''' % sqlvalues(self.potemplate, self),
             clauseTables=['POMsgSet', 'POSubmission'],
             orderBy='POTmsgSet.sequence')
 
@@ -485,7 +485,7 @@ class POFile(SQLBase, RosettaStats):
         """See IRosettaStats."""
         return self.rosettacount
 
-    def unreviewedCount(self, language=None):
+    def unreviewedCount(self):
         """See `IRosettaStats`."""
         return self.unreviewed_count
 

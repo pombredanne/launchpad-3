@@ -119,7 +119,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
     def rosettaCount(self, language=None):
         return self.rosettacount
 
-    def unreviewedCount(self, language=None):
+    def unreviewedCount(self):
         """See `IRosettaStats`."""
         return self.unreviewed_count
 

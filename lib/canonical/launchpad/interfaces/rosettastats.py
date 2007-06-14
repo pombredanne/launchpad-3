@@ -49,7 +49,7 @@ class IRosettaStats(Interface):
         translation in the PO file for this language when we last parsed it.
         """
 
-    def unreviewedCount(language=None):
+    def unreviewedCount():
         """Return the number of msgsets with unreviewed suggestions.
 
         Unreviewed are those which contain suggestions submitted later

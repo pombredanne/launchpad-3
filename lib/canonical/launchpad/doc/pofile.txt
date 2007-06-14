@@ -685,8 +685,9 @@ Launchpad.
   >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
   >>> len(potmsgsets)
   1
-  >>> pofile_changed.updateStatistics()
-  (7, 1, 0, 1)
+  >>> stats = pofile_changed.updateStatistics()
+  >>> print pofile_changed.updatesCount()
+  1
 
 We make sure that submissions on untranslated strings are not considered
 'changed in Launchpad', since this method is mainly designed to help
@@ -715,8 +716,9 @@ And make sure that the count of changed in Launchpad hasn't changed.
   >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
   >>> len(potmsgsets)
   1
-  >>> pofile_changed.updateStatistics()
-  (7, 1, 1, 1)
+  >>> stats = pofile_changed.updateStatistics()
+  >>> print pofile_changed.updatesCount()
+  1
 
 Now, lets change translation for a message which already has a published
 translation.  First we need to find a message with active, published
@@ -744,8 +746,7 @@ And make sure that the count of messages changed in Launchpad _has_ changed:
 
 Lets check that the updatesCount() is also properly updated.
 
-  >>> pofile_changed.updateStatistics()
-  (7, 2, 1, 1)
+  >>> stats = pofile_changed.updateStatistics()
   >>> pofile_changed.updatesCount()
   2
 
@@ -759,11 +760,11 @@ Lets get Evolution Spanish translation in distribution Hoary.
 
   >>> person_set = getUtility(IPersonSet)
   >>> potemplateset = getUtility(IPOTemplateSet)
-  >>> product = getUtility(IProductSet).getByName('evolution')
-  >>> productseries = product.getSeries('trunk')
-  >>> potemplatesubset = potemplateset.getSubset(productseries=productseries)
-  >>> potemplate = potemplatesubset['evolution-2.2']
-  >>> pofile = potemplate.getPOFileByLang('es')
+  >>> evolution = getUtility(IProductSet).getByName('evolution')
+  >>> evolution_trunk = evolution.getSeries('trunk')
+  >>> potemplatesubset = potemplateset.getSubset(productseries=evolution_trunk)
+  >>> evolution_template = potemplatesubset['evolution-2.2']
+  >>> evolution_es = evolution_template.getPOFileByLang('es')
 
   >>> noneditor = person_set.getByName('no-priv')
   >>> editor = person_set.getByName('carlos')
@@ -774,12 +775,13 @@ Lets get Evolution Spanish translation in distribution Hoary.
 
 Non-editor can only submit a new suggestion on untranslated message.
 
-  >>> pofile.getPOTMsgSetWithNewSuggestions().count()
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
   2
-  >>> pofile.updateStatistics()
-  (8, 0, 1, 2)
+  >>> stats = evolution_es.updateStatistics()
+  >>> print evolution_es.unreviewedCount()
+  2
 
-  >>> pomsgset = pofile.getPOMsgSet(u'evolution minicard')
+  >>> pomsgset = evolution_es.getPOMsgSet(u'evolution minicard')
 
   # Make sure this entry is unreviewed and untranslated
   >>> print pomsgset.date_reviewed
@@ -791,10 +793,11 @@ Non-editor can only submit a new suggestion on untranslated message.
   ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
   >>> pomsgset.active_texts
   [None]
-  >>> pofile.getPOTMsgSetWithNewSuggestions().count()
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
   3
-  >>> pofile.updateStatistics()
-  (8, 0, 1, 3)
+  >>> stats = evolution_es.updateStatistics()
+  >>> print evolution_es.unreviewedCount()
+  3
 
 A privileged translator can approve this same suggestion by submitting
 it himself.
@@ -803,10 +806,11 @@ it himself.
   ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
   >>> pomsgset.active_texts
   [u'translation']
-  >>> pofile.getPOTMsgSetWithNewSuggestions().count()
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
   2
-  >>> pofile.updateStatistics()
-  (8, 0, 2, 2)
+  >>> stats = evolution_es.updateStatistics()
+  >>> print evolution_es.unreviewedCount()
+  2
 
 Or, they can update it with entirely different translation, which won't be
 picked up as a new suggestion, but will be directly set as the translation.
@@ -815,26 +819,28 @@ picked up as a new suggestion, but will be directly set as the translation.
   ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
   >>> pomsgset.active_texts
   [u'boohoo']
-  >>> pofile.getPOTMsgSetWithNewSuggestions().count()
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
   2
-  >>> pofile.updateStatistics()
-  (8, 0, 2, 2)
+  >>> stats = evolution_es.updateStatistics()
+  >>> print evolution_es.unreviewedCount()
+  2
 
 Non-editors can still provide suggestions on messages with approved
 translations, and this will again list this message among those with
 new suggestions.
 
-  >>> pomsgset = pofile.getPOMsgSet(u'have ')
+  >>> pomsgset = evolution_es.getPOMsgSet(u'have ')
   >>> print pomsgset.active_texts
   [u'tiene ']
   >>> pomsgset.updateTranslationSet(noneditor, {0: 'blahblah'}, fuzzy=False,
   ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
   >>> pomsgset.active_texts
   [u'tiene ']
-  >>> pofile.getPOTMsgSetWithNewSuggestions().count()
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
   3
-  >>> pofile.updateStatistics()
-  (8, 0, 2, 3)
+  >>> stats = evolution_es.updateStatistics()
+  >>> print evolution_es.unreviewedCount()
+  3
 
 = POFile Security tests =
 
