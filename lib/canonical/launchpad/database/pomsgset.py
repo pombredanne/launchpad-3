@@ -6,6 +6,7 @@ __all__ = ['POMsgSet', 'DummyPOMsgSet']
 import gettextpo
 
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
                        SQLMultipleJoin, SQLObjectNotFound)
 
@@ -97,6 +98,10 @@ class POMsgSetMixIn:
         # submissions caches.
         if related_submissions is None:
             related_submissions = self._getRelatedSubmissions()
+        else:
+            related_submissions = [
+                removeSecurityProxy(submission)
+                for submission in related_submissions]
 
         previous = None
         for submission in related_submissions:

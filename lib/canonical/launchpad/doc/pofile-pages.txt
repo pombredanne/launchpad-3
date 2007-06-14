@@ -237,7 +237,7 @@ the POMsgSets it shows.  We pick one with a nice list of POSubmissions and see
 what's inside.
 
     >>> pomsgset = POMsgSet.get(604)
-    >>> pomsgset._hasCaches()
+    >>> pomsgset._hasSubmissionsCaches()
     True
     >>> pomsgset.id
     604
@@ -262,16 +262,16 @@ what's inside.
     ...     print submission.datecreated.isoformat()
     2005-04-07T...
 
-The POMsgSet we're looking at had its cache pre-populated by the view object,
-which is faster because it can fetch all its information from the database in
-bulk.  If we force the POMsgSet to fill its own caches, using its own logic to
-fetch just its own submissions from the database, we get the exact same
-results.
+The POMsgSet we're looking at had its submissions cache pre-populated by the
+view object, which is faster because it can fetch all its information from the
+database in bulk.  If we force the POMsgSet to fill its own caches, using its
+own logic to fetch just its own submissions from the database, we get the
+exact same results.
 
-    >>> pomsgset.invalidateCaches()
-    >>> pomsgset._hasCaches()
+    >>> pomsgset._invalidateSubmissionsCaches()
+    >>> pomsgset._hasSubmissionsCaches()
     False
-    >>> pomsgset.initializeCaches()
+    >>> pomsgset.initializeSubmissionsCaches()
     >>> pomsgset.id
     604
     >>> pomsgset.potmsgset.id
