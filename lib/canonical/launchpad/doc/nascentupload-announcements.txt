@@ -424,3 +424,32 @@ One email generated:
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
   >>> notification['Subject']
   'Accepted bar 1.0-2 (i386)'
+
+
+Dry run uploads should not generate any emails.  Call do_accept with
+notify=False:
+
+  >>> sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
+
+  >>> netapplet_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> netapplet_src.process()
+
+  >>> netapplet_src.logger = mock_logger
+  >>> result = netapplet_src.do_accept(notify=False)
+
+No emails generated:
+
+  >>> msgs = pop_notifications()
+  >>> len(msgs)
+  0
+
+Rejections with notify=False will also not generate any emails.
+
+  >>> result = netapplet_src.do_reject(notify=False)
+  >>> msgs = pop_notifications()
+  >>> len(msgs)
+  0
+
