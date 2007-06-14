@@ -40,7 +40,12 @@ class GettextPoImporter:
     @property
     def file_extensions(self):
         """See ITranslationFormatImporter."""
-        return ('.po', '.pot')
+        return ['.po', '.pot']
+
+    @property
+    def has_alternative_msgid(self):
+        """See ITranslationFormatImporter."""
+        return False
 
     def parse(self, translation_import_queue_entry):
         """See ITranslationFormatImporter."""

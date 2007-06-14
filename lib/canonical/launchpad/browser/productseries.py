@@ -20,11 +20,10 @@ __all__ = ['ProductSeriesNavigation',
            'get_series_branch_error']
 
 import cgi
-from datetime import datetime
+import os.path
 import pytz
-
+from datetime import datetime
 from BeautifulSoup import BeautifulSoup
-
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -35,7 +34,7 @@ from canonical.launchpad.helpers import (
     browserLanguages, is_tar_filename, request_languages)
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
-    ISourcePackageNameSet, IProductSeries,
+    ISourcePackageNameSet, IProductSeries, ITranslationImporter,
     ITranslationImportQueue, IProductSeriesSet, NotFoundError)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
@@ -380,8 +379,9 @@ class ProductSeriesView(LaunchpadView):
 
         translation_import_queue_set = getUtility(ITranslationImportQueue)
 
-        if (filename.endswith('.pot') or filename.endswith('.po') or
-            filename=='en-US.xpi'):
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if (ext in translation_importer.file_extensions_with_importer):
             # Add it to the queue.
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, True, self.user,

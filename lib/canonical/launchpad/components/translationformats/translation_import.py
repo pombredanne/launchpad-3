@@ -78,10 +78,10 @@ class TranslationImporter:
     @cachedproperty
     def file_extensions_with_importers(self):
         """See ITranslationImporter."""
-        file_extensions = ()
+        file_extensions = []
 
-        for importer_class in importers.itervalues:
-            file_extensions += importer_class().file_extensions
+        for importer_class in importers.itervalues():
+            file_extensions.extend(importer_class().file_extensions)
 
         return file_extensions
 
@@ -118,9 +118,9 @@ class TranslationImporter:
             # We are importing a translation template.
             self.potemplate.source_file_format = (
                 translation_import_queue_entry.format)
-            # XXX: This should be done in a generic way so we handle this
-            # automatically without knowing the exact formats that need it.
-            if translation_import_queue_entry.format == TranslationFileFormat.XPI:
+            if importer.has_alternative_msgid:
+                # We use the special 'en' language as the way to store the
+                # English strings to show instead of the msgids.
                 english_pofile = self.potemplate.getPOFileByLang('en')
                 if english_pofile is None:
                     english_pofile = self.potemplate.newPOFile('en')

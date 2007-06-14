@@ -662,7 +662,7 @@ class POFile(SQLBase, RosettaStats):
         import_rejected = False
         try:
             importer = getUtility(ITranslationImporter)
-            errors = importer.import_file(entry_to_import, logger=logger)
+            errors = importer.importFile(entry_to_import, logger=logger)
         except NotExportedFromLaunchpad:
             # We got a file that was not exported from Rosetta as a non
             # published upload. We log it and select the email template.

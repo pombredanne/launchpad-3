@@ -15,6 +15,7 @@ __all__ = [
     ]
 
 import re
+import os.path
 from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
@@ -25,7 +26,8 @@ from canonical.launchpad.browser.pomsgset import (
 from canonical.launchpad.browser.potemplate import (
     BaseExportView, POTemplateSOP, POTemplateFacets)
 from canonical.launchpad.interfaces import (
-    IPOFile, ITranslationImportQueue, UnexpectedFormData, NotFoundError)
+    IPOFile, ITranslationImporter, ITranslationImportQueue,
+    UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -171,12 +173,12 @@ class POFileUploadView(POFileView):
             return
 
         translation_import_queue = getUtility(ITranslationImportQueue)
-
-        if not filename.endswith('.po') and not filename.endswith('.xpi'):
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if (ext not in translation_importer.file_extensions_with_importer):
             self.request.response.addWarningNotification(
                 "Ignored your upload because the file you uploaded was not"
-                " recognised as a file that can be imported as it does not"
-                " end with the '.po' or '.xpi' suffix.")
+                " recognised as a file that can be imported.")
             return
 
         # We only set the 'published' flag if the upload is marked as an
@@ -186,7 +188,7 @@ class POFileUploadView(POFileView):
         else:
             published = False
 
-        if self.context.path is None or filename.endswith('.xpi'):
+        if self.context.path is None:
             # The POFile is a dummy one, we use the filename as the path.
             path = filename
         else:
@@ -200,8 +202,8 @@ class POFileUploadView(POFileView):
             potemplate=self.context.potemplate, pofile=self.context)
 
         self.request.response.addInfoNotification(
-            'Thank you for your upload. The PO file content will be imported'
-            ' soon into Launchpad. You can track its status from the'
+            'Thank you for your upload. The translation content will be'
+            ' imported soon into Launchpad. You can track its status from the'
             ' <a href="%s">Translation Import Queue</a>' %
                 canonical_url(translation_import_queue))
 

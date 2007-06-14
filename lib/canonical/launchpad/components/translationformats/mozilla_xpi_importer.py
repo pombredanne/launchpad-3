@@ -7,7 +7,7 @@ __all__ = [
     ]
 
 import os
-import re
+import cElementTree
 from email.Utils import parseaddr
 from StringIO import StringIO
 from xml.parsers.xmlproc import dtdparser, xmldtd, utils
@@ -77,12 +77,11 @@ class MozillaZipFile:
                 self.extend(jarf.messages)
             elif entry == 'install.rdf':
                 data = zip.read(entry)
-                match = re.match('<em:contributor>(.*)</em:contributor>', data)
-                if match:
-                    # This file format could have more than a single 'last
-                    # translator' but we are not able to represent all them as
-                    # last translators so we take latest one in the list.
-                    self.last_translator = match.groups()[-1]
+                for event, elem in cElementTree.iterparse(StringIO(data)):
+                    if elem.tag == "{http://www.mozilla.org/2004/em-rdf#}contributor":
+                        # This file would have more than one contributor, but
+                        # we are only getting latest one.
+                        self.last_translator = elem.text
             else:
                 # Ignore this file, we don't need to do anything with it.
                 continue
@@ -160,7 +159,7 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
 
         message = XpiMessage()
         message.msgid = name
-        # XXX CarlosPerelloMarin 20070326: xmldtd parser does an inline
+        # CarlosPerelloMarin 20070326: xmldtd parser does an inline
         # parsing which means that the content is all in a single line so we
         # don't have a way to show the line number with the source reference.
         message.file_references_list = ["%s(%s)" % (self.filename, name)]
@@ -394,7 +393,12 @@ class MozillaXpiImporter:
     @property
     def file_extensions(self):
         """See ITranslationFormatImporter."""
-        return ('.xpi')
+        return ['.xpi']
+
+    @property
+    def has_alternative_msgid(self):
+        """See ITranslationFormatImporter."""
+        return True
 
     def parse(self, translation_import_queue_entry):
         """See ITranslationFormatImporter."""

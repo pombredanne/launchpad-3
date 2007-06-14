@@ -80,6 +80,12 @@ class TranslationImporterTestCase(unittest.TestCase):
         self.failUnless(xpi_format_importer is not None, (
             'There is no importer for XPI file format!'))
 
+    def testFileExtensionsWithImporters(self):
+        """Check whether we get the right list of file extensions handled."""
+        self.assertEqual(
+            self.translation_importer.file_extensions_with_importers,
+            ['.po', '.pot', '.xpi'])
+
 
 def test_suite():
     suite = unittest.TestSuite()

@@ -567,7 +567,7 @@ class POTemplate(SQLBase, RosettaStats):
         template_mail = None
         translation_importer = getUtility(ITranslationImporter)
         try:
-            translation_importer.import_file(entry_to_import, logger)
+            translation_importer.importFile(entry_to_import, logger)
         except (TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError):
             # The import failed, we mark it as failed so we could review it

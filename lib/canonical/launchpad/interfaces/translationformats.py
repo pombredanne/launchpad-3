@@ -79,7 +79,7 @@ class UnknownTranslationRevisionDate(Exception):
 class ITranslationImporter(Interface):
     """Importer of translation files."""
 
-    def import_file(translation_import_queue_entry, logger=None):
+    def importFile(translation_import_queue_entry, logger=None):
         """Convert a translation resource into database objects.
 
         :arg translation_import_queue_entry: An ITranslationImportQueueEntry
@@ -115,6 +115,10 @@ class ITranslationFormatImporter(Interface):
 
     messages = Attribute(
         "The list of ITranslationMessage included in the parsed file.")
+
+    has_alternative_msgid = Attribute("""
+        Whether this file format importer uses ids to identify strings
+        instead of English strings.""")
 
     def parse(translation_import_queue_entry):
         """Parse given translation_import_queue_entry object.

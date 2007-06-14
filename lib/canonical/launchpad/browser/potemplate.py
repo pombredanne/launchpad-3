@@ -22,7 +22,7 @@ __all__ = [
     ]
 
 import operator
-
+import os.path
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
@@ -37,7 +37,8 @@ from canonical.launchpad.browser.sourcepackage import (
     SourcePackageSOP, SourcePackageFacets)
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOExportRequestSet,
-    IPOTemplateSubset, ITranslationImportQueue, IProductSeries, ISourcePackage)
+    IPOTemplateSubset, ITranslationImporter, ITranslationImportQueue,
+    IProductSeries, ISourcePackage)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
@@ -317,25 +318,16 @@ class POTemplateView(LaunchpadView):
             return
 
         translation_import_queue = getUtility(ITranslationImportQueue)
-
-        if (filename.endswith('.pot') or filename.endswith('.po')
-            or filename=='en-US.xpi'):
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if (ext not in translation_importer.file_extensions_with_importer):
             # Add it to the queue.
-            if filename.endswith('.po'):
-                # It's a .po file attached to the template at self.context,
-                # we don't override its path.
-                path = filename
-            else:
-                # It's a template, we override it to have exactly the same
-                # path as the entry has in our database.
-                path = self.context.path
             translation_import_queue.addOrUpdateEntry(
-                path, content, True, self.user,
+                filename, content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
                 distroseries=self.context.distroseries,
                 productseries=self.context.productseries,
-                potemplate=self.context,
-                format=TranslationFileFormat.PO)
+                potemplate=self.context)
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be imported'
