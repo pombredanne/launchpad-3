@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import os
 import unittest
+import xmlrpclib
 
 import bzrlib.branch
 from bzrlib.errors import NotBranchError
@@ -18,6 +19,7 @@ from canonical.codehosting.tests.helpers import (
     adapt_suite, deferToThread, ServerTestCase, TwistedBzrlibLayer)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
+from canonical.codehosting.transport import branch_id_to_path
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
@@ -233,6 +235,95 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
             '~testuser/+junk/totally-new-branch', branch.unique_name)
 
 
+class SmartserverTests(ServerTestCase, TestCaseWithRepository):
+    """Acceptance tests for the smartserver component of Launchpad codehosting
+    service's Bazaar support.
+    """
+
+    layer = TwistedBzrlibLayer
+
+    server = None
+
+    def getDefaultServer(self):
+        return make_bzr_ssh_server()
+
+    def installServer(self, server):
+        super(SmartserverTests, self).installServer(server)
+        self.default_user = server.authserver.testUser
+        self.default_team = server.authserver.testTeam
+
+    def setUp(self):
+        super(SmartserverTests, self).setUp()
+
+        # Create a local branch with one revision
+        tree = self.make_branch_and_tree('.')
+        self.local_branch = tree.branch
+        self.build_tree(['foo'])
+        tree.add('foo')
+        tree.commit('Added foo', rev_id='rev1')
+
+    def runInChdir(self, func, *args, **kwargs):
+        old_dir = os.getcwdu()
+        os.chdir(local_path_from_url(self.local_branch.base))
+        try:
+            return func(*args, **kwargs)
+        finally:
+            os.chdir(old_dir)
+
+    def runAndWaitForDisconnect(self, func, *args, **kwargs):
+        return self.runInChdir(
+            self.server.runAndWaitForDisconnect, func, *args, **kwargs)
+
+    def push(self, remote_url):
+        """Push the local branch to the given URL.
+
+        This method is used to test then end-to-end behaviour of pushing Bazaar
+        branches to the SFTP server.
+
+        Do NOT run this method in the main thread! It does a blocking read from
+        the SFTP server, which is running in the Twisted reactor in the main
+        thread.
+        """
+        self.runAndWaitForDisconnect(
+            self.run_bzr_captured, ['push', remote_url], retcode=None)
+
+    def getLastRevision(self, remote_url):
+        """Get the last revision at the given URL.
+
+        Do NOT run this method in the main thread! It does a blocking read from
+        the SFTP server, which is running in the Twisted reactor in the main
+        thread.
+        """
+        return self.runAndWaitForDisconnect(
+            lambda: bzrlib.branch.Branch.open(remote_url).last_revision())
+
+    def getTransportURL(self, relpath=None, username=None):
+        """Return the base URL for the tests."""
+        if relpath is None:
+            relpath = ''
+        return self.server.get_url(username) + relpath
+
+    @deferToThread
+    def test_can_read_readonly_branch(self):
+        # We can get information from a read-only branch.
+
+        # - create a branch owned by a different user
+        # - getLastRevision on that branch.
+        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+        sabdfl_id = authserver.getUser('sabdfl')['id']
+        ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
+        ro_branch_url = 'file://' + os.path.abspath(
+            os.path.join(self.server._branches_root, 'branches',
+                         branch_id_to_path(ro_branch_id)))
+        out, err = self.runInChdir(
+            self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
+            retcode=None)
+        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+        remote_revision = self.getLastRevision(
+            self.getTransportURL('~sabdfl/+junk/ro-branch'))
+        self.assertEqual(revision, remote_revision)
+
+
 def make_repository_tests(base_suite):
     # Construct a test suite that runs AcceptanceTests with several different
     # repository formats.
@@ -260,13 +351,12 @@ def make_repository_tests(base_suite):
     return adapt_suite(adapter, base_suite)
 
 
-def make_server_tests(base_suite):
+def make_server_tests(base_suite, servers):
     from bzrlib.repository import RepositoryFormat
     from canonical.codehosting.tests.helpers import (
         CodeHostingRepositoryTestProviderAdapter)
     repository_format = RepositoryFormat.get_default_format()
 
-    servers = [make_sftp_server(), make_bzr_ssh_server()]
     adapter = CodeHostingRepositoryTestProviderAdapter(
         repository_format, servers)
     return adapt_suite(adapter, base_suite)
@@ -276,5 +366,8 @@ def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
     suite.addTest(make_repository_tests(base_suite))
-    suite.addTest(make_server_tests(base_suite))
+    suite.addTest(make_server_tests(
+        base_suite, [make_sftp_server(), make_bzr_ssh_server()]))
+    suite.addTest(make_server_tests(
+        unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server()]))
     return suite
