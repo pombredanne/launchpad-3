@@ -160,9 +160,9 @@
         <dd>
           <p>
             Like Sourceforge and Google Code Hosting,
-            Launchpad is not open source.
+            Launchpad is not currently open source.
             Unlike those other services,
-            we have committed to making Launchpad Free Software.
+            we have committed to making Launchpad Free Software eventually.
           </p>
           <p>
             Launchpad exists not just to make development easier within
@@ -170,14 +170,15 @@
             but also to encourage collaboration between projects.
             With Launchpad, distributors and upstream developers can share
             bug reports, translations, and code.
-            Until there are standards and APIs
-            that let standalone sites send these things to each other,
+            Eventually we hope to contribute to standards and APIs
+            that let standalone sites send these things to each other.
+            But until that happens,
             having a single Launchpad instance is the most practical way of
             maximizing the collaboration that Launchpad is designed to achieve.
             It also helps in funding Launchpad development in the short term.
           </p>
           <p>
-            We have released the code for 
+            In the meantime, we have released the code for 
             <a href="https://launchpad.net/launchpad-cscvs">CSCVS</a>,
             which Launchpad uses to mirror CVS/Subversion trees to Bazaar.
             We also make many contributions to other Free Software components
