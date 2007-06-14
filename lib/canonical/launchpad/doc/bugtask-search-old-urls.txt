@@ -7,7 +7,7 @@ agent to the new location with a permanent redirect so it has an
 opportunity to update bookmarks and so forth.
 
     >>> from canonical.launchpad.browser.bugtask import (
-    ...     BugTaskSearchListingView, get_old_bugtask_status_redirect)
+    ...     BugTaskSearchListingView, rewrite_old_bugtask_status_query_string)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
@@ -25,14 +25,11 @@ opportunity to update bookmarks and so forth.
     >>> view.request.response.getHeader('Location')
     'http://foobar/?field.status%3Alist=New'
 
-get_old_bugtask_status_redirect is the mapping function that converts
-the old url to an updated one. Only the statuses 'Unconfirmed, 'Needs
-Info' and 'Rejected' are converted.
+rewrite_old_bugtask_status_query_string is the mapping function that
+converts the old query string into an updated one. Only the statuses
+'Unconfirmed, 'Needs Info' and 'Rejected' are converted.
 
-    >>> from canonical.launchpad.webapp.uri import URI
-
-    >>> uri = URI(
-    ...     'http://somewhere/over/the/rainbow?'
+    >>> query_string = (
     ...     'freddy=krueger&'
     ...     'field.status%3Alist=Unconfirmed&'
     ...     'field.status%3Alist=Needs+Info&'
@@ -40,12 +37,9 @@ Info' and 'Rejected' are converted.
     ...     'field.status%3Alist=Fix+Committed&'
     ...     'sid=nancy'
     ...     )
-    >>> converted_uri = get_old_bugtask_status_redirect(uri)
-    >>> print converted_uri.host
-    somewhere
-    >>> print converted_uri.path
-    /over/the/rainbow
-    >>> print converted_uri.query.split('&')
+    >>> query_string_rewritten = (
+    ...     rewrite_old_bugtask_status_query_string(query_string))
+    >>> print query_string_rewritten.split('&')
     ['freddy=krueger',
      'field.status%3Alist=New',
      'field.status%3Alist=Incomplete',
@@ -53,8 +47,16 @@ Info' and 'Rejected' are converted.
      'field.status%3Alist=Fix+Committed',
      'sid=nancy']
 
-If the url does not contain any old statuses it should just return
-None.
+If the url does not contain any old statuses
+rewrite_old_bugtask_status_query_string returns the original query
+string unchanged.
 
-    >>> print get_old_bugtask_status_redirect(converted_uri)
-    None
+    >>> query_string_rewritten_again = (
+    ...     rewrite_old_bugtask_status_query_string(query_string_rewritten))
+    >>> print query_string_rewritten_again.split('&')
+    ['freddy=krueger',
+     'field.status%3Alist=New',
+     'field.status%3Alist=Incomplete',
+     'field.status%3Alist=Invalid',
+     'field.status%3Alist=Fix+Committed',
+     'sid=nancy']

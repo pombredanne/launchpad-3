@@ -182,14 +182,15 @@ OLD_BUGTASK_STATUS_MAP = {
     }
 
 
-def get_old_bugtask_status_redirect(uri):
-    """Get url with old status names replaced with new.
+def rewrite_old_bugtask_status_query_string(query_string):
+    """Get query string with old status names replaced with new.
 
     If an old status string has been used in the query, construct a
-    corrected location for the search, else return None.
+    corrected query string for the search, else return the original
+    query string.
     """
     query_elements = cgi.parse_qsl(
-        uri.query, keep_blank_values=True, strict_parsing=True)
+        query_string, keep_blank_values=True, strict_parsing=False)
     query_elements_mapped = []
 
     for name, value in query_elements:
@@ -198,10 +199,9 @@ def get_old_bugtask_status_redirect(uri):
         query_elements_mapped.append((name, value))
 
     if query_elements == query_elements_mapped:
-        return None
+        return query_string
     else:
-        return uri.replace(
-            query=urllib.urlencode(query_elements_mapped, doseq=True))
+        return urllib.urlencode(query_elements_mapped, doseq=True)
 
 
 class BugTargetTraversalMixin:
@@ -1325,12 +1325,14 @@ class BugTaskSearchListingView(LaunchpadView):
         # found.
         query_string = self.request.get('QUERY_STRING')
         if query_string:
-            uri = URI('%s?%s' % (self.request.getURL(), query_string))
-            uri = get_old_bugtask_status_redirect(uri)
-            if uri is not None:
-                self.request.response.redirect(str(uri), status=301)
+            query_string_rewritten = (
+                rewrite_old_bugtask_status_query_string(query_string))
+            if not query_string_rewritten == query_string:
+                redirect_uri = URI(self.request.getURL()).replace(
+                    query=query_string_rewritten)
+                self.request.response.redirect(str(redirect_uri), status=301)
                 return
-        
+
         if self.shouldShowComponentWidget():
             # CustomWidgetFactory doesn't work with
             # MultiCheckBoxWidget, so we work around this by manually

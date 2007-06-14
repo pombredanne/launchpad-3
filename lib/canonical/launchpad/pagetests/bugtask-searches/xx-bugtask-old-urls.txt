@@ -37,24 +37,12 @@ to allow user agents (and users) to update bookmarks, etc.
 
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
-    1
-    Firefox does not support SVG
-    mozilla-firefox
-    Medium
-    New
-    10
-    another test bug
-    linux-source-2.6.15
-    Medium
-    New
-    2
-    Blackhole Trash folder
-    &mdash;
-    Medium
-    New
+     1  Firefox does not support SVG  mozilla-firefox      Medium  New
+    10  another test bug              linux-source-2.6.15  Medium  New
+     2  Blackhole Trash folder        &mdash;              Medium  New
 
-Searching amongst all bugs should also redirect to an updated
-location with the new status names in place of the old.
+Searching amongst all bugs also redirects to an updated location with
+the new status names in place of the old.
 
     >>> url = (
     ...     "http://bugs.launchpad.dev/bugs/+bugs?"
