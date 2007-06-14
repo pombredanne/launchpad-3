@@ -25,7 +25,6 @@ import datetime
 import logging
 import os
 import re
-import sys
 import time
 
 import pytz
@@ -49,8 +48,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
     IEmailAddressSet, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessageSet, IMilestoneSet, IPersonSet, CreateBugParams,
-    NotFoundError)
+    IMessageSet, IPersonSet, CreateBugParams, NotFoundError)
 
 logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 

@@ -25,15 +25,13 @@ import re
 import logging
 import datetime
 import pytz
-import urlparse
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, IDistributionSet, IBugSet,
-    IBugTaskSet, IBugTrackerSet, IBugExternalRefSet,
-    IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet, ICveSet,
-    IBugWatchSet, ILaunchpadCelebrities, IMilestoneSet, NotFoundError,
-    CreateBugParams)
+    IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
+    IBugExternalRefSet, IBugAttachmentSet, IMessageSet,
+    ILibraryFileAliasSet, ICveSet, IBugWatchSet,
+    ILaunchpadCelebrities, NotFoundError, CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, BugAttachmentType,

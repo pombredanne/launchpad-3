@@ -11,10 +11,8 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBugSet, IDistributionSet, IUpstreamBugTask,
-    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSet,
+    IBugSet, IDistributionSet, IUpstreamBugTask, IBugTaskSet,
     ILaunchBag, IBugWatchSet, IProductSet)
-from canonical.launchpad.searchbuilder import any
 from canonical.lp.dbschema import BugTaskStatus
 
 

@@ -35,11 +35,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IDistroSeriesSet,
-    IProduct, IProject, IDistributionSourcePackage, NotFoundError,
-    CreateBugParams, IBugAddForm, ILaunchpadCelebrities, IProductSeries,
-    ITemporaryStorageManager, IMaloneApplication, IFrontPageBugAddForm,
-    IProjectBugAddForm)
+    IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
+    IProject, IDistributionSourcePackage, NotFoundError,
+    CreateBugParams, IBugAddForm, ILaunchpadCelebrities,
+    IProductSeries, ITemporaryStorageManager, IMaloneApplication,
+    IFrontPageBugAddForm, IProjectBugAddForm)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     safe_action, urlappend)

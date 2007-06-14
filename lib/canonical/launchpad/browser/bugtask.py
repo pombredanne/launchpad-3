@@ -60,8 +60,8 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
     IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
-    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
-    IBugWatchSet, IDistribution, IDistributionSourcePackage, IBug,
+    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet,
+    IBugTaskSearch, IDistribution, IDistributionSourcePackage, IBug,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
     IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
