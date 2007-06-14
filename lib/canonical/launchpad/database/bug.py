@@ -919,6 +919,9 @@ class BugSet:
                 bug.subscribe(context.security_contact)
             else:
                 bug.subscribe(context.owner)
+        # XXX: ElliotMurphy 2007-06-14, If we ever allow filing private
+        # non-security bugs, this test might be simplified to checking
+        # params.private.
         elif params.product and params.product.private_bugs:
             # Subscribe the bugcontact to all bugs,
             # because all their bugs are private by default
@@ -927,7 +930,9 @@ class BugSet:
                 bug.subscribe(params.product.bugcontact)
             else:
                 bug.subscribe(params.product.owner)
-
+        else:
+            # nothing to do
+            pass
 
         # Subscribe other users.
         for subscriber in params.subscribers:
