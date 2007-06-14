@@ -204,7 +204,7 @@ But first, let's see current values.
     0
     >>> pomsgset.pofile.rosettaCount()
     1
-    >>> pomsgset.pofile.updatesCount()
+    >>> pomsgset.pofile.unreviewedCount()
     2
 
 Now we do the submit.
@@ -259,6 +259,8 @@ statistics were updated accordly.
     1
     >>> pomsgset.pofile.rosettaCount()
     1
+    >>> pomsgset.pofile.unreviewedCount()
+    2
 
 Now, let's see how the system prevents a submission that has a timestamp older
 than when last active translation was submitted.
