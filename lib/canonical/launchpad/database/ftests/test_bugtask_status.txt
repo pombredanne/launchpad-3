@@ -1,7 +1,5 @@
 = Setting Bug Statuses =
 
-== Changing status to Won't Fix ==
-
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, IPersonSet, IProductSet)
     >>> from canonical.lp.dbschema import BugTaskStatus
@@ -15,7 +13,8 @@
     ...     nopriv_user, 'Test bug', 'Something')
     >>> firefox_bug = firefox.createBug(bug_params)
 
-Bug Contacts can assign status Won't Fix and Triaged to a bug.
+Bug Contacts can transition bugs to the Won't Fix and Triaged
+statuses.
 
     >>> [firefox_bugtask] = firefox_bug.bugtasks
     >>> firefox_bugtask.transitionToStatus(
@@ -28,7 +27,8 @@ Bug Contacts can assign status Won't Fix and Triaged to a bug.
     >>> print firefox_bugtask.status.title
     Triaged
 
-The product registrant can assign Won't Fix and Triaged too.
+The product registrant can transition to the Won't Fix and Triaged
+statuses too.
 
     >>> firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, nopriv_user)
@@ -48,9 +48,10 @@ The product registrant can assign Won't Fix and Triaged too.
     >>> print firefox_bugtask.status.title
     Triaged
 
-Users who are not bug contacts or product registrants cannot change
-the status to Won't Fix or Triaged. The option is not exposed in the
-UI, and this test proves the rule is enforced for all call sites.
+Users who are not bug contacts or product registrants cannot
+transition the status to Won't Fix or Triaged. The option is not
+exposed in the UI, and this test proves the rule is enforced for all
+call sites.
 
     >>> login('foo.bar@canonical.com')
     >>> firefox.bugcontact = None
@@ -68,3 +69,21 @@ UI, and this test proves the rule is enforced for all call sites.
     Traceback (most recent call last):
     ...
     AssertionError: Only Bug Contacts may change status to Triaged
+
+The method IBugTask.canTransitionToStatus comes in handy here. It
+tells us if a transition to a status is permitted. It is *not* a
+dry-run of transitionToStatus, but is good enough and fast enough to
+be used by UI code, e.g. to display only those statuses to which a
+user can transition a particular bugtask.
+
+    >>> firefox_bugtask.canTransitionToStatus(
+    ...     BugTaskStatus.WONTFIX, nopriv_user)
+    False
+
+    >>> firefox_bugtask.canTransitionToStatus(
+    ...     BugTaskStatus.TRIAGED, nopriv_user)
+    False
+
+    >>> firefox_bugtask.canTransitionToStatus(
+    ...     BugTaskStatus.INCOMPLETE, nopriv_user)
+    True
