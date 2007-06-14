@@ -36,7 +36,7 @@ from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
-from bzrlib.tests import TestCaseInTempDir
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
 from twisted.trial.runner import TrialSuite
 
@@ -648,6 +648,7 @@ class BzrlibLayer(BaseLayer):
         if test_root is not None:
             test_root = test_root.encode(sys.getfilesystemencoding())
             shutil.rmtree(test_root)
+        TestCaseWithMemoryTransport.TEST_ROOT = None
 
 
     @classmethod
@@ -661,27 +662,5 @@ class BzrlibLayer(BaseLayer):
 
 # XXX: JonathanLange 2007-06-13, It seems that this layer behaves erroneously
 # if it is a subclass of LaunchpadZopelessLayer and BzrlibLayer.
-class BzrlibZopelessLayer(LaunchpadZopelessLayer):
+class BzrlibZopelessLayer(BzrlibLayer, LaunchpadZopelessLayer):
     """Clean up the test directory created by TestCaseInTempDir tests."""
-
-    @classmethod
-    def setUp(cls):
-        pass
-
-    @classmethod
-    def tearDown(cls):
-        # Remove the test directory created by TestCaseInTempDir.
-        # Copied from bzrlib.tests.TextTestRunner.run.
-        test_root = TestCaseInTempDir.TEST_ROOT
-        if test_root is not None:
-            test_root = test_root.encode(sys.getfilesystemencoding())
-            shutil.rmtree(test_root)
-
-
-    @classmethod
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    def testTearDown(cls):
-        pass
