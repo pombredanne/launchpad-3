@@ -29,17 +29,17 @@
                         <div class="three column left">
 
                             <h2>Translatable operating systems</h2>
-                            <ul class="distrorelease">
-                              <li tal:repeat="distrorelease context/translatable_distroreleases">
-                                <a tal:attributes="href string:/${distrorelease/distribution/name}/${distrorelease/name}/+translations">
-                                  <tal:distroname replace="distrorelease/distribution/displayname" />
+                            <ul class="distroseries">
+                              <li tal:repeat="distroseries context/translatable_distroseriess">
+                                <a tal:attributes="href string:/${distroseries/distribution/name}/${distroseries/name}/+translations">
+                                  <tal:distroname replace="distroseries/distribution/displayname" />
                                   <tal:version
-                                    condition="distrorelease/version"
-                                    replace="distrorelease/version"
+                                    condition="distroseries/version"
+                                    replace="distroseries/version"
                                   />
                                   <tal:codename
-                                    condition="not:distrorelease/version"
-                                    replace="distrorelease/title"
+                                    condition="not:distroseries/version"
+                                    replace="distroseries/title"
                                   />
                                 </a>
                               </li>

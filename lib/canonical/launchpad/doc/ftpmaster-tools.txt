@@ -59,7 +59,7 @@ INFO by ID, return an error if it's not present in the specified queue:
   Aborting current transaction
   <BLANKLINE>
 
-Same for wrong distribution/distrorelease
+Same for wrong distribution/distroseries
 
   >>> process = subprocess.Popen([sys.executable, script,
   ...                             "-s", "hoary",

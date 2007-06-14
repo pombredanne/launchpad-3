@@ -17,7 +17,7 @@ GINA=$LPL/canonical/launchpad/scripts/gina
 
 (PYTHONPATH=$LPL python -u $GINA/grabber.py \
                            --distro=ubuntu \
-                           --distrorelease=hoary \
+                           --distroseries=hoary \
                            --arch=i386,amd64,powerpc \
                            --components=main,restricted,universe \
                            --run \

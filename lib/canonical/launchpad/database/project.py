@@ -10,8 +10,7 @@ __all__ = [
 from zope.interface import implements
 
 from sqlobject import (
-        ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
-        SQLMultipleJoin, SQLRelatedJoin)
+    ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -27,6 +26,8 @@ from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
     SpecificationFilter, SprintSpecificationStatus)
 
+from canonical.launchpad.database.branchvisibilitypolicy import (
+    BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -44,7 +45,7 @@ from canonical.launchpad.database.question import QuestionTargetSearch
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              HasSprintsMixin, KarmaContextMixin):
+              HasSprintsMixin, KarmaContextMixin, BranchVisibilityPolicyMixin):
     """A Project"""
 
     implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,

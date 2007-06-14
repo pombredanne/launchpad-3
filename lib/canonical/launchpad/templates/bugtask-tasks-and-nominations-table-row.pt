@@ -12,12 +12,12 @@
                src="/@@/treeCollapsed" alt="edit" /></a></td>
     <td style="padding: 0.3em 0em 0.3em 1.5em"
         tal:condition="indent_task"
-        tal:define="release_targetname view/getReleaseTargetName">
+        tal:define="series_targetname view/getSeriesTargetName">
       <img src="/@@/milestone" alt="Targeted to" />
       <tal:not-conjoined-task condition="not: context/conjoined_master">
         <a
           tal:attributes="href context/target/fmt:url"
-          tal:content="release_targetname"
+          tal:content="series_targetname"
         />
       </tal:not-conjoined-task>
     </td>

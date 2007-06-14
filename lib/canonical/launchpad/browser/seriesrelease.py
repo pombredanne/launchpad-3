@@ -16,7 +16,7 @@ class SeriesOrReleasesMixinDynMenu:
 
     def seriesMenu(self):
         for link in self._seriesOrReleaseMenu(
-            self.context.serieslist,
+            self.context.serieses,
             self.MAX_SERIES,
             self.makeLink('Show all series...', page='+series')
             ):

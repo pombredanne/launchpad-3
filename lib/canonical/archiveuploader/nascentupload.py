@@ -26,11 +26,6 @@ from canonical.archiveuploader.dscfile import DSCFile
 from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
-from canonical.archiveuploader.template_messages import (
-    rejection_template, new_template, accepted_template, announce_template)
-from canonical.config import config
-from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.mail import format_address
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     NotFoundError, IDistributionSet)
@@ -120,13 +115,13 @@ class NascentUpload:
         self.logger.debug("Beginning processing.")
 
         try:
-            self.policy.setDistroReleaseAndPocket(self.changes.suite_name)
+            self.policy.setDistroSeriesAndPocket(self.changes.suite_name)
         except NotFoundError:
             self.reject(
-                "Unable to find distrorelease: %s" % self.changes.suite_name)
+                "Unable to find distroseries: %s" % self.changes.suite_name)
 
         # We need to process changesfile addresses at this point because
-        # we depend on an already initialised policy (distrorelease
+        # we depend on an already initialised policy (distroseries
         # and pocket set) to have proper person 'creation rationale'.
         self.run_and_collect_errors(self.changes.processAddresses)
 
@@ -174,7 +169,7 @@ class NascentUpload:
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
 
-        signer_components = self.processSignerAcl()
+        signer_components = self.getAutoAcceptedComponents()
         if not self.is_new:
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
@@ -333,26 +328,20 @@ class NascentUpload:
         Check if the declared number of architectures corresponds to the
         upload contents.
         """
-        # Currently the only check we make is that if the upload is binaryful
-        # we don't allow more than one build.
-        # XXX: dsilvers: 20051014: We'll want to refactor to remove this limit
-        # but it's not too much of a hassle for now.
-        # bug 3158
         considered_archs = [arch_name for arch_name in self.changes.architectures
                             if not arch_name.endswith("_translations")]
         max = 1
         if self.sourceful:
             # When sourceful, the tools add 'source' to the architecture
-            # list in the upload. Thusly a sourceful upload with one build
-            # has two architectures listed.
-            max = 2
+            # list in the upload.
+            max = self.policy.distroseries.architecturecount + 1
         if 'all' in considered_archs:
             # Sometimes we get 'i386 all' which would count as two archs
             # so if 'all' is present, we bump the permitted number up
             # by one.
             max += 1
         if len(considered_archs) > max:
-            self.reject("Policy permits only one build per upload.")
+            self.reject("Upload has more architetures than it is supported.")
 
     #
     # Helpers for warnings and rejections
@@ -397,13 +386,13 @@ class NascentUpload:
     @property
     def is_ppa(self):
         """Whether or not the current upload is target for a PPA."""
-        # XXX julian 2007-05-29 When self.policy.distrorelease is None, this
+        # XXX julian 2007-05-29 When self.policy.distroseries is None, this
         # will causes a rejection for the wrong reasons (a code exception
         # instead of a bad distro).  Bug reported as #117557.
-        if not self.policy.distrorelease:
+        if not self.policy.distroseries:
             # Greasy hack until above bug is fixed.
             return False
-        if self.policy.archive.id != self.policy.distrorelease.main_archive.id:
+        if self.policy.archive.id != self.policy.distroseries.main_archive.id:
             return True
         return False
 
@@ -456,7 +445,7 @@ class NascentUpload:
         self.logger.debug("Decision: %s" % in_keyring)
         return in_keyring
 
-    def processSignerAcl(self):
+    def getAutoAcceptedComponents(self):
         """Check rights of the current upload submmiter.
 
         Work out what components the signer is permitted to upload to and
@@ -554,7 +543,7 @@ class NascentUpload:
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
         for pocket in lookup_pockets:
-            candidates = self.policy.distrorelease.getPublishedReleases(
+            candidates = self.policy.distroseries.getPublishedReleases(
                 source_name, include_pending=True, pocket=pocket,
                 archive=self.policy.archive)
             if candidates:
@@ -570,7 +559,7 @@ class NascentUpload:
 
         This method may raise NotFoundError if it is dealing with an
         uploaded file targeted to an architecture not present in the
-        distrorelease in context. So callsites needs to be aware.
+        distroseries in context. So callsites needs to be aware.
         """
         binary_name = getUtility(
             IBinaryPackageNameSet).queryByName(uploaded_file.package)
@@ -579,7 +568,7 @@ class NascentUpload:
             return None
 
         if uploaded_file.architecture == "all":
-            arch_indep = self.policy.distrorelease.nominatedarchindep
+            arch_indep = self.policy.distroseries.nominatedarchindep
             archtag = arch_indep.architecturetag
         else:
             archtag = uploaded_file.architecture
@@ -587,7 +576,7 @@ class NascentUpload:
         # XXX cprov 20070213: it raises NotFoundError for unknown
         # architectures. For now, it is treated in find_and_apply_overrides().
         # But it should be refactored ASAP.
-        dar = self.policy.distrorelease[archtag]
+        dar = self.policy.distroseries[archtag]
 
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
@@ -603,7 +592,7 @@ class NascentUpload:
                 continue
 
             # Try the other architectures...
-            dars = self.policy.distrorelease.architectures
+            dars = self.policy.distroseries.architectures
             other_dars = [other_dar for other_dar in dars
                           if other_dar.id != dar.id]
             for other_dar in other_dars:
@@ -665,7 +654,7 @@ class NascentUpload:
         Override target component, section and priority.
         """
         self.logger.debug("%s: (binary) exists in %s/%s" % (
-            uploaded_file.package, override.distroarchrelease.architecturetag,
+            uploaded_file.package, override.distroarchseries.architecturetag,
             override.pocket.name))
 
         uploaded_file.component_name = override.component.name
@@ -739,8 +728,7 @@ class NascentUpload:
     # Actually processing accepted or rejected uploads -- and mailing people
     #
 
-    def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
-                  announce_msg=announce_template):
+    def do_accept(self, notify=True):
         """Accept the upload into the queue.
 
         This *MAY* in extreme cases cause a database error and thus
@@ -748,10 +736,12 @@ class NascentUpload:
         occur, for example, if we have failed to validate the input
         sufficiently and something trips a database validation
         constraint.
+
+        :param notify: True to send an email, False to not send one.
         """
         if self.is_rejected:
             self.reject("Alas, someone called do_accept when we're rejected")
-            self.do_reject()
+            self.do_reject(notify)
             return False
         try:
             maintainerfrom = None
@@ -765,10 +755,13 @@ class NascentUpload:
             # may fail yet this email will be sent.  The chances of this are
             # very small, and at some point the script infrastructure will
             # only send emails when the script exits successfully.
-            changes_file_object = open(self.changes.filepath, "r")
-            self.queue_root.notify(announce_list=self.policy.announcelist, 
-                changes_file_object=changes_file_object, logger=self.logger)
-            changes_file_object.close()
+            if notify:
+                changes_file_object = open(self.changes.filepath, "r")
+                self.queue_root.notify(
+                    announce_list=self.policy.announcelist,
+                    changes_file_object=changes_file_object,
+                    logger=self.logger)
+                changes_file_object.close()
             return True
 
         except (SystemExit, KeyboardInterrupt):
@@ -779,13 +772,18 @@ class NascentUpload:
             # reject message rather than being swallowed up.
             self.reject("%s" % e)
             # Let's log tracebacks for uncaught exceptions ...
-            self.logger.error('Exception while accepting:\n', exc_info=True)
-            self.do_reject()
+            self.logger.error(
+                'Exception while accepting:\n %s' % e, exc_info=True)
+            self.do_reject(notify)
             return False
 
-    def do_reject(self, template=rejection_template):
+    def do_reject(self, notify=True):
         """Reject the current upload given the reason provided."""
         assert self.is_rejected, "The upload is not rejected."
+
+        # Bail out immediately if no email is really required.
+        if not notify:
+            return
 
         # We need to check that the queue_root object has been fully
         # initialised first, because policy checks or even a code exception
@@ -796,7 +794,13 @@ class NascentUpload:
 
         if not self.queue_root:
             self.queue_root = self._createQueueEntry()
+
+        try:
             self.queue_root.setRejected()
+        except QueueInconsistentStateError:
+            # These exceptions are ignored, we want to force the rejected
+            # state.
+            pass
 
         changes_file_object = open(self.changes.filepath, "r")
         self.queue_root.notify(summary_text=self.rejection_message,
@@ -805,20 +809,20 @@ class NascentUpload:
 
     def _createQueueEntry(self):
         """Return a PackageUpload object."""
-        distrorelease = self.policy.distrorelease
-        if not distrorelease:
-            # Upload was probably rejected with a bad distrorelease, so we
+        distroseries = self.policy.distroseries
+        if not distroseries:
+            # Upload was probably rejected with a bad distroseries, so we
             # can create a dummy one for the purposes of a rejection email.
             assert self.is_rejected, (
-                "The upload is not rejected but distrorelease is None.")
-            distrorelease = getUtility(
-                IDistributionSet)['ubuntu'].currentrelease
-            return distrorelease.createQueueEntry(
+                "The upload is not rejected but distroseries is None.")
+            distroseries = getUtility(
+                IDistributionSet)['ubuntu'].currentseries
+            return distroseries.createQueueEntry(
                 PackagePublishingPocket.RELEASE, self.changes.filename,
-                self.changes.filecontents, distrorelease.main_archive,
+                self.changes.filecontents, distroseries.main_archive,
                 self.changes.signingkey)
         else:
-            return distrorelease.createQueueEntry(
+            return distroseries.createQueueEntry(
                 self.policy.pocket, self.changes.filename,
                 self.changes.filecontents, self.policy.archive,
                 self.changes.signingkey)
@@ -833,7 +837,7 @@ class NascentUpload:
         # Queue entries are created in the NEW state by default; at the
         # end of this method we cope with uploads that aren't new.
         self.logger.debug("Creating queue entry")
-        distrorelease = self.policy.distrorelease
+        distroseries = self.policy.distroseries
         self.queue_root = self._createQueueEntry()
 
         # When binaryful and sourceful, we have a mixed-mode upload.
@@ -875,17 +879,15 @@ class NascentUpload:
                 binary_package_file.storeInDatabase(build)
                 processed_builds.append(build)
 
-            # Perform some checks on processed build(s) if there were any.
-            # Ensure that only binaries for a single build were processed
-            # Then add a respective PackageUploadBuild entry for it
-            if len(processed_builds) > 0:
-                unique_builds = set([b.id for b in processed_builds])
-                assert len(unique_builds) == 1, (
-                    "Upload contains binaries from different builds. "
-                    "(%s)" % unique_builds)
-                # Use any (the first) IBuild stored as reference.
-                # They are all the same according the previous assertion.
-                considered_build = processed_builds[0]
+            # Store the related builds after verifying they were built
+            # from the same source.
+            for considered_build in processed_builds:
+                attached_builds = [build.build.id
+                                   for build in self.queue_root.builds]
+                if considered_build.id in attached_builds:
+                    continue
+                assert (considered_build.sourcepackagerelease.id == spr.id), (
+                    "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
 
         # PPA uploads are Auto-Accepted by default
@@ -900,6 +902,15 @@ class NascentUpload:
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
                 self.queue_root.setAccepted()
+                # If it is a pure-source upload we can further process it
+                # in order to have a pending publishing record in place.
+                # This change is based on discussions for bug #77853 and aims
+                # to fix a deficiency on published file lookup system.
+                if ((self.queue_root.sources.count() == 1) and
+                    (self.queue_root.builds.count() == 0) and
+                    (self.queue_root.customfiles.count() == 0)):
+                    self.logger.debug("Creating PENDING publishing record.")
+                    self.queue_root.realiseUpload()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 self.queue_root.setUnapproved()
