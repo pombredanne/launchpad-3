@@ -11,14 +11,13 @@ __all__ = [
         'ILoginServiceLoginForm',
         ]
 
-from zope.schema import Choice, Datetime, Int, Set, TextLine
+from zope.schema import Choice, Datetime, Int, TextLine
 from zope.interface import Attribute, implements, Interface
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PasswordField
-
 
 class IOpenIdAuthorization(Interface):
     id = Int(title=u'ID', required=True)
@@ -56,7 +55,7 @@ class IOpenIdAuthorizationSet(Interface):
         (person, trust_root, client_id).
         """
 
- 
+
 class ILaunchpadOpenIdStoreFactory(Interface):
     """Factory to create LaunchpadOpenIdStore instances."""
 
@@ -92,6 +91,6 @@ class ILoginServiceLoginForm(ILoginServiceAuthorizeForm):
     unauthenticated users."""
 
     email = TextLine(title=u'What is your e-mail address?', required=True)
-    password = PasswordField(title=u'passphrase', required=True)
+    password = PasswordField(title=u'passphrase', required=False)
     action = Choice(title=_('Action'), required=True,
                     source=LoginServiceActionsVocabularyFactory())

@@ -5,7 +5,7 @@ ALTER TABLE Person ADD COLUMN openid_identifier text UNIQUE;
 -- Give every existing user an openid_identifier
 CREATE TRIGGER temp_t_set_openid_identifier BEFORE UPDATE ON Person
 FOR EACH ROW EXECUTE PROCEDURE set_openid_identifier();
-UPDATE Person SET openid_identifier=NULL;
+UPDATE Person SET openid_identifier=NULL WHERE openid_identifier IS NULL;
 DROP TRIGGER temp_t_set_openid_identifier ON Person;
 
 -- Make the openid_identifier column required

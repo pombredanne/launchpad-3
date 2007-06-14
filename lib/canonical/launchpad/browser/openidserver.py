@@ -25,7 +25,6 @@ from openid.server.server import CheckIDRequest, ENCODE_URL, Server
 from openid.server.trustroot import TrustRoot
 from openid import oidutil
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.lp.dbschema import LoginTokenType
@@ -44,7 +43,7 @@ from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp.login import logInPerson
 from canonical.launchpad.webapp.publisher import (
-        stepthrough, Navigation, RedirectionView)
+        stepthrough, stepto, Navigation, RedirectionView)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -58,11 +57,6 @@ IDENTIFIER_SELECT_URI = 'http://specs.openid.net/auth/2.0/identifier_select'
 def null_log(message, level=0):
     pass
 oidutil.log = null_log
-
-
-class IOpenIdView(Interface):
-    """Marker interface"""
-    pass
 
 
 class OpenIDMixinView:
@@ -122,23 +116,6 @@ class OpenIDMixinView:
             del session[key]
         except LookupError:
             pass
-
-    def showLoginPage(self):
-        self.storeOpenIdRequestInSession()
-        return LoginServiceLoginView(
-            self.context, self.request, self.nonce)()
-
-    def storeOpenIdRequestInSession(self):
-        # To ensure that the user has seen this page and it was actually the
-        # user that clicks the 'Accept' button, we generate a nonce and
-        # use it to store the openid_request in the session. The nonce
-        # is passed through by the form, but it is only meaningful if
-        # it was used to store information in the actual users session,
-        # rather than the session of a malicious connection attempting a
-        # man-in-the-middle attack.
-        nonce = generate_uuid()
-        self.saveRequestInSession('nonce' + nonce)
-        self.nonce = nonce
 
     def renderOpenIdResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
@@ -231,8 +208,6 @@ class LoginServiceResetPasswordView(OpenIDMixinView, ResetPasswordView):
 
 
 class OpenIdView(OpenIDMixinView, LaunchpadView):
-    implements(IOpenIdView)
-
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")
     invalid_identity_template = ViewPageTemplateFile(
         "../templates/openid-invalid-identity.pt")
@@ -266,9 +241,7 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
         elif self.openid_request.mode == 'checkid_setup':
             # If we can not possibly handle this identity URL, show an
             # error page telling the user.
-            if not (self.openid_request.identity == IDENTIFIER_SELECT_URI or
-                    self.openid_request.identity.startswith(
-                        self.identity_url_prefix)):
+            if not self.canHandleIdentity():
                 return self.invalid_identity_template()
 
             if self.user is None:
@@ -291,6 +264,23 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
         # openid_respose is filled out ready for the openid library to render.
         return self.renderOpenIdResponse(openid_response)
 
+    def storeOpenIdRequestInSession(self):
+        # To ensure that the user has seen this page and it was actually the
+        # user that clicks the 'Accept' button, we generate a nonce and
+        # use it to store the openid_request in the session. The nonce
+        # is passed through by the form, but it is only meaningful if
+        # it was used to store information in the actual users session,
+        # rather than the session of a malicious connection attempting a
+        # man-in-the-middle attack.
+        nonce = generate_uuid()
+        self.saveRequestInSession('nonce' + nonce)
+        self.nonce = nonce
+
+    def showLoginPage(self):
+        self.storeOpenIdRequestInSession()
+        return LoginServiceLoginView(
+            self.context, self.request, self.nonce)()
+
     def showDecidePage(self):
         """Render the 'do you want to authenticate' page.
 
@@ -301,6 +291,12 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
         self.storeOpenIdRequestInSession()
         return LoginServiceAuthorizeView(
             self.context, self.request, self.nonce)()
+
+    def canHandleIdentity(self):
+        """Returns True if the identity URL is supported by the server."""
+        identity = self.openid_request.identity
+        return (identity == IDENTIFIER_SELECT_URI or
+                identity.startswith(self.identity_url_prefix))
 
     def isIdentityOwner(self):
         """Returns True if we are logged in as the owner of the identity."""
@@ -322,6 +318,28 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
                 self.user, self.openid_request.trust_root, client_id)
 
 
+# Information about known trust roots
+# XXX: 2007-06-14 jamesh
+# Include more information about the trust roots, such as an icon.
+# Should we maintain this data elsewhere?
+KNOWN_TRUST_ROOTS = {
+    'http://localhost.localdomain:8001/':
+        dict(title="OpenID Consumer Example"),
+    'http://pdl-dev.co.uk':
+        dict(title="PDL Demo OSCommerce shop"),
+    'https://shop.ubuntu.com/':
+        dict(title="Ubuntu Shop"),
+    'https://shipit.ubuntu.com/':
+        dict(title="Ubuntu Shipit"),
+    'https://shipit.kubuntu.org/':
+        dict(title="Kubuntu Shipit"),
+    'https://shipit.edubuntu.org/':
+        dict(title="Edubuntu Shipit"),
+    'https://wiki.ubuntu.com/':
+        dict(title="Ubuntu Wiki"),
+    }
+
+
 class LoginServiceBaseView(OpenIDMixinView, LaunchpadFormView):
 
     def __init__(self, context, request, nonce=None):
@@ -332,30 +350,49 @@ class LoginServiceBaseView(OpenIDMixinView, LaunchpadFormView):
     def initial_values(self):
         return {'nonce': self.nonce}
 
-    # XXX: This needs a better name!
-    def _getRequest(self, data, trash=True):
-        if 'nonce' not in data:
-            raise UnexpectedFormData('No nonce found')
-        key = 'nonce' + data['nonce']
-        self.restoreRequestFromSession(key)
-        if trash:
-            self.trashRequestInSession(key)
+    def setUpWidgets(self):
+        super(LoginServiceBaseView, self).setUpWidgets()
+
+        # Restore the OpenID request.
+        widget = self.widgets['nonce']
+        if widget.hasValidInput():
+            self.nonce = widget.getInputValue()
+        if self.nonce is None:
+            raise UnexpectedFormData("No OpenID request.")
+        self.restoreRequestFromSession('nonce' + self.nonce)
+
+    def trashRequest(self):
+        self.trashRequestInSession('nonce' + self.nonce)
+
+    @property
+    def relying_party_title(self):
+        assert self.openid_request is not None
+        rp_info = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root)
+        if rp_info is not None:
+            return rp_info['title']
+        else:
+            return self.openid_request.trust_root
+
+    def isSaneTrustRoot(self):
+        assert self.openid_request is not None
+        trust_root = TrustRoot.parse(self.openid_request.trust_root)
+        return trust_root.isSane()
 
 
 class LoginServiceAuthorizeView(LoginServiceBaseView):
 
     schema = ILoginServiceAuthorizeForm
     template = ViewPageTemplateFile(
-        "../templates/loginservice-allow-relying-party.pt")
+        "../templates/loginservice-authorize.pt")
 
     @action('Sign In', name='auth')
     def auth_action(self, action, data):
-        self._getRequest(data)
+        self.trashRequest()
         return self.renderOpenIdResponse(self.createPositiveResponse())
 
     @action('Cancel', name='deny')
     def deny_action(self, action, data):
-        self._getRequest(data)
+        self.trashRequest()
         return self.renderOpenIdResponse(self.createFailedResponse())
 
     @action("No, I'm not this person", name='logout')
@@ -368,7 +405,9 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         authdata['personid'] = None
         authdata['logintime'] = datetime.utcnow()
         notify(LoggedOutEvent(self.request))
-        return self.showLoginPage()
+        # Display the unauthenticated form
+        return LoginServiceLoginView(
+            self.context, self.request, self.nonce)()
 
 
 class LoginServiceLoginView(LoginServiceBaseView):
@@ -380,7 +419,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
     @property
     def initial_values(self):
         values = super(LoginServiceLoginView, self).initial_values
-        values.update(dict(action='login'))
+        values['action'] = 'login'
         return values
 
     def validate(self, data):
@@ -421,12 +460,12 @@ class LoginServiceLoginView(LoginServiceBaseView):
                     "passphrase' option below and we'll allow you to "
                     "change it." % cgi.escape(email)))
             else:
-                # This is either an email address we've never seen or it's 
+                # This is either an email address we've never seen or it's
                 # associated with an unvalidated profile, so we just move
                 # on with the registration process as if we had never seen it.
                 pass
         else:
-            raise UnexpectedFormData("Unknown action.")
+            raise UnexpectedFormData("Unknown action: %s, %s." % (self.widgets['action'].error(), self.request.form.keys()))
 
     def validateEmailAndPassword(self, email, password):
         """Check that the email address and password are valid for login."""
@@ -443,8 +482,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
                     person, email, email, LoginTokenType.VALIDATEEMAIL)
                 self.token.sendEmailValidationRequest(
                     self.request.getApplicationURL())
-                # XXX: Need to use the token to store the openid request in
-                # the session here as well.
+                self.saveRequestInSession('token' + self.token.token)
 
             if not person.is_valid_person:
                 # Normally invalid accounts will have a NULL password
@@ -460,7 +498,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
     def continue_action(self, action, data):
         email = data['email']
         action = data['action']
-        self._getRequest(data)
+        self.trashRequest()
         if action == 'login':
             password = data['password']
             loginsource = getUtility(IPlacelessLoginSource)
@@ -505,14 +543,15 @@ class OpenIdApplicationNavigation(Navigation):
             return OpenIdIdentityView(person, self.request)
         else:
             return None
-    
-    def traverse(self, name):
+
+    @stepto('token')
+    def token(self):
         # We need to traverse the 'token' namespace in order to allow people
         # to create new accounts and reset their passwords. This can't clash
         # with a person's name because it's a blacklisted name.
-        if name == 'token':
-            return getUtility(ILoginTokenSet)
+        return getUtility(ILoginTokenSet)
 
+    def traverse(self, name):
         # Provide a permanent OpenID identity for use by the Ubuntu shop
         # or other services that cannot cope with name changes.
         person = getUtility(IPersonSet).getByName(name)

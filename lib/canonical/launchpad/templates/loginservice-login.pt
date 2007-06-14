@@ -6,6 +6,21 @@
     <div metal:fill-slot="main">
       <h1>Launchpad Login Service</h1>
 
+      <table width="100%" tal:define="rp_title view/relying_party_title">
+        <tr>
+          <td width="50%">
+            <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
+              <strong>Warning:</strong>
+              <em tal:content="view/openid_request/trust_root" /> does not look
+              like a trustworthy URL.
+            </p>
+            <h2 tal:content="rp_title">Ubuntu Shop</h2>
+
+            <p>To continue with <tal:title replace="rp_title" />, you
+            need to sign in to Launchpad.</p>
+          </td>
+          <td width="50%">
+
       <form method="post" accept-charset="UTF-8" action="/+login-foo">
         <tal:widget replace="structure view/widgets/nonce/hidden" />
 
@@ -38,6 +53,8 @@
         </div>
 
       </form>
+
+      </td></tr></table>
 
     </div>
   </body>
