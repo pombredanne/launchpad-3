@@ -133,13 +133,10 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
     expected_token_types = (LoginTokenType.PROFILECLAIM,)
 
     def initialize(self):
+        self.redirectIfInvalidOrConsumedToken()
         self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
             self.context.email).person
         LaunchpadFormView.initialize(self)
-
-    def render(self):
-        if not self.redirectIfInvalidOrConsumedToken():
-            return LaunchpadFormView.render(self)
 
     @property
     def initial_values(self):
@@ -179,14 +176,11 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
     field_names = ['email', 'password']
     custom_widget('password', PasswordChangeWidget)
     label = 'Reset password'
+    expected_token_types = (LoginTokenType.PASSWORDRECOVERY,)
 
     def initialize(self):
+        self.redirectIfInvalidOrConsumedToken()
         LaunchpadFormView.initialize(self)
-        self.expected_token_types = (LoginTokenType.PASSWORDRECOVERY,)
-
-    def render(self):
-        if not self.redirectIfInvalidOrConsumedToken():
-            return LaunchpadFormView.render(self)
 
     def validate(self, form_values):
         """Validate the email address."""
@@ -241,21 +235,19 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
 
 class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
 
+    expected_token_types = (LoginTokenType.VALIDATEEMAIL,
+                            LoginTokenType.VALIDATETEAMEMAIL,
+                            LoginTokenType.VALIDATEGPG,
+                            LoginTokenType.VALIDATESIGNONLYGPG)
+
     def initialize(self):
-        self.expected_token_types = (LoginTokenType.VALIDATEEMAIL,
-                                     LoginTokenType.VALIDATETEAMEMAIL,
-                                     LoginTokenType.VALIDATEGPG,
-                                     LoginTokenType.VALIDATESIGNONLYGPG)
+        self.redirectIfInvalidOrConsumedToken()
 
     def success(self, message):
         # We're not a GeneralFormView, so we need to do the redirect
         # ourselves.
         BaseLoginTokenView.success(self, message)
         self.request.response.redirect(canonical_url(self.context.requester))
-
-    def render(self):
-        if not self.redirectIfInvalidOrConsumedToken():
-            return LaunchpadView.render(self)
 
     def processForm(self):
         """Process the action specified by the LoginToken.
@@ -571,17 +563,14 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
     field_names = ['displayname', 'hide_email_addresses', 'password']
     custom_widget('password', PasswordChangeWidget)
     label = 'Complete your registration'
+    expected_token_types = (
+        LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
 
     def initialize(self):
+        self.redirectIfInvalidOrConsumedToken()
         self.email = getUtility(IEmailAddressSet).getByEmail(
             self.context.email)
-        self.expected_token_types = (
-            LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
         LaunchpadFormView.initialize(self)
-
-    def render(self):
-        if not self.redirectIfInvalidOrConsumedToken():
-            return LaunchpadFormView.render(self)
 
     @property
     def next_url(self):
@@ -684,14 +673,12 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
 
 class MergePeopleView(BaseLoginTokenView, LaunchpadView):
 
-    def initialize(self):
-        self.expected_token_types = (LoginTokenType.ACCOUNTMERGE,)
-        self.mergeCompleted = False
-        self.dupe = getUtility(IPersonSet).getByEmail(self.context.email)
+    expected_token_types = (LoginTokenType.ACCOUNTMERGE,)
+    mergeCompleted = False
 
-    def render(self):
-        if not self.redirectIfInvalidOrConsumedToken():
-            return LaunchpadView.render(self)
+    def initialize(self):
+        self.redirectIfInvalidOrConsumedToken()
+        self.dupe = getUtility(IPersonSet).getByEmail(self.context.email)
 
     def success(self, message):
         # We're not a GeneralFormView, so we need to do the redirect
