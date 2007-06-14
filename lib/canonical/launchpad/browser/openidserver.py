@@ -184,13 +184,13 @@ class OpenIdView(LaunchpadView):
 
         >>> view = OpenIdView(None, None)
         >>> view.getPersonByIdentity(
-        ...     'http://openid.launchpad.dev/+id/temp1').name
+        ...     'http://openid.launchpad.dev/+id/sabdfl_oid').name
         u'sabdfl'
         >>> view.getPersonByIdentity(
-        ...     'http://openid.launchpad.dev/+id/temp1/').name
+        ...     'http://openid.launchpad.dev/+id/sabdfl_oid/').name
         u'sabdfl'
         >>> view.getPersonByIdentity('foo')
-        >>> view.getPersonByIdentity('http://example.com/+id/temp1')
+        >>> view.getPersonByIdentity('http://example.com/+id/sabdfl_oid')
         """
         assert allvhosts.configs['openid'].rooturl.endswith('/'), \
                 'rooturl does not end with trailing slash.'
@@ -221,7 +221,7 @@ class OpenIdView(LaunchpadView):
         >>> view = OpenIdView(None, None)
         >>> view.getPersonNameByIdentity('foo')
         >>> view.getPersonNameByIdentity(
-        ...     'http://openid.launchpad.dev/+id/temp1')
+        ...     'http://openid.launchpad.dev/+id/sabdfl_oid')
         u'sabdfl'
         """
         person = self.getPersonByIdentity(identity)
