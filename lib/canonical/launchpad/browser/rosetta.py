@@ -17,8 +17,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IRequestPreferredLanguages, ICountry, ILaunchpadCelebrities,
-    IRosettaApplication, ILanguageSet, ILaunchpadRoot, ITranslationGroupSet,
-    IProjectSet, IProductSet, ITranslationImportQueue)
+    IRosettaApplication, ILanguageSet, ILaunchpadRoot,
+    IProductSet, ITranslationImportQueue)
 from canonical.launchpad import helpers
 import canonical.launchpad.layers
 from canonical.launchpad.webapp import (
@@ -30,6 +30,7 @@ from canonical.cachedproperty import cachedproperty
 
 class TranslationsMixin:
     """Translation mixin that provides language handling."""
+
     @property
     def translatable_languages(self):
         """Return a set of the Person's translatable languages."""
@@ -66,7 +67,8 @@ class RosettaApplicationView(TranslationsMixin):
         return ICountry(self.request, None)
 
     def browserLanguages(self):
-        return IRequestPreferredLanguages(self.request).getPreferredLanguages()
+        return IRequestPreferredLanguages(
+            self.request).getPreferredLanguages()
 
     @cachedproperty
     def batchnav(self):
@@ -98,12 +100,13 @@ class RosettaApplicationNavigation(Navigation):
     newlayer = canonical.launchpad.layers.TranslationsLayer
 
     # DEPRECATED: Support bookmarks to the old rosetta prefs page.
-    redirection('prefs', '/+editmylanguages', status=httplib.MOVED_PERMANENTLY)
+    redirection('prefs', '/+editmylanguages',
+                status=httplib.MOVED_PERMANENTLY)
 
     @stepto('groups')
     def redirect_groups(self):
         """Redirect /translations/+groups to Translations root site."""
-        target_url= canonical_url(
+        target_url = canonical_url(
             getUtility(ILaunchpadRoot), rootsite='translations')
         return self.redirectSubTree(
             target_url + '+groups', status=301)

@@ -4,7 +4,7 @@
     >>> print browser.title
     Launchpad Translations
 
-The page includes a list of translatable distribution releases
+The page includes a list of translatable distribution series
 in the left column.
 
     >>> left_column = find_tags_by_class(
