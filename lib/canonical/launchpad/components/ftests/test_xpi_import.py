@@ -14,9 +14,8 @@ import canonical.launchpad
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateNameSet, IPOTemplateSet,
     ITranslationImportQueue)
-from canonical.launchpad.ftests import login
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
-from canonical.lp.dbschema import RosettaImportStatus
+from canonical.lp.dbschema import RosettaImportStatus, TranslationFileFormat
+from canonical.testing import LaunchpadZopelessLayer
 
 def get_en_US_xpi_file_to_import():
     """Return an en-US.xpi file object ready to be imported."""
@@ -55,16 +54,11 @@ def get_en_US_xpi_file_to_import():
 
     return xpifile
 
-class XpiTestCase(LaunchpadZopelessTestCase):
-    """XPI file import/export into Rosetta."""
+class XpiTestCase(unittest.TestCase):
+    """XPI file import into Launchpad."""
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessTestCase.setUp(self)
-
-        # Login as a Rosetta expert to be able to do changes to the import
-        # queue.
-        login('carlos@canonical.com')
-
         # Get the importer.
         person_set = getUtility(IPersonSet)
         self.importer = person_set.getByName('sabdfl')
@@ -94,7 +88,8 @@ class XpiTestCase(LaunchpadZopelessTestCase):
         entry = translation_import_queue.addOrUpdateEntry(
             self.firefox_template.path, en_US_xpi.read(), published,
             self.importer, productseries=self.firefox_template.productseries,
-            potemplate=self.firefox_template)
+            potemplate=self.firefox_template, format=TranslationFileFormat.XPI
+            )
 
         # The file data is stored in the Librarian, so we have to commit the
         # transaction to make sure it's stored properly.
@@ -273,3 +268,6 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(XpiTestCase))
     return suite
+
+if __name__ == '__main__':
+    unittest.TextTestRunner().run(test_suite())

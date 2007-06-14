@@ -17,6 +17,7 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.posubmission import POSubmission
+from canonical.lp.dbschema import TranslationFileFormat
 
 
 class POTMsgSet(SQLBase):
@@ -57,7 +58,7 @@ class POTMsgSet(SQLBase):
     @property
     def singular_text(self):
         """See IPOTMsgSet."""
-        if self.potemplate.source_file_format == RosettaFileFormat.XPI:
+        if self.potemplate.source_file_format == TranslationFileFormat.XPI:
             # This format uses English translations as the way to store the
             # singular_text.
             pomsgset = self.getPOMsgSet('en')

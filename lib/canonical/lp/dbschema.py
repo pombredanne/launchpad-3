@@ -3374,48 +3374,12 @@ class TranslationFileFormat(DBSchema):
         Gettext's standard binary file format.
         """)
 
-    XLIFF = Item(3, """
-        XLIFF
-
-        OASIS's XML Localisation Interchange File Format.
-        """)
-
-    CSHARP_DLL = Item(4, """
-        .NET DLL
-
-        The dynamic link library format as used by programs that use the .NET
-        framework.
-        """)
-
-    CSHARP_RESOURCES = Item(5, """
-        .NET resource file
-
-        The resource file format used by programs that use the .NET framework.
-        """)
-
-    TCL = Item(6, """
-        TCL format
-
-        The .msg format as used by TCL/msgcat.
-        """)
-
-    QT = Item(7, """
-        QT format
-
-        The .qm format as used by programs using the QT toolkit.
-        """)
-
-    XPI = Item(8, """
+    XPI = Item(3, """
         Mozilla XPI format
 
         The .xpi format as used by programs from Mozilla foundation.
         """)
 
-    KDEPO = Item(9, """
-        KDE-style PO format
-
-        PO files in non-standard KDE <4.0 format (plural forms and context).
-        """)
 
 class TranslationValidationStatus(DBSchema):
     """Translation Validation Status

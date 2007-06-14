@@ -3,10 +3,10 @@
 __metaclass__ = type
 
 import unittest
-from textwrap import dedent
 
-from canonical.launchpad.components.translationformats.mozilla_xpi_importer import (
-    DtdFile, UnsupportedEncoding)
+from canonical.launchpad.components.translationformats.mozilla_xpi_importer \
+    import DtdFile
+from canonical.launchpad.interfaces import TranslationFormatInvalidInputError
 
 
 class UTF8DtdFileTest(unittest.TestCase):
@@ -22,10 +22,10 @@ class UTF8DtdFileTest(unittest.TestCase):
         dtd_file = DtdFile('test.dtd', self.content)
 
         count = 0
-        for message in dtd_file._data:
-            if message['msgid'] == u'utf8.message':
+        for message in dtd_file.messages:
+            if message.msgid == u'utf8.message':
                 self.assertEqual(
-                    message['content'], u'\xbfQuieres? \xa1S\xed!')
+                    message.translations, [u'\xbfQuieres? \xa1S\xed!'])
                 count += 1
 
         # Validate that we actually found the string so the test is really
@@ -45,7 +45,7 @@ class Latin1DtdFileTest(unittest.TestCase):
         detected = False
         try:
             dtd_file = DtdFile('test.dtd', self.content)
-        except UnsupportedEncoding:
+        except TranslationFormatInvalidInputError:
             detected = True
 
         # Whether the unsupported encoding was detected.

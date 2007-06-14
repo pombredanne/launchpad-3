@@ -108,10 +108,23 @@ class ITranslationFormatImporter(Interface):
         values=TranslationFileFormat.items,
         required=True)
 
+    file_extensions = Attribute(
+        "Set of file extensions handlable by this importer.")
+
     header = Attribute("An ITranslationHeader for the parsed file.")
 
     messages = Attribute(
         "The list of ITranslationMessage included in the parsed file.")
+
+    def parse(translation_import_queue_entry):
+        """Parse given translation_import_queue_entry object.
+
+        :arg translation_import_queue: An ITranslationImportQueueEntry to
+            import.
+
+        Once the parse is done self.header and self.messages contain the
+        elements parsed.
+        """
 
     def canHandleFileExtension(extension):
         """Whether this importer is able to handle the given file extension.

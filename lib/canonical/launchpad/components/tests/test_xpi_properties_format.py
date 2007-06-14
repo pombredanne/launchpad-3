@@ -5,8 +5,9 @@ __metaclass__ = type
 import unittest
 from textwrap import dedent
 
-from canonical.launchpad.components.translationformats.mozilla_xpi_importer import (
-    PropertyFile, UnsupportedEncoding, PropertySyntaxError)
+from canonical.launchpad.components.translationformats.mozilla_xpi_importer \
+    import PropertyFile
+from canonical.launchpad.interfaces import TranslationFormatInvalidInputError
 
 class BaseEncodingPropertyFileTest(unittest.TestCase):
     """Test class for property file format.
@@ -27,12 +28,12 @@ class BaseEncodingPropertyFileTest(unittest.TestCase):
         property_file = PropertyFile('test.properties', dedent(self.content))
 
         count = 0
-        for message in property_file._data:
-            if message['msgid'] == u'default-first-title-mac':
-                self.assertEqual(message['content'], u'Introducci\xf3n')
+        for message in property_file.messages:
+            if message.msgid == u'default-first-title-mac':
+                self.assertEqual(message.translations, [u'Introducci\xf3n'])
                 count += 1
-            elif message['msgid'] == u'default-last-title-mac':
-                self.assertEqual(message['content'], u'Conclusi\xf3n')
+            elif message.msgid == u'default-last-title-mac':
+                self.assertEqual(message.translations, [u'Conclusi\xf3n'])
                 count += 1
 
         # Validate that we actually found the strings so the test is really
@@ -80,7 +81,7 @@ class Latin1PropertyFileTest(unittest.TestCase):
         try:
             property_file = PropertyFile(
                 'test.properties', dedent(self.content))
-        except UnsupportedEncoding:
+        except TranslationFormatInvalidInputError:
             detected = True
 
         # Whether the unsupported encoding was detected.
@@ -103,9 +104,9 @@ ucci\u00F3n
         property_file = PropertyFile('test.properties', dedent(self.content))
 
         count = 0
-        for message in property_file._data:
-            if message['msgid'] == u'default-first-title-mac':
-                self.assertEqual(message['content'], u'Introducci\xf3n')
+        for message in property_file.messages:
+            if message.msgid == u'default-first-title-mac':
+                self.assertEqual(message.translations, [u'Introducci\xf3n'])
                 count += 1
 
         # Validate that we actually found the strings so the test is really
@@ -125,10 +126,10 @@ class EscapedQuotesPropertyFileTest(unittest.TestCase):
         property_file = PropertyFile('test.properties', dedent(self.content))
 
         count = 0
-        for message in property_file._data:
-            if message['msgid'] == u'default-first-title-mac':
+        for message in property_file.messages:
+            if message.msgid == u'default-first-title-mac':
                 self.assertEqual(
-                    message['content'], u'\'Something\' \"more\"')
+                    message.translations, [u'\'Something\' \"more\"'])
                 count += 1
 
         # Validate that we actually found the strings so the test is really
@@ -152,14 +153,14 @@ class WholeLineCommentPropertyFileTest(unittest.TestCase):
         property_file = PropertyFile('test.properties', dedent(self.content))
 
         count = 0
-        for message in property_file._data:
-            if message['msgid'] == u'default-first-title-mac':
+        for message in property_file.messages:
+            if message.msgid == u'default-first-title-mac':
                 self.assertEqual(
-                    message['comment'], u'Foo bar comment.')
+                    message.source_comment, u'Foo bar comment.')
                 count += 1
-            if message['msgid'] == u'foo':
+            if message.msgid == u'foo':
                 self.assertEqual(
-                    message['comment'], None)
+                    message.source_comment, None)
                 count += 1
 
         # Validate that we actually found the strings so the test is really
@@ -181,22 +182,22 @@ class EndOfLineCommentPropertyFileTest(unittest.TestCase):
         property_file = PropertyFile('test.properties', dedent(self.content))
 
         count = 0
-        for message in property_file._data:
-            if message['msgid'] == u'default-first-title-mac':
+        for message in property_file.messages:
+            if message.msgid == u'default-first-title-mac':
                 self.assertEqual(
-                    message['comment'], u'Foo bar comment.')
+                    message.source_comment, u'Foo bar comment.')
                 # Also, the content should be only the text before the comment
                 # tag.
                 self.assertEqual(
-                    message['content'], u'blah')
+                    message.translations, [u'blah'])
                 count += 1
-            if message['msgid'] == u'foo':
+            if message.msgid == u'foo':
                 self.assertEqual(
-                    message['comment'], u'Something')
+                    message.source_comment, u'Something')
                 # Also, the content should be only the text before the comment
                 # tag.
                 self.assertEqual(
-                    message['content'], u'bar')
+                    message.translations, [u'bar'])
                 count += 1
 
         # Validate that we actually found the strings so the test is really
@@ -227,19 +228,19 @@ class MultiLineCommentPropertyFileTest(unittest.TestCase):
         property_file = PropertyFile('test.properties', dedent(self.content))
 
         count = 0
-        for message in property_file._data:
-            if message['msgid'] == u'default-first-title-mac':
+        for message in property_file.messages:
+            if message.msgid == u'default-first-title-mac':
                 self.assertEqual(
-                    message['comment'], u' single line comment ')
+                    message.source_comment, u' single line comment ')
                 count += 1
-            if message['msgid'] == u'foo':
+            if message.msgid == u'foo':
                 self.assertEqual(
-                    message['comment'],
+                    message.source_comment,
                     u" Multi line comment\n   yeah, it's multiple! ")
                 count += 1
-            if message['msgid'] == u'long_comment':
+            if message.msgid == u'long_comment':
                 self.assertEqual(
-                    message['comment'],
+                    message.source_comment,
                     u' Even with nested comment tags, we handle this as' +
                         u' multiline comment:\n# fooo\nfoos = bar\n' +
                         u'something = else // Comment me!')

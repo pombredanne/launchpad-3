@@ -64,8 +64,10 @@ class GettextPoImporterTestCase(unittest.TestCase):
             productseries=productseries)
 
         transaction.commit()
-        self.template_importer = GettextPoImporter(template_entry)
-        self.translation_importer = GettextPoImporter(translation_entry)
+        self.template_importer = GettextPoImporter()
+        self.template_importer.parse(template_entry)
+        self.translation_importer = GettextPoImporter()
+        self.translation_importer.parse(translation_entry)
 
     def testInterface(self):
         """Check whether the object follows the interface."""

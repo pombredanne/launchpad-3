@@ -12,9 +12,12 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.components.translationformats.gettext_po_importer \
     import GettextPoImporter
+from canonical.launchpad.components.translationformats.mozilla_xpi_importer \
+    import MozillaXpiImporter
 from canonical.launchpad.interfaces import (
         IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
         OldTranslationImported, TranslationConflict, TranslationConstants)
@@ -25,6 +28,7 @@ from canonical.lp.dbschema import (
 # Registered importers.
 importers = {
     TranslationFileFormat.PO: GettextPoImporter,
+    TranslationFileFormat.XPI: MozillaXpiImporter,
     }
 
 
@@ -70,7 +74,17 @@ class TranslationImporter:
         """
         return importers.get(file_format, None)
 
-    def import_file(self, translation_import_queue_entry, logger=None):
+    @cachedproperty
+    def file_extensions_with_importers(self):
+        """See ITranslationImporter."""
+        file_extensions = ()
+
+        for importer_class in importers.itervalues:
+            file_extensions += importer_class().file_extensions
+
+        return file_extensions
+
+    def importFile(self, translation_import_queue_entry, logger=None):
         """See ITranslationImporter."""
         assert translation_import_queue_entry is not None, (
             "The translation import queue entry cannot be None.")
@@ -87,8 +101,8 @@ class TranslationImporter:
             'There is no importer available for %s files' % (
                 translation_import_queue_entry.format.name))
 
-        importer = importer_class(
-            translation_import_queue_entry, logger=logger)
+        importer = importer_class(logger=logger)
+        importer.parse(translation_import_queue_entry)
 
         # This var will hold an special IPOFile for 'English' which will have
         # the English strings to show instead of arbitrary IDs.
@@ -105,7 +119,7 @@ class TranslationImporter:
                 translation_import_queue_entry.format)
             # XXX: This should be done in a generic way so we handle this
             # automatically without knowing the exact formats that need it.
-            if translation_import_queue_entry.format == RosettaFileFormat.XPI:
+            if translation_import_queue_entry.format == TranslationFileFormat.XPI:
                 english_pofile = self.potemplate.getPOFileByLang('en')
                 if english_pofile is None:
                     english_pofile = self.potemplate.newPOFile('en')

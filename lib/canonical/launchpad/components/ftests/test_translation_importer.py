@@ -9,8 +9,6 @@ from zope.interface.verify import verifyObject
 
 from canonical.launchpad.components.translationformats import (
     TranslationImporter)
-from canonical.launchpad.components.translationformats.gettext_po_importer \
-    import GettextPoImporter
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateSet, ITranslationImporter)
 from canonical.lp.dbschema import TranslationFileFormat
@@ -70,10 +68,17 @@ class GettextPoImporterTestCase(unittest.TestCase):
 
     def testGetImporterByFileFormat(self):
         """Check whether we get the right importer from the file format."""
-        format_importer = self.translation_importer._getImporterByFileFormat(
+        po_format_importer = self.translation_importer._getImporterByFileFormat(
             TranslationFileFormat.PO)
 
-        self.failUnless(isinstance(GettextPoImporter, format_importer))
+        self.failUnless(po_format_importer is not None, (
+            'There is no importer for PO file format!'))
+
+        xpi_format_importer = self.translation_importer._getImporterByFileFormat(
+            TranslationFileFormat.XPI)
+
+        self.failUnless(xpi_format_importer is not None, (
+            'There is no importer for XPI file format!'))
 
 
 def test_suite():
