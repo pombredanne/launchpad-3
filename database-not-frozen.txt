@@ -8,6 +8,5 @@ means.
 
 Status
 ------
-Database patches are frozen. Roll out is scheduled late May 24th. Once
-roll out is enacted edge and beta code updates will be reenabled.
-
+Database is not frozen. Database freeze is expected to be reenabled in a
+few days.

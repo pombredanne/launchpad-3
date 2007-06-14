@@ -319,6 +319,8 @@ debug_root_index = 'Launchpad Debug Home Page'
 
 default_editform = 'Default "Edit" Page'
 
+distributionmirror_delete = ContextTitle('Delete mirror %s')
+
 distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
@@ -394,6 +396,8 @@ distroseries_edit = ContextTitle('Edit details of %s')
 
 def distroseries_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
+
+distroseries_nominations = ContextDisplayName('Bugs nominated for %s')
 
 distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
     'for %s')
