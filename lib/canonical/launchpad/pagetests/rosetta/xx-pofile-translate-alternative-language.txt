@@ -40,7 +40,7 @@ show only the strings he is interested in.
 
     >>> browser.getControl('Show').displayOptions
     ['all', 'untranslated', 'need review', 'translated', 
-     'changed in Launchpad']
+     'with new suggestions', 'changed in Launchpad']
 
 Let's do a translation submit with an alternative language selected
 to see whether the final url is correct. We don't need to change any
