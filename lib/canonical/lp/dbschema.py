@@ -30,6 +30,7 @@ __all__ = (
 'BranchReviewStatus',
 'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
+'BranchType',
 'BranchVisibilityPolicy',
 'BugBranchStatus',
 'BugNominationStatus',
@@ -2616,6 +2617,34 @@ class BranchSubscriptionNotificationLevel(DBSchema):
 
         Send notifications for both branch attribute updates
         and new revisions added to the branch.
+        """)
+
+
+class BranchType(DBSchema):
+    """Branch Type
+
+    The type of a branch determins the branch interaction with a number
+    of other subsystems.
+    """
+
+    HOSTED = Item(1, """
+        Hosted
+
+        Hosted branches have their main repository on the supermirror.
+        """)
+
+    MIRRORED = Item(2, """
+        Mirrored
+
+        Mirrored branches are primarily hosted elsewhere and are
+        periodically pulled from the remote site into the supermirror.
+        """)
+
+    IMPORTED = Item(3, """
+        Imported
+
+        Imported branches have been converted from some other revision
+        control system into bzr and are made available through the supermirror.
         """)
 
 

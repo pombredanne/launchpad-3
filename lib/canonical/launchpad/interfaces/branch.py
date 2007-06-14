@@ -82,6 +82,12 @@ class IBranch(IHasOwner):
     """A Bazaar branch."""
 
     id = Int(title=_('ID'), readonly=True, required=True)
+    branch_type = Choice(
+        title=_("Branch type"), requried=True, vocabulary='BranchType',
+        description=_("Hosted branches have Launchpad code hosting as the "
+                      "primary location and can be pushed to.  Mirrored "
+                      "branches are pulled from the remote location "
+                      "specified and cannot be pushed to."))
     name = TextLine(
         title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "

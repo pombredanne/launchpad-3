@@ -28,7 +28,7 @@ from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.lp.dbschema import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    BranchRelationships, BranchLifecycleStatus)
+    BranchRelationships, BranchLifecycleStatus, BranchType)
 
 
 class Branch(SQLBase):
@@ -37,6 +37,8 @@ class Branch(SQLBase):
     implements(IBranch)
     _table = 'Branch'
     _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
+
+    branch_type = EnumCol(schema=BranchType, notNull=True)
 
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
@@ -310,7 +312,7 @@ class BranchSet:
         except SQLObjectNotFound:
             return default
 
-    def new(self, name, owner, product, url, title=None,
+    def new(self, branch_type, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):
         """See IBranchSet."""
@@ -322,7 +324,7 @@ class BranchSet:
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page, whiteboard=whiteboard,
-            date_created=date_created)
+            date_created=date_created, branch_type=branch_type)
 
     def getByUrl(self, url, default=None):
         """See IBranchSet."""
