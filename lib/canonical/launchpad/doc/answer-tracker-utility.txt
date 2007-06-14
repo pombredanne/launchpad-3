@@ -153,7 +153,10 @@ two months, so no projects are initially returned:
     >>> for project in question_set.getMostActiveProjects():
     ...     print project.displayname
 
-    # Create recent questions on a number of projects.
+Create recent questions on a number of projects.
+
+    >>> from canonical.launchpad.ftests.answertracker import (
+    ...     QuestionFactory)
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, ILaunchBag, IProductSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -163,14 +166,13 @@ two months, so no projects are initially returned:
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
-    >>> for project, question_count in (
-    ...     (ubuntu, 3), (firefox, 2), (landscape, 1)):
-    ...     # Create a number of questions on all of these projects.
-    ...     for number in range(question_count):
-    ...         question = project.newQuestion(
-    ...             no_priv, 'Title %s' % number, 'Question %s' % number)
+    >>> QuestionFactory.createManyByProject([
+    ...     (ubuntu, 3),
+    ...     (firefox, 2),
+    ...     (landscape, 1)])
 
-    # Create a question just before the time limit on Launchpad.
+Create a question just before the time limit on Launchpad.
+
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
     >>> question = launchpad.newQuestion(
@@ -183,7 +185,7 @@ Tracker. The order of the returned projects is based on the number of
 questions asked during the period.
 
     >>> ubuntu.official_answers
-    True    
+    True
     >>> firefox.official_answers
     True
     >>> landscape.official_answers

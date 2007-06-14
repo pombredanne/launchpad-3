@@ -45,23 +45,14 @@ last 60 days, this list is empty):
     ...     anon_browser.contents, 'most-active-projects'))
     Most active projects
 
-    # Add some recent questions so that this listing contains something.
-    >>> from zope.component import getUtility
+Add some recent questions so that this listing contains something.
+
+    >>> from canonical.launchpad.ftests.answertracker import QuestionFactory
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, IProductSet)
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('no-priv@canonical.com')
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-    >>> question = ubuntu.newQuestion(
-    ...     no_priv, 'Ubuntu question 1', 'Ubuntu question 1')
-    >>> question = ubuntu.newQuestion(
-    ...     no_priv, 'Ubuntu question 2', 'Ubuntu question 2')
-    >>> question = firefox.newQuestion(
-    ...     no_priv, 'Firefox question 1', 'Firefox question 1')
-    >>> flush_database_updates()
+    >>> QuestionFactory.createManyByProject([
+    ...    ('ubuntu', 2),
+    ...    ('firefox', 1)])
     >>> logout()
 
     >>> anon_browser.open('http://answers.launchpad.dev/')
