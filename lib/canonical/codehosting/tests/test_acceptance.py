@@ -306,21 +306,46 @@ class SmartserverTests(ServerTestCase, TestCaseWithRepository):
     @deferToThread
     def test_can_read_readonly_branch(self):
         # We can get information from a read-only branch.
-
-        # - create a branch owned by a different user
-        # - getLastRevision on that branch.
         authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
         sabdfl_id = authserver.getUser('sabdfl')['id']
         ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
         ro_branch_url = 'file://' + os.path.abspath(
             os.path.join(self.server._branches_root, 'branches',
                          branch_id_to_path(ro_branch_id)))
-        out, err = self.runInChdir(
+        self.runInChdir(
             self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
             retcode=None)
+
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
         remote_revision = self.getLastRevision(
             self.getTransportURL('~sabdfl/+junk/ro-branch'))
+        self.assertEqual(revision, remote_revision)
+
+    @deferToThread
+    def test_cant_write_to_readonly_branch(self):
+        # We can't write to a read-only branch.
+        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+        sabdfl_id = authserver.getUser('sabdfl')['id']
+        ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
+        ro_branch_url = 'file://' + os.path.abspath(
+            os.path.join(self.server._branches_root, 'branches',
+                         branch_id_to_path(ro_branch_id)))
+        self.runInChdir(
+            self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
+            retcode=None)
+
+        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+
+        # Create a new revision on the local branch.
+        tree = WorkingTree.open(self.local_branch.base)
+        tree.commit('Empty commit', rev_id='rev2')
+
+        # Push the local branch to the remote url
+        remote_url = self.getTransportURL('~sabdfl/+junk/ro-branch')
+        self.push(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
+
+        # UNCHANGED!
         self.assertEqual(revision, remote_revision)
 
 
