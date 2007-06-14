@@ -42,6 +42,7 @@ from canonical.launchpad.interfaces import (
     IProject,
     ISpecification,
     ISpecificationBranch,
+    ISpecificationErrorMessages,
     ISpecificationSet,
     NotFoundError,
     )
@@ -827,29 +828,30 @@ class SpecificationNewView(LaunchpadFormView):
         return field_names
 
     def validate(self, data):
-        """Validate the contents of the form. In general we can trust the
-        field validation but for the name of the spec we need to check that
-        there is not already a spec with that name for the given target.
+        """Validates the contents of the form. Generally we trust individual
+        fields to perform validation in isolation, but there are some cases
+        where fields must be validated collectively. In the case where the
+        current context does not correspond to a unique specification name-
+        space, we need to identify the user's specified target and check that
+        the specified name does not already exist in that target's namespace.
         """
-        if not ISpecificationSet.providedBy(self.context):
-            return
-        name = data.get('name')
-        if name is None:
-            self.setFieldError('name',
-                'Please provide a name for this blueprint')
-        target = data.get('target')
-        projecttarget = data.get('projecttarget')
-        if projecttarget is not None:
-            target = projecttarget
-        if target is None:
-            self.setFieldError('target',
-                'Please select a valid project.')
-        else:
-            name = name.strip().lower()
-            if target.getSpecification(name) is not None:
+        target = None
+        if ISpecificationSet.providedBy(self.context):
+            target = data.get('target')
+        elif IProject.providedBy(self.context):
+            target = data.get('projecttarget')
+        if target:
+            # The user has specified a target. Check that the specified name
+            # does not already exist in the target's specification namespace.
+            name = data.get('name')
+            if target.getSpecification(name):
+                # The specified name already exists in the specified target's
+                # specification namespace. Mark the field with an error.
                 self.setFieldError('name',
-                    'There is already a blueprint with this name for %s. '
-                    'Please try another name.' % target.displayname)
+                                   ISpecificationErrorMessages.duplicate_name
+                                   % name)
+        # Perform normal validation.
+        LaunchpadFormView.validate(self, data)
 
     @action(_('Register Blueprint'), name='register')
     def register_action(self, action, data):
