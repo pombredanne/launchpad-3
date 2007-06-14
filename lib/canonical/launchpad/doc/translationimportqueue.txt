@@ -928,7 +928,7 @@ distroseries:
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary_distroseries = ubuntu.getSeries('hoary')
     >>> evolution_sourcepackagename = (
-    ...     SourcePackageName.selectOne(name='evolution'))
+    ...     SourcePackageName.selectOne("name='evolution'"))
     >>> entry1 = translationimportqueue.addOrUpdateEntry(
     ...     u'po/sr.po', 'foo', True, rosetta_expert,
     ...      distroseries=hoary_distroseries,
@@ -942,7 +942,8 @@ distroseries with defer_translation_imports = True.
     ...     u'po/sr.po', 'foo', True, rosetta_expert,
     ...      distroseries=warty_distroseries,
     ...      sourcepackagename=evolution_sourcepackagename)
-    >>> entry3.status == RosettaImportStatus.APPROVED
+    >>> print entry3.status.name
+    NEEDS_REVIEW
     >>> warty_distroseries.defer_translation_imports = True
 
 Next, lets add one item to a ProductSeries as well:
@@ -958,8 +959,10 @@ we haven't approved any.
 
     >>> importqueues = (
     ...     translationimportqueue.getPillarObjectsWithApprovedImports() )
-    >>> len(importqueues) == 0
-    True
+    >>> len(importqueues)
+    0
+    >>> print entry3.status.name
+    NEEDS_REVIEW
 
 Now we approve these entries (we need to be Rosetta administrator to do this).
 
@@ -975,8 +978,8 @@ get these recently approved ones.
 
     >>> importqueues = (
     ...     translationimportqueue.getPillarObjectsWithApprovedImports() )
-    >>> len(importqueues) == 2
-    True
+    >>> len(importqueues)
+    2
 
 Lets check that the returned entries are actually the same ones we submitted.
 Each of the objects returned provides a getFirstEntryToImport method
@@ -997,3 +1000,10 @@ which returns the TranslationImportQueueEntry which is next up for import.
     >>> entry = queue2.getFirstEntryToImport()
     >>> entry == entry2
     True
+
+Note that our third entry never received approval, so it is still awaiting
+review.
+
+    >>> print entry3.status.name
+    NEEDS_REVIEW
+

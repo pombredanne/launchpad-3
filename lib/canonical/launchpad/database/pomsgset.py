@@ -31,7 +31,7 @@ class POMsgSetMixIn:
 
     @property
     def pluralforms(self):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         if self.potmsgset.getPOMsgIDs().count() > 1:
             if self.pofile.language.pluralforms is not None:
                 entries = self.pofile.language.pluralforms
@@ -45,7 +45,7 @@ class POMsgSetMixIn:
         return entries
 
     def getWikiSubmissions(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         filter_pomsgset_sql = ''
         if self.id is not None:
             # Filter out submissions coming from this POMsgSet.
@@ -111,24 +111,24 @@ class DummyPOMsgSet(POMsgSetMixIn):
 
     @property
     def active_texts(self):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         return [None] * self.pluralforms
 
     def getActiveSubmission(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         return None
 
     def getPublishedSubmission(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         return None
 
     def getSuggestedSubmissions(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         # Return an empty SelectResults object.
         return POSubmission.select("1 = 2")
 
     def getCurrentSubmissions(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         return []
 
 
@@ -194,7 +194,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         return translations
 
     def isNewerThan(self, timestamp):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         if (self.date_reviewed is not None and
             self.date_reviewed > timestamp):
             return True
@@ -202,7 +202,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             return False
 
     def setActiveSubmission(self, pluralform, submission):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         if submission is not None and submission.active:
             return
 
@@ -219,7 +219,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             submission.active = True
 
     def setPublishedSubmission(self, pluralform, submission):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         if submission is not None and submission.published:
             return
 
@@ -236,7 +236,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             submission.published = True
 
     def getActiveSubmission(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         return POSubmission.selectOne("""
             POSubmission.pomsgset = %s AND
             POSubmission.pluralform = %s AND
@@ -244,7 +244,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             """ % sqlvalues(self, pluralform))
 
     def getPublishedSubmission(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         return POSubmission.selectOne("""
             POSubmission.pomsgset = %s AND
             POSubmission.pluralform = %s AND
@@ -252,7 +252,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             """ % sqlvalues(self, pluralform))
 
     def updateReviewerInfo(self, reviewer):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         self.pofile.last_touched_pomsgset = self
         self.reviewer = reviewer
         self.date_reviewed = UTC_NOW
@@ -260,7 +260,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def updateTranslationSet(self, person, new_translations, fuzzy, published,
         lock_timestamp, ignore_errors=False, force_edition_rights=False):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         # Is the person allowed to edit translations?
         is_editor = (force_edition_rights or
                      self.pofile.canEditTranslations(person))
@@ -620,7 +620,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         return submission
 
     def updateFlags(self):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         # make sure we are working with the very latest data
         flush_database_updates()
 
@@ -679,7 +679,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         flush_database_updates()
 
     def getSuggestedSubmissions(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         query = '''pomsgset = %s AND
                    pluralform = %s''' % sqlvalues(self, pluralform)
         active_submission = self.getActiveSubmission(pluralform)
@@ -690,7 +690,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         return POSubmission.select(query, orderBy=['-datecreated'])
 
     def getCurrentSubmissions(self, pluralform):
-        """See IPOMsgSet."""
+        """See `IPOMsgSet`."""
         subs = self.potmsgset.getCurrentSubmissions(self.pofile.language,
                                                     pluralform)
         # While getCurrentSubmissions itself does prejoining and
