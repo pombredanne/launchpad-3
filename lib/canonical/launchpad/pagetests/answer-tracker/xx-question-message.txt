@@ -1,0 +1,61 @@
+= Question messages =
+
+Question messages are plain text. They are formated as HTML for web
+pages. Many messages originate from emails where unwanted or
+unescessay content is included.
+
+Let's have an authenticated user create a message in the style of
+an email post to examine the markup rules.
+
+    >>> browser.addHeader("Authorization", 'Basic test@canonical.com:test')
+    >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/11')
+    >>> browser.title.decode('utf-8')
+    u'Ubuntu question #11: ...Continue playing after shutdown...'
+    >>> browser.getControl('Message').value = (
+    ...     "Top quoting is bad netiquette.\n"
+    ...     "The leading text will be displayed\n"
+    ...     "normally--no markup to hide it from view.\n"
+    ...     "\n"
+    ...     "Somebody said sometime ago:\n"
+    ...     "> 1. Remove the letters  c, j, q, x, w\n"
+    ...     ">    from the English Language.\n"
+    ...     "> 2. Remove the penny from US currency.\n"
+    ...     "\n"
+    ...     "--\n"
+    ...     "______________________\n"
+    ...     "human@somewhere.org\n"
+    ...     "Witty signatures rock!\n")
+    >>> browser.getControl("I'm Providing More Information").click()
+
+
+== Email addresses are only shown to authenticated users ==
+
+Email addresses are visible to authenitcated users. No Priviliges
+Person is authenticated already, how else could he have created
+the message. He will see 'human@somewhere.org'
+
+    >>> browser.title.decode('utf-8')
+    u'Ubuntu question #11: ...Continue playing after shutdown...'
+    >>> text = find_tags_by_class(browser.contents, 'boardCommentBody')[-1]
+    >>> print extract_text(text.findAll('p')[-1])
+    --
+    ______________________
+    human@somewhere.org
+    Witty signatures rock!
+
+Unautheticated users, such as a bot will see the mock email address
+of 'person@domain.dom'. Anon is unauthenticated, he will see the
+obfuscated email address.
+
+    >>> anon_browser.open('http://answers.launchpad.dev/ubuntu/+question/11')
+    >>> anon_browser.title.decode('utf-8')
+    u'Ubuntu question #11: ...Continue playing after shutdown...'
+    >>> text = find_tags_by_class(
+    ...     anon_browser.contents, 'boardCommentBody')[-1]
+    >>> print extract_text(text.findAll('p')[-1])
+    --
+    ______________________
+    person@domain.dom
+    Witty signatures rock!
+
+== signatures and quoted passages are hidden ==
