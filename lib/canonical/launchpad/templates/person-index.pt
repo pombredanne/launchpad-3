@@ -12,16 +12,19 @@
             <link
                 tal:condition="not:context/hide_email_addresses" 
                 rel="meta" type="application/rdf+xml"
-                title="FOAF" href="+rdf" />
+                title="FOAF" href="+rdf"
+                />
             <link
                 tal:condition="context/is_openid_enabled"
                 rel="openid.server"
-                tal:attributes="href vhosts/openid/rooturl" />
+                tal:attributes="href string:${vhosts/openid/rooturl}+openid"
+                />
             <link
                 tal:condition="context/is_openid_enabled"
                 rel="openid.delegate"
                 tal:attributes="href string:${vhosts/openid/rooturl
-                    }+openid/+id/${context/openid_identifier}" />
+                    }+id/${context/openid_identifier}"
+                />
         </tal:valid_person_or_team>
     </tal:block>
 </head>
