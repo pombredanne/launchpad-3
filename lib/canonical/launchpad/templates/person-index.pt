@@ -190,6 +190,8 @@
     </div>
     </div>
     </tal:recent-members>
+    <div class="section" 
+         tal:content="structure context/@@+portlet-related-projects" />
   </div>
 
   <div class="right">
@@ -390,4 +392,3 @@
 </div>
 </body>
 </html>
-<!-- 1-0 in-progress Needs table of contributions (bug 81224), list of current bugs (bug 81221) and blueprints (bug 81222). -->
