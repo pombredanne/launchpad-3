@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
            'UntranslatablePath']
 
-
 from bzrlib.errors import BzrError, NoSuchFile, TransportNotPossible
 from bzrlib import urlutils
 from bzrlib.transport import (
@@ -91,6 +90,12 @@ class LaunchpadServer(Server):
         self.user_id = self.user_dict['id']
         self.user_name = self.user_dict['name']
         self.backing_transport = transport
+        self._is_set_up = False
+
+    def dirty(self, virtual_path):
+        """Mark the branch containing virtual_path as dirty."""
+        branch_id, path = self._get_branch_path(virtual_path)
+        self._dirty_branch_ids.add(branch_id)
 
     def mkdir(self, virtual_path):
         """Make a new directory for the given virtual path.
@@ -154,6 +159,22 @@ class LaunchpadServer(Server):
                     "<https://launchpad.net/>.")
         return self.authserver.createBranch(user_id, product_id, branch)
 
+    def _get_branch_path(self, virtual_path):
+        # We can safely pad with '' because we can guarantee that no product or
+        # branch name is the empty string. (Mapping '' to '+junk' happens
+        # in _iter_branches). 'user' is checked later.
+        user, product, branch, path = split_with_padding(
+            virtual_path.lstrip('/'), '/', 4, padding='')
+        if not user.startswith('~'):
+            raise TransportNotPossible(
+                'Path must start with user or team directory: %r' % (user,))
+        user = user[1:]
+        branch_id, permissions = self.authserver.getBranchInformation(
+            self.user_id, user, product, branch)
+        if branch_id == '':
+            raise UntranslatablePath(path=virtual_path, user=self.user_name)
+        return branch_id, path
+
     def translate_virtual_path(self, virtual_path):
         """Translate an absolute virtual path into the real path on the backing
         transport.
@@ -171,7 +192,6 @@ class LaunchpadServer(Server):
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.
-
         # We can safely pad with '' because we can guarantee that no product or
         # branch name is the empty string. (Mapping '' to '+junk' happens
         # in _iter_branches). 'user' is checked later.
@@ -207,10 +227,17 @@ class LaunchpadServer(Server):
     def setUp(self):
         """See Server.setUp."""
         self.scheme = 'lp-%d:///' % id(self)
+        self._dirty_branch_ids = set()
         register_transport(self.scheme, self._factory)
+        self._is_set_up = True
 
     def tearDown(self):
         """See Server.tearDown."""
+        if not self._is_set_up:
+            return
+        self._is_set_up = False
+        while self._dirty_branch_ids:
+            self.authserver.requestMirror(self._dirty_branch_ids.pop())
         unregister_transport(self.scheme, self._factory)
 
 
@@ -256,6 +283,12 @@ class LaunchpadTransport(Transport):
         method = getattr(transport, methodname)
         return method(path, *args, **kwargs)
 
+    def _writing_call(self, methodname, relpath, *args, **kwargs):
+        """As for _call but mark the branch being written to as dirty."""
+        result = self._call(methodname, relpath, *args, **kwargs)
+        self.server.dirty(self._abspath(relpath))
+        return result
+
     def _translate_virtual_path(self, relpath):
         """Translate a virtual path into a path on the backing transport.
 
@@ -274,17 +307,17 @@ class LaunchpadTransport(Transport):
         return urlutils.join(self.server.scheme, relpath)
 
     def append_file(self, relpath, f, mode=None):
-        return self._call('append_file', relpath, f, mode)
+        return self._writing_call('append_file', relpath, f, mode)
 
     def clone(self, relpath):
         return LaunchpadTransport(
             self.server, urlutils.join(self.base, relpath))
 
     def delete(self, relpath):
-        return self._call('delete', relpath)
+        return self._writing_call('delete', relpath)
 
     def delete_tree(self, relpath):
-        return self._call('delete_tree', relpath)
+        return self._writing_call('delete_tree', relpath)
 
     def get(self, relpath):
         return self._call('get', relpath)
@@ -307,7 +340,7 @@ class LaunchpadTransport(Transport):
         return self._call('lock_read', relpath)
 
     def lock_write(self, relpath):
-        return self._call('lock_write', relpath)
+        return self._writing_call('lock_write', relpath)
 
     def mkdir(self, relpath, mode=None):
         # If we can't translate the path, then perhaps we are being asked to
@@ -320,25 +353,25 @@ class LaunchpadTransport(Transport):
                              extra=("Can only create .bzr directories "
                                     "directly beneath branch directories."))
         try:
-            return self._call('mkdir', relpath, mode)
+            return self._writing_call('mkdir', relpath, mode)
         except NoSuchFile:
             return self.server.mkdir(abspath)
 
     def put_file(self, relpath, f, mode=None):
-        return self._call('put_file', relpath, f, mode)
+        return self._writing_call('put_file', relpath, f, mode)
 
     def rename(self, rel_from, rel_to):
         path, permissions = self._translate_virtual_path(rel_to)
         if permissions == READ_ONLY:
             raise TransportNotPossible('readonly transport')
-        return self._call('rename', rel_from, path)
+        return self._writing_call('rename', rel_from, path)
 
     def rmdir(self, relpath):
         virtual_path = self._abspath(relpath)
         path_segments = path = virtual_path.lstrip('/').split('/')
         if len(path_segments) <= 3:
             raise NoSuchFile(virtual_path)
-        return self._call('rmdir', relpath)
+        return self._writing_call('rmdir', relpath)
 
     def stat(self, relpath):
         return self._call('stat', relpath)

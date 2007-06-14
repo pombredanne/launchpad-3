@@ -98,6 +98,22 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.addCleanup(self.server.tearDown)
         self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
 
+    def test_mark_as_dirty(self):
+        # If a given file is flagged as modified then the branch owning that
+        # file should be flagged as dirty.
+        self.server.setUp()
+        self.server.tearDown()
+        self.assertEqual([], self.server.authserver._request_mirror_log)
+
+        self.server.setUp()
+        self.server.dirty('/~testuser/firefox/baz/.bzr')
+        self.server.tearDown()
+        self.assertEqual([1], self.server.authserver._request_mirror_log)
+
+        self.server.setUp()
+        self.server.tearDown()
+        self.assertEqual([1], self.server.authserver._request_mirror_log)
+
 
 class TestLaunchpadTransport(TestCaseWithMemoryTransport):
 
@@ -227,6 +243,16 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         transport.mkdir('~testuser/thunderbird/orange')
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
         self.assertTrue(transport.has('~testuser/thunderbird/orange'))
+
+    def test_make_directory_under_branch_marks_as_dirty(self):
+        transport = get_transport(self.server.get_url())
+        transport.mkdir('~testuser/firefox/baz/.bzr')
+        self.assertEqual(set([1]), self.server._dirty_branch_ids)
+
+    def test_read_operation_doesnt_mark_as_dirty(self):
+        transport = get_transport(self.server.get_url())
+        transport.has('~testuser/firefox/baz/hello.txt')
+        self.assertEqual(set([]), self.server._dirty_branch_ids)
 
 
 class TestLaunchpadTransportReadOnly(TestCaseWithMemoryTransport):

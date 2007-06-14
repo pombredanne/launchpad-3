@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
+import signal
 import sys
 import xmlrpclib
 
@@ -57,8 +58,8 @@ class cmd_launchpad_server(Command):
 
     takes_args = ['user_id']
 
-    def get_transport(self, authserver, user_id, url):
-        """Create a transport that connects to a Launchpad smart server.
+    def get_lp_server(self, authserver, user_id, url):
+        """Create a Launchpad smart server.
 
         :param authserver: An `xmlrpclib.ServerProxy` (or equivalent) for the
             Launchpad authserver.
@@ -75,8 +76,7 @@ class cmd_launchpad_server(Command):
             authserver,
             user_id,
             backing_transport)
-        lp_server.setUp()
-        return get_transport(lp_server.get_url())
+        return lp_server
 
     def get_smart_server(self, transport, port, inet):
         """Construct a smart server."""
@@ -122,9 +122,17 @@ class cmd_launchpad_server(Command):
             url = 'readonly+' + url
         authserver = xmlrpclib.ServerProxy(authserver_url)
 
-        transport = self.get_transport(authserver, user_id, url)
-        smart_server = self.get_smart_server(transport, port, inet)
-        self.run_server(smart_server)
+        lp_server = self.get_lp_server(authserver, user_id, url)
+        lp_server.setUp()
+        signal.signal(signal.SIGHUP,
+                      lambda signal, frames: lp_server.tearDown())
+        try:
+            transport = get_transport(lp_server.get_url())
+            smart_server = self.get_smart_server(transport, port, inet)
+            self.run_server(smart_server)
+        finally:
+            signal.signal(signal.SIGHUP, signal.SIG_DFL)
+            lp_server.tearDown()
 
 
 register_command(cmd_launchpad_server)

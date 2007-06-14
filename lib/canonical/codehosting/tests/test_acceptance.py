@@ -239,6 +239,41 @@ class AcceptanceTests(SSHTestCase):
         self.assertEqual(
             '~testuser/+junk/totally-new-branch', branch.unique_name)
 
+    @deferToThread
+    def test_push_triggers_mirror_request(self):
+        # Pushing new data to a branch should trigger a mirror request.
+        remote_url = self.getTransportURL('~testuser/+junk/totally-new-branch')
+        self.push(remote_url)
+
+        # Retrieve the branch from the database. selectOne will fail if the
+        # branch does not exist (or if somehow multiple branches match!).
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = database.Branch.selectOne(
+            "owner = %s AND product IS NULL AND name = %s"
+            % sqlvalues(database.Person.byName('testuser').id,
+                        'totally-new-branch'))
+
+        self.assertNotEqual(None, branch.mirror_request_time)
+        branch.mirror_request_time = None
+        LaunchpadZopelessTestSetup().txn.commit()
+
+        # Add a single revision to the local branch.
+        tree = WorkingTree.open(self.local_branch.base)
+        tree.commit('Empty commit', rev_id='rev2')
+
+        # Push the new revision.
+        self.push(remote_url)
+
+        # Retrieve the branch from the database. selectOne will fail if the
+        # branch does not exist (or if somehow multiple branches match!).
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = database.Branch.selectOne(
+            "owner = %s AND product IS NULL AND name = %s"
+            % sqlvalues(database.Person.byName('testuser').id,
+                        'totally-new-branch'))
+        self.assertNotEqual(None, branch.mirror_request_time)
+        LaunchpadZopelessTestSetup().txn.abort()
+
 
 class SmartserverTests(SSHTestCase):
     """Acceptance tests for the smartserver component of Launchpad codehosting
