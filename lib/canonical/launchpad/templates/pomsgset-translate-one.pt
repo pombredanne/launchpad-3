@@ -281,7 +281,8 @@
     <tal:published-submission
       define="submission translation_dictionary/published_submission"
       condition="submission">
-  <tr class="suggestion secondary">
+  <tr class="suggestion secondary"
+    tal:attributes="id string:msgset_${context/potmsgset/id}_packaged">
     <th colspan="3">
       Packaged:
     </th>
@@ -337,7 +338,8 @@
       </label>
     </td>
   </tr>
-  <tr class="discreet suggestion secondary">
+  <tr class="discreet suggestion secondary"
+    tal:attributes="id string:msgset_${context/potmsgset/id}_packaged_origin">
     <td colspan="4" class="icon left right" />
     <td style="overflow: auto;">
       Translated by

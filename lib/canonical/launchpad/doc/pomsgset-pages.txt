@@ -121,6 +121,17 @@ If we request a plural form that is not valid, we get an AssertionError.
     ...
     AssertionError: There is no plural form #1 for Spanish (es) language
 
+Published translation is defined and same as the active one.
+
+    >>> subview.getPublishedTranslation(0)
+    u'libreta de direcciones de Evolution'
+
+However, if we ask for incorrect plural form, we get an AssertionError.
+
+    >>> subview.getPublishedTranslation(1)
+    Traceback (most recent call last):
+    ...
+    AssertionError: There is no plural form #1 for Spanish (es) language
 
 Web presentation
 ----------------

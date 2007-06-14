@@ -58,7 +58,8 @@
       </label>
     </td>
   </tr>
-  <tr class="discreet suggestion secondary">
+  <tr class="discreet suggestion secondary"
+    tal:attributes="id string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_origin">
     <td colspan="4" class="icon left right" />
     <td style="overflow: auto;"
         tal:condition="python:context.pomsgset.pofile==
