@@ -210,10 +210,11 @@ AUTO_APPROVED source uploads for 'translations' section:
   >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Creating PENDING publishing record.
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
   >>> lang_pack.queue_root.status.name
-  'ACCEPTED'
+  'DONE'
 
 Again, no messages were generated since this upload is targeted for
 'translation' section:
@@ -244,11 +245,6 @@ UNAPPROVED source uploads for 'translations' section via insecure:
   ...     datadir('language-packs/language-pack-pt_1.0-3_source.changes'),
   ...     insecure_policy, mock_logger_quiet)
   >>> lang_pack.process()
-
-  >>> print lang_pack.rejection_message
-
-
-
   >>> lang_pack.logger = mock_logger
   >>> result = lang_pack.do_accept()
   DEBUG: Creating queue entry
@@ -301,15 +297,16 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   >>> result = netapplet_src.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Creating PENDING publishing record.
   DEBUG: Building recipients list.
   ...
   DEBUG: Skipping announcement, it is a BACKPORT.
   DEBUG: Sent a mail:
   ...
   DEBUG: Accepted:
-  DEBUG: OK: bar_1.0.orig.tar.gz
-  DEBUG: OK: bar_1.0-4.diff.gz
-  DEBUG: OK: bar_1.0-4.dsc
+  DEBUG:  OK: bar_1.0.orig.tar.gz
+  DEBUG:  OK: bar_1.0-4.diff.gz
+  DEBUG:  OK: bar_1.0-4.dsc
   DEBUG:      -> Component: main Section: devel
   ...
   DEBUG: Announcing to hoary-announce@lists.ubuntu.com
@@ -337,7 +334,6 @@ checks:
 
 AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
 
-
   >>> security_policy = getPolicy(
   ...     name='security', distro='ubuntu', distroseries=None)
   >>> security_policy.setDistroSeriesAndPocket('hoary-security')
@@ -351,21 +347,19 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   >>> result = netapplet_src.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Creating PENDING publishing record.
   DEBUG: Building recipients list.
   ...
   DEBUG: Sent a mail:
   ...
   DEBUG: Accepted:
-  DEBUG: OK: bar_1.0.orig.tar.gz
-  DEBUG: OK: bar_1.0-2.diff.gz
-  DEBUG: OK: bar_1.0-2.dsc
+  DEBUG:  OK: bar_1.0.orig.tar.gz
+  DEBUG:  OK: bar_1.0-2.diff.gz
+  DEBUG:  OK: bar_1.0-2.dsc
   DEBUG:      -> Component: main Section: devel
   ...
   DEBUG: Announcing to hoary-announce@lists.ubuntu.com
   ...
-  DEBUG: -----END PGP SIGNATURE-----
-  DEBUG:
-  DEBUG:
 
   >>> import operator
   >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
@@ -376,11 +370,6 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
   >>> msgs[0]['Subject']
   'Accepted bar 1.0-2 (source)'
-
-Let's publish security bar sources in order to allow its binaries to
-come:
-
-  >>> netapplet_src.queue_root.realiseUpload()
 
 Remove orig.tar.gz pumped from librarian to disk during the upload
 checks:
@@ -409,7 +398,7 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
   DEBUG: Sent a mail:
   ...
   DEBUG: Accepted:
-  DEBUG: OK: bar_1.0-2_i386.deb
+  DEBUG:  OK: bar_1.0-2_i386.deb
   ...
   DEBUG: Thank you for your contribution to Ubuntu Linux.
   ...

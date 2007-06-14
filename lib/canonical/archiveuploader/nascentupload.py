@@ -902,6 +902,15 @@ class NascentUpload:
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
                 self.queue_root.setAccepted()
+                # If it is a pure-source upload we can further process it
+                # in order to have a pending publishing record in place.
+                # This change is based on discussions for bug #77853 and aims
+                # to fix a deficiency on published file lookup system.
+                if ((self.queue_root.sources.count() == 1) and
+                    (self.queue_root.builds.count() == 0) and
+                    (self.queue_root.customfiles.count() == 0)):
+                    self.logger.debug("Creating PENDING publishing record.")
+                    self.queue_root.realiseUpload()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 self.queue_root.setUnapproved()
