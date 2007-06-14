@@ -309,7 +309,7 @@ class LaunchpadTransport(Transport):
         try:
             return self._call('mkdir', relpath, mode)
         except NoSuchFile:
-            return self.server.mkdir(self._abspath(relpath))
+            return self.server.mkdir(abspath)
 
     def put_file(self, relpath, f, mode=None):
         return self._call('put_file', relpath, f, mode)

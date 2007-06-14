@@ -13,7 +13,7 @@ from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
 from canonical.authserver.interfaces import READ_ONLY, WRITABLE
 from canonical.codehosting.tests.helpers import FakeLaunchpad
-from canonical.codehosting.transport import LaunchpadServer
+from canonical.codehosting.transport import LaunchpadServer, makedirs
 from canonical.testing import BzrlibLayer
 
 
@@ -56,14 +56,15 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.assertEqual(
             ('00/00/00/03/', WRITABLE),
             self.server.translate_virtual_path('/~testuser/+junk/random'))
+
         # We can map a branch owned by a team that the user is in to its path.
         self.assertEqual(
             ('00/00/00/04/', WRITABLE),
             self.server.translate_virtual_path('/~testteam/firefox/qux'))
 
         self.assertEqual(
-            '00/00/00/03/',
-            self.server.translate_virtual_path('/~testuser/+junk/random'))
+            ('00/00/00/05/', READ_ONLY),
+            self.server.translate_virtual_path('/~name12/+junk/junk.dev'))
 
     def test_extend_path_translation(self):
         # More than just the branch name needs to be translated: transports
@@ -226,6 +227,19 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         transport.mkdir('~testuser/thunderbird/orange')
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
         self.assertTrue(transport.has('~testuser/thunderbird/orange'))
+
+    def test_mkdir_readonly(self):
+        # If we only have READONLY access to a branch then we should not be
+        # able to create directories within that branch.
+        transport = get_transport(self.server.get_url())
+        # Make the directory on the backing transport so that the error is
+        # about permissions, rather than base directories not existing.
+        makedirs(
+            self.backing_transport,
+            self.server.translate_virtual_path('/~name12/+junk/junk.dev/')[0])
+        self.assertRaises(
+            errors.PermissionDenied,
+            transport.mkdir, '~name12/+junk/junk.dev/.bzr')
 
 
 def test_suite():
