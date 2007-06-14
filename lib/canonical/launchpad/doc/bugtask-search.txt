@@ -29,13 +29,10 @@ grab all the UNCONFIRMED and CONFIRMED tasks:
 
 For upstream:
 
-    >>> from zope.schema.vocabulary import getVocabularyRegistry
     >>> from canonical.launchpad.searchbuilder import any
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> from canonical.launchpad.interfaces import (BugTaskSearchParams,
     ...     IProductSet)
-    >>> vocabulary_registry = getVocabularyRegistry()
-    >>> status_vocabulary = vocabulary_registry.get(None, 'BugTaskStatus')
     >>> productset = getUtility(IProductSet)
     >>> upstream_mozilla = productset.getByName('firefox')
     >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
@@ -45,7 +42,7 @@ For upstream:
     >>> print bugtasks.count()
     4
     >>> for task in bugtasks:
-    ...  print bugTaskInfo(task), status_vocabulary.getTerm(task.status).token
+    ...  print bugTaskInfo(task), task.status.title
      2 1 firefox (upstream) Firefox does not support SVG Unconfirmed
     13 4 firefox (upstream) Reflow problems with complex page layouts
          Unconfirmed
@@ -229,9 +226,6 @@ canonical.launchpad.searchbuilder.NULL:
 For negating a search argument, use not_equals:
 
     >>> from canonical.launchpad.searchbuilder import not_equals
-    >>> importance_vocabulary = vocabulary_registry.get(
-    ...     None, 'BugTaskImportance')
-
     >>> params = BugTaskSearchParams(
     ...     importance=not_equals(BugTaskImportance.LOW), user=None)
     >>> bugtasks = upstream_mozilla.searchTasks(params)
@@ -239,8 +233,7 @@ For negating a search argument, use not_equals:
     >>> print sorted(bugtask.bug.id for bugtask in bugtasks)
     [4, 5, 6]
     >>> for task in bugtasks:
-    ...     print bugTaskInfo(task), 
-    ...     print importance_vocabulary.getTerm(task.importance).token
+    ...     print bugTaskInfo(task), task.importance.title
     13 4 firefox (upstream) Reflow problems with complex page layouts Medium
     14 5 firefox (upstream) Firefox install instructions should be complete
          Critical
@@ -444,14 +437,12 @@ The search filter can also return bugs that are related to CVE reports:
     >>> from canonical.launchpad.interfaces import ICveSet
     >>> def getCves(bugtask):
     ...     bugcve = getUtility(ICveSet).getBugCvesForBugTasks([bugtask])[0]
-    ...     return bugcve.cve.description
+    ...     return bugcve.cve.sequence
     >>> params = BugTaskSearchParams(
     ...     has_cve=True, orderby='id', user=None)
     >>> tasks_with_cves = ubuntu.searchTasks(params)
     >>> for bugtask in tasks_with_cves:
     ...     print bugTaskInfo(bugtask), getCves(bugtask)
-    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG Firefox 
-         crashes all the time
-    32 1 evolution (Ubuntu) Firefox does not support SVG Firefox crashes 
-         all the time
-    26 2 Ubuntu Blackhole Trash folder Possible data loss
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG 1999-8979
+    32 1 evolution (Ubuntu) Firefox does not support SVG  1999-8979
+    26 2 Ubuntu Blackhole Trash folder 1999-2345

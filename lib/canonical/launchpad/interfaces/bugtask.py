@@ -248,32 +248,21 @@ class INullBugTask(IBugTask):
     have tasks reported in your context.
     """
 
-class AdvancedBugTaskUpstreamStatusFactory:
-    """A vocabulary for filtering on upstream status.
-
-    This is used to show checkbox widgets on the advanced search form.
-    """
-
-    implements(IContextSourceBinder)
-
-    def __call__(self, context):
-        terms = [
-            SimpleTerm(
-                "pending_bugwatch",
-                title="Show bugs that need to be forwarded to an upstream bug"
-                      "tracker"),
-            SimpleTerm(
-                "hide_upstream",
-                title="Show bugs that are not known to affect upstream"),
-            SimpleTerm(
-                "resolved_upstream",
-                title="Show bugs that are resolved upstream"),
-            SimpleTerm(
-                "open_upstream",
-                title="Show bugs that are open upstream"),
-                ]
-        return SimpleVocabulary(terms)
-    
+UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
+    [SimpleTerm(
+        "pending_bugwatch",
+        title="Show bugs that need to be forwarded to an upstream bug"
+        "tracker"),
+    SimpleTerm(
+        "hide_upstream",
+        title="Show bugs that are not known to affect upstream"),
+    SimpleTerm(
+        "resolved_upstream",
+        title="Show bugs that are resolved upstream"),
+    SimpleTerm(
+        "open_upstream",
+        title="Show bugs that are open upstream"),
+    ])
 
 
 class IBugTaskSearchBase(Interface):
@@ -312,7 +301,7 @@ class IBugTaskSearchBase(Interface):
     tag = List(title=_("Tag"), value_type=Tag(), required=False)
     status_upstream = List(
         title=_('Status Upstream'),
-        value_type=Choice(source=AdvancedBugTaskUpstreamStatusFactory()),
+        value_type=Choice(vocabulary=UPSTREAM_STATUS_VOCABULARY),
         required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
