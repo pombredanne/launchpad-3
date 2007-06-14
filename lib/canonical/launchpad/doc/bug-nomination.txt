@@ -420,7 +420,7 @@ after the bug has been targeted to a release is rare enough for this to
 be acceptable.
 
     >>> thunderbird_grumpy = tasks[-3]
-    >>> thunderbird_grumpy.targetname
+    >>> thunderbird_grumpy.bugtargetname
     u'thunderbird (Ubuntu Grumpy)'
 
     >>> ubuntu_pmount = ubuntu.getSourcePackage('pmount')
@@ -447,7 +447,7 @@ be acceptable.
 The same is done if the distribution task's source package is changed.
 
     >>> pmount_ubuntu = tasks[-1]
-    >>> pmount_ubuntu.targetname
+    >>> pmount_ubuntu.bugtargetname
     u'pmount (Ubuntu)'
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')

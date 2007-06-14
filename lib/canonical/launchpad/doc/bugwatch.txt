@@ -180,7 +180,7 @@ Updater and get a bug watch and a bugtask to test with.
     >>> print len(bug_one.bugtasks)
     3
     >>> debian_task = bug_one.bugtasks[2]
-    >>> print debian_task.targetname
+    >>> print debian_task.bugtargetdisplayname
     mozilla-firefox (Debian)
 
     >>> print debian_task.status.title

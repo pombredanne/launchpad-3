@@ -204,9 +204,9 @@ It's possible to file a bug on more than product/package at once:
     Affects many packages
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    Evolution
-    Mozilla Firefox
+    ...     print bugtask.bugtargetname
+    evolution
+    firefox
     evolution (Debian)
     mozilla-firefox (Debian)
 
@@ -916,7 +916,7 @@ A notification was added:
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print bug_notification.message.text_contents
-    ** Also affects: Debian
+    ** Also affects: debian
     ...
 
 
@@ -977,7 +977,7 @@ well.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
 
     >>> submit_commands(bug, 'affects ubuntu/hoary')
@@ -986,7 +986,7 @@ This caused one bugtask to be added to the bug. The added bug task is a
 generic Ubuntu task, though.
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
     Ubuntu
 
@@ -1002,7 +1002,7 @@ The same happens if we try to target another release.
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
     Ubuntu
 
@@ -1016,7 +1016,7 @@ Targeting an existing nomination won't create another nomination.
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
     Ubuntu
 
@@ -1039,7 +1039,7 @@ Now a new bugtask for the release will be create directly.
     >>> submit_commands(bug, 'affects ubuntu/grumpy')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
     Ubuntu
     Ubuntu Grumpy
@@ -1049,7 +1049,7 @@ He can also approve existing nominations.
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
     Ubuntu
     Ubuntu Warty
@@ -1060,7 +1060,7 @@ specific distrorelease.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
 
     >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
@@ -1069,7 +1069,7 @@ Now we can see that two tasks were created; both the general Ubuntu
 task, and the release specific task.
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Ubuntu Hoary)
@@ -1084,13 +1084,13 @@ driver of the release, only a nomination will be created.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
 
     >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
     mozilla-firefox (Ubuntu)
 
@@ -1111,7 +1111,7 @@ nomination is automatically approved.
     >>> submit_commands(bug, 'affects /firefox/trunk')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
     Mozilla Firefox trunk
     mozilla-firefox (Ubuntu)
@@ -1130,7 +1130,7 @@ will be created if one doesn't exist.
     >>> submit_commands(bug, 'affects /evolution/trunk')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Evolution
     Mozilla Firefox
 
@@ -1293,7 +1293,7 @@ The user is a bug contact of the upstream product
     ...     bug_one, 'status confirmed', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
-    ...         bugtask.targetname, bugtask.status.title,
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Unconfirmed, assigned to no one
@@ -1303,7 +1303,7 @@ The user is a bug contact of the upstream product
     >>> print bug_notification.bug.id
     1
     >>> print bug_notification.message.text_contents
-    ** Changed in: Mozilla Firefox
+    ** Changed in: firefox
     ...
         Status: Unconfirmed => Confirmed
 
@@ -1327,7 +1327,7 @@ The user is a package bug contact
     ...     bug_one, 'status confirmed', 'assignee no-priv@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
-    ...         bugtask.targetname, bugtask.status.title,
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Confirmed, assigned to No Privileges Person
@@ -1355,7 +1355,7 @@ The user is a distribution member
     ...     bug_one, 'status unconfirmed', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
-    ...         bugtask.targetname, bugtask.status.title,
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
@@ -1381,7 +1381,7 @@ user, telling him that he has to use the 'affects' command.
     ...     bug_one, 'status new', 'assignee foo.bar@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
-    ...         bugtask.targetname, bugtask.status.title,
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person

@@ -202,7 +202,7 @@ be created:
     u''
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Evolution
     Mozilla Firefox
 
@@ -229,7 +229,7 @@ as smoothly as above.
     u''
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Evolution
     Mozilla Firefox
 
@@ -261,7 +261,7 @@ If the user confirms, a bugtask will be added to the bug.
     True
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     alsa-utils
     Evolution
     Mozilla Firefox
@@ -314,7 +314,7 @@ without any confirmation needee:
     False
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     alsa-utils
     Mozilla Firefox
 
@@ -327,7 +327,7 @@ attribute got initialised to Unknown. The bugtask will be synced with
 the bug watch's status later.
 
     >>> alsa_task = bug_four.bugtasks[0]
-    >>> alsa_task.targetname
+    >>> alsa_task.bugtargetname
     u'alsa-utils'
     >>> alsa_task.product.official_malone
     False

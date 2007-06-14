@@ -493,7 +493,7 @@ def get_bug_edit_notification_texts(bug_delta):
             bugtask_deltas = [bugtask_deltas]
         for bugtask_delta in bugtask_deltas:
             change_info = u"** Changed in: %s\n" % (
-                bugtask_delta.bugtargetname)
+                bugtask_delta.targetname)
 
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),

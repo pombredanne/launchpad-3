@@ -561,7 +561,7 @@ well:
     To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
+    X-Launchpad-Message-Rationale: Registrant (tomcat) @ubuntu-team
     <BLANKLINE>
     ** Visibility changed to: Private.
     <BLANKLINE>
@@ -596,7 +596,7 @@ well:
     To: support@ubuntu.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
+    X-Launchpad-Message-Rationale: Registrant (tomcat) @ubuntu-team
     <BLANKLINE>
     ** Visibility changed to: Public.
     <BLANKLINE>
@@ -762,7 +762,7 @@ initial message of the bug, it will result in a bug filed notification:
     <BLANKLINE>
     a description of the bug.
     <BLANKLINE>
-    ** Affects: Ubuntu
+    ** Affects: ubuntu
          Importance: Undecided
              Status: Unconfirmed
     <BLANKLINE>

@@ -255,7 +255,7 @@ in the vocabulary.
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> firefox_task = bug_one.bugtasks[0]
-    >>> firefox_task.targetname
+    >>> firefox_task.bugtargetdisplayname
     u'Mozilla Firefox'
     >>> firefox_task_milestones = vocabulary_registry.get(
     ...     firefox_task, 'Milestone')
@@ -265,7 +265,7 @@ in the vocabulary.
 
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> debian_woody_task = bug_two.bugtasks[-1]
-    >>> debian_woody_task.targetname
+    >>> debian_woody_task.bugtargetdisplayname
     u'mozilla-firefox (Debian Woody)'
     >>> debian_woody_milestones = vocabulary_registry.get(
     ...     debian_woody_task, 'Milestone')
@@ -352,7 +352,7 @@ for any Firefox series yet:
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> for bugtask in bug_one.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Debian)
@@ -379,7 +379,7 @@ No series is targeted or nominated on bug 4:
 
     >>> bug_four = getUtility(IBugSet).get(4)
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
 
     >>> for nomination in bug_four.getNominations(firefox):
@@ -406,7 +406,7 @@ Bug one is nominated for Ubuntu Hoary:
 
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> for bugtask in bug_one.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Debian)
@@ -432,7 +432,7 @@ The same is true for bug two, where the bug is targeted to Hoary.
 
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> for bugtask in bug_two.bugtasks:
-    ...     print bugtask.targetname
+    ...     print bugtask.bugtargetdisplayname
     Tomcat
     Ubuntu
     Ubuntu Hoary

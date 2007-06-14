@@ -139,7 +139,7 @@ function will be used:
   ...     for subscriber_name in subscriber_names:
   ...         print '    %s' % subscriber_name
   ...     for task in bug.bugtasks:
-  ...         print 'Task:', task.targetname
+  ...         print 'Task:', task.bugtargetdisplayname
   ...         print '    Status:', task.status.name
   ...         if task.product:
   ...             print '    Product:', task.product.name

@@ -101,7 +101,7 @@ Now we try changing the generic Ubuntu task to evolution, which will
 fail.
 
     >>> ubuntu_task = bug_two.bugtasks[1]
-    >>> ubuntu_task.targetname
+    >>> ubuntu_task.bugtargetdisplayname
     u'Ubuntu'
     >>> edit_form = {
     ...    'FORM_SUBMIT': '',
@@ -132,7 +132,7 @@ directly, let's add a grumpy task first.
     True
 
     >>> ubuntu_grumpy_task = bug_two.bugtasks[5]
-    >>> ubuntu_grumpy_task.targetname
+    >>> ubuntu_grumpy_task.bugtargetdisplayname
     u'Ubuntu Grumpy'
 
     >>> edit_form = {

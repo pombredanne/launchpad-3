@@ -451,7 +451,7 @@ Modifying a bugtask will update IBug.date_last_updated.
 
     >>> firefox_task = firefox_bug.bugtasks[0]
 
-    >>> print firefox_task.targetname
+    >>> print firefox_task.bugtargetdisplayname
     Mozilla Firefox
 
     >>> print firefox_task.importance.title
@@ -757,7 +757,7 @@ Now, let's iterate over the bug tasks, some complete and others
 incomplete, and show the status of each of the tasts:
 
     >>> for task in b8.bugtasks:
-    ...     print task.targetname, task.is_complete
+    ...     print task.bugtargetdisplayname, task.is_complete
     Mozilla Firefox False
     mozilla-firefox (Debian) True
 

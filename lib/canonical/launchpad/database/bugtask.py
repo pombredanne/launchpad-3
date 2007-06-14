@@ -129,7 +129,7 @@ class BugTaskDelta:
 
     @property
     def targetname(self):
-        return self.bugtask.targetname
+        return self.bugtask.bugtargetname
 
     @property
     def bugtargetname(self):
@@ -147,7 +147,7 @@ class BugTaskMixin:
     def title(self):
         """See canonical.launchpad.interfaces.IBugTask."""
         title = 'Bug #%s in %s: "%s"' % (
-            self.bug.id, self.targetname, self.bug.title)
+            self.bug.id, self.bugtargetdisplayname, self.bug.title)
         return title
 
     @property
@@ -158,7 +158,7 @@ class BugTaskMixin:
     @property
     def bugtargetname(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        return self.targetnamecache
+        return self.target.bugtargetname
 
     @property
     def target(self):
@@ -303,7 +303,7 @@ class NullBugTask(BugTaskMixin):
         # For a INullBugTask, there is no targetname in the database, of
         # course, so we fallback on calculating the targetname in
         # Python.
-        return self.target.bugtargetdisplayname
+        return self.target.bugtargetname
 
 
 def BugTaskToBugAdapter(bugtask):
