@@ -511,7 +511,7 @@ launchpadstatisticset_index = 'Launchpad statistics'
 
 # XXX: Fixme!!!
 def loginservice_allow_relying_party(context, view):
-    return 'Authenticate to %s' % 'XXX' # view.openid_request.trust_root
+    return 'Authenticate to %s' % view.openid_request.trust_root
 
 loginservice_login = 'Launchpad Login Service'
 

@@ -8,6 +8,12 @@
     <div metal:fill-slot="main">
       <h1>Launchpad Login Service</h1>
 
+      <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
+          <strong>Warning:</strong>
+          <em tal:content="view/openid_request/trust_root" /> does not look
+          like a trustworthy URL.
+      </p>
+
       <h3>Sign in as <span tal:replace="view/user/displayname" /></h3>
 
       <form method="post" accept-charset="UTF-8" action="/+decide">

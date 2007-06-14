@@ -178,7 +178,7 @@ to the consumer, completing the OpenID request:
     >>> print sabdfl_browser.title
     Launchpad Login Service
     >>> sabdfl_browser.getControl('email address?').value = 'mark@hbd.com'
-    >>> sabdfl_browser.getControl('Passphrase:').value = 'test'
+    >>> sabdfl_browser.getControl(name='field.password').value = 'test'
     >>> sabdfl_browser.getControl('Continue').click()
 
     >>> print sabdfl_browser.url
@@ -204,7 +204,7 @@ This can be seen using the existing browser session:
 
     >>> sabdfl_browser.open(setup_url)
     >>> print sabdfl_browser.title
-    Authenticate to XXX
+    Authenticate to http://launchpad.dev/+openid-consumer
     >>> sabdfl_browser.getControl('Cancel').click()
 
     >>> print sabdfl_browser.url

@@ -6,6 +6,12 @@
     <div metal:fill-slot="main">
       <h1>Launchpad Login Service</h1>
 
+      <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
+          <strong>Warning:</strong>
+          <em tal:content="view/openid_request/trust_root" /> does not look
+          like a trustworthy URL.
+      </p>
+
       <form method="post" accept-charset="UTF-8" action="/+login-foo">
         <tal:widget replace="structure view/widgets/nonce/hidden" />
 
