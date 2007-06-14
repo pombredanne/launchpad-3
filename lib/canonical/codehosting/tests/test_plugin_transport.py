@@ -228,18 +228,45 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
         self.assertTrue(transport.has('~testuser/thunderbird/orange'))
 
-    def test_mkdir_readonly(self):
-        # If we only have READONLY access to a branch then we should not be
-        # able to create directories within that branch.
-        transport = get_transport(self.server.get_url())
-        # Make the directory on the backing transport so that the error is
-        # about permissions, rather than base directories not existing.
+
+class TestLaunchpadTransportReadOnly(TestCaseWithMemoryTransport):
+    """Tests for read-only operations on the LaunchpadTransport."""
+
+    layer = BzrlibLayer
+
+    def setUp(self):
+        TestCaseWithMemoryTransport.setUp(self)
+        self.authserver = FakeLaunchpad()
+        self.user_id = 1
+        self.backing_transport = self.get_transport()
+        self.server = LaunchpadServer(
+            self.authserver, self.user_id, self.backing_transport)
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+        self.transport = get_transport(self.server.get_url())
+        path = self.server.translate_virtual_path('/~testuser/firefox/baz')[0]
+        makedirs(self.backing_transport, path)
+        self.backing_transport.put_bytes(
+            '%s/hello.txt' % path, 'Hello World!')
         makedirs(
             self.backing_transport,
             self.server.translate_virtual_path('/~name12/+junk/junk.dev/')[0])
+
+    def test_mkdir_readonly(self):
+        # If we only have READ_ONLY access to a branch then we should not be
+        # able to create directories within that branch.
         self.assertRaises(
-            errors.PermissionDenied,
-            transport.mkdir, '~name12/+junk/junk.dev/.bzr')
+            errors.TransportNotPossible,
+            self.transport.mkdir, '~name12/+junk/junk.dev/.bzr')
+
+    def test_rename_target_readonly(self):
+        # Even if we can write to a file, we can't rename it to location which
+        # is read-only to us.
+        transport = get_transport(self.server.get_url())
+        self.assertRaises(
+            errors.TransportNotPossible,
+            self.transport.rename, '/~testuser/firefox/baz/hello.txt',
+            '/~name12/+junk/junk.dev/goodbye.txt')
 
 
 def test_suite():

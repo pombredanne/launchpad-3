@@ -10,11 +10,14 @@ __all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
 from bzrlib.errors import BzrError, NoSuchFile, TransportNotPossible
 from bzrlib import urlutils
 from bzrlib.transport import (
+    get_transport,
     register_transport,
     Server,
     Transport,
     unregister_transport,
     )
+
+from canonical.authserver.interfaces import READ_ONLY, WRITABLE
 
 
 def branch_id_to_path(branch_id):
@@ -236,10 +239,22 @@ class LaunchpadTransport(Transport):
         """Call a method on the backing transport, translating relative,
         virtual paths to filesystem paths.
 
+        If 'relpath' translates to a path that we only have read-access to,
+        then the method will be called on the backing transport decorated with
+        'readonly+'.
+
         :raise NoSuchFile: If the path cannot be translated.
+        :raise TransportNotPossible: If trying to do a write operation on a
+            read-only path.
         """
-        method = getattr(self.server.backing_transport, methodname)
-        return method(self._translate_virtual_path(relpath), *args, **kwargs)
+        path, permissions = self._translate_virtual_path(relpath)
+        if permissions == READ_ONLY:
+            transport = get_transport(
+                'readonly+' + self.server.backing_transport.base)
+        else:
+            transport = self.server.backing_transport
+        method = getattr(transport, methodname)
+        return method(path, *args, **kwargs)
 
     def _translate_virtual_path(self, relpath):
         """Translate a virtual path into a path on the backing transport.
@@ -250,9 +265,7 @@ class LaunchpadTransport(Transport):
         :return: A valid path on the backing transport.
         """
         try:
-            path, permissions = self.server.translate_virtual_path(
-                self._abspath(relpath))
-            return path
+            return self.server.translate_virtual_path(self._abspath(relpath))
         except (UntranslatablePath, TransportNotPossible):
             raise NoSuchFile(relpath)
 
@@ -280,8 +293,8 @@ class LaunchpadTransport(Transport):
         return self._call('has', relpath)
 
     def iter_files_recursive(self):
-        backing_transport = self.server.backing_transport.clone(
-            self._translate_virtual_path('.'))
+        path, permissions = self._translate_virtual_path('.')
+        backing_transport = self.server.backing_transport.clone(path)
         return backing_transport.iter_files_recursive()
 
     def listable(self):
@@ -315,8 +328,10 @@ class LaunchpadTransport(Transport):
         return self._call('put_file', relpath, f, mode)
 
     def rename(self, rel_from, rel_to):
-        return self._call(
-            'rename', rel_from, self._translate_virtual_path(rel_to))
+        path, permissions = self._translate_virtual_path(rel_to)
+        if permissions == READ_ONLY:
+            raise TransportNotPossible('readonly transport')
+        return self._call('rename', rel_from, path)
 
     def rmdir(self, relpath):
         virtual_path = self._abspath(relpath)
