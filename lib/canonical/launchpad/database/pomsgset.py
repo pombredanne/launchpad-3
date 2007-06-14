@@ -119,7 +119,7 @@ class POMsgSetMixIn:
                     if submission.potranslation != active.potranslation]
 
     def _invalidateSubmissionsCaches(self):
-        """See IPOMsgSet."""
+        """Drop our submissions caches."""
         self.active_submissions = None
         self.published_submissions = None
         self.suggestions = None
