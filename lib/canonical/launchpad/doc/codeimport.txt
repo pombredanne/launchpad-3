@@ -40,8 +40,7 @@ tests below much easier to read.
   ...     product = getUtility(IProductSet).createProduct(
   ...         user, name, name, name, name, name)
   ...     return getUtility(IBranchSet).new(
-  ...         'trunk', vcs_imports, product,
-  ...         '~vcs-imports/%s/trunk'%product.name, 'Import branch')
+  ...         'trunk', vcs_imports, product, None, 'Import branch')
 
 
 == Supported source systems ==

@@ -53,10 +53,10 @@ class CodeImportSet:
 
     implements(ICodeImportSet)
 
-    def new(self, branch, rcs_type, svn_branch_url=None,
+    def new(self, registrant, branch, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
         """See ICodeImportSet."""
-        return CodeImport(name=name, product=product, series=series,
+        return CodeImport(registrant=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
 
@@ -64,6 +64,10 @@ class CodeImportSet:
         """See ICodeImportSet."""
         return CodeImport.select()
 
-    def getByName(self, name):
+    def get(self, id):
         """See ICodeImportSet."""
-        return CodeImport.selectOneBy(name=name)
+        return CodeImport.selectOneBy(id=id)
+
+    def getByBranch(self, branch):
+        """See ICodeImportSet."""
+        return CodeImport.selectOneBy(branch=branch)
