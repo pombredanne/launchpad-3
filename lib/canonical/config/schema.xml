@@ -244,6 +244,19 @@ k            </description>
         <key name="http_proxy" datatype="string" default="http://squid.internal:3128/">
             <description>
                 Proxy to be used when issuing HTTP requests.
+
+                XXX: This should be in the canonical section, not the
+                Launchpad section? At the moment, there are only scripts
+                using this. -- StuartBishop 20070609
+            </description>
+        </key>
+        <key name="is_demo" datatype="boolean" default="false">
+            <description>
+                If true, the main template will be styled so that it is
+                obvious to the end user that they are using a demo system
+                and that any changes they make will be lost at some point.
+                This should not be true for any systems talking to the
+                production database.
             </description>
         </key>
         <key name="site_message" datatype="string" default="">
@@ -270,9 +283,16 @@ k            </description>
                 Set to 'all' for open access.
             </description>
         </key>
+        <key name="openid_sreg_trustroots"
+             datatype="canonical.config.commalist" default="">
+            <description>
+                A list of OpenID trust roots for which we will send
+                simple registration information.
+            </description>
+        </key>
         <key name="non_restricted_hostname" datatype="string"
              default="launchpad.net">
-	    <description>
+            <description>
                 If restrict_to_team is set (such as on the beta
                 website), then this indicates the hostname suffix for
                 the non-restricted version of Launchpad.  Replacing

@@ -20,7 +20,6 @@ from bzrlib.tests import TestCaseInTempDir
 from bzrlib.transport import get_transport, remote
 
 from twisted.enterprise.adbapi import ConnectionPool
-from twisted.internet import defer
 from canonical.tests.test_twisted import TwistedTestCase
 
 from canonical.codehosting import plugins
@@ -39,6 +38,17 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
     layer = TwistedBzrlibLayer
 
+    def setUp(self):
+        TestCaseInTempDir.setUp(self)
+        # Work around bug in Twisted that prevents closing connection pools
+        # synchronously.
+        # See http://twistedmatrix.com/trac/ticket/2680
+        ConnectionPool.shutdownID = None
+        self.make_empty_directory(config.codehosting.branches_root)
+        authserver = AuthserverService()
+        authserver.startService()
+        self.addCleanup(authserver.stopService)
+
     def assertInetServerShutsdownCleanly(self, process):
         """Shutdown the server process looking for errors."""
         # Shutdown the server: the server should shut down when it cannot read
@@ -46,17 +56,17 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
         process.stdin.close()
         # Hide stdin from the subprocess module, so it won't fail to close it.
         process.stdin = None
-        result = self.finish_bzr_subprocess(process, retcode=0)
-        self.assertEqual('', result[0])
-        self.assertEqual('', result[1])
+        stdout, stderr = self.finish_bzr_subprocess(process, retcode=0)
+        self.assertEqual('', stdout)
+        self.assertEqual('', stderr)
 
     def assertServerFinishesCleanly(self, process):
         """Shutdown the bzr serve instance process looking for errors."""
         # Shutdown the server
-        result = self.finish_bzr_subprocess(process, retcode=3,
-                                            send_signal=signal.SIGINT)
-        self.assertEqual('', result[0])
-        self.assertEqual('bzr: interrupted\n', result[1])
+        stdout, stderr = self.finish_bzr_subprocess(
+            process, retcode=3, send_signal=signal.SIGINT)
+        self.assertEqual('', stdout)
+        self.assertEqual('bzr: interrupted\n', stderr)
 
     def make_empty_directory(self, directory, mode=0700):
         if os.path.isdir(directory):
@@ -68,7 +78,7 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
         :param extra_options: extra options to give the server.
         :return: a tuple with the bzr process handle for passing to
-            finish_bzr_subprocess, a client for the server, and a transport.
+            finish_bzr_subprocess and a transport.
         """
         # Serve from the current directory
         args = ['lp-serve', '--inet']
@@ -89,7 +99,7 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
     def start_server_port(self, user_id, extra_options=()):
         """Start a bzr server subprocess.
 
-         :param extra_options: extra options to give the server.
+        :param extra_options: extra options to give the server.
         :return: a tuple with the bzr process handle for passing to
             finish_bzr_subprocess, and the base url for the server.
         """
@@ -122,17 +132,6 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
         bzr_path = ROCKETFUEL_ROOT + '/sourcecode/bzr/bzr'
         assert os.path.isfile(bzr_path), "Bad Rocketfuel. Couldn't find bzr."
         return bzr_path
-
-    def setUp(self):
-        TestCaseInTempDir.setUp(self)
-        # Work around bug in Twisted that prevents closing connection pools
-        # synchronously.
-        # See http://twistedmatrix.com/trac/ticket/2680
-        ConnectionPool.shutdownID = None
-        self.make_empty_directory(config.codehosting.branches_root)
-        authserver = AuthserverService()
-        authserver.startService()
-        self.addCleanup(authserver.stopService)
 
     def test_command_registered(self):
         # The 'lp-serve' command object is registered as soon as the plugin is

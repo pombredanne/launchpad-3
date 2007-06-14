@@ -151,7 +151,7 @@ class BuilddMaster:
                              distroarchseries.distroseries.name,
                              distroarchseries.architecturetag))
 
-        # check ARCHRELEASE across available pockets
+        # check ARCHSERIES across available pockets
         for pocket in dbschema.PackagePublishingPocket.items:
             if distroarchseries.getChroot(pocket):
                 # Fill out the contents
@@ -672,20 +672,27 @@ class BuilddMaster:
             # isNominatedArchIndep. -- kiko, 2006-08-31
             args['arch_indep'] = (queueItem.archhintlist == 'all' or
                                   queueItem.archseries.isNominatedArchIndep)
-
+            # XXX cprov 20070523: Ogre should not be modelled here ...
             if not queueItem.is_trusted:
-                components_map = {
+                ogre_map = {
                     'main': 'main',
                     'restricted': 'main restricted',
                     'universe': 'main restricted universe',
                     'multiverse': 'main restricted universe multiverse',
                     }
-                allowed_components = components_map[queueItem.component_name]
+                ogre_components = ogre_map[queueItem.component_name]
+                # XXX cprov 20070523: it should be suite name, but it
+                # is just fine for PPAs since they are only built in
+                # RELEASE pocket.
+                dist_name = queueItem.archseries.distroseries.name
                 ppa_archive_url = queueItem.build.archive.archive_url
-                args['archives'] = [
-                    'http://archive.ubuntu.com/ubuntu %s' % allowed_components,
-                    '%s/ubuntu %s' % (ppa_archive_url, allowed_components)
-                    ]
+                ppa_source_line = (
+                    'deb %s/ubuntu %s %s'
+                    % (ppa_archive_url, dist_name, ogre_components))
+                ubuntu_source_line = (
+                    'deb http://archive.ubuntu.com/ubuntu %s %s'
+                    % (dist_name, ogre_components))
+                args['archives'] = [ppa_source_line, ubuntu_source_line]
             else:
                 args['archives'] = []
 

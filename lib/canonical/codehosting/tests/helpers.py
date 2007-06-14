@@ -217,6 +217,7 @@ class FakeLaunchpad:
 
 
 class CodeHostingTestProviderAdapter:
+    """Test adapter to run a single test against many codehosting servers."""
 
     def __init__(self, servers):
         self._servers = servers
@@ -240,6 +241,9 @@ class CodeHostingTestProviderAdapter:
 
 
 class CodeHostingRepositoryTestProviderAdapter(CodeHostingTestProviderAdapter):
+    """Test adapter to run a single RepositoryTest against many codehosting
+    servers.
+    """
 
     def __init__(self, format, servers):
         self._repository_format = format

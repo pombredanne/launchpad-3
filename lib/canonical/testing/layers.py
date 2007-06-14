@@ -36,7 +36,7 @@ from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
-from bzrlib.tests import TestCaseInTempDir
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
 from twisted.trial.runner import TrialSuite
 
@@ -684,6 +684,7 @@ class BzrlibLayer(BaseLayer):
         if test_root is not None:
             test_root = test_root.encode(sys.getfilesystemencoding())
             shutil.rmtree(test_root)
+        TestCaseWithMemoryTransport.TEST_ROOT = None
 
 
     @classmethod
@@ -695,5 +696,7 @@ class BzrlibLayer(BaseLayer):
         pass
 
 
+# XXX: JonathanLange 2007-06-13, It seems that this layer behaves erroneously
+# if it is a subclass of LaunchpadZopelessLayer and BzrlibLayer.
 class BzrlibZopelessLayer(BzrlibLayer, LaunchpadZopelessLayer):
     """Clean up the test directory created by TestCaseInTempDir tests."""
