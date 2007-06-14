@@ -1,28 +1,26 @@
 = An example of EnumCol with EnumeratedTypes =
 
-Test imports and setup.
+EnumCol is a type of column that is used in SQLBase classes where the
+database representation is an integer and the code uses an enumerated
+type.
 
-    >>> from canonical.database.sqlbase import SQLBase
-    >>> from canonical.database.constants import DEFAULT
-    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+Firstly we need an example table.
 
-Let's make a example table to demonstrate EnumCol with.  
-Enumerations are stored in the database as integers, 
-and we'll give the column a default value.
-
-    >>> connection = LaunchpadTestSetup().connect()
-    >>> cursor = connection.cursor()
-    >>> cursor.execute('''
+    >>> from canonical.database.sqlbase import cursor
+    >>> cur = cursor()
+    >>> cur.execute('''
     ...     CREATE TABLE FooTest (
     ...         id serial NOT NULL,
-    ...         foo integer DEFAULT 1 NOT NULL 
+    ...         foo integer DEFAULT 1 NOT NULL
     ...     );
     ... ''')
-    >>> cursor.execute('GRANT ALL ON TABLE FooTest TO launchpad;')
-    >>> cursor.execute('GRANT ALL ON footest_id_seq TO launchpad;')
-    >>> connection.commit()
+    >>> cur.execute('GRANT ALL ON TABLE FooTest TO launchpad;')
+    >>> cur.execute('GRANT ALL ON footest_id_seq TO launchpad;')
+    >>> import transaction
+    >>> transaction.commit()
 
-Let's define a schema for that column.
+The enumerated type that is used with the EnumCol must be a
+DBEnumeratedType, with items that are instances of DBItem.
 
     >>> from canonical.launchpad.webapp.enum import (
     ...     EnumeratedType, DBEnumeratedType, DBItem, Item, extends)
@@ -30,30 +28,30 @@ Let's define a schema for that column.
     ...     """Enumerated type for the foo column."""
     ...     ONE = DBItem(1, """
     ...         One
-    ... 
+    ...
     ...         Number one.
     ...         """)
     ...
     ...     TWO = DBItem(2, """
     ...         Two
-    ... 
+    ...
     ...         Number two.
     ...         """)
- 
-Now let's define an SQLObject for that table, using FooType as the schema for
-the foo column.  We declare the default value for the foo column to be whatever
-the database's default is.
 
+The database implementation class then refers to the enumerated type.
+
+    >>> from canonical.database.constants import DEFAULT
     >>> from canonical.database.enumcol import EnumCol
+    >>> from canonical.database.sqlbase import SQLBase
     >>> class FooTest(SQLBase):
     ...     foo = EnumCol(enum=FooType, default=DEFAULT)
 
 Create a row in the table.
- 
+
     >>> t = FooTest()
 
-The value of the foo column has been set to the default defined in the database,
-because we didn't specify one.
+The value of the foo column has been set to the default defined in the
+database, because we didn't specify one in the constructor.
 
     >>> t.foo == FooType.ONE
     True
@@ -70,7 +68,7 @@ You cannot use integers or strings as EnumCol values:
     ...
     TypeError: Not a DBItem: 'TWO'
 
-You can of course use items from FooSchema.
+You can of course use items from FooType.
 
     >>> t.foo = FooType.TWO
     >>> t.foo
@@ -81,7 +79,7 @@ But not items from another schema.
     >>> class AnotherType(DBEnumeratedType):
     ...     ONE = DBItem(1, """
     ...         One
-    ... 
+    ...
     ...         Number one.
     ...         """)
     >>> t.foo = AnotherType.ONE
@@ -89,7 +87,11 @@ But not items from another schema.
     ...
     TypeError: DBItem from wrong type, 'FooType' not in ['AnotherType']
 
-But it will allow setting from an item from an enumerated type that 
+XXX: thumper 2007-06-14
+Need to think of a cleaner way to implement the extending assignment
+problem.
+
+But it will allow setting from an item from an enumerated type that
 inherits or extends the original enumerated type where the item was in
 that original type.
 
@@ -117,10 +119,10 @@ enumeration.
     >>> t.foo = FooBazType.ONE
     >>> t.foo
     <DBItem FooType.ONE, (1) One>
-    
+
     >>> t.foo = FooBazType.THREE
     Traceback (most recent call last):
-    ... 
+    ...
     TypeError: DBItem from wrong type, 'FooType' not in ['FooBazType']
 
     >>> t.foo = FooBazType.FOUR
