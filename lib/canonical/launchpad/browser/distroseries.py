@@ -184,13 +184,16 @@ class DistroSeriesBugsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'bugs'
-    links = ['new', 'cve']
+    links = ['new', 'cve', 'nominations']
 
     def new(self):
         return Link('+filebug', 'Report a bug', icon='add')
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
+
+    def nominations(self):
+        return Link('+nominations', 'Review nominations', icon='bug')
 
 
 class DistroSeriesSpecificationsMenu(ApplicationMenu):

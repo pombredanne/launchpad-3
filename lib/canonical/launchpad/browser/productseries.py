@@ -591,7 +591,10 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
             if self.context.syncCertified():
                 self.addError('Import has already been approved.')
 
-    def isAdmin(self):
+    def isAdmin(self, action=None):
+        # The optional action parameter is so this method can be
+        # supplied as the condition argument to an @action.  We treat
+        # all such actions the same though, so we ignore it.
         return check_permission('launchpad.Admin', self.context)
 
     @action(_('Update RCS Details'), name='update')
@@ -628,6 +631,31 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         self.context.certifyForSync()
         self.request.response.addInfoNotification(
             'Source import certified for publication')
+
+    @action(_('Mark Import TESTFAILED'), name='testfailed',
+            condition=isAdmin)
+    def testfailed_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.markTestFailed()
+        self.request.response.addInfoNotification(
+            'Source import marked as TESTFAILED.')
+
+    @action(_('Mark Import DONTSYNC'), name='dontsync',
+            condition=isAdmin)
+    def dontsync_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.markDontSync()
+        self.request.response.addInfoNotification(
+            'Source import marked as DONTSYNC.')
+
+    @action(_('Delete Import'), name='delete',
+            condition=isAdmin)
+    def delete_action(self, action, data):
+        # No need to update the details from the submitted data when
+        # we're about to clear them all anyway.
+        self.context.deleteImport()
+        self.request.response.addInfoNotification(
+            'Source import deleted.')
 
     @property
     def next_url(self):
