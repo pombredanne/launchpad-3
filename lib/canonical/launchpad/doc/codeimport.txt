@@ -1,10 +1,10 @@
 = Code Imports =
 
-CodeImport objects model the process surrounding the code import service of
-Launchpad. A CodeImport object is created by a user requesting an import, the
-import source is then reviewed by privileged users. Then importd, the code
-import daemon, performs the initial import that creates the import branch, and
-updates it regularly.
+CodeImport objects model the process surrounding the code import service
+of Launchpad. A CodeImport object is created by a user requesting an
+import, the import source is then reviewed by privileged users. Then
+importd, the code import daemon, performs the initial import that
+populates the import branch, and updates it regularly.
 
 We can import code from CVS or Subversion.
 
@@ -29,14 +29,14 @@ Person.
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> user = getUtility(ILaunchBag).user
 
-CodeImports are associated with a Branch when they are created; this
-is how they are linked to a Product.  A helper function makes the
-tests below much easier to read.
+CodeImports are associated with a Branch when they are created; this is
+how they are linked to a Product.  A helper function makes the tests
+below much easier to read.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBranchSet, ILaunchpadCelebrities, IProductSet)
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    >>> def importBranchForNewProduct(name):
+    >>> def import_branch_for_new_product(name):
     ...     product = getUtility(IProductSet).createProduct(
     ...         user, name, name, name, name, name)
     ...     return getUtility(IBranchSet).new(
@@ -53,13 +53,13 @@ Subversion, takes values from the 'RevisionControlSystems' vocabulary.
 
 === Import from CVS ===
 
-Code imports from CVS specify the CVSROOT value, and the path to import in the
-repository, known as the "module".
+Code imports from CVS specify the CVSROOT value, and the path to import
+in the repository, known as the "module".
 
     >>> cvs = RevisionControlSystems.CVS
     >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
     >>> cvs_module = 'hello'
-    >>> cvs_branch = importBranchForNewProduct("cvs-using-product")
+    >>> cvs_branch = import_branch_for_new_product("cvs-using-product")
     >>> cvs_import = code_import_set.new(
     ...     registrant=user, branch=cvs_branch,
     ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
@@ -73,7 +73,7 @@ retrieve the tree to import.
 
     >>> svn = RevisionControlSystems.SVN
     >>> svn_url = 'svn://svn.example.com/trunk'
-    >>> svn_branch = importBranchForNewProduct("svn-using-project")
+    >>> svn_branch = import_branch_for_new_product("svn-using-project")
     >>> svn_import = code_import_set.new(
     ...     registrant=user, branch=svn_branch,
     ...     rcs_type=svn, svn_branch_url=svn_url)
@@ -81,7 +81,7 @@ retrieve the tree to import.
     True
 
 Write the new code imports to the database, so we can use it to test
-CodeImportSet.get.
+ICodeImportSet.get() and friends.
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
@@ -93,13 +93,11 @@ You can retrieve all imports with the `getAll` method of ICodeImport.
     >>> svn_import in code_import_set.getAll()
     True
 
-You can also retrive an import by id, which will be used to present
-the object view for an import and also by branch, which will be used
-to present the import's details on the page of the branch.
+You can also retrive an import by id, which will be used to present the
+object view for an import and also by branch, which will be used to
+present the import's details on the page of the branch.
 
-    >>> svn_import == code_import_set.get(svn_import.id)
-    True
-    >>> svn_import == code_import_set.getByBranch(svn_branch)
-    True
-
-
+    >>> code_import_set.get(svn_import.id).svn_branch_url
+    u'svn://svn.example.com/trunk'
+    >>> code_import_set.getByBranch(cvs_branch).cvs_root
+    u':pserver:anonymous@cvs.example.com:/cvsroot'
