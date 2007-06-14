@@ -76,7 +76,7 @@ class TranslationImporter:
         return importers.get(file_format, None)
 
     @cachedproperty
-    def file_extensions_with_importers(self):
+    def file_extensions_with_importer(self):
         """See ITranslationImporter."""
         file_extensions = []
 

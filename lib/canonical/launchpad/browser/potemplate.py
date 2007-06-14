@@ -36,9 +36,9 @@ from canonical.launchpad.browser.productseries import (
 from canonical.launchpad.browser.sourcepackage import (
     SourcePackageSOP, SourcePackageFacets)
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOExportRequestSet,
-    IPOTemplateSubset, ITranslationImporter, ITranslationImportQueue,
-    IProductSeries, ISourcePackage)
+    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFile, IPOFileSet,
+    IPOExportRequestSet, IPOTemplateSubset, ITranslationImporter,
+    ITranslationImportQueue, IProductSeries, ISourcePackage)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
@@ -320,7 +320,7 @@ class POTemplateView(LaunchpadView):
         translation_import_queue = getUtility(ITranslationImportQueue)
         root, ext = os.path.splitext(filename)
         translation_importer = getUtility(ITranslationImporter)
-        if (ext not in translation_importer.file_extensions_with_importer):
+        if (ext in translation_importer.file_extensions_with_importer):
             # Add it to the queue.
             translation_import_queue.addOrUpdateEntry(
                 filename, content, True, self.user,
@@ -439,7 +439,14 @@ class BaseExportView(LaunchpadView):
         ]
 
         for format in formats:
-            is_default = (self.context.format == format)
+            if IPOTemplate.providedBy(self.context):
+                source_file_format = self.context.source_file_format
+            elif IPOFile.providedBy(self.context):
+                source_file_format = (
+                    self.context.potemplate.source_file_format)
+            else:
+                raise AssertionError('Got an unknown object')
+            is_default = (source_file_format == format)
             yield BrowserFormat(format.title, format.name, is_default)
 
 

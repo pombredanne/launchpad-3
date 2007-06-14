@@ -2,7 +2,7 @@
 
 from zope.interface import Interface, Attribute
 from zope.interface.common.mapping import IMapping
-from zope.schema import Choice
+from zope.schema import Choice, Field
 
 from canonical.lp.dbschema import TranslationFileFormat
 
@@ -79,7 +79,7 @@ class UnknownTranslationRevisionDate(Exception):
 class ITranslationImporter(Interface):
     """Importer of translation files."""
 
-    file_extensions_with_importers = Attribute(
+    file_extensions_with_importer = Attribute(
         "List of file extension we have imports for.")
 
     def getContentTypeByFileExtension(file_extension):
