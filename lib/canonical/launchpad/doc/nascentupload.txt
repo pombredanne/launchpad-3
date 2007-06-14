@@ -1000,6 +1000,9 @@ It will be caught in publisher, but it generates an annoying PENDING
 publication record and a warning in the publisher log until the entire
 series get bumped to a higher version in archive.
 
+Although, since PPA is 'auto-accepted', this problem is only possible
+to happen in ubuntu uploads, but in this case we trust the queue
+reviewers.
 
 Upload 'non-epoched' bar source:
 
