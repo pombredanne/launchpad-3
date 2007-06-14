@@ -119,6 +119,12 @@
               >
               translated
             </option>
+            <option value="new_suggestions"
+              tal:attributes="selected
+              request/htmlform:show/selected/new_suggestions"
+              >
+              with new suggestions
+            </option>
             <option value="changed_in_launchpad"
               tal:attributes="selected
               request/htmlform:show/selected/changed_in_launchpad"
