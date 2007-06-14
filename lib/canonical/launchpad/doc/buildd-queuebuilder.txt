@@ -442,4 +442,3 @@ buildd-slavescanner.txt):
   >>> ppa_job = new_jobs[0]
   >>> ppa_job.build.archive.owner.name
   u'cprov'
-

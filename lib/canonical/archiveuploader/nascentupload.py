@@ -26,8 +26,6 @@ from canonical.archiveuploader.dscfile import DSCFile
 from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
-from canonical.archiveuploader.template_messages import (
-    rejection_template, new_template, accepted_template, announce_template)
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     NotFoundError, IDistributionSet)
@@ -330,26 +328,20 @@ class NascentUpload:
         Check if the declared number of architectures corresponds to the
         upload contents.
         """
-        # Currently the only check we make is that if the upload is binaryful
-        # we don't allow more than one build.
-        # XXX: dsilvers: 20051014: We'll want to refactor to remove this limit
-        # but it's not too much of a hassle for now.
-        # bug 3158
         considered_archs = [arch_name for arch_name in self.changes.architectures
                             if not arch_name.endswith("_translations")]
         max = 1
         if self.sourceful:
             # When sourceful, the tools add 'source' to the architecture
-            # list in the upload. Thusly a sourceful upload with one build
-            # has two architectures listed.
-            max = 2
+            # list in the upload.
+            max = self.policy.distroseries.architecturecount + 1
         if 'all' in considered_archs:
             # Sometimes we get 'i386 all' which would count as two archs
             # so if 'all' is present, we bump the permitted number up
             # by one.
             max += 1
         if len(considered_archs) > max:
-            self.reject("Policy permits only one build per upload.")
+            self.reject("Upload has more architetures than it is supported.")
 
     #
     # Helpers for warnings and rejections
@@ -736,8 +728,7 @@ class NascentUpload:
     # Actually processing accepted or rejected uploads -- and mailing people
     #
 
-    def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
-                  announce_msg=announce_template):
+    def do_accept(self, notify=True):
         """Accept the upload into the queue.
 
         This *MAY* in extreme cases cause a database error and thus
@@ -745,10 +736,12 @@ class NascentUpload:
         occur, for example, if we have failed to validate the input
         sufficiently and something trips a database validation
         constraint.
+
+        :param notify: True to send an email, False to not send one.
         """
         if self.is_rejected:
             self.reject("Alas, someone called do_accept when we're rejected")
-            self.do_reject()
+            self.do_reject(notify)
             return False
         try:
             maintainerfrom = None
@@ -762,10 +755,13 @@ class NascentUpload:
             # may fail yet this email will be sent.  The chances of this are
             # very small, and at some point the script infrastructure will
             # only send emails when the script exits successfully.
-            changes_file_object = open(self.changes.filepath, "r")
-            self.queue_root.notify(announce_list=self.policy.announcelist, 
-                changes_file_object=changes_file_object, logger=self.logger)
-            changes_file_object.close()
+            if notify:
+                changes_file_object = open(self.changes.filepath, "r")
+                self.queue_root.notify(
+                    announce_list=self.policy.announcelist,
+                    changes_file_object=changes_file_object,
+                    logger=self.logger)
+                changes_file_object.close()
             return True
 
         except (SystemExit, KeyboardInterrupt):
@@ -776,13 +772,18 @@ class NascentUpload:
             # reject message rather than being swallowed up.
             self.reject("%s" % e)
             # Let's log tracebacks for uncaught exceptions ...
-            self.logger.error('Exception while accepting:\n', exc_info=True)
-            self.do_reject()
+            self.logger.error(
+                'Exception while accepting:\n %s' % e, exc_info=True)
+            self.do_reject(notify)
             return False
 
-    def do_reject(self, template=rejection_template):
+    def do_reject(self, notify=True):
         """Reject the current upload given the reason provided."""
         assert self.is_rejected, "The upload is not rejected."
+
+        # Bail out immediately if no email is really required.
+        if not notify:
+            return
 
         # We need to check that the queue_root object has been fully
         # initialised first, because policy checks or even a code exception
@@ -793,7 +794,13 @@ class NascentUpload:
 
         if not self.queue_root:
             self.queue_root = self._createQueueEntry()
+
+        try:
             self.queue_root.setRejected()
+        except QueueInconsistentStateError:
+            # These exceptions are ignored, we want to force the rejected
+            # state.
+            pass
 
         changes_file_object = open(self.changes.filepath, "r")
         self.queue_root.notify(summary_text=self.rejection_message,
@@ -872,17 +879,15 @@ class NascentUpload:
                 binary_package_file.storeInDatabase(build)
                 processed_builds.append(build)
 
-            # Perform some checks on processed build(s) if there were any.
-            # Ensure that only binaries for a single build were processed
-            # Then add a respective PackageUploadBuild entry for it
-            if len(processed_builds) > 0:
-                unique_builds = set([b.id for b in processed_builds])
-                assert len(unique_builds) == 1, (
-                    "Upload contains binaries from different builds. "
-                    "(%s)" % unique_builds)
-                # Use any (the first) IBuild stored as reference.
-                # They are all the same according the previous assertion.
-                considered_build = processed_builds[0]
+            # Store the related builds after verifying they were built
+            # from the same source.
+            for considered_build in processed_builds:
+                attached_builds = [build.build.id
+                                   for build in self.queue_root.builds]
+                if considered_build.id in attached_builds:
+                    continue
+                assert (considered_build.sourcepackagerelease.id == spr.id), (
+                    "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
 
         # PPA uploads are Auto-Accepted by default
@@ -897,6 +902,15 @@ class NascentUpload:
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
                 self.queue_root.setAccepted()
+                # If it is a pure-source upload we can further process it
+                # in order to have a pending publishing record in place.
+                # This change is based on discussions for bug #77853 and aims
+                # to fix a deficiency on published file lookup system.
+                if ((self.queue_root.sources.count() == 1) and
+                    (self.queue_root.builds.count() == 0) and
+                    (self.queue_root.customfiles.count() == 0)):
+                    self.logger.debug("Creating PENDING publishing record.")
+                    self.queue_root.realiseUpload()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 self.queue_root.setUnapproved()

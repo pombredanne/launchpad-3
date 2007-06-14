@@ -34,6 +34,7 @@ Several views are used to handle the various operations on a question.
     ...     stub.test_emails = []
     ...     return notifications
 
+
 == QuestionSubscriptionView ==
 
 This view is used to subscribe and unsubscribe from a question.
@@ -74,6 +75,7 @@ These two actions didn't generate any notification mails:
     >>> len(pop_notifications())
     0
 
+
 == QuestionWorkflowView ==
 
 QuestionWorkflowView is the view used to handle the comments submitted by
@@ -95,7 +97,7 @@ form.
     ...              if action.available()]
     ...     return sorted(names)
 
-Unlogged users cannot post any comments on the question:
+Unlogged-in users cannot post any comments on the question:
 
     >>> login(ANONYMOUS)
     >>> workflow_harness.submit('', {})
@@ -277,6 +279,7 @@ the SOLVED state.
     # Clear all notifications.
     >>> notifications = pop_notifications()
 
+
 == QuestionMakeBugView ==
 
 The QuestionMakeBugView is used to handle the creation of a bug from a
@@ -328,6 +331,7 @@ If the question already has bugs linked to it, no new bug can be created.
     ...     print n.message
     You cannot create a bug report...
 
+
 == BugLinkView and BugsUnlinkView ==
 
 Linking bug (+linkbug) to the question is managed through the BugLinkView.
@@ -335,6 +339,7 @@ Unlinking bugs from the question is managed through the BugsUnlinkView.
 See 'buglinktarget-pages.txt' for their documentation. The notifications
 sent along linking and unlinking bugs can be found in
 'answer-tracker-notifications.txt'.
+
 
 == QuestionRejectView ==
 
@@ -353,6 +358,7 @@ question.
     You have rejected this question.
     >>> print firefox_question.status.title
     Invalid
+
 
 == QuestionChangeStatusView ==
 
@@ -375,10 +381,11 @@ outside of the comment workflow.
     # Clear the notification.
     >>> notifications = pop_notifications()
 
+
 == QuestionEditView ==
 
-QuestionEditView available through '+edit' is used to edit most 
-question fields. It can be used to edit the question title and 
+QuestionEditView available through '+edit' is used to edit most
+question fields. It can be used to edit the question title and
 description and also its metadata like language, assignee,
 distribution, source package, product and whiteboard.
 
@@ -431,6 +438,9 @@ This View send the event appropriate to send out a notification:
     Description changed to:
     A better description.
     <BLANKLINE>
+    --
+    You received this question notification because you are a direct
+    subscriber of the question.
 
 If the user has the required permission, the assignee and whiteboard
 fields will be updated:
@@ -485,6 +495,7 @@ a distribution question:
     # Clear out the pending notifications.
     >>> notifications = pop_notifications()
 
+
 == The QuestionLanguage vocabulary ==
 
 The QuestionLanguageVocabularyFactory is an IContextSourceBinder which
@@ -497,7 +508,7 @@ interesting languages based on GeoIP information and the request's
 languages.
 
 For example, if the user doesn't log in and his browser is configured
-to accept brazilian Portuguese, the vocabulary will contain 'English'
+to accept Brazilian Portuguese, the vocabulary will contain 'English'
 plus the languages spoken in South Africa (because the 127.0.0.1 IP
 address is mapped to South Africa in the tests).
 .
@@ -574,6 +585,7 @@ by the previous rules.
     # Clean up.
     >>> question_three.language = getUtility(ILanguageSet)['en']
 
+
 == UserSupportLanguagesMixin ==
 
 The UserSupportLanguagesMixin can be used by views that needs to
@@ -636,6 +648,7 @@ excluded:
     >>> sorted(language.code for language in view.user_support_languages)
     [u'cy', u'en', u'ja']
 
+
 == SearchQuestionsView ==
 
 This view is used as a base class to search for questions. It is intended
@@ -662,7 +675,7 @@ By default, that class provides widgets to search by text and by status.
     >>> search_view = search_view_harness.view
     >>> search_view.widgets.get('search_text') is not None
     True
-    >>> search_view.widgets.get('languages') is not None
+    >>> search_view.widgets.get('language') is not None
     True
     >>> search_view.widgets.get('status') is not None
     True
@@ -678,12 +691,13 @@ searchResults() method. The returned results are batched.
     >>> questions = search_view.searchResults()
     >>> questions
     <canonical.launchpad.webapp.batching.BatchNavigator ...>
-    >>> print "\n".join([question.title for question in questions.batch])
+    >>> for question in questions.batch:
+    ...     print question.title.encode('us-ascii', 'backslashreplace')
+    Problema al recompilar kernel con soporte smp (doble-n\xfacleo)
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
     Installation of Java Runtime Environment for Mozilla
-    Slow system
 
 These were the default results when no search is entered. The user
 can tweak the search and filter the results:
@@ -691,7 +705,7 @@ can tweak the search and filter the results:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Solved', 'Open'],
     ...     'field.search_text': 'firefox',
-    ...     'field.languages': 'Preferred',
+    ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
@@ -705,7 +719,7 @@ search parameters to use in the getDefaultFilter() method:
     >>> from canonical.lp.dbschema import QuestionStatus
     >>> MyCustomSearchQuestionsView.default_filter = {
     ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID],
-    ...     'languages':'Preferred'}
+    ...     'language' : search_view.user_support_languages}
     >>> search_view_harness.submit('', {})
 
 In this example, only the solved and invalid questions are listed by
@@ -731,7 +745,7 @@ criteria.
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Solved'],
     ...     'field.search_text': 'firefox',
-    ...     'field.languages': 'Preferred',
+    ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
@@ -765,7 +779,7 @@ It works also with user submitted values:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Expired'],
     ...     'field.search_text': '',
-    ...     'field.languages': 'Preferred',
+    ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
     Expired questions for Ubuntu
@@ -775,13 +789,14 @@ It works also with user submitted values:
     >>> search_view_harness.submit('search', {
     ...     'field.status': ['Open', 'Answered'],
     ...     'field.search_text': 'evolution',
-    ...     'field.languages': 'Preferred',
+    ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
     >>> print translate(search_view_harness.view.pageheading)
     Questions matching "evolution" for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no questions matching "evolution" for Ubuntu with the
     requested statuses.
+
 
 == QuestionCollectionOpenCountView ==
 
@@ -793,6 +808,7 @@ states on that target.
     ...     firefox, '+open_questions_count', LaunchpadTestRequest())
     >>> view()
     u'4'
+
 
 == QuestionSOP ==
 
@@ -897,7 +913,7 @@ can only remove his own registration.
     You have been removed as an answer contact for Ubuntu.
 
 It can also be used to remove a team registration when the user is a team
-administror:
+administrator:
 
     >>> login('jeff.waugh@ubuntulinux.com')
     >>> request = LaunchpadTestRequest(

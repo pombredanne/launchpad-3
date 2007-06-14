@@ -20,7 +20,7 @@ from canonical.config import config
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
 from canonical.archivepublisher.diskpool import poolify
@@ -82,6 +82,8 @@ class DistributionMirror(SQLBase):
     official_approved = BoolCol(
         notNull=True, default=False)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    whiteboard = StringCol(
+        notNull=False, default=None)
 
     @property
     def base_url(self):
@@ -116,6 +118,15 @@ class DistributionMirror(SQLBase):
     def has_ftp_or_rsync_base_url(self):
         """See IDistributionMirror"""
         return self.ftp_base_url is not None or self.rsync_base_url is not None
+
+    def destroySelf(self):
+        """Delete this mirror from the database.
+
+        Only mirrors which have never been probed can be deleted.
+        """
+        assert self.last_probe_record is None, (
+            "This mirror has been probed and thus can't be removed.")
+        SQLBase.destroySelf(self)
 
     def getOverallStatus(self):
         """See IDistributionMirror"""
@@ -215,7 +226,7 @@ class DistributionMirror(SQLBase):
         return MirrorProbeRecord(distribution_mirror=self, log_file=log_file)
 
     def deleteMirrorDistroArchSeries(self, distro_arch_series, pocket,
-                                      component):
+                                     component):
         """See IDistributionMirror"""
         mirror = MirrorDistroArchSeries.selectOneBy(
             distribution_mirror=self, distro_arch_series=distro_arch_series,
@@ -224,7 +235,7 @@ class DistributionMirror(SQLBase):
             mirror.destroySelf()
 
     def ensureMirrorDistroArchSeries(self, distro_arch_series, pocket,
-                                      component):
+                                     component):
         """See IDistributionMirror"""
         assert IDistroArchSeries.providedBy(distro_arch_series)
         mirror = MirrorDistroArchSeries.selectOneBy(
@@ -285,8 +296,7 @@ class DistributionMirror(SQLBase):
     @property
     def cdimage_serieses(self):
         """See IDistributionMirror"""
-        return MirrorCDImageDistroSeries.selectBy(
-            distribution_mirror=self)
+        return MirrorCDImageDistroSeries.selectBy(distribution_mirror=self)
 
     @property
     def source_serieses(self):

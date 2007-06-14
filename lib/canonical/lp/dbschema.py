@@ -30,6 +30,7 @@ __all__ = (
 'BranchReviewStatus',
 'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
+'BranchVisibilityPolicy',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -642,14 +643,14 @@ class TeamMembershipRenewalPolicy(DBSchema):
     """
 
     NONE = Item(10, """
-        None
+        invite them to apply for renewal
 
         Memberships can be renewed only by team administrators or by going
         through the normal workflow for joining the team.
         """)
 
     ONDEMAND = Item(20, """
-        On demand
+        invite them to renew their own membership
 
         Memberships can be renewed by the members themselves a few days before
         it expires. After it expires the member has to go through the normal
@@ -657,7 +658,7 @@ class TeamMembershipRenewalPolicy(DBSchema):
         """)
 
     AUTOMATIC = Item(30, """
-        Automatic
+        renew their membership automatically, also notifying the admins
 
         Memberships are automatically renewed when they expire and a note is
         sent to the member and to team admins.
@@ -2615,6 +2616,35 @@ class BranchSubscriptionNotificationLevel(DBSchema):
 
         Send notifications for both branch attribute updates
         and new revisions added to the branch.
+        """)
+
+
+class BranchVisibilityPolicy(DBSchema):
+    """Branch Visibility Policy"""
+
+    PUBLIC = Item(1, """
+        Public
+
+        Branches are public by default.
+        """)
+
+    PRIVATE = Item(2, """
+        Private
+
+        Branches are private by default.
+        """)
+
+    PRIVATE_ONLY = Item (3, """
+        Private only
+
+        Branches are private by default. Branch owners are not able
+        to change the visibility of the branches to public.
+        """)
+
+    FORBIDDEN = Item(4, """
+        Forbidden
+
+        Users are not able to create branches in the context.
         """)
 
 

@@ -16,3 +16,5 @@ UPDATE Archive SET enabled=TRUE, authorized_size=104857600
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 16, 0);
+
+
