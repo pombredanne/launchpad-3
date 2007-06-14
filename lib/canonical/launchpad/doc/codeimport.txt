@@ -13,34 +13,34 @@ We can import code from CVS or Subversion.
 CodeImports are created and found using the ICodeImportSet interface,
 which is registered as a utility.
 
-  >>> from canonical.launchpad.interfaces import ICodeImport, ICodeImportSet
-  >>> from zope.interface.verify import verifyObject
-  >>> from zope.component import getUtility
-  >>> from zope.security.proxy import removeSecurityProxy
-  >>> code_import_set = getUtility(ICodeImportSet)
-  >>> verifyObject(ICodeImportSet, removeSecurityProxy(code_import_set))
-  True
+    >>> from canonical.launchpad.interfaces import ICodeImport, ICodeImportSet
+    >>> from zope.interface.verify import verifyObject
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> code_import_set = getUtility(ICodeImportSet)
+    >>> verifyObject(ICodeImportSet, removeSecurityProxy(code_import_set))
+    True
 
 CodeImports record who created them, and also we're going to create
 new Products to create CodeImports for, so we log in as No Privileges
 Person.
 
-  >>> login("no-priv@canonical.com")
-  >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-  >>> user = getUtility(ILaunchBag).user
+    >>> login("no-priv@canonical.com")
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> user = getUtility(ILaunchBag).user
 
 CodeImports are associated with a Branch when they are created; this
 is how they are linked to a Product.  A helper function makes the
 tests below much easier to read.
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IBranchSet, ILaunchpadCelebrities, IProductSet)
-  >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-  >>> def importBranchForNewProduct(name):
-  ...     product = getUtility(IProductSet).createProduct(
-  ...         user, name, name, name, name, name)
-  ...     return getUtility(IBranchSet).new(
-  ...         'trunk', vcs_imports, product, None, 'Import branch')
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBranchSet, ILaunchpadCelebrities, IProductSet)
+    >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    >>> def importBranchForNewProduct(name):
+    ...     product = getUtility(IProductSet).createProduct(
+    ...         user, name, name, name, name, name)
+    ...     return getUtility(IBranchSet).new(
+    ...         'trunk', vcs_imports, product, None, 'Import branch')
 
 
 == Supported source systems ==
@@ -48,42 +48,43 @@ tests below much easier to read.
 The rcs_type field, which indicates whether the import is from CVS or
 Subversion, takes values from the 'RevisionControlSystems' vocabulary.
 
-  >>> from canonical.lp.dbschema import RevisionControlSystems
+    >>> from canonical.lp.dbschema import RevisionControlSystems
+
 
 === Import from CVS ===
 
 Code imports from CVS specify the CVSROOT value, and the path to import in the
 repository, known as the "module".
 
-  >>> cvs = RevisionControlSystems.CVS
-  >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
-  >>> cvs_module = 'hello'
-  >>> cvs_branch = importBranchForNewProduct("cvs-using-product")
-  >>> cvs_import = code_import_set.new(
-  ...     registrant=user, branch=cvs_branch,
-  ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
-  >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
-  True
+    >>> cvs = RevisionControlSystems.CVS
+    >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
+    >>> cvs_module = 'hello'
+    >>> cvs_branch = importBranchForNewProduct("cvs-using-product")
+    >>> cvs_import = code_import_set.new(
+    ...     registrant=user, branch=cvs_branch,
+    ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
+    >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
+    True
 
 === Import from Subversion ===
 
 Code imports from Subversion specify the URL used with "svn checkout" to
 retrieve the tree to import.
 
-  >>> svn = RevisionControlSystems.SVN
-  >>> svn_url = 'svn://svn.example.com/trunk'
-  >>> svn_branch = importBranchForNewProduct("svn-using-project")
-  >>> svn_import = code_import_set.new(
-  ...     registrant=user, branch=svn_branch,
-  ...     rcs_type=svn, svn_branch_url=svn_url)
-  >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
-  True
+    >>> svn = RevisionControlSystems.SVN
+    >>> svn_url = 'svn://svn.example.com/trunk'
+    >>> svn_branch = importBranchForNewProduct("svn-using-project")
+    >>> svn_import = code_import_set.new(
+    ...     registrant=user, branch=svn_branch,
+    ...     rcs_type=svn, svn_branch_url=svn_url)
+    >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
+    True
 
 Write the new code imports to the database, so we can use it to test
 CodeImportSet.get.
 
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> flush_database_updates()
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 == Retreiving CodeImports ==
 
