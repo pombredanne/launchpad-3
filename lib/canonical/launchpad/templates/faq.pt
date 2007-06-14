@@ -156,38 +156,37 @@
             </ul>
             </dd>
 
-        <dt>Is Launchpad Free Software/open source? If not, why not?</dt>
-        <dd>
-          <p>
-            Like Sourceforge and Google Code Hosting,
-            Launchpad is not currently open source.
-            Unlike those other services,
-            we have committed to making Launchpad Free Software eventually.
-          </p>
-          <p>
-            Launchpad exists not just to make development easier within
-            projects,
-            but also to encourage collaboration between projects.
-            With Launchpad, distributors and upstream developers can share
-            bug reports, translations, and code.
-            Eventually we hope to contribute to standards and APIs
-            that let standalone sites send these things to each other.
-            But until that happens,
-            having a single Launchpad instance is the most practical way of
-            maximizing the collaboration that Launchpad is designed to achieve.
-            It also helps in funding Launchpad development in the short term.
-          </p>
-          <p>
-            In the meantime, we have released the code for 
-            <a href="https://launchpad.net/launchpad-cscvs">CSCVS</a>,
-            which Launchpad uses to mirror CVS/Subversion trees to Bazaar.
-            We also make many contributions to other Free Software components
-            we use, including
-            <a href="http://zope.org/">Zope</a>,
-            <a href="http://bazaar-vcs.org/">Bazaar</a>,
-            <a href="http://sqlobject.org/">SQLObject</a>,
-            and <a href="http://twistedmatrix.com/trac/">Twisted</a>.
-          </p>
+        <dt>Is Launchpad open source? Will it be?</dt>
+
+            <dd>
+            <p>
+            Our goal is to release all of Launchpad as free software, though it
+            will take some time (potentially, years) before that happens.
+            </p><p>
+            We are doing so in a piecemeal approach. Parts of Launchpad have already
+            been released as free software where they would be particularly useful to
+            other projects. And very few, if any, Launchpad modifications to upstream
+            code are not immediately published to those upstream projects.
+            </p><p>
+            Launchpad is a large, monolithic, web application. We would
+            be happy to release the code for the Registry, for example,
+            which keeps track of all upstream projects and their series
+            and releases; however, that code will not run without the
+            distribution management code, which is part of of the
+            service that Canonical provides to other companies that make
+            their own distributions.
+            </p><p>
+            If you are keen on seeing Launchpad components published as
+            free software sooner, rather than later, and you have good
+            Python and Zope3 skills, we are happy to provide code access
+            and accept patches that use Zope 3's component architecture
+            to factor out individual Launchpad applications and make it
+            easier to release chunks of Launchpad.  That is a lot of
+            hard work, but it would make it possible to release the
+            Registry, and the parts of Rosetta that are used for
+            upstream translation.
+            </p>
+            </dd>
 
         <dt>Launchpad is down for maintenance.  How long before it comes back?</dt>
             <dd>
