@@ -286,7 +286,7 @@
     class="canonical.launchpad.browser.BugNominationsView"
     permission="zope.Public"
     facet="bugs"
-    template="../templates/distroseries-nominations.pt"
+    template="../templates/series-bug-nominations.pt"
     />
 
   <browser:page
