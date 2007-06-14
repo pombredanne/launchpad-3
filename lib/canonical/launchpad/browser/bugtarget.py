@@ -54,6 +54,7 @@ class FileBugData:
         self.initial_summary = None
         self.initial_summary = None
         self.initial_tags = []
+        self.private = None
         self.extra_description = None
         self.comments = []
         self.attachments = []
@@ -63,6 +64,7 @@ class FileBugData:
 
             * The Subject header is the initial bug summary.
             * The Tags header specifies the initial bug tags.
+            * The Private header sets the visibility of the bug.
             * The first inline part will be added to the description.
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
@@ -72,6 +74,12 @@ class FileBugData:
             self.initial_summary = mime_msg.get('Subject')
             tags = mime_msg.get('Tags', '')
             self.initial_tags = tags.lower().split()
+            private = mime_msg.get('Private')
+            if private:
+                if private.lower() == 'yes':
+                    self.private = True
+                elif private.lower() == 'no':
+                    self.private = False
             for part in mime_msg.get_payload():
                 disposition_header = part.get('Content-Disposition', 'inline')
                 # Get the type, excluding any parameters.
@@ -342,15 +350,24 @@ class FileBugViewBase(LaunchpadFormView):
                     'The file "%s" was attached to the bug report.' % 
                         cgi.escape(attachment['filename']))
 
+        if extra_data.private:
+            bug.private = extra_data.private
+
         # Give the user some feedback on the bug just opened.
         for notification in notifications:
             self.request.response.addNotification(notification)
-        if bug.private:
+        if bug.security_related:
             self.request.response.addNotification(
                 'Security-related bugs are by default <span title="Private '
                 'bugs are visible only to their direct subscribers.">private'
                 '</span>. You may choose to <a href="+secrecy">publically '
                 'disclose</a> this bug.')
+        if bug.private and not bug.security_related:
+            self.request.response.addNotification(
+                'This bug report has been marked as <span title="Private '
+                'bugs are visible only to their direct subscribers.">private'
+                '</span>. You may choose to <a href="+secrecy">change '
+                'this</a>.')
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 

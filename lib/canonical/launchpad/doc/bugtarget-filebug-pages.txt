@@ -235,6 +235,90 @@ The attachments are all added to the same comment.
     ...         comment.owner.displayname, comment.bugattachments.count())
     Comment by No Privileges Person: 2 attachment(s)
 
+=== Private Bugs ===
+
+We should be able to specify whether a bug is private by providing a Private
+field in the message.
+
+    >>> debug_data = """MIME-Version: 1.0 
+    ... Content-type: multipart/mixed; boundary=boundary
+    ... Private: yes
+    ...
+    ... --boundary
+    ... Content-disposition: inline
+    ... Content-type: text/plain; charset=utf-8
+    ...
+    ... This bug should be private.
+    ...
+    ... --boundary--
+    ... """
+    >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
+    >>> transaction.commit()
+
+    >>> request = LaunchpadTestRequest()
+    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    True
+    >>> filebug_view.extra_data.extra_description
+    u'This bug should be private.'
+    >>> filebug_view.extra_data.private
+    True
+
+    >>> filebug_view.validate(bug_data) is None
+    True
+    >>> filebug_view.submit_bug_action.success(bug_data)
+    >>> filebug_view.added_bug.title
+    u'Test Title'
+    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    Test description.
+    <BLANKLINE>
+    This bug should be private.
+    >>> filebug_view.added_bug.private
+    True
+
+The user will be notified that the bug has been marked as private.
+
+    >>> print filebug_view.request.response.notifications[2].message
+    This bug report has been marked as <span title="Private bugs...
+
+We can also specify that a bug is public via the same field.
+
+    >>> debug_data = """MIME-Version: 1.0 
+    ... Content-type: multipart/mixed; boundary=boundary
+    ... Private: no
+    ...
+    ... --boundary
+    ... Content-disposition: inline
+    ... Content-type: text/plain; charset=utf-8
+    ...
+    ... This bug should be public.
+    ...
+    ... --boundary--
+    ... """
+    >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
+    >>> transaction.commit()
+
+    >>> request = LaunchpadTestRequest()
+    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view.publishTraverse(request, token) is filebug_view
+    True
+    >>> filebug_view.extra_data.extra_description
+    u'This bug should be public.'
+    >>> filebug_view.extra_data.private
+    False
+
+    >>> filebug_view.validate(bug_data) is None
+    True
+    >>> filebug_view.submit_bug_action.success(bug_data)
+    >>> filebug_view.added_bug.title
+    u'Test Title'
+    >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
+    Test description.
+    <BLANKLINE>
+    This bug should be public.
+    >>> filebug_view.added_bug.private
+    False
+
 == publishTraverse() ==
 
 As already seen above, it's the FileBugViewBase's publishTraverse that
