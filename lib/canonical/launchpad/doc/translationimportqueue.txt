@@ -924,8 +924,11 @@ To test it, we need to add a few items to the queue first, so lets
 start with adding a single item to a source package inside Hoary
 distroseries:
 
-    >>> hoary_distroseries = DistroSeries.get(3)
-    >>> evolution_sourcepackagename = SourcePackageName.get(9)
+    >>> from canonical.launchpad.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary_distroseries = ubuntu.getSeries('hoary')
+    >>> evolution_sourcepackagename = (
+    ...     SourcePackageName.selectOne(name='evolution'))
     >>> entry1 = translationimportqueue.addOrUpdateEntry(
     ...     u'po/sr.po', 'foo', True, rosetta_expert,
     ...      distroseries=hoary_distroseries,
@@ -934,12 +937,12 @@ distroseries:
 Now, lets add another which will be ignored since we are setting this
 distroseries with defer_translation_imports = True.
 
-    >>> warty_distroseries = DistroSeries.get(1)
-    >>> evolution_sourcepackagename = SourcePackageName.get(9)
+    >>> warty_distroseries = ubuntu.getSeries('warty')
     >>> entry3 = translationimportqueue.addOrUpdateEntry(
     ...     u'po/sr.po', 'foo', True, rosetta_expert,
     ...      distroseries=warty_distroseries,
     ...      sourcepackagename=evolution_sourcepackagename)
+    >>> entry3.status == RosettaImportStatus.APPROVED
     >>> warty_distroseries.defer_translation_imports = True
 
 Next, lets add one item to a ProductSeries as well:
