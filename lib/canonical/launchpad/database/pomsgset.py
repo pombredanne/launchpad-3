@@ -54,7 +54,7 @@ class POMsgSetMixIn:
         return entries
 
     def _getRelatedSubmissions(self):
-        """Fetch all POSubmissions for self's caches.
+        """Fetch all POSubmissions for self's submissions caches.
 
         This retrieves all POSubmissions that form useful suggestions for self
         from the database, as well as any POSubmissions that are already
@@ -149,7 +149,7 @@ class POMsgSetMixIn:
     def getWikiSubmissions(self, pluralform):
         """See IPOMsgSet."""
         if self.attached_submissions is None:
-            self.initializeCaches()
+            self.initializeSubmissionsCaches()
         suggestions = self.suggestions.get(pluralform)
         if suggestions is None:
             return []
