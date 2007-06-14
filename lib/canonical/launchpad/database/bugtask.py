@@ -1073,6 +1073,51 @@ class BugTaskSet:
             """ % sqlvalues(distroseries, distroseries.main_archive,
                             component_ids, PackagePublishingStatus.PUBLISHED)])
 
+        upstream_clause = self._buildUpstreamClause(params)
+        if upstream_clause:
+            extra_clauses.append(upstream_clause)
+
+        if params.tag:
+            tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
+                    search_value_to_where_condition(params.tag))
+            extra_clauses.append(tags_clause)
+            clauseTables.append('BugTag')
+
+        if params.bug_contact:
+            bug_contact_clause = """BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, Product
+                WHERE BugTask.product = Product.id
+                    AND Product.bugcontact = %(bug_contact)s
+                UNION ALL
+                SELECT BugTask.id
+                FROM BugTask, PackageBugContact
+                WHERE BugTask.distribution = PackageBugContact.distribution
+                    AND BugTask.sourcepackagename =
+                        PackageBugContact.sourcepackagename
+                    AND PackageBugContact.bugcontact = %(bug_contact)s
+                UNION ALL
+                SELECT BugTask.id FROM BugTask, Distribution
+                WHERE BugTask.distribution = Distribution.id
+                    AND Distribution.bugcontact = %(bug_contact)s
+                )""" % sqlvalues(bug_contact=params.bug_contact)
+            extra_clauses.append(bug_contact_clause)
+
+        if params.bug_reporter:
+            bug_reporter_clause = (
+                "BugTask.bug = Bug.id AND Bug.owner = %s" % sqlvalues(
+                    params.bug_reporter))
+            extra_clauses.append(bug_reporter_clause)
+
+        clause = get_bug_privacy_filter(params.user)
+        if clause:
+            extra_clauses.append(clause)
+
+        orderby_arg = self._processOrderBy(params)
+
+        query = " AND ".join(extra_clauses)
+        return query, clauseTables, orderby_arg
+
+    def _buildUpstreamClause(self, params):
         upstream_clauses = []
         if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets
@@ -1147,47 +1192,8 @@ class BugTaskSet:
 
         if upstream_clauses:
             upstream_clause = " OR ".join(upstream_clauses)
-            extra_clauses.append('(%s)' % upstream_clause)
-
-        if params.tag:
-            tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
-                    search_value_to_where_condition(params.tag))
-            extra_clauses.append(tags_clause)
-            clauseTables.append('BugTag')
-
-        if params.bug_contact:
-            bug_contact_clause = """BugTask.id IN (
-                SELECT BugTask.id FROM BugTask, Product
-                WHERE BugTask.product = Product.id
-                    AND Product.bugcontact = %(bug_contact)s
-                UNION ALL
-                SELECT BugTask.id
-                FROM BugTask, PackageBugContact
-                WHERE BugTask.distribution = PackageBugContact.distribution
-                    AND BugTask.sourcepackagename =
-                        PackageBugContact.sourcepackagename
-                    AND PackageBugContact.bugcontact = %(bug_contact)s
-                UNION ALL
-                SELECT BugTask.id FROM BugTask, Distribution
-                WHERE BugTask.distribution = Distribution.id
-                    AND Distribution.bugcontact = %(bug_contact)s
-                )""" % sqlvalues(bug_contact=params.bug_contact)
-            extra_clauses.append(bug_contact_clause)
-
-        if params.bug_reporter:
-            bug_reporter_clause = (
-                "BugTask.bug = Bug.id AND Bug.owner = %s" % sqlvalues(
-                    params.bug_reporter))
-            extra_clauses.append(bug_reporter_clause)
-
-        clause = get_bug_privacy_filter(params.user)
-        if clause:
-            extra_clauses.append(clause)
-
-        orderby_arg = self._processOrderBy(params)
-
-        query = " AND ".join(extra_clauses)
-        return query, clauseTables, orderby_arg
+            return '(%s)' % upstream_clause
+        return None
 
     def search(self, params, *args):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
@@ -1382,5 +1388,3 @@ class BugTaskSet:
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see IBugTaskSet"""
         return BugTask.select()
-
-

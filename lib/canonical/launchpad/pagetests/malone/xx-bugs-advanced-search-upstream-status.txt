@@ -25,9 +25,6 @@ doesn't have a bug watch.
     >>> anon_browser.getLink('Advanced search').attrs['href']
     '?advanced=1'
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/+bugs?advanced=1'
-
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
     ...     'Show bugs that need to be forwarded to an upstream bugtracker']
@@ -77,9 +74,6 @@ makes it easy for developers to ignore bugs that they've already passed
 on upstream, to focus instead on things they need to work on.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/+bugs?advanced=1'
-
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
     ...     'Show bugs that are not known to affect upstream']
@@ -111,9 +105,6 @@ Now, if we choose to show only closed upstream task, only the bugs we
 modified and the sampledata we created above will show up.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/+bugs?advanced=1'
-
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
     ...     'Show bugs that are resolved upstream']
@@ -130,9 +121,6 @@ If more than one filter for upstream status is selected, the search returns
 the union of the results for the individual filters.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/+bugs?advanced=1'
-
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
     ...     'Show bugs that are resolved upstream',

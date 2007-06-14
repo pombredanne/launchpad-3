@@ -24,7 +24,6 @@ __all__ = [
     'get_buglisting_search_filter_url',
     'BugTargetTextView',
     'BugListingBatchNavigator',
-    'upstream_status_vocabulary_factory',
     'BugsBugTaskSearchListingView',
     'BugTaskSOP',
     ]
@@ -60,7 +59,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.interfaces import (
     IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
-    IBugWatchSet, IDistribution, IDistributionSourcePackage, IBug,
+    IDistribution, IDistributionSourcePackage, IBug,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
     IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
@@ -1189,29 +1188,6 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     return initial
 
 
-def upstream_status_vocabulary_factory(context):
-    """Create a vocabulary for filtering on upstream status.
-
-    This is used to show a radio widget on the advanced search form.
-    """
-    terms = [
-        SimpleTerm(
-            "pending_bugwatch",
-            title="Show bugs that need to be forwarded to an upstream bug"
-                  "tracker"),
-        SimpleTerm(
-            "hide_upstream",
-            title="Show bugs that are not known to affect upstream"),
-        SimpleTerm(
-            "resolved_upstream",
-            title="Show bugs that are resolved upstream"),
-        SimpleTerm(
-            "open_upstream",
-            title="Show bugs that are open upstream"),
-            ]
-    return SimpleVocabulary(terms)
-
-
 class BugTaskListingItem:
     """A decorated bug task.
 
@@ -1281,10 +1257,8 @@ class BugTaskSearchListingView(LaunchpadView):
                 self.request)
 
         self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
-        self.status_upstream_widget = LabeledMultiCheckBoxWidget(
-            self.schema['status_upstream'].bind(self.context),
-            upstream_status_vocabulary_factory(self.context),
-            self.request)
+        self.status_upstream_widget = CustomWidgetFactory(
+             LabeledMultiCheckBoxWidget)
         self.tag_widget = CustomWidgetFactory(BugTagsWidget)
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
@@ -1404,19 +1378,7 @@ class BugTaskSearchListingView(LaunchpadView):
             if has_no_package:
                 data["sourcepackagename"] = NULL
 
-        if 'status_upstream' in data:
-            # Convert the status_upstream value to parameters we can
-            # send to BugTaskSet.search().
-            status_upstream = data['status_upstream']
-            if 'pending_bugwatch' in status_upstream:
-                data['pending_bugwatch_elsewhere'] = True
-            if 'resolved_upstream' in status_upstream:
-                data['resolved_upstream'] = True
-            if 'open_upstream' in status_upstream:
-                data['open_upstream'] = True
-            if 'hide_upstream' in status_upstream:
-                data['has_no_upstream_bugtask'] = True
-            del data['status_upstream']
+        self._buildUpstreamStatusParams(data)
 
         # "Normalize" the form data into search arguments.
         form_values = {}
@@ -1431,6 +1393,23 @@ class BugTaskSearchListingView(LaunchpadView):
         for name, value in form_values.items():
             setattr(search_params, name, value)
         return search_params
+
+    def _buildUpstreamStatusParams(self, data):
+        """ Convert the status_upstream value to parameters we can
+        send to BugTaskSet.search().
+        """
+        if 'status_upstream' in data:
+            status_upstream = data['status_upstream']
+            if 'pending_bugwatch' in status_upstream:
+                data['pending_bugwatch_elsewhere'] = True
+            if 'resolved_upstream' in status_upstream:
+                data['resolved_upstream'] = True
+            if 'open_upstream' in status_upstream:
+                data['open_upstream'] = True
+            if 'hide_upstream' in status_upstream:
+                data['has_no_upstream_bugtask'] = True
+            del data['status_upstream']
+
 
     def search(self, searchtext=None, context=None, extra_params=None):
         """Return an ITableBatchNavigator for the GET search criteria.

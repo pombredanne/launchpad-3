@@ -23,9 +23,11 @@ __all__ = [
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES']
 
-from zope.interface import Interface, Attribute
+from zope.interface import implements, Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from sqlos.interfaces import ISelectResults
 
@@ -246,6 +248,33 @@ class INullBugTask(IBugTask):
     have tasks reported in your context.
     """
 
+class AdvancedBugTaskUpstreamStatusFactory:
+    """A vocabulary for filtering on upstream status.
+
+    This is used to show checkbox widgets on the advanced search form.
+    """
+
+    implements(IContextSourceBinder)
+
+    def __call__(self, context):
+        terms = [
+            SimpleTerm(
+                "pending_bugwatch",
+                title="Show bugs that need to be forwarded to an upstream bug"
+                      "tracker"),
+            SimpleTerm(
+                "hide_upstream",
+                title="Show bugs that are not known to affect upstream"),
+            SimpleTerm(
+                "resolved_upstream",
+                title="Show bugs that are resolved upstream"),
+            SimpleTerm(
+                "open_upstream",
+                title="Show bugs that are open upstream"),
+                ]
+        return SimpleVocabulary(terms)
+    
+
 
 class IBugTaskSearchBase(Interface):
     """The basic search controls."""
@@ -283,9 +312,7 @@ class IBugTaskSearchBase(Interface):
     tag = List(title=_("Tag"), value_type=Tag(), required=False)
     status_upstream = List(
         title=_('Status Upstream'),
-        value_type=Choice(
-            title=_('Status Upstream'), required=False,
-            vocabulary="AdvancedBugTaskUpstreamStatus"),
+        value_type=Choice(source=AdvancedBugTaskUpstreamStatusFactory()),
         required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)

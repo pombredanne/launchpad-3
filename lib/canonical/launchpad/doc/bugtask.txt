@@ -39,7 +39,7 @@ to access those other objects:
     >>> bugset = getUtility(IBugSet)
     >>> personset = getUtility(IPersonSet)
     >>> bug_one = bugset.get(1)
-    >>> sabdfl = personset.get(1)
+    >>> sabdfl = personset.getByEmail('mark@hbd.com')
 
 Next, we need to grab some values to provide for importance and status.
 
@@ -210,7 +210,7 @@ is not marked private. So, as an anonymous user, we can edit anything:
       ...
     Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
 
-    >>> sample_person = personset.get(12)
+    >>> sample_person = personset.getByEmail('test@canonical.com')
     >>> distro_series_task.transitionToAssignee(sample_person)
     Traceback (most recent call last):
       ...
@@ -444,7 +444,7 @@ require extra privileges.)
 
 2. Assignee
 
-    >>> no_priv = personset.getByName("no-priv")
+    >>> no_priv = personset.getByEmail('no-priv@canonical.com')
 
     >>> generic_alsa_utils_task.assignee is None
     True
@@ -678,7 +678,7 @@ entitled _Privacy and Team Awareness_):
 
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
 
-    >>> ubuntu_team = personset.get(17)
+    >>> ubuntu_team = personset.getByEmail('support@ubuntu.com')
     >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(
     ...     ubuntu_team)
 
@@ -723,7 +723,7 @@ results:
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_UNCONFIRMED, STATUS_CONFIRMED),
     ...     orderby="id", user=mr_no_privs)
-    >>> upstream_mozilla = Product.get(4)
+    >>> upstream_mozilla = productset.getByName('firefox')
     >>> bugtasks = upstream_mozilla.searchTasks(params)
     >>> print bugtasks.count()
     3
@@ -761,7 +761,6 @@ Privacy and Team Awareness
 No Privileges Person can't see the private bug, because he's not a subscriber:
 
     >>> login("no-priv@canonical.com")
-    >>> no_priv = personset.getByName("no-priv")
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_UNCONFIRMED, STATUS_CONFIRMED), user=no_priv)
     >>> firefox_bugtasks = firefox.searchTasks(params)
