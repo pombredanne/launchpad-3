@@ -46,8 +46,10 @@ If we instead pick a new email address, we can register an account:
 
     >>> browser.getControl('email address?').value = 'new-user@example.com'
     >>> browser.getControl('Continue').click()
-    >>> print browser.contents
-    Check your email
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> print soup.find('h2').renderContents()
+    Registration mail sent
 
 The user would then check their email, and find a message:
 
@@ -61,7 +63,7 @@ The user would then check their email, and find a message:
     bounces@canonical.com
     >>> print to_addrs
     ['new-user@example.com']
-    >>> print msg.get_payload()
+    >>> print msg.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hello!
     <BLANKLINE>
     Thank you for registering at Launchpad. To complete your registration,

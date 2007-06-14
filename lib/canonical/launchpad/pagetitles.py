@@ -513,6 +513,8 @@ launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 launchpadstatisticset_index = 'Launchpad statistics'
 
+loginservice_email_sent = 'Launchpad Login Service - Email sent'
+
 def loginservice_authorize(context, view):
     return 'Authenticate to %s' % view.relying_party_title
 
