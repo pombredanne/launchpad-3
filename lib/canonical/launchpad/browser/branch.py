@@ -418,7 +418,7 @@ class DecoratedSubscription:
 
 
 class BranchSubscriptionsView(LaunchpadView):
-    """The view is used for the branch subscriptions portlet.
+    """The view for the branch subscriptions portlet.
 
     The view is used to provide a decorated list of branch subscriptions
     in order to provide links to be able to edit the subscriptions
@@ -428,7 +428,7 @@ class BranchSubscriptionsView(LaunchpadView):
     def isEditable(self, subscription):
         """A subscription is editable by members of the subscribed team.
 
-        Launchpad Admins are special, and can edit anyones subscription.
+        Launchpad Admins are special, and can edit anyone's subscription.
         """
         # We don't want to say editable if the logged in user
         # is the same as the person of the subscription.

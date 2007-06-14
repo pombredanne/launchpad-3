@@ -217,8 +217,11 @@ class Branch(SQLBase):
         """See IBranch."""
         recipients = NotificationRecipientSet()
         for subscription in self.subscriptions:
-            # Not using the header, but there is no default value.
-            recipients.add(subscription.person, subscription, None)
+            if subscription.person.isTeam():
+                rationale = 'Subscriber @%s' % subscription.person.name
+            else:
+                rationale = 'Subscriber'
+            recipients.add(subscription.person, subscription, rationale)
         return recipients
 
     def getScannerData(self):

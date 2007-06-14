@@ -138,9 +138,9 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     def subscribe_action(self, action, data):
         """Subscribe the specified user to the branch.
 
-        The user must be a member of a team in order to subscribe
-        that team to the branch.  Again Launchpad Admins are special
-        and they can subscribe any team.
+        The user must be a member of a team in order to subscribe that team to
+        the branch.  Launchpad Admins are special and they can subscribe any
+        team.
         """
         notification_level = data['notification_level']
         max_diff_lines = self.optional_max_diff_lines(
@@ -176,7 +176,7 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
 
 
 class BranchSubscriptionEditView(LaunchpadEditFormView):
-    """View is used to edit branch subscriptions.
+    """The view for editting branch subscriptions.
 
     Used when traversed to the branch subscription itself rather than
     through the branch action item to edit the user's own subscription.

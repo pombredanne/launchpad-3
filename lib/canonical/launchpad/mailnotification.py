@@ -1766,12 +1766,10 @@ def email_branch_modified_notifications(branch, to_addresses,
         'branch_url': canonical_url(branch),
          }
     for address in to_addresses:
-        subscription, ignored = recipients.getReason(address)
+        subscription, rationale = recipients.getReason(address)
         if subscription.person.isTeam():
-            rationale = 'Subscriber @%s' % subscription.person.name
             params['unsubscribe_url'] = canonical_url(subscription)
         else:
-            rationale = 'Subscriber'
             params['unsubscribe_url'] = (
                 canonical_url(branch) + '/+edit-subscription')
         headers['X-Launchpad-Message-Rationale'] = rationale
