@@ -5,6 +5,11 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
+      <div style="float: right">
+        <img src="/@@/locked-large" title="Private"
+             tal:condition="context/private" />
+      </div>
+      <h1>&#8220;<tal:branch replace="context/displayname" />&#8221; branch</h1>
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -14,8 +19,6 @@
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
-
-  <h1>&#8220;<tal:branch replace="context/displayname" />&#8221; branch</h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
