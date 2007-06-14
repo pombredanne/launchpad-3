@@ -1,58 +1,59 @@
-# list all team members: name, preferred email address
-# Copyright (C) 2005, 2006, 2007 Canonical Software Ltd.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-import sys
+"""List all team members: name, preferred email address."""
+
+__metaclass__ = type
+__all__ = ['process_team']
 
 from zope.component import getUtility
 
 from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import IPersonSet
 
-################################################################################
+output_templates = {
+   'simple': '%(name)s, %(email)s',
+   'email': '%(email)s',
+   'full': '%(teamname)s|%(id)s|%(name)s|%(email)s|%(displayname)s|%(ubuntite)s'
+   }
 
-class NoSuchTeamError(Exception): pass
 
-def process_team(teamname, display_option=False):
+class NoSuchTeamError(Exception): 
+    """Used if non-existent team name is specified."""
+    pass
+
+def process_team(teamname, display_option='simple'):
     output = []
     people = getUtility(IPersonSet)
     memberset = people.getByName(teamname)
     if memberset == None:
         raise NoSuchTeamError
 
-    if not display_option:
-        for member in memberset.allmembers:
-            if member.preferredemail is not None:
-                email = member.preferredemail.email
-            else:
-                email = '--none--'
-            output.append('%s, %s' % (member.name, email))
-        return sorted(output)
-    elif display_option == 'email':
-        for member in memberset.allmembers:
-            if member.preferredemail:
-                output.append(member.preferredemail.email)
-            for email in member.validatedemails:
-                output.append(email.email)
-        return sorted(output)
-    elif display_option == 'full':
-        for member in memberset.allmembers:
-            prefmail = member.preferredemail
-            if prefmail is not None:
-                email = prefmail.email
-            else:
-                email = '--none--'
-            if member.displayname:
-                displayname = member.displayname.encode("ascii", "replace")
-            else:
-                displayname = ""
+    for member in memberset.allmembers:
+        # Email
+        if member.preferredemail is not None:
+            email = member.preferredemail.email
+        else:
+            email = '--none--'
+        # Ubuntite
+        if member.signedcocs:
+            for i in member.signedcocs:
+                if i.active:
+                    ubuntite = "yes"
+                    break
+        else:
             ubuntite = "no"
-            if member.signedcocs:
-                for i in member.signedcocs:
-                    if i.active:
-                        ubuntite = "yes"
-                        break
-            else:
-                ubuntite = "no"
-            output.append('%s|%s|%s|%s|%s|%s' % (teamname, member.id, member.name, email,
-                                         displayname, ubuntite))
-        return sorted(output)
+        params = dict(
+            email=email, 
+            name=member.name,
+            teamname=teamname,
+            id=member.id,
+            displayname=member.displayname,
+            ubuntite=ubuntite
+            )
+        output.append(output_templates[display_option] % params)
+    # If we're only looking at email, remove --none-- entries
+    # as we're only interested in emails
+    if display_option == 'email':
+        output = [x for x in output if x != '--none--']
+    return sorted(output)
+

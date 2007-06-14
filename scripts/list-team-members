@@ -1,6 +1,8 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
+
 import logging
 import sys
 
@@ -20,28 +22,23 @@ class ListTeamMembersScript(LaunchpadScript):
     loglevel = logging.INFO
 
     def add_my_options(self):
-        self.parser.add_option('-e', '--email-only', metavar='EMAILONLY',
-                               action='store',
-                               help='Only print email addresses',
-                               type='string', dest='emailonly', default=None)
-        self.parser.add_option('-f', '--full-details', metavar='FULLDETAILS',
-                               action='store',
-                               help='Print full details',
-                               type='string', dest='fulldetails', default=None)
+        self.parser.set_defaults(format=None)
+        self.parser.add_option(
+            '-e', '--email-only', action='store_const', const='email',
+            help='Only print email addresses', dest='format')
+        self.parser.add_option(
+            '-f', '--full-details', action='store_const', const='full',
+            help='Print full details', dest='format')
 
     def main(self):
 
-        if self.options.emailonly:
-            display_option = 'email'
-            teamnames = sys.argv[2:]
-        elif self.options.fulldetails:
-            display_option = 'full'
-            teamnames = sys.argv[2:]
-        else:
-            display_option = False
-            teamnames = sys.argv[1:]
+        display_option = self.options.format
+        if display_option is None:
+            display_option = 'simple'
+        teamnames = self.args
 
-        if not teamnames: self.parser.error('No team specified')
+        if not teamnames:
+            self.parser.error('No team specified')
 
         emails = []
         for teamname in teamnames:
@@ -49,7 +46,7 @@ class ListTeamMembersScript(LaunchpadScript):
                 emails.extend(process_team(teamname, display_option))
             except NoSuchTeamError:
                 print "Error, no such team: %s" % teamname
-                sys.exit(1)
+                return 1
         print "\n".join(sorted(list(set(emails))))
         return 0
 
