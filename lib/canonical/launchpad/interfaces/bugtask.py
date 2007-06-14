@@ -199,7 +199,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         :new_status: new status from `BugTaskStatus`
         :user: the user requesting the change
 
-        The user must be a bug contact or the owner of the project.
+        Some status transitions, e.g. Triaged, require that the user
+        be a bug contact or the owner of the project.
         """
 
     def transitionToStatus(new_status, user):
@@ -211,6 +212,9 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         For certain statuses, e.g. Confirmed, other actions will
         happen, like recording the date when the task enters this
         status.
+
+        Some status transitions require extra conditions to be met.
+        See `canTransitionToStatus` for more details.
         """
 
     def transitionToAssignee(assignee):
