@@ -1,0 +1,31 @@
+#! /bin/bash
+
+SOURCEDEPS="~/canonical/lp-sourcedeps/sourcecode"
+
+# Force tilde expansion
+SOURCEDEPS=$(eval echo ${SOURCEDEPS})
+
+DEVPAD="devpad.canonical.com"
+ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"
+RSYNCOPTIONS="-avp --partial --progress --delete"
+
+# Make sure we have an ssh key primed
+ssh-add -l
+if [ $? -gt 0 ]; then ssh-add; fi
+
+if [ ! -d $SOURCEDEPS ]; then mkdir -p $SOURCEDEPS; fi
+
+rsync $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $SOURCEDEPS/
+
+cd ~/canonical/lp-branches
+for branch in *; do
+  cd $branch
+  echo "Updating sourcecode dependencies for ${branch}"
+  utilities/link-external-sourcecode.sh ../../lp-sourcedeps
+  cd ..
+done
+
+cd ~/canonical/lp-branches/trunk
+bzr pull
+make
+
