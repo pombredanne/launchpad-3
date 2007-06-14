@@ -2,10 +2,13 @@
 
 Question messages are plain text. They are formated as HTML for web
 pages. Many messages originate from emails where unwanted or
-unescessay content is included.
+unescessay content is included. Note: This set of tests is generally
+the same rules as xx-bug-comments-truncated.txt; changes here may
+require changes to that test.
 
 Let's have an authenticated user create a message in the style of
-an email post to examine the markup rules.
+an email post to examine the markup rules. This message contains a
+quoted passage, and a signature with an email address in it.
 
     >>> # Note that no-priv does not have permission to create messages.
     >>> browser.addHeader("Authorization", 'Basic test@canonical.com:test')
@@ -32,7 +35,7 @@ an email post to examine the markup rules.
 == Email addresses are only shown to authenticated users ==
 
 Email addresses are visible to authenitcated users. Sample Person is
-authenticated already, how else could he have created the message. 
+authenticated already, how else could he have created the message.
 He will see 'human@somewhere.org'
 
     >>> browser.title.decode('utf-8')
@@ -60,14 +63,14 @@ obfuscated email address.
     Witty signatures rock!
 
 
-== signatures and quoted passages are hidden ==
+== Signatures and quoted passages are hidden ==
 
-The style and script in the browser control the display and behaviour
+The style and script in the user_browser control the display and behaviour
 of content inside tags with the class 'foldable'. The script adds a
 link to toggle the diplay of the foldable text between none and inline.
 
 Signatures are identified by paragraphs with a starting line like '--'.
-The entire content of the paragraph is wrapped by a tag of 'foldable' 
+The entire content of the paragraph is wrapped by a tag of 'foldable'
 class. Continuing the Anon since all users get the same markup, we can
 see
 
@@ -85,7 +88,8 @@ Quoted passages are indentified by lines that start with '>', '|', ':'.
 The lines represents many paragraphs of quoted text, but we mark the
 block of content as a single paragraph. The quoted lines are often
 preceeded by a citation line. Only the quoted lines are wrapped with a
-tag of 'foldable' class, citation lines are always displayed.
+tag of 'foldable' class, citation lines are always displayed. Again
+we can continue with Anon to see the markup.
 
     >>> print text.findAll('p')[-2]
     <p>Somebody said sometime ago:<br />

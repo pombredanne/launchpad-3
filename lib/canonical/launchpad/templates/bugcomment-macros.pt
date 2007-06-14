@@ -29,10 +29,16 @@
     </ul>
 
     <div style="font-family: monospace;"
-      tal:content="structure comment/text_for_display/fmt:text-to-html">
+      tal:condition="view/user"
+      tal:content="structure comment/text_for_display/fmt:email-to-html">
       Comment text.
     </div>
 
+    <div style="font-family: monospace;"
+      tal:condition="not:view/user"
+      tal:content="structure comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
+      Comment text.
+    </div>
     <p tal:condition="comment/was_truncated">
       <a tal:attributes="href comment/fmt:url">Read more...</a>
     </p>
