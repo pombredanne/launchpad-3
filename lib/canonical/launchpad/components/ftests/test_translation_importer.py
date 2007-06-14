@@ -1,5 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-"""Gettext PO importer tests."""
+"""Translation Importer tests."""
 
 __metaclass__ = type
 
@@ -15,8 +15,8 @@ from canonical.lp.dbschema import TranslationFileFormat
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class GettextPoImporterTestCase(unittest.TestCase):
-    """Class test for gettext's .po file imports"""
+class TranslationImporterTestCase(unittest.TestCase):
+    """Class test for translation importer component"""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -77,6 +77,6 @@ class GettextPoImporterTestCase(unittest.TestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(GettextPoImporterTestCase))
+    suite.addTest(unittest.makeSuite(TranslationImporterTestCase))
     return suite
 
