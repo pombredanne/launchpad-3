@@ -246,6 +246,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
             "owner = %s AND product IS NULL AND name = %s"
             % sqlvalues(database.Person.byName('testuser').id,
                         'totally-new-branch'))
+
         self.assertNotEqual(None, branch.mirror_request_time)
         branch.mirror_request_time = None
         LaunchpadZopelessTestSetup().txn.commit()
@@ -253,6 +254,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         # Add a single revision to the local branch.
         tree = WorkingTree.open(self.local_branch.base)
         tree.commit('Empty commit', rev_id='rev2')
+
         # Push the new revision.
         self.push(remote_url)
 

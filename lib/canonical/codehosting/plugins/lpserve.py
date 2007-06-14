@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
+import signal
 import sys
 import xmlrpclib
 
@@ -123,11 +124,14 @@ class cmd_launchpad_server(Command):
 
         lp_server = self.get_lp_server(authserver, user_id, url)
         lp_server.setUp()
+        signal.signal(signal.SIGHUP,
+                      lambda signal, frames: lp_server.tearDown())
         try:
             transport = get_transport(lp_server.get_url())
             smart_server = self.get_smart_server(transport, port, inet)
             self.run_server(smart_server)
         finally:
+            signal.signal(signal.SIGHUP, signal.SIG_DFL)
             lp_server.tearDown()
 
 

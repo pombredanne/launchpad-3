@@ -244,6 +244,11 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         transport.mkdir('~testuser/firefox/baz/.bzr')
         self.assertEqual(set([1]), self.server._dirty_branch_ids)
 
+    def test_read_operation_doesnt_mark_as_dirty(self):
+        transport = get_transport(self.server.get_url())
+        transport.has('~testuser/firefox/baz/hello.txt')
+        self.assertEqual(set([]), self.server._dirty_branch_ids)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

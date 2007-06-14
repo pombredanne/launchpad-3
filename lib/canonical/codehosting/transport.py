@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
            'UntranslatablePath']
 
-
 from bzrlib.errors import BzrError, NoSuchFile, TransportNotPossible
 from bzrlib import urlutils
 from bzrlib.transport import (
@@ -94,6 +93,7 @@ class LaunchpadServer(Server):
         # given the authserver's present API. However, in the future, we will
         # want to get branch information as required.
         self._branches = dict(self._iter_branches())
+        self._is_set_up = False
 
     def dirty(self, virtual_path):
         """Mark the branch containing virtual_path as dirty."""
@@ -233,9 +233,13 @@ class LaunchpadServer(Server):
         self.scheme = 'lp-%d:///' % id(self)
         self._dirty_branch_ids = set()
         register_transport(self.scheme, self._factory)
+        self._is_set_up = True
 
     def tearDown(self):
         """See Server.tearDown."""
+        if not self._is_set_up:
+            return
+        self._is_set_up = False
         while self._dirty_branch_ids:
             self.authserver.requestMirror(self._dirty_branch_ids.pop())
         unregister_transport(self.scheme, self._factory)
@@ -269,7 +273,11 @@ class LaunchpadTransport(Transport):
         :raise NoSuchFile: If the path cannot be translated.
         """
         method = getattr(self.server.backing_transport, methodname)
-        result = method(self._translate_virtual_path(relpath), *args, **kwargs)
+        return method(self._translate_virtual_path(relpath), *args, **kwargs)
+
+    def _writing_call(self, methodname, relpath, *args, **kwargs):
+        """As for _call but mark the branch being written to as dirty."""
+        result = self._call(methodname, relpath, *args, **kwargs)
         self.server.dirty(self._abspath(relpath))
         return result
 
@@ -291,17 +299,17 @@ class LaunchpadTransport(Transport):
         return urlutils.join(self.server.scheme, relpath)
 
     def append_file(self, relpath, f, mode=None):
-        return self._call('append_file', relpath, f, mode)
+        return self._writing_call('append_file', relpath, f, mode)
 
     def clone(self, relpath):
         return LaunchpadTransport(
             self.server, urlutils.join(self.base, relpath))
 
     def delete(self, relpath):
-        return self._call('delete', relpath)
+        return self._writing_call('delete', relpath)
 
     def delete_tree(self, relpath):
-        return self._call('delete_tree', relpath)
+        return self._writing_call('delete_tree', relpath)
 
     def get(self, relpath):
         return self._call('get', relpath)
@@ -324,7 +332,7 @@ class LaunchpadTransport(Transport):
         return self._call('lock_read', relpath)
 
     def lock_write(self, relpath):
-        return self._call('lock_write', relpath)
+        return self._writing_call('lock_write', relpath)
 
     def mkdir(self, relpath, mode=None):
         # If we can't translate the path, then perhaps we are being asked to
@@ -337,15 +345,15 @@ class LaunchpadTransport(Transport):
                              extra=("Can only create .bzr directories "
                                     "directly beneath branch directories."))
         try:
-            return self._call('mkdir', relpath, mode)
+            return self._writing_call('mkdir', relpath, mode)
         except NoSuchFile:
             return self.server.mkdir(self._abspath(relpath))
 
     def put_file(self, relpath, f, mode=None):
-        return self._call('put_file', relpath, f, mode)
+        return self._writing_call('put_file', relpath, f, mode)
 
     def rename(self, rel_from, rel_to):
-        return self._call(
+        return self._writing_call(
             'rename', rel_from, self._translate_virtual_path(rel_to))
 
     def rmdir(self, relpath):
@@ -353,7 +361,7 @@ class LaunchpadTransport(Transport):
         path_segments = path = virtual_path.lstrip('/').split('/')
         if len(path_segments) <= 3:
             raise NoSuchFile(virtual_path)
-        return self._call('rmdir', relpath)
+        return self._writing_call('rmdir', relpath)
 
     def stat(self, relpath):
         return self._call('stat', relpath)
