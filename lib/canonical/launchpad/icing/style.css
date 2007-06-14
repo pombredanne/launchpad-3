@@ -1134,6 +1134,8 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 .importance.UNDECIDED {color: #999;}
 .status :link, .importance :link {color: inherit; text-decoration: none;}
 
+#bug-description {font-family: monospace;}
+
 /* --- Blueprints --- */
 
 body.tab-specifications #applications {

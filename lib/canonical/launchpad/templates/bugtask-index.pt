@@ -144,7 +144,7 @@
              href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
     </div>
 
-    <div id="bug-description" style="font-family: monospace;"
+    <div id="bug-description"
          tal:content="structure context/bug/description/fmt:text-to-html" />
 
   </div>
@@ -175,35 +175,6 @@
   <p tal:condition="view/userCanMentor">
     &raquo; <a href="+mentor">Offer to mentor someone fixing this bug</a>
   </p>
-
-  <tal:branches define="bug_branches context/bug/bug_branches"
-              condition="bug_branches">
-    <p tal:condition="context/bug/private"
-         class="warning message">
-      This bug is private, so avoid adding public branches here.
-    </p>
-
-    <table class="listing">
-      <thead>
-        <tr>
-          <th>Related Branch</th>
-          <th>Developer</th>
-          <th>Revision Hint</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="bug_branch bug_branches">
-          <td>
-            <a href="#"
-               tal:attributes="href string:${bug_branch/fmt:url}/+status"
-               tal:content="bug_branch/status/title">Under Development</a>
-          </td>
-          <td tal:content="bug_branch/branch/owner/displayname"></td>
-          <td tal:content="bug_branch/revision_hint"></td>
-        </tr>
-      </tbody>
-    </table>
-  </tal:branches>
 
   <tal:comment repeat="comment view/getBugCommentsForDisplay">
     <metal:comment-box

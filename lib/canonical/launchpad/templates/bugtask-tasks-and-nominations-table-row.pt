@@ -22,12 +22,11 @@
       </tal:not-conjoined-task>
     </td>
     <td tal:condition="not:indent_task">
-      <img src="/@@/distribution" alt=""
-           tal:condition="view/shouldShowDistributionIcon" />
-      <img src="/@@/package-source" alt=""
-           tal:condition="view/shouldShowPackageIcon" />
-      <img src="/@@/product" alt=""
-           tal:condition="view/shouldShowProductIcon" />
+      <img
+        tal:condition="view/bugTaskIcon"
+        alt=""
+        tal:attributes="src view/bugTaskIcon"
+      />
       <a
         tal:attributes="href context/target/fmt:url"
         tal:content="context/bugtargetdisplayname"

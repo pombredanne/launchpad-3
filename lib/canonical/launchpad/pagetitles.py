@@ -40,7 +40,8 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMaloneApplication, INullBugTask, IPerson)
+    ILaunchBag, IMaloneApplication, INullBugTask, IPerson,
+    IStructuralObjectPresentation)
 from canonical.launchpad.webapp import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -49,14 +50,9 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 class BugTaskPageTitle:
     def __call__(self, context, view):
-        # XXX 20070417 mpt: This code is almost identical to
-        # BugTaskSOP.getMainHeading, and should perhaps be factored out.
-        if INullBugTask.providedBy(context):
-            return smartquote('Bug #%s is not in %s: "%s"') % (
-                context.bug.id, context.bugtargetdisplayname, context.bug.title)
-        else:
-            return smartquote('Bug #%s in %s: "%s"') % (
-                context.bug.id, context.bugtargetdisplayname, context.bug.title)
+        return smartquote('%s: "%s"') % (
+            IStructuralObjectPresentation(context).getMainHeading(),
+            context.bug.title)
 
 
 class SubstitutionHelper:

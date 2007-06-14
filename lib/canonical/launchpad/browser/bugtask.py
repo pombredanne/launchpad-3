@@ -1968,10 +1968,8 @@ class BugTaskTableRowView(LaunchpadView):
         not a duplicate. It is independent of whether they can *change* the
         status; you need to expand the details to see any milestone set.
         """
-        if (self.context.conjoined_master or self.context.bug.duplicateof):
-            return False
-        else:
-            return True
+        return not (self.context.conjoined_master or
+                    self.context.bug.duplicateof)
 
     def getTaskRowCSSClass(self):
         """The appropriate CSS class for the row in the Affects table.
@@ -2021,25 +2019,17 @@ class BugTaskTableRowView(LaunchpadView):
         """Get the conjoined master's name for displaying."""
         return self._getSeriesTargetNameHelper(self.context.conjoined_master)
 
-    def shouldShowPackageIcon(self):
-        """Should we show the package icon?
-        
-        The package icon should be shown only for generic distribution
-        bugtasks that have a sourcepackagename.
-        """
-        return (
-            IDistroBugTask.providedBy(self.context) and
-            self.context.sourcepackagename)
-
-    def shouldShowDistributionIcon(self):
-        """Should we show the distribution icon?"""
-        return (
-            IDistroBugTask.providedBy(self.context) and
-            not self.context.sourcepackagename)
-        
-    def shouldShowProductIcon(self):
-        """Should we show the product icon?"""
-        return IUpstreamBugTask.providedBy(self.context)
+    def bugTaskIcon(self):
+        """Which icon should be shown for the task, if any?"""
+        if IDistroBugTask.providedBy(self.context):
+            if self.context.sourcepackagename:
+                return "/@@/package-source"
+            else:
+                return "/@@/distribution"
+        elif IUpstreamBugTask.providedBy(self.context):
+            return "/@@/product"
+        else:
+            return None
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
