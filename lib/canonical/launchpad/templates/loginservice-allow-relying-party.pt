@@ -8,11 +8,20 @@
     <div metal:fill-slot="main">
       <h1>Launchpad Login Service</h1>
 
-      <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
-          <strong>Warning:</strong>
-          <em tal:content="view/openid_request/trust_root" /> does not look
-          like a trustworthy URL.
-      </p>
+      <table width="100%" tal:define="rp_title view/relying_party_title">
+        <tr>
+          <td width="50%">
+            <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
+              <strong>Warning:</strong>
+              <em tal:content="view/openid_request/trust_root" /> does not look
+              like a trustworthy URL.
+            </p>
+            <h2 tal:content="rp_title">Ubuntu Shop</h2>
+
+            <p>To continue with <tal:title replace="rp_title" />, you
+            need to sign in.</p>
+          </td>
+          <td width="50%">
 
       <h3>Sign in as <span tal:replace="view/user/displayname" /></h3>
 
@@ -25,7 +34,7 @@
 
         <br />
         <div>
-          <h4>These details will be sent to the Ubuntu shop</h4>
+          <h4>These details will be sent to <tal:title replace="rp_title" /></h4>
           <ul>
             <li tal:content="view/user/displayname">
               My name
@@ -43,6 +52,8 @@
         </div>
 
       </form>
+
+      </td></tr></table>
 
     </div>
   </body>

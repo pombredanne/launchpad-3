@@ -25,7 +25,6 @@ from openid.server.server import CheckIDRequest, ENCODE_URL, Server
 from openid.server.trustroot import TrustRoot
 from openid import oidutil
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.lp.dbschema import LoginTokenType
@@ -58,11 +57,6 @@ IDENTIFIER_SELECT_URI = 'http://specs.openid.net/auth/2.0/identifier_select'
 def null_log(message, level=0):
     pass
 oidutil.log = null_log
-
-
-class IOpenIdView(Interface):
-    """Marker interface"""
-    pass
 
 
 class OpenIDMixinView:
@@ -214,8 +208,6 @@ class LoginServiceResetPasswordView(OpenIDMixinView, ResetPasswordView):
 
 
 class OpenIdView(OpenIDMixinView, LaunchpadView):
-    implements(IOpenIdView)
-
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")
     invalid_identity_template = ViewPageTemplateFile(
         "../templates/openid-invalid-identity.pt")
@@ -249,9 +241,7 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
         elif self.openid_request.mode == 'checkid_setup':
             # If we can not possibly handle this identity URL, show an
             # error page telling the user.
-            if not (self.openid_request.identity == IDENTIFIER_SELECT_URI or
-                    self.openid_request.identity.startswith(
-                        self.identity_url_prefix)):
+            if not self.canHandleIdentity():
                 return self.invalid_identity_template()
 
             if self.user is None:
@@ -302,6 +292,12 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
         return LoginServiceAuthorizeView(
             self.context, self.request, self.nonce)()
 
+    def canHandleIdentity(self):
+        """Returns True if the identity URL is supported by the server."""
+        identity = self.openid_request.identity
+        return (identity == IDENTIFIER_SELECT_URI or
+                identity.startswith(self.identity_url_prefix))
+
     def isIdentityOwner(self):
         """Returns True if we are logged in as the owner of the identity."""
         assert self.user is not None, "user should be logged in by now."
@@ -320,6 +316,28 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
 
         return auth_set.isAuthorized(
                 self.user, self.openid_request.trust_root, client_id)
+
+
+# Information about known trust roots
+# XXX: 2007-06-14 jamesh
+# Include more information about the trust roots, such as an icon.
+# Should we maintain this data elsewhere?
+KNOWN_TRUST_ROOTS = {
+    'http://localhost.localdomain:8001/':
+        dict(title="OpenID Consumer Example"),
+    'http://pdl-dev.co.uk':
+        dict(title="PDL Demo OSCommerce shop"),
+    'https://shop.ubuntu.com/':
+        dict(title="Ubuntu Shop"),
+    'https://shipit.ubuntu.com/':
+        dict(title="Ubuntu Shipit"),
+    'https://shipit.kubuntu.org/':
+        dict(title="Kubuntu Shipit"),
+    'https://shipit.edubuntu.org/':
+        dict(title="Edubuntu Shipit"),
+    'https://wiki.ubuntu.com/':
+        dict(title="Ubuntu Wiki"),
+    }
 
 
 class LoginServiceBaseView(OpenIDMixinView, LaunchpadFormView):
@@ -345,6 +363,15 @@ class LoginServiceBaseView(OpenIDMixinView, LaunchpadFormView):
 
     def trashRequest(self):
         self.trashRequestInSession('nonce' + self.nonce)
+
+    @property
+    def relying_party_title(self):
+        assert self.openid_request is not None
+        rp_info = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root)
+        if rp_info is not None:
+            return rp_info['title']
+        else:
+            return self.openid_request.trust_root
 
     def isSaneTrustRoot(self):
         assert self.openid_request is not None
