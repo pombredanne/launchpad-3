@@ -502,7 +502,7 @@ class PackageUpload(SQLBase):
 
         # Unapproved uploads coming from an insecure policy only sends
         # an acceptance message.
-        if self.status != PackageUploadStatus.ACCEPTED:
+        if self.status == PackageUploadStatus.UNAPPROVED:
             # Only send an acceptance message.
             interpolations["SUMMARY"] += (
                 "\nThis upload awaits approval by a distro manager\n")
@@ -512,7 +512,7 @@ class PackageUpload(SQLBase):
         # Fallback, all the rest coming from insecure, secure and sync
         # policies should send an acceptance and an announcement message.
         self._sendMail(accepted_template % interpolations)
-        if announce_list: 
+        if announce_list:
             self._sendMail(announce_template % interpolations)
         return
 
