@@ -51,12 +51,6 @@ If the url does not contain any old statuses
 rewrite_old_bugtask_status_query_string returns the original query
 string unchanged.
 
-    >>> query_string_rewritten_again = (
+    >>> query_string_rewritten == (
     ...     rewrite_old_bugtask_status_query_string(query_string_rewritten))
-    >>> print query_string_rewritten_again.split('&')
-    ['freddy=krueger',
-     'field.status%3Alist=New',
-     'field.status%3Alist=Incomplete',
-     'field.status%3Alist=Invalid',
-     'field.status%3Alist=Fix+Committed',
-     'sid=nancy']
+    True

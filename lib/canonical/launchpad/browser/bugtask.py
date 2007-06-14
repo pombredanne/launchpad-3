@@ -183,7 +183,7 @@ OLD_BUGTASK_STATUS_MAP = {
 
 
 def rewrite_old_bugtask_status_query_string(query_string):
-    """Get query string with old status names replaced with new.
+    """Return a query string with old status names replaced with new.
 
     If an old status string has been used in the query, construct a
     corrected query string for the search, else return the original
@@ -1327,7 +1327,7 @@ class BugTaskSearchListingView(LaunchpadView):
         if query_string:
             query_string_rewritten = (
                 rewrite_old_bugtask_status_query_string(query_string))
-            if not query_string_rewritten == query_string:
+            if query_string_rewritten != query_string:
                 redirect_uri = URI(self.request.getURL()).replace(
                     query=query_string_rewritten)
                 self.request.response.redirect(str(redirect_uri), status=301)
