@@ -142,6 +142,11 @@
     <allow interface="canonical.launchpad.interfaces.IBranchSet" />
   </content>
 
+  <!-- BranchVisibilityPolicy -->
+  <content class="canonical.launchpad.database.BranchVisibilityPolicyItem">
+    <allow interface="canonical.launchpad.interfaces.IBranchVisibilityPolicyItem" />
+  </content>
+
   <!-- BranchDelta -->
   <content class="canonical.launchpad.components.branch.BranchDelta">
     <allow interface="canonical.launchpad.interfaces.IBranchDelta" />

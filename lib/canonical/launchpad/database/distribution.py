@@ -68,7 +68,7 @@ from canonical.launchpad.interfaces import (
     get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH,\
     IHasLogo, IHasMugshot, IHasIcon)
 
-from sourcerer.deb.version import Version
+from canonical.archivepublisher.debversion import Version
 
 from canonical.launchpad.validators.name import valid_name, sanitize_name
 
@@ -535,7 +535,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             unsupported_target = self
         else:
             unsupported_target = None
-            
+
         return QuestionTargetSearch(
             distribution=self,
             search_text=search_text, status=status,
