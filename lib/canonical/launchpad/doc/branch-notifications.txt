@@ -162,12 +162,12 @@ NotificationRecipientSet is used to remember why the email recipients
 are getting the emails.  The branch object adds all the branch
 subscriptions to the NotificationRecipientSet and sets the reason to be
 the subscription itself.  The subscription itself is passed through as
-the reason as not every subscriber gets every type of email.  The
+the reason, since not every subscriber gets every type of email.  The
 filtering of the subscriptions are done in the notification handlers.
-The header value is also set and sent as part of the email in the email
-header X-Launchpad-Message-Rationale.  The X-Launchpad-Message-Rationale
-header is added to email sent by launchpad to allow client email
-filtering.
+The header value is also set and sent as part of the message in the
+email header X-Launchpad-Message-Rationale.  The
+X-Launchpad-Message-Rationale header is added to email sent by launchpad
+to allow email filtering.
 
     >>> recipients = branch.getNotificationRecipients()
     >>> interested_levels = (

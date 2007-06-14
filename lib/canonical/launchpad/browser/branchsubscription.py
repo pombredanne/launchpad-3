@@ -190,7 +190,7 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
         self.person = self.context.person
         LaunchpadEditFormView.initialize(self)
 
-    @action("Unsubscribe", name="unsubscribe_action")
+    @action("Unsubscribe", name="unsubscribe")
     def unsubscribe_action(self, action, data):
         """Unsubscribe the team from the branch."""
         self.branch.unsubscribe(self.person)
@@ -198,7 +198,7 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
             "%s has been unsubscribed from this branch."
             % self.person.displayname)
 
-    @action("Change", name="change_action")
+    @action("Change", name="change")
     def change_action(self, action, data):
         """Update the branch subscription."""
         self.updateContextFromData(data)
