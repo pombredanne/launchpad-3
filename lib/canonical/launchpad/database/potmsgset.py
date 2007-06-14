@@ -10,14 +10,13 @@ from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
 from canonical.launchpad.interfaces import (
-    IPOTMsgSet, ILanguageSet, BrokenTextError, TranslationConstants
-    )
+    BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
+    TranslationConstants)
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.posubmission import POSubmission
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 class POTMsgSet(SQLBase):
@@ -58,7 +57,9 @@ class POTMsgSet(SQLBase):
     @property
     def singular_text(self):
         """See IPOTMsgSet."""
-        if self.potemplate.source_file_format == TranslationFileFormat.XPI:
+        translation_importer = getUtility(ITranslationImporter)
+        if translation_importer.hasAlternativeMsgID(
+            self.potemplate.source_file_format):
             # This format uses English translations as the way to store the
             # singular_text.
             pomsgset = self.getPOMsgSet('en')
@@ -67,6 +68,7 @@ class POTMsgSet(SQLBase):
                     TranslationConstants.SINGULAR_FORM] is not None):
                 return pomsgset.active_texts[
                     TranslationConstants.SINGULAR_FORM]
+
         # By default, singular text is the msgid.
         return self.msgid
 

@@ -391,6 +391,13 @@ class MozillaXpiImporter:
         return TranslationFileFormat.XPI
 
     @property
+    def content_type(self):
+        """See ITranslationFormatImporter."""
+        # using "application/x-xpinstall" would trigger installation in
+        # firefox.
+        return 'application/zip'
+
+    @property
     def file_extensions(self):
         """See ITranslationFormatImporter."""
         return ['.xpi']

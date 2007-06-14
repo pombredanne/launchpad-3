@@ -21,8 +21,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
-    ITranslationImportQueueEntry, ITranslationImportQueue, IPOFileSet,
-    IPOTemplateSet, ILanguageSet, NotFoundError, IHasTranslationImports)
+    IHasTranslationImports, IPOFileSet, IPOTemplateSet, ITranslationImporter,
+    ITranslationImportQueueEntry, ITranslationImportQueue, ILanguageSet,
+    NotFoundError)
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import RosettaImportStatus
 from canonical.lp.dbschema import TranslationFileFormat
@@ -532,7 +533,7 @@ class TranslationImportQueue:
 
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, pofile=None, format=TranslationFileFormat.PO):
+        potemplate=None, pofile=None, format=None):
         """See ITranslationImportQueue."""
         if ((sourcepackagename is not None or distroseries is not None) and
             productseries is not None):
@@ -550,21 +551,22 @@ class TranslationImportQueue:
         if path is None or path == '':
             raise AssertionError('The path cannot be empty')
 
-        # Upload the file into librarian.
         filename = os.path.basename(path)
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if format is None:
+            # Get it based on the file extension.
+            format = (
+                translation_importer.getTranslationFileFormatByFileExtension(
+                    ext))
+
+        # Upload the file into librarian.
         size = len(content)
         file = StringIO(content)
         client = getUtility(ILibrarianClient)
-        if filename.endswith('.xpi'):
-            # using "application/x-xpinstall" would trigger installation in ff
-            ctype = 'application/zip'
-        else:
-            ctype = 'application/x-po'
+        content_type = translation_importer.getContentTypeByFileExtension(ext)
         alias = client.addFile(
-            name=filename,
-            size=size,
-            file=file,
-            contentType=ctype)
+            name=filename, size=size, file=file, contentType=content_type)
 
         # Check if we got already this request from this user.
         if sourcepackagename is not None:

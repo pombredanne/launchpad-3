@@ -79,6 +79,27 @@ class UnknownTranslationRevisionDate(Exception):
 class ITranslationImporter(Interface):
     """Importer of translation files."""
 
+    file_extensions_with_importers = Attribute(
+        "List of file extension we have imports for.")
+
+    def getContentTypeByFileExtension(file_extension):
+        """Return content type for given file_extension.
+
+        If file_extension cannot be handled, return None.
+        """
+
+    def getTranslationFileFormatByFileExtension(file_extension):
+        """Return the translation file format for given file_extension.
+
+        If file_extension cannot be handled, return None.
+        """
+
+    def hasAlternativeMsgID(file_format):
+        """Whether the given format uses alternative msgid instead of English.
+
+        :arg file_format: a TranslationFileFormat value.
+        """
+
     def importFile(translation_import_queue_entry, logger=None):
         """Convert a translation resource into database objects.
 
@@ -107,6 +128,9 @@ class ITranslationFormatImporter(Interface):
         title=u'The file format of the import.',
         values=TranslationFileFormat.items,
         required=True)
+
+    content_type = Attribute(
+        "Content type string for this file format.")
 
     file_extensions = Attribute(
         "Set of file extensions handlable by this importer.")

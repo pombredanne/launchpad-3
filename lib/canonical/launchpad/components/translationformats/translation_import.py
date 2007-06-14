@@ -85,6 +85,36 @@ class TranslationImporter:
 
         return file_extensions
 
+    def getContentTypeByFileExtension(self, file_extension):
+        """See ITranslationImporter."""
+        for importer_class in importers.itervalues():
+            importer = importer_class()
+            if importer.canHandleFileExtension(file_extension):
+                return importer.content_type
+
+        # We cannot handle that file_extension so we don't know its content
+        # type.
+        return None
+
+    def getTranslationFileFormatByFileExtension(self, file_extension):
+        """See ITranslationImporter."""
+        for importer_class in importers.itervalues():
+            importer = importer_class()
+            if importer.canHandleFileExtension(file_extension):
+                return importer.format
+
+        # We cannot handle that file_extension so we don't know its file
+        # format.
+        return None
+
+    def hasAlternativeMsgID(self, file_format):
+        """See ITranslationImporter."""
+        importer_class = importers.get(file_format, None)
+        assert importer_class is not None, (
+            "We don't know how to handle format %s" % file_format.name)
+
+        return importer_class().has_alternative_msgid
+
     def importFile(self, translation_import_queue_entry, logger=None):
         """See ITranslationImporter."""
         assert translation_import_queue_entry is not None, (

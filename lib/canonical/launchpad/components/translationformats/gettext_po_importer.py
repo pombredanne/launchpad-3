@@ -38,6 +38,11 @@ class GettextPoImporter:
         return TranslationFileFormat.PO
 
     @property
+    def content_type(self):
+        """See ITranslationFormatImporter."""
+        return 'application/x-po'
+
+    @property
     def file_extensions(self):
         """See ITranslationFormatImporter."""
         return ['.po', '.pot']
