@@ -132,6 +132,7 @@ class FakeLaunchpad:
         self.createBranch(1, 1, 'qux')
         self.createBranch(1, '', 'random')
         self.createBranch(2, 1, 'qux')
+        self._request_mirror_log = []
 
     def _lookup(self, item_set, item_id):
         row = dict(item_set[item_id])
@@ -193,6 +194,9 @@ class FakeLaunchpad:
                 result.append(
                     (product, self._product_set[product]['name'], branches))
         return result
+
+    def requestMirror(self, branchID):
+        self._request_mirror_log.append(branchID)
 
 
 class CodeHostingTestProviderAdapter:

@@ -95,6 +95,11 @@ class LaunchpadServer(Server):
         # want to get branch information as required.
         self._branches = dict(self._iter_branches())
 
+    def dirty(self, virtual_path):
+        """Mark the branch containing virtual_path as dirty."""
+        branch_id, path = self._get_branch_path(virtual_path)
+        self._dirty_branch_ids.add(branch_id)
+
     def _iter_branches(self):
         for team_dict in self.user_dict['teams']:
             products = self.authserver.getBranchesForUser(team_dict['id'])
@@ -171,6 +176,21 @@ class LaunchpadServer(Server):
         self._branches[(user, product, branch)] = branch_id
         return branch_id
 
+    def _get_branch_path(self, virtual_path):
+        # We can safely pad with '' because we can guarantee that no product or
+        # branch name is the empty string. (Mapping '' to '+junk' happens
+        # in _iter_branches). 'user' is checked later.
+        user, product, branch, path = split_with_padding(
+            virtual_path.lstrip('/'), '/', 4, padding='')
+        if not user.startswith('~'):
+            raise TransportNotPossible(
+                'Path must start with user or team directory: %r' % (user,))
+        user = user[1:]
+        try:
+            return self._branches[(user, product, branch)], path
+        except KeyError:
+            raise UntranslatablePath(path=virtual_path, user=self.user_name)
+
     def translate_virtual_path(self, virtual_path):
         """Translate an absolute virtual path into the real path on the backing
         transport.
@@ -188,20 +208,7 @@ class LaunchpadServer(Server):
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.
-
-        # We can safely pad with '' because we can guarantee that no product or
-        # branch name is the empty string. (Mapping '' to '+junk' happens
-        # in _iter_branches). 'user' is checked later.
-        user, product, branch, path = split_with_padding(
-            virtual_path.lstrip('/'), '/', 4, padding='')
-        if not user.startswith('~'):
-            raise TransportNotPossible(
-                'Path must start with user or team directory: %r' % (user,))
-        user = user[1:]
-        try:
-            branch_id = self._branches[(user, product, branch)]
-        except KeyError:
-            raise UntranslatablePath(path=virtual_path, user=self.user_name)
+        branch_id, path = self._get_branch_path(virtual_path)
         return '/'.join([branch_id_to_path(branch_id), path])
 
     def _factory(self, url):
@@ -224,10 +231,13 @@ class LaunchpadServer(Server):
     def setUp(self):
         """See Server.setUp."""
         self.scheme = 'lp-%d:///' % id(self)
+        self._dirty_branch_ids = set()
         register_transport(self.scheme, self._factory)
 
     def tearDown(self):
         """See Server.tearDown."""
+        while self._dirty_branch_ids:
+            self.authserver.requestMirror(self._dirty_branch_ids.pop())
         unregister_transport(self.scheme, self._factory)
 
 
@@ -259,7 +269,9 @@ class LaunchpadTransport(Transport):
         :raise NoSuchFile: If the path cannot be translated.
         """
         method = getattr(self.server.backing_transport, methodname)
-        return method(self._translate_virtual_path(relpath), *args, **kwargs)
+        result = method(self._translate_virtual_path(relpath), *args, **kwargs)
+        self.server.dirty(self._abspath(relpath))
+        return result
 
     def _translate_virtual_path(self, relpath):
         """Translate a virtual path into a path on the backing transport.
