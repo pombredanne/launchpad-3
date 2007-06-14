@@ -66,7 +66,7 @@ class CodeImportSet:
 
     def get(self, id):
         """See ICodeImportSet."""
-        return CodeImport.selectOneBy(id=id)
+        return CodeImport.get(id)
 
     def getByBranch(self, branch):
         """See ICodeImportSet."""
