@@ -30,31 +30,27 @@ from canonical.archiveuploader.template_messages import (
 from canonical.archiveuploader.utils import (
     safe_fix_maintainer, re_issource, re_isadeb)
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 from canonical.encoding import (
     guess as guess_encoding, ascii_smash)
-from canonical.config import config
-from canonical.lp.dbschema import (
-    PackageUploadStatus, PackageUploadCustomFormat,
-    PackagePublishingPocket, PackagePublishingStatus)
-
+from canonical.launchpad.database.publishing import (
+    SecureSourcePackagePublishingHistory,
+    SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
     IPackageUploadCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError, IPackageUploadQueue,
     QueueBuildAcceptError, IPackageUploadSet, pocketsuffix, IPersonSet,
     ISourcePackageNameSet)
-from canonical.launchpad.database.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.mail import format_address, sendmail
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.lp.dbschema import (
-    PackageUploadStatus, PackageUploadCustomFormat,
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackageUploadStatus, PackageUploadCustomFormat, PackagePublishingPocket,
+    PackagePublishingStatus, SourcePackageFileType)
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -754,7 +750,7 @@ class PackageUploadSource(SQLBase):
             # Multiple DIFFs, DSCs, TARGZs and ORIGs with different contents
             # are a very big problem.
             raise QueueInconsistentStateError(
-                '%s is already published in archive for %s with a different'
+                '%s is already published in archive for %s with a different '
                 'content (%s != %s)' % (
                 filename, self.packageupload.distroseries.name,
                 proposed_sha1, published_sha1))

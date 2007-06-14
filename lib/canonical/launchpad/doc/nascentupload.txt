@@ -883,6 +883,161 @@ Server. We already use this object here for a 'deep-cleanup'.
   >>> local_transaction = ZopelessTransactionManager._installed
   >>> local_transaction.abort()
 
+=== Epoch version conflicts ===
+
+It's know that debian-like archive have deficiency caused by not including
+the *epoched* version in the filenames in pool.
+
+This deficiency makes two different packages to include the same filename:
+
+ * source 'bar' version '1.0-1' uses 'bar_1.0-1.diff.gz'
+ * source 'bar' version 1:1.0-1' also uses 'bar_1.0-1.diff.gz'
+
+If not used carefully 'epochs' can cause published files overwrites in archive.
+
+In Soyuz we try to catch such situations by performing a file lookup in the
+archive against the proposed source files before 'accepting' it.
+
+Even so ...
+
+
+==== Collision in Upload-Time ====
+
+When the 'non-epoched' version is already PENDING publication before
+uploading the candidate, we can detect collisions at upload-time,
+returning a rejection email to the user.
+
+Upload and publish 'non-epoched' version:
+
+  >>> bar_src_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload.process()
+  >>> success = bar_src_upload.do_accept()
+  >>> bar_src_queue_noepoch = bar_src_upload.queue_root
+  >>> bar_src_queue_noepoch.displayversion
+  u'1.0-1'
+  >>> bar_src_queue_noepoch.status.name
+  'NEW'
+  >>> bar_src_queue_noepoch.setAccepted()
+  >>> bar_src_queue_noepoch.realiseUpload()
+  >>> bar_src_queue_noepoch.status.name
+  'DONE'
+
+Upload 'epoched' bar version:
+
+  >>> bar_src_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-1_epoched/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload.process()
+
+  >>> print bar_src_upload.rejection_message
+  MD5 sum of uploaded file does not match existent file in archive
+  Files specified in DSC are broken or missing, skipping package unpack verification.
+
+Cleanup this change and carry on:
+
+  >>> local_transaction.abort()
+
+
+==== Collision in queue DONE =====
+
+When the 'non-epoched' version is at least PENDING publication, we are able to
+identify collision when 'accepting' the new candidate:
+
+Upload 'non-epoched' bar source:
+
+  >>> bar_src_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload.process()
+  >>> success = bar_src_upload.do_accept()
+  >>> bar_src_queue_noepoch = bar_src_upload.queue_root
+  >>> bar_src_queue_noepoch.status.name
+  'NEW'
+
+Upload 'epoched' bar source :
+
+  >>> bar_src_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-1_epoched/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload.process()
+  >>> success = bar_src_upload.do_accept()
+  >>> bar_src_queue_epoch = bar_src_upload.queue_root
+  >>> bar_src_queue_epoch.status.name
+  'NEW'
+
+Accept and Publish 'non-epoched' bar source:
+
+  >>> bar_src_queue_noepoch.displayversion
+  u'1.0-1'
+  >>> bar_src_queue_noepoch.setAccepted()
+  >>> bar_src_queue_noepoch.realiseUpload()
+  >>> bar_src_queue_noepoch.status.name
+  'DONE'
+
+When accepting 'epoched' bar source the collision is detected:
+
+  >>> bar_src_queue_epoch.displayversion
+  u'1:1.0-1'
+  >>> bar_src_queue_epoch.setAccepted()
+  Traceback (most recent call last):
+  ...
+  QueueInconsistentStateError: bar_1.0-1.diff.gz is already published in archive for hoary with a different content (d6791a4ad91b3d765c4dd2fa0ccc55c267362496 != a8984a879e8cde0aee1e984cdd831351d1f3209f)
+
+Cleanup this change and carry on:
+
+  >>> local_transaction.abort()
+
+
+==== Collision in queue NEW ====
+
+Unfortunately the upload system is not able to detect collisions of
+unpublished files.Such situations would happen when both,
+'non-epoched' and 'epoched' sources are accepted in the same batch.
+
+It will be caught in publisher, but it generates an annoying PENDING
+publication record and a warning in the publisher log until the entire
+series get bumped to a higher version in archive.
+
+
+Upload 'non-epoched' bar source:
+
+  >>> bar_src_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload.process()
+  >>> success = bar_src_upload.do_accept()
+  >>> bar_src_queue_noepoch = bar_src_upload.queue_root
+  >>> bar_src_queue_noepoch.status.name
+  'NEW'
+
+Upload 'epoched' bar source:
+
+  >>> bar_src_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-1_epoched/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload.process()
+  >>> success = bar_src_upload.do_accept()
+  >>> bar_src_queue_epoch = bar_src_upload.queue_root
+  >>> bar_src_queue_epoch.status.name
+  'NEW'
+
+Accepting both versions at the same batch will work:
+
+  >>> bar_src_queue_noepoch.displayversion
+  u'1.0-1'
+  >>> bar_src_queue_noepoch.setAccepted()
+
+  >>> bar_src_queue_epoch.displayversion
+  u'1:1.0-1'
+  >>> bar_src_queue_epoch.setAccepted()
+
+
+Cleanup this change and carry on:
+
+  >>> local_transaction.abort()
+
 
 === Publishing ACCEPTED Sources ===
 
