@@ -634,7 +634,7 @@ Lets get a single untranslated POTMsgSet.
   >>> untranslated = list(pofile_changed.getPOTMsgSetUntranslated())[0]
   >>> untranslated is None
   False
-  >>> pomsgset = pofile_changed.getPOMsgSet(untranslated.primemsgid_.msgid)
+  >>> pomsgset = pofile_changed.getPOMsgSet(untranslated.msgid)
   >>> pomsgset is None
   False
 
