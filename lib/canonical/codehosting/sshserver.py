@@ -5,6 +5,7 @@ import os
 
 from twisted.conch import avatar
 from twisted.conch.error import ConchError
+from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
 from twisted.conch.ssh.common import getNS, NS
@@ -22,27 +23,21 @@ from twisted.vfs.pathutils import FileSystem
 from twisted.vfs.adapters import sftp
 
 from canonical.codehosting.bazaarfs import SFTPServerRoot
+from canonical.codehosting.smartserver import launch_smart_server
 
 from zope.interface import implements
 
 
 class SubsystemOnlySession(session.SSHSession, object):
-    """A session adapter that disables every request except request_subsystem"""
-    def __getattribute__(self, name):
-        # Get out the big hammer :)
-        # (This is easier than overriding all the different request_ methods
-        # individually, or writing an ISession adapter to give the same effect.)
-        if name.startswith('request_') and name not in ('request_subsystem',
-                                                        'request_exec'):
-            raise AttributeError(name)
-        return object.__getattribute__(self, name)
+    """Session adapter that corrects a bug in Conch."""
 
     def closeReceived(self):
         # Without this, the client hangs when its finished transferring.
         self.loseConnection()
 
 
-class SFTPOnlyAvatar(avatar.ConchUser):
+class LaunchpadAvatar(avatar.ConchUser):
+
     def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
         # Double-check that we don't get unicode -- directory names on the file
         # system are a sequence of bytes as far as we're concerned.  We don't
@@ -85,7 +80,7 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         that name exists.
 
         This method guarantees repeatable reads: on a particular instance of
-        SFTPOnlyAvatar, fetchProductID will always return the same value for a
+        LaunchpadAvatar, fetchProductID will always return the same value for a
         given productName.
         """
         productID = self._productIDs.get(productName)
@@ -132,6 +127,7 @@ class SFTPOnlyAvatar(avatar.ConchUser):
     def makeFileSystem(self):
         return FileSystem(SFTPServerRoot(self))
 
+
 # XXX This is nasty.  We want a filesystem per SFTP session, not per avatar, so
 # we let the standard adapter grab a per avatar object, and immediately override
 # with the one we want it to use.
@@ -142,8 +138,10 @@ class AdaptFileSystemUserToISFTP(sftp.AdaptFileSystemUserToISFTP):
         self.filesystem = avatar.makeFileSystem()
 
 
-components.registerAdapter(AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
+components.registerAdapter(AdaptFileSystemUserToISFTP, LaunchpadAvatar,
                            filetransfer.ISFTPServer)
+
+components.registerAdapter(launch_smart_server, LaunchpadAvatar, ISession)
 
 
 class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
@@ -153,7 +151,7 @@ class UserDisplayedUnauthorizedLogin(UnauthorizedLogin):
 class Realm:
     implements(IRealm)
 
-    avatarFactory = SFTPOnlyAvatar
+    avatarFactory = LaunchpadAvatar
 
     def __init__(self, homeDirsRoot, authserver):
         self.homeDirsRoot = homeDirsRoot
@@ -162,7 +160,7 @@ class Realm:
     def requestAvatar(self, avatarId, mind, *interfaces):
         # Fetch the user's details from the authserver
         deferred = self.authserver.getUser(avatarId)
-        
+
         # Then fetch more details: the branches owned by this user (and the
         # teams they are a member of).
         def getInitialBranches(userDict):
@@ -333,10 +331,3 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
 
     def connectionLost(self, reason):
         self.sendMirrorRequests()
-
-
-if __name__ == "__main__":
-    # Run doctests.
-    import doctest
-    doctest.testmod()
-
