@@ -61,9 +61,9 @@ from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadFormView,
     LaunchpadView, Navigation, redirection, stepthrough)
 from canonical.launchpad.interfaces import (
-    IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
+    IBug, IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
-    IBugWatchSet, IDistribution, IDistributionSourcePackage, IBug,
+    IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
     IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
@@ -612,6 +612,16 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
         return self.comments[0].text_contents != self.context.bug.description
+
+    @cachedproperty
+    def bug_branches(self):
+        """Filter out the bug_branch links to non-visible private branches."""
+        bug_branches = []
+        for bug_branch in self.context.bug.bug_branches:
+            if check_permission('launchpad.View', bug_branch.branch):
+                bug_branches.append(bug_branch)
+        return bug_branches
+
 
 class BugTaskPortletView:
     def alsoReportedIn(self):
@@ -1241,8 +1251,9 @@ class BugListingBatchNavigator(TableBatchNavigator):
         # Create a map from the bug id to the branches.
         self.bug_id_mapping = {}
         for bugbranch in bugbranches:
-            self.bug_id_mapping.setdefault(
-                bugbranch.bug.id, []).append(bugbranch)
+            if check_permission('launchpad.View', bugbranch.branch):
+                self.bug_id_mapping.setdefault(
+                    bugbranch.bug.id, []).append(bugbranch)
 
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""

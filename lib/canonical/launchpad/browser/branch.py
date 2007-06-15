@@ -33,8 +33,8 @@ from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, IBranchSubscription, IBugSet, ILaunchpadCelebrities,
-    IPersonSet)
+    BranchCreationForbidden, IBranch, IBranchSet, IBranchSubscription, IBugSet,
+    ILaunchpadCelebrities, IPersonSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
@@ -286,18 +286,33 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     @action('Add Branch', name='add')
     def add_action(self, action, data):
         """Handle a request to create a new branch for this product."""
-        self.branch = getUtility(IBranchSet).new(
-            name=data['name'],
-            owner=self.user,
-            author=self.getAuthor(data),
-            product=self.getProduct(data),
-            url=data['url'],
-            title=data['title'],
-            summary=data['summary'],
-            lifecycle_status=data['lifecycle_status'],
-            home_page=data['home_page'],
-            whiteboard=data['whiteboard'])
-        notify(SQLObjectCreatedEvent(self.branch))
+        try:
+            self.branch = getUtility(IBranchSet).new(
+                name=data['name'],
+                creator=self.user,
+                owner=self.user,
+                author=self.getAuthor(data),
+                product=self.getProduct(data),
+                url=data['url'],
+                title=data['title'],
+                summary=data['summary'],
+                lifecycle_status=data['lifecycle_status'],
+                home_page=data['home_page'],
+                whiteboard=data['whiteboard'])
+            notify(SQLObjectCreatedEvent(self.branch))
+            self.next_url = canonical_url(self.branch)
+        except BranchCreationForbidden:
+            self.setForbiddenError(self.getProduct(data))
+
+    def setForbiddenError(self, product):
+        """Method provided so the error handling can be overridden."""
+        assert product is not None, (
+            "BranchCreationForbidden should never be raised for "
+            "junk branches.")
+        self.setFieldError(
+            'product',
+            "You are not allowed to create branches in %s."
+            % (quote(product.displayname)))
 
     def getAuthor(self, data):
         """A method that is overridden in the derived classes."""
@@ -307,16 +322,11 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """A method that is overridden in the derived classes."""
         return data['product']
 
-    @property
-    def next_url(self):
-        assert self.branch is not None, 'next_url called when branch is None'
-        return canonical_url(self.branch)
-
     def validate(self, data):
         if 'product' in data and 'name' in data:
-            self.validate_branch_name(self.user,
-                                      data['product'],
-                                      data['name'])
+            self.validate_branch_name(
+                self.user, data['product'], data['name'])
+
     def script_hook(self):
         return '''<script type="text/javascript">
 
@@ -330,7 +340,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         url_field.onchange = populate_name;
         url_field.onblur = populate_name;
         </script>''' % { 'name' : self.widgets['name'].name,
-                         'url' : self.widgets['url'].name } 
+                         'url' : self.widgets['url'].name }
 
 
 class PersonBranchAddView(BranchAddView):
@@ -345,11 +355,12 @@ class PersonBranchAddView(BranchAddView):
     def getAuthor(self, data):
         return self.context
 
+
 class ProductBranchAddView(BranchAddView):
     """See BranchAddView."""
 
     initial_focus_widget = 'url'
-    
+
     @property
     def field_names(self):
         fields = list(BranchAddView.field_names)
@@ -366,6 +377,15 @@ class ProductBranchAddView(BranchAddView):
     @property
     def initial_values(self):
         return {'author': self.user}
+
+    def setForbiddenError(self, product):
+        """There is no product widget, so set a form wide error."""
+        assert product is not None, (
+            "BranchCreationForbidden should never be raised for "
+            "junk branches.")
+        self.addError(
+            "You are not allowed to create branches in %s."
+            % (quote(product.displayname)))
 
 
 class BranchReassignmentView(ObjectReassignmentView):
