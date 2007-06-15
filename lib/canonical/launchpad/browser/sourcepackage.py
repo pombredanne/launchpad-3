@@ -34,6 +34,7 @@ from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
+from canonical.launchpad.browser.rosetta import TranslationsMixin
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
@@ -171,7 +172,7 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
         return Link('+potemplatenames', 'Edit template names', icon='edit')
 
 
-class SourcePackageView(BuildRecordsView):
+class SourcePackageView(BuildRecordsView, TranslationsMixin):
 
     def initialize(self):
         # lets add a widget for the product series to which this package is
@@ -185,10 +186,6 @@ class SourcePackageView(BuildRecordsView):
         # IP address and launchpad preferences.
         self.status_message = None
         self.processForm()
-
-    @property
-    def languages(self):
-        return helpers.request_languages(self.request)
 
     def processForm(self):
         # look for an update to any of the things we track

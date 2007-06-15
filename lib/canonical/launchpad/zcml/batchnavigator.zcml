@@ -28,4 +28,11 @@
       template="../templates/bugs-listing-table-without-navlinks.pt"
       permission="zope.Public" />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.INominationsReviewTableBatchNavigator"
+      class="canonical.launchpad.browser.NominationsReviewTableBatchNavigatorView"
+      name="+table-view-without-navlinks"
+      template="../templates/bugs-listing-nominations-table-without-navlinks.pt"
+      permission="zope.Public" />
+
 </configure>
