@@ -19,7 +19,7 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
+    IBug, IBugSet, IBugWatchSet, ICveSet, NotFoundError, ILaunchpadCelebrities,
     IDistroBugTask, IDistroSeriesBugTask, ILibraryFileAliasSet,
     IBugAttachmentSet, IMessage, IUpstreamBugTask, IDistroSeries,
     IProductSeries, IProductSeriesBugTask, NominationError,
@@ -435,7 +435,9 @@ class Bug(SQLBase):
             rfc822msgid=make_msgid('malone'))
         MessageChunk(message=msg, content=content, sequence=1)
 
-        bugmsg = BugMessage(bug=self, message=msg)
+        bugmsg = self.linkMessage(msg)
+        if not bugmsg:
+            return
 
         notify(SQLObjectCreatedEvent(bugmsg, user=owner))
 
@@ -444,7 +446,11 @@ class Bug(SQLBase):
     def linkMessage(self, message):
         """See IBug."""
         if message not in self.messages:
-            return BugMessage(bug=self, message=message)
+            result = BugMessage(bug=self, message=message)
+            getUtility(IBugWatchSet).fromText(
+                message.text_contents, self, message.owner)
+            self.findCvesInText(message.text_contents)
+            return result
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See IBug."""
