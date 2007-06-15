@@ -323,8 +323,8 @@ class Publisher(object):
             os.chmod(package_index_path, mode | stat.S_IWGRP)
 
         # Inject static requests for Release files into self.apt_handler
-        # in a way we can easily obtain them for NoMoreAptFtpArchive w/o
-        # chaging much the rest of the code, specially D_writeReleaseFiles
+        # in a way we can easily obtain them for NoMoreAptFtpArchive without
+        # changing much the rest of the code, specially D_writeReleaseFiles
         self.apt_handler.requestReleaseFile(
             suite_name, component.name, 'source')
         for arch in distroseries.architectures:
