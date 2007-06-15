@@ -109,6 +109,15 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"
+    name="+nominations"
+    class="canonical.launchpad.browser.BugNominationsView"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/distroseries-nominations.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
     name="+bugs-index"
     class="canonical.launchpad.browser.BugTargetBugsView"
     permission="zope.Public"
