@@ -662,7 +662,8 @@ class ProductChangeTranslatorsView(ProductEditView):
 
 class ProductReviewView(ProductEditView):
     label = "Administer project details"
-    field_names = ["name", "owner", "active", "autoupdate", "reviewed"]
+    field_names = ["name", "owner", "active", "autoupdate", "reviewed",
+                   "private_bugs"]
 
 
 class ProductLaunchpadUsageEditView(LaunchpadEditFormView):

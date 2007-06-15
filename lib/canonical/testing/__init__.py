@@ -9,14 +9,14 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'PageTestLayer', 'TwistedLayer',
-    'BzrlibLayer', 'BzrlibZopelessLayer'
+    'BzrlibLayer', 'BzrlibZopelessLayer', 'LaunchpadScriptLayer',
     ]
 
 import logging
 
 def reset_logging():
     """Reset the logging system back to defaults
-    
+
     Currently, defaults means 'the way the Z3 testrunner sets it up'
 
     XXX: We need isolation enforcement so that an error will be raised and
@@ -51,7 +51,6 @@ from canonical.testing.layers import (
     BaseLayer, DatabaseLayer, LibrarianLayer, FunctionalLayer,
     LaunchpadLayer, ZopelessLayer, LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer, PageTestLayer, TwistedLayer, BzrlibZopelessLayer,
-    BzrlibLayer
-    )
+    BzrlibLayer, LaunchpadScriptLayer)
 
 

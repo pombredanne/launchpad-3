@@ -331,7 +331,7 @@ class POFileTranslateView(BaseTranslationView):
 
         if self.show not in (
             'translated', 'untranslated', 'all', 'need_review',
-            'changed_in_launchpad'):
+            'changed_in_launchpad', 'new_suggestions'):
             # XXX: should this be an UnexpectedFormData?
             self.show = self.DEFAULT_SHOW
         if self.show == 'all':
@@ -342,6 +342,8 @@ class POFileTranslateView(BaseTranslationView):
             self.shown_count = self.context.untranslatedCount()
         elif self.show == 'need_review':
             self.shown_count = self.context.fuzzy_count
+        elif self.show == 'new_suggestions':
+            self.shown_count = self.context.unreviewedCount()
         elif self.show == 'changed_in_launchpad':
             self.shown_count = self.context.updatesCount()
         else:
@@ -361,6 +363,8 @@ class POFileTranslateView(BaseTranslationView):
             ret = pofile.getPOTMsgSetFuzzy()
         elif self.show == 'untranslated':
             ret = pofile.getPOTMsgSetUntranslated()
+        elif self.show == 'new_suggestions':
+            ret = pofile.getPOTMsgSetWithNewSuggestions()
         elif self.show == 'changed_in_launchpad':
             ret = pofile.getPOTMsgSetChangedInLaunchpad()
         else:
