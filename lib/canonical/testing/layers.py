@@ -38,9 +38,7 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
-from twisted.trial.runner import TrialSuite
-
-from canonical.config import config, dbconfig
+from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in

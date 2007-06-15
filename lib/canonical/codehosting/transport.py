@@ -16,7 +16,7 @@ from bzrlib.transport import (
     unregister_transport,
     )
 
-from canonical.authserver.interfaces import READ_ONLY, WRITABLE
+from canonical.authserver.interfaces import READ_ONLY
 
 
 def branch_id_to_path(branch_id):
@@ -163,12 +163,13 @@ class LaunchpadServer(Server):
         # We can safely pad with '' because we can guarantee that no product or
         # branch name is the empty string. (Mapping '' to '+junk' happens
         # in _iter_branches). 'user' is checked later.
-        user, product, branch, path = split_with_padding(
+        user_dir, product, branch, path = split_with_padding(
             virtual_path.lstrip('/'), '/', 4, padding='')
         if not user.startswith('~'):
             raise TransportNotPossible(
-                'Path must start with user or team directory: %r' % (user,))
-        user = user[1:]
+                'Path must start with user or team directory: %r'
+                % (user_dir,))
+        user = user_dir[1:]
         branch_id, permissions = self.authserver.getBranchInformation(
             self.user_id, user, product, branch)
         if branch_id == '':

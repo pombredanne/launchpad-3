@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import os
 import unittest
 
 from bzrlib import errors
@@ -71,10 +72,13 @@ class TestLaunchpadServer(TestCaseInTempDir):
         # will ask for files beneath the branch. The server translates the
         # unique name of the branch (i.e. the ~user/product/branch-name part)
         # to the four-byte hexadecimal split ID described in
-        # test_extend_path_translation and appends the remainder of the path.
+        # test_base_path_translation and appends the remainder of the path.
         self.assertEqual(
             ('00/00/00/01/.bzr', WRITABLE),
             self.server.translate_virtual_path('/~testuser/firefox/baz/.bzr'))
+        self.assertEqual(
+            ('00/00/00/05/.bzr', READ_ONLY),
+            self.server.translate_virtual_path('/~name12/+junk/junk.dev/.bzr'))
 
     def test_setUp(self):
         # Setting up the server registers its schema with the protocol
@@ -273,7 +277,7 @@ class TestLaunchpadTransportReadOnly(TestCaseWithMemoryTransport):
         path = self.server.translate_virtual_path('/~testuser/firefox/baz')[0]
         makedirs(self.backing_transport, path)
         self.backing_transport.put_bytes(
-            '%s/hello.txt' % path, 'Hello World!')
+            os.path.join(path, 'hello.txt'), 'Hello World!')
         makedirs(
             self.backing_transport,
             self.server.translate_virtual_path('/~name12/+junk/junk.dev/')[0])

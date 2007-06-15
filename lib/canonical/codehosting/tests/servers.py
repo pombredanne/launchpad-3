@@ -105,6 +105,10 @@ class Authserver(Server):
 
 
 class AuthserverTac(TacTestSetup):
+    """Handler for running the Authserver .tac file.
+
+    Used to run the authserver out-of-process.
+    """
     def setUpRoot(self):
         pass
 
@@ -130,6 +134,7 @@ class AuthserverTac(TacTestSetup):
 
 
 class AuthserverOutOfProcess(Server):
+    """Server to run the authserver out-of-process."""
 
     def __init__(self):
         self.tachandler = AuthserverTac()
@@ -145,6 +150,7 @@ class AuthserverOutOfProcess(Server):
 
 
 class AuthserverWithKeys(AuthserverOutOfProcess):
+    """Server to run the authserver, setting up SSH key configuration."""
 
     def __init__(self, testUser, testTeam):
         AuthserverOutOfProcess.__init__(self)

@@ -10,7 +10,7 @@ __all__ = [
 
 import os
 
-from transaction import abort, begin
+import transaction
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -41,14 +41,15 @@ def utf8(x):
 
 
 def read_only_transaction(function):
+    """Decorate 'function' by wrapping it in a transaction and Zope session."""
     def transacted(*args, **kwargs):
-        begin()
+        transaction.begin()
         login(ANONYMOUS)
         try:
             return function(*args, **kwargs)
         finally:
             logout()
-            abort()
+            transaction.abort()
     return mergeFunctionMetadata(function, transacted)
 
 
