@@ -49,6 +49,13 @@ class IRosettaStats(Interface):
         translation in the PO file for this language when we last parsed it.
         """
 
+    def unreviewedCount():
+        """Return the number of msgsets with unreviewed suggestions.
+
+        Unreviewed are those which contain suggestions submitted later
+        than the last review date.
+        """
+
     def translatedCount(language=None):
         """Return the total number of msgsets that are translated in Rosetta.
         """

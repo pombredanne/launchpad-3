@@ -387,14 +387,17 @@ class BaseTranslationView(LaunchpadView):
             #   -- kiko, 2006-10-18
             self.request.response.addErrorNotification("""
             <p>
-            Launchpad can&#8217;t handle the plural items in this file, 
-	    because it doesn&#8217;t yet know how plural forms work for %s.
+            Launchpad can&#8217;t handle the plural items in this file,
+            because it doesn&#8217;t yet know how plural forms work for %s.
             </p>
             <p>
-            To fix this, please e-mail the <a
-            href="mailto:rosetta-users@lists.ubuntu.com">Launchpad Translations users mailing list</a>
-            with this information, preferably in the format described in the
-            <a href="https://wiki.ubuntu.com/RosettaFAQ">FAQ</a>.
+            If you have this information, please visit the
+            <a href="https://answers.launchpad.net/rosetta/">Answers</a>
+            application to see whether anyone has submitted it yet.  If not,
+            please file the information there as a question.  The preferred
+            format for such questions is described in the
+            <a href="https://help.launchpad.net/RosettaFAQ">Frequently Asked
+            Questions list</a>.
             </p>
             <p>
             This only needs to be done once per language. Thanks for helping Launchpad Translations.
@@ -907,15 +910,15 @@ class POMsgSetView(LaunchpadView):
         # would cut the number of (expensive) queries per-page by an
         # order of 30. -- kiko, 2006-09-27
 
-        # XXX: to avoid the use of python in the view, we'd need objects
-        # to hold the data representing a pomsgset translation for a
-        # plural form. -- kiko, 2006-09-27
-
         # This code is where we hit the database collecting message IDs
         # and suggestions for this POMsgSet.
         self.msgids = helpers.shortlist(self.context.potmsgset.getPOMsgIDs())
         assert len(self.msgids) > 0, (
             'Found a POTMsgSet without any POMsgIDSighting')
+
+        # Collect posubmissions etc. that we need from the database in order
+        # to identify useful suggestions.
+        self.context.initializeSubmissionsCaches()
 
         # We store lists of POMsgSetSuggestions objects in a
         # suggestion_blocks dictionary, keyed on plural form index; this
@@ -929,7 +932,7 @@ class POMsgSetView(LaunchpadView):
             self.suggestion_blocks[index] = \
                 [non_editor, elsewhere, wiki, alt_lang_suggestions]
 
-        # Let's initialise the translation dictionaries used from the
+        # Initialise the translation dictionaries used from the
         # translation form.
         self.translation_dictionaries = []
 
@@ -1014,22 +1017,24 @@ class POMsgSetView(LaunchpadView):
             return dict((k, v) for (k, v) in main.iteritems()
                         if k not in pruners_merged)
 
+        suggestions_list = self.context.getWikiSubmissions(index)
+
         if self.message_must_be_hidden:
-            # We must hide all suggestions because it may have private
-            # info that we don't want to show to anoymous users.
+            # We must hide all suggestions because this message may contain
+            # private information that we don't want to show to anonymous
+            # users, such as email addresses.
             non_editor = self._buildSuggestions(None, [])
             elsewhere = self._buildSuggestions(None, [])
             wiki = self._buildSuggestions(None, [])
             alt_lang_suggestions = self._buildSuggestions(None, [])
             return non_editor, elsewhere, wiki, alt_lang_suggestions
 
-        wiki = self.context.getWikiSubmissions(index)
-        wiki_translations = build_dict(wiki)
+        wiki_translations = build_dict(suggestions_list)
 
         current = self.context.getCurrentSubmissions(index)
         current_translations = build_dict(current)
 
-        non_editor = self.context.getSuggestedSubmissions(index)
+        non_editor = self.context.getNewSubmissions(index)
         non_editor_translations = build_dict(non_editor)
 
         # Use a set for pruning; this is a bit inconsistent with the
@@ -1263,3 +1268,4 @@ class POMsgSetSuggestions:
                 'person': submission.person,
                 'datecreated': submission.datecreated
                 })
+
