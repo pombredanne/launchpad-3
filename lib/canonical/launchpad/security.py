@@ -659,11 +659,11 @@ class AdminTheBazaar(OnlyVcsImportsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IBazaarApplication
 
-class EveryOneCanSeeCodeImportSet(OnlyVcsImportsAndAdmins):
+class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
     permission = 'launchpad.View'
     usedfor = ICodeImportSet
 
-class EveryOneCanSeeCodeImports(OnlyVcsImportsAndAdmins):
+class SeeCodeImports(OnlyVcsImportsAndAdmins):
     permission = 'launchpad.View'
     usedfor = ICodeImport
 
