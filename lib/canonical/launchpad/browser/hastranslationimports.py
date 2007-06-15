@@ -10,92 +10,107 @@ __all__ = [
 
 import datetime
 import pytz
-from zope.app.form.browser.widget import renderElement
+from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
+from zope.formlib import form
+from zope.interface import implements
+from zope.schema import Choice
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IHasTranslationImports, ITranslationImportQueue,
-    UnexpectedFormData)
+    IHasTranslationImports, ITranslationImportQueue, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, action, canonical_url)
+    LaunchpadFormView, action, custom_widget, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.batching import TableBatchNavigator
 
 from canonical.lp.dbschema import RosettaImportStatus
+
 
 class HasTranslationImportsView(LaunchpadFormView):
     """View class used for objects with translation imports."""
     schema = IHasTranslationImports
     field_names = []
 
-    def _validateFilteringOptions(self):
-        """Validate the filtering options for this form.
-
-        This method initialize self.status and self.file_extension depending
-        on the form values.
-
-        Raise UnexpectedFormData if we get something wrong.
-        """
-        form = self.request.form
-        # Get the filtering arguments.
-        self.status = str(form.get('status', 'all'))
-        self.type = str(form.get('type', 'all'))
-
-        # Fix the case to our needs.
-        if self.status is not None:
-            self.status = self.status.upper()
-        if self.type is not None:
-            self.type = self.type.lower()
-
-        # Prepare the list of available status.
-        available_status = [
-            status.name
-            for status in RosettaImportStatus.items
-            ]
-        available_status.append('ALL')
-
-        # Sanity checks so we don't accept broken input.
-        if (not (self.status and self.type) or
-            (self.status not in available_status) or
-            (self.type not in ('all', 'po', 'pot'))):
-            raise UnexpectedFormData(
-                'The queue filtering got an unexpected value.')
-
-        # Set to None status and type if they have the default value.
-        if self.status == 'ALL':
-            # Selected all status, the status is None to get all values.
-            self.status = None
-        else:
-            # Get the DBSchema entry.
-            self.status = RosettaImportStatus.items[self.status]
-
-        if self.type == 'all':
-            # Selected all types, so the type is None to get all values.
-            self.type = None
-
-        if 'field.actions.filter' in form:
-            # Got a filter action, redirect to the next url.
-            self.request.response.redirect(self.next_url)
+    custom_widget('filter_status', DropdownWidget, cssClass='inlined-widget')
+    custom_widget('filter_extension', DropdownWidget, cssClass='inlined-widget')
 
     def initialize(self):
-        # Validate the filtering arguments.
-        self._validateFilteringOptions()
-
+        """Set form label depending on the context."""
         self.label = 'Translation files waiting to be imported for %s' % (
             self.context.displayname)
-
         LaunchpadFormView.initialize(self)
 
+    def createFilterStatusField(self):
+        """Create a field with a vocabulary to filter by import status.
+
+        :return: A form.Fields instance containing the status field.
+        """
+        return form.Fields(
+            Choice(
+                __name__='filter_status',
+                source=RosettaImportStatusVocabularyFactory(),
+                title=_('Choose which status to show')),
+            custom_widget=self.custom_widgets['filter_status'],
+            render_context=self.render_context)
+
+    def createFilterFileExtensionField(self):
+        """Create a field with a vocabulary to filter by file extension.
+
+        :return: A form.Fields instance containing the file extension field.
+        """
+        return form.Fields(
+            Choice(
+                __name__='file_extension',
+                source=TranslationImportFileExtensionVocabularyFactory(),
+                title=_('Show entries with this extension')),
+            custom_widget=self.custom_widgets['filter_extension'],
+            render_context=self.render_context)
+
+    def createEntryStatusField(self, entry):
+        """Create a field with a vocabulary with entry's import status.
+
+        :return: A form.Fields instance containing the status field.
+        """
+        return form.Fields(
+            Choice(
+                __name__='status_%d' % entry.id,
+                source=EntryImportStatusVocabularyFactory(entry),
+                title=_('Select import status')),
+            custom_widget=self.custom_widgets['filter_status'],
+            render_context=self.render_context)
+
+    def setUpFields(self):
+        """Set up the form_fields from custom_widgets."""
+        LaunchpadFormView.setUpFields(self)
+        # setup filter fields.
+        self.form_fields = (
+            self.createFilterStatusField() +
+            self.createFilterFileExtensionField() +
+            self.form_fields)
+
+        # Prepare entries fields.
+        for entry in self.batchnav.currentBatch():
+            self.form_fields = (
+                self.createEntryStatusField(entry) +
+                self.form_fields)
+
+    @safe_action
+    @action('Filter', name='filter')
+    def filter_action(self, action, data):
+        """Handle a filter action."""
+        # XXX CarlosPerelloMarin 20070615: Is there anything we should do
+        # here? It's a GET form submission, so we are not supposed to do
+        # anything, although I'm not sure whether just using 'pass' is enough.
+        pass
 
     @action("Change status")
     def change_status_action(self, action, data):
         """Handle a queue submission changing the status of its entries."""
         # The user must be logged in.
         assert self.user is not None
-
-        # We are not rendering rows automatically based on an Interface and
-        # thus, data is always empty. We fill it with form's content.
-        data = self.request.form
 
         number_of_changes = 0
         for form_item in data:
@@ -165,8 +180,8 @@ class HasTranslationImportsView(LaunchpadFormView):
     @property
     def entries(self):
         """Return the entries in the queue for this context."""
-        return self.context.getTranslationImportQueueEntries(
-            status=self.status, file_extension=self.type)
+        return self.context.getTranslationImportQueueEntries()
+        #    status=self.status, file_extension=self.type)
 
     @property
     def has_entries(self):
@@ -176,112 +191,72 @@ class HasTranslationImportsView(LaunchpadFormView):
     @property
     def batchnav(self):
         """Return batch object for this page."""
-        return BatchNavigator(self.entries, self.request)
-
-    @property
-    def next_url(self):
-        arguments = []
-        if self.status is not None:
-            arguments.append('status=%s' % self.status.name)
-        if self.type is not None:
-            arguments.append('type=%s' % self.type)
-        if len(arguments) > 0:
-            arg_string = '?%s' % '&'.join(arguments)
-        else:
-            arg_string = ''
-        return '/'.join(
-                [canonical_url(self.context), '+imports%s' % arg_string])
+        return TableBatchNavigator(self.entries, self.request)
 
 
-    def renderOption(self, status, selected=False, check_status=None,
-                     empty_if_check_fails=False):
-        """Render an option for a certain status
+class EntryImportStatusVocabularyFactory:
+    """Factory for a vocabulary containing a list of status for import."""
 
-        When check_status is supplied, check if the supplied status
-        matches the check_status. If empty_if_check_fails is
-        additionally set to True, and the check fails, return an empty
-        string.
+    implements(IContextSourceBinder)
+
+    def __init__(self, entry):
+        """Create a EntryImportStatusVocabularyFactory.
+
+        :param entry: The ITranslationImportQueueEntry related with this
+            vocabulary.
         """
-        if check_status is not None:
-            if check_status == status:
-                selected = True
-            elif empty_if_check_fails:
-                return ''
+        self.entry = entry
 
-        # We need to supply selected as a dictionary because it can't
-        # appear at all in the argument list for renderElement -- if it
-        # does it is included in the HTML output
-        if selected:
-            selected = {'selected': 'yes'}
-        else:
-            selected = {}
-        html = renderElement('option',
-            value=status.name,
-            contents=status.title,
-            **selected)
 
-        return html
-
-    def getStatusFilteringSelect(self):
-        """Return a select html tag with all status for filtering purposes."""
-        selected_status = self.request.form.get('status', 'all')
-        html = ''
+    def __call__(self, context):
+        terms = []
         for status in RosettaImportStatus.items:
-            selected = (status.name.lower() == selected_status.lower())
-            html = '%s\n%s' % (
-                html, self.renderOption(status, selected=selected))
-        return html
+            if (status in (RosettaImportStatus.FAILED,
+                           RosettaImportStatus.IMPORTED) and
+                self.entry.status != status):
+                # FAILED and IMPORTED status cannot be set by hand so we
+                # don't give that choice.
+                continue
+            if (status == RosettaImportStatus.APPROVED and
+                self.entry.status != status and
+                (self.entry.import_into is None or
+                 not check_permission('launchpad.Admin', self.entry))):
+                # Only administrators are able to set the APPROVED status, and
+                # that's only possible if we know where to import it
+                # (import_into not None).
+                continue
+            if (status == RosettaImportStatus.BLOCKED and
+                self.entry.status != status and
+                not check_permission('launchpad.Admin', self.entry)):
+                # Only administrators are able to set the BLOCKED status
+                continue
 
-    def getStatusSelect(self, entry):
-        """Return a select html tag with the possible status for entry
+            terms.append(SimpleTerm(status.name, status.name, status.title))
+        return SimpleVocabulary(terms)
 
-        :arg entry: An ITranslationImportQueueEntry.
-        """
-        assert check_permission('launchpad.Edit', entry), (
-            'You can only change the status if you have rights to do it')
 
-        deleted_html = self.renderOption(RosettaImportStatus.DELETED,
-                                         check_status=entry.status)
-        needs_review_html = self.renderOption(RosettaImportStatus.NEEDS_REVIEW,
-                                              check_status=entry.status)
+class RosettaImportStatusVocabularyFactory:
+    """Factory for a vocabulary containing a list of import status."""
 
-        failed_html = self.renderOption(RosettaImportStatus.FAILED,
-                                        check_status=entry.status,
-                                        empty_if_check_fails=True)
-        imported_html = self.renderOption(RosettaImportStatus.IMPORTED,
-                                          check_status=entry.status,
-                                          empty_if_check_fails=True)
+    implements(IContextSourceBinder)
 
-        # These two options have special checks for permissions -- only
-        # admins can select them, though anyone can unselect.
-        if entry.status == RosettaImportStatus.APPROVED:
-            approved_html = self.renderOption(RosettaImportStatus.APPROVED,
-                                              selected=True)
-        elif (check_permission('launchpad.Admin', entry) and
-              entry.import_into is not None):
-            # We also need to check here if we know where to import this
-            # entry; if not, there's no sense in allowing this to be set
-            # as approved.
-            approved_html = self.renderOption(RosettaImportStatus.APPROVED,
-                                              selected=False)
-        else:
-            approved_html = ''
+    def __call__(self, context):
+        terms = [SimpleTerm('all', 'all', 'All')]
+        for status in RosettaImportStatus.items:
+            terms.append(SimpleTerm(status.name, status.name, status.title))
+        return SimpleVocabulary(terms)
 
-        if entry.status == RosettaImportStatus.BLOCKED:
-            blocked_html = renderElement('option', selected='yes',
-                value=RosettaImportStatus.BLOCKED.name,
-                contents=RosettaImportStatus.BLOCKED.title)
-        elif check_permission('launchpad.Admin', entry):
-            blocked_html = renderElement('option',
-                value=RosettaImportStatus.BLOCKED.name,
-                contents=RosettaImportStatus.BLOCKED.title)
-        else:
-            # We should not add the blocked status for this entry.
-            blocked_html = ''
 
-        # Generate the final select html tag with the possible values.
-        entry_id = 'field.status-%d' % entry.id
-        return renderElement('select', id=entry_id, name=entry_id,
-            contents='%s\n%s\n%s\n%s\n%s\n%s\n' % (
-                approved_html, imported_html, deleted_html, failed_html,
-                needs_review_html, blocked_html))
+class TranslationImportFileExtensionVocabularyFactory:
+    """Factory for a vocabulary containing a list of available extensions."""
+
+    implements(IContextSourceBinder)
+
+    def __call__(self, context):
+        file_extensions = ('po', 'pot')
+
+        terms = [SimpleTerm('all', 'all', 'All files')]
+        for extension in file_extensions:
+            title = 'Only %s files' % extension
+            terms.append(SimpleTerm(extension, extension, title))
+        return SimpleVocabulary(terms)

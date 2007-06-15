@@ -62,6 +62,7 @@
     <include file="emailaddress.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
+    <include file="hastranslationimports.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />
     <include file="karma.zcml" />
@@ -129,7 +130,6 @@
     <include file="questiontarget.zcml" />
     <include file="translationgroup.zcml" />
     <include file="translationimportqueue.zcml" />
-    <include file="translationimportqueuelink.zcml" />
     <include file="translator.zcml" />
     <include file="wikiname.zcml" />
     <include file="component.zcml" />

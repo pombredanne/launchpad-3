@@ -452,6 +452,9 @@ def hasspecifications_specs(context, view):
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
+hastranslationimports_index = ContextTitle(
+    'Translation import queue for %s')
+
 karmaaction_index = 'Karma actions'
 
 karmaaction_edit = 'Edit karma action'
@@ -1176,9 +1179,6 @@ translationgroups_index = 'Launchpad translation groups'
 translationimportqueueentry_index = 'Translation import queue entry'
 
 translationimportqueue_index = 'Translation import queue'
-
-translationimportqueuelink_index = ContextTitle(
-    'Translation import queue for %s')
 
 translationimportqueue_blocked = 'Translation import queue - Blocked'
 

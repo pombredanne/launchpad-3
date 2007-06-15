@@ -3,9 +3,8 @@
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, TextLine, Datetime, Field
 
-from canonical.lp.dbschema import RosettaImportStatus
-
 from canonical.launchpad import _
+from canonical.lp.dbschema import RosettaImportStatus
 
 __metaclass__ = type
 
@@ -15,6 +14,7 @@ __all__ = [
     'IEditTranslationImportQueueEntry',
     'IHasTranslationImports',
     ]
+
 
 class ITranslationImportQueueEntry(Interface):
     """An entry of the Translation Import Queue."""

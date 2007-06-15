@@ -9,7 +9,7 @@
   <content class="canonical.launchpad.database.Product">
     <allow interface="canonical.launchpad.interfaces.IProduct" />
     <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
-    <allow interface="canonical.launchpad.interfaces.ITranslationImportQueueLink"/>
+    <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
     <require
       permission="launchpad.Edit"
       set_attributes="displayname title summary description driver
@@ -135,12 +135,12 @@
     />
 
   <browser:page
-    for="canonical.launchpad.interfaces.ITranslationImportQueueLink"
+    for="canonical.launchpad.interfaces.IHasTranslationImports"
     name="+imports"
-    class="canonical.launchpad.browser.TranslationImportQueueLinkView"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
     permission="zope.Public"
     facet="translations"
-    template="../templates/translationimportqueuelink-index.pt"
+    template="../templates/hastranslationimports-index.pt"
     />
 
   <browser:pages

@@ -55,29 +55,18 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    get_supported_languages,
-    ICalendarOwner,
-    IHasIcon,
-    IHasLogo,
-    IHasMugshot,
-    ILaunchpadCelebrities,
-    ILaunchpadStatisticSet,
-    IPersonSet,
-    IProduct,
-    IProductSet,
-    IQuestionTarget,
-    ITranslationImportQueueLink,
-    NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH,
-    )
+    get_supported_languages, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot,
+    IHasTranslationImports, ILaunchpadCelebrities, ILaunchpadStatisticSet,
+    IPersonSet, IProduct, IProductSet, IQuestionTarget, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               KarmaContextMixin, BranchVisibilityPolicyMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, IQuestionTarget,
-               IHasLogo, IHasMugshot, IHasIcon, ITranslationImportQueueLink)
+    implements(IProduct, ICalendarOwner, IQuestionTarget, IHasLogo,
+               IHasMugshot, IHasIcon, IHasTranslationImports)
 
     _table = 'Product'
 
@@ -619,9 +608,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard)
 
-    # From ITranslationImportQueueLink.
     def getFirstEntryToImport(self):
-        """See ITranslationImportQueueLink."""
+        """See IHasTranslationImports."""
         return TranslationImportQueueEntry.selectFirst(
             '''status=%s AND
             productseries=ProductSeries.id AND
@@ -631,7 +619,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             orderBy='TranslationImportQueueEntry.dateimported')
 
     def getTranslationImportQueueEntries(self, status=None, file_extension=None):
-        """See ITranslationImportQueueLink."""
+        """See IHasTranslationImports."""
         queries = [
             'productseries = ProductSeries.id',
             'ProductSeries.product = %s' % sqlvalues(self)

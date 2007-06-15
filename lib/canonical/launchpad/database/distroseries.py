@@ -34,9 +34,9 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IBinaryPackageName, IBuildSet, IDistroSeries, IDistroSeriesSet,
-    IHasBuildRecords, IHasQueueItems, ILibraryFileAliasSet,
-    IPublishedPackageSet, IPublishing, ISourcePackage, ISourcePackageName,
-    ISourcePackageNameSet, ITranslationImportQueueLink, NotFoundError)
+    IHasBuildRecords, IHasQueueItems, IHasTranslationImports,
+    ILibraryFileAliasSet, IPublishedPackageSet, IPublishing,
+    ISourcePackage, ISourcePackageName, ISourcePackageNameSet, NotFoundError)
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -80,8 +80,8 @@ from canonical.launchpad.helpers import shortlist
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     """A particular series of a distribution."""
-    implements(IDistroSeries, IHasBuildRecords, IHasQueueItems, IPublishing,
-               ITranslationImportQueueLink)
+    implements(IDistroSeries, IHasBuildRecords, IHasQueueItems,
+               IHasTranslationImports, IPublishing)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -1849,7 +1849,7 @@ new imports with the information being copied.
         return self.distribution.main_archive
 
     def getFirstEntryToImport(self):
-        """See ITranslationImportQueueLink."""
+        """See IHasTranslationImports."""
         if self.defer_translation_imports:
             return None
         else:
