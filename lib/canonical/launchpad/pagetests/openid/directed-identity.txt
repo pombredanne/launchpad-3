@@ -15,13 +15,13 @@ response and do further validation as normal.
     >>> from urllib import urlencode
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_setup',
-    ...     'openid.identity': 'http://specs.openid.net/auth/2.0/'
-    ...                        'identifier_select',
+    ...     'openid.identity':
+    ...         'http://specs.openid.net/auth/2.0/identifier_select',
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     'openid.trust_root': 'http://launchpad.dev/+openid-consumer',
     ...     })
     >>> sabdfl_browser = setupBrowser()
-    >>> setup_url = 'http://openid.launchpad.dev/?%s' % args
+    >>> setup_url = 'http://openid.launchpad.dev/+openid?%s' % args
     >>> sabdfl_browser.handleErrors = True
     >>> sabdfl_browser.open(setup_url)
     >>> sabdfl_browser.handleErrors = False
@@ -45,10 +45,11 @@ for us.
     >>> print sabdfl_browser.contents
     Consumer received GET
     ...
-    openid.identity:http://openid.launchpad.dev/+openid/+id/temp1
+    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
     openid.mode:id_res
     openid.return_to:http://launchpad.dev/+openid-consumer
     ...
 
     >>> from canonical.launchpad.ftests.openid import uninstall_consumer
     >>> uninstall_consumer()
+
