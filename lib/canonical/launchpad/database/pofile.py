@@ -148,11 +148,13 @@ def _can_edit_translations(pofile, person):
         if person.inTeam(product.owner):
             return True
 
+    # Finally, check whether the user is member of the translation team or
+    # owner for the given PO file.
     translators = [t.translator for t in pofile.translators]
     return _check_translation_perms(
         pofile.translationpermission,
         translators,
-        person)
+        person) or person.inTeam(pofile.owner)
 
 def _can_add_suggestions(pofile, person):
     """Whether a person is able to add suggestions.
@@ -264,23 +266,11 @@ class POFile(SQLBase, RosettaStats):
 
     def canEditTranslations(self, person):
         """See IPOFile."""
-        if _can_edit_translations(self, person):
-            return True
-        elif person is not None:
-            # Finally, check for the owner of the PO file
-            return person.inTeam(self.owner)
-        else:
-            return False
+        return _can_edit_translations(self, person)
 
     def canAddSuggestions(self, person):
         """See IPOFile."""
-        if _can_add_suggestions(self, person):
-            return True
-        elif person is not None:
-            # Finally, check for the owner of the PO file
-            return person.inTeam(self.owner)
-        else:
-            return False
+        return _can_add_suggestions(self, person)
 
     def currentMessageSets(self):
         return POMsgSet.select(
@@ -947,13 +937,12 @@ class DummyPOFile(RosettaStats):
         self.lasttranslator = None
         self.license = None
         self.lastparsed = None
+        self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
 
         # The default POFile owner is the Rosetta Experts team unless the
         # given owner has rights to write into that file.
         if self.canEditTranslations(owner):
             self.owner = owner
-        else:
-            self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
 
         self.path = u'unknown'
         self.exportfile = None
