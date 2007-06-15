@@ -19,15 +19,14 @@ from canonical.database.sqlbase import (
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
     ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
+from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.lp.dbschema import (
-    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     BranchRelationships, BranchLifecycleStatus)
 
 
@@ -216,45 +215,16 @@ class Branch(SQLBase):
         self.last_scanned_id = revision_id
         self.revision_count = revision_count
 
-    def getAttributeNotificationAddresses(self):
+    def getNotificationRecipients(self):
         """See IBranch."""
-        addresses = set()
-        interested_levels = (
-            BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
-            BranchSubscriptionNotificationLevel.FULL)
+        recipients = NotificationRecipientSet()
         for subscription in self.subscriptions:
-            if subscription.notification_level in interested_levels:
-                addresses.update(contactEmailAddresses(subscription.person))
-        return sorted(addresses)
-
-    def getRevisionNotificationDetails(self):
-        """See IBranch."""
-        team_email_details = {}
-        individual_email_details = {}
-        interested_levels = (
-            BranchSubscriptionNotificationLevel.DIFFSONLY,
-            BranchSubscriptionNotificationLevel.FULL)
-        for subscription in self.subscriptions:
-            if subscription.notification_level in interested_levels:
-                addresses = contactEmailAddresses(subscription.person)
-                if subscription.person.isTeam():
-                    email_details = team_email_details
-                else:
-                    email_details = individual_email_details
-                for address in addresses:
-                    curr = email_details.get(
-                        address, BranchSubscriptionDiffSize.NODIFF)
-                    email_details[address] = max(
-                        curr, subscription.max_diff_lines)
-        # Individual preferences override team preferences.
-        email_details = team_email_details
-        email_details.update(individual_email_details)
-        # Now that we have determined the maximum size to send
-        # to any individual, switch the map around.
-        result = {}
-        for address, max_diff in email_details.iteritems():
-            result.setdefault(max_diff, []).append(address)
-        return result
+            if subscription.person.isTeam():
+                rationale = 'Subscriber @%s' % subscription.person.name
+            else:
+                rationale = 'Subscriber'
+            recipients.add(subscription.person, subscription, rationale)
+        return recipients
 
     def getScannerData(self):
         """See IBranch."""

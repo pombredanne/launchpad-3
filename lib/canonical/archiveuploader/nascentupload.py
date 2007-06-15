@@ -26,11 +26,6 @@ from canonical.archiveuploader.dscfile import DSCFile
 from canonical.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
-from canonical.archiveuploader.template_messages import (
-    rejection_template, new_template, accepted_template, announce_template)
-from canonical.config import config
-from canonical.encoding import guess as guess_encoding
-from canonical.launchpad.mail import format_address
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     NotFoundError, IDistributionSet)
@@ -174,7 +169,7 @@ class NascentUpload:
             # actually comes from overrides for packages that are not NEW.
             self.find_and_apply_overrides()
 
-        signer_components = self.processSignerAcl()
+        signer_components = self.getAutoAcceptedComponents()
         if not self.is_new:
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
@@ -450,7 +445,7 @@ class NascentUpload:
         self.logger.debug("Decision: %s" % in_keyring)
         return in_keyring
 
-    def processSignerAcl(self):
+    def getAutoAcceptedComponents(self):
         """Check rights of the current upload submmiter.
 
         Work out what components the signer is permitted to upload to and
@@ -733,8 +728,7 @@ class NascentUpload:
     # Actually processing accepted or rejected uploads -- and mailing people
     #
 
-    def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
-                  announce_msg=announce_template):
+    def do_accept(self, notify=True):
         """Accept the upload into the queue.
 
         This *MAY* in extreme cases cause a database error and thus
@@ -742,10 +736,12 @@ class NascentUpload:
         occur, for example, if we have failed to validate the input
         sufficiently and something trips a database validation
         constraint.
+
+        :param notify: True to send an email, False to not send one.
         """
         if self.is_rejected:
             self.reject("Alas, someone called do_accept when we're rejected")
-            self.do_reject()
+            self.do_reject(notify)
             return False
         try:
             maintainerfrom = None
@@ -759,12 +755,13 @@ class NascentUpload:
             # may fail yet this email will be sent.  The chances of this are
             # very small, and at some point the script infrastructure will
             # only send emails when the script exits successfully.
-            changes_file_object = open(self.changes.filepath, "r")
-            self.queue_root.notify(
-                announce_list=self.policy.announcelist,
-                changes_file_object=changes_file_object,
-                logger=self.logger)
-            changes_file_object.close()
+            if notify:
+                changes_file_object = open(self.changes.filepath, "r")
+                self.queue_root.notify(
+                    announce_list=self.policy.announcelist,
+                    changes_file_object=changes_file_object,
+                    logger=self.logger)
+                changes_file_object.close()
             return True
 
         except (SystemExit, KeyboardInterrupt):
@@ -777,12 +774,16 @@ class NascentUpload:
             # Let's log tracebacks for uncaught exceptions ...
             self.logger.error(
                 'Exception while accepting:\n %s' % e, exc_info=True)
-            self.do_reject()
+            self.do_reject(notify)
             return False
 
-    def do_reject(self, template=rejection_template):
+    def do_reject(self, notify=True):
         """Reject the current upload given the reason provided."""
         assert self.is_rejected, "The upload is not rejected."
+
+        # Bail out immediately if no email is really required.
+        if not notify:
+            return
 
         # We need to check that the queue_root object has been fully
         # initialised first, because policy checks or even a code exception
@@ -793,7 +794,13 @@ class NascentUpload:
 
         if not self.queue_root:
             self.queue_root = self._createQueueEntry()
+
+        try:
             self.queue_root.setRejected()
+        except QueueInconsistentStateError:
+            # These exceptions are ignored, we want to force the rejected
+            # state.
+            pass
 
         changes_file_object = open(self.changes.filepath, "r")
         self.queue_root.notify(summary_text=self.rejection_message,
@@ -895,6 +902,15 @@ class NascentUpload:
             if self.policy.autoApprove(self):
                 self.logger.debug("Setting it to ACCEPTED")
                 self.queue_root.setAccepted()
+                # If it is a pure-source upload we can further process it
+                # in order to have a pending publishing record in place.
+                # This change is based on discussions for bug #77853 and aims
+                # to fix a deficiency on published file lookup system.
+                if ((self.queue_root.sources.count() == 1) and
+                    (self.queue_root.builds.count() == 0) and
+                    (self.queue_root.customfiles.count() == 0)):
+                    self.logger.debug("Creating PENDING publishing record.")
+                    self.queue_root.realiseUpload()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 self.queue_root.setUnapproved()

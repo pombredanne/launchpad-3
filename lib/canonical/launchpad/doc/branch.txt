@@ -382,7 +382,7 @@ subscribed user, and max_diff_lines is used to control the size of
 any generated diffs between revisions that are emailed out.
 
 Both of these attributes are contolled through the UI through the use
-of the enumerated types: BranchSubscriptionDiffSize, and 
+of the enumerated types: BranchSubscriptionDiffSize, and
 BranchSubscriptionNotificationLevel.
 
     >>> from canonical.launchpad.interfaces import IPerson, IBranchSubscription
@@ -393,7 +393,7 @@ BranchSubscriptionNotificationLevel.
     0
     >>> subscription = gterm_dev.subscribe(
     ...     sabdfl,
-    ...     BranchSubscriptionNotificationLevel.FULL, 
+    ...     BranchSubscriptionNotificationLevel.FULL,
     ...     BranchSubscriptionDiffSize.FIVEKLINES)
     >>> verifyObject(IBranchSubscription, subscription)
     True
@@ -409,6 +409,9 @@ BranchSubscriptionNotificationLevel.
     True
     >>> list(sabdfl.subscribed_branches) == [gterm_dev]
     True
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> print canonical_url(subscription)
+    http://code.launchpad.dev/~ddaa/gnome-terminal/dev/+subscription/sabdfl
     >>> gterm_dev.unsubscribe(sabdfl)
     >>> gterm_dev.subscribers.count()
     0
@@ -428,7 +431,7 @@ the branches registered, authored and subscribed to by this person.
     ...     title, summary=title, date_created=now.next())
     >>> junkcode.author = lifeless
     >>> syncUpdate(junkcode)
-    >>> unused = gterm_dev.subscribe(lifeless, 
+    >>> unused = gterm_dev.subscribe(lifeless,
     ...            BranchSubscriptionNotificationLevel.NOEMAIL, None)
     >>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
     True

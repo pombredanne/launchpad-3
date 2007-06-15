@@ -269,24 +269,13 @@ class IBranch(IHasOwner):
         script.
         """
 
-    def getAttributeNotificationAddresses():
-        """Return a list of email addresses of interested subscribers.
+    def getNotificationRecipients():
+        """Return a complete INotificationRecipientSet instance.
 
-        Only branch subscriptions that specified an interest in
-        attribute notifications will have specified email addresses added.
+        The INotificationRecipientSet instance contains the subscribers
+        and their subscriptions.
         """
 
-    def getRevisionNotificationDetails():
-        """Return a map of max diff size to a list of email addresses.
-        
-        Only branch subscriptions that specified an interest in
-        revision notifications will have their specified email addresses added.
-
-        If a user has subscribed to a branch directly, the settings
-        that the user specifies overrides the settings of a team that the
-        user is a member of.
-        """
-        
     def getScannerData():
         """Retrieve the full ancestry of a branch for the branch scanner.
 

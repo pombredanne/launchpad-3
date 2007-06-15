@@ -136,6 +136,10 @@ def branch_index(context, view):
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
 
+def branchsubscription_edit(context, view):
+    return smartquote(
+        'Edit subscription to branch "%s"' % context.branch.displayname)
+
 branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
 
 def branch_visibility_edit(context, view):
@@ -324,6 +328,8 @@ debug_root_index = 'Launchpad Debug Home Page'
 
 default_editform = 'Default "Edit" Page'
 
+distributionmirror_delete = ContextTitle('Delete mirror %s')
+
 distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
@@ -399,6 +405,8 @@ distroseries_edit = ContextTitle('Edit details of %s')
 
 def distroseries_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
+
+distroseries_nominations = ContextDisplayName('Bugs nominated for %s')
 
 distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
     'for %s')
@@ -697,7 +705,9 @@ person_packagebugs_overview = person_packagebugs
 
 person_packagebugs_search = person_packagebugs
 
-person_participation = ContextTitle("Team partipation by %s")
+person_participation = ContextTitle("Team participation by %s")
+
+person_projects = ContextTitle("Projects %s is involved with")
 
 person_review = ContextDisplayName("Review %s")
 
@@ -1129,6 +1139,10 @@ def teammembership_index(context, view):
 
 def teammembership_invitation(context, view):
     return "Make %s a member of %s" % (
+        context.person.browsername, context.team.browsername)
+
+def teammembership_self_renewal(context, view):
+    return "Renew membership of %s in %s" % (
         context.person.browsername, context.team.browsername)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')
