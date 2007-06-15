@@ -167,9 +167,9 @@ Create recent questions on a number of projects.
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
     >>> QuestionFactory.createManyByProject([
-    ...     (ubuntu, 3),
-    ...     (firefox, 2),
-    ...     (landscape, 1)])
+    ...     ('ubuntu', 3),
+    ...     ('firefox', 2),
+    ...     ('landscape', 1)])
 
 Create a question just before the time limit on Launchpad.
 

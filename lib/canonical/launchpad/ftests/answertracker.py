@@ -17,18 +17,17 @@ class QuestionFactory:
     """Helper object that can be used to quickly create questions."""
 
     @classmethod
-    def _getQuestionTarget(cls, target_or_name):
-        """Return the `IQuestionTarget` to use for target_or_name.
+    def _getQuestionTarget(cls, target_name):
+        """Return the `IQuestionTarget` to use.
 
-        If target_or_name provides `IQuestionTarget` it is returned,
-        otherwise if it is a string a project with that name is looked up.
+        It returns the pillar with the target_name and makes sure it
+        provides `IQuestionTarget`.
         """
-        if isinstance(target_or_name, basestring):
-            target = getUtility(IPillarNameSet).getByName(target_or_name)
-            assert target is not None, (
-                'No project with name %s' % target_or_name)
-        else:
-            target = IQuestionTarget(target_or_name)
+        assert isinstance(target_name, basestring), (
+            "expected a project name: %r", target_name)
+        target = getUtility(IPillarNameSet).getByName(target_name)
+        assert target is not None, (
+            'No project with name %s' % target_name)
         assert IQuestionTarget.providedBy(target), (
             "%r doesn't provide IQuestionTarget" % target)
         return target
@@ -37,15 +36,15 @@ class QuestionFactory:
     def createManyByProject(cls, specification):
         """Create a number of questions on selected projects.
 
-        The function expects a list of list of the form
-        [project, question_count].
+        The function expects a sequence of tuples of the form
+        (project_name, question_count).
 
-        Project can be an object providing `IQuestionTarget` or a string which
-        will be used to look up the project by name.
+        project_name should be the name of a pillar providing
+        `IQuestionTarget`.
     
-        question_count is the number of questions to create on the project.
+        question_count is the number of questions to create on the target.
 
-        Question are created by the logged in user.
+        Questions will appear as posted by the currently logged in user.
         """
         owner = getUtility(ILaunchBag).user
         for project, question_count in specification:
