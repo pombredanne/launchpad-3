@@ -88,7 +88,7 @@ Seeing that we were redirected again to the addspec page is a good sign
 (something prevented the spec from being registered) however better make sure
 this happened due to the right reason.
 
-  >>> 'is already in use by another specification' in browser.contents
+  >>> 'is already in use by another blueprint' in browser.contents
   True
 
 We test the validator using an invalid name.
@@ -156,7 +156,7 @@ URL.
   >>> browser.getControl('Register Blueprint').click()
   >>> browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
-  >>> "is already registered by another specification" in browser.contents
+  >>> "is already registered by another blueprint" in browser.contents
   True
 
 
@@ -224,7 +224,7 @@ First, we try to create a spec that has the same name as an existing one.
 So, we were not redirected to the spec page, because the spec was not
 created. Let's check that this happened because the name is taken:
 
-  >>> 'is already in use by another specification' in browser.contents
+  >>> 'is already in use by another blueprint' in browser.contents
   True
 
 
