@@ -43,20 +43,17 @@ receive an error:
     ...     print extract_text(tag)
     Please enter a valid email address
 
-If the user provides a non-ASCII password, they receive an appropriate
-error:
+If the user provides a non-ASCII password, they receive an incorrect
+passphrase error.
 
-# XXX: 2007-06-14 jamesh
-# This is currently raising UnicodeDecodeError -- bleh.
-
-#    >>> browser.getControl('email address?').value = 'mark@hbd.com'
-#    >>> browser.getControl(name='field.password').value = '\xa0blah'
-#    >>> browser.getControl('Continue').click()
-#    >>> print browser.title
-#    Launchpad Login Service
-#    >>> for tag in find_tags_by_class(browser.contents, 'error'):
-#    ...     print extract_text(tag)
-#    The passphrase provided contains non-ASCII characters.
+    >>> browser.getControl('email address?').value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.password').value = '\xc2\xa0blah'
+    >>> browser.getControl('Continue').click()
+    >>> print browser.title
+    Launchpad Login Service
+    >>> for tag in find_tags_by_class(browser.contents, 'error'):
+    ...     print extract_text(tag)
+    Incorrect passphrase for the provided email address.
 
 If the password does not match the given email address, an error is
 shown:
@@ -68,7 +65,7 @@ shown:
     Launchpad Login Service
     >>> for tag in find_tags_by_class(browser.contents, 'error'):
     ...     print extract_text(tag)
-    The email address and passphrase do not match.
+    Incorrect passphrase for the provided email address.
 
 Finally, if the email address and password match, the user is logged
 in and returned to the relying party, with the user's identity URL:
