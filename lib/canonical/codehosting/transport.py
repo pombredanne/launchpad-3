@@ -94,7 +94,7 @@ class LaunchpadServer(Server):
 
     def dirty(self, virtual_path):
         """Mark the branch containing virtual_path as dirty."""
-        branch_id, path = self._get_branch_path(virtual_path)
+        branch_id, ignored, path = self._get_branch_info(virtual_path)
         self._dirty_branch_ids.add(branch_id)
 
     def mkdir(self, virtual_path):
@@ -159,22 +159,20 @@ class LaunchpadServer(Server):
                     "<https://launchpad.net/>.")
         return self.authserver.createBranch(user_id, product_id, branch)
 
-    def _get_branch_path(self, virtual_path):
+    def _get_branch_info(self, virtual_path):
         # We can safely pad with '' because we can guarantee that no product or
         # branch name is the empty string. (Mapping '' to '+junk' happens
         # in _iter_branches). 'user' is checked later.
         user_dir, product, branch, path = split_with_padding(
             virtual_path.lstrip('/'), '/', 4, padding='')
-        if not user.startswith('~'):
+        if not user_dir.startswith('~'):
             raise TransportNotPossible(
                 'Path must start with user or team directory: %r'
                 % (user_dir,))
         user = user_dir[1:]
         branch_id, permissions = self.authserver.getBranchInformation(
             self.user_id, user, product, branch)
-        if branch_id == '':
-            raise UntranslatablePath(path=virtual_path, user=self.user_name)
-        return branch_id, path
+        return branch_id, permissions, path
 
     def translate_virtual_path(self, virtual_path):
         """Translate an absolute virtual path into the real path on the backing
@@ -193,17 +191,7 @@ class LaunchpadServer(Server):
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.
-        # We can safely pad with '' because we can guarantee that no product or
-        # branch name is the empty string. (Mapping '' to '+junk' happens
-        # in _iter_branches). 'user' is checked later.
-        user, product, branch, path = split_with_padding(
-            virtual_path.lstrip('/'), '/', 4, padding='')
-        if not user.startswith('~'):
-            raise TransportNotPossible(
-                'Path must start with user or team directory: %r' % (user,))
-        user = user[1:]
-        branch_id, permissions = self.authserver.getBranchInformation(
-            self.user_id, user, product, branch)
+        branch_id, permissions, path = self._get_branch_info(virtual_path)
         if branch_id == '':
             raise UntranslatablePath(path=virtual_path, user=self.user_name)
         return '/'.join([branch_id_to_path(branch_id), path]), permissions
@@ -327,7 +315,7 @@ class LaunchpadTransport(Transport):
         return self._call('has', relpath)
 
     def iter_files_recursive(self):
-        path, permissions = self._translate_virtual_path('.')
+        path, ignored = self._translate_virtual_path('.')
         backing_transport = self.server.backing_transport.clone(path)
         return backing_transport.iter_files_recursive()
 

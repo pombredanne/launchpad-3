@@ -190,7 +190,9 @@ class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
     layer = TwistedBzrlibLayer
 
     def _cleanUp(self, result):
-        print "Overriding Twisted's cleanup because it causes errors."
+        # XXX: JonathanLange 2007-06-13, Override Twisted's post-test cleanup.
+        # The tests fail badly if this is removed, for unknown reasons.
+        # See Launchpad bug 120156.
         from twisted.internet import defer
         return defer.succeed(None)
 
