@@ -62,10 +62,3 @@ class IDistroArchSeriesBinaryPackage(Interface):
 
         Return the modified IBinaryPackagePublishingHistory object.
         """
-
-    def copyTo(distroseries, pocket):
-        """Copy a DistroArchSeriesBinaryPackage to another location.
-
-        Return the publishing record in the targeted location.
-        """
-

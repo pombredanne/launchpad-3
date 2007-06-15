@@ -20,7 +20,7 @@ from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
 from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -64,6 +64,7 @@ from canonical.launchpad.database.bugtask import (
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
+from canonical.launchpad.database.pillar import PillarName
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -118,6 +119,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
+    openid_identifier = StringCol(
+            dbName='openid_identifier', alternateID=True, notNull=True,
+            default=DEFAULT)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -800,6 +804,43 @@ class Person(SQLBase, HasSpecificationsMixin):
         cur.execute(query)
         return cur.fetchall()
 
+    def getOwnedOrDrivenPillars(self):
+        """See IPerson."""
+        query = """
+            SELECT name
+            FROM product, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND (driver = teamparticipation.team
+                     OR owner = teamparticipation.team)
+
+            UNION
+
+            SELECT name
+            FROM project, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND (driver = teamparticipation.team 
+                     OR owner = teamparticipation.team)
+
+            UNION
+
+            SELECT name
+            FROM distribution, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND (driver = teamparticipation.team
+                     OR owner = teamparticipation.team)
+            """ % sqlvalues(person=self)
+        cur = cursor()
+        cur.execute(query)
+        names = [sqlvalues(str(name)) for [name] in cur.fetchall()]
+        if not names:
+            return PillarName.select("1=2")
+        quoted_names = ','.join([name for [name] in names])
+        return PillarName.select(
+            "PillarName.name IN (%s) AND PillarName.active IS TRUE" %
+            quoted_names, prejoins=['distribution', 'project', 'product'],
+            orderBy=['PillarName.distribution', 'PillarName.project',
+                     'PillarName.product'])
+
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
         for name, karmavalue in self._getProjectsWithTheMostKarma(limit=limit):
@@ -895,17 +936,6 @@ class Person(SQLBase, HasSpecificationsMixin):
             return True
 
         return False
-
-    @property
-    def openid_identifier(self):
-        # XXX: This should be a value stored in the database. Calculating
-        # using a hash for now so we can test during database freeze.
-        # Bug #118200
-        # -- StuartBishop 20070528
-        if self.isTeam():
-            return None
-        else:
-            return 'temp%d' % self.id
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
@@ -1093,7 +1123,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                 reviewercomment=comment)
             notify(event(person, self))
 
-    # The two methods below are not in the IPerson interface because we want
+    # The three methods below are not in the IPerson interface because we want
     # to protect them with a launchpad.Edit permission. We could do that by
     # defining explicit permissions for all IPerson methods/attributes in
     # the zcml but that's far from optimal given the size of IPerson.
@@ -1124,6 +1154,26 @@ class Person(SQLBase, HasSpecificationsMixin):
         tm.setStatus(
             TeamMembershipStatus.INVITATION_DECLINED,
             getUtility(ILaunchBag).user, reviewercomment=comment)
+
+    def renewTeamMembership(self, team):
+        """Renew the TeamMembership for this person on the given team.
+
+        The given team's renewal policy must be ONDEMAND and the membership
+        must be active (APPROVED or ADMIN) and set to expire in less than
+        DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        """
+        tm = TeamMembership.selectOneBy(person=self, team=team)
+        assert tm.canBeRenewedByMember(), (
+            "This membership can't be renewed by the member himself.")
+
+        assert (team.defaultrenewalperiod is not None
+                and team.defaultrenewalperiod > 0), (
+            'Teams with a renewal policy of ONDEMAND must specify '
+            'a default renewal period greater than 0.')
+        # Keep the same status, change the expiration date and send a
+        # notification explaining the membership has been renewed.
+        tm.dateexpires += timedelta(days=team.defaultrenewalperiod)
+        tm.sendSelfRenewalNotification()
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
@@ -1703,18 +1753,18 @@ class PersonSet:
         return Person.selectOne(query)
 
     def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None."""
-        # XXX: This should be a value stored in the database. Calculating
-        # using a hash for now so we can test during database freeze.
-        # Bug #118200
-        # -- StuartBishop 20070528
-        if openid_identifier.startswith('temp'):
-            try:
-                id = int(openid_identifier[4:])
-            except ValueError:
-                return None
-            return self.get(id)
-        return None
+        """Returns a Person with the given openid_identifier, or None.
+       
+        None is returned if the person is not enabled for OpenID usage
+        (see Person.is_openid_enabled).
+        """
+        person = Person.selectOne(
+                Person.q.openid_identifier == openid_identifier
+                )
+        if person is not None and person.is_openid_enabled:
+            return person
+        else:
+            return None
 
     def updateStatistics(self, ztm):
         """See IPersonSet."""

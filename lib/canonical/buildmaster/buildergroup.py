@@ -19,7 +19,7 @@ from canonical.config import config
 from canonical.lp import dbschema
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.interfaces import (
-    IBuildQueueSet, IBuildSet, IBuilderSet, pocketsuffix
+    IBuildQueueSet, IBuildSet, IBuilderSet, pocketsuffix, NotFoundError
     )
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
@@ -141,7 +141,7 @@ class BuilderGroup:
             if queue_item.build.id != build.id:
                 raise BuildJobMismatch('Job build entry mismatch')
 
-        except (SQLObjectNotFound, BuildJobMismatch), reason:
+        except (SQLObjectNotFound, NotFoundError, BuildJobMismatch), reason:
             slave.clean()
             self.logger.warn("Builder '%s' rescued from '%s-%s: %s'" % (
                 builder.name, build_id, queue_item_id, reason))
@@ -172,9 +172,9 @@ class BuilderGroup:
         self.logger.debug("Resuming %s" % builder.url)
         hostname = builder.url.split(':')[1][2:].split('.')[0]
         host_url = '%s-host.ppa' % hostname
+        key_path = os.path.expanduser('~/.ssh/ppa-reset-builder')
         resume_argv = [
-            'ssh', '-i' , '/home/launchpad/.ssh/ppa-reset-builder',
-            'ppa@%s' % host_url]
+            'ssh', '-i' , key_path, 'ppa@%s' % host_url]
         self.logger.debug('Running: %s' % resume_argv)
         resume_process = subprocess.Popen(
             resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)

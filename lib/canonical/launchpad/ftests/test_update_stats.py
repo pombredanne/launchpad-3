@@ -60,7 +60,8 @@ class UpdateStatsTest(LaunchpadTestCase):
             UPDATE DistroReleaseLanguage
             SET
                 currentcount=-1, updatescount=-1, rosettacount=-1,
-                contributorcount=-1, dateupdated=now()-'10 weeks'::interval
+                unreviewed_count=-1,contributorcount=-1,
+                dateupdated=now()-'10 weeks'::interval
             """)
 
         # Update stats should create missing distroserieslanguage,
@@ -123,6 +124,13 @@ class UpdateStatsTest(LaunchpadTestCase):
             SELECT COUNT(*) FROM DistroReleaseLanguage, Language
             WHERE DistroReleaseLanguage.language = Language.id AND
                   Language.visible = TRUE AND rosettacount = -1
+            """)
+        self.failUnlessEqual(cur.fetchone()[0], 0)
+
+        cur.execute("""
+            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
+            WHERE DistroReleaseLanguage.language = Language.id AND
+                  Language.visible = TRUE AND unreviewed_count = -1
             """)
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
