@@ -192,6 +192,9 @@ class POFile(SQLBase, RosettaStats):
     rosettacount = IntCol(dbName='rosettacount',
                           notNull=True,
                           default=0)
+    unreviewed_count = IntCol(dbName='unreviewed_count',
+                              notNull=True,
+                              default=0)
     lastparsed = UtcDateTimeCol(dbName='lastparsed',
                                 notNull=False,
                                 default=None)
@@ -389,6 +392,54 @@ class POFile(SQLBase, RosettaStats):
 
         return results
 
+    def getPOTMsgSetWithNewSuggestions(self):
+        """See `IPOFile`."""
+        # A POT set has "new" suggestions if there is a POMsgSet with
+        # submissions after active translation was reviewed
+        results = POTMsgSet.select('''
+            POTMsgSet.potemplate = %s AND
+            POTMsgSet.sequence > 0 AND
+            POMsgSet.potmsgset = POTMsgSet.id AND
+            POMsgSet.pofile = %s AND
+            POSubmission.pomsgset = POMsgSet.id AND
+            (POSubmission.datecreated > POMsgSet.date_reviewed OR
+             (POMsgSet.date_reviewed IS NULL AND
+              POSubmission.active IS NOT TRUE))
+            ''' % sqlvalues(self.potemplate, self),
+            clauseTables=['POMsgSet', 'POSubmission'],
+            orderBy='POTmsgSet.sequence')
+
+        return results
+
+    def getPOTMsgSetChangedInLaunchpad(self):
+        """See IPOFile."""
+        # POT set has been changed in Launchpad if it contains active
+        # translation which didn't come from a published package
+        # (iow, it's different from a published translation: this only
+        # lists translations which have actually changed in LP, not
+        # translations which are 'new' and only exist in LP).
+        results = POTMsgSet.select('''POTMsgSet.id IN (
+            SELECT POTMsgSet.id
+            FROM POTMsgSet
+            LEFT OUTER JOIN POMsgSet ON
+                POTMsgSet.id = POMsgSet.potmsgset AND
+                POMsgSet.pofile = %s
+            LEFT OUTER JOIN POSubmission ps1 ON
+                ps1.pomsgset = POMsgSet.id
+            LEFT OUTER JOIN POSubmission ps2 ON
+                ps2.pomsgset = ps1.pomsgset AND
+                ps2.pluralform = ps1.pluralform AND
+                ps2.id != ps1.id
+            WHERE
+                ps1.published IS TRUE AND
+                ps2.active IS TRUE AND
+                POTMsgSet.sequence > 0 AND
+                POTMsgSet.potemplate = %s)
+            ''' % sqlvalues(self, self.potemplate),
+            orderBy='POTmsgSet.sequence')
+
+        return results
+
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""
         results = POTMsgSet.select('''
@@ -433,6 +484,10 @@ class POFile(SQLBase, RosettaStats):
     def rosettaCount(self, language=None):
         """See IRosettaStats."""
         return self.rosettacount
+
+    def unreviewedCount(self):
+        """See `IRosettaStats`."""
+        return self.unreviewed_count
 
     @property
     def fuzzy_count(self):
@@ -509,10 +564,21 @@ class POFile(SQLBase, RosettaStats):
             POTMsgSet.sequence > 0
             ''' % self.id,
             clauseTables=['POTMsgSet']).count()
+
+        unreviewed = POMsgSet.select('''
+            POMsgSet.pofile = %s AND
+            POSubmission.pomsgset = POMsgSet.id AND
+            (POSubmission.datecreated > POMsgSet.date_reviewed OR
+             (POMsgSet.date_reviewed IS NULL AND
+              POSubmission.active IS NOT TRUE))
+            ''' % sqlvalues(self),
+            clauseTables=['POSubmission']).count()
+
         self.currentcount = current
         self.updatescount = updates
         self.rosettacount = rosetta
-        return (current, updates, rosetta)
+        self.unreviewed_count = unreviewed
+        return (current, updates, rosetta, unreviewed)
 
     def createMessageSetFromMessageSet(self, potmsgset):
         """See IPOFile."""
@@ -947,25 +1013,37 @@ class DummyPOFile(RosettaStats):
 
         return DummyPOMsgSet(self, potmsgset)
 
+    def emptySelectResults(self):
+        return POFile.select("1=2")
+
     def getPOMsgSetsNotInTemplate(self):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
 
     def getPOTMsgSetTranslated(self, slice=None):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
 
     def getPOTMsgSetFuzzy(self, slice=None):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
 
     def getPOTMsgSetUntranslated(self, slice=None):
         """See IPOFile."""
         return self.potemplate.getPOTMsgSets(slice)
 
+    def getPOTMsgSetWithNewSuggestions(self):
+        """See IPOFile."""
+        return self.emptySelectResults()
+
+    def getPOTMsgSetChangedInLaunchpad(self):
+        """See IPOFile."""
+        return self.emptySelectResults()
+
     def getPOTMsgSetWithErrors(self, slice=None):
         """See IPOFile."""
-        return None
+        return self.emptySelectResults()
+
 
     def hasMessageID(self, msgid):
         """See IPOFile."""
@@ -978,6 +1056,10 @@ class DummyPOFile(RosettaStats):
         return 0
 
     def updatesCount(self):
+        return 0
+
+    def unreviewedCount(self):
+        """See `IPOFile`."""
         return 0
 
     def nonUpdatesCount(self):

@@ -365,11 +365,52 @@ person uploaded (where he isn't the maintainer).
     (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
+    (u'iceweasel', u'Ubuntu Warty', u'1.0')
     (u'libstdc++', u'Ubuntu Hoary', u'b8p')
     (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
     (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
     (u'at', u'Ubuntu Hoary', u'0.00')
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
+
+
+== Pillars owned or driven by a person or team ==
+
+To obtain all distributions, project groups and projects owned or driven by a
+person or team, we can use the getOwnedOrDrivenPillars() method of IPerson.
+This method returns PillarNames ordered by distribution, project groups and
+projects.
+
+    >>> from canonical.launchpad.interfaces import (IDistribution, IProject,
+    ...     IProduct)
+
+    >>> def print_pillar(pillarname):
+    ...     pillar = pillarname.pillar
+    ...     if IDistribution.providedBy(pillar):
+    ...         pillar_type = 'distribution'
+    ...     elif IProject.providedBy(pillar):
+    ...         pillar_type = 'project group'
+    ...     elif IProduct.providedBy(pillar):
+    ...         pillar_type = 'project'
+    ...     print "%s: %s (%s)" % (
+    ...         pillar_type, pillar.title, pillar.name)
+
+    >>> for pillarname in sabdfl.getOwnedOrDrivenPillars():
+    ...     print_pillar(pillarname)
+    distribution: Ubuntu Linux (ubuntu)
+    distribution: Redhat Advanced Server (redhat)
+    distribution: Debian GNU/Linux (debian)
+    distribution: The Gentoo Linux (gentoo)
+    distribution: Kubuntu - Free KDE-based Linux (kubuntu)
+    distribution: Ubuntu Test (ubuntutest)
+    project group: The Ubuntu Project (ubuntu-project)
+    project: Ubuntu (ubuntu-product)
+    project: ALSA utilities (alsa-utils)
+
+    >>> for pillarname in ubuntu_team.getOwnedOrDrivenPillars():
+    ...     print_pillar(pillarname)
+    distribution: Ubuntu Linux (ubuntu)
+    distribution: Ubuntu Test (ubuntutest)
+    project: Ubuntu (ubuntu-product)
 
 
 == Translations ==

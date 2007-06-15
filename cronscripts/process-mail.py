@@ -7,11 +7,11 @@ import _pythonpath
 from zope.component.exceptions import ComponentLookupError
 
 from canonical.launchpad.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.mail.incoming import handleMail
 from canonical.launchpad.interfaces import IMailBox
 
-class ProcessMail(LaunchpadScript):
+class ProcessMail(LaunchpadCronScript):
     usage = """%prog [options]
 
     """ + __doc__
