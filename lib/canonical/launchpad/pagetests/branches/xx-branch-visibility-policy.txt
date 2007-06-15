@@ -29,6 +29,20 @@ Nor to 'normal' users.
     ...
     Unauthorized: ...
 
+Not even the owner of the project can get to it.
+
+    >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> owner_browser.getLink('Define branch visibility')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> owner_browser.open('http://launchpad.dev/firefox/+branchvisibility')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
 Launchpad admins however, can get to it.
 
     >>> admin_browser.open('http://launchpad.dev/firefox')
@@ -147,7 +161,7 @@ button is clicked, they are deleted.
     >>> for checkbox in [tag for tag in main.fetch('input')
     ...                  if tag['type'] == 'checkbox']:
     ...     print checkbox['value'], checkbox.nextSibling
-    None ...Everyone: Public
+    +everyone ...Everyone: Public
     launchpad ...Launchpad Developers: Private
     name18 ...Ubuntu Gnome Team: Private
 
@@ -160,7 +174,7 @@ items, nor will it be an error.
     >>> for checkbox in [tag for tag in main.fetch('input')
     ...                  if tag['type'] == 'checkbox']:
     ...     print checkbox['value'], checkbox.nextSibling
-    None ...Everyone: Public
+    +everyone ...Everyone: Public
     launchpad ...Launchpad Developers: Private
     name18 ...Ubuntu Gnome Team: Private
 

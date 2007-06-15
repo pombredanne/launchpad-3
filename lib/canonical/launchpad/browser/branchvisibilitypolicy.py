@@ -24,6 +24,7 @@ from canonical.launchpad.webapp import (
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.lp.dbschema import BranchVisibilityPolicy
 
+
 class BaseBranchVisibilityPolicyItemView(LaunchpadFormView):
     """Used as a base class for the add and remove view."""
 
@@ -41,7 +42,7 @@ class BaseBranchVisibilityPolicyItemView(LaunchpadFormView):
 class AddBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
     """Simple form view to add branch visibility policy items."""
 
-    pagetitle = "Add branch visibility policy item"
+    pagetitle = "Set branch visibility policy for team"
 
     initial_values = {'policy': BranchVisibilityPolicy.PRIVATE}
 
@@ -55,7 +56,7 @@ class AddBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
 class RemoveBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
     """The view to remove zero or more branch visibility policy items."""
 
-    pagetitle = "Remove branch visibility policy items"
+    pagetitle = "Remove branch visibility policy for teams"
 
     def _policyDescription(self, item):
         """The text visible to the user displayed by the widget."""
@@ -69,7 +70,7 @@ class RemoveBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
     def _policyToken(self, item):
         """The text used as the value of the widget."""
         if item.team is None:
-            return 'None'
+            return '+everyone'
         else:
             return item.team.name
 
