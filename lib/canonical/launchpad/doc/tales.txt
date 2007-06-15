@@ -225,7 +225,7 @@ Email addresses can be obfuscated:
     >>> test_tales('foo/fmt:obfuscate-email', foo='name@organization.org.cc')
     '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email',
-    ...     foo='long_name@host.network.org.cc')
+    ...     foo='long_name@host.long-network.org.cc')
     '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email',
     ...     foo='long-name@building.museum')
