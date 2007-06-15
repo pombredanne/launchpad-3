@@ -121,6 +121,17 @@ the amount used will cause an error.
     
 == Date range checking ==
 
+The 'in_date_range' attribute can be used to tell whether the
+entitlement is valid with respect to the start date and expires date.
+When the current date is out of range the entitlement is considered
+invalid. 
+
+When the entitlement does not have a start date or an expiration date
+then those values are not checked.  If no start date is given the
+expiration date is still used, and vice versa.  If both start date and
+expiration date are None then no date range checking is performed and
+the entitlement is valid with respect to dates.
+
 Remove the start and expiration dates and the date range will be
 valid. 
 
@@ -138,8 +149,9 @@ valid.
     >>> yesterday = now - timedelta(days = 1)
     >>> tomorrow = now + timedelta(days = 1)
 
-If the start date is in the past and the expiration date remains None
-the date range is satisfied and the entitlement is valid.
+If the start date is in the past and the expiration date is not set
+this condition is considered an open-ended entitlement and we are
+still in its range.
 
     >>> entitlement.date_starts = yesterday
     >>> entitlement.in_date_range
@@ -156,8 +168,8 @@ entitlement is invalid.
     >>> entitlement.is_valid
     False
 
-If the expires date is in the past the date is not in range and the
-entitlement is not valid.
+If the expires date is in the past, we are not in its date range and
+the entitlement is not valid.
 
     >>> entitlement.date_starts = None
     >>> entitlement.date_expires = yesterday
@@ -166,8 +178,8 @@ entitlement is not valid.
     >>> entitlement.is_valid
     False
 
-If the expires date is in the future the date range is satisfied and
-the entitlement is valid.
+If the expiration date is in the future the date range is satisfied
+and the entitlement is valid.
 
     >>> entitlement.date_expires = tomorrow
     >>> entitlement.in_date_range
@@ -185,11 +197,13 @@ the date range is again satisfied and the entitlement is valid.
     >>> entitlement.is_valid
     True
 
+Viewing the entitlement's attributes is restricted to the
+entitlement's owner, the entitlement's registrant (or to a member of
+these teams), and to Launchpad administrators. 
+
 If logged in as an anonymous user the entitlement values cannot be
-viewed as access to viewing attributes is restricted to the owner or
-members of the team, registrant, or Launchpad administrators.  A
-security-wrapped entitlement must be used to exercise the security
-adapters. 
+viewed.  A security-wrapped entitlement must be used to exercise the
+security adapters.
 
     >>> entitlement = ubuntu_team.entitlements[0]
     >>> entitlement.quota = 50
