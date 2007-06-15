@@ -16,147 +16,172 @@ from canonical.testing import LaunchpadFunctionalLayer
 from zope.component import getUtility
 
 
-class BranchSetVisibilityPolicySimple(TestCase):
-    """Test the policy where Public for all except one team where private."""
+class BranchVisibilityPolicyTestCase(TestCase):
+    """Base class for tests to make testing easier."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCase.setUp(self)
         login(ANONYMOUS)
+        # Our test product.
         self.firefox = getUtility(IProductSet).getByName('firefox')
+        # Test teams.
         self.guadamen = getUtility(IPersonSet).getByName('guadamen')
-        self.firefox.setTeamBranchVisibilityPolicy(
-            None, BranchVisibilityPolicy.PUBLIC)
-        self.firefox.setTeamBranchVisibilityPolicy(
-            self.guadamen, BranchVisibilityPolicy.PRIVATE)
+        self.vcs_imports = getUtility(IPersonSet).getByName('vcs-imports')
+        self.ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        # Test people
+        self.ddaa = getUtility(IPersonSet).getByEmail('david@canonical.com')
+        self.foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+        self.stevea = getUtility(IPersonSet).getByName('stevea')
+
+    def _definePolicy(self, policies):
+        """Shortcut to help define policies."""
+        for team, policy in policies:
+            self.firefox.setTeamBranchVisibilityPolicy(team, policy)
+
+    def _assertVisibilityPolicy(self, creator, owner, private, subscriber):
+        create_private, implicit_subscription_team = (
+            BranchSet()._checkVisibilityPolicy(
+            creator=creator, owner=owner, product=self.firefox))
+        self.assertEqual(
+            create_private, private,
+            "Branch privacy doesn't match. Expected %s, got %s"
+            % (private, create_private))
+        self.assertEqual(
+            implicit_subscription_team, subscriber,
+            "Implicit subscriber doesn't match. Expected %s, got %s."
+            % (getattr(subscriber, 'name', None),
+               getattr(implicit_subscription_team, 'name', None)))
+
+    def _assertBranchCreationForbidden(self, creator, owner):
+        self.assertRaises(
+            BranchCreationForbidden,
+            BranchSet()._checkVisibilityPolicy,
+            creator=creator, owner=owner, product=self.firefox)
+
+
+class TestTeamMembership(BranchVisibilityPolicyTestCase):
+    """Test the team membership once."""
+
+    def test_team_memberships(self):
+        # David is a member of only vcs-imports.
+        self.failIf(self.ddaa.inTeam(self.guadamen),
+                    "David should not be in team Guadamen.")
+        self.failIf(self.ddaa.inTeam(self.ubuntu_team),
+                    "David should not be in the Ubuntu team.")
+        self.failUnless(self.ddaa.inTeam(self.vcs_imports),
+                        "David should be in the VCS Imports team.")
+        # Steve is a member of only ubuntu-team.
+        self.failIf(self.stevea.inTeam(self.guadamen),
+                    "Steve should not be in team Guadamen.")
+        self.failUnless(self.stevea.inTeam(self.ubuntu_team),
+                        "Steve should be in the Ubuntu team.")
+        self.failIf(self.stevea.inTeam(self.vcs_imports),
+                    "Steve should not be in the VCS Imports team.")
+        # Foo Bar is a member of all three teams.
+        self.failUnless(self.foo_bar.inTeam(self.guadamen),
+                        "Foo Bar should be in team Guadamen.")
+        self.failUnless(self.foo_bar.inTeam(self.vcs_imports),
+                        "Foo Bar should be in VCS Imports team.")
+        self.failUnless(self.foo_bar.inTeam(self.ubuntu_team),
+                        "Foo Bar should be in the Ubuntu team.")
+
+
+class PolicySimple(BranchVisibilityPolicyTestCase):
+    """Test the policy where Public for all except one team where private."""
+
+    def setUp(self):
+        BranchVisibilityPolicyTestCase.setUp(self)
+        self._definePolicy((
+            (None, BranchVisibilityPolicy.PUBLIC),
+            (self.guadamen, BranchVisibilityPolicy.PRIVATE),
+            ))
 
     def test_public_branch_creation(self):
         """Branches created by people not in Guadamen will be public."""
-        branch_set = BranchSet()
-        ddaa = getUtility(IPersonSet).getByEmail('david@canonical.com')
-        self.failUnless(not ddaa.inTeam(self.guadamen),
-                        "David should not be in team Guadamen.")
-        create_private, implicit_subscription_team = (
-            BranchSet()._checkVisibilityPolicy(
-            creator=ddaa, owner=ddaa, product=self.firefox))
-        self.failUnless(not create_private, "Branch should be created public.")
-        self.failUnless(
-            implicit_subscription_team is None,
-            "There should be no implict subscriptions for public branches.")
+        self._assertVisibilityPolicy(
+            creator=self.ddaa, owner=self.ddaa, private=False, subscriber=None)
 
     def test_private_branch_creation(self):
         """Branches created by people in Guadamen will be private."""
-        branch_set = BranchSet()
-        foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-        self.failUnless(foo_bar.inTeam(self.guadamen),
-                        "Foo Bar should be in team Guadamen.")
-        create_private, implicit_subscription_team = (
-            BranchSet()._checkVisibilityPolicy(
-            creator=foo_bar, owner=foo_bar, product=self.firefox))
-        self.failUnless(create_private, "Branch should be created private.")
-        self.assertEqual(
-            implicit_subscription_team, self.guadamen,
-            "Guadamen should be subscribed to branches created by Foo Bar.")
+        self._assertVisibilityPolicy(
+            creator=self.foo_bar, owner=self.foo_bar, private=True,
+            subscriber=self.guadamen)
 
 
-class BranchSetVisibilityPolicyForbidden(TestCase):
+class PolicyPrivateOnly(BranchVisibilityPolicyTestCase):
+    """Test the policy where Public for all except one team where private.
+
+    Private only only stops the user from changing the branch to public.
+    """
+
+    def setUp(self):
+        BranchVisibilityPolicyTestCase.setUp(self)
+        self._definePolicy((
+            (None, BranchVisibilityPolicy.PUBLIC),
+            (self.guadamen, BranchVisibilityPolicy.PRIVATE_ONLY),
+            ))
+
+    def test_public_branch_creation(self):
+        """Branches created by people not in Guadamen will be public."""
+        self._assertVisibilityPolicy(
+            creator=self.ddaa, owner=self.ddaa, private=False, subscriber=None)
+
+    def test_private_branch_creation(self):
+        """Branches created by people in Guadamen will be private."""
+        self._assertVisibilityPolicy(
+            creator=self.foo_bar, owner=self.foo_bar, private=True,
+            subscriber=self.guadamen)
+
+
+class PolicyForbidden(BranchVisibilityPolicyTestCase):
     """Test the policy where Forbidden for all, public for some and private
     for others.
     """
 
-    layer = LaunchpadFunctionalLayer
-
     def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
-        self.firefox = getUtility(IProductSet).getByName('firefox')
-        self.guadamen = getUtility(IPersonSet).getByName('guadamen')
-        self.ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
-        self.firefox.setTeamBranchVisibilityPolicy(
-            None, BranchVisibilityPolicy.FORBIDDEN)
-        self.firefox.setTeamBranchVisibilityPolicy(
-            self.guadamen, BranchVisibilityPolicy.PRIVATE)
-        self.firefox.setTeamBranchVisibilityPolicy(
-            self.ubuntu_team, BranchVisibilityPolicy.PUBLIC)
+        BranchVisibilityPolicyTestCase.setUp(self)
+        self._definePolicy((
+            (None, BranchVisibilityPolicy.FORBIDDEN),
+            (self.guadamen, BranchVisibilityPolicy.PRIVATE),
+            (self.ubuntu_team, BranchVisibilityPolicy.PUBLIC),
+            ))
 
     def test_forbidden_branch_creation(self):
         """Branches created by people not in Guadamen or Ubuntu Team is
         forbidden.
         """
-        branch_set = BranchSet()
-        ddaa = getUtility(IPersonSet).getByEmail('david@canonical.com')
-        self.failUnless(not ddaa.inTeam(self.guadamen),
-                        "David should not be in team Guadamen.")
-        self.failUnless(not ddaa.inTeam(self.ubuntu_team),
-                        "David should not be in the Ubuntu team.")
-        self.assertRaises(
-            BranchCreationForbidden,
-            BranchSet()._checkVisibilityPolicy,
-            creator=ddaa, owner=ddaa, product=self.firefox)
+        self._assertBranchCreationForbidden(creator=self.ddaa, owner=self.ddaa)
 
     def test_public_branch_creation(self):
         """Branches created by people in the Ubuntu team will be public."""
-        branch_set = BranchSet()
-        stevea = getUtility(IPersonSet).getByName('stevea')
-        self.failUnless(not stevea.inTeam(self.guadamen),
-                        "Steve should not be in team Guadamen.")
-        self.failUnless(stevea.inTeam(self.ubuntu_team),
-                        "Steve should be in the Ubuntu team.")
-        create_private, implicit_subscription_team = (
-            BranchSet()._checkVisibilityPolicy(
-            creator=stevea, owner=stevea, product=self.firefox))
-        self.failUnless(not create_private, "Branch should be created public.")
-        self.failUnless(
-            implicit_subscription_team is None,
-            "There should be no implict subscriptions for public branches.")
+        self._assertVisibilityPolicy(
+            creator=self.stevea, owner=self.stevea, private=False,
+            subscriber=None)
 
     def test_private_branch_creation(self):
         """Branches created by people in Guadamen will be private."""
-        branch_set = BranchSet()
-        foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-        self.failUnless(foo_bar.inTeam(self.guadamen),
-                        "Foo Bar should be in team Guadamen.")
-        create_private, implicit_subscription_team = (
-            BranchSet()._checkVisibilityPolicy(
-            creator=foo_bar, owner=foo_bar, product=self.firefox))
-        self.failUnless(create_private, "Branch should be created private.")
-        self.assertEqual(
-            implicit_subscription_team, self.guadamen,
-            "Guadamen should be subscribed to branches created by Foo Bar.")
+        self._assertVisibilityPolicy(
+            creator=self.foo_bar, owner=self.foo_bar, private=True,
+            subscriber=self.guadamen)
 
 
-class BranchSetVisibilityPolicyTeamOverlap(TestCase):
+class PolicyTeamOverlap(BranchVisibilityPolicyTestCase):
     """Test the policy where a user is a member of multiple teams."""
 
-    layer = LaunchpadFunctionalLayer
-
     def setUp(self):
-        TestCase.setUp(self)
-        login(ANONYMOUS)
-        self.firefox = getUtility(IProductSet).getByName('firefox')
-        self.guadamen = getUtility(IPersonSet).getByName('guadamen')
-        self.vcs_imports = getUtility(IPersonSet).getByName('vcs-imports')
-        self.firefox.setTeamBranchVisibilityPolicy(
-            self.guadamen, BranchVisibilityPolicy.PRIVATE)
-        self.firefox.setTeamBranchVisibilityPolicy(
-            self.vcs_imports, BranchVisibilityPolicy.PRIVATE)
+        BranchVisibilityPolicyTestCase.setUp(self)
+        self._definePolicy((
+            (self.guadamen, BranchVisibilityPolicy.PRIVATE),
+            (self.vcs_imports, BranchVisibilityPolicy.PRIVATE),
+            ))
 
     def test_public_branch_creation(self):
         """The base branch visibility policy is used for Steve."""
-        branch_set = BranchSet()
-        stevea = getUtility(IPersonSet).getByName('stevea')
-        self.failUnless(not stevea.inTeam(self.guadamen),
-                        "Steve should not be in team Guadamen.")
-        self.failUnless(not stevea.inTeam(self.vcs_imports),
-                        "Steve should not be in the VCS Imports team.")
-        create_private, implicit_subscription_team = (
-            BranchSet()._checkVisibilityPolicy(
-            creator=stevea, owner=stevea, product=self.firefox))
-        self.failUnless(not create_private, "Branch should be created public.")
-        self.failUnless(
-            implicit_subscription_team is None,
-            "There should be no implict subscriptions for public branches.")
+        self._assertVisibilityPolicy(
+            creator=self.stevea, owner=self.stevea, private=False,
+            subscriber=None)
 
     def test_private_branch_creation(self):
         """David is only a member of VCS Imports.
@@ -164,66 +189,87 @@ class BranchSetVisibilityPolicyTeamOverlap(TestCase):
         Since David is only a member of one team, normal behaviour applies.
         VCS Imports will be subscribed to new branches created by David.
         """
-        branch_set = BranchSet()
-        ddaa = getUtility(IPersonSet).getByEmail('david@canonical.com')
-        self.failUnless(not ddaa.inTeam(self.guadamen),
-                        "David should not be in team Guadamen.")
-        self.failUnless(ddaa.inTeam(self.vcs_imports),
-                        "David should be in the VCS Imports team.")
-        create_private, implicit_subscription_team = (
-            BranchSet()._checkVisibilityPolicy(
-            creator=ddaa, owner=ddaa, product=self.firefox))
-        self.failUnless(create_private, "Branch should be created private.")
-        self.assertEqual(
-            implicit_subscription_team, self.vcs_imports,
-            "VCS Imports should be subscribed to branches created by David.")
+        self._assertVisibilityPolicy(
+            creator=self.ddaa, owner=self.ddaa, private=True,
+            subscriber=self.vcs_imports)
+        # XXX thumper 2007-06-15
+        # This subscription should not be needed if we change
+        # the access policy to allow *inTeam* of owner.
+        self._assertVisibilityPolicy(
+            creator=self.ddaa, owner=self.vcs_imports, private=True,
+            subscriber=self.vcs_imports)
 
     def test_private_branch_creation_two_teams(self):
-        """Foo Bar is in both private teams.
+        """Foo Bar is in both private teams."""
+        # Foo Bar is not subscribed when he is the owner.
+        self._assertVisibilityPolicy(
+            creator=self.foo_bar, owner=self.foo_bar, private=True,
+            subscriber=None)
+        # Foo Bar is subscribed when he is not the owner.
+        self._assertVisibilityPolicy(
+            creator=self.foo_bar, owner=self.vcs_imports, private=True,
+            subscriber=self.foo_bar)
+        self._assertVisibilityPolicy(
+            creator=self.foo_bar, owner=self.guadamen, private=True,
+            subscriber=self.foo_bar)
+        # Even pushing to a team that doesn't have private branches
+        # are private
+        self._assertVisibilityPolicy(
+            creator=self.foo_bar, owner=self.ubuntu_team, private=True,
+            subscriber=self.foo_bar)
 
-        When Foo Bar creates a branch where he is the owner, he'll
-        not be subscribed to the new branch.
+
+class PolicyTeamOverlapForbidden(BranchVisibilityPolicyTestCase):
+    """Test the policy where a user is a member of multiple teams."""
+
+    def setUp(self):
+        BranchVisibilityPolicyTestCase.setUp(self)
+        self._definePolicy((
+            (None, BranchVisibilityPolicy.PUBLIC),
+            (self.guadamen, BranchVisibilityPolicy.FORBIDDEN),
+            (self.vcs_imports, BranchVisibilityPolicy.PRIVATE),
+            ))
+
+    def test_public_branch_creation(self):
+        """The base branch visibility policy is used for Steve."""
+        self._assertVisibilityPolicy(
+            creator=self.stevea, owner=self.stevea, private=False,
+            subscriber=None)
+
+    def test_private_branch_creation(self):
+        """David is only a member of VCS Imports.
+
+        Since David is only a member of one team, normal behaviour applies.
+        VCS Imports will be subscribed to new branches created by David.
         """
-        branch_set = BranchSet()
-        foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-        self.failUnless(foo_bar.inTeam(self.guadamen),
-                        "Foo Bar should be in team Guadamen.")
-        self.failUnless(foo_bar.inTeam(self.vcs_imports),
-                        "Foo Bar should be in VCS Imports team.")
-        create_private, implicit_subscription_team = (
-            BranchSet()._checkVisibilityPolicy(
-            creator=foo_bar, owner=foo_bar, product=self.firefox))
-        self.failUnless(create_private, "Branch should be created private.")
-        self.assertEqual(
-            implicit_subscription_team, None,
-            "Since Foo Bar is in two different teams that have private "
-            "branches, the branch is created as private but only visible "
-            "to Foo Bar.  Since Foo Bar gets visibility through being "
-            "the owner of the branch, he doesn't need to be subscribed.")
+        self._assertVisibilityPolicy(
+            creator=self.ddaa, owner=self.ddaa, private=True,
+            subscriber=self.vcs_imports)
+        self._assertVisibilityPolicy(
+            creator=self.ddaa, owner=self.vcs_imports, private=True,
+            subscriber=self.vcs_imports)
 
-    def test_private_branch_creation_two_teams_not_owner(self):
-        """Foo Bar is in both private teams.
+    def test_private_branch_creation_two_teams(self):
+        """Foo Bar is in a team with forbidden policy."""
+        # Forbidden trumps all else.
+        self._assertBranchCreationForbidden(
+            creator=self.foo_bar, owner=self.foo_bar)
+        # Since Foo Bar is a member of a team that is forbidden then
+        # even creating team branches for the team that is allowed
+        # private branches, or even public branches for that matter
+        # is forbidden.
+        self._assertBranchCreationForbidden(
+            creator=self.foo_bar, owner=self.vcs_imports)
+        self._assertBranchCreationForbidden(
+            creator=self.foo_bar, owner=self.guadamen)
+        self._assertBranchCreationForbidden(
+            creator=self.foo_bar, owner=self.ubuntu_team)
 
-        When Foo Bar creates a branch where he is not the owner, he'll
-        be subscribed to the new branch.
-        """
-        branch_set = BranchSet()
-        foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-        self.failUnless(foo_bar.inTeam(self.guadamen),
-                        "Foo Bar should be in team Guadamen.")
-        self.failUnless(foo_bar.inTeam(self.vcs_imports),
-                        "Foo Bar should be in VCS Imports team.")
-        create_private, implicit_subscription_team = (
-            BranchSet()._checkVisibilityPolicy(
-            creator=foo_bar, owner=self.vcs_imports, product=self.firefox))
-        self.failUnless(create_private, "Branch should be created private.")
-        self.assertEqual(
-            implicit_subscription_team, foo_bar,
-            "Since Foo Bar is in two different teams that have private "
-            "branches, the branch is created as private but only visible "
-            "to Foo Bar.  Since Foo Bar has set the owner of the branch "
-            "to be someone else (actually a team) he gets subscribed to "
-            "the branch automatically.")
+        # XXX thumper 2007-06-15
+        # We should really change the way that this is checked.
+        # ideally some of the visibility checks should be done
+        # based on the team that they are being pushed to.
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
