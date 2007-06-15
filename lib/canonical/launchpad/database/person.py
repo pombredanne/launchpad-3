@@ -20,7 +20,7 @@ from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
 from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -118,6 +118,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
+    openid_identifier = StringCol(
+            dbName='openid_identifier', alternateID=True, notNull=True,
+            default=DEFAULT)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -896,17 +899,6 @@ class Person(SQLBase, HasSpecificationsMixin):
             return True
 
         return False
-
-    @property
-    def openid_identifier(self):
-        # XXX: This should be a value stored in the database. Calculating
-        # using a hash for now so we can test during database freeze.
-        # Bug #118200
-        # -- StuartBishop 20070528
-        if self.isTeam():
-            return None
-        else:
-            return 'temp%d' % self.id
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
@@ -1724,18 +1716,18 @@ class PersonSet:
         return Person.selectOne(query)
 
     def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None."""
-        # XXX: This should be a value stored in the database. Calculating
-        # using a hash for now so we can test during database freeze.
-        # Bug #118200
-        # -- StuartBishop 20070528
-        if openid_identifier.startswith('temp'):
-            try:
-                id = int(openid_identifier[4:])
-            except ValueError:
-                return None
-            return self.get(id)
-        return None
+        """Returns a Person with the given openid_identifier, or None.
+       
+        None is returned if the person is not enabled for OpenID usage
+        (see Person.is_openid_enabled).
+        """
+        person = Person.selectOne(
+                Person.q.openid_identifier == openid_identifier
+                )
+        if person is not None and person.is_openid_enabled:
+            return person
+        else:
+            return None
 
     def updateStatistics(self, ztm):
         """See IPersonSet."""

@@ -99,7 +99,7 @@ about how to contact Rosetta Admins to update it.
     >>> print country_portlet.find('li', 'languages')
     None
     >>> print country_portlet.first('a')['href']
-    mailto:rosetta@launchpad.net
+    https://answers.launchpad.net/rosetta/
 
 We also have a page under the launchpad root, called +editmylanguages,
 with launchpad.AnyPerson as permission. This is the page to which we
