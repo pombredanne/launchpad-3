@@ -192,6 +192,9 @@ class POFile(SQLBase, RosettaStats):
     rosettacount = IntCol(dbName='rosettacount',
                           notNull=True,
                           default=0)
+    unreviewed_count = IntCol(dbName='unreviewed_count',
+                              notNull=True,
+                              default=0)
     lastparsed = UtcDateTimeCol(dbName='lastparsed',
                                 notNull=False,
                                 default=None)
@@ -507,6 +510,25 @@ class POFile(SQLBase, RosettaStats):
 
         return results
 
+    def getPOTMsgSetWithNewSuggestions(self):
+        """See `IPOFile`."""
+        # A POT set has "new" suggestions if there is a POMsgSet with
+        # submissions after active translation was reviewed
+        results = POTMsgSet.select('''
+            POTMsgSet.potemplate = %s AND
+            POTMsgSet.sequence > 0 AND
+            POMsgSet.potmsgset = POTMsgSet.id AND
+            POMsgSet.pofile = %s AND
+            POSubmission.pomsgset = POMsgSet.id AND
+            (POSubmission.datecreated > POMsgSet.date_reviewed OR
+             (POMsgSet.date_reviewed IS NULL AND
+              POSubmission.active IS NOT TRUE))
+            ''' % sqlvalues(self.potemplate, self),
+            clauseTables=['POMsgSet', 'POSubmission'],
+            orderBy='POTmsgSet.sequence')
+
+        return results
+
     def getPOTMsgSetChangedInLaunchpad(self):
         """See IPOFile."""
         # POT set has been changed in Launchpad if it contains active
@@ -580,6 +602,10 @@ class POFile(SQLBase, RosettaStats):
     def rosettaCount(self, language=None):
         """See IRosettaStats."""
         return self.rosettacount
+
+    def unreviewedCount(self):
+        """See `IRosettaStats`."""
+        return self.unreviewed_count
 
     @property
     def fuzzy_count(self):
@@ -656,10 +682,21 @@ class POFile(SQLBase, RosettaStats):
             POTMsgSet.sequence > 0
             ''' % self.id,
             clauseTables=['POTMsgSet']).count()
+
+        unreviewed = POMsgSet.select('''
+            POMsgSet.pofile = %s AND
+            POSubmission.pomsgset = POMsgSet.id AND
+            (POSubmission.datecreated > POMsgSet.date_reviewed OR
+             (POMsgSet.date_reviewed IS NULL AND
+              POSubmission.active IS NOT TRUE))
+            ''' % sqlvalues(self),
+            clauseTables=['POSubmission']).count()
+
         self.currentcount = current
         self.updatescount = updates
         self.rosettacount = rosetta
-        return (current, updates, rosetta)
+        self.unreviewed_count = unreviewed
+        return (current, updates, rosetta, unreviewed)
 
     def createMessageSetFromMessageSet(self, potmsgset):
         """See IPOFile."""
@@ -1119,7 +1156,11 @@ class DummyPOFile(RosettaStats):
         """See IPOFile."""
         return self.potemplate.getPOTMsgSets(slice)
 
-    def getPOTMsgSetChangedInLaunchpad(self, slice=None):
+    def getPOTMsgSetWithNewSuggestions(self):
+        """See IPOFile."""
+        return self.emptySelectResults()
+
+    def getPOTMsgSetChangedInLaunchpad(self):
         """See IPOFile."""
         return self.emptySelectResults()
 
@@ -1139,6 +1180,10 @@ class DummyPOFile(RosettaStats):
         return 0
 
     def updatesCount(self):
+        return 0
+
+    def unreviewedCount(self):
+        """See `IPOFile`."""
         return 0
 
     def nonUpdatesCount(self):

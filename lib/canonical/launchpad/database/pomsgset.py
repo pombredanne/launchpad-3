@@ -250,8 +250,14 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def isNewerThan(self, timestamp):
         """See `IPOMsgSet`."""
-        if (self.date_reviewed is not None and
-            self.date_reviewed > timestamp):
+        date_updated = self.date_reviewed
+        for pluralform in range(self.pluralforms):
+            submission = self.getActiveSubmission(pluralform)
+            if submission and (not date_updated or
+                               submission.datecreated > date_updated):
+                date_updated = submission.datecreated
+
+        if (date_updated is not None and date_updated > timestamp):
             return True
         else:
             return False
@@ -463,7 +469,13 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 has_changed = True
 
         if has_changed and is_editor:
-            self.updateReviewerInfo(person)
+            if published:
+                # When update for a submission is published, nobody has
+                # actually reviewed the new submission in Launchpad, so
+                # we don't set the reviewer and date_reviewed
+                self.pofile.last_touched_pomsgset = self
+            else:
+                self.updateReviewerInfo(person)
 
         if force_suggestion:
             # We already stored the suggestions, so we don't have anything
