@@ -136,6 +136,10 @@ def branch_index(context, view):
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
 
+def branchsubscription_edit(context, view):
+    return smartquote(
+        'Edit subscription to branch "%s"' % context.branch.displayname)
+
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
 bug_activity = ContextBugId('Bug #%s - Activity log')
@@ -697,6 +701,8 @@ person_packagebugs_overview = person_packagebugs
 person_packagebugs_search = person_packagebugs
 
 person_participation = ContextTitle("Team participation by %s")
+
+person_projects = ContextTitle("Projects %s is involved with")
 
 person_review = ContextDisplayName("Review %s")
 

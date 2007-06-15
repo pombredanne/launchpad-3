@@ -165,6 +165,18 @@ COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker en
 COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
 
 
+-- CodeImport
+
+COMMENT ON TABLE CodeImport IS 'The persistent record of an import from a foreign version control system to Bazaar, from the initial request to the regularly updated import branch.';
+COMMENT ON COLUMN CodeImport.branch IS 'The Bazaar branch produced by the import system.  Always non-NULL: a placeholder branch is created when the import is created.  The import is associated to a Product and Series though the branch.';
+COMMENT ON COLUMN CodeImport.registrant IS 'The person who requested this import.';
+COMMENT ON COLUMN CodeImport.review_status IS 'Whether this code import request has been reviewed, and whether it was accepted.';
+COMMENT ON COLUMN CodeImport.rcs_type IS 'The revision control system used by the import source. The value is defined in dbschema.RevisionControlSystems.';
+COMMENT ON COLUMN CodeImport.svn_branch_url IS 'The URL of the Subversion branch for this import.';
+COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the form :pserver:user@host:/path.';
+COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
+
+
 -- CVE
 
 COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';
@@ -430,6 +442,7 @@ COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of t
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
+COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POMsgSets with new, unreviewed POSubmissions.';
 
 -- POSubmission
 COMMENT ON TABLE POSubmission IS 'This table records the fact
@@ -546,6 +559,7 @@ COMMENT ON COLUMN DistroReleaseLanguage.dateupdated IS 'The date these statistuc
 COMMENT ON COLUMN DistroReleaseLanguage.currentcount IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.updatescount IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.rosettacount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroReleaseLanguage.unreviewed_count IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.contributorcount IS 'The total number of contributors to the translation of this distrorelease into this language.';
 
 -- Manifest
