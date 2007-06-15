@@ -59,7 +59,8 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
             attributes = dict(
                 type='radio', name=self.name, value=option,
                 id='%s.option.%s' % (self.name, option))
-            if self.request.form.get(self.name, self.default_option) == option:
+            if self.request.form_ng.getOne(
+                     self.name, self.default_option) == option:
                 attributes['checked'] = 'checked'
             self.options[option] = renderElement('input', **attributes)
         self.package_widget.onKeyPress = (
@@ -80,14 +81,15 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     def getInputValue(self):
         """See zope.app.form.interfaces.IInputWidget."""
-        form_value = self.request.form.get(self.name)
+        form_value = self.request.form_ng.getOne(self.name)
         if form_value == 'product':
             try:
                 return self.product_widget.getInputValue()
             except MissingInputError:
                 raise LaunchpadValidationError('Please enter a project name')
             except ConversionError:
-                entered_name = self.request.form.get("%s.product" % self.name)
+                entered_name = self.request.form_ng.getOne(
+                    "%s.product" % self.name)
                 raise LaunchpadValidationError(
                     "There is no project named '%s' registered in"
                     " Launchpad", entered_name)
@@ -95,7 +97,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
             try:
                 distribution = self.distribution_widget.getInputValue()
             except ConversionError:
-                entered_name = self.request.form.get(
+                entered_name = self.request.form_ng.getOne(
                     "%s.distribution" % self.name)
                 raise LaunchpadValidationError(
                     "There is no distribution named '%s' registered in"
@@ -105,7 +107,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 try:
                     package_name = self.package_widget.getInputValue()
                 except ConversionError:
-                    entered_name = self.request.form.get(
+                    entered_name = self.request.form_ng.getOne(
                         '%s.package' % self.name)
                     raise LaunchpadValidationError(
                         "There is no source package name '%s' published in %s",

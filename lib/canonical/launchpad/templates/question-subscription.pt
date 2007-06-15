@@ -38,9 +38,6 @@
         method="post">
 
     <div class="actions">
-      <input type="submit"
-             name="cancel"
-             value="Cancel" />
       <input tal:condition="not: view/subscription"
              type="submit"
              name="subscribe"

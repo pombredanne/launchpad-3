@@ -35,14 +35,14 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, ILaunchBag, IDistribution, IDistroRelease, IDistroReleaseSet,
+    IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IDistroSeriesSet,
     IProduct, IProject, IDistributionSourcePackage, NotFoundError,
     CreateBugParams, IBugAddForm, ILaunchpadCelebrities, IProductSeries,
     ITemporaryStorageManager, IMaloneApplication, IFrontPageBugAddForm,
     IProjectBugAddForm)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
-    urlappend)
+    safe_action, urlappend)
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
@@ -191,11 +191,11 @@ class FileBugViewBase(LaunchpadFormView):
                 try:
                     distribution.guessPackageNames(packagename)
                 except NotFoundError:
-                    if distribution.releases:
-                        # If a distribution doesn't have any releases,
+                    if distribution.serieses:
+                        # If a distribution doesn't have any serieses,
                         # it won't have any source packages published at
                         # all, so we set the error only if there are
-                        # releases.
+                        # serieses.
                         packagename_error = (
                             '"%s" does not exist in %s. Please choose a '
                             "different package. If you're unsure, please "
@@ -399,7 +399,7 @@ class FileBugViewBase(LaunchpadFormView):
     def getProductOrDistroFromContext(self):
         """Return the product or distribution relative to the context.
 
-        For instance, if the context is an IDistroRelease, return the
+        For instance, if the context is an IDistroSeries, return the
         distribution related to it. Will return None if the context is
         not related to a product or a distro.
         """
@@ -408,7 +408,7 @@ class FileBugViewBase(LaunchpadFormView):
             return context
         elif IProductSeries.providedBy(context):
             return context.product
-        elif (IDistroRelease.providedBy(context) or
+        elif (IDistroSeries.providedBy(context) or
               IDistributionSourcePackage.providedBy(context)):
             return context.distribution
         else:
@@ -456,6 +456,7 @@ class FileBugGuidedView(FileBugViewBase):
 
     focused_element_id = 'field.title'
 
+    @safe_action
     @action("Continue", name="search", validator="validate_search")
     def search_action(self, action, data):
         """Search for similar bug reports."""
@@ -674,37 +675,35 @@ class BugTargetBugListingView:
     """Helper methods for rendering bug listings."""
 
     @property
-    def release_buglistings(self):
-        """Return a buglisting for each release.
+    def series_buglistings(self):
+        """Return a buglisting for each series.
 
-        The list is sorted newest release to oldest.
+        The list is sorted newest series to oldest.
 
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        distribution_context = IDistribution(self.context, None)
-        distrorelease_context = IDistroRelease(self.context, None)
-
-        if distrorelease_context:
-            distribution = distrorelease_context.distribution
-        elif distribution_context:
-            distribution = distribution_context
+        if IDistribution(self.context, None):
+            serieses = self.context.serieses
+        elif IProduct(self.context, None):
+            serieses = self.context.serieses
+        elif IDistroSeries(self.context, None):
+            serieses = self.context.distribution.serieses
+        elif IProductSeries(self.context, None):
+            serieses = self.context.product.serieses
         else:
-            raise AssertionError, ("release_bug_counts called with "
+            raise AssertionError, ("series_bug_counts called with "
                                    "illegal context")
 
-        releases = getUtility(IDistroReleaseSet).search(
-            distribution=distribution, orderBy="-datereleased")
-
-        release_buglistings = []
-        for release in releases:
-            release_buglistings.append(
+        series_buglistings = []
+        for series in serieses:
+            series_buglistings.append(
                 dict(
-                    title=release.displayname,
-                    url=canonical_url(release) + "/+bugs",
-                    count=release.open_bugtasks.count()))
+                    title=series.name,
+                    url=canonical_url(series) + "/+bugs",
+                    count=series.open_bugtasks.count()))
 
-        return release_buglistings
+        return series_buglistings
 
 
 class BugCountDataItem:
@@ -746,7 +745,7 @@ class BugTargetBugsView(BugTaskSearchListingView):
             BugTaskStatus.INPROGRESS,
             BugTaskStatus.FIXCOMMITTED,
             ]
-        if IDistroRelease.providedBy(self.context):
+        if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
         bug_counts = sorted(
             self.context.getBugCounts(self.user, bug_statuses_to_show).items())

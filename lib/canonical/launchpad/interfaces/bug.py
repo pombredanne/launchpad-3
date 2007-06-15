@@ -150,7 +150,7 @@ class IBug(IMessageTarget, ICanBeMentored):
     initial_message = Attribute(
         "The message that was specified when creating the bug")
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
-        'ubuntu, then other distroreleases.')
+        'ubuntu, then other distroseriess.')
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
@@ -248,6 +248,14 @@ class IBug(IMessageTarget, ICanBeMentored):
     def addCommentNotification(message):
         """Add a bug comment notification."""
 
+    def expireNotifications():
+        """Expire any pending notifications that have not been emailed.
+
+        This will mark any notifications related to this bug as having
+        been emailed.  The intent is to prevent large quantities of
+        bug mail being generated during bulk imports or changes.
+        """
+
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
@@ -292,14 +300,14 @@ class IBug(IMessageTarget, ICanBeMentored):
 
     def getNullBugTask(product=None, productseries=None,
                     sourcepackagename=None, distribution=None,
-                    distrorelease=None):
+                    distroseries=None):
         """Create an INullBugTask and return it for the given parameters."""
 
     def addNomination(owner, target):
-        """Nominate a bug for an IDistroRelease or IProductSeries.
+        """Nominate a bug for an IDistroSeries or IProductSeries.
 
         :owner: An IPerson.
-        :target: An IDistroRelease or IProductSeries.
+        :target: An IDistroSeries or IProductSeries.
 
         The nomination will be automatically approved, if the user has
         permission to approve it.
@@ -311,7 +319,7 @@ class IBug(IMessageTarget, ICanBeMentored):
     def canBeNominatedFor(nomination_target):
         """Can this bug nominated for this target?
 
-        :nomination_target: An IDistroRelease or IProductSeries.
+        :nomination_target: An IDistroSeries or IProductSeries.
 
         Returns True or False.
         """
@@ -321,7 +329,7 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         If no nomination is found, a NotFoundError is raised.
 
-        :nomination_target: An IDistroRelease or IProductSeries.
+        :nomination_target: An IDistroSeries or IProductSeries.
         """
 
     def getNominations(target=None):
@@ -338,6 +346,19 @@ class IBug(IMessageTarget, ICanBeMentored):
         """Return the BugWatch that has the given bugtracker and remote bug.
 
         Return None if this bug doesn't have such a bug watch.
+        """
+
+    def setStatus(target, status, user):
+        """Set the status of the bugtask related to the specified target.
+
+            :target: The target of the bugtask that should be modified.
+            :status: The status the bugtask should be set to.
+            :user: The IPerson doing the change.
+
+        If a bug task was edited, emit a SQLObjectModifiedEvent and
+        return the edited bugtask.
+
+        Return None if no bugtask was edited.
         """
 
     def getBugTask(target):

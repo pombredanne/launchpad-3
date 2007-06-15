@@ -1,9 +1,9 @@
 = Milestones =
 
-Products, Distributions, ProductSeries and DistroReleases have a page in
+Products, Distributions, ProductSeries and DistroSeriess have a page in
 which all of their milestones are listed.
 
-== Distributions and DistroReleases ==
+== Distributions and DistroSeriess ==
 
     >>> anon_browser.open('http://launchpad.dev/debian/+milestones')
     >>> anon_browser.url

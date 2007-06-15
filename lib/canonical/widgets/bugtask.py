@@ -22,7 +22,9 @@ from zope.app.form.utility import setUpWidget
 
 from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
 from canonical.launchpad.webapp import canonical_url
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
 
 class BugTaskAssigneeWidget(Widget):
     """A widget for setting the assignee on an IBugTask."""
@@ -68,7 +70,7 @@ class BugTaskAssigneeWidget(Widget):
         # If the user has chosen to assign this bug to somebody else,
         # ensure that they actually provided a valid input value for
         # the assignee field.
-        if self.request.form.get(self.name + ".option") == self.assign_to:
+        if self.request.form_ng.getOne(self.name + ".option") == self.assign_to:
             if not self.assignee_chooser_widget.hasInput():
                 raise WidgetInputError(
                         self.name, self.label,
@@ -107,9 +109,9 @@ class BugTaskAssigneeWidget(Widget):
         """See zope.app.form.interfaces.IInputWidget."""
         self.validate()
 
-        form = self.request.form
+        form = self.request.form_ng
 
-        assignee_option = form.get(self.name + ".option")
+        assignee_option = form.getOne(self.name + ".option")
         if assignee_option == self.assign_to:
             # The user has chosen to use the assignee chooser widget
             # to select an assignee.
@@ -189,7 +191,7 @@ class BugTaskAssigneeWidget(Widget):
         """
         # Give form values in the request precedence in deciding which
         # radio button should be selected.
-        selected_option = self.request.form.get(self.name + ".option")
+        selected_option = self.request.form_ng.getOne(self.name + ".option")
         if selected_option:
             return selected_option
 
@@ -268,7 +270,7 @@ class BugTaskBugWatchWidget(RadioWidget):
         one uses getInputValue(), which it shouldn't do.
         """
         if not self._renderedValueSet():
-            return self.request.form.get(self.name, self._missing)
+            return self.request.form_ng.getOne(self.name, self._missing)
         else:
             return self._toFormValue(self._data)
 
@@ -406,11 +408,11 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
 
         field = self.context
         distribution = field.context.distribution
-        if distribution is None and field.context.distrorelease is not None:
-            distribution = field.context.distrorelease.distribution
+        if distribution is None and field.context.distroseries is not None:
+            distribution = field.context.distroseries.distribution
         assert distribution is not None, (
             "BugTaskSourcePackageNameWidget should be used only for"
-            " bugtasks on distributions or on distribution releases.")
+            " bugtasks on distributions or on distribution series.")
 
         try:
             source, binary = distribution.guessPackageNames(input)
@@ -475,12 +477,26 @@ class DBItemDisplayWidget(BrowserWidget):
             return renderElement('span', contents='&mdash;')
 
 
-class NewLineToSpacesWidget(TextWidget):
+class NewLineToSpacesWidget(StrippedTextWidget):
     """A widget that replaces new line characters with spaces."""
 
     def _toFieldValue(self, input):
-        value = TextWidget._toFieldValue(self, input)
+        value = StrippedTextWidget._toFieldValue(self, input)
         if value is not self.context.missing_value:
             lines = value.splitlines()
             value = ' '.join(lines)
         return value
+
+
+class NominationReviewActionWidget(LaunchpadRadioWidget):
+    """Widget for choosing a nomination review action.
+
+    It renders a radio box with no label for each option.
+    """
+    orientation = "horizontal"
+
+    # The label will always be the empty string.
+    _joinButtonToMessageTemplate = '%s%s'
+
+    def textForValue(self, term):
+        return u''

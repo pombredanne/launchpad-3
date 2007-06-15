@@ -10,6 +10,7 @@ import random
 import time
 import unittest
 
+import bzrlib.osutils
 from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
 from bzrlib.tests import TestCaseWithTransport
@@ -802,6 +803,61 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.assertTextEqual(diff, expected_diff)
         message = sync.getRevisionMessage(revision)
         self.assertTextEqual(message, expected_message)
+
+    def test_message_encoding(self):
+        """Test handling of non-ASCII commit messages."""
+        rev_id = 'rev-1'
+        self.commitRevision(
+            rev_id=rev_id, message = u"Non ASCII: \xe9",
+            committer=u"Non ASCII: \xed",
+            timestamp=1000000000.0, timezone=0)
+        sync = self.makeBzrSync()
+        revision = sync.bzr_branch.repository.get_revision(rev_id)
+        message = sync.getRevisionMessage(revision)
+        # The revision message must be a unicode object.
+        expected = (
+            u'-' * 60 + '\n'
+            u"revno: 1" '\n'
+            u"committer: Non ASCII: \xed" '\n'
+            u"branch nick: bzr_branch" '\n'
+            u"timestamp: Sun 2001-09-09 01:46:40 +0000" '\n'
+            u"message:" '\n'
+            u"  Non ASCII: \xe9" '\n')
+        self.assertTextEqual(message, expected)
+
+    def test_diff_encoding(self):
+        """Test handling of diff of files which are not utf-8."""
+        # Since bzr does not know the encoding used for file contents, which
+        # may even be no encoding at all (different part of the file using
+        # different encodings), it generates diffs using utf-8 for file names
+        # and raw 8 bit text for file contents.
+        rev_id = 'rev-1'
+        # Adding a file whose content is a mixture of latin-1 and utf-8. It
+        # would be nice to use a non-ASCII file name, but getting it into the
+        # branch through the filesystem would make the test dependent on the
+        # value of sys.getfilesystemencoding().
+        self.writeToFile(filename='un elephant',
+                         contents='\xc7a trompe \xc3\xa9norm\xc3\xa9ment.\n')
+        # XXX: The binary file is not really needed here, but it triggers a
+        # crasher bug with bzr-0.15 and earlier. -- DavidAllouche 2007-04-26
+        self.writeToFile(filename='binary', contents=chr(0))
+        self.commitRevision(rev_id=rev_id, timestamp=1000000000.0, timezone=0)
+        sync = self.makeBzrSync()
+        revision = sync.bzr_branch.repository.get_revision(rev_id)
+        diff = sync.getDiff(revision)
+        # The diff must be a unicode object, characters that could not be
+        # decoded as utf-8 replaced by the unicode substitution character.
+        expected = (
+            u"=== added file 'binary'" '\n'
+            u"Binary files a/binary\t1970-01-01 00:00:00 +0000"
+            u" and b/binary\t2001-09-09 01:46:40 +0000 differ" '\n'
+            u"=== added file 'un elephant'" '\n'
+            u"--- a/un elephant\t1970-01-01 00:00:00 +0000" '\n'
+            u"+++ b/un elephant\t2001-09-09 01:46:40 +0000" '\n'
+            u"@@ -0,0 +1,1 @@" '\n'
+            # \ufffd is the substitution character.
+            u"+\ufffd trompe \xe9norm\xe9ment." '\n' '\n')
+        self.assertTextEqual(diff, expected)
 
 
 class TestRevisionProperty(BzrSyncTestCase):

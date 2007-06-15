@@ -43,7 +43,7 @@
          tal:define="widgets view/bugwatch_widgets">
 
       <p>
-            eIf the bug has been reported in another bug tracker, you can
+            If the bug has been reported in another bug tracker, you can
             link to it in order to keep track of its status. Launchpad
             synchronizes the status automatically for you.
       </p>

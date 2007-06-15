@@ -31,7 +31,6 @@
       </tal:answerer>
       in
       <span tal:replace="context/target/title">SmegConf</span>
-      (<span tal:replace="context/priority/title">High</span>)
     </div>
   </td>
 </tr>

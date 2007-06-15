@@ -117,3 +117,7 @@ class TranslationGroupSet:
             orderBy="TranslationGroup.title")
 
         return direct.union(indirect)
+
+    def getGroupsCount(self):
+        """See ITranslationGroupSet."""
+        return TranslationGroup.select().count()

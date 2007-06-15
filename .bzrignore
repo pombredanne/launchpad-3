@@ -10,8 +10,10 @@ sourcecode/bzrtools
 sourcecode/cscvs
 sourcecode/gnarly
 sourcecode/hct
+sourcecode/mailman
 sourcecode/openid
 sourcecode/psycopgda
+sourcecode/pyax
 sourcecode/pybaz
 sourcecode/pygettextpo
 sourcecode/pygpgme
@@ -31,3 +33,4 @@ database/schema/diagrams/*.dot
 sourcecode/twisted
 thread*.request
 ./TAGS
+lib/mailman

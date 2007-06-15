@@ -39,7 +39,6 @@ __all__ = [
     'BugContactPackageBugsSearchListingView',
     'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
-    'PersonView',
     'PersonTranslationView',
     'PersonFacets',
     'PersonGPGView',
@@ -50,6 +49,7 @@ __all__ = [
     'PersonRdfView',
     'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
+    'PersonRelatedProjectsView',
     'PersonSearchQuestionsView',
     'PersonSetContextMenu',
     'PersonSetFacets',
@@ -86,8 +86,10 @@ __all__ = [
 
 import cgi
 import copy
-import urllib
+from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
+import pytz
+import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.form.browser.add import AddView
@@ -95,7 +97,9 @@ from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.interface import implements
 from zope.component import getUtility
+from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
@@ -104,7 +108,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
-    PersonCreationRationale, BugTaskStatus)
+    PersonCreationRationale, BugTaskStatus, TeamMembershipRenewalPolicy)
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -118,7 +122,8 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet)
+    BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet, ITeamMembership,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -135,6 +140,7 @@ from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -193,6 +199,17 @@ class PersonNavigation(CalendarTraversalMixin,
     def breadcrumb(self):
         return self.context.displayname
 
+    @stepthrough('+expiringmembership')
+    def traverse_expiring_membership(self, name):
+        # Return the found membership regardless of its status as we know
+        # TeamMembershipSelfRenewalView will tell users why the memembership
+        # can't be renewed when necessary.
+        membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.context, getUtility(IPersonSet).getByName(name))
+        if membership is None:
+            return None
+        return TeamMembershipSelfRenewalView(membership, self.request)
+
 
 class PersonDynMenu(DynMenu):
 
@@ -214,9 +231,7 @@ class PersonDynMenu(DynMenu):
         yield self.makeLink('See all projects...', target='/products')
 
 
-class TeamNavigation(CalendarTraversalMixin,
-                     BranchTraversalMixin,
-                     Navigation):
+class TeamNavigation(PersonNavigation):
 
     usedfor = ITeam
 
@@ -227,6 +242,17 @@ class TeamNavigation(CalendarTraversalMixin,
     def traverse_poll(self, name):
         return getUtility(IPollSet).getByTeamAndName(self.context, name)
 
+    @stepthrough('+invitation')
+    def traverse_invitation(self, name):
+        # Return the found membership regardless of its status as we know
+        # TeamInvitationView can handle memberships in statuses other than
+        # INVITED.
+        membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.context, getUtility(IPersonSet).getByName(name))
+        if membership is None:
+            return None
+        return TeamInvitationView(membership, self.request)
+
     @stepthrough('+member')
     def traverse_member(self, name):
         person = getUtility(IPersonSet).getByName(name)
@@ -234,6 +260,131 @@ class TeamNavigation(CalendarTraversalMixin,
             return None
         return getUtility(ITeamMembershipSet).getByPersonAndTeam(
             person, self.context)
+
+
+class TeamMembershipSelfRenewalView(LaunchpadFormView):
+
+    implements(IBrowserPublisher)
+
+    schema = ITeamMembership
+    field_names = []
+    label = 'Renew team membership'
+    template = ViewPageTemplateFile(
+        '../templates/teammembership-self-renewal.pt')
+
+    def __init__(self, context, request):
+        # Only the member himself or admins of the member (in case it's a
+        # team) can see the page in which they renew memberships that are
+        # about to expire.
+        if not check_permission('launchpad.Edit', context.person):
+            raise Unauthorized(
+                "Only the member himself can renew his memberships.")
+        LaunchpadFormView.__init__(self, context, request)
+
+    def browserDefault(self, request):
+        return self, ()
+
+    def getReasonForDeniedRenewal(self):
+        """Return text describing why the membership can't be renewed."""
+        context = self.context
+        ondemand = TeamMembershipRenewalPolicy.ONDEMAND
+        admin = TeamMembershipStatus.ADMIN
+        approved = TeamMembershipStatus.APPROVED
+        date_limit = datetime.now(pytz.timezone('UTC')) - timedelta(
+            days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
+        if context.status not in (admin, approved):
+            text = "it is not active."
+        elif context.team.renewal_policy != ondemand:
+            text = ('<a href="%s">%s</a> is not a team which accepts its '
+                    'members to renew their own memberships.'
+                    % (canonical_url(context.team),
+                       context.team.unique_displayname))
+        elif context.dateexpires is None or context.dateexpires > date_limit:
+            if context.person.isTeam():
+                link_text = "Somebody else has already renewed it."
+            else:
+                link_text = (
+                    "You or one of the team administrators has already "
+                    "renewed it.")
+            text = ('it is not set to expire in %d days or less. '
+                    '<a href="%s/+members">%s</a>'
+                    % (DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+                       canonical_url(context.team), link_text))
+        else:
+            raise AssertionError('This membership can be renewed!')
+        return text
+
+    @property
+    def time_before_expiration(self):
+        return self.context.dateexpires - datetime.now(pytz.timezone('UTC'))
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.person)
+
+    @action(_("Renew"), name="renew")
+    def renew_action(self, action, data):
+        member = self.context.person
+        member.renewTeamMembership(self.context.team)
+        self.request.response.addInfoNotification(
+            _("Membership renewed until %(date)s."),
+            date=self.context.dateexpires.strftime('%Y-%m-%d'))
+
+    @action(_("Let it Expire"), name="nothing")
+    def do_nothing_action(self, action, data):
+        # Redirect back and wait for the membership to expire automatically.
+        pass
+
+
+class TeamInvitationView(LaunchpadFormView):
+
+    implements(IBrowserPublisher)
+
+    schema = ITeamMembership
+    label = 'Team membership invitation'
+    field_names = ['reviewercomment']
+    custom_widget('reviewercomment', TextAreaWidget, height=5, width=60)
+    template = ViewPageTemplateFile(
+        '../templates/teammembership-invitation.pt')
+
+    def __init__(self, context, request):
+        # Only admins of the invited team can see the page in which they
+        # approve/decline invitations.
+        if not check_permission('launchpad.Edit', context.person):
+            raise Unauthorized(
+                "Only team administrators can approve/decline invitations "
+                "sent to this team.")
+        LaunchpadFormView.__init__(self, context, request)
+
+    def browserDefault(self, request):
+        return self, ()
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.person)
+
+    @action(_("Accept"), name="accept")
+    def accept_action(self, action, data):
+        member = self.context.person
+        member.acceptInvitationToBeMemberOf(
+            self.context.team, data['reviewercomment'])
+        self.request.response.addInfoNotification(
+            _("This team is now a member of %(team)s"),
+            team=self.context.team.browsername)
+
+    @action(_("Decline"), name="decline")
+    def decline_action(self, action, data):
+        member = self.context.person
+        member.declineInvitationToBeMemberOf(
+            self.context.team, data['reviewercomment'])
+        self.request.response.addInfoNotification(
+            _("Declined the invitation to join %(team)s"),
+            team=self.context.team.browsername)
+
+    @action(_("Cancel"), name="cancel")
+    def cancel_action(self, action, data):
+        # Simply redirect back.
+        pass
 
 
 class PersonSetNavigation(Navigation):
@@ -385,7 +536,8 @@ class PersonFacets(StandardLaunchpadFacets):
 
     def answers(self):
         text = 'Answers'
-        summary = 'Questions that involves %s' % self.context.browsername
+        summary = (
+            'Questions that %s is involved with' % self.context.browsername)
         return Link('', text, summary)
 
     def translations(self):
@@ -558,6 +710,12 @@ class CommonMenuLinks:
         summary = 'Packages assigned to %s' % self.context.browsername
         return Link(target, text, summary, icon='packages')
 
+    def related_projects(self):
+        target = '+projects'
+        text = 'List related projects'
+        summary = 'Projects %s is involved with' % self.context.browsername
+        return Link(target, text, summary, icon='packages')
+
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -568,7 +726,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys',
              'memberships', 'mentoringoffers',
-             'codesofconduct', 'karma', 'common_packages', 'administer',]
+             'codesofconduct', 'karma', 'common_packages', 'related_projects',
+             'administer']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -673,10 +832,10 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = ITeam
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'memberships', 'mugshots', 
+             'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'polls', 'add_poll',
              'joinleave', 'mentorships', 'reassign', 'common_packages',
-             ]
+             'related_projects']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -702,6 +861,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+members'
         text = 'Show all members'
         return Link(target, text, icon='people')
+
+    @enabled_with_permission('launchpad.Edit')
+    def received_invitations(self):
+        target = '+invitations'
+        text = 'Show received invitations'
+        return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def add_member(self):
@@ -748,15 +913,20 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         return Link(target, text, summary, icon='mail')
 
     def joinleave(self):
-        if userIsActiveTeamMember(self.context):
+        team = self.context
+        enabled = True
+        if userIsActiveTeamMember(team):
             target = '+leave'
             text = 'Leave the Team' # &#8230;
             icon = 'remove'
         else:
+            if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+                # This is a restricted team; users can't join.
+                enabled = False
             target = '+join'
             text = 'Join the team' # &#8230;
             icon = 'add'
-        return Link(target, text, icon=icon)
+        return Link(target, text, icon=icon, enabled=enabled)
 
 
 class BaseListView:
@@ -1450,9 +1620,27 @@ class PersonView(LaunchpadView):
             categories.update(category for category in contrib['categories'])
         return sorted(categories, key=attrgetter('title'))
 
-    @cachedproperty
-    def recently_approved_memberships(self):
-        """Return the 5 memberships for teams most recently joined."""
+    @property
+    def subscription_policy_description(self):
+        """Return the description of this team's subscription policy."""
+        team = self.context
+        assert team.isTeam(), (
+            'This method can only be called when the context is a team.')
+        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+            description = _(
+                "This is a restricted team; new members can only be added "
+                "by one of the team's administrators.")
+        elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+            description = _(
+                "This is a moderated team; all subscriptions are subjected "
+                "to approval by one of the team's administrators.")
+        elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+            description = _(
+                "This is an open team; any user can join and no approval "
+                "is required.")
+        else:
+            raise AssertionError('Unknown subscription policy.')
+        return description
 
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
@@ -1585,6 +1773,35 @@ class PersonView(LaunchpadView):
                 type_name = 'Unknown key type'
             keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
         return "\n".join(keys)
+
+
+class PersonRelatedProjectsView(LaunchpadView):
+
+    # Safety net for the Registry Admins case which is the owner/driver of
+    # lots of projects.
+    max_results_to_display = config.launchpad.default_batch_size
+
+    def _related_projects(self):
+        """Return all projects owned or driven by this person."""
+        return self.context.getOwnedOrDrivenPillars()
+
+    @cachedproperty
+    def relatedProjects(self):
+        """Return projects owned or driven by this person up to the maximum
+        configured."""
+        return list(self._related_projects()[:self.max_results_to_display])
+
+    @cachedproperty
+    def firstFiveRelatedProjects(self):
+        """Return first five projects owned or driven by this person."""
+        return list(self._related_projects()[:5])
+
+    @cachedproperty
+    def related_projects_count(self):
+        return self._related_projects().count()
+
+    def tooManyRelatedProjectsFound(self):
+        return self.related_projects_count > self.max_results_to_display
 
 
 class PersonCodeOfConductEditView(LaunchpadView):
@@ -1853,8 +2070,8 @@ class PersonTranslationView(LaunchpadView):
         #   potemplate.potemplatename
         #   potemplate.productseries
         #   potemplate.productseries.product
-        #   potemplate.distrorelease
-        #   potemplate.distrorelease.distribution
+        #   potemplate.distroseries
+        #   potemplate.distroseries.distribution
         #   potemplate.sourcepackagename
         # However, a list this long may be actually suggesting that
         # displayname be cached in a table field; particularly given the
@@ -2137,7 +2354,8 @@ class TeamJoinView(PersonView):
         user = self.user
         context = self.context
 
-        if request.form.get('join') and self.userCanRequestToJoin():
+        notification = None
+        if 'join' in request.form and self.userCanRequestToJoin():
             policy = context.subscriptionpolicy
             user.join(context)
             if policy == TeamSubscriptionPolicy.MODERATED:
@@ -2145,11 +2363,16 @@ class TeamJoinView(PersonView):
             else:
                 notification = _(
                     'Successfully joined %s.' % context.displayname)
-        elif request.form.get('join'):
+        elif 'join' in request.form:
             notification = _('You cannot join %s.' % context.displayname)
+        elif 'goback' in request.form:
+            # User clicked on the 'Go back' button, so we'll simply redirect.
+            pass
         else:
-            raise UnexpectedFormData('No action specified')
-        request.response.addInfoNotification(notification)
+            raise UnexpectedFormData(
+                "Couldn't find any of the expected actions.")
+        if notification is not None:
+            request.response.addInfoNotification(notification)
         self.request.response.redirect(canonical_url(context))
 
 
@@ -2707,10 +2930,12 @@ class TeamReassignmentView(ObjectReassignmentView):
         # proposed members they'll be made administrators of the team.
         if newOwner not in team.inactivemembers:
             team.addMember(
-                newOwner, reviewer=oldOwner, status=TeamMembershipStatus.ADMIN)
+                newOwner, reviewer=oldOwner,
+                status=TeamMembershipStatus.ADMIN, force_team_add=True)
         if oldOwner not in team.inactivemembers:
             team.addMember(
-                oldOwner, reviewer=oldOwner, status=TeamMembershipStatus.ADMIN)
+                oldOwner, reviewer=oldOwner,
+                status=TeamMembershipStatus.ADMIN, force_team_add=True)
 
 
 class PersonLatestQuestionsView(LaunchpadView):

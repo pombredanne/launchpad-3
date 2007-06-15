@@ -3,6 +3,10 @@ Test that the page to add a new product loads.
 >>> user_browser.open("http://launchpad.dev/projects/+new")
 >>> print find_main_content(user_browser.contents).find('h1').renderContents()
 Register an upstream open source project
+>>> for tag in find_tags_by_class(user_browser.contents, 'documentDescription'):
+...     print extract_text(tag)
+Use this page to register a project, so that you can track translations, bugs
+or specifications for it.
 
 Tests if the validator is working for the URL fields
 

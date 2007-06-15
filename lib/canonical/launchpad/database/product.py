@@ -14,9 +14,8 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
-from sqlobject.sqlbuilder import SQLConstant
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues, cursor
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -25,12 +24,14 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.lp.dbschema import (
     TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus)
+    SpecificationStatus, RosettaImportStatus)
 
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.branchvisibilitypolicy import (
+    BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
@@ -50,6 +51,8 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
+from canonical.launchpad.database.translationimportqueue import (
+    TranslationImportQueueEntry)
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     get_supported_languages,
@@ -57,6 +60,7 @@ from canonical.launchpad.interfaces import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
+    IHasTranslationImports,
     ILaunchpadCelebrities,
     ILaunchpadStatisticSet,
     IPersonSet,
@@ -69,11 +73,11 @@ from canonical.launchpad.interfaces import (
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
-              KarmaContextMixin):
+              KarmaContextMixin, BranchVisibilityPolicyMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner, IQuestionTarget,
-               IHasLogo, IHasMugshot, IHasIcon)
+               IHasLogo, IHasMugshot, IHasIcon, IHasTranslationImports)
 
     _table = 'Product'
 
@@ -99,11 +103,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
-        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
+        dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
-        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
+        dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+        dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     screenshotsurl = StringCol(
         dbName='screenshotsurl', notNull=False, default=None)
     wikiurl =  StringCol(dbName='wikiurl', notNull=False, default=None)
@@ -180,7 +184,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
-    serieslist = SQLMultipleJoin('ProductSeries', joinColumn='product',
+    serieses = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 
     @property
@@ -238,12 +242,12 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
                     """ % sqlvalues(self.id)
         clauseTables = ['ProductSeries']
         ret = Packaging.select(clause, clauseTables,
-            prejoins=["sourcepackagename", "distrorelease.distribution"])
+            prejoins=["sourcepackagename", "distroseries.distribution"])
         sps = [SourcePackage(sourcepackagename=r.sourcepackagename,
-                             distrorelease=r.distrorelease) for r in ret]
+                             distroseries=r.distroseries) for r in ret]
         return sorted(sps, key=lambda x:
-            (x.sourcepackagename.name, x.distrorelease.name,
-             x.distrorelease.distribution.name))
+            (x.sourcepackagename.name, x.distroseries.name,
+             x.distroseries.distribution.name))
 
     @property
     def distrosourcepackages(self):
@@ -254,11 +258,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
                     """ % sqlvalues(self.id)
         clauseTables = ['ProductSeries']
         ret = Packaging.select(clause, clauseTables,
-            prejoins=["sourcepackagename", "distrorelease.distribution"])
+            prejoins=["sourcepackagename", "distroseries.distribution"])
         distros = set()
         dsps = []
         for packaging in ret:
-            distro = packaging.distrorelease.distribution
+            distro = packaging.distroseries.distribution
             if distro in distros:
                 continue
             distros.add(distro)
@@ -280,15 +284,15 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         return shortlist(Branch.selectBy(product=self,
             orderBy='-id').limit(quantity))
 
-    def getPackage(self, distrorelease):
+    def getPackage(self, distroseries):
         """See IProduct."""
-        if isinstance(distrorelease, Distribution):
-            distrorelease = distrorelease.currentrelease
+        if isinstance(distroseries, Distribution):
+            distroseries = distroseries.currentrelease
         for pkg in self.sourcepackages:
-            if pkg.distrorelease == distrorelease:
+            if pkg.distroseries == distroseries:
                 return pkg
         else:
-            raise NotFoundError(distrorelease)
+            raise NotFoundError(distroseries)
 
     def getMilestone(self, name):
         """See IProduct."""
@@ -337,7 +341,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             unsupported_target = self
         else:
             unsupported_target = None
-            
+
         return QuestionTargetSearch(
             product=self,
             search_text=search_text, status=status,
@@ -393,8 +397,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IProduct."""
         packages = set(package for package in self.sourcepackages
                        if len(package.currentpotemplates) > 0)
-        # Sort packages by distrorelease.name and package.name
-        return sorted(packages, key=lambda p: (p.distrorelease.name, p.name))
+        # Sort packages by distroseries.name and package.name
+        return sorted(packages, key=lambda p: (p.distroseries.name, p.name))
 
     @property
     def translatable_series(self):
@@ -412,14 +416,14 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IProduct."""
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        targetrelease = ubuntu.currentrelease
+        targetseries = ubuntu.currentseries
         # First, go with the latest product series that has templates:
         series = self.translatable_series
         if series:
             return series[0]
-        # Otherwise, look for an Ubuntu package in the current distrorelease:
+        # Otherwise, look for an Ubuntu package in the current distroseries:
         for package in packages:
-            if package.distrorelease == targetrelease:
+            if package.distroseries == targetseries:
                 return package
         # now let's make do with any ubuntu package
         for package in packages:
@@ -614,6 +618,17 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             product=self, name=name, title=title, url=url, home_page=home_page,
             lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard)
+
+    def getFirstEntryToImport(self):
+        """See IHasTranslationImports."""
+        return TranslationImportQueueEntry.selectFirst(
+            '''status=%s AND
+            productseries=ProductSeries.id AND
+            ProductSeries.product=%s''' % sqlvalues(
+            RosettaImportStatus.APPROVED,
+            self.id),
+            clauseTables=['ProductSeries'],
+            orderBy='TranslationImportQueueEntry.dateimported')
 
 
 class ProductSet:

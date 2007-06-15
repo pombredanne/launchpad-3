@@ -3,124 +3,123 @@ Librarian Access
 
 High Level
 ----------
-
->>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
->>> from StringIO import StringIO
->>> data = 'This is some data'
+    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from StringIO import StringIO
+    >>> data = 'This is some data'
 
 We can create LibraryFileAliases using the ILibraryFileAliasSet utility.
-This name is a mouthful, but is consistant with the rest of our naming.
+This name is a mouthful, but is consistent with the rest of our naming.
 
->>> lfas = getUtility(ILibraryFileAliasSet)
->>> from canonical.launchpad.interfaces import NEVER_EXPIRES
->>> alias = lfas.create(
-...     'text.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
-...     )
->>> alias.mimetype
-u'text/plain'
->>> alias.filename
-u'text.txt'
+    >>> lfas = getUtility(ILibraryFileAliasSet)
+    >>> from canonical.launchpad.interfaces import NEVER_EXPIRES
+    >>> alias = lfas.create(
+    ...     'text.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
+    ...     )
+    >>> alias.mimetype
+    u'text/plain'
+    >>> alias.filename
+    u'text.txt'
 
 We may wish to set an expiry timestamp on the file. The NEVER_EXPIRES
 constant means the file will never be removed from the Librarian, and
 because of this should probably never be used.
 
->>> alias.expires == NEVER_EXPIRES
-True
->>> alias = lfas.create('text.txt', len(data), StringIO(data), 'text/plain')
+    >>> alias.expires == NEVER_EXPIRES
+    True
+    >>> alias = lfas.create('text.txt', len(data), StringIO(data), 'text/plain')
 
 The default expiry of None means the file will expire a few days after
 it is no longer referenced in the database.
 
->>> alias.expires is None
-True
+    >>> alias.expires is None
+    True
 
 We can retrieve the LibraryFileAlias we just created using its ID or sha1.
 
->>> org_alias_id = alias.id
->>> alias = lfas[org_alias_id]
->>> alias.id == org_alias_id
-True
+    >>> org_alias_id = alias.id
+    >>> alias = lfas[org_alias_id]
+    >>> alias.id == org_alias_id
+    True
 
->>> org_alias_id in [a.id for a in lfas.findBySHA1(alias.content.sha1)]
-True
+    >>> org_alias_id in [a.id for a in lfas.findBySHA1(alias.content.sha1)]
+    True
 
 We can get its URL too
 
->>> import re
->>> re.search(
-...     r'^http://localhost:58000/\d+/text.txt$', alias.http_url
-...     ) is not None
-True
+    >>> import re
+    >>> re.search(
+    ...     r'^http://localhost:58000/\d+/text.txt$', alias.http_url
+    ...     ) is not None
+    True
 
 Librarian also serves the same file through https.
 
->>> re.search(
-...     r'^https://localhost:58000/\d+/text.txt$', alias.https_url
-...     ) is not None
-True
+    >>> re.search(
+    ...     r'^https://localhost:58000/\d+/text.txt$', alias.https_url
+    ...     ) is not None
+    True
 
 And we even have a convenient method which returns either the http URL or the
 https one, depending on a config value.
 
->>> from canonical.config import config
->>> config.launchpad.vhosts.use_https
-False
->>> re.search(
-...     r'^http://localhost:58000/\d+/text.txt$', alias.getURL()
-...     ) is not None
-True
+    >>> from canonical.config import config
+    >>> config.launchpad.vhosts.use_https
+    False
+    >>> re.search(
+    ...     r'^http://localhost:58000/\d+/text.txt$', alias.getURL()
+    ...     ) is not None
+    True
 
->>> config.launchpad.vhosts.use_https = True
->>> re.search(
-...     r'^https://localhost:58000/\d+/text.txt$', alias.getURL()
-...     ) is not None
-True
+    >>> config.launchpad.vhosts.use_https = True
+    >>> re.search(
+    ...     r'^https://localhost:58000/\d+/text.txt$', alias.getURL()
+    ...     ) is not None
+    True
 
 # Let's reset the value of use_https to avoid problems in future tests
->>> config.launchpad.vhosts.use_https = False
+    >>> config.launchpad.vhosts.use_https = False
 
 However, we can't access its contents until we have committed
 
->>> alias.open()
-Traceback (most recent call last):
-    [...]
-LookupError: ...
+    >>> alias.open()
+    Traceback (most recent call last):
+        [...]
+    LookupError: ...
 
 Once we commit the transaction, LibraryFileAliases can be accessed like
 files.
 
->>> import transaction
->>> transaction.commit()
+    >>> import transaction
+    >>> transaction.commit()
 
->>> alias.open()
->>> alias.read()
-'This is some data'
->>> alias.close()
+    >>> alias.open()
+    >>> alias.read()
+    'This is some data'
+    >>> alias.close()
 
 We can also read it in chunks.
 
->>> alias.open()
->>> alias.read(2)
-'Th'
->>> alias.read(6)
-'is is '
->>> alias.read()
-'some data'
->>> alias.close()
+    >>> alias.open()
+    >>> alias.read(2)
+    'Th'
+    >>> alias.read(6)
+    'is is '
+    >>> alias.read()
+    'some data'
+    >>> alias.close()
 
 If you don't want to read the file in chunks you can neglect to call
 open() and close().
 
->>> alias.read()
-'This is some data'
+    >>> alias.read()
+    'This is some data'
 
 Each alias also has an expiry date associated with it, the default of None
 meaning the file will expire a few days after nothing references it any
 more:
 
->>> alias.expires is None
-True
+    >>> alias.expires is None
+    True
 
 
 
@@ -130,19 +129,19 @@ Low Level
 We can also use the ILibrarianClient Utility directly to store and access
 files in the Librarian.
 
->>> from canonical.librarian.interfaces import ILibrarianClient
->>> client = getUtility(ILibrarianClient)
->>> from canonical.launchpad.database import LibraryFileAlias
->>> aid = client.addFile(
-...     'text.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
-...     )
->>> transaction.commit()
->>> f = client.getFileByAlias(aid)
->>> f.read()
-'This is some data'
->>> url = client.getURLForAlias(aid)
->>> re.search(r'^http://localhost:58000/\d+/text.txt$', url) is not None
-True
+    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> client = getUtility(ILibrarianClient)
+    >>> from canonical.launchpad.database import LibraryFileAlias
+    >>> aid = client.addFile(
+    ...     'text.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
+    ...     )
+    >>> transaction.commit()
+    >>> f = client.getFileByAlias(aid)
+    >>> f.read()
+    'This is some data'
+    >>> url = client.getURLForAlias(aid)
+    >>> re.search(r'^http://localhost:58000/\d+/text.txt$', url) is not None
+    True
 
 At this level we can also reverse the transactional semantics by using the
 remoteAddFile instead of the addFile method. In this case, the database
@@ -151,48 +150,48 @@ immediately and will exist even if the client transaction rolls back.
 However, the records in the database will not be visible to the client
 until it begins a new transaction.
 
->>> url = client.remoteAddFile(
-...     'text.txt', len(data), StringIO(data), 'text/plain'
-...     )
->>> print url
-http://localhost:58000/.../text.txt
->>> from urllib2 import urlopen
->>> urlopen(url).read()
-'This is some data'
+    >>> url = client.remoteAddFile(
+    ...     'text.txt', len(data), StringIO(data), 'text/plain'
+    ...     )
+    >>> print url
+    http://localhost:58000/.../text.txt
+    >>> from urllib2 import urlopen
+    >>> urlopen(url).read()
+    'This is some data'
 
 If we abort the transaction, it is still in there
 
->>> transaction.abort()
->>> urlopen(url).read()
-'This is some data'
+    >>> transaction.abort()
+    >>> urlopen(url).read()
+    'This is some data'
 
 You can also set the expiry date on the file this way too:
 
->>> from datetime import datetime, timedelta
->>> from pytz import utc
->>> url = client.remoteAddFile(
-...     'text.txt', len(data), StringIO(data), 'text/plain',
-...     expires=datetime(2005,9,1,12,0,0, tzinfo=utc)
-...     )
->>> transaction.abort()
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import utc
+    >>> url = client.remoteAddFile(
+    ...     'text.txt', len(data), StringIO(data), 'text/plain',
+    ...     expires=datetime(2005,9,1,12,0,0, tzinfo=utc)
+    ...     )
+    >>> transaction.abort()
 
 To check the expiry is set, we need to extract the alias id from the URL.
 remoteAddFile deliberatly returns the URL instead of the alias id because,
 except for test cases, the URL is the only thing useful (because the
 client can't see the database records yet).
 
->>> import re
->>> match = re.search('^http://localhost:\d+/(\d+)/', url)
->>> alias_id = int(match.group(1))
->>> alias = lfas[alias_id]
->>> print alias.expires.isoformat()
-2005-09-01T12:00:00+00:00
+    >>> import re
+    >>> match = re.search('^http://localhost:\d+/(\d+)/', url)
+    >>> alias_id = int(match.group(1))
+    >>> alias = lfas[alias_id]
+    >>> print alias.expires.isoformat()
+    2005-09-01T12:00:00+00:00
 
 Buildd mechanism
 ----------------
 
->>> temp_url = config.librarian.buildd_download_url
->>> config.librarian.buildd_download_url = "http://NOT.VALID.COM/"
+    >>> temp_url = config.librarian.buildd_download_url
+    >>> config.librarian.buildd_download_url = "http://NOT.VALID.COM/"
 
 The build daemon machines operate in a restricted network. Because of
 this they require a different download URL to that which gets
@@ -203,73 +202,92 @@ a separate configuration option because the buildd master sometimes
 downloads files itself and that would require the standard
 download_url.
 
->>> url = client.getURLForAlias(aid, is_buildd=True)
->>> re.search(r'^http://NOT\.VALID\.COM/\d+/text.txt$', url) is not None
-True
+    >>> url = client.getURLForAlias(aid, is_buildd=True)
+    >>> re.search(r'^http://NOT\.VALID\.COM/\d+/text.txt$', url) is not None
+    True
 
 We also confirm that when not asking for a buildd URL, the configured
 buildd_download_url does not interfere with the normal URL generation.
 
->>> url = client.getURLForAlias(aid)
->>> re.search(r'^http://NOT\.VALID\.COM/\d+/text.txt$', url) is not None
-False
+    >>> url = client.getURLForAlias(aid)
+    >>> re.search(r'^http://NOT\.VALID\.COM/\d+/text.txt$', url) is not None
+    False
 
->>> config.librarian.buildd_download_url = temp_url
+    >>> config.librarian.buildd_download_url = temp_url
 
 Odds and Sods
 -------------
 
 An UploadFailed will be raised if you try to create a file with no content
 
->>> client.addFile('test.txt', 0, StringIO('hello'), 'text/plain')
-Traceback (most recent call last):
-    [...]
-UploadFailed: Invalid length: 0
+    >>> client.addFile('test.txt', 0, StringIO('hello'), 'text/plain')
+    Traceback (most recent call last):
+        [...]
+    UploadFailed: Invalid length: 0
 
 An AssertionError will be raised if the number of bytes that could be read
 from the file don't match the declared size.
 
->>> client.addFile('test.txt', 42, StringIO(''), 'text/plain')
-Traceback (most recent call last):
-    [...]
-AssertionError: size is 42, but 0 were read from the file
+    >>> client.addFile('test.txt', 42, StringIO(''), 'text/plain')
+    Traceback (most recent call last):
+        [...]
+    AssertionError: size is 42, but 0 were read from the file
 
 Filenames with spaces in them work.
 
->>> aid = client.addFile('hot dog', len(data), StringIO(data), 'text/plain')
->>> transaction.commit()
->>> f = client.getFileByAlias(aid)
->>> f.read()
-'This is some data'
->>> url = client.getURLForAlias(aid)
->>> re.search(r'^http://localhost:58000/\d+/hot%20dog$', url) is not None
-True
+    >>> aid = client.addFile('hot dog', len(data), StringIO(data), 'text/plain')
+    >>> transaction.commit()
+    >>> f = client.getFileByAlias(aid)
+    >>> f.read()
+    'This is some data'
+    >>> url = client.getURLForAlias(aid)
+    >>> re.search(r'^http://localhost:58000/\d+/hot%20dog$', url) is not None
+    True
 
 Unicode file names work.  Note that the filename in the resulting URL
 is encoded as UTF-8.
 
->>> aid = client.addFile(u'Yow\N{INTERROBANG}', len(data), StringIO(data),
-...                      'text/plain')
->>> transaction.commit()
->>> f = client.getFileByAlias(aid)
->>> f.read()
-'This is some data'
->>> url = client.getURLForAlias(aid)
->>> re.search(r'^http://localhost:58000/\d+/Yow%E2%80%BD$', url) is not None
-True
+    >>> aid = client.addFile(u'Yow\N{INTERROBANG}', len(data), StringIO(data),
+    ...                      'text/plain')
+    >>> transaction.commit()
+    >>> f = client.getFileByAlias(aid)
+    >>> f.read()
+    'This is some data'
+    >>> url = client.getURLForAlias(aid)
+    >>> re.search(r'^http://localhost:58000/\d+/Yow%E2%80%BD$', url) is not None
+    True
 
 Files will get garbage collected on production systems as per
 LibrarianGarbageCollection. If you request the URL of a deleted file, you
 will be given None
 
->>> alias = lfas[36]
->>> alias.content.deleted
-True
->>> alias.http_url is None
-True
->>> alias.https_url is None
-True
->>> alias.getURL() is None
-True
->>> client.getURLForAlias(alias.id) is None
-True
+    >>> alias = lfas[36]
+    >>> alias.content.deleted
+    True
+    >>> alias.http_url is None
+    True
+    >>> alias.https_url is None
+    True
+    >>> alias.getURL() is None
+    True
+    >>> client.getURLForAlias(alias.id) is None
+    True
+
+
+Default View
+------------
+A librarian file has a default view that should redirect to the download URL.
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> req = LaunchpadTestRequest()
+    >>> alias = lfas.create(
+    ...     'text2.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
+    ...     )
+    >>> transaction.commit()
+    >>> lfa_view = getMultiAdapter((alias,req), name='+index')
+    >>> lfa_view.initialize()
+    >>> lfa_url = lfa_view.context.getURL()
+    >>> url = alias.getURL()
+    >>> lfa_url == url
+    True

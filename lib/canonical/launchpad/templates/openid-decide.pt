@@ -1,0 +1,52 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+<body>
+    <div metal:fill-slot="main">
+        <p>A site identifying as
+            <em tal:content="view/openid_request/trust_root" />
+            has asked us for confirmation that you are
+            <em tal:content="view/user/displayname" />.
+        </p>
+
+        <p class="warning message" tal:condition="not:view/trust_root/isSane">
+            <strong>Warning:</strong>
+            <em tal:content="view/openid_request/trust_root" /> does not look
+            like a trustworthy URL.
+        </p>
+
+        <p>If you click the <strong>Allow</strong> button, we will
+            confirm to <tal:x content="view/openid_request/trust_root" />
+            that you are who you claim you are.
+        </p>
+
+        <p>If you click the <strong>Deny</strong> button, we will send you
+            back to <tal:x content="view/openid_request/trust_root" />
+            without confirming your identity.
+        </p>
+
+        <form method="post" tal:attributes="action view/server_url">
+            <input type="hidden" name="nonce"
+                tal:attributes="value view/nonce" />
+            <select name="allow_duration">
+                <option value="once">Once only</option>
+                <option value="300">5 minutes</option>
+                <option value="900">15 minutes</option>
+                <option value="1800">30 minutes</option>
+                <option value="3600">1 hour</option>
+                <option value="10800">3 hours</option>
+                <option value="43200">12 hours</option>
+                <option value="86400">1 day</option>
+                <option value="604800">1 week</option>
+                <option value="2678400">1 month</option>
+                <option value="forever">Forever</option>
+            </select>
+            <input type="submit" name="action_allow" value="Allow" />
+            <input type="submit" name="action_deny" value="Deny" />
+        </form>
+    </div>
+</body>
+
+</html>
+
