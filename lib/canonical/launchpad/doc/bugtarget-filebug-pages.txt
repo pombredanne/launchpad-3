@@ -237,8 +237,8 @@ The attachments are all added to the same comment.
 
 === Private Bugs ===
 
-We should be able to specify whether a bug is private by providing a Private
-field in the message.
+We can specify whether a bug is private by providing Private field in the
+message.
 
     >>> debug_data = """MIME-Version: 1.0 
     ... Content-type: multipart/mixed; boundary=boundary
@@ -275,6 +275,18 @@ field in the message.
     This bug should be private.
     >>> filebug_view.added_bug.private
     True
+    >>> filebug_view.added_bug.security_related
+    False
+
+Since the bug was marked private before it was filed, only the bug reporter has
+been subscribed to the bug and there should be no indirect subscribers.
+
+    >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():
+    ...     print subscriber.displayname
+    No Privileges Person
+
+    >>> filebug_view.added_bug.getIndirectSubscribers()
+    []
 
 The user will be notified that the bug has been marked as private.
 
@@ -318,6 +330,17 @@ We can also specify that a bug is public via the same field.
     This bug should be public.
     >>> filebug_view.added_bug.private
     False
+
+Since this bug is public, both the reporter and the bug contact have been
+subscribed.
+
+    >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():
+    ...     print subscriber.displayname
+    No Privileges Person
+
+    >>> for subscriber in filebug_view.added_bug.getIndirectSubscribers():
+    ...     print subscriber.displayname
+    Foo Bar
 
 == publishTraverse() ==
 

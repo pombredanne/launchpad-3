@@ -80,6 +80,10 @@ class FileBugData:
                     self.private = True
                 elif private.lower() == 'no':
                     self.private = False
+                else:
+                    # If the value is anything other than yes or no we just
+                    # ignore it as we cannot currently give the user an error
+                    pass
             for part in mime_msg.get_payload():
                 disposition_header = part.get('Content-Disposition', 'inline')
                 # Get the type, excluding any parameters.
@@ -326,6 +330,9 @@ class FileBugViewBase(LaunchpadFormView):
             notifications.append(
                 'Additional information was added to the bug description.')
 
+        if extra_data.private:
+            params.private = extra_data.private
+
         self.added_bug = bug = context.createBug(params)
         notify(SQLObjectCreatedEvent(bug))
 
@@ -349,9 +356,6 @@ class FileBugViewBase(LaunchpadFormView):
                 notifications.append(
                     'The file "%s" was attached to the bug report.' % 
                         cgi.escape(attachment['filename']))
-
-        if extra_data.private:
-            bug.private = extra_data.private
 
         # Give the user some feedback on the bug just opened.
         for notification in notifications:
