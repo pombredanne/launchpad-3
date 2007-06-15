@@ -21,8 +21,10 @@ from canonical.launchpad.fields import Whiteboard
 class EntitlementQuotaExceededError(Exception):
     """The quota has been exceeded for the entitlement."""
 
+
 class EntitlementInvalidError(Exception):
     """The entitlement is not valid."""
+
 
 class IEntitlement(Interface):
     """An entitlement the right to use a specific feature in Launchpad.
@@ -107,6 +109,7 @@ class IEntitlement(Interface):
 
     def incrementAmountUsed():
         """Add one to the amount used."""
+
 
 class EntitlementQuota:
     """This class stores constants for entitlements quotas."""

@@ -921,6 +921,7 @@ class AdminDistroSeriesTranslations(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
 
+
 class BranchSubscriptionEdit(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBranchSubscription
@@ -933,6 +934,7 @@ class BranchSubscriptionEdit(AuthorizationBase):
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.person) or user.inTeam(admins)
+
 
 class ViewEntitlement(AuthorizationBase):
     """Permissions to view IEntitlement objects.

@@ -38,28 +38,31 @@ entitlement is ACTIVE and the expiration and start dates can be specified.
     >>> verifyObject(IEntitlement, entitlement)
     True
 
-Ensure the date restrictions are met since no start date was specified
-and the expiration date is well into the future.
+If the current date is after the start date (if not None) or before
+the expiration date (if not None) then the in_date_range test will
+pass. 
 
     >>> entitlement.in_date_range
     True
 
 == Quota checking ==
 
-Set the quota to be unmet, meaning the amount used is less than the
-quota.  Since we know the date range is met, the overall validity of
-the entitlement is true.
+If the amount used is less than the quota value the exceeded_quota
+test will be false.
 
     >>> entitlement.quota = 100
     >>> entitlement.amount_used = 0
     >>> entitlement.exceeded_quota
     False
+
+The quota is not exceeded, the date is in range, and the state is
+ACTIVE, so the entitlement is valid.
+
     >>> entitlement.is_valid
     True
 
-Set the amount used to be equal to the quota.  Since the quota has not
-been exceeded, 'exceeded_quota' should still be false and 'is_valid'
-is still true.
+If the amount used is equal to the quota 'exceeded_quota' should still
+be false and 'is_valid' is still true.
 
     >>> entitlement.quota = 100
     >>> entitlement.amount_used = 100
@@ -68,8 +71,8 @@ is still true.
     >>> entitlement.is_valid
     True
 
-Set the amount_used to exceed the quota.  Now the quota constraint is
-false and the entitlement is no longer valid.
+However if the amount_used to exceeds the quota, the exceeded quota is
+true and the entitlement is no longer valid.
 
     >>> entitlement.quota = 100
     >>> entitlement.amount_used = 101
@@ -78,8 +81,8 @@ false and the entitlement is no longer valid.
     >>> entitlement.is_valid
     False
 
-Remove the quota entirely and set the amount used to a really big
-number to demonstrate the quota is not exceeded and the entitlement is
+If the quota is UNLIMITED the exceeded quota test is false even when
+using a really large value for amount used.  The entitlement remains
 valid. 
 
     >>> import sys
