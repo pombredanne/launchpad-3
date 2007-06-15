@@ -75,16 +75,17 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     instance.
     """
     hint_string = pubrec.sourcepackagerelease.architecturehintlist
-    assert hint_string
+    assert hint_string, 'Missing arch_hint_list'
 
-    legal_arch_tags = set(arch.architecturetag 
+    legal_arch_tags = set(arch.architecturetag
                           for arch in legal_archserieses)
 
     if hint_string == 'any':
         package_tags = legal_arch_tags
     elif hint_string == 'all':
         nominated_arch = distroseries.nominatedarchindep
-        assert nominated_arch in legal_archserieses
+        assert nominated_arch in legal_archserieses, (
+            'nominatedarchindep is not present in legal_archseries')
         package_tags = set([nominated_arch.architecturetag])
     else:
         my_archs = hint_string.split()
@@ -247,7 +248,8 @@ class BuilddMaster:
                   (pubrec.sourcepackagerelease.name,
                    pubrec.sourcepackagerelease.version,
                    pubrec.sourcepackagerelease.architecturehintlist))
-        assert pubrec.sourcepackagerelease.architecturehintlist
+        assert pubrec.sourcepackagerelease.architecturehintlist, (
+            'Empty architecture hint list')
         for archseries in build_archs:
             if not archseries.processors:
                 self._logger.debug(

@@ -315,7 +315,7 @@ We want to get a Build and make BuildQueue items for it:
 To make testing easier we provide a convenience function to put a BuildQueue
 object into a preset fixed state:
 
-  >>> default_start = datetime.datetime(2005, 1, 1, 8, 0, 0,tzinfo=UTC)
+  >>> default_start = datetime.datetime(2005, 1, 1, 8, 0, 0, tzinfo=UTC)
   >>> def setupBuildQueue(build_queue, builder):
   ...      build_queue.builder = builder
   ...      build_queue.buildstart = default_start

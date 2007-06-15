@@ -99,8 +99,8 @@ class BuilderGroup:
 
         If builder is BUILDING or WAITING but has an information record
         that doesn't match what is stored in the DB, we have to dismiss
-        the its current actions and let the slave free for another job.
-        Assuming the XMLRPC is working properly at this point.
+        its current actions and let the slave free for another job,
+        assuming the XMLRPC is working properly at this point.
         """
         status_sentence = builder.slaveStatusSentence()
 
@@ -114,7 +114,8 @@ class BuilderGroup:
             }
 
         # Isolate the BuilderStatus string, always the first token in
-        # status returned sentence, see lib/canonical/buildd/slave.py.
+        # see lib/canonical/buildd/slave.py and
+        # IBuilder.slaveStatusSentence().
         status = status_sentence[0]
 
         # If slave is not building nor waiting, it's not in need of rescuing.
@@ -249,8 +250,8 @@ class BuilderGroup:
         librarian = getUtility(ILibrarianClient)
 
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
-        assert (build_status.startswith('BuildStatus.'),
-                'Malformed status string: %s' % build_status)
+        assert build_status.startswith('BuildStatus.'), (
+            'Malformed status string: %s' % build_status)
 
         buildstatus = build_status[len('BuildStatus.'):]
         method = getattr(self, 'buildStatus_' + buildstatus, None)
