@@ -87,8 +87,10 @@ class POMsgSetMixIn:
 
     def initializeSubmissionsCaches(self, related_submissions=None):
         """See `IPOMsgSet`."""
+
         if self._hasSubmissionsCaches():
             return
+
         self.active_submissions = {}
         self.published_submissions = {}
         self.suggestions = {}
@@ -126,11 +128,10 @@ class POMsgSetMixIn:
         for pluralform in self.suggestions.keys():
             active = self.getActiveSubmission(pluralform)
             if active is not None and active.potranslation is not None:
-                suggestions = self.suggestions.get(pluralform)
                 self.suggestions[pluralform] = [
-                    filtered
-                    for filtered in suggestions
-                    if filtered.potranslation != active.potranslation]
+                    submission
+                    for submission in self.suggestions.get(pluralform)
+                    if submission.potranslation != active.potranslation]
         assert self._hasSubmissionsCaches(), (
             "Failed to set up POMsgSet's submission caches")
 
@@ -144,12 +145,12 @@ class POMsgSetMixIn:
             "Failed to initialize POMsgSet's submission caches")
 
     def _hasSubmissionsCaches(self):
-        return not self.attached_submissions is None
+        """Are this POMsgSet's submissions caches initialized?"""
+        return self.attached_submissions is not None
 
     def getWikiSubmissions(self, pluralform):
         """See `IPOMsgSet`."""
-        if self.attached_submissions is None:
-            self.initializeSubmissionsCaches()
+        self.initializeSubmissionsCaches()
         suggestions = self.suggestions.get(pluralform)
         if suggestions is None:
             return []
@@ -320,8 +321,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         (and more) is to initialize the POMsgSet's caches, but that is a much
         bigger job with lots of other byproducts that may not turn out to be
         needed.
-
         """
+
         active = {}
         published = {}
         query = "pomsgset = %s AND (active OR published)" % quote(self)
@@ -808,6 +809,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         applicable_submissions = self.attached_submissions.get(pluralform)
         if applicable_submissions is None:
             return []
+
         active = self.getActiveSubmission(pluralform)
         if active is None:
             return applicable_submissions
