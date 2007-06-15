@@ -8,7 +8,7 @@ import unittest
 
 from zope.interface.verify import verifyObject
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
@@ -39,12 +39,6 @@ class TestDatabaseSetup(LaunchpadTestCase):
 
 
 class DatabaseStorageTestCase(TestDatabaseSetup):
-
-    layer = LaunchpadScriptLayer
-
-    def setUp(self):
-        LaunchpadScriptLayer.switchDbConfig('authserver')
-        super(DatabaseStorageTestCase, self).setUp()
 
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
@@ -163,15 +157,6 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         userDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
         self.assertEqual('sabdfl', userDict['name'])
 
-    def test_fetchProductID(self):
-        storage = DatabaseUserDetailsStorageV2(None)
-        productID = storage._fetchProductIDInteraction('firefox')
-        self.assertEqual(4, productID)
-
-        # Invalid product names are signalled by a return value of ''
-        productID = storage._fetchProductIDInteraction('xxxxx')
-        self.assertEqual('', productID)
-
     def test_getBranchesForUser(self):
         # Although user 12 has lots of branches in the sample data, they only
         # have three push branches: "pushed", "mirrored" and "scanned" on the
@@ -215,25 +200,69 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         fooBranchID, fooBranchName = junkBranches[0]
         self.assertEqual('foo-branch', fooBranchName)
 
+
+class NewDatabaseStorageTestCase(unittest.TestCase):
+    # Tests that call database methods that use the new-style database
+    # connection infrastructure.
+
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        LaunchpadScriptLayer.switchDbConfig('authserver')
+        super(NewDatabaseStorageTestCase, self).setUp()
+
+    def _getTime(self, row_id):
+        cur = cursor()
+        cur.execute("""
+            SELECT mirror_request_time FROM Branch
+            WHERE id = %d""" % row_id)
+        [mirror_request_time] = cur.fetchone()
+        return mirror_request_time
+
     def test_createBranch(self):
         storage = DatabaseUserDetailsStorageV2(None)
-        branchID = storage._createBranchInteraction(self.cursor, 12, 6, 'foo')
+        branchID = storage._createBranchInteraction(
+            12, 'name12', 'firefox', 'foo')
         # Assert branchID now appears in database.  Note that title and summary
         # should be NULL, and author should be set to the owner.
-        self.cursor.execute("""
-            SELECT owner, product, name, title, summary, author FROM Branch
-            WHERE id = %d"""
+        cur = cursor()
+        cur.execute("""
+            SELECT Person.name, Product.name, Branch.name, Branch.title,
+                Branch.summary, Branch.author
+            FROM Branch, Person, Product
+            WHERE Branch.id = %d
+            AND Person.id = Branch.owner
+            AND Product.id = Branch.product
+            """
             % branchID)
-        self.assertEqual((12, 6, 'foo', None, None, 12), self.cursor.fetchone())
+        self.assertEqual(
+            ['name12', 'firefox', 'foo', None, None, 12], cur.fetchone())
 
+    def test_createBranch_junk(self):
         # Create a branch with NULL product too:
-        branchID = storage._createBranchInteraction(self.cursor, 1, None, 'foo')
-        self.cursor.execute("""
-            SELECT owner, product, name, title, summary, author FROM Branch
-            WHERE id = %d"""
+        storage = DatabaseUserDetailsStorageV2(None)
+        branchID = storage._createBranchInteraction(
+            1, 'sabdfl', '+junk', 'foo')
+        cur = cursor()
+        cur.execute("""
+            SELECT Person.name, Branch.product, Branch.name, Branch.title,
+                Branch.summary, Branch.author
+            FROM Branch, Person
+            WHERE Branch.id = %d
+            AND Person.id = Branch.owner
+            """
             % branchID)
-        self.assertEqual((1, None, 'foo', None, None, 1),
-                         self.cursor.fetchone())
+        self.assertEqual(
+            ['sabdfl', None, 'foo', None, None, 1], cur.fetchone())
+
+    def test_fetchProductID(self):
+        storage = DatabaseUserDetailsStorageV2(None)
+        productID = storage._fetchProductIDInteraction('firefox')
+        self.assertEqual(4, productID)
+
+        # Invalid product names are signalled by a return value of ''
+        productID = storage._fetchProductIDInteraction('xxxxx')
+        self.assertEqual('', productID)
 
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own branches (i.e.
@@ -265,9 +294,20 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(13, branch_id)
         self.assertEqual(READ_ONLY, permissions)
 
+    def test_initialMirrorRequest(self):
+        # The default 'mirror_request_time' for a newly created hosted branch
+        # should be None.
+        storage = DatabaseUserDetailsStorageV2(None)
+        branchID = storage._createBranchInteraction(
+            1, 'sabdfl', '+junk', 'foo')
+        self.assertEqual(self._getTime(branchID), None)
+
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
+
+    layer = LaunchpadScriptLayer
+
     def setUp(self):
         TestDatabaseSetup.setUp(self)
         # This is the salt for Mark's password in the sample data.
@@ -279,14 +319,6 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             WHERE id = %d""" % row_id)
         [mirror_request_time] = self.cursor.fetchone()
         return mirror_request_time
-
-    def test_initialMirrorRequest(self):
-        # The default 'mirror_request_time' for a newly created hosted branch
-        # should be None.
-        storage = DatabaseUserDetailsStorageV2(None)
-        branchID = storage._createBranchInteraction(self.cursor, 1, None,
-                                                    'foo')
-        self.assertEqual(self._getTime(branchID), None)
 
     def test_requestMirror(self):
         # requestMirror should set the mirror_request_time field to be the

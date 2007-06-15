@@ -19,7 +19,8 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.interfaces import (
-    UBUNTU_WIKI_URL, IBranchSet, IPersonSet, IProductSet)
+    UBUNTU_WIKI_URL, BranchCreationForbidden, IBranchSet, IPersonSet,
+    IProductSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.database.sqlbase import sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -51,6 +52,19 @@ def read_only_transaction(function):
             logout()
             transaction.abort()
     return mergeFunctionMetadata(function, transacted)
+
+
+## def writing_transaction(function):
+##     """Decorate 'function' by wrapping it in a transaction and Zope session."""
+##     def transacted(*args, **kwargs):
+##         transaction.begin()
+##         login(ANONYMOUS)
+##         try:
+##             return function(*args, **kwargs)
+##         finally:
+##             logout()
+##             transaction.commit()
+##     return mergeFunctionMetadata(function, transacted)
 
 
 class UserDetailsStorageMixin:
@@ -434,31 +448,39 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         else:
             return product.id
 
-    def createBranch(self, personID, productID, branchName):
+    def createBranch(self, loginID, personName, productName, branchName):
         """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._createBranchInteraction, personID, productID,
-                  branchName)
+        return deferToThread(
+            self._createBranchInteraction, loginID, personName, productName,
+            branchName)
 
-    def _createBranchInteraction(self, transaction, personID, productID,
+    def _createBranchInteraction(self, loginID, personName, productName,
                                  branchName):
         """The interaction for createBranch."""
-        # Convert pseudo-None to real None (damn XML-RPC!)
-        if productID == '':
-            productID = None
+        transaction.begin()
+        login(ANONYMOUS)
+        try:
+            if productName == '+junk':
+                product = None
+            else:
+                product = getUtility(IProductSet).getByName(productName)
 
-        # Get the ID of the new branch
-        transaction.execute(
-            "SELECT NEXTVAL('branch_id_seq'); "
-        )
-        branchID = transaction.fetchone()[0]
+            person_set = getUtility(IPersonSet)
+            creator = person_set.get(loginID)
+            owner = person_set.getByName(personName)
 
-        transaction.execute(utf8('''
-            INSERT INTO Branch (id, owner, product, name, author)
-            VALUES (%s, %s, %s, %s, %s)'''
-            % sqlvalues(branchID, personID, productID, branchName, personID))
-        )
-        return branchID
+            branch_set = getUtility(IBranchSet)
+            try:
+                branch = branch_set.new(
+                    branchName, creator, owner, product, None, None,
+                    author=creator)
+            except BranchCreationForbidden:
+                return ''
+            else:
+                return branch.id
+        finally:
+            logout()
+            transaction.commit()
 
     def requestMirror(self, branchID):
         """See IHostedBranchStorage."""
