@@ -103,6 +103,22 @@ class ILoginToken(Interface):
         him to finish the Launchpad registration process.
         """
 
+    def sendPasswordResetNeutralEmail():
+        """Identical to ILoginToken.sendPasswordResetEmail but in this case
+        the email sent is neutral --it doesn't mention Launchpad.
+
+        This is needed when Launchpad is acting as an OpenID provider for the
+        Ubuntu Shop/Wiki.
+        """
+
+    def sendNewUserNeutralEmail():
+        """Identical to ILoginToken.sendNewUserEmail but in this case
+        the email sent is neutral --it doesn't mention Launchpad.
+
+        This is needed when Launchpad is acting as an OpenID provider for the
+        Ubuntu Shop/Wiki.
+        """
+
     def sendProfileCreatedEmail(profile, comment):
         """Notify the profile's email owner that a new profile was created.
 

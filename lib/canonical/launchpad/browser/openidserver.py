@@ -6,19 +6,15 @@ __metaclass__ = type
 __all__ = []
 
 import cgi
-from datetime import datetime, timedelta
-import re
+from datetime import datetime
 from time import time
-
-import pytz
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements, Interface
+from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.server.server import CheckIDRequest, ENCODE_URL, Server
@@ -31,10 +27,9 @@ from canonical.lp.dbschema import LoginTokenType
 from canonical.launchpad.browser.logintoken import (
     NewAccountView, ResetPasswordView)
 from canonical.launchpad.interfaces import (
-        IEmailAddressSet, ILaunchBag, ILaunchpadOpenIdStoreFactory,
-        ILoginServiceAuthorizeForm, ILoginServiceLoginForm, ILoginTokenSet,
-        IOpenIdApplication, IOpenIdAuthorizationSet, IPersonSet,
-        NotFoundError, UnexpectedFormData)
+    ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
+    ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
+    IOpenIdAuthorizationSet, IPersonSet, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
@@ -43,7 +38,7 @@ from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp.login import logInPerson
 from canonical.launchpad.webapp.publisher import (
-        stepthrough, stepto, Navigation, RedirectionView)
+    Navigation, RedirectionView, stepthrough, stepto)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -436,8 +431,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
                 if valid_password(password):
                     self.validateEmailAndPassword(email, password)
                 else:
-                    self.addError(_("The passphrase provided contains "
-                                    "non-ASCII characters."))
+                    self.addError(_("Invalid passphrase."))
             else:
                 self.addError(_("Please enter your passphrase."))
         elif action == 'resetpassword':
@@ -517,20 +511,35 @@ class LoginServiceLoginView(LoginServiceBaseView):
         self.token = logintokenset.new(
             requester=None, requesteremail=None, email=email,
             tokentype=LoginTokenType.NEWACCOUNT)
-        self.token.sendNewUserEmail()
+        self.token.sendNewUserNeutralEmail()
         self.saveRequestInSession('token' + self.token.token)
-        # XXX: Fixme
-        return u"Check your email"
+        heading = 'Registration mail sent'
+        reason = 'to confirm your address.'
+        return LoginServiceEmailSentView(
+            self.context, self.request, email, heading, reason)()
 
     def process_password_recovery(self, email):
         person = getUtility(IPersonSet).getByEmail(email)
         logintokenset = getUtility(ILoginTokenSet)
         self.token = logintokenset.new(
             person, email, email, LoginTokenType.PASSWORDRECOVERY)
-        self.token.sendPasswordResetEmail()
+        self.token.sendPasswordResetNeutralEmail()
         self.saveRequestInSession('token' + self.token.token)
-        # XXX: Fixme
-        return u"Check your email"
+        heading = 'Forgotten your passphrase?'
+        reason = 'with instructions on resetting your passphrase.'
+        return LoginServiceEmailSentView(
+            self.context, self.request, email, heading, reason)()
+
+
+class LoginServiceEmailSentView(LaunchpadView):
+
+    template = ViewPageTemplateFile("../templates/loginservice-email-sent.pt")
+
+    def __init__(self, context, request, email, heading, reason):
+        self.email = email
+        self.heading = heading
+        self.reason = reason
+        LaunchpadView.__init__(self, context, request)
 
 
 class OpenIdApplicationNavigation(Navigation):
