@@ -9,33 +9,21 @@ __all__ = [
     ]
 
 import StringIO
-import pytz
-import datetime
-import os.path
 import logging
-
-# Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
 from urllib2 import URLError
-
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
     )
 
 from canonical.config import config
-
-from canonical.cachedproperty import cachedproperty
-
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
-
 from canonical.lp.dbschema import (
     RosettaImportStatus, TranslationPermission, TranslationValidationStatus)
-
-import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
@@ -43,20 +31,16 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IPOFileSet, IPOFile, IPOTemplateExporter,
     ILibraryFileAliasSet, ILaunchpadCelebrities, IPOFileTranslator,
     ZeroLengthPOExportError, NotFoundError)
-
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
-from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
-
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import (
     import_po, OldPOImported, NotExportedFromRosetta)
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
-from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 
