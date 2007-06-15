@@ -42,7 +42,6 @@ from canonical.launchpad.interfaces import (
     IProject,
     ISpecification,
     ISpecificationBranch,
-    ISpecificationErrorMessages,
     ISpecificationSet,
     NotFoundError,
     )
@@ -828,28 +827,35 @@ class SpecificationNewView(LaunchpadFormView):
         return field_names
 
     def validate(self, data):
-        """Validates the contents of the form. Generally we trust individual
-        fields to perform validation in isolation, but there are some cases
-        where fields must be validated collectively. In the case where the
-        current context does not correspond to a unique specification name-
-        space, we need to identify the user's specified target and check that
-        the specified name does not already exist in that target's namespace.
+        """Validates the contents of the form.
+
+        Generally, we trust individual fields to perform validation in
+        isolation, but there are cases where fields must be validated
+        collectively. In the case where the current context does not
+        define a unique specification namespace, we need to identify
+        such a namespace from the user's specified target and check that
+        the specified name does not already exist in that namespace.
         """
-        target = None
         if ISpecificationSet.providedBy(self.context):
             target = data.get('target')
         elif IProject.providedBy(self.context):
             target = data.get('projecttarget')
+        else:
+            # The context corresponds to a unique specification name-
+            # space. We can rely on the name field to validate itself.
+            target = None
         if target:
-            # The user has specified a target. Check that the specified name
-            # does not already exist in the target's specification namespace.
+            # The context does not correspond to a unique specification
+            # namespace. Instead, ensure that the specified name does
+            # not exist within the namespace of the specified target.
             name = data.get('name')
             if target.getSpecification(name):
-                # The specified name already exists in the specified target's
-                # specification namespace. Mark the field with an error.
-                self.setFieldError('name',
-                                   ISpecificationErrorMessages.duplicate_name
-                                   % name)
+                # The specified name already exists. Mark the field with
+                # an error.
+                self.setFieldError(
+                    'name',
+                    self.schema['name'].errormessage % name
+                )
         # Perform normal validation.
         LaunchpadFormView.validate(self, data)
 
