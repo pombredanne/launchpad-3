@@ -1792,10 +1792,10 @@ ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
 ALTER TABLE entitlement DISABLE TRIGGER ALL;
 
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (1, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 1, 100, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (2, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 2, 200, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (4, 18, '2007-06-11 00:44:19.267601', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 1, 5, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (5, 18, '2007-06-11 01:02:48.538842', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 1, 3, 0);
+INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (1, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 10, 100, 0);
+INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (2, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 20, 200, 0);
+INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (4, 18, '2007-06-11 00:44:19.267601', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 5, 0);
+INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (5, 18, '2007-06-11 01:02:48.538842', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 3, 0);
 
 
 ALTER TABLE entitlement ENABLE TRIGGER ALL;

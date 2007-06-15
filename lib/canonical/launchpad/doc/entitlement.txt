@@ -101,7 +101,7 @@ Calling incrementAmountUsed increases the value by one.
     >>> entitlement.amount_used
     10
 
-Attemting to increment past the quota will cause an error.
+Attempting to increment past the quota will cause an error.
 
     >>> entitlement.incrementAmountUsed()
     Traceback (most recent call last):
@@ -121,7 +121,8 @@ the amount used will cause an error.
     
 == Date range checking ==
 
-Remove the start and expiration dates and show the range is valid.
+Remove the start and expiration dates and the date range will be
+valid. 
 
     >>> entitlement.state = EntitlementState.ACTIVE
     >>> entitlement.date_starts = None
@@ -137,7 +138,8 @@ Remove the start and expiration dates and show the range is valid.
     >>> yesterday = now - timedelta(days = 1)
     >>> tomorrow = now + timedelta(days = 1)
 
-Set the start date to the past and the date range is satisfied.
+If the start date is in the past and the expiration date remains None
+the date range is satisfied and the entitlement is valid.
 
     >>> entitlement.date_starts = yesterday
     >>> entitlement.in_date_range
@@ -145,7 +147,8 @@ Set the start date to the past and the date range is satisfied.
     >>> entitlement.is_valid
     True
 
-Set the start date to the future and the date range is not satisfied.
+If the start date is in the future the date is not in range and the
+entitlement is invalid.
 
     >>> entitlement.date_starts = tomorrow
     >>> entitlement.in_date_range
@@ -153,8 +156,8 @@ Set the start date to the future and the date range is not satisfied.
     >>> entitlement.is_valid
     False
 
-Set the expires date to the past and the entitlement is out of the
-date range.
+If the expires date is in the past the date is not in range and the
+entitlement is not valid.
 
     >>> entitlement.date_starts = None
     >>> entitlement.date_expires = yesterday
@@ -163,7 +166,8 @@ date range.
     >>> entitlement.is_valid
     False
 
-Set the expires date to the future and the date range is satisfied.
+If the expires date is in the future the date range is satisfied and
+the entitlement is valid.
 
     >>> entitlement.date_expires = tomorrow
     >>> entitlement.in_date_range
@@ -171,8 +175,8 @@ Set the expires date to the future and the date range is satisfied.
     >>> entitlement.is_valid
     True
 
-Set the start date to the past and the expires date to the future to
-again satisfy the date criteria.
+If the start date is in the past and the expires date is in the future
+the date range is again satisfied and the entitlement is valid.
 
     >>> entitlement.date_starts = yesterday
     >>> entitlement.date_expires = tomorrow
@@ -181,10 +185,11 @@ again satisfy the date criteria.
     >>> entitlement.is_valid
     True
 
-Login as an anonymous user and show that the entitlement values
-cannot be viewed as access to viewing attributes is restricted to the
-owner or members of the team, registrant, or Launchpad administrators.  
-Get a security-wrapped entitlement to test against. 
+If logged in as an anonymous user the entitlement values cannot be
+viewed as access to viewing attributes is restricted to the owner or
+members of the team, registrant, or Launchpad administrators.  A
+security-wrapped entitlement must be used to exercise the security
+adapters. 
 
     >>> entitlement = ubuntu_team.entitlements[0]
     >>> entitlement.quota = 50
@@ -217,10 +222,9 @@ similarly restricted.
       ...
     Unauthorized: (<Entitlement..., 'quota', 'launchpad.Admin')
 
-Now let's add the current user to the team and show that the user can
-now access attributes.  Since ubuntu-team is restricted, an
-administrator must be listed as a reviewer for the membership to go
-through. 
+Add the current user to the team and the user can now access
+attributes.  Since ubuntu-team is restricted, an administrator must be
+listed as a reviewer for the membership to go through.
 
     >>> from canonical.lp.dbschema import TeamMembershipStatus
     >>> nopriv = getUtility(ILaunchBag).user

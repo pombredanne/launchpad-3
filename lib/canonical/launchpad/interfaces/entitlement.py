@@ -80,14 +80,14 @@ class IEntitlement(Interface):
         vocabulary='ValidPersonOrTeam',
         description=_(
             "Person who registered the entitlement.  "
-            "May be null if imported from an external system."),
+            "May be None if created automatically."),
         readonly=True)
     approved_by = Choice(
         title=_('Approved By'),
         vocabulary='ValidPersonOrTeam',
         description=_(
             "Person who approved the entitlement.  "
-            "May be null if imported from an external system."),
+            "May be None if created automatically."),
         readonly=True)
     state = Choice(
         title=_("State"),
