@@ -45,6 +45,7 @@ from canonical.launchpad.browser.distroseriesbinarypackage import *
 from canonical.launchpad.browser.distroserieslanguage import *
 from canonical.launchpad.browser.distroseriessourcepackagerelease import *
 from canonical.launchpad.browser.branding import *
+from canonical.launchpad.browser.hastranslationimports import *
 from canonical.launchpad.browser.karma import *
 from canonical.launchpad.browser.language import *
 from canonical.launchpad.browser.librarian import *
@@ -91,7 +92,6 @@ from canonical.launchpad.browser.build import *
 from canonical.launchpad.browser.builder import *
 from canonical.launchpad.browser.translationgroup import *
 from canonical.launchpad.browser.translationimportqueue import *
-from canonical.launchpad.browser.translationimportqueuelink import *
 from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.widgets import *
 from canonical.launchpad.browser.calendarwidgets import *

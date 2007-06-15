@@ -1,11 +1,11 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
-"""Browser view for ITranslationImportQueueLink."""
+"""Browser view for IHasTranslationImports."""
 
 __metaclass__ = type
 
 __all__ = [
-    'TranslationImportQueueLinkView',
+    'HasTranslationImportsView',
     ]
 
 import datetime
@@ -14,7 +14,7 @@ from zope.app.form.browser.widget import renderElement
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    ITranslationImportQueueLink, ITranslationImportQueue,
+    IHasTranslationImports, ITranslationImportQueue,
     UnexpectedFormData)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url)
@@ -23,9 +23,9 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 
 from canonical.lp.dbschema import RosettaImportStatus
 
-class TranslationImportQueueLinkView(LaunchpadFormView):
-    """View class used for Translation Import Queue Link management."""
-    schema = ITranslationImportQueueLink
+class HasTranslationImportsView(LaunchpadFormView):
+    """View class used for objects with translation imports."""
+    schema = IHasTranslationImports
     field_names = []
 
     def _validateFilteringOptions(self):

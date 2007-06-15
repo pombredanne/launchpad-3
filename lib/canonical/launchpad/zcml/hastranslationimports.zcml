@@ -8,11 +8,11 @@
   <facet facet="translations">
 
     <browser:page
-        for="canonical.launchpad.interfaces.ITranslationImportQueueLink"
-        class="canonical.launchpad.browser.TranslationImportQueueLinkView"
+        for="canonical.launchpad.interfaces.IHasTranslationImports"
+        class="canonical.launchpad.browser.HasTranslationImportsView"
         permission="zope.Public"
         name="+import-queue"
-        template="../templates/translationimportqueuelink-index.pt"/>
+        template="../templates/hastranslationimports-index.pt"/>
 
   </facet>
 
