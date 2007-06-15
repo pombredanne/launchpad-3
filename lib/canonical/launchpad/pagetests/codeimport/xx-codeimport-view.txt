@@ -31,16 +31,16 @@ the page:
 
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
     >>> rows = table.tbody('tr')
-    >>> names = [extract_text(tr.td) for tr in rows]
-    >>> sorted(names)
-    [u'a52dec-trunk-3', u'gnome-terminal-trunk-1']
+    >>> ids = [extract_text(tr.td) for tr in rows]
+    >>> sorted(ids) # XXX argh
+    [u'5', u'6']
 
 If we click on the code import's name, we go to the page for that
 import:
 
-    >>> browser.getLink('gnome-terminal-trunk-1').click()
+    >>> browser.getLink('5').click()
     >>> browser.url
-    'http://code.launchpad.dev/+code-imports/gnome-terminal-trunk-1'
+    'http://code.launchpad.dev/+code-imports/5'
 
 It displays some information about the code import, for example the
 review status and the URL of the Subversion branch the import is from:
@@ -52,8 +52,7 @@ review status and the URL of the Subversion branch the import is from:
     ...     find_tag_by_id(browser.contents, 'subversion-url'))
     u'http://svn.example.org/svnroot/gnome-terminal/trunk'
 
-This import has a branch associated to it, so there's a link to the
-branch:
+There is also a link to the associated branch:
 
     >>> browser.getLink('GNOME Terminal Mainline').url
     'http://code.launchpad.dev/~name12/gnome-terminal/main'
@@ -61,35 +60,46 @@ branch:
 There's a similar page for the other import, which uses CVS:
 
     >>> browser.getLink('Code Imports').click()
-    >>> browser.getLink('a52dec-trunk-3').click()
+    >>> browser.getLink('6').click()
     >>> browser.url
-    'http://code.launchpad.dev/+code-imports/a52dec-trunk-3'
+    'http://code.launchpad.dev/+code-imports/6'
     >>> extract_text(
     ...     find_tag_by_id(browser.contents, 'review-status'))
     u'Pending Review'
     >>> extract_text(
     ...     find_tag_by_id(browser.contents, 'cvs-root'))
-    u'cvs.example.org/cvsroot'
+    u':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
     >>> extract_text(
     ...     find_tag_by_id(browser.contents, 'cvs-module'))
-    u'a52dec'
+    u'evolution'
 
 If we create a lot of imports, the listing view will be batched.
 
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS, logout
-    >>> login(ANONYMOUS)
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import ICodeImportSet
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
+    ...     IPersonSet, IProductSet)
     >>> from canonical.lp.dbschema import RevisionControlSystems
+
+    >>> login('david.allouche@canonical.com')
+
     >>> code_import_set = getUtility(ICodeImportSet)
     >>> svn = RevisionControlSystems.SVN
     >>> svn_url = 'svn://svn.example.com/trunk-%s'
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> product = getUtility(IProductSet).get(1)
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    >>> def import_branch_for_new_product(name):
+    ...     product = getUtility(IProductSet).createProduct(
+    ...         nopriv, name, name, name, name, name)
+    ...     return getUtility(IBranchSet).new(
+    ...         'trunk', vcs_imports, product, None, 'Import branch')
     >>> for i in range(100):
-    ...     new_import = code_import_set.new(
-    ...         rcs_type=svn, product=product, series=None,
-    ...         name="import-%s"%(i,), svn_branch_url=svn_url%(i,))
+    ...     new_branch = import_branch_for_new_product('import-%s'%i)
+    ...     svn_import = code_import_set.new(
+    ...         registrant=nopriv, branch=new_branch,
+    ...         rcs_type=svn, svn_branch_url=svn_url%i)
+
     >>> logout()
 
     >>> browser.open('http://code.launchpad.dev/+code-imports')

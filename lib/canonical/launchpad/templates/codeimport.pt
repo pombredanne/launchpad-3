@@ -2,8 +2,8 @@
 
   <body>
 
-    <h1 metal:fill-slot="heading">
-      Code Import '<tal:block tal:replace="context/id" />'
+    <h1 metal:fill-slot="heading" tal:content="CONTEXTS/fmt:pagetitle">
+      Code Import for firefox
     </h1>
 
     <div metal:fill-slot="main" class="visualPadding">
