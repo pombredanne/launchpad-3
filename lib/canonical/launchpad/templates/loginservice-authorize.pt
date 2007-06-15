@@ -25,7 +25,7 @@
 
       <h3>Sign in as <span tal:replace="view/user/displayname" /></h3>
 
-      <form method="post" accept-charset="UTF-8" action="/+decide">
+      <form action="/+decide" method="post" accept-charset="UTF-8">
         <tal:widget replace="structure view/widgets/nonce/hidden" />
 
         <div>

@@ -44,6 +44,7 @@ from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
 
+OPENID_REQUEST_TIMEOUT = 3600
 SESSION_PKG_KEY = 'OpenID'
 IDENTIFIER_SELECT_URI = 'http://specs.openid.net/auth/2.0/identifier_select'
 
@@ -69,15 +70,36 @@ class OpenIDMixinView:
     def user_identity_url(self):
         return self.identity_url_prefix + self.user.openid_identifier
 
+    def isIdentityOwner(self):
+        """Return True if the user can authenticate as the given identifier."""
+        assert self.user is not None, "user should be logged in by now."
+        return self.openid_request.identity in (
+            IDENTIFIER_SELECT_URI, self.user_identity_url)
+
     def getSession(self):
         return ISession(self.request)[SESSION_PKG_KEY]
 
-    def _sweep(self, now, session):
-        """Clean our Session of nonces older than 1 hour."""
+    @staticmethod
+    def _sweep(now, session):
+        """Clean our Session of nonces older than 1 hour.
+
+        The session argument is edited in place to remove the expired items:
+          >>> now = 10000
+          >>> session = {
+          ...     'x': (9999, 'foo'),
+          ...     'y': (11000, 'bar'),
+          ...     'z': (100, 'baz')
+          ...     }
+          >>> OpenIDMixinView._sweep(now, session)
+          >>> for key in sorted(session):
+          ...     print key, session[key]
+          x (9999, 'foo')
+          y (11000, 'bar')
+        """
         to_delete = []
         for key, value in session.items():
             timestamp = value[0]
-            if timestamp < now - 3600:
+            if timestamp < now - OPENID_REQUEST_TIMEOUT:
                 to_delete.append(key)
         for key in to_delete:
             del session[key]
@@ -87,7 +109,7 @@ class OpenIDMixinView:
         session = self.getSession()
         try:
             timestamp, self.openid_request = session[key]
-        except LookupError:
+        except KeyError:
             raise UnexpectedFormData("Invalid or expired nonce")
 
         assert zisinstance(self.openid_request, CheckIDRequest), (
@@ -109,12 +131,11 @@ class OpenIDMixinView:
         session = self.getSession()
         try:
             del session[key]
-        except LookupError:
+        except KeyError:
             pass
 
     def renderOpenIdResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
-
         response = self.request.response
         response.setStatus(webresponse.code)
         for header, value in webresponse.headers.items():
@@ -131,16 +152,21 @@ class OpenIDMixinView:
         then additional user information is included with the
         response.
         """
-        assert self.user is not None
-        assert self.openid_request is not None
-        # Ensure that the user has permission to authenticate as this identity:
-        identity_url = self.user_identity_url
-        if self.openid_request.identity == IDENTIFIER_SELECT_URI:
-            self.openid_request.identity = identity_url
-        elif self.openid_request.identity != identity_url:
+        assert self.user is not None, (
+            'Must be logged in for positive OpenID response')
+        assert self.openid_request is not None, (
+            'No OpenID request to respond to.')
+
+        if not self.isIdentityOwner():
             return self.createFailedResponse()
 
         response = self.openid_request.answer(True)
+
+        # If we are in identifier select mode, then we need to
+        # override the claimed identifier.  For regular checks it does
+        # not hurt, so we set it here unconditionally.
+        response.addField(None, 'identity', self.user_identity_url)
+
         # If this is a trust root we know about and trust, send some
         # user details.
         if (self.openid_request.trust_root in
@@ -161,10 +187,15 @@ class OpenIDMixinView:
         This method should be called to create the response to
         unsuccessful checkid requests.
         """
-        assert self.openid_request is not None
+        assert self.openid_request is not None, (
+            'No OpenID request to respond to.')
         response = self.openid_request.answer(False, self.server_url)
         return response
 
+
+# XXX: 2007-06-15 jamesh
+# We should consider killing this class and the next and rolling the
+# changes into the existing logintoken classes.
 
 class LoginServiceNewAccountView(OpenIDMixinView, NewAccountView):
     """A wrapper around NewAccountView which doesn't expect a
@@ -203,6 +234,13 @@ class LoginServiceResetPasswordView(OpenIDMixinView, ResetPasswordView):
 
 
 class OpenIdView(OpenIDMixinView, LaunchpadView):
+    """An OpenID Provider endpoint for Launchpad.
+
+    This class implemnts an OpenID endpoint using the python-openid
+    library.  In addition to the normal modes of operation, it also
+    implements the OpenID 2.0 identifier select mode.
+    """
+
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")
     invalid_identity_template = ViewPageTemplateFile(
         "../templates/openid-invalid-identity.pt")
@@ -272,6 +310,11 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
         self.nonce = nonce
 
     def showLoginPage(self):
+        """Render the login dialog.
+
+        This should be done if the user has not yet authenticated to
+        Launchpad.
+        """
         self.storeOpenIdRequestInSession()
         return LoginServiceLoginView(
             self.context, self.request, self.nonce)()
@@ -292,12 +335,6 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
         identity = self.openid_request.identity
         return (identity == IDENTIFIER_SELECT_URI or
                 identity.startswith(self.identity_url_prefix))
-
-    def isIdentityOwner(self):
-        """Returns True if we are logged in as the owner of the identity."""
-        assert self.user is not None, "user should be logged in by now."
-        return self.openid_request.identity in [
-            IDENTIFIER_SELECT_URI, self.user_identity_url]
 
     def isAuthorized(self):
         """Check if the identity is authorized for the trust_root"""
@@ -336,6 +373,7 @@ KNOWN_TRUST_ROOTS = {
 
 
 class LoginServiceBaseView(OpenIDMixinView, LaunchpadFormView):
+    """Common functionality for the OpenID login and authorize forms."""
 
     def __init__(self, context, request, nonce=None):
         super(LoginServiceBaseView, self).__init__(context, request)
@@ -346,6 +384,7 @@ class LoginServiceBaseView(OpenIDMixinView, LaunchpadFormView):
         return {'nonce': self.nonce}
 
     def setUpWidgets(self):
+        """Set up the widgets, and grab the OpenID request from the session."""
         super(LoginServiceBaseView, self).setUpWidgets()
 
         # Restore the OpenID request.
@@ -357,11 +396,20 @@ class LoginServiceBaseView(OpenIDMixinView, LaunchpadFormView):
         self.restoreRequestFromSession('nonce' + self.nonce)
 
     def trashRequest(self):
+        """Remove the OpenID request from the session."""
         self.trashRequestInSession('nonce' + self.nonce)
 
     @property
     def relying_party_title(self):
-        assert self.openid_request is not None
+        """Return a display name for the relying party.
+
+        The relying party is looked up in the list of known RPs by its
+        trust root to find its title.
+
+        If the relying party is not known, its trust root URL is returned.
+        """
+        assert self.openid_request is not None, (
+            'Could not find the OpenID request')
         rp_info = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root)
         if rp_info is not None:
             return rp_info['title']
@@ -369,7 +417,9 @@ class LoginServiceBaseView(OpenIDMixinView, LaunchpadFormView):
             return self.openid_request.trust_root
 
     def isSaneTrustRoot(self):
-        assert self.openid_request is not None
+        """Return True if the RP's trust root looks sane."""
+        assert self.openid_request is not None, (
+            'Could not find the OpenID request')
         trust_root = TrustRoot.parse(self.openid_request.trust_root)
         return trust_root.isSane()
 
@@ -422,29 +472,21 @@ class LoginServiceLoginView(LoginServiceBaseView):
         action = data.get('action')
         password = data.get('password')
         person = getUtility(IPersonSet).getByEmail(email)
-        if not (email is not None and valid_email(email)):
+        if email is None or not valid_email(email):
             self.addError('Please enter a valid email address')
             return
 
         if action == 'login':
-            if password is not None:
-                if valid_password(password):
-                    self.validateEmailAndPassword(email, password)
-                else:
-                    self.addError(_("Invalid passphrase."))
-            else:
-                self.addError(_("Please enter your passphrase."))
+            self.validateEmailAndPassword(email, password)
         elif action == 'resetpassword':
             if person is None:
                 self.addError(_(
                     "Your account details have not been found. Please "
                     "check your subscription email address and try again."))
             elif person.isTeam():
-                # XXX: This doesn't make any sense to non-Launchpad users. What
-                # can we do about it? -- Guilherme Salgado, 2007-06-13
                 self.addError(_(
-                    "The email address <strong>%s</strong> belongs to a team, "
-                    "and teams cannot log in." % email))
+                    "The email address <strong>%s</strong> can not be used "
+                    "to log in as it belongs to a team." % email))
         elif action == 'createaccount':
             if person is not None and person.is_valid_person:
                 self.addError(_(
@@ -459,7 +501,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
                 # on with the registration process as if we had never seen it.
                 pass
         else:
-            raise UnexpectedFormData("Unknown action: %s, %s." % (self.widgets['action'].error(), self.request.form.keys()))
+            raise UnexpectedFormData("Unknown action")
 
     def validateEmailAndPassword(self, email, password):
         """Check that the email address and password are valid for login."""
@@ -486,7 +528,8 @@ class LoginServiceLoginView(LoginServiceBaseView):
                 # processor or manual changes by the DBA.
                 self.addError(_("This account cannot be used."))
         else:
-            self.addError(_("The email address and passphrase do not match."))
+            self.addError(_("Incorrect passphrase for the provided "
+                            "email address."))
 
     @action('Continue', name='continue')
     def continue_action(self, action, data):
