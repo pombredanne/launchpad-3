@@ -137,13 +137,15 @@ update.
 But first, let's see current values.
 
     >>> pofile_es.updateStatistics()
-    (7, 1, 0)
+    (7, 1, 0, 1)
     >>> pofile_es.currentCount()
     7
     >>> pofile_es.updatesCount()
     1
     >>> pofile_es.rosettaCount()
     0
+    >>> pofile_es.unreviewedCount()
+    1
 
 Now we do a submission with new translations:
 
