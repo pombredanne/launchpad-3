@@ -388,7 +388,7 @@ class BaseTranslationView(LaunchpadView):
             self.request.response.addErrorNotification("""
             <p>
             Launchpad can&#8217;t handle the plural items in this file, 
-	    because it doesn&#8217;t yet know how plural forms work for %s.
+            because it doesn&#8217;t yet know how plural forms work for %s.
             </p>
             <p>
             To fix this, please e-mail the <a
@@ -610,6 +610,12 @@ class BaseTranslationView(LaunchpadView):
     def user_is_official_translator(self):
         """Determine whether the current user is an official translator."""
         return self.pofile.canEditTranslations(self.user)
+
+    @cachedproperty
+    def form_is_writeable(self):
+        """Whether the form should accept write operations."""
+        return (self.user is not None and
+                self.pofile.canAddSuggestions(self.user))
 
     def _extractFormPostedTranslations(self, pomsgset):
         """Look for translations for this POMsgSet in the form submitted.
@@ -1072,7 +1078,7 @@ class POMsgSetView(LaunchpadView):
                              reverse=True)
         return POMsgSetSuggestions(
             title, self.context, submissions[:self.max_entries],
-            self.user_is_official_translator)
+            self.user_is_official_translator, self.form_is_writeable)
 
     def getActiveTranslation(self, index):
         """Return the active translation for the pluralform 'index'."""
@@ -1150,6 +1156,12 @@ class POMsgSetView(LaunchpadView):
             return text_to_html(msgid, self.context.potmsgset.flags())
         else:
             return None
+
+    @cachedproperty
+    def form_is_writeable(self):
+        """Whether the form should accept write operations."""
+        return (self.user is not None and
+                self.context.pofile.canAddSuggestions(self.user))
 
     # XXX 20060915 mpt: Detecting tabs, newlines, and leading/trailing spaces
     # is being done one way here, and another way in the functions above.
@@ -1246,10 +1258,11 @@ class POMsgSetSuggestions:
     """See IPOMsgSetSuggestions."""
     implements(IPOMsgSetSuggestions)
     def __init__(self, title, pomsgset, submissions,
-                 user_is_official_translator):
+                 user_is_official_translator, form_is_writeable):
         self.title = title
         self.pomsgset = pomsgset
         self.user_is_official_translator = user_is_official_translator
+        self.form_is_writeable = form_is_writeable
         self.submissions = []
         for submission in submissions:
             self.submissions.append({

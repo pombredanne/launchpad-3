@@ -18,7 +18,7 @@
 
     <div metal:fill-slot="main">
 
-      <tal:notloggedin condition="not:request/lp:person">
+      <tal:form-not-writeable condition="not:view/form_is_writeable">
         <div>
           <a tal:attributes="href context/potemplate/fmt:url"
              tal:content="context/potemplate/title">
@@ -32,8 +32,8 @@
           </tal:language>
           translation
         </h1>
-      </tal:notloggedin>
-      <tal:loggedin condition="request/lp:person">
+      </tal:form-not-writeable>
+      <tal:form-writeable condition="view/form_is_writeable">
         <div>
           <a tal:attributes="href context/potemplate/fmt:url"
              tal:content="context/potemplate/title">
@@ -46,7 +46,7 @@
             Spanish
           </tal:language>
         </h1>
-      </tal:loggedin>
+      </tal:form-writeable>
 
       <tal:havepluralforms condition="view/has_plural_form_information">
 
@@ -139,7 +139,7 @@
             <input type="hidden" name="batch" value=""
                    tal:attributes="value view/size" />
             <input type="hidden" name="lock_timestamp" value=""
-                   tal:condition="request/lp:person"
+                   tal:condition="view/form_is_writeable"
                    tal:attributes="value view/lock_timestamp/isoformat" />
             <table class="listing" style="margin-top: 0.5em;">
               <thead>
@@ -156,7 +156,7 @@
                 </tal:loop>
               </tbody>
               <tfoot>
-                <tr tal:condition="request/lp:person">
+                <tr tal:condition="view/form_is_writeable">
                   <th colspan="5">
                     <tal:review
                       condition="not: view/user_is_official_translator"

@@ -21,6 +21,8 @@ from canonical.launchpad.interfaces import (
     ISpecificationTarget, IHasSecurityContact, IKarmaContext,
     PillarNameField, IHasLogo, IHasMugshot, IHasIcon, IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.sprint import IHasSprints
+from canonical.launchpad.interfaces.translationgroup import (
+    IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.fields import (
@@ -37,7 +39,7 @@ class ProductNameField(PillarNameField):
 class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                ISpecificationTarget, IHasSecurityContact, IKarmaContext,
                IHasSprints, IHasMentoringOffers, IHasLogo, IHasMugshot,
-               IHasIcon, IHasBranchVisibilityPolicy):
+               IHasIcon, IHasBranchVisibilityPolicy, IHasTranslationGroup):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -197,28 +199,6 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "A large image of exactly 192x192 pixels, that will be displayed "
             "on this project's home page in Launchpad. It should be no "
             "bigger than 100kb in size. "))
-
-    translationgroup = Choice(
-        title = _("Translation group"),
-        description = _("The translation group for this project. This group "
-            "is made up of a set of translators for all the languages "
-            "approved by the group manager. These translators then have "
-            "permission to edit the groups translation files, based on the "
-            "permission system selected below."),
-        required=False,
-        vocabulary='TranslationGroup')
-
-    translationpermission = Choice(
-        title=_("Translation Permission System"),
-        description=_("The permissions this group requires for "
-            "translators. If 'Open', then anybody can edit translations "
-            "in any language. If 'Reviewed', then anybody can make "
-            "suggestions but only the designated translators can edit "
-            "or confirm translations. And if 'Closed' then only the "
-            "designated translation group will be able to touch the "
-            "translation files at all."),
-        required=True,
-        vocabulary='TranslationPermission')
 
     autoupdate = Bool(title=_('Automatic update'),
         description=_("""Whether or not this project's attributes are

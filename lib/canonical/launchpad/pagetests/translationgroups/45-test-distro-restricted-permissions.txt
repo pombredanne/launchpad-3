@@ -1,8 +1,22 @@
-So now No Privileges Person is the Welsh translator for the PolyGlot
-translation group, and they are the translation group for Ubuntu, which has
-Closed translations. This means that No Privileges Person should be able to
-translate any strings in Ubuntu to Welsh. In other languages, No
-Privileges Person should be warned that he is not a designated translator.
+Now No Privileges Person is still the Welsh translator for the PolyGlot
+translation group, and they are the translation group for Ubuntu, which we
+are going to set as having Restricted translations. This means that No
+Privileges Person should be able to translate any strings in Ubuntu to
+Welsh. In other languages, No Privileges Person should be warned that he
+is not a designated translator.
+
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/+changetranslators')
+
+  >>> admin_browser.getControl(
+  ...     'Translation Permission System').value = ['Restricted']
+  >>> admin_browser.getControl('Change').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/ubuntu/+changetranslators
+  >>> for tag in find_tags_by_class(
+  ...     admin_browser.contents, 'informational message'):
+  ...     print tag.renderContents()
+  Updated on ...
 
 Let's see if No Privileges Person can see the translated strings in Southern
 Sotho. We expect them to be told they can only make contributions:

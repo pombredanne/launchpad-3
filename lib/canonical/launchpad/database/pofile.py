@@ -97,9 +97,10 @@ def _check_translation_perms(permission, translators, person):
         else:
             # since there are no translators, anyone can edit
             return True
-    elif permission == TranslationPermission.CLOSED:
-        # if the translation policy is "closed", then check if the person is
-        # in the set of translators
+    elif permission in (TranslationPermission.RESTRICTED,
+                        TranslationPermission.CLOSED):
+        # if the translation policy is "restricted" or "closed", then check if
+        # the person is in the set of translators
         if is_designated_translator:
             return True
     else:
@@ -152,6 +153,15 @@ def _can_edit_translations(pofile, person):
         pofile.translationpermission,
         translators,
         person)
+
+def _can_add_suggestions(pofile, person):
+    """Whether a person is able to add suggestions.
+
+    Any user that can edit translations can add suggestions, the others will
+    be able to add suggestions only if the permission is not CLOSED.
+    """
+    return (_can_edit_translations(pofile, person) or
+            pofile.translationpermission <> TranslationPermission.CLOSED)
 
 
 class POFile(SQLBase, RosettaStats):
@@ -252,6 +262,16 @@ class POFile(SQLBase, RosettaStats):
     def canEditTranslations(self, person):
         """See IPOFile."""
         if _can_edit_translations(self, person):
+            return True
+        elif person is not None:
+            # Finally, check for the owner of the PO file
+            return person.inTeam(self.owner)
+        else:
+            return False
+
+    def canAddSuggestions(self, person):
+        """See IPOFile."""
+        if _can_add_suggestions(self, person):
             return True
         elif person is not None:
             # Finally, check for the owner of the PO file
@@ -917,6 +937,10 @@ class DummyPOFile(RosettaStats):
     def canEditTranslations(self, person):
         """See IPOFile."""
         return _can_edit_translations(self, person)
+
+    def canAddSuggestions(self, person):
+        """See IPOFile."""
+        return _can_add_suggestions(self, person)
 
     def getPOMsgSet(self, key, only_current=False):
         """See IPOFile."""

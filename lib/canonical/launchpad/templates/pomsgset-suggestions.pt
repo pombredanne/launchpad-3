@@ -8,7 +8,7 @@
   <tr class="discreet secondary">
     <td colspan="3" />
     <td class="icon left right">
-      <tal:logged-in condition="request/lp:person">
+      <tal:form-writeable condition="context/form_is_writeable">
       <tal:user-is-official-translator
         condition="context/user_is_official_translator">
         <input
@@ -34,7 +34,7 @@
             return false;;
           "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
       </tal:user-is-not-official-translator>
-      </tal:logged-in>
+      </tal:form-writeable>
     </td>
     <td>
       <div

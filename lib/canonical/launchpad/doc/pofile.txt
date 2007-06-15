@@ -287,6 +287,112 @@ And samething with the unprivileged account.
     >>> pofile_es.canEditTranslations(no_priv)
     True
 
+== canAddSuggestions ==
+
+This method determines if someone is allowed to add suggestions.
+
+Set a translation group to test the CLOSED mode. This mode allows translations
+only from the teams set as official translators.
+
+    >>> XXX
+
+    >>> product = getUtility(IProductSet).getByName('evolution')
+    >>> product.translationgroup = getUtility(
+    ...     ITranslationGroupSet)['testing-translation-team']
+    >>> product.translationpermission = TranslationPermission.CLOSED
+
+Get the IPOFile we are going to use.
+
+    >>> product_series = product.translatable_series[0]
+    >>> potemplate = product_series.getPOTemplate('evolution-2.2')
+    >>> pofile_es = potemplate.getPOFileByLang('es')
+
+A Launchpad admin must have permission always.
+
+    >>> admins = getUtility(ILaunchpadCelebrities).admin
+    >>> pofile_es.canEditTranslations(admins)
+    True
+
+A Rosetta Expert too.
+
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+    >>> pofile_es.canEditTranslations(rosetta_experts)
+    True
+
+And Valentina Commissari, as member of the Spanish translation team for
+evolution should also have rights.
+
+    >>> valentina = person_set.getByName('tsukimi')
+    >>> pofile_es.canEditTranslations(valentina)
+    True
+
+But the unprivileged account should not.
+
+    >>> no_priv = person_set.getByName('no-priv')
+    >>> pofile_es.canEditTranslations(no_priv)
+    False
+
+Now, we get an IPOFile that does not have a translation team assigned.
+
+    >>> pofile_cy = potemplate.getDummyPOFile('cy')
+
+Valentina Commissari is not a translator for this language and does not
+have permissions.
+
+    >>> pofile_cy.canEditTranslations(valentina)
+    False
+
+And same thing with the unprivileged account.
+
+    >>> pofile_cy.canEditTranslations(no_priv)
+    False
+
+Now, let's test the STRUCTURED mode. In this mode, only the defined
+translation teams can translate like the CLOSE mode, but in addition, if we
+don't have any language team for one language, anyone can add translations.
+
+    >>> product.translationpermission = TranslationPermission.STRUCTURED
+
+Valentina Commissari, as member of the Spanish translation team for
+evolution should have rights for the Spanish IPOFile.
+
+    >>> pofile_es.canEditTranslations(valentina)
+    True
+
+But the unprivileged account should not.
+
+    >>> pofile_es.canEditTranslations(no_priv)
+    False
+
+And this is the difference with the CLOSED mode, anyone will be able to
+translate into Welsh, as we can see with Valentina:
+
+    >>> pofile_cy.canEditTranslations(valentina)
+    True
+
+And same thing with the unprivileged account.
+
+    >>> pofile_cy.canEditTranslations(no_priv)
+    True
+
+Finally, let's check the OPEN mode to be 100% sure that in that mode
+anyone can do translations.
+
+    >>> product.translationgroup = None
+    >>> product.translationpermission = TranslationPermission.OPEN
+
+We don't have any translation group for the Evolution product so there are
+no translators assigned to it, but Valentina Commissari still has rights to
+do translations.
+
+    >>> pofile_es.canEditTranslations(valentina)
+    True
+
+And samething with the unprivileged account.
+
+    >>> pofile_es.canEditTranslations(no_priv)
+    True
+
 == uncachedExport ==
 
 This method serializes an IPOFile as a .po file.
