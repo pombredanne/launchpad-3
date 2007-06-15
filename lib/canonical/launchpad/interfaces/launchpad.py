@@ -55,6 +55,7 @@ __all__ = [
     'ILaunchpadRoot',
     'IMaloneApplication',
     'INotificationRecipientSet',
+    'IOpenIdApplication',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
@@ -188,10 +189,9 @@ class IShipItApplication(ILaunchpadApplication):
 class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
 
-    all = Attribute("The full set of branches in The Bazaar")
 
-    def getMatchingBranches():
-        """Return the set of branches that match the given queries."""
+class IOpenIdApplication(ILaunchpadApplication):
+    """Launchpad Login Service application root."""
 
 
 class IAuthApplication(Interface):
