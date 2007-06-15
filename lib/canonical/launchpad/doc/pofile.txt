@@ -208,8 +208,9 @@ Set a translation group to test the CLOSED mode. This mode allows translations
 only from the teams set as official translators.
 
     >>> product = getUtility(IProductSet).getByName('evolution')
-    >>> product.translationgroup = getUtility(
-    ...     ITranslationGroupSet)['testing-translation-team']
+    >>> translation_group_set = getUtility(ITranslationGroupSet)
+    >>> product.translationgroup = translation_group_set[
+    ...     'testing-translation-team']
     >>> product.translationpermission = TranslationPermission.CLOSED
 
 Get the IPOFile we are going to use.
@@ -349,6 +350,8 @@ This method determines if someone is allowed to add suggestions.
 Set a translation group to test the CLOSED mode. This mode allows translations
 only from the teams set as official translators.
 
+    >>> product.translationgroup = translation_group_set[
+    ...     'testing-translation-team']
     >>> product.translationpermission = TranslationPermission.CLOSED
 
 A Launchpad admin must have permission always.
