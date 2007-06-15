@@ -406,8 +406,9 @@ class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
             return self.request.form_ng.getAll(self.name)
 
         # Save the original method and replace it with fixed ones.
-        cls.SimpleInputWidget__getFormInput = (
-            SimpleInputWidget._getFormInput )
+        # We don't save MultiDataHelper._getFormInput because it doesn't
+        # override the one in SimpleInputWidget.
+        cls._original__getFormInput = SimpleInputWidget._getFormInput
         SimpleInputWidget._getFormInput = _getFormInput_single
         MultiDataHelper._getFormInput = _getFormInput_multi
         cls.installed = True
@@ -417,8 +418,8 @@ class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
         """Uninstall the monkey patch."""
         assert cls.installed, "Monkey patch is not installed."
 
-        # Restore saved methods.
-        SimpleInputWidget._getFormInput = cls.SimpleInputWidget__getFormInput
+        # Restore saved method.
+        SimpleInputWidget._getFormInput = cls._original__getFormInput
         del MultiDataHelper._getFormInput
         cls.installed = False
 
