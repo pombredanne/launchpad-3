@@ -370,7 +370,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 force_suggestion=force_suggestion,
                 active_submission=old_active_submission)
 
-            if new_submission != old_active_submission:
+            if (new_submission != old_active_submission and
+                new_submission.active):
                 has_changed = True
                 while index >= len(active_submissions):
                     active_submissions.append(None)
@@ -385,7 +386,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             # that the changes were saved as suggestions only.
             raise TranslationConflict(
                 'The new translations were saved as suggestions to avoid '
-                'possible conflicts. Please review them.') 
+                'possible conflicts. Please review them.')
 
         # We set the fuzzy flag first, and completeness flags as needed:
         if is_editor:
@@ -409,14 +410,21 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                                 matches += 1
                     if matches == self.pluralforms:
                         # The active submission is exactly the same as the
-                        # published one, so the fuzzy and complete flags should be
-                        # also the same.
+                        # published one, so the fuzzy and complete flags
+                        # should be also the same.
                         self.isfuzzy = self.publishedfuzzy
                         self.iscomplete = self.publishedcomplete
                     if updated > 0:
                         # There are some active translations different from
                         # published ones, so the message has been updated
                         self.isupdated = True
+                active_count = 0
+                for pluralform in range(self.pluralforms):
+                    if active_submissions[pluralform]:
+                        active_count += 1
+                self.iscomplete = (active_count == self.pluralforms)
+
+                flush_database_updates()
             else:
                 self.isfuzzy = fuzzy
                 self.iscomplete = complete
