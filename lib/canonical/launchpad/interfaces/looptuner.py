@@ -14,14 +14,14 @@ class ITunableLoop(Interface):
     To construct a self-tuning batched loop, define your loop body as a class
     implementing TunableLoop, and pass an instance to your LoopTuner.
     """
-    def isDone(self):
+    def isDone():
         """Is this loop finished?
 
         Once this returns True, the LoopTuner will no longer touch this
         object.
         """
 
-    def __call__(self, chunk_size):
+    def __call__(chunk_size):
         """Perform an iteration of the loop.
 
         The chunk_size parameter says (in some way you define) how much work
