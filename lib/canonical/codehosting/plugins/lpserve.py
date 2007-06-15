@@ -12,6 +12,7 @@ __all__ = ['cmd_launchpad_server']
 
 import signal
 import sys
+import thread
 import xmlrpclib
 
 from bzrlib.commands import Command, register_command
@@ -124,8 +125,17 @@ class cmd_launchpad_server(Command):
 
         lp_server = self.get_lp_server(authserver, user_id, url)
         lp_server.setUp()
-        signal.signal(signal.SIGHUP,
-                      lambda signal, frames: lp_server.tearDown())
+
+        def clean_up(signal, frames):
+            # XXX: JonathanLange 2007-06-15, The lpserve process is interrupted
+            # using SIGHUP as a matter of course. When this happens, we still
+            # want to perform cleanup operations -- in particular, notifying
+            # the authserver of modified branches. This signal handler runs the
+            # operations we need to run (i.e. lp_server.tearDown) and does its
+            # best to trigger 'finally' blocks across the rest of Launchpad.
+            lp_server.tearDown()
+            thread.interrupt_main()
+        signal.signal(signal.SIGHUP, clean_up)
         try:
             transport = get_transport(lp_server.get_url())
             smart_server = self.get_smart_server(transport, port, inet)
