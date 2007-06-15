@@ -134,6 +134,9 @@ Add manual word breaks to long words in a string:
     ...     foo='<http://launchpad.net/products/launchpad>')
     '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
 
+
+== The fmt: namespace to get strings (hiding and obfuscation) ==
+
 Signatures and full-quoted parts of a message can be wrapped in markup
 to hide them:
 
@@ -151,40 +154,34 @@ to hide them:
     ...              '__C U R T I S  C.  H O V E Y_______\n'
     ...              'sinzui.is@somewhere.org\n'
     ...              'Guilty of stealing everything I am.\n')
-    >>> # Print this without processing to check that we have a good start
-    >>> print '\n'.join([text, quoted_text, signature])
-    Top quoting is simply bad netiquette.
-    The words of the leading text should be displayed
-    normally--no markup to hide it from view.
-    Raise your hand if you can read this.
-    <BLANKLINE>
-    Somebody said sometime ago:
-    > 1. Remove the letters  c, j, q, x, w
-    >    from the English Language.
-    > 2. Remove the penny from US currency.
-    <BLANKLINE>
-    --
-    __C U R T I S  C.  H O V E Y_______
-    sinzui.is@somewhere.org
-    Guilty of stealing everything I am.
-    
+
+The email-to-html formatter marks up text as html using the
+text-to-html formatter, then adds additional markup to identify
+signatures and quoted passages. The formatters  wraps the text inside
+the paragraph in a span of 'foldable' class. Stylesheets and scripts
+in the browser can format or change the behaviour of the text as
+needed.
+
+When given simple paragraphs it behaves just as the text-to-html
+formatter.
+
     >>> print test_tales('foo/fmt:email-to-html',
-    ...                  foo='\n'.join([text, quoted_text, signature]))
+    ...                  foo=text)
     <p>Top quoting is simply bad netiquette.<br />
     The words of the leading text should be displayed<br />
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
-    <p>Somebody said sometime ago:<br />
-    <span class="foldable"...>
-    &gt; 1. Remove the letters  c, j, q, x, w<br />
-    &gt;    from the English Language.<br />
-    &gt; 2. Remove the penny from US currency.
-    </span></p>
-    <p><span class="foldable"...>--<br />
-    __C U R T I S  C.  H O V E Y_______<br />
-    sinzui.<wbr></wbr>is@somewhere.<wbr></wbr>org<br />
-    Guilty of stealing everything I am.
-    </span></p>
+
+    >>> print test_tales('foo/fmt:text-to-html',
+    ...                  foo=text)
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+
+In this example, we see the main paragraph and the signature marked
+up as HTML. All the text inside the signature is wrapped with the
+foldable span.
 
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([text, signature]))
@@ -197,6 +194,12 @@ to hide them:
     sinzui.<wbr></wbr>is@somewhere.<wbr></wbr>org<br />
     Guilty of stealing everything I am.
     </span></p>
+
+Quoted passages are treated somewhat different from signatures because
+they often have a citation line before the quoted text. In this
+example of the main paragraph and the quoted paragraph, only the
+lines that start with the quote identifier ('>' in this case) are
+wrapped with the foldable span.
 
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([text, quoted_text]))
@@ -211,14 +214,56 @@ to hide them:
     &gt; 2. Remove the penny from US currency.
     </span></p>
 
+The reverse order works to:
+
     >>> print test_tales('foo/fmt:email-to-html',
-    ...                  foo=text)
+    ...                  foo='\n'.join([quoted_text, text]))
+    <p>Somebody said sometime ago:<br />
+    <span class="foldable"...>
+    &gt; 1. Remove the letters  c, j, q, x, w<br />
+    &gt;    from the English Language.<br />
+    &gt; 2. Remove the penny from US currency.
+    </span></p>
     <p>Top quoting is simply bad netiquette.<br />
     The words of the leading text should be displayed<br />
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
 
-Email addresses can be obfuscated:
+The formatter is indifferent to the number and kinds of paragraphs
+it must markup. We can format the three examples at the same time.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...     foo='\n'.join([text, quoted_text, text, quoted_text, signature]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>Somebody said sometime ago:<br />
+    <span class="foldable"...>
+    &gt; 1. Remove the letters  c, j, q, x, w<br />
+    &gt;    from the English Language.<br />
+    &gt; 2. Remove the penny from US currency.
+    </span></p>
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>Somebody said sometime ago:<br />
+    <span class="foldable"...>
+    &gt; 1. Remove the letters  c, j, q, x, w<br />
+    &gt;    from the English Language.<br />
+    &gt; 2. Remove the penny from US currency.
+    </span></p>
+    <p><span class="foldable"...>--<br />
+    __C U R T I S  C.  H O V E Y_______<br />
+    sinzui.<wbr></wbr>is@somewhere.<wbr></wbr>org<br />
+    Guilty of stealing everything I am.
+    </span></p>
+
+Email addresses embedded in text can be obfuscated. In cases where
+personal information may be in the content, and it will be shown to
+unauthenticated users, the email address can be hidden. The address
+is replaced with the message '<email address hidden>'.
 
     >>> test_tales('foo/fmt:obfuscate-email', foo='name.surname@company.com')
     '<email address hidden>'

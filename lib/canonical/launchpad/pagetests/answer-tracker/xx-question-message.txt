@@ -10,12 +10,10 @@ Let's have an authenticated user create a message in the style of
 an email post to examine the markup rules. This message contains a
 quoted passage, and a signature with an email address in it.
 
-    >>> # Note that no-priv does not have permission to create messages.
-    >>> browser.addHeader("Authorization", 'Basic test@canonical.com:test')
-    >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/11')
-    >>> browser.title.decode('utf-8')
+    >>> user_browser.open('http://answers.launchpad.dev/ubuntu/+question/11')
+    >>> user_browser.title.decode('utf-8')
     u'Ubuntu question #11: ...Continue playing after shutdown...'
-    >>> browser.getControl('Message').value = (
+    >>> user_browser.getControl('Message').value = (
     ...     "Top quoting is bad netiquette.\n"
     ...     "The leading text will be displayed\n"
     ...     "normally--no markup to hide it from view.\n"
@@ -29,7 +27,7 @@ quoted passage, and a signature with an email address in it.
     ...     "______________________\n"
     ...     "human@somewhere.org\n"
     ...     "Witty signatures rock!\n")
-    >>> browser.getControl("I'm Providing More Information").click()
+    >>> user_browser.getControl('Add Information Request').click()
 
 
 == Email addresses are only shown to authenticated users ==
@@ -37,9 +35,10 @@ quoted passage, and a signature with an email address in it.
 Email addresses are visible to authenticated users. Sample Person is
 authenticated already, He will see 'human@somewhere.org'
 
-    >>> browser.title.decode('utf-8')
+    >>> user_browser.title.decode('utf-8')
     u'Ubuntu question #11: ...Continue playing after shutdown...'
-    >>> text = find_tags_by_class(browser.contents, 'boardCommentBody')[-1]
+    >>> text = find_tags_by_class(
+    ...     user_browser.contents, 'boardCommentBody')[-1]
     >>> print extract_text(text.findAll('p')[-1])
     --
     ______________________
@@ -71,8 +70,7 @@ and inline.
 
 Signatures are identified by paragraphs with a starting line like '--'.
 The entire content of the paragraph is wrapped by a tag of 'foldable'
-class. Continuing the anonymous user since all users get the same 
-markup, we can see:
+class.
 
     >>> # XXX sinzui 2007-06-14 bug 120425
     >>> # Pagetests cannot test CSS and JS behaviour.

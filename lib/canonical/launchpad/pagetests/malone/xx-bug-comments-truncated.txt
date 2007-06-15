@@ -128,8 +128,7 @@ link to toggle the display of the foldable text between none and inline.
 
 Signatures are identified by paragraphs with a starting line like '--'.
 The entire content of the paragraph is wrapped by a tag of 'foldable'
-class. Continuing the anonymous user since all users get the same
-markup, we can see:
+class.
 
     >>> # XXX sinzui 2007-06-14 bug 120425
     >>> # Pagetests cannot test CSS and JS behaviour.
