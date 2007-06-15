@@ -8,7 +8,6 @@ __all__ = [
     'ISpecification',
     'ISpecificationSet',
     'ISpecificationDelta',
-    'ISpecificationErrorMessages',
     ]
 
 
@@ -21,7 +20,6 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (ContentNameField, Summary,
     Title)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IProject
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
@@ -33,50 +31,48 @@ from canonical.lp.dbschema import (
     SpecificationGoalStatus)
 
 
-class ISpecificationErrorMessages:
-
-    duplicate_name = _("%s is already in use by another specification.")
-
-    duplicate_URL = _("%s is already registered by another specification.")
-
-
 class SpecNameField(ContentNameField):
 
-    errormessage = ISpecificationErrorMessages.duplicate_name
+    errormessage = _("%s is already in use by another blueprint.")
 
     @property
     def _content_iface(self):
         return ISpecification
 
-    """Looks up a specification by name from within the current context.
-    Returns a specification if (and only if) the current context is associated
-    with exactly one specification namespace, and if the name can be found
-    within that namespace. Returns None otherwise.
-    """
     def _getByName(self, name):
+        """Finds a specification by name from the current context.
+
+        Returns a specification if (and only if) the current context
+        defines a unique specification namespace and then if a matching
+        specification can be found within that namespace. Returns None
+        otherwise.
+        """
         if ISpecificationSet.providedBy(self.context):
-            # The context is the set of all specifications. Since this set
-            # corresponds to multiple specification namespaces, we return None.
+            # The context is the set of all specifications. Since this
+            # set corresponds to multiple specification namespaces, we
+            # return None.
             return None
         elif IProject.providedBy(self.context):
-            # The context is a project group. Since a project group corresponds
-            # to multiple specification namespaces, we return None.
+            # The context is a project group. Since a project group
+            # corresponds to multiple specification namespaces, we
+            # return None.
             return None
         elif ISpecification.providedBy(self.context):
-            # The context is a specification. Since a specification's target
-            # defines a single specification namespace, we ask the target to
-            # perform the lookup.
+            # The context is a specification. Since a specification's
+            # target defines a single specification namespace, we ask
+            # the target to perform the lookup.
             return self.context.target.getSpecification(name)
         else:
-            # The context is a entity such as a product or distribution. Since
-            # this type of context is associated with exactly one specification
-            # namespace, we ask the context to perform the lookup.
+            # The context is a entity such as a product or distribution.
+            # Since this type of context is associated with exactly one
+            # specification namespace, we ask the context to perform the
+            # lookup.
             return self.context.getSpecification(name)
 
 
 class SpecURLField(TextLine):
 
-    errormessage = ISpecificationErrorMessages.duplicate_URL
+    errormessage = _("%s is already registered by another blueprint.")
 
     def _validate(self, specurl):
         TextLine._validate(self, specurl)
@@ -95,7 +91,6 @@ class ISpecification(IHasOwner, ICanBeMentored):
 
     name = SpecNameField(
         title=_('Name'), required=True, readonly=False,
-        constraint=name_validator,
         description=_(
             "May contain lower-case letters, numbers, and dashes. "
             "It will be used in the specification url. "
