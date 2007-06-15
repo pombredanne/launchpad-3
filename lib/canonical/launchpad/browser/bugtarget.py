@@ -55,11 +55,8 @@ class FileBugData:
         self.initial_summary = None
         self.initial_summary = None
         self.initial_tags = []
-<<<<<<< TREE
-        self.subscribers = []
-=======
         self.private = None
->>>>>>> MERGE-SOURCE
+        self.subscribers = []
         self.extra_description = None
         self.comments = []
         self.attachments = []
@@ -69,11 +66,8 @@ class FileBugData:
 
             * The Subject header is the initial bug summary.
             * The Tags header specifies the initial bug tags.
-<<<<<<< TREE
-            * The Subscribe header specifies additional initial subscribers
-=======
             * The Private header sets the visibility of the bug.
->>>>>>> MERGE-SOURCE
+            * The Subscribe header specifies additional initial subscribers
             * The first inline part will be added to the description.
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
@@ -83,10 +77,6 @@ class FileBugData:
             self.initial_summary = mime_msg.get('Subject')
             tags = mime_msg.get('Tags', '')
             self.initial_tags = tags.lower().split()
-<<<<<<< TREE
-            subscribers = mime_msg.get('Subscribe', '')
-            self.subscribers = subscribers.split()
-=======
             private = mime_msg.get('Private')
             if private:
                 if private.lower() == 'yes':
@@ -97,7 +87,8 @@ class FileBugData:
                     # If the value is anything other than yes or no we just
                     # ignore it as we cannot currently give the user an error
                     pass
->>>>>>> MERGE-SOURCE
+            subscribers = mime_msg.get('Subscribe', '')
+            self.subscribers = subscribers.split()
             for part in mime_msg.get_payload():
                 disposition_header = part.get('Content-Disposition', 'inline')
                 # Get the type, excluding any parameters.
