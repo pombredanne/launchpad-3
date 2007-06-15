@@ -39,6 +39,12 @@ class ICodeImport(Interface):
         readonly=True, vocabulary='Product',
         description=_("The project this code import belongs to."))
 
+    series = Choice(
+        title=_("Series"),
+        readonly=True, vocabulary='ProductSeries',
+        description=_("The series this import is registered as the "
+                      "code for.  Can be None."))
+
     review_status = Choice(
         title=_("Review Status"), vocabulary='CodeImportReviewStatus',
         default=CodeImportReviewStatus.NEW,

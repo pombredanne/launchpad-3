@@ -17,6 +17,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import ICodeImport, ICodeImportSet
 from canonical.lp.dbschema import (
     CodeImportReviewStatus, RevisionControlSystems)
@@ -37,6 +38,10 @@ class CodeImport(SQLBase):
     @property
     def product(self):
         return self.branch.product
+
+    @property
+    def series(self):
+        return ProductSeries.selectOneBy(import_branch=self.branch)
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)
