@@ -22,8 +22,11 @@ class CodeImportSetNavigation(Navigation):
     def breadcrumb(self):
         return "Code Imports"
 
-    def traverse(self, name):
-        return self.context.getByName(name)
+    def traverse(self, id):
+        try:
+            return self.context.get(id)
+        except LookupError:
+            return None
 
 class CodeImportSetView(LaunchpadView):
     def initialize(self):

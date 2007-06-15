@@ -18,7 +18,7 @@
       <thead>
         <tr>
           <th>
-            Name
+            ID
           </th>
           <th>
             Date Created
@@ -41,8 +41,8 @@
         <tr tal:repeat="codeimport codeimports">
 
           <td>
-            <a href="name" tal:attributes="href codeimport/fmt:url" tal:content="codeimport/name">
-              name
+            <a href="name" tal:attributes="href codeimport/fmt:url" tal:content="codeimport/id">
+              id
             </a>
           </td>
 
@@ -70,8 +70,8 @@
           </td>
 
           <td>
-            <a tal:condition="codeimport/branch"
-               tal:content="codeimport/branch/name"
+            <!-- probably want _some_ condition here -->
+            <a tal:content="codeimport/branch/name"
                tal:attributes="href codeimport/branch/fmt:url">
               branch-name
             </a>
