@@ -39,17 +39,12 @@
 
   <!-- CodeImportSet -->
 
-  <content class="canonical.launchpad.database.CodeImportSet">
-    <require
-      permission="launchpad.View"
-      interface="canonical.launchpad.interfaces.ICodeImport"
-      />
-  </content>
-
   <securedutility
     class="canonical.launchpad.database.CodeImportSet"
     provides="canonical.launchpad.interfaces.ICodeImportSet" >
-    <allow interface="canonical.launchpad.interfaces.ICodeImportSet" />
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImportSet" />
   </securedutility>
 
   <browser:navigation
