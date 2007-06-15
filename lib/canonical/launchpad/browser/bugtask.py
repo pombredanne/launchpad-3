@@ -1806,8 +1806,15 @@ class BugNominationsView(BugTaskSearchListingView):
 
     def search(self):
         """Return all the nominated tasks for this series."""
+        if IDistroSeries.providedBy(self.context):
+            main_context = self.context.distribution
+        elif IProductSeries.providedBy(self.context):
+            main_context = self.context.product
+        else:
+            raise AssertionError(
+                'Unknown nomination target: %r' % self.context)
         return BugTaskSearchListingView.search(
-            self, context=self.context.distribution,
+            self, context=main_context,
             extra_params=dict(nominated_for=self.context))
 
 
