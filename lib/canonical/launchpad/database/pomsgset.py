@@ -371,7 +371,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 active_submission=old_active_submission)
 
             if (new_submission != old_active_submission and
-                new_submission.active):
+                new_submission and new_submission.active):
                 has_changed = True
                 while index >= len(active_submissions):
                     active_submissions.append(None)
@@ -408,7 +408,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                                 updated += 1
                             else:
                                 matches += 1
-                    if matches == self.pluralforms:
+                    if matches == self.pluralforms and self.publishedcomplete:
                         # The active submission is exactly the same as the
                         # published one, so the fuzzy and complete flags
                         # should be also the same.
