@@ -108,6 +108,9 @@ class IPOMsgSet(Interface):
         populate the full submissions caches without duplication of the effort
         to fetch the active/published submissions information.
 
+        Note that the actual caches are private to this object, which is
+        visible only in a single thread.  This is why no locking is needed.
+
         :related_submissions: list or iterator of all submissions attached to
         this object, as well as all that should be presented as suggestions
         for its translation.  If related_submissions is not given, they will
