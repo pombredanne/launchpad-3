@@ -169,15 +169,15 @@ class Builder(SQLBase):
         logger.debug("Resuming %s", self.url)
         hostname = self.url.split(':')[1][2:].split('.')[0]
         host_url = '%s-host.ppa' % hostname
+        key_path = os.path.expanduser('~/.ssh/ppa-reset-builder')
         resume_argv = [
-            'ssh', '-i' , '/home/launchpad/.ssh/ppa-reset-builder',
-            'ppa@%s' % host_url]
+            'ssh', '-i' , key_path, 'ppa@%s' % host_url]
         logger.debug('Running: %s', resume_argv)
         resume_process = subprocess.Popen(
             resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        resume_process.communicate()
         # XXX cprov 20070615: If the reset command fails, we should raise
         # an error rather than assuming it reset ok.
+        resume_process.communicate()
 
     @property
     def slave(self):
@@ -200,9 +200,8 @@ class Builder(SQLBase):
                     build_queue_item.name, build_queue_item.version,
                     build_queue_item.build.pocket.title)
         if self.trusted:
-            assert (
-                build_queue_item.is_trusted,
-                "attempt to build untrusted item on a trusted-only builder.")
+            assert build_queue_item.is_trusted, (
+                "Attempt to build untrusted item on a trusted-only builder.")
         # Ensure build has the needed chroot
         chroot = build_queue_item.archseries.getChroot(
             build_queue_item.build.pocket)
