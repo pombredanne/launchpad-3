@@ -20,7 +20,7 @@
 
   <browser:url
     for="canonical.launchpad.interfaces.ICodeImport"
-    path_expression="name"
+    path_expression="string:${id}"
     parent_utility="canonical.launchpad.interfaces.ICodeImportSet"
     rootsite="code" />
 

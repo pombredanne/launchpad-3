@@ -26,13 +26,12 @@ which is registered as a utility.
     >>> verifyObject(ICodeImportSet, removeSecurityProxy(code_import_set))
     True
 
-CodeImports record who created them, and as we're also going to create
-new Products to create CodeImports for, so we log in as No Privileges
-Person.
+CodeImports record who created them, and we're also going to create new
+Products to create CodeImports for.  We're going to pretend that these
+are done by 'No Privileges Person'.
 
-    >>> login("no-priv@canonical.com")
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> user = getUtility(ILaunchBag).user
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
 
 CodeImports are associated with a Branch when they are created; this is
 how they are linked to a Product.  A helper function makes the tests
@@ -43,7 +42,7 @@ below much easier to read.
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     >>> def import_branch_for_new_product(name):
     ...     product = getUtility(IProductSet).createProduct(
-    ...         user, name, name, name, name, name)
+    ...         nopriv, name, name, name, name, name)
     ...     return getUtility(IBranchSet).new(
     ...         'trunk', vcs_imports, product, None, 'Import branch')
 
@@ -66,7 +65,7 @@ in the repository, known as the "module".
     >>> cvs_module = 'hello'
     >>> cvs_branch = import_branch_for_new_product("cvs-using-product")
     >>> cvs_import = code_import_set.new(
-    ...     registrant=user, branch=cvs_branch,
+    ...     registrant=nopriv, branch=cvs_branch,
     ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
     >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
     True
@@ -80,7 +79,7 @@ retrieve the tree to import.
     >>> svn_url = 'svn://svn.example.com/trunk'
     >>> svn_branch = import_branch_for_new_product("svn-using-project")
     >>> svn_import = code_import_set.new(
-    ...     registrant=user, branch=svn_branch,
+    ...     registrant=nopriv, branch=svn_branch,
     ...     rcs_type=svn, svn_branch_url=svn_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
     True
@@ -113,11 +112,11 @@ We've registered the ICodeImportSet utility on the 'code' part of the
 site:
 
     >>> from canonical.launchpad.webapp import canonical_url
-    >>> canonical_url(code_import_set)
-    u'http://code.launchpad.dev/+code-imports'
+    >>> print canonical_url(code_import_set)
+    http://code.launchpad.dev/+code-imports
 
-Each code import can be found at '<url of ICodeImportSet>/<name of
+Each code import can be found at '<url of ICodeImportSet>/<id of
 import>':
 
-    >>> canonical_url(found_svn)
-    u'http://code.launchpad.dev/+code-imports/svn-test'
+    >>> print canonical_url(svn_import)
+    http://code.launchpad.dev/+code-imports/...
