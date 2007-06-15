@@ -155,6 +155,10 @@ def _can_edit_translations(pofile, person):
 
 
 class POFileMixIn(RosettaStats):
+    """Base class for POFile and DummyPOFile.
+
+    Provides machinery for retrieving POMsgSets and populating their
+    submissions caches.  That machinery is needed even for DummyPOFiles."""
 
     def getMsgSetsForPOTMsgSets(self, for_potmsgsets):
         """See `IPOFile`."""
