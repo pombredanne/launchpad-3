@@ -646,6 +646,8 @@ class POFile(SQLBase, RosettaStats):
             template_mail = 'poimport-got-old-version.txt'
             import_rejected = True
 
+        flush_database_updates()
+
         # Prepare the mail notification.
         msgsets_imported = POMsgSet.select(
             'sequence > 0 AND pofile=%s' % (sqlvalues(self.id))).count()

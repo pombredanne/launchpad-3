@@ -423,8 +423,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                     if active_submissions[pluralform]:
                         active_count += 1
                 self.iscomplete = (active_count == self.pluralforms)
-
-                flush_database_updates()
             else:
                 self.isfuzzy = fuzzy
                 self.iscomplete = complete
