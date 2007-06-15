@@ -20,7 +20,7 @@ from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
 from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -118,6 +118,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
+    openid_identifier = StringCol(
+            dbName='openid_identifier', alternateID=True, notNull=True,
+            default=DEFAULT)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -698,7 +701,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             "is not a participant in any direct member of %(team)s"
             % dict(person=self.name, team=team.name))
         return member
-            
+
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
@@ -709,14 +712,14 @@ class Person(SQLBase, HasSpecificationsMixin):
         min_entries = MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT
         return Karma.selectBy(person=self).count() >= min_entries
 
-    def shippedShipItRequestsOfCurrentRelease(self):
+    def shippedShipItRequestsOfCurrentSeries(self):
         """See IPerson."""
         query = '''
             ShippingRequest.recipient = %s
             AND ShippingRequest.id = RequestedCDs.request
             AND RequestedCDs.distrorelease = %s
             AND ShippingRequest.shipment IS NOT NULL
-            ''' % sqlvalues(self.id, ShipItConstants.current_distrorelease)
+            ''' % sqlvalues(self.id, ShipItConstants.current_distroseries)
         return ShippingRequest.select(
             query, clauseTables=['RequestedCDs'], distinct=True,
             orderBy='-daterequested')
@@ -1059,7 +1062,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                 "be added as a member of '%s'"
                 % (self.name, person.name, person.name, self.name))
             # By default, teams can only be invited as members, meaning that
-            # one of the team's admins will have to accept the invitation 
+            # one of the team's admins will have to accept the invitation
             # before the team is made a member. If force_team_add is True,
             # though, then we'll add a team as if it was a person.
             if not force_team_add:
@@ -1082,13 +1085,13 @@ class Person(SQLBase, HasSpecificationsMixin):
                 reviewercomment=comment)
             notify(event(person, self))
 
-    # The two methods below are not in the IPerson interface because we want
+    # The three methods below are not in the IPerson interface because we want
     # to protect them with a launchpad.Edit permission. We could do that by
     # defining explicit permissions for all IPerson methods/attributes in
     # the zcml but that's far from optimal given the size of IPerson.
     def acceptInvitationToBeMemberOf(self, team, comment):
         """Accept an invitation to become a member of the given team.
-        
+
         There must be a TeamMembership for this person and the given team with
         the INVITED status. The status of this TeamMembership will be changed
         to APPROVED.
@@ -1102,7 +1105,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def declineInvitationToBeMemberOf(self, team, comment):
         """Decline an invitation to become a member of the given team.
-        
+
         There must be a TeamMembership for this person and the given team with
         the INVITED status. The status of this TeamMembership will be changed
         to INVITATION_DECLINED.
@@ -1113,6 +1116,26 @@ class Person(SQLBase, HasSpecificationsMixin):
         tm.setStatus(
             TeamMembershipStatus.INVITATION_DECLINED,
             getUtility(ILaunchBag).user, reviewercomment=comment)
+
+    def renewTeamMembership(self, team):
+        """Renew the TeamMembership for this person on the given team.
+
+        The given team's renewal policy must be ONDEMAND and the membership
+        must be active (APPROVED or ADMIN) and set to expire in less than
+        DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        """
+        tm = TeamMembership.selectOneBy(person=self, team=team)
+        assert tm.canBeRenewedByMember(), (
+            "This membership can't be renewed by the member himself.")
+
+        assert (team.defaultrenewalperiod is not None
+                and team.defaultrenewalperiod > 0), (
+            'Teams with a renewal policy of ONDEMAND must specify '
+            'a default renewal period greater than 0.')
+        # Keep the same status, change the expiration date and send a
+        # notification explaining the membership has been renewed.
+        tm.dateexpires += timedelta(days=team.defaultrenewalperiod)
+        tm.sendSelfRenewalNotification()
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
@@ -1520,16 +1543,16 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def latestMaintainedPackages(self):
         """See IPerson."""
-        return self._latestReleaseQuery()
+        return self._latestSeriesQuery()
 
     def latestUploadedButNotMaintainedPackages(self):
         """See IPerson."""
-        return self._latestReleaseQuery(uploader_only=True)
+        return self._latestSeriesQuery(uploader_only=True)
 
-    def _latestReleaseQuery(self, uploader_only=False):
+    def _latestSeriesQuery(self, uploader_only=False):
         # Issues a special query that returns the most recent
         # sourcepackagereleases that were maintained/uploaded to
-        # distribution releases by this person.
+        # distribution series by this person.
         if uploader_only:
             extra = """sourcepackagerelease.creator = %d AND
                        sourcepackagerelease.maintainer != %d""" % (
@@ -1551,6 +1574,13 @@ class Person(SQLBase, HasSpecificationsMixin):
             orderBy=['-SourcePackageRelease.dateuploaded',
                      'SourcePackageRelease.id'],
             prejoins=['sourcepackagename', 'maintainer'])
+
+    def isUploader(self, distribution):
+        """See IPerson."""
+        for acl in distribution.uploaders:
+            if self in acl:
+                return True
+        return False
 
     @cachedproperty
     def is_ubuntero(self):
@@ -1580,6 +1610,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     def archive(self):
         """See IPerson."""
         return Archive.selectOneBy(owner=self)
+
 
 class PersonSet:
     """The set of persons."""
@@ -1682,6 +1713,20 @@ class PersonSet:
         if ignore_merged:
             query = AND(query, Person.q.mergedID==None)
         return Person.selectOne(query)
+
+    def getByOpenIdIdentifier(self, openid_identifier):
+        """Returns a Person with the given openid_identifier, or None.
+       
+        None is returned if the person is not enabled for OpenID usage
+        (see Person.is_openid_enabled).
+        """
+        person = Person.selectOne(
+                Person.q.openid_identifier == openid_identifier
+                )
+        if person is not None and person.is_openid_enabled:
+            return person
+        else:
+            return None
 
     def updateStatistics(self, ztm):
         """See IPersonSet."""
@@ -1827,7 +1872,7 @@ class PersonSet:
             orderBy=["Person.displayname", "Person.name"])
         return contributors
 
-    def getPOFileContributorsByDistroRelease(self, distrorelease, language):
+    def getPOFileContributorsByDistroSeries(self, distroseries, language):
         """See IPersonSet."""
         contributors = Person.select("""
             POFileTranslator.person = Person.id AND
@@ -1836,7 +1881,7 @@ class PersonSet:
             POFile.potemplate = POTemplate.id AND
             POTemplate.distrorelease = %s AND
             POTemplate.iscurrent = TRUE"""
-                % sqlvalues(language, distrorelease),
+                % sqlvalues(language, distroseries),
             clauseTables=["POFileTranslator", "POFile", "POTemplate"],
             distinct=True,
             # See comment in getPOFileContributors about how we can't

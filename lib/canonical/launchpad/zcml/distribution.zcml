@@ -89,8 +89,8 @@
     facet="bugs"
     permission="zope.Public">
     <browser:page
-      name="+portlet-bugtasklist-releasebugs"
-      template="../templates/bugtask-portlet-releasebugs.pt"
+      name="+portlet-bugtasklist-seriesbugs"
+      template="../templates/bugtask-portlet-seriesbugs.pt"
       />
   </browser:pages>
 
@@ -121,7 +121,7 @@
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
     facet="overview"
-    class="canonical.launchpad.browser.DistributionReleaseMirrorsView"
+    class="canonical.launchpad.browser.DistributionSeriesMirrorsView"
     permission="zope.Public"
     name="+cdmirrors"
     template="../templates/distribution-mirrors.pt"
@@ -131,7 +131,7 @@
     for="canonical.launchpad.interfaces.IDistribution"
     name="+cdmirrors-rss"
     permission="zope.Public"
-    class="canonical.launchpad.browser.DistributionReleaseMirrorsRSSView"
+    class="canonical.launchpad.browser.DistributionSeriesMirrorsRSSView"
     template="../templates/distribution-mirrors-rss.pt"
     />
 
@@ -172,9 +172,9 @@
       template="../templates/distribution-index.pt"
       />
     <browser:page
-      name="+releases"
+      name="+series"
       facet="overview"
-      template="../templates/distribution-releases.pt"
+      template="../templates/distribution-series.pt"
       />
     <browser:page
       name="+search"
@@ -250,8 +250,8 @@
       template="../templates/distribution-portlet-lifecycle.pt"
       />
     <browser:page
-      name="+portlet-releases"
-      template="../templates/distribution-portlet-releases.pt"
+      name="+portlet-series"
+      template="../templates/distribution-portlet-series.pt"
       />
     <browser:page
       name="+portlet-milestones"
@@ -287,13 +287,13 @@
   </browser:pages>
 
   <browser:addform
-    name="+addrelease"
+    name="+addseries"
     for="canonical.launchpad.interfaces.IDistribution"
-    schema="canonical.launchpad.interfaces.IDistroRelease"
-    label="Register a new distribution release"
-    fields="name displayname title summary description version parentrelease"
-    content_factory="canonical.launchpad.database.DistroRelease"
-    class="canonical.launchpad.browser.DistroReleaseAddView"
+    schema="canonical.launchpad.interfaces.IDistroSeries"
+    label="Register a new series"
+    fields="name displayname title summary description version parentseries"
+    content_factory="canonical.launchpad.database.DistroSeries"
+    class="canonical.launchpad.browser.DistroSeriesAddView"
     facet="overview"
     permission="launchpad.Admin"
     template="../templates/launchpad-addform.pt" >

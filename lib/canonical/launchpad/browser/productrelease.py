@@ -29,12 +29,11 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu,
-    GetitemNavigation, LaunchpadFormView, Link,
+    canonical_url, ContextMenu, Navigation, LaunchpadFormView, Link,
     enabled_with_permission, custom_widget, action, stepthrough)
 
 
-class ProductReleaseNavigation(GetitemNavigation):
+class ProductReleaseNavigation(Navigation):
 
     usedfor = IProductRelease
 
@@ -42,6 +41,7 @@ class ProductReleaseNavigation(GetitemNavigation):
     def download(self, name):
         newlocation = self.context.getFileAliasByName(name)
         return newlocation
+
 
 class ProductReleaseContextMenu(ContextMenu):
 
@@ -121,6 +121,7 @@ class ProductReleaseRdfView(object):
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
 
 class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     schema = IProductReleaseFileAddForm
